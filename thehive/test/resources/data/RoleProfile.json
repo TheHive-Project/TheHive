@@ -1,8 +1,8 @@
 [
   {"from": "ro-cert", "to":  "read-only"},
-  {"from": "user-cert", "to":  "incident-handler"},
+  {"from": "user-cert", "to":  "analyst"},
   {"from": "admin-cert", "to":  "org-admin"},
   {"from": "ro-soc", "to":  "read-only"},
-  {"from": "user-soc", "to":  "incident-handler"},
+  {"from": "user-soc", "to":  "analyst"},
   {"from": "admin-soc", "to":  "org-admin"}
 ]

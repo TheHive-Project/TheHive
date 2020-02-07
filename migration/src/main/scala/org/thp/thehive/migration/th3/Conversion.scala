@@ -56,7 +56,7 @@ trait Conversion {
     } yield InputCase(
       Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary),
       user,
-      Map(mainOrganisation -> "all"),
+      Map(mainOrganisation -> ProfileSrv.orgAdmin.name),
       tags,
       (metricsValue ++ customFieldsValue).toMap,
       None,

@@ -9,7 +9,7 @@ import org.thp.scalligraph.auth._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationSrv
+import org.thp.thehive.services.{OrganisationSrv, ProfileSrv}
 
 case class TestUser(login: String, name: String, profile: String, permissions: Set[String], organisation: String)
 
@@ -100,7 +100,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
       val expected = TestUser(
         login = "certadmin@thehive.local",
         name = "certadmin",
-        profile = "org-admin",
+        profile = ProfileSrv.orgAdmin.name,
         permissions = Set(
           Permissions.manageShare,
           Permissions.manageAnalyse,

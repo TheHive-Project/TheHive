@@ -3,8 +3,11 @@ package org.thp.thehive.controllers.v0
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputProfile
+import org.thp.thehive.services.ProfileSrv
 
 class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
   "profile controller" should {
@@ -30,7 +33,7 @@ class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a profile" in testApp { app =>
-      val request = FakeRequest("PATCH", s"/api/profile/testProfile")
+      val request = FakeRequest("PATCH", "/api/profile/testProfile")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"permissions": ["manageTask"]}"""))
       val result = app[ProfileCtrl].update("testProfile")(request)
@@ -41,29 +44,28 @@ class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "fail to update non editable profile" in testApp { app =>
-      val request = FakeRequest("PATCH", s"/api/profile/org-admin")
+      val request = FakeRequest("PATCH", s"/api/profile/${ProfileSrv.orgAdmin.name}")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"permissions": ["manageTask"]}"""))
-      val result = app[ProfileCtrl].update("org-admin")(request)
+      val result = app[ProfileCtrl].update(ProfileSrv.orgAdmin.name)(request)
 
       status(result) must equalTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
 
     "delete a profile if allowed" in testApp { app =>
-      val request = FakeRequest("DELETE", s"/api/profile/testProfile")
+      val request = FakeRequest("DELETE", "/api/profile/testProfile")
         .withHeaders("user" -> "admin@thehive.local")
       val result = app[ProfileCtrl].delete("testProfile")(request)
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
+      app[Database].roTransaction { implicit graph =>
+        app[ProfileSrv].get("testProfile").exists() must beFalse
+      }
+    }
 
-      val requestGet = FakeRequest("GET", s"/api/profile/testProfile")
+    "refuse to delete protected profile" in testApp { app =>
+      val requestFailed = FakeRequest("DELETE", s"/api/profile/${ProfileSrv.orgAdmin.name}")
         .withHeaders("user" -> "admin@thehive.local")
-      val resultGet = app[ProfileCtrl].get("testProfile")(requestGet)
-
-      status(resultGet) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultGet)}")
-
-      val requestFailed = FakeRequest("DELETE", s"/api/profile/all")
-        .withHeaders("user" -> "admin@thehive.local")
-      val resultFailed = app[ProfileCtrl].delete("all")(requestFailed)
+      val resultFailed = app[ProfileCtrl].delete(ProfileSrv.orgAdmin.name)(requestFailed)
 
       status(resultFailed) must equalTo(400).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
     }

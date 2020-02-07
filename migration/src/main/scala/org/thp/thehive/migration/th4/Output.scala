@@ -150,7 +150,7 @@ class Output @Inject() (
         user         <- inputCase.user.map(userSrv.getOrFail).flip
         tags         <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
         caseTemplate <- inputCase.caseTemplate.map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail()).flip
-        organisation <- inputCase.organisations.find(_._2 == "all") match {
+        organisation <- inputCase.organisations.find(_._2 == ProfileSrv.orgAdmin.name) match {
           case Some(o) => organisationSrv.getOrFail(o._1)
           case None    => Failure(InternalError("Organisation not found"))
         }

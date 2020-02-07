@@ -1,6 +1,6 @@
 [
-  {"from": "case1-cert", "to": "all"},
-  {"from": "case2-cert", "to": "all"},
+  {"from": "case1-cert", "to": "org-admin"},
+  {"from": "case2-cert", "to": "org-admin"},
   {"from": "case2-soc", "to": "read-only"},
-  {"from": "case3-soc", "to": "all"}
+  {"from": "case3-soc", "to": "org-admin"}
 ]

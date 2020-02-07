@@ -170,7 +170,7 @@ class CortexClient(
     */
   def getRespondersByType(entityType: String): Future[Seq[OutputWorker]] =
     responder
-      .search[SearchQuery](SearchQuery("dataTypeList", s"thehive:$entityType", "all"))
+      .search[SearchQuery](SearchQuery(field = "dataTypeList", value = s"thehive:$entityType", range = "all"))
 
   /**
     * Search responders according to a formatted query
@@ -179,7 +179,7 @@ class CortexClient(
     */
   def searchResponders(query: JsObject): Future[Seq[OutputWorker]] =
     responder
-      .search[SearchQuery](SearchQuery("", "", "all", Some(query)))
+      .search[SearchQuery](SearchQuery(field = "", value = "", range = "all", queryOverride = Some(query)))
 
   /**
     * Materializes an action as a job on Cortex client server
