@@ -19,7 +19,9 @@ case class OutputProfile(
     updatedAt: Option[Date] = None,
     _type: String,
     name: String,
-    permissions: Seq[String]
+    permissions: Seq[String],
+    editable: Boolean,
+    isAdmin: Boolean
 )
 
 object OutputProfile {

@@ -2,11 +2,14 @@ package org.thp.thehive.services
 
 import scala.util.{Failure, Try}
 
+import play.api.libs.json.JsObject
+
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
@@ -30,6 +33,8 @@ object ProfileSrv {
   )
   val readonly: Profile = Profile("read-only", Set.empty)
   val orgAdmin: Profile = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
+
+  def isEditable(profile: Profile): Boolean = profile.name != admin.name && profile.name != orgAdmin.name
 }
 
 @Singleton
@@ -56,12 +61,22 @@ class ProfileSrv @Inject() (auditSrv: AuditSrv)(implicit val db: Database) exten
     else initSteps.getByName(idOrName)
 
   def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    if (profile.name == "all" || get(profile).filter(_.or(_.roles, _.shares)).exists())
+    if (!ProfileSrv.isEditable(profile))
+      Failure(BadRequestError(s"Profile ${profile.name} cannot be removed"))
+    else if (get(profile).filter(_.or(_.roles, _.shares)).exists())
       Failure(BadRequestError(s"Profile ${profile.name} is used"))
     else {
       get(profile).remove()
       auditSrv.profile.delete(profile)
     }
+
+  override def update(
+      steps: ProfileSteps,
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(ProfileSteps, JsObject)] =
+    if (steps.newInstance().toIterator.exists(!ProfileSrv.isEditable(_)))
+      Failure(BadRequestError(s"Profile is not editable"))
+    else super.update(steps, propertyUpdaters)
 }
 
 @EntitySteps[Profile]

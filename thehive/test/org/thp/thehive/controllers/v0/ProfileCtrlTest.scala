@@ -40,6 +40,15 @@ class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
       updatedProfile.permissions shouldEqual List("manageTask")
     }
 
+    "fail to update non editable profile" in testApp { app =>
+      val request = FakeRequest("PATCH", s"/api/profile/org-admin")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withJsonBody(Json.parse("""{"permissions": ["manageTask"]}"""))
+      val result = app[ProfileCtrl].update("org-admin")(request)
+
+      status(result) must equalTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
+    }
+
     "delete a profile if allowed" in testApp { app =>
       val request = FakeRequest("DELETE", s"/api/profile/testProfile")
         .withHeaders("user" -> "admin@thehive.local")

@@ -441,7 +441,7 @@ object Conversion {
       .withFieldConst(_.createdBy, profile._createdBy)
       .withFieldConst(_._type, "profile")
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
-      .withFieldComputed(_.editable, p => p.name != ProfileSrv.admin.name && p.name != ProfileSrv.orgAdmin.name)
+      .withFieldComputed(_.editable, ProfileSrv.isEditable)
       .withFieldComputed(_.isAdmin, _.permissions.intersect(Permissions.restrictedPermissions).nonEmpty)
       .transform
   )
