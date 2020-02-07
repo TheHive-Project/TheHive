@@ -280,7 +280,7 @@ class Properties @Inject() (
     PublicPropertyListBuilder[DashboardSteps]
       .property("title", UniMapping.string)(_.field.updatable)
       .property("description", UniMapping.string)(_.field.updatable)
-      .property("definition", UniMapping.jsObject)(_.field.updatable)
+      .property("definition", UniMapping.string)(_.field.updatable)
       .property("status", UniMapping.string)(
         _.select(_.richDashboard.map(d => if (d.organisationShares.nonEmpty) "Shared" else "Private")).custom { // TODO replace by choose step
           case (_, "Shared", vertex, _, graph, authContext) =>

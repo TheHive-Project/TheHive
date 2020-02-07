@@ -52,7 +52,7 @@ class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val request = FakeRequest("PATCH", s"/api/dashboard/${dashboard._id}")
         .withHeaders("user" -> "certadmin@thehive.local")
-        .withJsonBody(Json.parse("""{"title": "updated", "description": "updated", "status": "Private", "definition": {}}"""))
+        .withJsonBody(Json.parse("""{"title": "updated", "description": "updated", "status": "Private", "definition": "{}"}"""))
       val result = app[DashboardCtrl].update(dashboard._id)(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
