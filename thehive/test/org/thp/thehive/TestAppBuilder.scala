@@ -56,14 +56,15 @@ trait TestAppBuilder {
                                |    berkeleyje.freeDisk: 2
                                |  }
                                |}
+                               |akka.cluster.jmx.multi-mbeans-in-same-jvm: on
                                |""".stripMargin)
           .bind[Database, JanusDatabase]
 
         app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
       }
     }
-    val storageDirectory = s"target/janusgraph-test-database-${math.random}"
-    FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), new File(storageDirectory))
+    val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
+    FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
     try body(
       appConfigure
         .bind[Database, JanusDatabase]
@@ -78,6 +79,6 @@ trait TestAppBuilder {
                              |}
                              |""".stripMargin)
     )
-    finally FileUtils.deleteDirectory(new File(storageDirectory))
+    finally FileUtils.deleteDirectory(storageDirectory)
   }
 }

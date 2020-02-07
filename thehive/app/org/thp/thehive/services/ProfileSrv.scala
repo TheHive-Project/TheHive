@@ -30,7 +30,6 @@ object ProfileSrv {
   )
   val readonly: Profile = Profile("read-only", Set.empty)
   val orgAdmin: Profile = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
-//  val all: Profile      = Profile("all", Permissions.all)
 }
 
 @Singleton

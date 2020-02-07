@@ -79,29 +79,36 @@ class UserCtrl @Inject() (
               _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
               profile      <- profileSrv.getOrFail(inputUser.profile)
-              user         <- userSrv.create(inputUser.toUser, inputUser.avatar, organisation, profile)
-            } yield user
+              user         <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
+            } yield user -> userSrv.canSetPassword(user.user)
           }
-          .flatMap { user =>
-            inputUser
-              .password
-              .map(password => authSrv.setPassword(user._id, password))
-              .flip
-              .map(_ => Results.Created(user.toJson))
+          .flatMap {
+            case (user, true) =>
+              inputUser
+                .password
+                .map(password => authSrv.setPassword(user._id, password))
+                .flip
+                .map(_ => Results.Created(user.toJson))
+            case (user, _) => Success(Results.Created(user.toJson))
           }
       }
 
-  // FIXME delete = lock or remove from organisation ?
-  // lock make user unusable for all organisation
-  // remove from organisation make the user disappear from organisation admin, and his profile is removed
+  def lock(userId: String): Action[AnyContent] =
+    entrypoint("lock user")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail()
+          _    <- userSrv.lock(user)
+        } yield Results.NoContent
+      }
+
   def delete(userId: String): Action[AnyContent] =
     entrypoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          user        <- userSrv.get(userId).getOrFail()
-          _           <- userSrv.current.organisations(Permissions.manageUser).users.get(user).getOrFail()
-          updatedUser <- userSrv.get(user).updateOne("locked" -> true)
-          _           <- auditSrv.user.delete(updatedUser)
+          organisation <- userSrv.current.organisations(Permissions.manageUser).has("name", request.organisation).getOrFail()
+          user         <- organisationSrv.get(organisation).users.get(userId).getOrFail()
+          _            <- userSrv.delete(user, organisation)
         } yield Results.NoContent
       }
 

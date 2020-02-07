@@ -4,8 +4,11 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import org.thp.scalligraph.AuthenticationError
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputUser
+import org.thp.thehive.services.UserSrv
 
 case class TestUser(login: String, name: String, roles: Set[String], organisation: String, hasKey: Boolean, status: String)
 
@@ -118,10 +121,10 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
       status(app[UserCtrl].current(keyAuthRequest)) must_=== 200
     }
 
-    "remove a user" in testApp { app =>
+    "remove a user (lock)" in testApp { app =>
       val request = FakeRequest("DELETE", "/api/v0/user/certro@thehive.local")
         .withHeaders("user" -> "certadmin@thehive.local")
-      val result = app[UserCtrl].delete("certro@thehive.local")(request)
+      val result = app[UserCtrl].lock("certro@thehive.local")(request)
 
       status(result) must beEqualTo(204)
 
@@ -131,6 +134,18 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
 
       status(resultGet) must_=== 200
       contentAsJson(resultGet).as[OutputUser].status must beEqualTo("Locked")
+    }
+
+    "remove a user (force)" in testApp { app =>
+      val request = FakeRequest("DELETE", "/api/v0/user/certro@thehive.local/force")
+        .withHeaders("user" -> "certadmin@thehive.local")
+      val result = app[UserCtrl].delete("certro@thehive.local")(request)
+
+      status(result) must beEqualTo(204)
+
+      app[Database].roTransaction { implicit graph =>
+        app[UserSrv].get("certro@thehive.local").exists()
+      } must beFalse
     }
   }
 }

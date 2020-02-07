@@ -50,7 +50,8 @@ class Router @Inject() (
     case GET(p"/user/current")                  => userCtrl.current
     case GET(p"/user/$userId")                  => userCtrl.get(userId)
     case PATCH(p"/user/$userId")                => userCtrl.update(userId)
-    case DELETE(p"/user/$userId")               => userCtrl.delete(userId)
+    case DELETE(p"/user/$userId")               => userCtrl.lock(userId)
+    case DELETE(p"/user/$userId/force")         => userCtrl.delete(userId)
     case POST(p"/user/$userId/password/set")    => userCtrl.setPassword(userId)
     case POST(p"/user/$userId/password/change") => userCtrl.changePassword(userId)
     case GET(p"/user/$userId/key")              => userCtrl.getKey(userId)

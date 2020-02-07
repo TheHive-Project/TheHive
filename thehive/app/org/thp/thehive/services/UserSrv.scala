@@ -15,8 +15,7 @@ import org.thp.scalligraph.{BadRequestError, EntitySteps, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.Configuration
-import play.api.libs.json.JsObject
-
+import play.api.libs.json.{JsObject, Json}
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -56,18 +55,52 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
     else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
   }
 
-  def create(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(
+  def add(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
     for {
-      validUser   <- checkUser(user)
-      createdUser <- createEntity(validUser)
-      avatarId    <- avatar.map(setAvatar(createdUser, _)).flip
-      _           <- roleSrv.create(createdUser, organisation, profile)
-      richUser = RichUser(createdUser, avatarId, profile.name, profile.permissions, organisation.name)
-      _ <- auditSrv.user.create(createdUser, richUser.toJson)
+      _        <- roleSrv.create(user, organisation, profile)
+      richUser <- get(user).richUser(organisation.name).getOrFail()
+      _        <- auditSrv.user.create(user, richUser.toJson)
     } yield richUser
+
+  def addOrCreateUser(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichUser] =
+    get(user.id)
+      .getOrFail()
+      .orElse {
+        for {
+          validUser   <- checkUser(user)
+          createdUser <- createEntity(validUser)
+          _           <- avatar.map(setAvatar(createdUser, _)).flip
+        } yield createdUser
+      }
+      .flatMap(add(_, organisation, profile))
+
+  def canSetPassword(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Boolean = {
+    val userOrganisations     = get(user).organisations.name.toList.toSet
+    val operatorOrganisations = current.organisations(Permissions.manageUser).name.toList
+    operatorOrganisations.contains(OrganisationSrv.administration.name) || (userOrganisations -- operatorOrganisations).isEmpty
+  }
+
+  def delete(user: User with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    if (get(user).organisations.hasNot("name", organisation.name).exists())
+      get(user).role.filter(_.organisation.has("name", organisation.name)).remove()
+    else {
+      get(user).role.remove()
+      get(user).remove()
+    }
+    auditSrv.user.delete(user, organisation)
+  }
+
+  def lock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
+    for {
+      updatedUser <- get(user).updateOne("locked" -> true)
+      _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
+    } yield updatedUser
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
 

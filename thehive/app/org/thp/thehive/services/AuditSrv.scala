@@ -192,14 +192,24 @@ class AuditSrv @Inject() (
 
   class UserAudit extends SelfContextObjectAudit[User] {
 
-    def changeProfile(entity: User with Entity, organisation: Organisation, profile: Profile)(
+    def changeProfile(user: User with Entity, organisation: Organisation, profile: Profile)(
         implicit graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
-        Audit(Audit.update, entity, Some(Json.obj("organisation" -> organisation.name, "profile" -> profile.name).toString)),
-        Some(entity),
-        Some(entity)
+        Audit(Audit.update, user, Some(Json.obj("organisation" -> organisation.name, "profile" -> profile.name).toString)),
+        Some(user),
+        Some(user)
+      )
+
+    def delete(user: User with Entity, organisation: Organisation with Entity)(
+        implicit graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(
+        Audit(Audit.delete, user, Some(Json.obj("organisation" -> organisation.name).toString)),
+        None,
+        None
       )
   }
 
