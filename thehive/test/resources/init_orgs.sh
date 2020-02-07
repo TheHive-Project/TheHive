@@ -2,7 +2,7 @@
 
 declare -A PROFILES
 PROFILES[admin]="org-admin"
-PROFILES[user]="incident-handler"
+PROFILES[user]="analyst"
 PROFILES[ro]="read-only"
 
 for ORG in cert csirt soc
