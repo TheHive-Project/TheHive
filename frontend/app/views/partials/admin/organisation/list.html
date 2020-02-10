@@ -29,12 +29,12 @@
                                             {{::org.description || 'No description'}}
                                         </div>
                                         <div class="mt-xs" ng-if="org.links.length > 0">
-                                            <span class="text-muted mr-xxs">Linked organizations:</span>
+                                            <span class="text-muted mr-xxs">Linked organisations:</span>
                                             <span class="label label-default mr-xxs" ng-repeat="link in ::org.links | orderBy">{{link}}</span>
                                         </div>
                                         <div class="mt-xs" ng-if="org.links.length === 0">
-                                            <span class="text-muted mr-xxs">Linked organizations:</span>
-                                            <span class="text-warning"><em>None</em></span>                                            
+                                            <span class="text-muted mr-xxs">Linked organisations:</span>
+                                            <span class="text-warning"><em>None</em></span>
                                         </div>
                                     </td>
 

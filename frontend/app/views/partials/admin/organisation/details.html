@@ -29,16 +29,11 @@
                                 <i class="glyphicon glyphicon-calendar"></i>
                                 <span class="mr-xxxs">{{$vm.org.createdAt | showDate}}</span>
                             </span>
+                            <span ng-if="$vm.org.links.length > 0">
+                                <i class="fa fa-link"></i>
+                                <span class="label label-default mr-xxs" ng-repeat="link in $vm.org.links | orderBy">{{link}}</span>
+                            </span>
                         </div>
-
-
-                        <!-- Right side -->
-                        <!-- <span class="ml-xxs pull-right">
-                            <a href ng-click="removeCase()" class="text-danger noline" uib-tooltip="Permanently Remove case">
-                                <i class="text-danger fa fa-times"></i>
-                                Remove
-                            </a>
-                        </span> -->
                     </div>
                 </div>
             </div>
