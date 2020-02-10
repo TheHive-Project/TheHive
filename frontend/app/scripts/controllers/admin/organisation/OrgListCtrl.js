@@ -24,7 +24,7 @@
                     templateUrl: 'views/partials/admin/organisation/list/create.modal.html',
                     size: 'lg',
                     resolve: {
-                        organisation: org,
+                        organisation: angular.copy(org),
                         mode: function(){
                             return mode;
                         }
@@ -32,11 +32,11 @@
                 });
 
                 modal.result
-                    .then(function(org) {
+                    .then(function(newOrg) {
                         if (mode === 'edit') {
-                            self.update(org.name, org);
+                            self.update(org.name, newOrg);
                         } else {
-                            self.create(org);
+                            self.create(newOrg);
                         }
                     })
                     .catch(function(err){
@@ -85,7 +85,7 @@
             };
 
             self.update = function(orgName, org) {
-                OrganisationSrv.update(orgName, _.pick(org, 'description'))
+                OrganisationSrv.update(orgName, _.pick(org, 'name', 'description'))
                     .then(function(/*response*/) {
                         self.load();
                         NotificationSrv.log('Organisation updated successfully', 'success');
