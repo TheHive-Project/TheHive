@@ -7,6 +7,10 @@
 
             self.defaultOrg = 'admin';
 
+            self.isDefaultOrg = function(org) {
+                return org.name === self.defaultOrg;
+            };
+
             self.list = function() {
                 return $http.get(baseUrl);
             };

@@ -1,15 +1,27 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('OrgUserModalCtrl', function($scope, $uibModalInstance, UserSrv, NotificationSrv, organisation, user, profiles, isEdit) {
+    angular.module('theHiveControllers').controller('OrgUserModalCtrl', function($scope, $uibModalInstance, OrganisationSrv, UserSrv, NotificationSrv, organisation, user, profiles, isEdit) {
         var self = this;
 
         self.user = user;
         self.isEdit = isEdit;
-        self.profiles = profiles;
         self.organisation = organisation;
 
         self.$onInit = function() {
+
+            // filter profiles based organisation
+            if(OrganisationSrv.isDefaultOrg({name: self.organisation})) {
+
+                self.profiles = _.indexBy(_.filter(_.values(profiles), function(profile) {
+                    return !!profile.isAdmin;
+                }), 'name');
+            } else {
+                self.profiles = _.indexBy(_.filter(_.values(profiles), function(profile) {
+                    return !!!profile.isAdmin;
+                }), 'name');
+            }
+
             var formData = _.defaults(_.pick(self.user, '_id', 'name', 'login', 'organisation'), {
                 _id: null,
                 login: null,
