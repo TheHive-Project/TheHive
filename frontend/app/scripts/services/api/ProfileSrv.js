@@ -5,42 +5,54 @@
             var self = this;
             var baseUrl = './api/profile';
 
-            this.adminProfile = 'admin'
+            this.adminProfile = 'admin';
 
             this.permissions = {
-                keys: [
-                    'manageUser',
-                    'manageCaseTemplate',
-                    'manageAlert',
-                    'manageCase',
-                    'manageShare',
-                    'manageObservable',
-                    'manageTask',
-                    'manageAction',
-                    'manageOrganisation',
-                    'manageCustomField',
-                    'manageConfig',
-                    'manageTag',
-                    'manageProfile',
-                    'manageAnalyzerTemplate',
-                    'manageAnalyse'
-                ],
-                labels: {
-                    manageUser: 'Manage users',
-                    manageCaseTemplate: 'Manage case templates',
-                    manageAlert: 'Manage alert',
-                    manageCase: 'Manage case',
-                    manageShare: 'Manage sharing',
-                    manageObservable: 'Manage observables',
-                    manageTask: 'Manage tasks',
-                    manageAction: 'Manage actions',
-                    manageOrganisation: 'Manage organisations',
-                    manageCustomField: 'Manage custom fields',
-                    manageConfig: 'Manage configurations',
-                    manageTag: 'Manage tags',
-                    manageProfile: 'Manage profiles',
-                    manageAnalyzerTemplate: 'Manage analyzer templates',
-                    manageAnalyse: 'Run Cortex analyzer and responders'
+                admin: {
+                    hints: 'Permissions for administration user profiles',
+                    keys: [
+                        'manageUser',
+                        'manageOrganisation',
+                        'manageCustomField',
+                        'manageConfig',
+                        'manageTag',
+                        'manageProfile',
+                        'manageAnalyzerTemplate'
+                    ],
+                    labels: {
+                        manageUser: 'Manage users',
+                        manageOrganisation: 'Manage organisations',
+                        manageCustomField: 'Manage custom fields',
+                        manageConfig: 'Manage configurations',
+                        manageTag: 'Manage tags',
+                        manageProfile: 'Manage profiles',
+                        manageAnalyzerTemplate: 'Manage analyzer templates'
+                    }
+                },
+                org: {
+                    hints: 'Permissions for organisation user profiles',
+                    keys: [
+                        'manageUser',
+                        'manageCaseTemplate',
+                        'manageAlert',
+                        'manageCase',
+                        'manageShare',
+                        'manageObservable',
+                        'manageTask',
+                        'manageAction',
+                        'manageAnalyse'
+                    ],
+                    labels: {
+                        manageUser: 'Manage users',
+                        manageCaseTemplate: 'Manage case templates',
+                        manageAlert: 'Manage alert',
+                        manageCase: 'Manage case',
+                        manageShare: 'Manage sharing',
+                        manageObservable: 'Manage observables',
+                        manageTask: 'Manage tasks',
+                        manageAction: 'Manage actions',
+                        manageAnalyse: 'Run Cortex analyzer and responders'
+                    }
                 }
             };
 

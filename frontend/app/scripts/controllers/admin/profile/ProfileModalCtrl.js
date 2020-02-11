@@ -12,9 +12,10 @@
 
             self.initForm = function(profile) {
                 self.formData = _.defaults(
-                    _.pick(profile || {}, 'id', 'name', 'permissions'), {
+                    _.pick(profile || {}, 'id', 'name', 'permissions', 'isAdmin'), {
                         name: null,
-                        permissions: []
+                        permissions: [],
+                        isAdmin: false
                     }
                 );
             };

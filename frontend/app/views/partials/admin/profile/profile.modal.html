@@ -5,6 +5,19 @@
     <div class="modal-body">
         <div class="form-group">
             <label class="col-sm-3 control-label">
+                Profile type
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <div class="btn-group">
+                    <label class="btn btn-primary" ng-model="$modal.formData.isAdmin" uib-btn-radio="true">Administration Profile</label>
+                    <label class="btn btn-primary" ng-model="$modal.formData.isAdmin" uib-btn-radio="false">Organisation Profile</label>
+                </div>
+                <p class="help-block">{{$modal.permissions[$modal.formData.isAdmin ? 'admin' : 'org'].hints}}</p>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-3 control-label">
                 Name
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
@@ -23,7 +36,7 @@
             </label>
             <div class="col-sm-9">
                 <select class="form-control" ng-model="$modal.formData.permissions"
-                    ng-options="permission as ($modal.permissions.labels[permission]) for permission in $modal.permissions.keys" multiple size="15">
+                    ng-options="permission as ($modal.permissions[$modal.formData.isAdmin ? 'admin' : 'org'].labels[permission]) for permission in $modal.permissions[$modal.formData.isAdmin ? 'admin' : 'org'].keys" multiple size="15">
                 </select>
                 <div class="wrap">
                     Selected ({{$modal.formData.permissions.length || 0}})
