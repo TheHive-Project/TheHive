@@ -10,8 +10,8 @@
                     .then(function(response) {
                         self.list = response.data;
                     })
-                    .catch(function() {
-                        // TODO: Handle error
+                    .catch(function(rejection) {
+                        NotificationSrv.error('Profile management', rejection.data, rejection.status);
                     });
             };
 
