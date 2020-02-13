@@ -15,7 +15,7 @@
                 <tr ng-repeat="share in $ctrl.shares | orderBy:'organisationName'">
                     <td>{{share.organisationName}}</td>
                     <td ng-if="!$ctrl.readOnly">
-                        <updatable-select options="$ctrl.profiles" value="share.profileName" on-update="$ctrl.updateShareProfile(share._id, newValue)"></updatable-select>
+                        <updatable-select options="$ctrl.profiles" value="share.profileName" on-update="$ctrl.updateProfile(share._id, newValue)"></updatable-select>
                     </td>
                     <td ng-if="$ctrl.readOnly">{{share.profileName}}</td>
                     <td>{{share.createdAt | shortDate}}</td>

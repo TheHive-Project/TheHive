@@ -104,8 +104,8 @@
                     });
             };
 
-            this.updateShareProfile = function(id, newValue) {
-                CaseSrv.updateShare(id, { profile: newValue })
+            this.updateShareProfile = function(org, profile) {
+                CaseSrv.updateShare(org, { profile: profile })
                     .then(function(/*response*/) {
                         self.load();
                         NotificationSrv.log('Case sharings updated successfully', 'success');

@@ -28,6 +28,7 @@
             organisations="$vm.organisations"
             profiles="$vm.profiles"
             on-delete="$vm.removeShare(share)"
+            on-update-profile="$vm.updateShareProfile(org, profile)"
             ></sharing-list>
     </div>
 </div>

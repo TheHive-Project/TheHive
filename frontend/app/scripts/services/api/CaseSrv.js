@@ -58,8 +58,8 @@
                 });
             };
 
-            this.updateShare = function(id, patch) {
-                return $http.patch('./api/case/share/' + id, patch);
+            this.updateShare = function(org, patch) {
+                return $http.patch('./api/case/share/' + org, patch);
             };
 
             this.removeShare = function(id, share) {

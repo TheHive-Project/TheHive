@@ -338,7 +338,10 @@ angular.module('thehive', [
                     profiles: function(ProfileSrv) {
                         return ProfileSrv.list()
                             .then(function(response) {
-                                return _.map(response.data, 'name');
+
+                                return _.map(_.filter(response.data, function(item) {
+                                    return !item.isAdmin;
+                                }), 'name');
                             });
                     },
                     shares: function(CaseSrv, $stateParams) {

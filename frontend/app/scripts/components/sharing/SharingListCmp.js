@@ -9,6 +9,13 @@
                         share: share
                     });
                 };
+
+                this.updateProfile = function(org, newProfile) {
+                    this.onUpdateProfile({
+                        profile: newProfile,
+                        org: org
+                    });
+                };
             },
             controllerAs: '$ctrl',
             templateUrl: 'views/components/sharing/sharing-list.html',
@@ -18,6 +25,7 @@
                 profiles: '<',
                 readOnly: '<',
                 //onReload: '&',
+                onUpdateProfile: '&',
                 onDelete: '&'
             }
         });
