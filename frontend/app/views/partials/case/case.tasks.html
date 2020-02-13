@@ -127,7 +127,7 @@
                             Start
                         </span>
 
-                        <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                        <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
                             <a href class="text-primary noline nowrap" ng-click="getTaskResponders(task.id, true)" uib-dropdown-toggle>
                                 <i class="text-primary fa fa-cog"></i>
                                 <!-- Responders
@@ -246,7 +246,7 @@
                                     Start
                                 </span>
 
-                                <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+                                <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
                                     <a href class="text-primary noline nowrap" ng-click="getTaskResponders(task.id, true)" uib-dropdown-toggle>
                                         <i class="text-primary fa fa-cog"></i>
                                         <!-- Responders

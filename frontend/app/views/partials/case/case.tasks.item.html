@@ -36,7 +36,7 @@
                 </span>
             </a>
 
-            <span class="action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+            <span class="action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
 
                 <span class="mh-xxs text-primary">|</span>
 

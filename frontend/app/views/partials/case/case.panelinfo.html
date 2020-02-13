@@ -48,7 +48,7 @@
         </span>
 
         <div class="pull-right" if-permission="manageCase" allowed="{{userPermissions}}">
-            <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
+            <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
                 <span class="mr-xxs text-primary">|</span>
 
                 <a href class="text-primary noline" ng-click="getCaseResponders(true)" uib-dropdown-toggle>
