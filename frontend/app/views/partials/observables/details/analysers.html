@@ -2,7 +2,7 @@
     <div class="col-md-12">
         <h4 class="pv-xxs pr-xxs text-primary">
             Analysis
-            <span class="pull-right" if-permission="manageObservable" allowed="{{userPermissions}}" ng-if="analysisEnabled">
+            <span class="pull-right" if-permission="manageAnalyse" allowed="{{userPermissions}}" ng-if="analysisEnabled">
                 <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>
             </span>
         </h4>
@@ -10,7 +10,7 @@
             <thead>
                 <th>Analyzer</th>
                 <th width="450">Last analysis</th>
-                <th width="60" class="text-center" if-permission="manageObservable" allowed="{{userPermissions}}" ng-if="analysisEnabled">Actions</th>
+                <th width="60" class="text-center" if-permission="manageAnalyse" allowed="{{userPermissions}}" ng-if="analysisEnabled">Actions</th>
             </thead>
             <tbody>
                 <tr ng-repeat="(analyzerName, jobs) in analyzerJobs"
@@ -44,7 +44,7 @@
                             </li>
                         </ul>
                     </td>
-                    <td if-permission="manageObservable" allowed="{{userPermissions}}" ng-if="analysisEnabled" class="text-center">
+                    <td if-permission="manageAnalyse" allowed="{{userPermissions}}" ng-if="analysisEnabled" class="text-center">
                         <!-- <pre>{{cortexServers | json}}</pre> -->
                         <span class="btn btn-xs" ng-class="{true: 'btn-warning', false: 'btn-danger'}[jobs.length > 0]"
                             ng-click="runAnalyzer(analyzerName)"

@@ -19,7 +19,7 @@
                     <li>
                         <a ng-click="selection.isCollapsed=true;selection.Action ='addTags';evalTtags();">Add tag</a>
                     </li>
-                    <li ng-if="analysisEnabled">
+                    <li ng-if="analysisEnabled" if-permission="manageAnalyse" allowed="{{userPermissions}}">
                         <a ng-click="selection.Action ='runAnalyzers'; activeAnalyzers();">Run analyzers</a>
                     </li>
                     <li class="divider"></li>

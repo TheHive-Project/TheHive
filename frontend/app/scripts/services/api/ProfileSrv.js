@@ -50,8 +50,8 @@
                         manageShare: 'Manage sharing',
                         manageObservable: 'Manage observables',
                         manageTask: 'Manage tasks',
-                        manageAction: 'Manage actions',
-                        manageAnalyse: 'Run Cortex analyzer and responders'
+                        manageAction: 'Run Cortex responders',
+                        manageAnalyse: 'Run Cortex analyzer'
                     }
                 }
             };
