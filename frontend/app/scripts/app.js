@@ -565,14 +565,13 @@ angular.module('thehive', [
         'use strict';
         $rootScope.async = 0;
 
-        $rootScope.$on('$stateChangeStart', function(event, toState /*toParams*/) {
+        $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams) {
+            // Check rout permissions
             if(toState.permissions && !AuthenticationSrv.hasPermission(toState.permissions)) {
                 event.preventDefault();
                 $state.go('app.index');
             }
-        });
 
-        $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams) {
             if (_.isFunction(toState.title)) {
                 $rootScope.title = toState.title(toParams);
             } else {
