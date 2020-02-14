@@ -6,7 +6,7 @@
             <user user-id="log.owner" icon-size="xs"></user>
         </div>
         <div class="col-md-6">
-            <span class="pull-right ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageTask" allowed="{{userPermissions}}">
+            <span class="pull-right ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{permissions}}">
                 <a href class="text-primary noline nowrap" ng-click="getLogResponders(log.id, true)" uib-dropdown-toggle>
                     <i class="fa fa-cog"></i>
                     Responders
@@ -26,7 +26,7 @@
                   </li>
                 </ul>
             </span>
-            <span class="pull-right" if-permission="manageTask" allowed="{{userPermissions}}">
+            <span class="pull-right" if-permission="manageTask" allowed="{{permissions}}">
                 <a href ng-click="dropLog()" uib-tooltip="Delete log" class="text-danger">
                     <i class="fa fa-trash"></i> Delete
                 </a>

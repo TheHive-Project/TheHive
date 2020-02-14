@@ -104,7 +104,8 @@
                 restrict: 'EA',
                 scope: {
                     log: '=',
-                    appConfig: '='
+                    appConfig: '=',
+                    permissions: '='
                 }
             };
         });
