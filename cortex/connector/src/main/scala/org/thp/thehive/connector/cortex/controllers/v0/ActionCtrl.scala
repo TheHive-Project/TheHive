@@ -69,7 +69,7 @@ class ActionCtrl @Inject() (
       .asyncAuth { implicit request =>
         val action: InputAction = request.body("action")
         val tryEntity = db.roTransaction { implicit graph =>
-          entityHelper.get(action.objectType, action.objectId, Permissions.manageAction)
+          entityHelper.get(toObjectType(action.objectType), action.objectId, Permissions.manageAction)
         }
         for {
           entity <- Future.fromTry(tryEntity)
