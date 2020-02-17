@@ -63,7 +63,7 @@ case class CaseCaseTemplate()
 @DefineIndex(IndexType.unique, "number")
 //@DefineIndex(IndexType.fulltext, "title")
 //@DefineIndex(IndexType.fulltext, "description")
-@DefineIndex(IndexType.standard, "startDate")
+//@DefineIndex(IndexType.standard, "startDate")
 @DefineIndex(IndexType.basic, "status")
 case class Case(
     number: Int,
