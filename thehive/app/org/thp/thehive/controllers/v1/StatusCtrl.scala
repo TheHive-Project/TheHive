@@ -31,7 +31,6 @@ class StatusCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationConfig
               "Play"        -> getVersion(classOf[AbstractController])
             ),
             "connectors" -> JsObject.empty,
-            "health"     -> Json.obj("elasticsearch" -> "UNKNOWN"),
             "config" -> Json.obj(
               "protectDownloadsWith" -> password,
               "authType" -> (authSrv match {

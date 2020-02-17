@@ -39,7 +39,6 @@ class StatusCtrl @Inject() (
               "Play"        -> getVersion(classOf[AbstractController])
             ),
             "connectors" -> JsObject(connectors.map(c => c.name -> c.status).toSeq),
-            "health"     -> Json.obj("elasticsearch" -> "UNKNOWN"),
             "config" -> Json.obj(
               "protectDownloadsWith" -> password,
               "authType" -> (authSrv match {
