@@ -247,8 +247,8 @@ class Output @Inject() (
         richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.caseTemplate, organisation, inputCaseTemplate.tags, Nil, Nil)
         _                <- caseTemplateSrv.addTags(richCaseTemplate.caseTemplate, inputCaseTemplate.tags)
         _ = inputCaseTemplate.customFields.foreach {
-          case (name, value) =>
-            caseTemplateSrv.setOrCreateCustomField(richCaseTemplate.caseTemplate, name, value).getOrElse {
+          case (name, value, order) =>
+            caseTemplateSrv.setOrCreateCustomField(richCaseTemplate.caseTemplate, name, value, order).getOrElse {
               logger.warn(s"Add custom field $name:$value to case template ${richCaseTemplate.name} failure")
             }
         }

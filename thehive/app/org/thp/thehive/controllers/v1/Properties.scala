@@ -168,7 +168,7 @@ class Properties @Inject() (
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
             c <- caseTemplateSrv.getOrFail(vertex)(graph)
-            _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+            _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })(NoValue(JsNull))

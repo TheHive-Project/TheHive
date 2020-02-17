@@ -51,7 +51,7 @@ class CaseTemplateCtrl @Inject() (
       .extract("caseTemplate", FieldsParser[InputCaseTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
-        val customFields                         = inputCaseTemplate.customFields.map(c => c.name -> c.value)
+        val customFields                         = inputCaseTemplate.customFields.sortBy(_.order.getOrElse(0)).map(c => c.name -> c.value)
         for {
           tasks            <- inputCaseTemplate.tasks.toTry(t => t.owner.map(userSrv.getOrFail).flip.map(t.toTask -> _))
           organisation     <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail()

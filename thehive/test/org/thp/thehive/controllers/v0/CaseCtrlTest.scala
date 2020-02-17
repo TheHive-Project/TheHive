@@ -42,8 +42,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val now = new Date()
 
       val inputCustomFields = Seq(
-        InputCustomFieldValue("date1", Some(now.getTime)),
-        InputCustomFieldValue("boolean1", Some(true))
+        InputCustomFieldValue("date1", Some(now.getTime), None),
+        InputCustomFieldValue("boolean1", Some(true), None)
 //          InputCustomFieldValue("string1", Some("string custom field"))
       )
 
@@ -260,8 +260,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       // Create a case with custom fields
       val now = new Date()
       val inputCustomFields = Seq(
-        InputCustomFieldValue("date1", Some(now.getTime)),
-        InputCustomFieldValue("boolean1", Some(true))
+        InputCustomFieldValue("date1", Some(now.getTime), None),
+        InputCustomFieldValue("boolean1", Some(true), None)
       )
 
       val request = FakeRequest("POST", "/api/v0/case")

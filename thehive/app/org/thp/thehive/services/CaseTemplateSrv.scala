@@ -60,7 +60,7 @@ class CaseTemplateSrv @Inject() (
         _                   <- createdTasks.toTry(rt => addTask(createdCaseTemplate, rt.task))
         tags                <- tagNames.toTry(tagSrv.getOrCreate)
         _                   <- tags.toTry(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
-        cfs                 <- customFields.toTry { case (name, value) => createCustomField(createdCaseTemplate, name, value) }
+        cfs                 <- customFields.zipWithIndex.toTry { case ((name, value), order) => createCustomField(createdCaseTemplate, name, value, Some(order + 1)) }
         richCaseTemplate = RichCaseTemplate(createdCaseTemplate, organisation.name, tags, createdTasks, cfs)
         _ <- auditSrv.caseTemplate.create(createdCaseTemplate, richCaseTemplate.toJson)
       } yield richCaseTemplate
@@ -132,11 +132,12 @@ class CaseTemplateSrv @Inject() (
       .filterNot(rcf => customFieldNames.contains(rcf.name))
       .foreach(rcf => get(caseTemplate).customFields(rcf.name).remove())
     customFieldValues
-      .toTry { case (cf, v) => setOrCreateCustomField(caseTemplate, cf.name, Some(v)) }
+      .zipWithIndex
+      .toTry { case ((cf, v), o) => setOrCreateCustomField(caseTemplate, cf.name, Some(v), Some(o + 1)) }
       .map(_ => ())
   }
 
-  def setOrCreateCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String, value: Option[Any])(
+  def setOrCreateCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
@@ -144,17 +145,18 @@ class CaseTemplateSrv @Inject() (
     if (cfv.newInstance().exists())
       cfv.setValue(value)
     else
-      createCustomField(caseTemplate, customFieldName, value).map(_ => ())
+      createCustomField(caseTemplate, customFieldName, value, order).map(_ => ())
   }
 
   def createCustomField(
       caseTemplate: CaseTemplate with Entity,
       customFieldName: String,
-      customFieldValue: Option[Any]
+      customFieldValue: Option[Any],
+      order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
       cf   <- customFieldSrv.getOrFail(customFieldName)
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(), customFieldValue)
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), customFieldValue)
       ccfe <- caseTemplateCustomFieldSrv.create(ccf, caseTemplate, cf)
     } yield RichCustomField(cf, ccfe)
 }

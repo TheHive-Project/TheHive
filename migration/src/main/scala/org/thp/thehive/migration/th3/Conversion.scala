@@ -282,12 +282,16 @@ trait Conversion {
       tags    <- (json \ "tags").validateOpt[Set[String]]
       metrics <- (json \ "metrics").validateOpt[JsObject]
       metricsValue = metrics.getOrElse(JsObject.empty).value.map {
-        case (name, value) => name -> Some(value)
+        case (name, value) => (name, Some(value), None)
       }
       customFields <- (json \ "customFields").validateOpt[JsObject]
       customFieldsValue = customFields.getOrElse(JsObject.empty).value.map {
         case (name, value) =>
-          name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
+          (
+            name,
+            Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull),
+            (value \ "order").asOpt[Int]
+          )
       }
     } yield InputCaseTemplate(
       metaData,
@@ -304,7 +308,7 @@ trait Conversion {
       ),
       mainOrganisation,
       tags.getOrElse(Set.empty),
-      (metricsValue ++ customFieldsValue).toMap
+      (metricsValue ++ customFieldsValue).toSeq
     )
   }
 

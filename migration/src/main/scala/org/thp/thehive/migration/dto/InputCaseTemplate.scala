@@ -7,5 +7,5 @@ case class InputCaseTemplate(
     caseTemplate: CaseTemplate,
     organisation: String,
     tags: Set[String],
-    customFields: Map[String, Option[Any]]
+    customFields: Seq[(String, Option[Any], Option[Int])]
 )

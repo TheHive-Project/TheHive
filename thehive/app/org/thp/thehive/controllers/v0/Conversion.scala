@@ -210,7 +210,10 @@ object Conversion {
 
   implicit val caseTemplateOutput: Outputer.Aux[RichCaseTemplate, OutputCaseTemplate] = Outputer[RichCaseTemplate, OutputCaseTemplate](
     _.into[OutputCaseTemplate]
-      .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
+      .withFieldComputed(
+        _.customFields,
+        rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson, "order" -> cf.order)))
+      )
       .withFieldRenamed(_._id, _.id)
       .withFieldRenamed(_._updatedAt, _.updatedAt)
       .withFieldRenamed(_._updatedBy, _.updatedBy)

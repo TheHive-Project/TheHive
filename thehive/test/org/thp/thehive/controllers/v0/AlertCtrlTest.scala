@@ -41,8 +41,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val now                = new Date()
     val outputCustomFields = Json.obj("string1" -> Json.obj("string" -> "string custom field"), "float1" -> Json.obj("float" -> 42.0))
     val inputCustomFields = Seq(
-      InputCustomFieldValue("float1", Some(42)),
-      InputCustomFieldValue("string1", Some("string custom field"))
+      InputCustomFieldValue("float1", Some(42), None),
+      InputCustomFieldValue("string1", Some("string custom field"), None)
     )
     val inputObservables =
       Seq(

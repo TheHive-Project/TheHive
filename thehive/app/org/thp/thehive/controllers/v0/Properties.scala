@@ -241,7 +241,7 @@ class Properties @Inject() (
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
             c <- caseTemplateSrv.getOrFail(vertex)(graph)
-            _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+            _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
           } yield Json.obj(s"customFields.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {
