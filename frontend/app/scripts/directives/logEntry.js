@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('logEntry', function($uibModal, TaskLogSrv, UserSrv, NotificationSrv) {
+        .directive('logEntry', function($uibModal, HtmlSanitizer, TaskLogSrv, UserSrv, NotificationSrv) {
             return {
                 templateUrl: 'views/directives/log-entry.html',
                 controller: function($scope, CortexSrv, PSearchSrv) {
@@ -94,8 +94,11 @@
                         return angular.isString(contentType) && contentType.indexOf('image') === 0;
                     };
                     scope.showImage = function() {
+                        var fileName = HtmlSanitizer.sanitize(scope.log.attachment.name);
+                        var fileId = HtmlSanitizer.sanitize(scope.log.attachment.id);
+
                         $uibModal.open({
-                            template: '<img style="width:100%" src="./api/datastore/' + scope.log.attachment.id + '" alt="' + scope.log.attachment.name + '"></img>',
+                            template: '<img style="width:100%" src="./api/datastore/' + fileId + '" alt="' + fileName + '"></img>',
                             size: 'lg'
                         });
                     };

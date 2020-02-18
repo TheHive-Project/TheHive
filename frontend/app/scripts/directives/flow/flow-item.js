@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveDirectives')
-        .directive('flowItem', function($uibModal, $state, $window, UserSrv) {
+        .directive('flowItem', function($uibModal, $state, $window, HtmlSanitizer, UserSrv) {
             return {
                 restrict: 'E',
                 replace: true,
@@ -27,7 +27,7 @@
                     };
                     scope.showImage = function(attachmentId, attachmentName) {
                         $uibModal.open({
-                            template: '<img style="width:100%" src="./api/datastore/' + attachmentId + '" alt="' + attachmentName + '"></img>',
+                            template: '<img style="width:100%" src="./api/datastore/' + HtmlSanitizer.sanitize(attachmentId) + '" alt="' + HtmlSanitizer.sanitize(attachmentName) + '"></img>',
                             size: 'lg'
                         });
                     };
