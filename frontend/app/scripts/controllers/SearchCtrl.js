@@ -23,11 +23,11 @@
             };
 
             $scope.buildBaseFilter = function(entityName) {
-                var statusCriterion = {
-                    _not: {
-                        'status': 'Deleted'
-                    }
-                };
+                // var statusCriterion = {
+                //     _not: {
+                //         'status': 'Deleted'
+                //     }
+                // };
 
                 var typeCriterion = {
                   _not: {
@@ -38,7 +38,7 @@
                   }
                 };
 
-                return entityName === 'all' ? {_and: [statusCriterion, typeCriterion]} : statusCriterion;
+                return entityName === 'all' ? typeCriterion : undefined;
             };
 
             $scope.importAlert = function(event) {

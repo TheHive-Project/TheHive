@@ -31,6 +31,10 @@
                     search: null,
                     filters: []
                 },
+                case_task_log: {
+                    search: null,
+                    filters: []
+                },
                 case_artifact: {
                     search: null,
                     filters: []
@@ -60,7 +64,7 @@
                 switch(fieldDef.type) {
                     case 'number':
                         return {
-                            value: Number.parseInt(value.id) 
+                            value: Number.parseInt(value.id)
                         };
                     case 'boolean':
                         return value.id === 'true';
