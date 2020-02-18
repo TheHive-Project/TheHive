@@ -54,6 +54,15 @@ trait CaseRenderer {
 
   def mergeIntoStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] = caseTraversal.constant(Nil)
 
+  def sharedWithStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[Seq[String]] =
+    new CaseSteps(caseTraversal).organisations.name.fold.map(_.asScala.toSeq).raw
+
+  def originStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[String] =
+    new CaseSteps(caseTraversal).origin.name.raw
+
+  def isOwnerStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph, authContext: AuthContext): GremlinScala[Boolean] =
+    new CaseSteps(caseTraversal).origin.name.map(_ == authContext.organisation).raw
+
   def caseStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): CaseSteps => Traversal[JsObject, JsObject] =
     _.project(
       _.apply(
@@ -69,14 +78,18 @@ trait CaseRenderer {
       ).and(By(alertStats(__[Vertex])))
         .and(By(mergeFromStats(__[Vertex])))
         .and(By(mergeIntoStats(__[Vertex])))
+        //        .and(By(sharedWithStats(__[Vertex])))
+        //        .and(By(originStats(__[Vertex])))
+        .and(By(isOwnerStats(__[Vertex])))
     ).map {
-      case ((tasks, observables), alerts, mergeFrom, mergeInto) =>
+      case ((tasks, observables), alerts, mergeFrom, mergeInto, isOwner) =>
         Json.obj(
           "tasks"     -> tasks,
           "artifacts" -> observables,
           "alerts"    -> alerts,
           "mergeFrom" -> mergeFrom,
-          "mergeInto" -> mergeInto
+          "mergeInto" -> mergeInto,
+          "isOwner"   -> isOwner
         )
     }
 }

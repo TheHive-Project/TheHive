@@ -159,7 +159,6 @@ class ShareCtrl @Inject() (
             JsArray(
               caseSrv
                 .get(caseId)
-                .can(Permissions.manageShare)
                 .shares
                 .filter(_.organisation.hasNot("name", request.organisation).visible)
                 .richShare

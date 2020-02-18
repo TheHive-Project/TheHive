@@ -39,7 +39,8 @@ case class OutputShare(
     updatedAt: Option[Date] = None,
     caseId: String,
     profileName: String,
-    organisationName: String
+    organisationName: String,
+    owner: Boolean
 )
 
 object OutputShare {

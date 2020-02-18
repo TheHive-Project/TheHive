@@ -428,6 +428,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].inTo[OrganisationShare])
 
+  def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
+
   // Warning: this method doesn't generate audit log
   def unassign(): Unit = {
     raw.outToE[CaseUser].drop().iterate()
