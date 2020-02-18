@@ -679,3 +679,8 @@ table tr td.task-actions span.action-button {
   max-height: 300px;
   overflow-y: auto;
 }
+
+.label-critical {
+    background-color: #8a0000 !important;
+    /*background: rgba(0,0,0,0.2) !important;*/
+}

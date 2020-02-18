@@ -2,10 +2,12 @@
 	<span class="label" ng-class="{ true:'label-info', false:'label-default' }[value == 1]" ng-click="update(1)">L</span>
 	<span class="label" ng-class="{ true:'label-warning', false:'label-default' }[value == 2 || !value]" ng-click="update(2)">M</span>
 	<span class="label" ng-class="{ true:'label-danger', false:'label-default' }[value == 3]" ng-click="update(3)">H</span>
+	<span class="label" ng-class="{ true:'label-critical', false:'label-default' }[value == 4]" ng-click="update(4)">C</span>
 </div>
 <span ng-if="active != true" ng-switch="value">
 	<span ng-switch-when="1" class="label label-info">L</span>
 	<span ng-switch-when="2" class="label label-warning">M</span>
 	<span ng-switch-when="3" class="label label-danger">H</span>
+	<span ng-switch-when="4" class="label label-critical">C</span>
 	<span ng-switch-default class="label label-primary">?</span>
 </span>

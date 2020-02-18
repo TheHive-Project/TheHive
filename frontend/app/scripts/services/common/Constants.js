@@ -16,11 +16,12 @@
         })
         .value('Severity', {
             keys: {
+                Critical: 4,
                 High: 3,
                 Medium: 2,
                 Low: 1
             },
-            values: ['Unknown', 'Low', 'Medium', 'High']
+            values: ['Unknown', 'Low', 'Medium', 'High', 'Critical']
         })
         .value('AlertStatus', {
             values: ['New', 'Updated', 'Ignored', 'Imported']
