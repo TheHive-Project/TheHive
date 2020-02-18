@@ -93,7 +93,7 @@
             };
 
             self.canDelete = function(profile) {
-                return profile.name !== 'all' && profile.name !== ProfileSrv.adminProfile;
+                return profile.editable === true && profile.name !== 'all' && profile.name !== ProfileSrv.adminProfile;
             };
 
             self.load();

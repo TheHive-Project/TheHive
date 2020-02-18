@@ -29,11 +29,11 @@
                                         <span class="label label-default mr-xxs mb-xxs" ng-repeat="permission in profile.permissions | orderBy:identity">{{permission}}</span>
                                         <em class="text-warning" ng-if="!profile.permissions || profile.permissions.length === 0">No permissions</em>
                                     </td>
-                                    <td class="text-left" ng-if="$vm.canDelete(profile)">
-                                        <span class="clickable mr-xs text-primary" ng-click="$vm.showProfile('edit', profile)">
+                                    <td class="text-left nowrap" ng-if="$vm.canDelete(profile)">
+                                        <span class="clickable mr-xs text-primary nowrap" ng-click="$vm.showProfile('edit', profile)">
                                             <i class="fa fa-edit"></i>Edit</span>
 
-                                        <span class="clickable mr-xs text-danger" ng-click="$vm.removeProfile(profile)">
+                                        <span class="clickable mr-xs text-danger nowrap" ng-click="$vm.removeProfile(profile)">
                                             <i class="fa fa-trash"></i>Delete</span>
                                     </td>
                                     <td class="text-left" ng-if="!$vm.canDelete(profile)">
