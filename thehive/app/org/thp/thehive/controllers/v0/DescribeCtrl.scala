@@ -103,7 +103,7 @@ class DescribeCtrl @Inject() (
     case (_, "pap") =>
       Some(Seq(PropertyDescription("pap", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red"))))
     case (_, "severity") =>
-      Some(Seq(PropertyDescription("severity", "number", Seq(JsNumber(1), JsNumber(2), JsNumber(3)), Seq("low", "medium", "high"))))
+      Some(Seq(PropertyDescription("severity", "number", Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)), Seq("low", "medium", "high", "critical"))))
     case (_, "createdBy")    => Some(Seq(PropertyDescription("createdBy", "user")))
     case (_, "updatedBy")    => Some(Seq(PropertyDescription("updatedBy", "user")))
     case (_, "customFields") => Some(customFields)
