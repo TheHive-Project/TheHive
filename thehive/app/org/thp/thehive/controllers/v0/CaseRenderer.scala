@@ -1,5 +1,7 @@
 package org.thp.thehive.controllers.v0
 
+import java.lang.{Long => JLong}
+
 import scala.collection.JavaConverters._
 
 import play.api.libs.json._
@@ -60,6 +62,9 @@ trait CaseRenderer {
   def originStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[String] =
     new CaseSteps(caseTraversal).origin.name.raw
 
+  def shareCountStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JLong] =
+    new CaseSteps(caseTraversal).organisations.count.raw
+
   def isOwnerStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph, authContext: AuthContext): GremlinScala[Boolean] =
     new CaseSteps(caseTraversal).origin.name.map(_ == authContext.organisation).raw
 
@@ -81,15 +86,17 @@ trait CaseRenderer {
         //        .and(By(sharedWithStats(__[Vertex])))
         //        .and(By(originStats(__[Vertex])))
         .and(By(isOwnerStats(__[Vertex])))
+        .and(By(shareCountStats(__[Vertex])))
     ).map {
-      case ((tasks, observables), alerts, mergeFrom, mergeInto, isOwner) =>
+      case ((tasks, observables), alerts, mergeFrom, mergeInto, isOwner, shareCount) =>
         Json.obj(
-          "tasks"     -> tasks,
-          "artifacts" -> observables,
-          "alerts"    -> alerts,
-          "mergeFrom" -> mergeFrom,
-          "mergeInto" -> mergeInto,
-          "isOwner"   -> isOwner
+          "tasks"      -> tasks,
+          "artifacts"  -> observables,
+          "alerts"     -> alerts,
+          "mergeFrom"  -> mergeFrom,
+          "mergeInto"  -> mergeInto,
+          "isOwner"    -> isOwner,
+          "shareCount" -> (shareCount.longValue() - 1)
         )
     }
 }
