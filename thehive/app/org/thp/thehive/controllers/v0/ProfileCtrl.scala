@@ -67,7 +67,7 @@ class ProfileCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: P
           profileSrv
             .update(_.get(profileId), propertyUpdaters)
             .flatMap { case (profileSteps, _) => profileSteps.getOrFail() }
-            .map(dashboard => Results.Ok(dashboard.toJson))
+            .map(profile => Results.Ok(profile.toJson))
         } else
           Failure(AuthorizationError("You don't have permission to update profiles"))
       }
