@@ -103,7 +103,7 @@
                                 <span class="hpad5">Organisations</span>
                             </a>
                         </li>
-                        <li>
+                        <li if-permission="manageProfile">
                             <a ui-sref="app.administration.profiles">
                                 <i class="fa fa-users"></i>
                                 <span class="hpad5">Profiles</span>
@@ -116,13 +116,13 @@
                                 <span class="hpad5">Case templates</span>
                             </a>
                         </li> -->
-                        <li>
+                        <li if-permission="manageCustomField">
                             <a ui-sref="app.administration.custom-fields">
                                 <i class="fa fa-edit"></i>
                                 <span class="hpad5">Case custom fields</span>
                             </a>
                         </li>
-                        <li>
+                        <li if-permission="manageAnalyzerTemplate">
                             <a ui-sref="app.administration.analyzer-templates">
                                 <i class="fa fa-file-text"></i>
                                 <span class="hpad5">Analyzer templates</span>
