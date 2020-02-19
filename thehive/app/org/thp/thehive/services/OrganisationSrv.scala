@@ -133,7 +133,7 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def dashboards: DashboardSteps = new DashboardSteps(raw.outTo[OrganisationDashboard])
 
   def visible(implicit authContext: AuthContext): OrganisationSteps =
-    if (authContext.permissions.contains(Permissions.manageOrganisation)) this
+    if (authContext.isPermitted(Permissions.manageOrganisation)) this
     else
       this.filter(_.visibleOrganisationsTo.users.has("login", authContext.userId))
 
@@ -149,6 +149,15 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
       }
 
   def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
+
+  def userProfile(login: String): ProfileSteps =
+    new ProfileSteps(
+      this
+        .inTo[RoleOrganisation]
+        .filter(_.inTo[UserRole].has("login", login))
+        .outTo[RoleProfile]
+        .raw
+    )
 
   def visibleOrganisationsTo: OrganisationSteps = new OrganisationSteps(raw.unionFlat(_.identity(), _.inTo[OrganisationOrganisation]).dedup())
 

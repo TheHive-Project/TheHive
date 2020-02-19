@@ -69,5 +69,11 @@ class LocalUserSrv @Inject() (db: Database, userSrv: UserSrv, organisationSrv: O
   }
 
   override def getSystemAuthContext: AuthContext =
-    AuthContextImpl(UserSrv.system.login, UserSrv.system.name, OrganisationSrv.administration.name, Instance.getInternalId, Permissions.all)
+    AuthContextImpl(
+      UserSrv.system.login,
+      UserSrv.system.name,
+      OrganisationSrv.administration.name,
+      Instance.getInternalId,
+      Permissions.all
+    )
 }

@@ -157,7 +157,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
 
   def visible(implicit authContext: AuthContext): UserSteps =
-    if (authContext.permissions.contains(Permissions.manageOrganisation)) this
+    if (authContext.isPermitted(Permissions.manageOrganisation.permission)) this
     else
       this.filter(_.or(_.organisations.visibleOrganisationsTo.get(authContext.organisation), _.systemUser))
 
@@ -214,9 +214,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         )
         .map {
           case (userId, userName, profile) =>
-            val permissions =
-              if (organisationName == OrganisationSrv.administration.name) profile.as[Profile].permissions
-              else profile.as[Profile].permissions -- Permissions.restrictedPermissions
+            val scope =
+              if (organisationName == OrganisationSrv.administration.name) "admin"
+              else "organisation"
+            val permissions = Permissions.forScope(scope) & profile.as[Profile].permissions
             AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }
     )

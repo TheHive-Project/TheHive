@@ -10,7 +10,7 @@ import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
-import org.thp.thehive.models.{Permissions, RichObservable}
+import org.thp.thehive.models.RichObservable
 import org.thp.thehive.services.{CaseSrv, ObservableSrv}
 
 case class TestAlert(
@@ -298,7 +298,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       val observables = app
         .apply[CaseSrv]
         .get("#1")
-        .observables(DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).getSystemAuthContext)
+        .observables(DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").getSystemAuthContext)
         .toList
 
       observables.flatMap(_.message) must contain("This domain")

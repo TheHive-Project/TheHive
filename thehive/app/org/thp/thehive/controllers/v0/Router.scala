@@ -30,7 +30,8 @@ class Router @Inject() (
     shareCtrl: ShareCtrl,
     tagCtrl: TagCtrl,
     queryExecutor: TheHiveQueryExecutor,
-    pageCtrl: PageCtrl
+    pageCtrl: PageCtrl,
+    permissionCtrl: PermissionCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -201,6 +202,8 @@ class Router @Inject() (
     case DELETE(p"/page/$idOrTitle") => pageCtrl.delete(idOrTitle)
     case POST(p"/page/_search")      => queryExecutor.page.search
     case POST(p"/page/_stats")       => queryExecutor.page.stats
+
+    case GET(p"/permission") => permissionCtrl.list
   }
 }
 /*

@@ -42,9 +42,9 @@ class ProfileCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: P
       .extract("profile", FieldsParser[InputProfile])
       .authTransaction(db) { implicit request => implicit graph =>
         val profile: InputProfile = request.body("profile")
-        if (request.permissions.contains(Permissions.manageProfile))
+        if (request.isPermitted(Permissions.manageProfile)) {
           profileSrv.create(profile.toProfile).map(createdProfile => Results.Created(createdProfile.toJson))
-        else
+        } else
           Failure(AuthorizationError("You don't have permission to create profiles"))
       }
 
@@ -63,7 +63,7 @@ class ProfileCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: P
       .extract("profile", FieldsParser.update("profile", properties.profile))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("profile")
-        if (request.permissions.contains(Permissions.manageProfile)) {
+        if (request.isPermitted(Permissions.manageProfile)) {
           profileSrv
             .update(_.get(profileId), propertyUpdaters)
             .flatMap { case (profileSteps, _) => profileSteps.getOrFail() }

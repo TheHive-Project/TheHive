@@ -366,30 +366,21 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
             .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
             .and(By(entityRenderer(newInstance(__[Vertex])).raw))
+            .and(By(newInstance(__[Vertex]).share(authContext.organisation).profile.permissions.fold.raw))
             .and(
               By(
-                __[Vertex]
-                  .inTo[ShareCase]
-                  .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
-                  .outTo[ShareProfile]
+                newInstance(__[Vertex])
+                  .organisations
+                  .has("name", authContext.organisation)
+                  .userProfile(authContext.userId)
+                  .permissions
                   .fold
-              )
-            )
-            .and(
-              By(
-                __[Vertex]
-                  .inTo[ShareCase]
-                  .inTo[OrganisationShare]
-                  .has(Key[String]("name") of authContext.organisation)
-                  .inTo[RoleOrganisation]
-                  .filter(_.inTo[UserRole].has(Key[String]("login") of authContext.userId))
-                  .outTo[RoleProfile]
-                  .fold
+                  .raw
               )
             )
         )
         .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, shareProfile, roleProfile) =>
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, sharePermissions, userPermissions) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -404,7 +395,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
               customFieldValues,
-              onlyOneOf[Vertex](shareProfile).as[Profile].permissions & onlyOneOf[Vertex](roleProfile).as[Profile].permissions
+              (sharePermissions.asScala.toSet & userPermissions.asScala.toSet).map(Permission.apply)
             ) -> renderedEntity
         }
     )
@@ -504,30 +495,21 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
             .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
             .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
+            .and(By(newInstance(__[Vertex]).share(authContext.organisation).profile.permissions.fold.raw))
             .and(
               By(
-                __[Vertex]
-                  .inTo[ShareCase]
-                  .filter(_.inTo[OrganisationShare].has(Key[String]("name"), P.eq[String](authContext.organisation)))
-                  .outTo[ShareProfile]
+                newInstance(__[Vertex])
+                  .organisations
+                  .has("name", authContext.organisation)
+                  .userProfile(authContext.userId)
+                  .permissions
                   .fold
-              )
-            )
-            .and(
-              By(
-                __[Vertex]
-                  .inTo[ShareCase]
-                  .inTo[OrganisationShare]
-                  .has(Key[String]("name"), P.eq[String](authContext.organisation))
-                  .inTo[RoleOrganisation]
-                  .filter(_.inTo[UserRole].has(Key[String]("login"), P.eq[String](authContext.userId)))
-                  .outTo[RoleProfile]
-                  .fold
+                  .raw
               )
             )
         )
         .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, shareProfile, roleProfile) =>
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields, sharePermissions, userPermissions) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -542,7 +524,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
               atMostOneOf[String](resolutionStatus),
               atMostOneOf[String](user),
               customFieldValues,
-              onlyOneOf[Vertex](shareProfile).as[Profile].permissions & onlyOneOf[Vertex](roleProfile).as[Profile].permissions
+              (sharePermissions.asScala.toSet & userPermissions.asScala.toSet).map(Permission.apply)
             )
         }
     )

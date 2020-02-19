@@ -17,9 +17,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
 object ProfileSrv {
-  val admin: Profile = Profile("admin", Permissions.adminPermissions)
+  lazy val admin: Profile = Profile("admin", Permissions.adminPermissions)
 
-  val analyst: Profile = Profile(
+  lazy val analyst: Profile = Profile(
     "analyst",
     Set(
       Permissions.manageCase,
@@ -27,12 +27,13 @@ object ProfileSrv {
       Permissions.manageAlert,
       Permissions.manageTask,
       Permissions.manageAction,
+      Permissions.manageShare,
       Permissions.manageAnalyse,
-      Permissions.manageShare
+      Permissions.managePage
     )
   )
-  val readonly: Profile = Profile("read-only", Set.empty)
-  val orgAdmin: Profile = Profile("org-admin", Permissions.all -- Permissions.restrictedPermissions)
+  lazy val readonly: Profile = Profile("read-only", Set.empty)
+  lazy val orgAdmin: Profile = Profile("org-admin", Permissions.forScope("organisation"))
 
   def isEditable(profile: Profile): Boolean = profile.name != admin.name && profile.name != orgAdmin.name
 }

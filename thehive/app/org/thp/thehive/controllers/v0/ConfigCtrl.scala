@@ -40,7 +40,7 @@ class ConfigCtrl @Inject() (
   def list: Action[AnyContent] =
     entrypoint("list configuration items")
       .auth {
-        case request if request.permissions.contains(Permissions.manageConfig) =>
+        case request if request.isPermitted(Permissions.manageConfig) =>
           Success(Results.Ok(Json.toJson(appConfig.list)))
         case _ => Failure(AuthorizationError("You need manageConfig permission to view configuration"))
       }
@@ -49,7 +49,7 @@ class ConfigCtrl @Inject() (
     entrypoint("set configuration item")
       .extract("value", FieldsParser.json.on("value"))
       .auth {
-        case request if request.permissions.contains(Permissions.manageConfig) =>
+        case request if request.isPermitted(Permissions.manageConfig) =>
           logger.info(s"app config value set: $path ${request.body("value")}")
           appConfig.set(path, request.body("value"))(request).map(_ => Results.NoContent)
         case _ => Failure(AuthorizationError("You need manageConfig permission to set configuration"))

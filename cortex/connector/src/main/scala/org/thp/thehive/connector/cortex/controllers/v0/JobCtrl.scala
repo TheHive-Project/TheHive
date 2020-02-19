@@ -63,7 +63,7 @@ class JobCtrl @Inject() (
       .extract("cortexId", FieldsParser[String].on("cortexId"))
       .extract("artifactId", FieldsParser[String].on("artifactId"))
       .asyncAuth { implicit request =>
-        if (request.permissions.contains(Permissions.manageAnalyse)) {
+        if (request.isPermitted(Permissions.manageAnalyse)) {
           val analyzerId: String = request.body("analyzerId")
           val cortexId: String   = request.body("cortexId")
           db.roTransaction { implicit graph =>

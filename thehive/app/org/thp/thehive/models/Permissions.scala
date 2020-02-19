@@ -1,33 +1,26 @@
 package org.thp.thehive.models
 
-import org.thp.scalligraph.auth.Permission
+import org.thp.scalligraph.auth.{Permission, PermissionDesc, Permissions => Perms}
 
-object Permissions {
-  val manageCase: Permission             = Permission("manageCase")
-  val manageObservable: Permission       = Permission("manageObservable")
-  val manageAlert: Permission            = Permission("manageAlert")
-  val manageUser: Permission             = Permission("manageUser")
-  val manageOrganisation: Permission     = Permission("manageOrganisation")
-  val manageCaseTemplate: Permission     = Permission("manageCaseTemplate")
-  val manageAnalyzerTemplate: Permission = Permission("manageAnalyzerTemplate")
-  val manageTask: Permission             = Permission("manageTask")
-  val manageAction: Permission           = Permission("manageAction")
-  val manageConfig: Permission           = Permission("manageConfig")
-  val manageProfile: Permission          = Permission("manageProfile")
-  val manageTag: Permission              = Permission("manageTag")
-  val manageCustomField: Permission      = Permission("manageCustomField")
-  val manageShare: Permission            = Permission("manageShare")
-  val manageAnalyse: Permission          = Permission("manageAnalyse")
-  val managePage: Permission             = Permission("managePage")
+object Permissions extends Perms {
+  lazy val manageCase: PermissionDesc             = PermissionDesc("manageCase", "Manage cases", "organisation")
+  lazy val manageObservable: PermissionDesc       = PermissionDesc("manageObservable", "Manage observables", "organisation")
+  lazy val manageAlert: PermissionDesc            = PermissionDesc("manageAlert", "Manage alerts", "organisation")
+  lazy val manageUser: PermissionDesc             = PermissionDesc("manageUser", "Manage users", "organisation", "admin")
+  lazy val manageOrganisation: PermissionDesc     = PermissionDesc("manageOrganisation", "Manage organisations", "admin")
+  lazy val manageCaseTemplate: PermissionDesc     = PermissionDesc("manageCaseTemplate", "Manage case templates", "organisation")
+  lazy val manageAnalyzerTemplate: PermissionDesc = PermissionDesc("manageAnalyzerTemplate", "Manage analyzer templates", "admin")
+  lazy val manageTask: PermissionDesc             = PermissionDesc("manageTask", "Manage tasks", "organisation")
+  lazy val manageAction: PermissionDesc           = PermissionDesc("manageAction", "Run Cortex responders ", "organisation")
+  lazy val manageConfig: PermissionDesc           = PermissionDesc("manageConfig", "Manage configurations", "admin")
+  lazy val manageProfile: PermissionDesc          = PermissionDesc("manageProfile", "Manage user profiles", "admin")
+  lazy val manageTag: PermissionDesc              = PermissionDesc("manageTag", "Manage tags", "admin")
+  lazy val manageCustomField: PermissionDesc      = PermissionDesc("manageCustomField", "Manage custom fields", "admin")
+  lazy val manageShare: PermissionDesc            = PermissionDesc("manageShare", "Manage shares", "organisation")
+  lazy val manageAnalyse: PermissionDesc          = PermissionDesc("manageAnalyse", "Run Cortex analyzer", "organisation")
+  lazy val managePage: PermissionDesc             = PermissionDesc("managePage", "Manage pages", "organisation")
 
-  // These permissions are available only if the user is in admin organisation, they are removed for other organisations
-  val restrictedPermissions: Set[Permission] =
-    Set(manageOrganisation, manageAnalyzerTemplate, manageConfig, manageProfile, manageCustomField, manageTag)
-
-  // This is the initial admin permissions
-  val adminPermissions: Set[Permission] = restrictedPermissions ++ Set(manageUser)
-
-  val all: Set[Permission] =
+  lazy val list: Set[PermissionDesc] =
     Set(
       manageCase,
       manageObservable,
@@ -46,4 +39,12 @@ object Permissions {
       manageAnalyse,
       managePage
     )
+
+  // These permissions are available only if the user is in admin organisation, they are removed for other organisations
+  lazy val restrictedPermissions: Set[Permission]               = list.filter(_.scope == Seq("admin")).map(_.permission)
+  def containsRestricted(permissions: Set[Permission]): Boolean = permissions.intersect(Permissions.restrictedPermissions).nonEmpty
+
+  // This is the initial admin permissions
+  lazy val adminPermissions: Set[Permission] = forScope("admin")
+  override val defaultScopes: Seq[String]    = Seq("organisation")
 }

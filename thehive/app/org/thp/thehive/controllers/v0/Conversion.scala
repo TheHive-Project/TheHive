@@ -5,7 +5,7 @@ import java.util.Date
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.auth.Permission
+import org.thp.scalligraph.auth.{Permission, PermissionDesc}
 import org.thp.scalligraph.controllers.Outputer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0._
@@ -142,7 +142,7 @@ object Conversion {
       .withFieldRenamed(_._createdBy, _.createdBy)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldConst(_.stats, JsObject.empty)
-      .withFieldComputed(_.permissions, _.userPermissions.map(_.toString))
+      .withFieldComputed(_.permissions, _.userPermissions.asInstanceOf[Set[String]]) // Permission is String
       .transform
   )
 
@@ -443,13 +443,13 @@ object Conversion {
       .withFieldConst(_.createdAt, profile._createdAt)
       .withFieldConst(_.createdBy, profile._createdBy)
       .withFieldConst(_._type, "profile")
-      .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
+      .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted) // Permission is String
       .withFieldComputed(_.editable, ProfileSrv.isEditable)
-      .withFieldComputed(_.isAdmin, _.permissions.intersect(Permissions.restrictedPermissions).nonEmpty)
+      .withFieldComputed(_.isAdmin, p => Permissions.containsRestricted(p.permissions))
       .transform
   )
 
-  implicit class InputProfileObs(inputProfile: InputProfile) {
+  implicit class InputProfileOps(inputProfile: InputProfile) {
 
     def toProfile: Profile =
       inputProfile
@@ -574,6 +574,9 @@ object Conversion {
       .withFieldComputed(_.title, _.title)
       .transform
   )
+
+  implicit val permissionOutput: Outputer.Aux[PermissionDesc, OutputPermission] =
+    Outputer[PermissionDesc, OutputPermission](p => p.into[OutputPermission].transform)
 
   implicit class InputPageOps(inputPage: InputPage) {
 

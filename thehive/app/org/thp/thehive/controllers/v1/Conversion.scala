@@ -204,9 +204,9 @@ object Conversion {
       .withFieldConst(_.createdAt, profile._createdAt)
       .withFieldConst(_.createdBy, profile._createdBy)
       .withFieldConst(_._type, "profile")
-      .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted)
+      .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted) // Permission is String
       .withFieldComputed(_.editable, ProfileSrv.isEditable)
-      .withFieldComputed(_.isAdmin, _.permissions.intersect(Permissions.restrictedPermissions).nonEmpty)
+      .withFieldComputed(_.isAdmin, p => Permissions.containsRestricted(p.permissions))
       .transform
   )
 
