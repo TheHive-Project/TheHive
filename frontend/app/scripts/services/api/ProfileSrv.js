@@ -18,7 +18,7 @@
                         'manageTag',
                         'manageProfile',
                         'manageAnalyzerTemplate',
-                        'manageObservableType'
+                        'manageObservableTemplate'
                     ],
                     labels: {
                         manageUser: 'Manage users',
@@ -28,7 +28,7 @@
                         manageTag: 'Manage tags',
                         manageProfile: 'Manage profiles',
                         manageAnalyzerTemplate: 'Manage analyzer templates',
-                        manageObservableType: 'Manage observable types'
+                        manageObservableTemplate: 'Manage observable types'
                     }
                 },
                 org: {

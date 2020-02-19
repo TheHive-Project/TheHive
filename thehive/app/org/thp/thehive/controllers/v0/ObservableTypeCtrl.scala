@@ -45,7 +45,7 @@ class ObservableTypeCtrl @Inject() (
 
   def create: Action[AnyContent] =
     entrypoint("create observable type")
-      .extract("observableType", FieldsParser[InputObservableType].on("observableType"))
+      .extract("observableType", FieldsParser[InputObservableType])
       .authPermittedTransaction(db, Permissions.manageObservableTemplate) { implicit request => implicit graph =>
         val inputObservableType: InputObservableType = request.body("observableType")
         observableTypeSrv

@@ -260,7 +260,17 @@ angular.module('thehive', [
                 url: '/observables',
                 templateUrl: 'views/partials/admin/observables.html',
                 controller: 'AdminObservablesCtrl',
-                title: 'Observable administration'
+                controllerAs: '$vm',
+                title: 'Observable administration',
+                resolve: {
+                    types: function(ObservableTypeSrv, $q) {
+                        return ObservableTypeSrv.list()
+                            .then(function(response) {
+                                return $q.resolve(response.data);
+                            });
+                    }
+                },
+                permissions: ['manageObservableTemplate']
             })
             .state('app.administration.ui-settings', {
                 url: '/ui-settings',

@@ -2,55 +2,53 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminObservablesCtrl',
-        function($scope, ListSrv, NotificationSrv) {
-            $scope.dataTypeList = [];
-            $scope.params = {
+        function(ModalUtilsSrv, NotificationSrv, ObservableTypeSrv, types) {
+            var self = this;
+
+            self.dataTypeList = types;
+            self.params = {
                 newDataType: null
             };
 
-            $scope.load = function() {
-                ListSrv.query({
-                    'listId': 'list_artifactDataType'
-                }, {}, function(response) {
-
-                    $scope.dataTypeList = _.keys(response).filter(function(key) {
-                        return _.isString(response[key]);
-                    }).map(function(key) {
-                        return {
-                            id: key,
-                            value: response[key]
-                        };
+            self.load = function() {
+                ObservableTypeSrv.list()
+                    .then(function(response) {
+                        self.dataTypeList = response.data;
+                    })
+                    .catch(function(response) {
+                        NotificationSrv.error('AdminObservablesCtrl', response.data, response.status);
                     });
-                }, function(response) {
+            };
+
+            self.addArtifactDataTypeList = function() {
+                ObservableTypeSrv.create({
+                    name: self.params.newDataType
+                }).then(function(/*response*/) {
+                    NotificationSrv.log('Observable type created successfully', 'success');
+                    self.load();
+                }).catch(function(response) {
                     NotificationSrv.error('AdminObservablesCtrl', response.data, response.status);
                 });
-            };
-            $scope.load();
 
-            $scope.addArtifactDataTypeList = function() {
-                ListSrv.save({
-                        'listId': 'list_artifactDataType'
-                    }, {
-                        'value': $scope.params.newDataType
-                    }, function() {
-                        $scope.load();
-                    },
-                    function(response) {
-                        NotificationSrv.error('ListSrv', response.data, response.status);
+                self.params.newDataType = '';
+            };
+
+            self.deleteArtifactDataType = function(type) {
+                ModalUtilsSrv.confirm('Remove observable type', s.sprintf('Are your sure your want to remove the observable type <strong>%s</strong>', type.name), {
+                    okText: 'Yes, remove it',
+                    flavor: 'danger',
+                    isHtml: true
+                })
+                    .then(ObservableTypeSrv.remove(type._id))
+                    .then(function(/*response*/) {
+                        NotificationSrv.log('Observable type removed successfully', 'success');
+                        self.load();
+                    })
+                    .catch(function(err){
+                        if (err && !_.isString(err)) {
+                            NotificationSrv.error('AdminObservablesCtrl', err.data, err.status);
+                        }
                     });
-
-                $scope.params.newDataType = '';
-            };
-
-            $scope.deleteArtifactDataType = function(datatype) {
-                ListSrv['delete']({
-                    'listId': datatype.id
-                }, function(data) {
-                    NotificationSrv.log('The datatype ' + datatype.value + ' has been removed', 'success');
-                    $scope.load();
-                }, function(response) {
-                    NotificationSrv.error('ListSrv', response.data, response.status);
-                });
             };
         });
 
