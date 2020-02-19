@@ -2,7 +2,6 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import scala.concurrent.ExecutionContext
 
-import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import akka.actor.ActorSystem
@@ -27,9 +26,7 @@ class AnalyzerCtrl @Inject() (
         val range: Option[String] = request.body("range")
         analyzerSrv
           .listAnalyzer(range)
-          .map { analyzers =>
-            Results.Ok(JsArray(analyzers.map(_.toJson).toSeq))
-          }
+          .map(analyzers => Results.Ok(analyzers.toSeq.toJson))
       }
 
   def listByType(dataType: String): Action[AnyContent] =
@@ -37,9 +34,7 @@ class AnalyzerCtrl @Inject() (
       .asyncAuth { implicit req =>
         analyzerSrv
           .listAnalyzerByType(dataType)
-          .map { analyzers =>
-            Results.Ok(JsArray(analyzers.map(_.toJson).toSeq))
-          }
+          .map(analyzers => Results.Ok(analyzers.toSeq.toJson))
       }
 
   def getById(id: String): Action[AnyContent] =

@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import scala.util.Success
 
-import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -75,9 +74,8 @@ class CaseTemplateCtrl @Inject() (
           .initSteps
           .visible
           .richCaseTemplate
-          .map(_.toJson)
           .toList
-        Success(Results.Ok(Json.toJson(caseTemplates)))
+        Success(Results.Ok(caseTemplates.toJson))
       }
 
   def update(caseTemplateNameOrId: String): Action[AnyContent] =

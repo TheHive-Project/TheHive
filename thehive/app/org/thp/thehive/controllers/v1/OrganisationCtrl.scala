@@ -67,14 +67,6 @@ class OrganisationCtrl @Inject() (
           .map(organisation => Results.Ok(organisation.toJson))
       }
 
-  //  def list: Action[AnyContent] =
-  //    entrypoint("list organisation")
-  //      .authRoTransaction(db) { _ ⇒ implicit graph ⇒
-  //          val organisations = organisationSrv.initSteps.toList
-  //            .map(toOutputOrganisation)
-  //          Results.Ok(Json.toJson(organisations))
-  //        }
-
   def update(organisationId: String): Action[AnyContent] =
     entrypoint("update organisation")
       .extract("organisation", FieldsParser.update("organisation", properties.organisation))

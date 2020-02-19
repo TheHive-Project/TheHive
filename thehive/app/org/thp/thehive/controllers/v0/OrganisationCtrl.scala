@@ -1,5 +1,9 @@
 package org.thp.thehive.controllers.v0
 
+import scala.util.{Failure, Success}
+
+import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -11,10 +15,6 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
-import play.api.libs.json.JsArray
-import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.{Failure, Success}
 
 @Singleton
 class OrganisationCtrl @Inject() (
@@ -76,10 +76,9 @@ class OrganisationCtrl @Inject() (
           .initSteps
           .visible
           .richOrganisation
-          .toIterator
-          .map(_.toJson)
-          .toSeq
-        Success(Results.Ok(JsArray(organisations)))
+          .toList
+
+        Success(Results.Ok(organisations.toJson))
       }
 
   def update(organisationId: String): Action[AnyContent] =
@@ -139,16 +138,8 @@ class OrganisationCtrl @Inject() (
               .current
               .organisations
               .get(organisationId)
+        val organisations = organisation.links.toList
 
-        Success(
-          Results.Ok(
-            JsArray(
-              organisation
-                .links
-                .toList
-                .map(_.toJson)
-            )
-          )
-        )
+        Success(Results.Ok(organisations.toJson))
       }
 }

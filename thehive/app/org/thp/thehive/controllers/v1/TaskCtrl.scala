@@ -1,8 +1,9 @@
 package org.thp.thehive.controllers.v1
 
 import scala.util.Success
-import play.api.libs.json.Json
+
 import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -76,8 +77,7 @@ class TaskCtrl @Inject() (
           .visible
           .richTask
           .toList
-          .map(_.toJson)
-        Success(Results.Ok(Json.toJson(tasks)))
+        Success(Results.Ok(tasks.toJson))
       }
 
   def update(taskId: String): Action[AnyContent] =

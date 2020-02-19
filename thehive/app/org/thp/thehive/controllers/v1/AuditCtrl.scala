@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import scala.util.Success
 
-import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -49,7 +48,7 @@ class AuditCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Pro
           .range(0, 10)
           .richAudit
           .toList
-          .map(_.toJson)
-        Success(Results.Ok(JsArray(audits)))
+
+        Success(Results.Ok(audits.toJson))
       }
 }

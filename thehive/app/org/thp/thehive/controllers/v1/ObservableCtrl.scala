@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import scala.util.Success
 
 import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -81,7 +81,7 @@ class ObservableCtrl @Inject() (
               .addObservable(case0, richObservables)
               .map(_ => richObservables)
           }
-        } yield Results.Created(Json.toJson(createdObservables.map(_.toJson)))
+        } yield Results.Created(createdObservables.toJson)
       }
 
   def get(observableId: String): Action[AnyContent] =
@@ -118,11 +118,8 @@ class ObservableCtrl @Inject() (
           .similar
           .richObservableWithCustomRenderer(observableLinkRenderer)
           .toList
-          .map {
-            case (org, parent) => org.toJson.as[JsObject] ++ parent
-          }
 
-        Success(Results.Ok(JsArray(observables)))
+        Success(Results.Ok(observables.toJson))
       }
 
   def bulkUpdate: Action[AnyContent] =

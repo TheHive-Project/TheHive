@@ -96,15 +96,6 @@ class CaseCtrl @Inject() (
           .map(richCase => Results.Ok(richCase.toJson))
       }
 
-//  def list: Action[AnyContent] =
-//    entrypoint("list case")
-//      .authRoTransaction(db) { implicit request ⇒ implicit graph ⇒
-//        val cases = userSrv.current.organisations.cases.richCase
-//          .map(_.toJson)
-//          .toList
-//        Success(Results.Ok(Json.toJson(cases)))
-//      }
-
   def update(caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("update case")
       .extract("case", FieldsParser.update("case", publicProperties))

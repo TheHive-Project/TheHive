@@ -2,7 +2,7 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import scala.concurrent.ExecutionContext
 
-import play.api.libs.json.{JsArray, JsObject}
+import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -25,7 +25,7 @@ class ResponderCtrl @Inject() (
       .asyncAuth { implicit req =>
         responderSrv
           .getRespondersByType(entityType, entityId)
-          .map(l => Results.Ok(JsArray(l.map(_.toJson).toSeq)))
+          .map(l => Results.Ok(l.toSeq.toJson))
       }
 
   def searchResponders: Action[AnyContent] =
@@ -35,6 +35,6 @@ class ResponderCtrl @Inject() (
         val query: JsObject = req.body("query")
         responderSrv
           .searchResponders(query)
-          .map(l => Results.Ok(JsArray(l.map(_.toJson).toSeq)))
+          .map(l => Results.Ok(l.toSeq.toJson))
       }
 }

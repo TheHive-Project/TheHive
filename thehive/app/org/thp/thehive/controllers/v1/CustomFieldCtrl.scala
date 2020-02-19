@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import scala.util.Success
 
-import play.api.libs.json.JsArray
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -31,9 +30,8 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFie
       .authRoTransaction(db) { _ => implicit graph =>
         val customFields = customFieldSrv
           .initSteps
-          .toIterator
-          .map(_.toJson)
-          .toSeq
-        Success(Results.Ok(JsArray(customFields)))
+          .toList
+
+        Success(Results.Ok(customFields.toJson))
       }
 }

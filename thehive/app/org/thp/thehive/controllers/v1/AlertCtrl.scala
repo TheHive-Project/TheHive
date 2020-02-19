@@ -77,17 +77,6 @@ class AlertCtrl @Inject() (
           .map(alert => Results.Ok(alert.toJson))
       }
 
-//  def list: Action[AnyContent] =
-//    entrypoint("list alert")
-//      .authRoTransaction(db) { implicit request ⇒ implicit graph ⇒
-//        val alerts = alertSrv.initSteps
-//          .availableFor(request.organisation)
-//          .richAlert
-//          .map(_.toJson)
-//          .toList()
-//        Success(Results.Ok(Json.toJson(alerts)))
-//      }
-
   def update(alertId: String): Action[AnyContent] =
     entrypoint("update alert")
       .extract("alert", FieldsParser.update("alertUpdate", publicProperties))

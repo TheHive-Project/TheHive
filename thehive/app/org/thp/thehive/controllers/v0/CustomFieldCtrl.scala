@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import scala.util.Success
 
-import play.api.libs.json.{JsArray, JsNumber, JsObject}
+import play.api.libs.json.{JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -33,9 +33,8 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, propertie
       .authRoTransaction(db) { _ => implicit graph =>
         val customFields = customFieldSrv
           .initSteps
-          .map(_.toJson)
           .toList
-        Success(Results.Ok(JsArray(customFields)))
+        Success(Results.Ok(customFields.toJson))
       }
 
   def delete(id: String): Action[AnyContent] =

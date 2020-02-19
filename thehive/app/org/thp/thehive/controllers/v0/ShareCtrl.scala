@@ -1,8 +1,9 @@
 package org.thp.thehive.controllers.v0
 
 import scala.util.{Failure, Success, Try}
-import play.api.libs.json.JsArray
+
 import play.api.mvc.{Action, AnyContent, Results}
+
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
@@ -49,10 +50,10 @@ class ShareCtrl @Inject() (
                 richShare <- shareSrv.get(share).richShare.getOrFail()
                 _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
                 _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
-              } yield richShare.toJson
+              } yield richShare
             }
           }
-          .map(shares => Results.Ok(JsArray(shares)))
+          .map(shares => Results.Ok(shares.toJson))
       }
 
   def removeShare(shareId: String): Action[AnyContent] =
@@ -154,59 +155,44 @@ class ShareCtrl @Inject() (
   def listShareCases(caseId: String): Action[AnyContent] =
     entrypoint("list case shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        Success(
-          Results.Ok(
-            JsArray(
-              caseSrv
-                .get(caseId)
-                .shares
-                .filter(_.organisation.hasNot("name", request.organisation).visible)
-                .richShare
-                .toList
-                .map(_.toJson)
-            )
-          )
-        )
+        val shares = caseSrv
+          .get(caseId)
+          .shares
+          .filter(_.organisation.hasNot("name", request.organisation).visible)
+          .richShare
+          .toList
+
+        Success(Results.Ok(shares.toJson))
       }
 
   def listShareTasks(caseId: String, taskId: String): Action[AnyContent] =
     entrypoint("list task shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        Success(
-          Results.Ok(
-            JsArray(
-              caseSrv
-                .get(caseId)
-                .can(Permissions.manageShare)
-                .shares
-                .filter(_.organisation.hasNot("name", request.organisation).visible)
-                .byTask(taskId)
-                .richShare
-                .toList
-                .map(_.toJson)
-            )
-          )
-        )
+        val shares = caseSrv
+          .get(caseId)
+          .can(Permissions.manageShare)
+          .shares
+          .filter(_.organisation.hasNot("name", request.organisation).visible)
+          .byTask(taskId)
+          .richShare
+          .toList
+
+        Success(Results.Ok(shares.toJson))
       }
 
   def listShareObservables(caseId: String, observableId: String): Action[AnyContent] =
     entrypoint("list observable shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        Success(
-          Results.Ok(
-            JsArray(
-              caseSrv
-                .get(caseId)
-                .can(Permissions.manageShare)
-                .shares
-                .filter(_.organisation.hasNot("name", request.organisation).visible)
-                .byObservable(observableId)
-                .richShare
-                .toList
-                .map(_.toJson)
-            )
-          )
-        )
+        val shares = caseSrv
+          .get(caseId)
+          .can(Permissions.manageShare)
+          .shares
+          .filter(_.organisation.hasNot("name", request.organisation).visible)
+          .byObservable(observableId)
+          .richShare
+          .toList
+
+        Success(Results.Ok(shares.toJson))
       }
 
   def shareTask(taskId: String): Action[AnyContent] =

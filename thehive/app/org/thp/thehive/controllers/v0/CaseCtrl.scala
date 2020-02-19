@@ -153,7 +153,7 @@ class CaseCtrl @Inject() (
                     .getOrFail()
               }
           }
-          .map(richCases => Results.Ok(JsArray(richCases.map(_.toJson))))
+          .map(richCases => Results.Ok(richCases.toJson))
       }
 
   def delete(caseIdOrNumber: String): Action[AnyContent] =
@@ -206,7 +206,7 @@ class CaseCtrl @Inject() (
           .map {
             case (c, o) =>
               c.toJson.as[JsObject] +
-                ("linkedWith" -> JsArray(o.map(_.toJson))) +
+                ("linkedWith" -> o.toJson) +
                 ("linksCount" -> JsNumber(o.size))
           }
 
