@@ -62,7 +62,6 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
             "status" -> "OK"
           )
         ),
-        "health" -> Json.obj("elasticsearch" -> "UNKNOWN"),
         "config" -> Json.obj(
           "protectDownloadsWith" -> config.get[String]("datastore.attachment.password"),
           "authType"             -> Seq("local", "key", "header"),

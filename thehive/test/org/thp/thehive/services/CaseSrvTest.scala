@@ -59,7 +59,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.manageAlert,
             Permissions.manageAction,
             Permissions.manageAnalyse,
-            Permissions.manageShare
+            Permissions.manageShare,
+            Permissions.managePage
           )
         )
         richCase.tags.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"t1\"", "testNamespace.testPredicate=\"t3\""))
@@ -99,7 +100,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.manageAlert,
             Permissions.manageAction,
             Permissions.manageAnalyse,
-            Permissions.manageShare
+            Permissions.manageShare,
+            Permissions.managePage
           )
         )
         richCase.tags.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"t2\"", "testNamespace.testPredicate=\"t1\""))
