@@ -32,6 +32,7 @@ class DescribeCtrl @Inject() (
     observableCtrl: ObservableCtrl,
     userCtrl: UserCtrl,
     logCtrl: LogCtrl,
+    auditCtrl: AuditCtrl,
     customFieldSrv: CustomFieldSrv,
     db: Database,
     applicationConfig: ApplicationConfig
@@ -43,7 +44,6 @@ class DescribeCtrl @Inject() (
     applicationConfig.item[Duration]("describe.cache.expire", "Custom fields refresh in describe")
   def cacheExpire: Duration = cacheExpireConfig.get
 
-  // audit ?
   // action
   val entityControllers: Map[String, QueryableCtrl] = Map(
     "case"          -> caseCtrl,
@@ -51,7 +51,8 @@ class DescribeCtrl @Inject() (
     "alert"         -> alertCtrl,
     "case_artifact" -> observableCtrl,
     "user"          -> userCtrl,
-    "case_task_log" -> logCtrl
+    "case_task_log" -> logCtrl,
+    "audit"         -> auditCtrl
   )
 
   def describe(label: String, ctrl: QueryableCtrl): JsObject =
