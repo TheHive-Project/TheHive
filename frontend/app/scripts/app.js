@@ -48,7 +48,12 @@ angular.module('thehive', [
     .config(function($stateProvider, $urlRouterProvider) {
         'use strict';
 
-        $urlRouterProvider.otherwise('/index');
+        //$urlRouterProvider.otherwise('/index');
+        $urlRouterProvider.otherwise(function($injector){
+            $injector.invoke(['$state', function($state) {
+                $state.go('app.index');
+            }]);
+        });
 
         $stateProvider
             .state('login', {
@@ -106,8 +111,7 @@ angular.module('thehive', [
                         return $q.resolve();
                     },
                     uiConfig: function($q, UiSettingsSrv) {
-                        UiSettingsSrv.all();
-                        return $q.resolve();
+                        return UiSettingsSrv.all();
                     }
                 }
             })
