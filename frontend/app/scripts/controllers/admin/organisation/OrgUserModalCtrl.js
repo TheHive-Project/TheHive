@@ -49,7 +49,7 @@
 
             var postData = {};
 
-            var profile = (self.organisation === 'admin') ? 'admin' : self.formData.profile.name;
+            var profile = self.formData.profile.name;
 
             if (self.user._id) {
                 postData = {
