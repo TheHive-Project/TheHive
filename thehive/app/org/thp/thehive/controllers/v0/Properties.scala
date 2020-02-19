@@ -33,6 +33,7 @@ import org.thp.thehive.services.{
   LogSteps,
   ObservableSrv,
   ObservableSteps,
+  ObservableTypeSteps,
   OrganisationSteps,
   PageSteps,
   ProfileSteps,
@@ -443,4 +444,9 @@ class Properties @Inject() (
           }
       )
       .build
+
+  lazy val observableType: List[PublicProperty[_, _]] = PublicPropertyListBuilder[ObservableTypeSteps]
+    .property("name", UniMapping.string)(_.field.readonly)
+    .property("isAttachment", UniMapping.boolean)(_.field.readonly)
+    .build
 }

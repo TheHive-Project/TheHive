@@ -31,7 +31,8 @@ class Router @Inject() (
     tagCtrl: TagCtrl,
     queryExecutor: TheHiveQueryExecutor,
     pageCtrl: PageCtrl,
-    permissionCtrl: PermissionCtrl
+    permissionCtrl: PermissionCtrl,
+    observableTypeCtrl: ObservableTypeCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -204,6 +205,11 @@ class Router @Inject() (
     case POST(p"/page/_stats")       => queryExecutor.page.stats
 
     case GET(p"/permission") => permissionCtrl.list
+
+    case GET(p"/observable/type")              => queryExecutor.observableType.search
+    case GET(p"/observable/type/$idOrName")    => observableTypeCtrl.get(idOrName)
+    case POST(p"/observable/type")             => observableTypeCtrl.create
+    case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
   }
 }
 /*

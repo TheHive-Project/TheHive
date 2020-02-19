@@ -576,7 +576,30 @@ object Conversion {
   )
 
   implicit val permissionOutput: Outputer.Aux[PermissionDesc, OutputPermission] =
-    Outputer[PermissionDesc, OutputPermission](p => p.into[OutputPermission].transform)
+    Outputer[PermissionDesc, OutputPermission](_.into[OutputPermission].transform)
+
+  implicit val observableTypeOutput: Outputer.Aux[ObservableType with Entity, OutputObservableType] =
+    Outputer[ObservableType with Entity, OutputObservableType](ot =>
+      ot.asInstanceOf[ObservableType]
+        .into[OutputObservableType]
+        .withFieldConst(_._id, ot._id)
+        .withFieldConst(_.id, ot._id)
+        .withFieldConst(_.createdBy, ot._createdBy)
+        .withFieldConst(_.createdAt, ot._createdAt)
+        .withFieldConst(_.updatedBy, ot._updatedBy)
+        .withFieldConst(_.updatedAt, ot._updatedAt)
+        .withFieldConst(_._type, "observableType")
+        .transform
+    )
+
+  implicit class InputObservableTypeOps(inputObservableType: InputObservableType) {
+
+    def toObservableType: ObservableType =
+      inputObservableType
+        .into[ObservableType]
+        .withFieldComputed(_.isAttachment, _.isAttachment.getOrElse(false))
+        .transform
+  }
 
   implicit class InputPageOps(inputPage: InputPage) {
 

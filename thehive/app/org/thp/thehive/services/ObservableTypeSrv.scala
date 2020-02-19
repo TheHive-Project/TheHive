@@ -2,15 +2,14 @@ package org.thp.thehive.services
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models._
-
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ObservableTypeSrv @Inject() (implicit db: Database) extends VertexSrv[ObservableType, ObservableTypeSteps] {
@@ -43,6 +42,13 @@ class ObservableTypeSrv @Inject() (implicit db: Database) extends VertexSrv[Obse
 
   def create(observableType: ObservableType)(implicit graph: Graph, authContext: AuthContext): Try[ObservableType with Entity] =
     createEntity(observableType)
+
+  def remove(idOrName: String)(implicit graph: Graph): Try[Unit] =
+    if (useCount(idOrName) == 0) Success(get(idOrName).remove())
+    else Failure(BadRequestError(s"Observable type $idOrName is used"))
+
+  def useCount(idOrName: String)(implicit graph: Graph): Long =
+    get(idOrName).inTo[ObservableObservableType].getCount
 }
 
 @EntitySteps[ObservableType]

@@ -31,11 +31,12 @@ class TheHiveQueryExecutor @Inject() (
     profileCtrl: ProfileCtrl,
     tagCtrl: TagCtrl,
     pageCtrl: PageCtrl,
+    observableTypeCtrl: ObservableTypeCtrl,
     queryCtrlBuilder: QueryCtrlBuilder
 ) extends QueryExecutor {
 
   lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: profileCtrl :: tagCtrl :: pageCtrl :: Nil
+    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: profileCtrl :: tagCtrl :: pageCtrl :: observableTypeCtrl :: Nil
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
   override lazy val filterQuery                                  = new ParentFilterQuery(db, publicProperties)
 
@@ -53,6 +54,7 @@ class TheHiveQueryExecutor @Inject() (
   val user: QueryCtrl              = queryCtrlBuilder(userCtrl, this)
   val caseTemplate: QueryCtrl      = queryCtrlBuilder(caseTemplateCtrl, this)
   val observable: QueryCtrl        = queryCtrlBuilder(observableCtrl, this)
+  val observableType: QueryCtrl    = queryCtrlBuilder(observableTypeCtrl, this)
   val dashboard: QueryCtrl         = queryCtrlBuilder(dashboardCtrl, this)
   val organisation: QueryCtrl      = queryCtrlBuilder(organisationCtrl, this)
   val audit: QueryCtrl             = queryCtrlBuilder(auditCtrl, this)
