@@ -55,6 +55,10 @@
                                     <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
                                     <td>
                                         <div class="case-title wrap">
+                                            <span class="mr-xxs text-primary" ng-if="!!!currentCase.stats.isOwner"><i class="fa fa-share-square"
+                                                uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
+                                            <span class="mr-xxs text-primary" ng-if="!!currentCase.stats.isOwner"><i class="fa fa-building-o"
+                                                uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span>
                                             <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}} - {{currentCase.title}}</a>
                                         </div>
                                         <div class="case-tags flexwrap mt-xxs">

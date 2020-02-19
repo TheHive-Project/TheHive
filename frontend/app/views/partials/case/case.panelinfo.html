@@ -1,7 +1,13 @@
 <div class="box box-default">
     <div class="box-header with-border">
-        <h3 class="box-title">
-            <severity value="caze.severity"></severity>
+        <h3 class="box-title text-primary">
+            <!-- <severity value="caze.severity"></severity> -->
+            <span class="mr-xxs" ng-if="!!!caze.stats.isOwner" uib-tooltip="Shared from another organisation" tooltip-placement="right">
+                <i class="fa fa-share-square"></i>
+            </span>
+            <span class="mr-xxs" ng-if="!!caze.stats.isOwner" uib-tooltip="Created by my organisation" tooltip-placement="right">
+                <i class="fa fa-building-o"></i>
+            </span>
             <span class="wrap">Case #
                 {{caze.caseId}}
                 -
@@ -123,7 +129,7 @@
             <span class="ml-xxs pull-right">
                 <a href ui-sref="app.case.sharing({caseId: caze.id})" class="noline">
                     <i class="fa fa-users"></i>
-                    Sharing
+                    Sharing ({{caze.stats.shareCount || 0}})
                 </a>
             </span>
 
