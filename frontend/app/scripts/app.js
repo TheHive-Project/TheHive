@@ -517,7 +517,8 @@ angular.module('thehive', [
             verticalSpacing: 20,
             horizontalSpacing: 20,
             positionX: 'left',
-            positionY: 'bottom'
+            positionY: 'bottom',
+            maxCount: 5
         });
     })
     .config(function($provide, markedProvider, hljsServiceProvider) {
