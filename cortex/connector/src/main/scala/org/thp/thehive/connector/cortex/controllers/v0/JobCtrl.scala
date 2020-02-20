@@ -42,7 +42,7 @@ class JobCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, JobSteps, PagedResult[RichJob]](
     "page",
     FieldsParser[OutputParam],
-    (range, jobSteps, _) => jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob)
+    (range, jobSteps, authContext) => jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob(authContext))
   )
   override val outputQuery: Query = Query.output[RichJob]()
 

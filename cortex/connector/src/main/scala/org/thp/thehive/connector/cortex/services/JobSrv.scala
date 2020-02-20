@@ -321,16 +321,32 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     */
   def reportObservables: ObservableSteps = new ObservableSteps(raw.outTo[ReportObservable])
 
-  def richJob: Traversal[RichJob, RichJob] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(newInstance(__[Vertex]).reportObservables.richObservable.fold.raw))
-        )
-        .map {
-          case (job, observables) =>
-            RichJob(job.as[Job], observables.asScala)
-        }
-    )
+  def richJob(implicit authContext: AuthContext): Traversal[RichJob, RichJob] = {
+    val thisJob = StepLabel()
+    this
+      .as(thisJob)
+      .project(
+        _.apply(By[Vertex]())
+          .and(
+            By(
+              newInstance(__[Vertex])
+                .reportObservables
+                .project(
+                  _.apply(By(new ObservableSteps(__[Vertex]).richObservable.raw))
+                    .and(By(new ObservableSteps(__[Vertex]).similar.`case`.observables.outTo[ObservableJob].where(P.eq(thisJob.name)).fold.raw))
+                )
+                .fold
+                .raw
+            )
+          )
+      )
+      .map {
+        case (job, observablesWithLink) =>
+          val observables = observablesWithLink.asScala.map {
+            case (obs, l) => obs -> Json.obj("imported" -> !l.isEmpty)
+          }
+          RichJob(job.as[Job], observables)
+      }
+  }
+
 }
