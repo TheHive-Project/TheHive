@@ -24,8 +24,8 @@ class CortexQueryExecutor @Inject() (
     reportCtrl: AnalyzerTemplateCtrl,
     actionCtrl: ActionCtrl
 ) extends QueryExecutor {
-  override lazy val publicProperties
-      : List[PublicProperty[_, _]] = jobCtrl.publicProperties ++ reportCtrl.publicProperties ++ actionCtrl.publicProperties
+  override lazy val publicProperties: List[PublicProperty[_, _]] =
+    jobCtrl.publicProperties ++ reportCtrl.publicProperties ++ actionCtrl.publicProperties
   override lazy val queries: Seq[ParamQuery[_]] =
     new CortexParentFilterQuery(db, publicProperties) ::
       actionCtrl.initialQuery ::
