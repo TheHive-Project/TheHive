@@ -210,8 +210,8 @@ trait Conversion {
       dataType <- (json \ "dataType").validate[String]
       message  <- (json \ "message").validateOpt[String]
       tlp      <- (json \ "tlp").validateOpt[Int]
-      tags     <- (json \ "tags").validate[Set[String]]
-      ioc      <- (json \ "ioc").validateOpt[Boolean]
+      tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      ioc <- (json \ "ioc").validateOpt[Boolean]
       dataOrAttachment <- (json \ "data")
         .validate[String]
         .map(Left.apply)
@@ -272,7 +272,7 @@ trait Conversion {
         case "boolean" => CustomFieldType.boolean
         case "date"    => CustomFieldType.date
       }
-      options <- (value \ "options").validate[Seq[JsValue]]
+      options = (value \ "options").asOpt[Seq[JsValue]].getOrElse(Nil)
     } yield InputCustomField(
       MetaData(name, UserSrv.init.login, new Date, None, None),
       CustomField(name, displayName, description, customFieldType, mandatory = false, options)
@@ -300,9 +300,9 @@ trait Conversion {
       tlp     <- (json \ "tlp").validateOpt[Int]
       pap     <- (json \ "pap").validateOpt[Int]
       summary <- (json \ "summary").validateOpt[String]
-      tags    <- (json \ "tags").validateOpt[Set[String]]
-      metrics <- (json \ "metrics").validateOpt[JsObject]
-      metricsValue = metrics.getOrElse(JsObject.empty).value.map {
+      tags    = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      metrics = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
+      metricsValue = metrics.value.map {
         case (name, value) => (name, Some(value), None)
       }
       customFields <- (json \ "customFields").validateOpt[JsObject]
@@ -328,7 +328,7 @@ trait Conversion {
         summary
       ),
       mainOrganisation,
-      tags.getOrElse(Set.empty),
+      tags,
       (metricsValue ++ customFieldsValue).toSeq
     )
   }
