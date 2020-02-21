@@ -333,7 +333,21 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
                 .reportObservables
                 .project(
                   _.apply(By(new ObservableSteps(__[Vertex]).richObservable.raw))
-                    .and(By(new ObservableSteps(__[Vertex]).similar.`case`.observables.outTo[ObservableJob].where(P.eq(thisJob.name))._id.fold.raw))
+                    .and(
+                      By(
+                        new ObservableSteps(__[Vertex])
+                          .similar
+                          .filter(
+                            _.`case`
+                              .observables
+                              .outTo[ObservableJob]
+                              .where(P.eq(thisJob.name))
+                          )
+                          ._id
+                          .fold
+                          .raw
+                      )
+                    )
                 )
                 .fold
                 .raw
