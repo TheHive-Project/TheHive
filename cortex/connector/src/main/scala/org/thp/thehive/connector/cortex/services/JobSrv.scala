@@ -333,7 +333,7 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
                 .reportObservables
                 .project(
                   _.apply(By(new ObservableSteps(__[Vertex]).richObservable.raw))
-                    .and(By(new ObservableSteps(__[Vertex]).similar.`case`.observables.outTo[ObservableJob].where(P.eq(thisJob.name)).fold.raw))
+                    .and(By(new ObservableSteps(__[Vertex]).similar.`case`.observables.outTo[ObservableJob].where(P.eq(thisJob.name))._id.fold.raw))
                 )
                 .fold
                 .raw
@@ -343,7 +343,7 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
       .map {
         case (job, observablesWithLink) =>
           val observables = observablesWithLink.asScala.map {
-            case (obs, l) => obs -> Json.obj("imported" -> !l.isEmpty)
+            case (obs, l) => obs -> Json.obj("observableId" -> l.asScala.headOption.map(_.toString))
           }
           RichJob(job.as[Job], observables)
       }
