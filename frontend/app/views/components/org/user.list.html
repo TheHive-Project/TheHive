@@ -18,7 +18,7 @@
                     <th></th>
                     <th>Password</th>
                     <th>API Key</th>
-                    <th style="width: 150px"></th>
+                    <th style="width: 200px"></th>
                 </tr>
             </thead>
             <tbody>
@@ -84,14 +84,17 @@
                         </span>
                     </td>
                     <td>
-                        <span class="clickable mr-xs text-primary" ng-click="$ctrl.editUser(user)">
+                        <span class="clickable mr-xxxs text-primary" ng-click="$ctrl.editUser(user)">
                             <i class="fa fa-edit"></i>Edit</span>
 
-                        <span class="clickable mr-xs text-danger" ng-if="!user.locked && user._id !== $ctrl.currentUser.login" ng-click="$ctrl.lockUser(user, true)">
+                        <span class="clickable mr-xxxs text-danger" ng-if="!user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, true)">
                             <i class="fa fa-ban"></i>Lock</span>
 
-                        <span class="clickable mr-xs text-success" ng-if="user.locked && user._id !== $ctrl.currentUser.login" ng-click="$ctrl.lockUser(user, false)">
+                        <span class="clickable mr-xxxs text-success" ng-if="user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, false)">
                             <i class="fa fa-refresh"></i>Unlock</span>
+
+                        <span class="clickable mr-xxxs text-danger" ng-if="user._id !== $ctrl.currentUser._id" ng-click="$ctrl.removeUser(user)">
+                            <i class="fa fa-trash"></i>Remove</span>
                     </td>
                 </tr>
             </tbody>

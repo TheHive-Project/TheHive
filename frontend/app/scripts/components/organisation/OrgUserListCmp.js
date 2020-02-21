@@ -145,6 +145,32 @@
                             );
                         });
                 };
+
+                self.removeUser = function(user) {
+                    var modalInstance = ModalSrv.confirm(
+                        'Permanently remove User',
+                        'Are you sure you want to permanently remove this user?', {
+                            flavor: 'danger',
+                            okText: 'Yes, proceed'
+                        }
+                    );
+
+                    modalInstance.result
+                        .then(function(/*response*/) {
+                            return UserSrv.remove(user._id);
+                        })
+                        .then(function() {
+                            NotificationSrv.success('User ' + user.login + ' has been successfully removed.');
+                            self.onReload();
+                        })
+                        .catch(function(response) {
+                            NotificationSrv.error(
+                                'OrgUserCtrl',
+                                response.data,
+                                response.status
+                            );
+                        });
+                };
             },
             controllerAs: '$ctrl',
             templateUrl: 'views/components/org/user.list.html',

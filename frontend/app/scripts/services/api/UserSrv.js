@@ -57,6 +57,17 @@
                 return defer.promise;
             };
 
+            this.remove = function(id) {
+                return $http
+                    .delete('./api/v1/user/' + id + '/force')
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    })
+                    .catch(function(err) {
+                        return $q.reject(err);
+                    });
+            };
+
             this.changePass = function(id, currentPassword, password) {
                 return $http
                     .post('./api/v1/user/' + id + '/password/change', {
