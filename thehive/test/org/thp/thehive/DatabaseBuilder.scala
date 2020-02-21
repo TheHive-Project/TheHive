@@ -132,11 +132,13 @@ class DatabaseBuilder @Inject() (
     None
   }
 
-  def readFile(name: String): String =
-    try Source.fromResource(name).mkString
+  def readFile(name: String): String = {
+    val source = Source.fromResource(name)
+    try source.mkString
     catch {
       case _: NullPointerException => sys.error(s"resources/$name : file or directory unreadable")
-    }
+    } finally source.close()
+  }
 
   def readFile(file: File): String = {
     val source = Source.fromFile(file)
