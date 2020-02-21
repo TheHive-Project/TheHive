@@ -380,15 +380,13 @@ object Conversion {
         .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
         .withFieldComputed(
           _.reports, { a =>
-            a.reportTags.groupBy(_.origin).map {
+            JsObject(a.reportTags.groupBy(_.origin).map {
               case (origin, tags) =>
-                Json.obj(
-                  origin -> Json.obj(
-                    "taxonomies" -> tags
-                      .map(t => Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value))
-                  )
+                origin -> Json.obj(
+                  "taxonomies" -> tags
+                    .map(t => Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value))
                 )
-            }
+            })
           }
         )
         .withFieldConst(_.stats, richObservableWithStats._2)
