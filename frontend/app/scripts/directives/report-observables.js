@@ -7,7 +7,8 @@
                 origin: '=',
                 observables: '=',
                 analyzer: '=',
-                caseId: '='
+                caseId: '=',
+                permissions: '='
             },
             templateUrl: 'views/directives/report-observables.html',
             link: function(scope) {
@@ -35,7 +36,7 @@
                 };
 
                 $scope.selectObservable = function(observable) {
-                    if(observable.id) {
+                    if(!!observable.stats.imported) {
                         return;
                     }
                     if(observable.selected === true) {

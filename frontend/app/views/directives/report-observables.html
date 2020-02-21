@@ -13,7 +13,7 @@
                 ng-click="filterArtifacts(type)"
                 ng-class="{'label-primary': pagination.filter===type}">{{type}} ({{list.length}})</span>
         </div>
-        <div class="mv-xxs">
+        <div class="mv-xxs" if-permission="manageObservable" allowed="{{permissions}}">
             <strong class="text-muted">{{selected}} items selected</strong>
             <a class="ml-xs" href ng-click="selectAll()"><i class="fa fa-check"></i> Select all</a>
             <span ng-if="selected > 0">
@@ -21,8 +21,8 @@
                 <span class="ml-xs">|</span>
                 <a class="ml-xs" href ng-click="import()"><i class="fa fa-plus"></i> Import Selection</a>
             </span>
-
         </div>
+
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -37,9 +37,9 @@
                 <tr ng-repeat="observable in pagination.data | orderBy:'id':true |
                         offset: (pagination.currentPage-1)*pagination.pageSize |
                         limitTo: pagination.pageSize ">
-                    <td><input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="observable.id"></td>
+                    <td><input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="!!observable.stats.imported"></td>
                     <td>
-                        <span uib-tooltip="Observable already id" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="observable.id" class="glyphicon glyphicon-eye-open"></span>
+                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="right" ng-if="!!observable.stats.imported" class="glyphicon glyphicon-eye-open"></span>
                     </td>
                     <td>{{observable.dataType}}</td>
                     <td class="wrap">
@@ -57,7 +57,7 @@
                         </div>
                     </td>
                     <td class="wrap">
-                        <a ng-if="observable.id" href ui-sref="app.case.observables-item({caseId: caseId, itemId: observable.id})"><i class="fa fa-search"></i> View</a>
+                        <a ng-if="!!observable.stats.imported" href ui-sref="app.case.observables-item({caseId: caseId, itemId: observable.id})"><i class="fa fa-search"></i> View</a>
                     </td>
                 </tr>
             </tbody>

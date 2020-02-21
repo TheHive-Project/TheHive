@@ -104,7 +104,13 @@
                     <strong>Observables</strong> <small>Extracted from analysis report</small>
                 </div>
                 <div class="panel-body">
-                    <report-observables origin="artifact" case-id="caseId" observables="report.content.artifacts" analyzer="report.template"></report-observables>
+                    <report-observables
+                        origin="artifact"
+                        case-id="caseId"
+                        observables="report.content.artifacts"
+                        analyzer="report.template"
+                        permissions="userPermissions"
+                        ></report-observables>
                 </div>
             </div>
         </div>
