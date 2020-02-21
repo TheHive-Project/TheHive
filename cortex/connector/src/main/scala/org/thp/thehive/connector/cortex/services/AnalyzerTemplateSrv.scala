@@ -78,8 +78,13 @@ class AnalyzerTemplateSrv @Inject() (
     file
       .entries
       .asScala
-      .filter(entry => !entry.isDirectory)
-      .map(entry => entry.getName.takeWhile(c => c != '/' && c != '.') -> entry)
+      .filterNot(_.isDirectory)
+      .toSeq
+      .groupBy(_.getName.takeWhile(c => c != '/' && c != '.'))
+      .flatMap {
+        case (name, entries) if entries.lengthCompare(1) == 0 => List(name                                                               -> entries.head)
+        case (name, entries)                                  => entries.filterNot(_.getName.endsWith("short.html")).headOption.map(name -> _)
+      }
       .foldLeft(Map.empty[String, Try[AnalyzerTemplate with Entity]]) {
         case (templateMap, (analyzerId, _)) if templateMap.contains(analyzerId) => templateMap
         case (templateMap, (analyzerId, entry)) =>
