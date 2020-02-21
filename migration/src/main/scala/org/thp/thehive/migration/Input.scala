@@ -1,24 +1,21 @@
 package org.thp.thehive.migration
 
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.config.Config
 import org.thp.thehive.migration.dto._
 
-case class Filter(caseFromDate: LocalDate, alertFromDate: LocalDate, auditFromDate: LocalDate)
+case class Filter(caseFromDate: Long, alertFromDate: Long, auditFromDate: Long)
 
 object Filter {
   def fromConfig(config: Config): Filter = {
-    val now           = LocalDate.now()
+    val now           = System.currentTimeMillis()
     val maxCaseAge    = config.getDuration("maxCaseAge")
-    val caseFromDate  = now.minus(maxCaseAge.getSeconds, ChronoUnit.SECONDS)
+    val caseFromDate  = now - maxCaseAge.getSeconds * 1000
     val maxAlertAge   = config.getDuration("maxAlertAge")
-    val alertFromDate = now.minus(maxAlertAge.getSeconds, ChronoUnit.SECONDS)
+    val alertFromDate = now - maxAlertAge.getSeconds * 1000
     val maxAuditAge   = config.getDuration("maxAuditAge")
-    val auditFromDate = now.minus(maxAuditAge.getSeconds, ChronoUnit.SECONDS)
+    val auditFromDate = now - maxAuditAge.getSeconds * 1000
     Filter(caseFromDate, alertFromDate, auditFromDate)
   }
 }

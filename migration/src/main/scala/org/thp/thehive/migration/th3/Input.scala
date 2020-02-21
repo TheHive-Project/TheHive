@@ -16,17 +16,14 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
-import com.sksamuel.elastic4s.ElasticDate
 import com.sksamuel.elastic4s.http.ElasticDsl.{bool, hasParentQuery, rangeQuery, search, termQuery}
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
 import org.thp.thehive.migration.Filter
 import org.thp.thehive.migration.dto._
-import org.thp.thehive.models.Organisation
-import org.thp.thehive.services.{ImpactStatusSrv, OrganisationSrv, ProfileSrv, ResolutionStatusSrv, UserSrv}
-
-import org.elastic4play.database.{DBFind, DBGet}
+import org.thp.thehive.models.{Organisation, Profile}
+import org.thp.thehive.services.{ImpactStatusSrv, ResolutionStatusSrv, UserSrv}
 
 object Input {
 
@@ -91,14 +88,19 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
   override def listOrganisations(filter: Filter): Source[InputOrganisation, NotUsed] =
     Source(
       List(
-        InputOrganisation(MetaData("thehive", "system", new Date, None, None), OrganisationSrv.administration),
-        InputOrganisation(MetaData("thehive", "system", new Date, None, None), Organisation("thehive", "thehive"))
+        InputOrganisation(MetaData(mainOrganisation, "system", new Date, None, None), Organisation(mainOrganisation, mainOrganisation))
       )
     )
 
   override def listCases(filter: Filter): Source[InputCase, NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(Seq(termQuery("relations", "case"), rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate))), Nil, Nil))
+      search(indexName).query(
+        bool(
+          Seq(termQuery("relations", "case"), rangeQuery("createdAt").gte(filter.caseFromDate)),
+          Nil,
+          Nil
+        )
+      )
     )._1
       .read[InputCase]
 
@@ -108,7 +110,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         bool(
           Seq(
             termQuery("relations", "case_artifact"),
-            hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false)
+            hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false)
           ),
           Nil,
           Nil
@@ -123,7 +125,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         bool(
           Seq(
             termQuery("relations", "case_task"),
-            hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false)
+            hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false)
           ),
           Nil,
           Nil
@@ -140,7 +142,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             termQuery("relations", "case_task_log"),
             hasParentQuery(
               "case_task",
-              hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false),
+              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
               score = false
             )
           ),
@@ -153,13 +155,13 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
 
   override def listAlerts(filter: Filter): Source[InputAlert, NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(ElasticDate(filter.alertFromDate))), Nil, Nil))
+      search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(filter.alertFromDate)), Nil, Nil))
     )._1
       .read[InputAlert]
 
   override def listAlertObservables(filter: Filter): Source[(String, InputObservable), NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(ElasticDate(filter.alertFromDate))), Nil, Nil))
+      search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(filter.alertFromDate)), Nil, Nil))
     )._1
       .map { json =>
         for {
@@ -188,7 +190,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       }
 
   override def listUsers(filter: Filter): Source[InputUser, NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "user")))
+    dbFind(Some("all"), Seq("createdAt"))(indexName => search(indexName).query(termQuery("relations", "user")))
       ._1
       .read[InputUser]
 
@@ -205,14 +207,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[InputObservableType]
 
   override def listProfiles(filter: Filter): Source[InputProfile, NotUsed] =
-    Source(
-      List(
-        ProfileSrv.admin,
-        ProfileSrv.orgAdmin,
-        ProfileSrv.analyst,
-        ProfileSrv.readonly
-      )
-    ).map(profile => InputProfile(MetaData(profile.name, UserSrv.init.login, new Date, None, None), profile))
+    Source.empty[Profile].map(profile => InputProfile(MetaData(profile.name, UserSrv.init.login, new Date, None, None), profile))
 
   override def listImpactStatus(filter: Filter): Source[InputImpactStatus, NotUsed] =
     Source(List(ImpactStatusSrv.noImpact, ImpactStatusSrv.withImpact, ImpactStatusSrv.notApplicable))
@@ -271,7 +266,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             termQuery("relations", "case_artifact_job"),
             hasParentQuery(
               "case_artifact",
-              hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false),
+              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
               score = false
             )
           ),
@@ -290,7 +285,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             termQuery("relations", "case_artifact_job"),
             hasParentQuery(
               "case_artifact",
-              hasParentQuery("case", rangeQuery("createdAt").gte(ElasticDate(filter.caseFromDate)), score = false),
+              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
               score = false
             )
           ),
@@ -336,7 +331,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         bool(
           Seq(
             termQuery("relations", "audit"),
-            rangeQuery("createdAt").gte(ElasticDate(filter.auditFromDate))
+            rangeQuery("createdAt").gte(filter.auditFromDate)
           ),
           Nil,
           Nil

@@ -149,8 +149,8 @@ class Output @Inject() (
   override def createCase(inputCase: InputCase): Try[IdMapping] =
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.info(s"Create case #${inputCase.`case`.number}")
+      val user = inputCase.user.map(userSrv.getOrFail).flip.getOrElse(None)
       for {
-        user         <- inputCase.user.map(userSrv.getOrFail).flip
         tags         <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
         caseTemplate <- inputCase.caseTemplate.map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail()).flip
         organisation <- inputCase.organisations.find(_._2 == ProfileSrv.orgAdmin.name) match {
@@ -164,9 +164,10 @@ class Output @Inject() (
         }
         _ = inputCase.customFields.foreach {
           case (name, value) =>
-            caseSrv.setOrCreateCustomField(richCase.`case`, name, value).getOrElse {
-              logger.warn(s"Add custom field $name:$value to case #${richCase.number} failure")
-            }
+            caseSrv
+              .setOrCreateCustomField(richCase.`case`, name, value)
+              .failed
+              .foreach(error => logger.warn(s"Add custom field $name:$value to case #${richCase.number} failure: $error"))
         }
       } yield IdMapping(inputCase.metaData.id, richCase._id)
     }

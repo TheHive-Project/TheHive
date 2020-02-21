@@ -5,18 +5,39 @@ import java.util.{Base64, Date}
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.elastic4play.services.Attachment
 import org.thp.thehive.connector.cortex.models.{Action, Job, JobStatus}
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
+import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.controllers.v0
 
+case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
 
-  import org.elastic4play.services.JsonFormat.attachmentFormat
+  private val attachmentWrites: OWrites[Attachment] = OWrites[Attachment] { attachment =>
+    Json.obj(
+      "name"        -> attachment.name,
+      "hashes"      -> attachment.hashes,
+      "size"        -> attachment.size,
+      "contentType" -> attachment.contentType,
+      "id"          -> attachment.id
+    )
+  }
+
+  private val attachmentReads: Reads[Attachment] = Reads { json =>
+    for {
+      name        <- (json \ "name").validate[String]
+      hashes      <- (json \ "hashes").validate[Seq[Hash]]
+      size        <- (json \ "size").validate[Long]
+      contentType <- (json \ "contentType").validate[String]
+      id          <- (json \ "id").validate[String]
+    } yield Attachment(name, hashes, size, contentType, id)
+  }
+  implicit val attachmentFormat: OFormat[Attachment] = OFormat(attachmentReads, attachmentWrites)
 
   def readAttachment(id: String): Source[ByteString, NotUsed]
   val mainOrganisation: String
@@ -43,12 +64,12 @@ trait Conversion {
       status      <- (json \ "status").validate[CaseStatus.Value]
       summary     <- (json \ "summary").validateOpt[String]
       user        <- (json \ "owner").validateOpt[String]
-      tags        <- (json \ "tags").validate[Set[String]]
-      metrics     <- (json \ "metrics").validate[JsObject]
+      tags    = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      metrics = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       metricsValue = metrics.value.map {
         case (name, value) => name -> Some(value)
       }
-      customFields <- (json \ "customFields").validate[JsObject]
+      customFields = (json \ "customFields").asOpt[JsObject].getOrElse(JsObject.empty)
       customFieldsValue = customFields.value.map {
         case (name, value) =>
           name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
@@ -72,7 +93,7 @@ trait Conversion {
       ioc      <- (json \ "ioc").validate[Boolean]
       sighted  <- (json \ "sighted").validate[Boolean]
       dataType <- (json \ "dataType").validate[String]
-      tags     <- (json \ "tags").validate[Set[String]]
+      tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
       dataOrAttachment <- (json \ "data")
         .validate[String]
         .map(Left.apply)
@@ -150,11 +171,11 @@ trait Conversion {
       pap          <- (json \ "pap").validateOpt[Int] // not in TH3
       status       <- (json \ "status").validate[String]
       read = status == "Ignored" || status == "Imported"
-      follow       <- (json \ "follow").validate[Boolean]
-      caseId       <- (json \ "case").validateOpt[String]
-      tags         <- (json \ "tags").validate[Set[String]]
-      customFields <- (json \ "metrics").validateOpt[JsObject]
-      customFieldsValue = customFields.getOrElse(JsObject.empty).value.map {
+      follow <- (json \ "follow").validate[Boolean]
+      caseId <- (json \ "case").validateOpt[String]
+      tags         = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      customFields = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
+      customFieldsValue = customFields.value.map {
         case (name, value) =>
           name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
       }
