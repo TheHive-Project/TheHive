@@ -3,6 +3,8 @@ package org.thp.thehive.models
 import scala.util.Try
 import scala.util.matching.Regex
 
+import play.api.Logger
+
 import org.thp.scalligraph.VertexEntity
 
 @VertexEntity
@@ -29,13 +31,12 @@ case class Tag(
 }
 
 object Tag {
-
-  val namespacePredicateValueColour: Regex =
-    "([\\p{Alnum}\\p{Blank}+-_]+)\\.([\\p{Alnum}\\p{Blank}:+-_]+)=\"([\\p{Print}&&[^\"]]+)\"#(\\p{XDigit}{6})".r
-  val namespacePredicateValue: Regex = "([\\p{Alnum}\\p{Blank}+-_]+)[\\.:]([\\p{Alnum}\\p{Blank}:+-_]+)=\"?([\\p{Print}&&[^\"]]+)\"?".r
-  val namespacePredicate: Regex      = "([\\p{Alnum}\\p{Blank}+-_]+)[\\.:]([\\p{Alnum}\\p{Blank}:+-_]+)".r
-  val PredicateValue: Regex          = "([\\p{Alnum}\\p{Blank}:+-_]+)=\"([\\p{Print}&&[^\"]]+)\"".r
-  val predicate: Regex               = "([\\p{Alnum}\\p{Blank}+-_]+)".r
+  lazy val logger: Logger                  = Logger(getClass)
+  val namespacePredicateValueColour: Regex = "([^\".:=]+)[.:]([\".=]+)=\"([^\"]+)\"#(\\p{XDigit}{6})".r
+  val namespacePredicateValue: Regex       = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
+  val namespacePredicate: Regex            = "([^\".:=]+)[.:]([^\".=]+)".r
+  val PredicateValue: Regex                = "([^\".:=]+)=\"([^\"]+)\"".r
+  val predicate: Regex                     = "([^\".:=]+)".r
 
   def fromString(tagName: String, defaultNamespace: String, defaultColour: Int = 0): Tag = {
     val (name, colour) = tagName.split('#') match {
@@ -47,7 +48,9 @@ object Tag {
       case namespacePredicate(namespace, predicate)             => Tag(namespace, predicate, None, None, colour)
       case PredicateValue(predicate, value)                     => Tag(defaultNamespace, predicate, Some(value), None, colour)
       case predicate(predicate)                                 => Tag(defaultNamespace, predicate, None, None, colour)
-      case _                                                    => ???
+      case _ =>
+        logger.error(s"Invalid tag format: $name")
+        Tag(defaultNamespace, name, None, None, colour)
     }
   }
 }
