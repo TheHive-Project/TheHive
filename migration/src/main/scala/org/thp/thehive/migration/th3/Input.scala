@@ -196,9 +196,14 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
 
   override def listCustomFields(filter: Filter): Source[InputCustomField, NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "custom_fields")), Nil, Nil))
-    )._1
-      .read[InputCustomField]
+      search(indexName).query(
+        bool(
+          Seq(termQuery("relations", "dblist"), bool(Nil, Seq(termQuery("dblist", "case_metrics"), termQuery("dblist", "custom_fields")), Nil)),
+          Nil,
+          Nil
+        )
+      )
+    )._1.read[InputCustomField]
 
   override def listObservableTypes(filter: Filter): Source[InputObservableType, NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>

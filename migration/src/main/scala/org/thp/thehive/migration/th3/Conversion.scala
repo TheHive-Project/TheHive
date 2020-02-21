@@ -255,6 +255,19 @@ trait Conversion {
     } yield InputUser(metaData, User(login, name, apikey, locked, password, None), Map(organisation -> profile), avatar)
   }
 
+  val metricsReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>
+    for {
+      valueJson <- (json \ "value").validate[String]
+      value = Json.parse(valueJson)
+      name <- (value \ "name").validate[String]
+//      title       <- (value \ "title").validate[String]
+      description <- (value \ "description").validate[String]
+    } yield InputCustomField(
+      MetaData(name, UserSrv.init.login, new Date, None, None),
+      CustomField(name, name, description, CustomFieldType.integer, mandatory = true, Nil)
+    )
+  }
+
   implicit val customFieldReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>
     for {
       //      metaData    <- json.validate[MetaData]
@@ -277,7 +290,7 @@ trait Conversion {
       MetaData(name, UserSrv.init.login, new Date, None, None),
       CustomField(name, displayName, description, customFieldType, mandatory = false, options)
     )
-  }
+  } orElse metricsReads
 
   implicit val observableTypeReads: Reads[InputObservableType] = Reads[InputObservableType] { json =>
     for {

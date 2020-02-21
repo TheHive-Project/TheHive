@@ -116,7 +116,7 @@ class Output @Inject() (
         AuthContextImpl(user.login, user.name, "admin", "mig-request", Permissions.all)
       }
       .getOrElse {
-        logger.warn(s"User $userId not found, use system user")
+        if (userId != "init") logger.warn(s"User $userId not found, use system user")
         localUserSrv.getSystemAuthContext
       }
 
