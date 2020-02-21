@@ -37,9 +37,9 @@
                 <tr ng-repeat="observable in pagination.data | orderBy:'id':true |
                         offset: (pagination.currentPage-1)*pagination.pageSize |
                         limitTo: pagination.pageSize ">
-                    <td><input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="!!observable.stats.imported"></td>
+                    <td><input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="!!observable.stats.observableId"></td>
                     <td>
-                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="right" ng-if="!!observable.stats.imported" class="glyphicon glyphicon-eye-open"></span>
+                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="right" ng-if="!!observable.stats.observableId" class="glyphicon glyphicon-eye-open"></span>
                     </td>
                     <td>{{observable.dataType}}</td>
                     <td class="wrap">
@@ -57,7 +57,7 @@
                         </div>
                     </td>
                     <td class="wrap">
-                        <a ng-if="!!observable.stats.imported" href ui-sref="app.case.observables-item({caseId: caseId, itemId: observable.id})"><i class="fa fa-search"></i> View</a>
+                        <a ng-if="!!observable.stats.observableId" href ui-sref="app.case.observables-item({caseId: caseId, itemId: observable.stats.observableId})"><i class="fa fa-search"></i> View</a>
                     </td>
                 </tr>
             </tbody>
