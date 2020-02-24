@@ -79,8 +79,7 @@ class StatusCtrl @Inject()(
         case 1 ⇒ HealthStatus.Warning
         case _ ⇒ HealthStatus.Error
       }
-      connectorStatus = connectors.map(c ⇒ c.health).toSeq
-      distinctStatus  = connectorStatus :+ dbStatus
+      distinctStatus = connectors.map(c ⇒ c.health) + dbStatus
       globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
         if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
       } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
