@@ -59,6 +59,14 @@ object ActionContext extends HasEdgeModel[ActionContext, Action, Product] {
       override val _createdAt: Date           = db.getProperty(element, "_createdAt", UniMapping.date)
       override val _updatedAt: Option[Date]   = db.getProperty(element, "_updatedAt", UniMapping.date.optional)
     }
+    override def addEntity(a: ActionContext, entity: Entity): EEntity = new ActionContext with Entity {
+      override def _id: String                = entity._id
+      override def _model: Model              = entity._model
+      override def _createdBy: String         = entity._createdBy
+      override def _updatedBy: Option[String] = entity._updatedBy
+      override def _createdAt: Date           = entity._createdAt
+      override def _updatedAt: Option[Date]   = entity._updatedAt
+    }
     override def create(e: ActionContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
   }
 }
