@@ -491,7 +491,7 @@ trait Conversion {
           },
           mainAction,
           objectId,
-          objectType,
+          objectType.map(v0.Conversion.toObjectType),
           details.map(_.toString)
         )
       )

@@ -2,6 +2,7 @@ package org.thp.thehive.migration.th3
 
 import java.util.{Base64, Date}
 
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.reflect.{classTag, ClassTag}
 import scala.util.{Failure, Success, Try}
@@ -16,7 +17,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
-import com.sksamuel.elastic4s.http.ElasticDsl.{bool, hasParentQuery, rangeQuery, search, termQuery}
+import com.sksamuel.elastic4s.http.ElasticDsl.{bool, hasParentQuery, idsQuery, rangeQuery, search, termQuery}
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
@@ -93,7 +94,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )
 
   override def listCases(filter: Filter): Source[InputCase, NotUsed] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("all"), Seq("-createdAt"))(indexName =>
       search(indexName).query(
         bool(
           Seq(termQuery("relations", "case"), rangeQuery("createdAt").gte(filter.caseFromDate)),
@@ -119,6 +120,21 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )._1
       .readWithParent[InputObservable](json => Try((json \ "_parent").as[String]))
 
+  override def listCaseObservables(caseId: String): Source[(String, InputObservable), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_artifact"),
+            hasParentQuery("case", idsQuery(caseId), score = false)
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
+      .readWithParent[InputObservable](json => Try((json \ "_parent").as[String]))
+
   override def listCaseTasks(filter: Filter): Source[(String, InputTask), NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName).query(
@@ -126,6 +142,21 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           Seq(
             termQuery("relations", "case_task"),
             hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false)
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
+      .readWithParent[InputTask](json => Try((json \ "_parent").as[String]))
+
+  override def listCaseTasks(caseId: String): Source[(String, InputTask), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_task"),
+            hasParentQuery("case", idsQuery(caseId), score = false)
           ),
           Nil,
           Nil
@@ -153,8 +184,27 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )._1
       .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
 
-  override def listAlerts(filter: Filter): Source[InputAlert, NotUsed] =
+  override def listCaseTaskLogs(caseId: String): Source[(String, InputLog), NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_task_log"),
+            hasParentQuery(
+              "case_task",
+              hasParentQuery("case", idsQuery(caseId), score = false),
+              score = false
+            )
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
+      .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
+
+  override def listAlerts(filter: Filter): Source[InputAlert, NotUsed] =
+    dbFind(Some("all"), Seq("-createdAt"))(indexName =>
       search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(filter.alertFromDate)), Nil, Nil))
     )._1
       .read[InputAlert]
@@ -163,6 +213,35 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(filter.alertFromDate)), Nil, Nil))
     )._1
+      .map { json =>
+        for {
+          metaData        <- json.validate[MetaData]
+          observablesJson <- (json \ "artifacts").validate[Seq[JsValue]]
+        } yield (metaData, observablesJson)
+      }
+      .mapConcat {
+        case JsSuccess(x, _) => List(x)
+        case JsError(errors) =>
+          val errorStr = errors.map(e => s"\n - ${e._1}: ${e._2.mkString(",")}")
+          logger.error(s"Alert observable read failure:$errorStr")
+          Nil
+      }
+      .mapConcat {
+        case (metaData, observablesJson) =>
+          observablesJson.flatMap { observableJson =>
+            observableJson.validate(alertObservableReads(metaData)) match {
+              case JsSuccess(observable, _) => Seq(metaData.id -> observable)
+              case JsError(errors) =>
+                val errorStr = errors.map(e => s"\n - ${e._1}: ${e._2.mkString(",")}")
+                logger.error(s"Alert observable read failure:$errorStr")
+                Nil
+            }
+          }.toList
+      }
+
+  override def listAlertObservables(alertId: String): Source[(String, InputObservable), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(Seq(termQuery("relations", "alert"), idsQuery(alertId)), Nil, Nil)))
+      ._1
       .map { json =>
         for {
           metaData        <- json.validate[MetaData]
@@ -263,6 +342,25 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           }.toList
       }
 
+  def listCaseTemplateTask(caseTemplateId: String): Source[(String, InputTask), NotUsed] =
+    Source
+      .futureSource {
+        dbGet("caseTemplate", caseTemplateId)
+          .map { json =>
+            val metaData = json.as[MetaData]
+            val tasks    = (json \ "tasks").as(Reads.seq(caseTemplateTaskReads(metaData)))
+            Source(tasks.to[immutable.Iterable].map(caseTemplateId -> _))
+          }
+          .recover {
+            case error =>
+              logger.error(s"Case template task read failure:$error")
+              Source.empty
+          }
+      }
+      .mapMaterializedValue(_ => NotUsed)
+
+  dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "caseTemplate")))
+
   override def listJobs(filter: Filter): Source[(String, InputJob), NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName).query(
@@ -272,6 +370,25 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             hasParentQuery(
               "case_artifact",
               hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
+              score = false
+            )
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
+      .readWithParent[InputJob](json => Try((json \ "_parent").as[String]))(jobReads, classTag[InputJob])
+
+  override def listJobs(observableId: String): Source[(String, InputJob), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_artifact_job"),
+            hasParentQuery(
+              "case_artifact",
+              hasParentQuery("case", idsQuery(observableId), score = false),
               score = false
             )
           ),
@@ -301,15 +418,58 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )._1
       .map { json =>
         for {
-          metaData        <- json.validate[MetaData]
-          observablesJson <- (json \ "artifacts").validate[Seq[JsValue]]
+          metaData <- json.validate[MetaData]
+          observablesJson = (json \ "artifacts").asOpt[Seq[JsValue]].getOrElse(Nil)
         } yield (metaData, observablesJson)
       }
       .mapConcat {
         case JsSuccess(x, _) => List(x)
         case JsError(errors) =>
           val errorStr = errors.map(e => s"\n - ${e._1}: ${e._2.mkString(",")}")
-          logger.error(s"Case template task read failure:$errorStr")
+          logger.error(s"Job observable read failure:$errorStr")
+          Nil
+      }
+      .mapConcat {
+        case (metaData, observablesJson) =>
+          observablesJson.flatMap { observableJson =>
+            observableJson.validate(jobObservableReads(metaData)) match {
+              case JsSuccess(observable, _) => Seq(metaData.id -> observable)
+              case JsError(errors) =>
+                val errorStr = errors.map(e => s"\n - ${e._1}: ${e._2.mkString(",")}")
+                logger.error(s"Job observable read failure:$errorStr")
+                Nil
+            }
+          }.toList
+      }
+
+  override def listJobObservables(caseId: String): Source[(String, InputObservable), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "case_artifact_job"),
+            hasParentQuery(
+              "case_artifact",
+              hasParentQuery("case", idsQuery(caseId), score = false),
+              score = false
+            )
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1
+      .map { json =>
+        for {
+          metaData <- json.validate[MetaData]
+          observablesJson = (json \ "artifacts").asOpt[Seq[JsValue]].getOrElse(Nil)
+        } yield (metaData, observablesJson)
+      }
+      .mapConcat {
+        case JsSuccess(x, _) => List(x)
+        case JsError(errors) =>
+          val errorStr = errors.map(e => s"\n - ${e._1}: ${e._2.mkString(",")}")
+          logger.error(s"Job observable read failure:$errorStr")
           Nil
       }
       .mapConcat {
@@ -330,6 +490,11 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       ._1
       .read[(String, InputAction)]
 
+  override def listAction(entityId: String): Source[(String, InputAction), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(Seq(termQuery("relations", "action"), idsQuery(entityId)), Nil, Nil)))
+      ._1
+      .read[(String, InputAction)]
+
   override def listAudit(filter: Filter): Source[(String, InputAudit), NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName).query(
@@ -337,6 +502,21 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           Seq(
             termQuery("relations", "audit"),
             rangeQuery("createdAt").gte(filter.auditFromDate)
+          ),
+          Nil,
+          Nil
+        )
+      )
+    )._1.read[(String, InputAudit)]
+
+  def listAudit(entityId: String, filter: Filter): Source[(String, InputAudit), NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          Seq(
+            termQuery("relations", "audit"),
+            rangeQuery("createdAt").gte(filter.auditFromDate),
+            termQuery("objectId", entityId)
           ),
           Nil,
           Nil

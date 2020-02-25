@@ -140,105 +140,104 @@ class Output @Inject() (
       _            <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
     } yield ()
 
+  override def organisationExists(inputOrganisation: InputOrganisation): Boolean = db.roTransaction { implicit graph =>
+    organisationSrv.initSteps.getByName(inputOrganisation.organisation.name).exists()
+  }
+
   override def createOrganisation(inputOrganisation: InputOrganisation): Try[IdMapping] = authTransaction(inputOrganisation.metaData.createdBy) {
     implicit graph => implicit authContext =>
       logger.info(s"Create organisation ${inputOrganisation.organisation.name}")
       organisationSrv.create(inputOrganisation.organisation).map(o => IdMapping(inputOrganisation.metaData.id, o._id))
   }
 
-  override def createCase(inputCase: InputCase): Try[IdMapping] =
-    authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create case #${inputCase.`case`.number}")
-      val user = inputCase.user.map(userSrv.getOrFail).flip.getOrElse(None)
-      for {
-        tags         <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
-        caseTemplate <- inputCase.caseTemplate.map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail()).flip
-        organisation <- inputCase.organisations.find(_._2 == ProfileSrv.orgAdmin.name) match {
-          case Some(o) => organisationSrv.getOrFail(o._1)
-          case None    => Failure(InternalError("Organisation not found"))
-        }
-        richCase <- caseSrv.create(inputCase.`case`, user, organisation, tags.toSet, Map.empty, caseTemplate, Nil)
-        _ <- inputCase.organisations.toTry {
-          case (org, profile) if org != organisation.name => shareCase(richCase.`case`, org, profile)
-          case _                                          => Success(())
-        }
-        _ = inputCase.customFields.foreach {
-          case (name, value) =>
-            caseSrv
-              .setOrCreateCustomField(richCase.`case`, name, value)
-              .failed
-              .foreach(error => logger.warn(s"Add custom field $name:$value to case #${richCase.number} failure: $error"))
-        }
-      } yield IdMapping(inputCase.metaData.id, richCase._id)
-    }
+  override def userExists(inputUser: InputUser): Boolean = db.roTransaction { implicit graph =>
+    userSrv.initSteps.getByName(inputUser.user.login).exists()
+  }
 
-  override def createCaseObservable(caseId: String, inputObservable: InputObservable): Try[IdMapping] =
-    authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
+  override def createUser(inputUser: InputUser): Try[IdMapping] = authTransaction(inputUser.metaData.createdBy) {
+    implicit graph => implicit authContext =>
+      logger.info(s"Create user ${inputUser.user.login}")
       for {
-        observableType <- observableTypeSrv.getOrFail(inputObservable.`type`)
-        richObservable <- inputObservable.dataOrAttachment match {
-          case Right(inputAttachment) =>
+        validUser <- userSrv.checkUser(inputUser.user)
+        createdUser <- if (userSrv.get(validUser.login).exists())
+          userSrv
+            .get(UserSrv.init.login)
+            .updateOne("name" -> inputUser.user.name, "apikey" -> inputUser.user.apikey, "password" -> inputUser.user.password)
+        else userSrv.createEntity(validUser)
+        _ <- inputUser
+          .avatar
+          .map { inputAttachment =>
             attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
               attachment =>
-                observableSrv.create(inputObservable.observable, observableType, attachment, inputObservable.tags, Nil)
+                userSrv.setAvatar(createdUser, attachment)
             }
-          case Left(data) => observableSrv.create(inputObservable.observable, observableType, data, inputObservable.tags, Nil)
-        }
-        orgs  <- inputObservable.organisations.toTry(organisationSrv.getOrFail)
-        case0 <- caseSrv.getOrFail(caseId)
-        _ <- caseSrv.addObservable(case0, richObservable)(
-          graph,
-          AuthContextImpl(authContext.userId, authContext.userName, orgs.head.name, authContext.requestId, authContext.permissions)
-        )
-        _ <- shareSrv.addObservableShares(richObservable.observable, orgs)
-      } yield IdMapping(inputObservable.metaData.id, richObservable._id)
-    }
-
-  override def createAlertObservable(alertId: String, inputObservable: InputObservable): Try[IdMapping] =
-    authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
-      for {
-        observableType <- observableTypeSrv.getOrFail(inputObservable.`type`)
-        richObservable <- inputObservable.dataOrAttachment match {
-          case Right(inputAttachment) =>
-            attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
-              attachment =>
-                observableSrv.create(inputObservable.observable, observableType, attachment, inputObservable.tags, Nil)
-            }
-          case Left(data) => observableSrv.create(inputObservable.observable, observableType, data, inputObservable.tags, Nil)
-        }
-        alert <- alertSrv.getOrFail(alertId)
-        _     <- alertSrv.addObservable(alert, richObservable)
-      } yield IdMapping(inputObservable.metaData.id, richObservable._id)
-    }
-
-  override def createCaseTask(caseId: String, inputTask: InputTask): Try[IdMapping] =
-    authTransaction(inputTask.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create task ${inputTask.task.title} in case $caseId")
-      for {
-        owner    <- inputTask.owner.map(userSrv.getOrFail).flip
-        richTask <- taskSrv.create(inputTask.task, owner)
-        case0    <- caseSrv.getOrFail(caseId)
-        _ <- inputTask.organisations.toTry { organisation =>
-          organisationSrv.getOrFail(organisation).flatMap(shareSrv.shareTask(richTask, case0, _))
-        }
-      } yield IdMapping(inputTask.metaData.id, richTask._id)
-    }
-
-  def createCaseTaskLog(taskId: String, inputLog: InputLog): Try[IdMapping] =
-    authTransaction(inputLog.metaData.createdBy) { implicit graph => implicit authContext =>
-      for {
-        task <- taskSrv.getOrFail(taskId)
-        _ = logger.info(s"Create log in task ${task.title}")
-        log <- logSrv.create(inputLog.log, task)
-        _ <- inputLog.attachments.toTry { inputAttachment =>
-          attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap { attachment =>
-            logSrv.addAttachment(log, attachment)
           }
+          .flip
+        _ <- inputUser.organisations.toTry {
+          case (organisationName, profileName) =>
+            for {
+              organisation <- organisationSrv.getOrFail(organisationName)
+              profile      <- profileSrv.getOrFail(profileName)
+            } yield roleSrv.create(createdUser, organisation, profile)
         }
-      } yield IdMapping(inputLog.metaData.id, log._id)
+      } yield IdMapping(inputUser.metaData.id, createdUser._id)
+  }
+
+  override def customFieldExists(inputCustomField: InputCustomField): Boolean = db.roTransaction { implicit graph =>
+    customFieldSrv.initSteps.getByName(inputCustomField.customField.name).exists()
+  }
+
+  override def createCustomField(inputCustomField: InputCustomField): Try[IdMapping] = authTransaction(inputCustomField.metaData.createdBy) {
+    implicit graph => implicit authContext =>
+      logger.info(s"Create custom field ${inputCustomField.customField.name}")
+      customFieldSrv.create(inputCustomField.customField).map(cf => IdMapping(inputCustomField.customField.name, cf._id))
+  }
+
+  override def observableTypeExists(inputObservableType: InputObservableType): Boolean = db.roTransaction { implicit graph =>
+    observableTypeSrv.initSteps.getByName(inputObservableType.observableType.name).exists()
+  }
+
+  override def createObservableTypes(inputObservableType: InputObservableType): Try[IdMapping] =
+    authTransaction(inputObservableType.metaData.createdBy) { implicit graph => implicit authContext =>
+      logger.info(s"Create observable types ${inputObservableType.observableType.name}")
+      observableTypeSrv.create(inputObservableType.observableType).map(cf => IdMapping(inputObservableType.observableType.name, cf._id))
     }
+
+  override def profileExists(inputProfile: InputProfile): Boolean = db.roTransaction { implicit graph =>
+    profileSrv.initSteps.getByName(inputProfile.profile.name).exists()
+  }
+
+  override def createProfile(inputProfile: InputProfile): Try[IdMapping] = authTransaction(inputProfile.metaData.createdBy) {
+    implicit graph => implicit authContext =>
+      logger.info(s"Create profile ${inputProfile.profile.name}")
+      profileSrv.create(inputProfile.profile).map(profile => IdMapping(inputProfile.profile.name, profile._id))
+  }
+
+  override def impactStatusExists(inputImpactStatus: InputImpactStatus): Boolean = db.roTransaction { implicit graph =>
+    impactStatusSrv.initSteps.getByName(inputImpactStatus.impactStatus.value).exists()
+  }
+
+  override def createImpactStatus(inputImpactStatus: InputImpactStatus): Try[IdMapping] = authTransaction(inputImpactStatus.metaData.createdBy) {
+    implicit graph => implicit authContext =>
+      logger.info(s"Create impact status ${inputImpactStatus.impactStatus.value}")
+      impactStatusSrv.create(inputImpactStatus.impactStatus).map(status => IdMapping(inputImpactStatus.impactStatus.value, status._id))
+  }
+
+  override def resolutionStatusExists(inputResolutionStatus: InputResolutionStatus): Boolean = db.roTransaction { implicit graph =>
+    resolutionStatusSrv.initSteps.getByName(inputResolutionStatus.resolutionStatus.value).exists()
+  }
+
+  override def createResolutionStatus(inputResolutionStatus: InputResolutionStatus): Try[IdMapping] =
+    authTransaction(inputResolutionStatus.metaData.createdBy) { implicit graph => implicit authContext =>
+      logger.info(s"Create resolution status ${inputResolutionStatus.resolutionStatus.value}")
+      resolutionStatusSrv
+        .create(inputResolutionStatus.resolutionStatus)
+        .map(status => IdMapping(inputResolutionStatus.resolutionStatus.value, status._id))
+    }
+
+  override def caseTemplateExists(inputCaseTemplate: InputCaseTemplate): Boolean = db.roTransaction { implicit graph =>
+    caseTemplateSrv.initSteps.getByName(inputCaseTemplate.caseTemplate.name).exists()
+  }
 
   override def createCaseTemplate(inputCaseTemplate: InputCaseTemplate): Try[IdMapping] = authTransaction(inputCaseTemplate.metaData.createdBy) {
     implicit graph => implicit authContext =>
@@ -268,74 +267,84 @@ class Output @Inject() (
       } yield IdMapping(inputTask.metaData.id, richTask._id)
   }
 
-  override def createAlert(inputAlert: InputAlert): Try[IdMapping] = authTransaction(inputAlert.metaData.createdBy) {
-    implicit graph => implicit authContext =>
-      logger.info(s"Create alert ${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
-      for {
-        organisation <- organisationSrv.getOrFail(inputAlert.organisation)
-        caseTemplate = inputAlert.caseTemplate.flatMap(caseTemplateSrv.get(_).headOption()) // TODO add warning if case template is not found
-        alert <- alertSrv.create(inputAlert.alert, organisation, inputAlert.tags, inputAlert.customFields, caseTemplate)
-        case0 <- inputAlert.caseId.map(caseSrv.getOrFail(_).flatMap(case0 => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, case0))).flip
-        // TODO add link between case and alert
-      } yield IdMapping(inputAlert.metaData.id, alert._id)
+  override def caseExists(inputCase: InputCase): Boolean = db.roTransaction { implicit graph =>
+    caseSrv.initSteps.getByNumber(inputCase.`case`.number).exists()
   }
 
-  def createUser(inputUser: InputUser): Try[IdMapping] = authTransaction(inputUser.metaData.createdBy) { implicit graph => implicit authContext =>
-    logger.info(s"Create user ${inputUser.user.login}")
-    for {
-      validUser <- userSrv.checkUser(inputUser.user)
-      createdUser <- if (userSrv.get(validUser.login).exists())
-        userSrv
-          .get(UserSrv.init.login)
-          .updateOne("name" -> inputUser.user.name, "apikey" -> inputUser.user.apikey, "password" -> inputUser.user.password)
-      else userSrv.createEntity(validUser)
-      _ <- inputUser
-        .avatar
-        .map { inputAttachment =>
+  override def createCase(inputCase: InputCase): Try[IdMapping] =
+    authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
+      logger.info(s"Create case #${inputCase.`case`.number}")
+      val user = inputCase.user.map(userSrv.getOrFail).flip.getOrElse(None)
+      for {
+        tags         <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
+        caseTemplate <- inputCase.caseTemplate.map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail()).flip
+        organisation <- inputCase.organisations.find(_._2 == ProfileSrv.orgAdmin.name) match {
+          case Some(o) => organisationSrv.getOrFail(o._1)
+          case None    => Failure(InternalError("Organisation not found"))
+        }
+        richCase <- caseSrv.create(inputCase.`case`, user, organisation, tags.toSet, Map.empty, caseTemplate, Nil)
+        _ <- inputCase.organisations.toTry {
+          case (org, profile) if org != organisation.name => shareCase(richCase.`case`, org, profile)
+          case _                                          => Success(())
+        }
+        _ = inputCase.customFields.foreach {
+          case (name, value) =>
+            caseSrv
+              .setOrCreateCustomField(richCase.`case`, name, value)
+              .failed
+              .foreach(error => logger.warn(s"Add custom field $name:$value to case #${richCase.number} failure: $error"))
+        }
+      } yield IdMapping(inputCase.metaData.id, richCase._id)
+    }
+
+  override def createCaseTask(caseId: String, inputTask: InputTask): Try[IdMapping] =
+    authTransaction(inputTask.metaData.createdBy) { implicit graph => implicit authContext =>
+      logger.info(s"Create task ${inputTask.task.title} in case $caseId")
+      for {
+        owner    <- inputTask.owner.map(userSrv.getOrFail).flip
+        richTask <- taskSrv.create(inputTask.task, owner)
+        case0    <- caseSrv.getOrFail(caseId)
+        _ <- inputTask.organisations.toTry { organisation =>
+          organisationSrv.getOrFail(organisation).flatMap(shareSrv.shareTask(richTask, case0, _))
+        }
+      } yield IdMapping(inputTask.metaData.id, richTask._id)
+    }
+
+  def createCaseTaskLog(taskId: String, inputLog: InputLog): Try[IdMapping] =
+    authTransaction(inputLog.metaData.createdBy) { implicit graph => implicit authContext =>
+      for {
+        task <- taskSrv.getOrFail(taskId)
+        _ = logger.info(s"Create log in task ${task.title}")
+        log <- logSrv.create(inputLog.log, task)
+        _ <- inputLog.attachments.toTry { inputAttachment =>
           attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap { attachment =>
-            userSrv.setAvatar(createdUser, attachment)
+            logSrv.addAttachment(log, attachment)
           }
         }
-        .flip
-      _ <- inputUser.organisations.toTry {
-        case (organisationName, profileName) =>
-          for {
-            organisation <- organisationSrv.getOrFail(organisationName)
-            profile      <- profileSrv.getOrFail(profileName)
-          } yield roleSrv.create(createdUser, organisation, profile)
-      }
-    } yield IdMapping(inputUser.metaData.id, createdUser._id)
-  }
+      } yield IdMapping(inputLog.metaData.id, log._id)
+    }
 
-  override def createCustomField(inputCustomField: InputCustomField): Try[IdMapping] = authTransaction(inputCustomField.metaData.createdBy) {
-    implicit graph => implicit authContext =>
-      logger.info(s"Create custom field ${inputCustomField.customField.name}")
-      customFieldSrv.create(inputCustomField.customField).map(cf => IdMapping(inputCustomField.customField.name, cf._id))
-  }
-
-  def createObservableTypes(inputObservableType: InputObservableType): Try[IdMapping] = authTransaction(inputObservableType.metaData.createdBy) {
-    implicit graph => implicit authContext =>
-      logger.info(s"Create observable types ${inputObservableType.observableType.name}")
-      observableTypeSrv.create(inputObservableType.observableType).map(cf => IdMapping(inputObservableType.observableType.name, cf._id))
-  }
-  override def createProfile(inputProfile: InputProfile): Try[IdMapping] = authTransaction(inputProfile.metaData.createdBy) {
-    implicit graph => implicit authContext =>
-      logger.info(s"Create profile ${inputProfile.profile.name}")
-      profileSrv.create(inputProfile.profile).map(profile => IdMapping(inputProfile.profile.name, profile._id))
-  }
-
-  override def createImpactStatus(inputImpactStatus: InputImpactStatus): Try[IdMapping] = authTransaction(inputImpactStatus.metaData.createdBy) {
-    implicit graph => implicit authContext =>
-      logger.info(s"Create impact status ${inputImpactStatus.impactStatus.value}")
-      impactStatusSrv.create(inputImpactStatus.impactStatus).map(status => IdMapping(inputImpactStatus.impactStatus.value, status._id))
-  }
-
-  override def createResolutionStatus(inputResolutionStatus: InputResolutionStatus): Try[IdMapping] =
-    authTransaction(inputResolutionStatus.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create resolution status ${inputResolutionStatus.resolutionStatus.value}")
-      resolutionStatusSrv
-        .create(inputResolutionStatus.resolutionStatus)
-        .map(status => IdMapping(inputResolutionStatus.resolutionStatus.value, status._id))
+  override def createCaseObservable(caseId: String, inputObservable: InputObservable): Try[IdMapping] =
+    authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
+      logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
+      for {
+        observableType <- observableTypeSrv.getOrFail(inputObservable.`type`)
+        richObservable <- inputObservable.dataOrAttachment match {
+          case Right(inputAttachment) =>
+            attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
+              attachment =>
+                observableSrv.create(inputObservable.observable, observableType, attachment, inputObservable.tags, Nil)
+            }
+          case Left(data) => observableSrv.create(inputObservable.observable, observableType, data, inputObservable.tags, Nil)
+        }
+        orgs  <- inputObservable.organisations.toTry(organisationSrv.getOrFail)
+        case0 <- caseSrv.getOrFail(caseId)
+        _ <- caseSrv.addObservable(case0, richObservable)(
+          graph,
+          AuthContextImpl(authContext.userId, authContext.userName, orgs.head.name, authContext.requestId, authContext.permissions)
+        )
+        _ <- shareSrv.addObservableShares(richObservable.observable, orgs)
+      } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
 
   override def createJob(observableId: String, inputJob: InputJob): Try[IdMapping] =
@@ -365,12 +374,46 @@ class Output @Inject() (
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
 
+  override def alertExists(inputAlert: InputAlert): Boolean = db.roTransaction { implicit graph =>
+    alertSrv.initSteps.getBySourceId(inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef).exists()
+  }
+
+  override def createAlert(inputAlert: InputAlert): Try[IdMapping] = authTransaction(inputAlert.metaData.createdBy) {
+    implicit graph => implicit authContext =>
+      logger.info(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
+      for {
+        organisation <- organisationSrv.getOrFail(inputAlert.organisation)
+        caseTemplate = inputAlert.caseTemplate.flatMap(caseTemplateSrv.get(_).headOption()) // TODO add warning if case template is not found
+        alert <- alertSrv.create(inputAlert.alert, organisation, inputAlert.tags, inputAlert.customFields, caseTemplate)
+        _     <- inputAlert.caseId.map(caseSrv.getOrFail(_).flatMap(case0 => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, case0))).flip
+      } yield IdMapping(inputAlert.metaData.id, alert._id)
+  }
+
+  override def createAlertObservable(alertId: String, inputObservable: InputObservable): Try[IdMapping] =
+    authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
+      logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
+      for {
+        observableType <- observableTypeSrv.getOrFail(inputObservable.`type`)
+        richObservable <- inputObservable.dataOrAttachment match {
+          case Right(inputAttachment) =>
+            attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
+              attachment =>
+                observableSrv.create(inputObservable.observable, observableType, attachment, inputObservable.tags, Nil)
+            }
+          case Left(data) => observableSrv.create(inputObservable.observable, observableType, data, inputObservable.tags, Nil)
+        }
+        alert <- alertSrv.getOrFail(alertId)
+        _     <- alertSrv.addObservable(alert, richObservable)
+      } yield IdMapping(inputObservable.metaData.id, richObservable._id)
+    }
+
   def getEntity(entityType: String, entityId: String)(implicit graph: Graph): Try[Entity] = entityType match {
     case "Task"       => taskSrv.getOrFail(entityId)
     case "Case"       => caseSrv.getOrFail(entityId)
     case "Observable" => observableSrv.getOrFail(entityId)
     case "Log"        => logSrv.getOrFail(entityId)
     case "Alert"      => alertSrv.getOrFail(entityId)
+    case "Job"        => jobSrv.getOrFail(entityId)
     case _            => Failure(BadRequestError(s"objectType $entityType is not recognised"))
   }
 
@@ -394,9 +437,12 @@ class Output @Inject() (
           i <- inputAudit.audit.objectId
         } yield getEntity(t, i)).flip
         ctxType = obj.map(_._model.label).map {
-          case "Log"   => "Task"
-          case "Share" => "Case"
-          case other   => other
+          case "Alert"                                        => "Alert"
+          case "Log" | "Task" | "Observable" | "Case" | "Job" => "Case"
+          case "User"                                         => "User"
+          case other =>
+            logger.error(s"Unknown object type: $other")
+            other
         }
         context <- ctxType.map(getEntity(_, contextId)).flip
         _       <- auditSrv.create(inputAudit.audit, context, obj)

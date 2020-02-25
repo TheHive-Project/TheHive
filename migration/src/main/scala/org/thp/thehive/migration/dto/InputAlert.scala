@@ -10,4 +10,6 @@ case class InputAlert(
     tags: Set[String],
     customFields: Map[String, Option[Any]],
     caseTemplate: Option[String]
-)
+) {
+  def updateCaseId(caseId: Option[String]): InputAlert = copy(caseId = caseId)
+}

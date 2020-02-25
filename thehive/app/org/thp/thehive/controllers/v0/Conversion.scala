@@ -613,11 +613,13 @@ object Conversion {
   }
 
   def toObjectType(t: String): String = t match {
-    case "case"          => "Case"
-    case "case_artifact" => "Observable"
-    case "case_task"     => "Task"
-    case "case_task_log" => "Log"
-    case "alert"         => "Alert"
+    case "case"              => "Case"
+    case "case_artifact"     => "Observable"
+    case "case_task"         => "Task"
+    case "case_task_log"     => "Log"
+    case "alert"             => "Alert"
+    case "case_artifact_job" => "Job"
+    case "action"            => "Action"
   }
 
   def permissions2Roles(permissions: Set[Permission]): Set[String] = {
