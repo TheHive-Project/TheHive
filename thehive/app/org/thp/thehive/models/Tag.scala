@@ -25,8 +25,8 @@ case class Tag(
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Tag]
 
   override def toString: String =
-    (if (namespace(0) == '_') "" else namespace + '.') +
-      (if (predicate(0) == '_') "" else predicate) +
+    (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + '.') +
+      (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
       value.fold("")(v => f"""="$v"""") // #$colour%06X
 }
 
