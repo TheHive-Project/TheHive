@@ -49,7 +49,6 @@ class JobSrv @Inject() (
     implicit val mat: Materializer
 ) extends VertexSrv[Job, JobSteps] {
 
-  lazy val logger: Logger = Logger(getClass)
   val observableJobSrv    = new EdgeSrv[ObservableJob, Observable, Job]
   val reportObservableSrv = new EdgeSrv[ReportObservable, Job, Observable]
 

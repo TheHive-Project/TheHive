@@ -31,7 +31,6 @@ class AuditSrv @Inject() (
     eventSrv: EventSrv
 )(implicit db: Database, schema: Schema)
     extends VertexSrv[Audit, AuditSteps] { auditSrv =>
-  lazy val logger: Logger                                 = Logger(getClass)
   lazy val userSrv: UserSrv                               = userSrvProvider.get
   val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv                                          = new EdgeSrv[Audited, Audit, Product]
