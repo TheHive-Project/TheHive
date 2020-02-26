@@ -6,7 +6,7 @@ import scala.util.{Failure, Success, Try}
 import play.api.inject.guice.GuiceInjector
 import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
 import play.api.libs.concurrent.AkkaGuiceSupport
-import play.api.{Configuration, Environment}
+import play.api.{Configuration, Environment, Logger}
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -19,7 +19,7 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Entity, Schema}
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.services.{DatabaseStorageSrv, HadoopStorageSrv, LocalFileSystemStorageSrv, S3StorageSrv, StorageSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.cortex.models.{SchemaUpdater => CortexSchemaUpdater}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
@@ -51,7 +51,7 @@ import org.thp.thehive.services.{
 
 object Output {
 
-  def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Output =
+  private def buildApp(configuration: Configuration)(implicit actorSystem: ActorSystem) =
     Guice
       .createInjector(new ScalaModule with AkkaGuiceSupport {
         override def configure(): Unit = {
@@ -67,18 +67,30 @@ object Output {
           bind[Database].to[JanusDatabase]
           //    bind[Database].to[OrientDatabase]
           //    bind[Database].to[RemoteJanusDatabase]
-          bind[StorageSrv].to[LocalFileSystemStorageSrv]
-          //    bind[StorageSrv].to[HadoopStorageSrv]
           bind[Configuration].toInstance(configuration)
           bind[Environment].toInstance(Environment.simple())
           bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
           bind[Schema].to[TheHiveSchema]
           bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
+          configuration.get[String]("storage.provider") match {
+            case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
+            case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
+            case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
+            case "s3"       => bind(classOf[StorageSrv]).to(classOf[S3StorageSrv])
+          }
           bind[TheHiveSchemaUpdater].asEagerSingleton()
           bind[CortexSchemaUpdater].asEagerSingleton()
         }
       })
-      .getInstance(classOf[Output])
+
+  def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Output = {
+    if (configuration.getOptional[Boolean]("dropDatabase").contains(true)) {
+      Logger(getClass).info("Drop database")
+      new JanusDatabase(configuration, actorSystem).drop()
+    }
+    buildApp(configuration).getInstance(classOf[Output])
+
+  }
 }
 
 @Singleton
@@ -106,7 +118,7 @@ class Output @Inject() (
     actionSrv: ActionSrv,
     db: Database
 ) extends migration.Output {
-
+  lazy val logger: Logger               = Logger(getClass)
   lazy val observableSrv: ObservableSrv = observableSrvProvider.get
 
   def getAuthContext(userId: String)(implicit graph: Graph): AuthContext =
@@ -122,12 +134,6 @@ class Output @Inject() (
 
   def authTransaction[A](userId: String)(body: Graph => AuthContext => Try[A]): Try[A] = db.tryTransaction { implicit graph =>
     auditSrv.mergeAudits(body(graph)(getAuthContext(userId)))(_ => Success(()))
-  }
-
-  override def removeData(): Try[Unit] = db.tryTransaction { graph =>
-    logger.info(s"Remove data")
-    graph.V.drop().iterate()
-    Success(())
   }
 
   def shareCase(`case`: Case with Entity, organisationName: String, profileName: String)(

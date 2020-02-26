@@ -53,44 +53,6 @@ trait MigrationOps {
       }
       .runWith(Sink.seq)
 
-  @deprecated("0.1", "use migrate()")
-  def process(input: Input, output: Output, filter: Filter, removeData: Boolean)(
-      implicit ec: ExecutionContext,
-      mat: Materializer
-  ): Future[Unit] = {
-    if (removeData) output.removeData()
-    for {
-      profileIds          <- migrate(input.listProfiles(filter).filterNot(output.profileExists), output.createProfile)
-      organisationIds     <- migrate(input.listOrganisations(filter).filterNot(output.organisationExists), output.createOrganisation)
-      userIds             <- migrate(input.listUsers(filter).filterNot(output.userExists), output.createUser)
-      impactStatusIds     <- migrate(input.listImpactStatus(filter).filterNot(output.impactStatusExists), output.createImpactStatus)
-      resolutionStatusIds <- migrate(input.listResolutionStatus(filter).filterNot(output.resolutionStatusExists), output.createResolutionStatus)
-      customFieldsIds     <- migrate(input.listCustomFields(filter).filterNot(output.customFieldExists), output.createCustomField)
-      observableTypeIds   <- migrate(input.listObservableTypes(filter).filterNot(output.observableTypeExists), output.createObservableTypes)
-      caseTemplateIds     <- migrate(input.listCaseTemplate(filter).filterNot(output.caseTemplateExists), output.createCaseTemplate)
-      caseTemplateTaskIds <- migrateWithParent(caseTemplateIds, input.listCaseTemplateTask(filter), output.createCaseTemplateTask)
-      caseIds             <- migrate(input.listCases(filter), output.createCase)
-      caseObservableIds   <- migrateWithParent(caseIds, input.listCaseObservables(filter), output.createCaseObservable)
-      caseTaskIds         <- migrateWithParent(caseIds, input.listCaseTasks(filter), output.createCaseTask)
-      caseTaskLogIds      <- migrateWithParent(caseTaskIds, input.listCaseTaskLogs(filter), output.createCaseTaskLog)
-      alertIds            <- migrate(input.listAlerts(filter), output.createAlert)
-      alertObservableIds  <- migrateWithParent(alertIds, input.listAlertObservables(filter), output.createAlertObservable)
-      jobIds              <- migrateWithParent(caseObservableIds, input.listJobs(filter), output.createJob)
-      jobObservableIds    <- migrateWithParent(jobIds, input.listJobObservables(filter), output.createJobObservable)
-      actionIds <- migrateWithParent(
-        caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds ++ alertIds,
-        input.listAction(filter),
-        output.createAction
-      )
-      _ <- migrateAudit(
-        profileIds ++ organisationIds ++ userIds ++ impactStatusIds ++ resolutionStatusIds ++ customFieldsIds ++ observableTypeIds ++ caseTemplateIds ++ caseTemplateTaskIds ++
-          caseIds ++ caseObservableIds ++ caseTaskIds ++ caseTaskLogIds ++ alertIds ++ alertObservableIds ++ jobIds ++ jobObservableIds ++ actionIds,
-        input.listAudit(filter),
-        output.createAudit
-      )
-    } yield ()
-  }
-
   def migrateAudit(ids: Seq[IdMapping], source: Source[(String, InputAudit), NotUsed], create: (String, InputAudit) => Try[Unit])(
       implicit ec: ExecutionContext,
       mat: Materializer
@@ -193,7 +155,7 @@ trait MigrationOps {
       .runWith(Sink.ignore)
       .map(_ => ())
 
-  def migrate(input: Input, output: Output, filter: Filter, removeData: Boolean)(
+  def migrate(input: Input, output: Output, filter: Filter)(
       implicit ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] = {

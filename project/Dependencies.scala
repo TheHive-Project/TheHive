@@ -52,6 +52,7 @@ object Dependencies {
   lazy val pbkdf2                  = "io.github.nremond"        %% "pbkdf2-scala"                       % "0.6.5"
   lazy val alpakkaS3               = "com.lightbend.akka"       %% "akka-stream-alpakka-s3"             % "1.1.2"
   lazy val commonCodec             = "commons-codec"            % "commons-codec"                       % "1.11"
+  lazy val scopt                   = "com.github.scopt"         %% "scopt"                              % "4.0.0-RC2"
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang" % "scala-reflect"  % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang" % "scala-compiler" % scalaVersion

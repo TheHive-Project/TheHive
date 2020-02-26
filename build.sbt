@@ -64,12 +64,24 @@ lazy val scalligraph = (project in file("ScalliGraph"))
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
   .dependsOn(thehiveCore, thehiveCortex, thehiveMisp, thehiveFrontend)
-  .aggregate(scalligraph, thehiveCore, thehiveDto, thehiveClient, thehiveFrontend, thehiveCortex, thehiveMisp, cortexClient, mispClient)
+  .aggregate(
+    scalligraph,
+    thehiveCore,
+    thehiveDto,
+    thehiveClient,
+    thehiveFrontend,
+    thehiveCortex,
+    thehiveMisp,
+    cortexClient,
+    mispClient,
+    thehiveMigration
+  )
   .settings(
     name := "thehive",
     crossScalaVersions := Nil,
     PlayKeys.playMonitoredFiles ~= (_.filter(f => f.compareTo(file("frontend/app").getAbsoluteFile) != 0)),
     PlayKeys.devSettings += "play.server.provider" -> "org.thp.thehive.CustomAkkaHttpServerProvider",
+    Universal / mappings ++= (thehiveMigration / Universal / mappings).value,
     Compile / run := {
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated
@@ -268,9 +280,11 @@ lazy val thehiveMigration = (project in file("migration"))
       elastic4sHttp,
       jts,
       ehcache,
+      scopt,
       specs % Test
     ),
     dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
     fork := true,
-    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml")
+    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml"),
+    normalizedName := "migrate"
   )
