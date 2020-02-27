@@ -38,7 +38,7 @@
                             </td>
                             <td class="vmiddle">
                                 <div class="btn-group btn-group-sm" ng-if="analyzer.template.id">
-                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer)">View Template</button>
+                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(vm.analyzers[analyzerId])">View Template</button>
                                     <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.template)"><i class="fa fa-times"></i></button>
                                 </div>
                                 <div class="btn-group btn-group-sm" ng-if="!analyzer.template.id">
