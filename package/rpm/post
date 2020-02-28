@@ -1,0 +1,6 @@
+# Chown definitions created by SBT Native Packager
+chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/secret.conf
+chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/secret.conf
+if test -x /bin/systemctl; then
+ 	/bin/systemctl daemon-reload
+ fi

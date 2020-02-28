@@ -1,6 +1,7 @@
 import Common.{betaVersion, snapshotVersion, stableVersion}
 
 linuxPackageMappings in Debian += packageMapping(file("LICENSE") -> "/usr/share/doc/thehive/copyright").withPerms("644")
+name in Debian := "thehive4"
 version in Debian := {
   version.value match {
     case stableVersion(_, _)   => version.value
