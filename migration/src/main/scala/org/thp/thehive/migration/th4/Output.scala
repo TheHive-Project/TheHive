@@ -343,13 +343,9 @@ class Output @Inject() (
             }
           case Left(data) => observableSrv.create(inputObservable.observable, observableType, data, inputObservable.tags, Nil)
         }
-        orgs  <- inputObservable.organisations.toTry(organisationSrv.getOrFail)
         case0 <- caseSrv.getOrFail(caseId)
-        _ <- caseSrv.addObservable(case0, richObservable)(
-          graph,
-          AuthContextImpl(authContext.userId, authContext.userName, orgs.head.name, authContext.requestId, authContext.permissions)
-        )
-        _ <- shareSrv.addObservableShares(richObservable.observable, orgs)
+        orgs  <- inputObservable.organisations.toTry(organisationSrv.getOrFail)
+        _     <- orgs.toTry(o => shareSrv.shareObservable(richObservable, case0, o))
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
 
