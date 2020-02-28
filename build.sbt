@@ -1,8 +1,9 @@
 import Dependencies._
 
-lazy val scala212               = "2.12.10"
-lazy val scala213               = "2.13.1"
-lazy val supportedScalaVersions = List(scala212, scala213)
+val thehiveVersion         = "4.0.0-RC1"
+val scala212               = "2.12.10"
+val scala213               = "2.13.1"
+val supportedScalaVersions = List(scala212, scala213)
 
 organization in ThisBuild := "org.thp"
 scalaVersion in ThisBuild := scala212
@@ -57,6 +58,7 @@ libraryDependencies in ThisBuild ++= {
     case _                       => compilerPlugin(macroParadise) :: Nil
   }
 }
+PlayKeys.includeDocumentationInBinary := false
 
 lazy val scalligraph = (project in file("ScalliGraph"))
   .settings(name := "scalligraph")
@@ -73,15 +75,17 @@ lazy val thehive = (project in file("."))
     thehiveCortex,
     thehiveMisp,
     cortexClient,
-    mispClient,
-    thehiveMigration
+    mispClient
   )
   .settings(
     name := "thehive",
+    version := thehiveVersion,
     crossScalaVersions := Nil,
     PlayKeys.playMonitoredFiles ~= (_.filter(f => f.compareTo(file("frontend/app").getAbsoluteFile) != 0)),
     PlayKeys.devSettings += "play.server.provider" -> "org.thp.thehive.CustomAkkaHttpServerProvider",
     Universal / mappings ++= (thehiveMigration / Universal / mappings).value,
+    Debian / aggregate := false,
+    Rpm / aggregate := false,
     Compile / run := {
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated
@@ -97,6 +101,7 @@ lazy val thehiveCore = (project in file("thehive"))
   .dependsOn(thehiveClient % Test)
   .settings(
     name := "thehive-core",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       chimney,
       guice,
@@ -119,7 +124,8 @@ lazy val thehiveCore = (project in file("thehive"))
 lazy val thehiveDto = (project in file("dto"))
   .dependsOn(scalligraph)
   .settings(
-    name := "thehive-dto"
+    name := "thehive-dto",
+    version := thehiveVersion
   )
 
 lazy val thehiveClient = (project in file("client"))
@@ -127,6 +133,7 @@ lazy val thehiveClient = (project in file("client"))
   .dependsOn(clientCommon)
   .settings(
     name := "thehive-client",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       ws
     )
@@ -140,6 +147,7 @@ lazy val gruntBuild = taskKey[Seq[(File, String)]]("Build frontend files")
 lazy val thehiveFrontend = (project in file("frontend"))
   .settings(
     name := "thehive-frontend",
+    version := thehiveVersion,
     npm :=
       FileBuilder(
         label = "npm",
@@ -196,6 +204,7 @@ lazy val clientCommon = (project in file("client-common"))
   .dependsOn(scalligraph)
   .settings(
     name := "client-common",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       ws,
       specs % Test
@@ -210,6 +219,7 @@ lazy val thehiveCortex = (project in file("cortex/connector"))
   .dependsOn(scalligraph % "test -> test")
   .settings(
     name := "thehive-cortex",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       reflections,
       specs % Test
@@ -220,6 +230,7 @@ lazy val cortexDto = (project in file("cortex/dto"))
   .dependsOn(scalligraph)
   .settings(
     name := "cortex-dto",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       chimney
     )
@@ -231,6 +242,7 @@ lazy val cortexClient = (project in file("cortex/client"))
   .dependsOn(scalligraph % "test -> test")
   .settings(
     name := "cortex-client",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       ws,
       specs            % Test,
@@ -246,6 +258,7 @@ lazy val thehiveMisp = (project in file("misp/connector"))
   .dependsOn(thehiveCore % "test -> test")
   .settings(
     name := "thehive-misp",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       specs      % Test,
       playMockws % Test
@@ -257,6 +270,7 @@ lazy val mispClient = (project in file("misp/client"))
   .dependsOn(clientCommon)
   .settings(
     name := "misp-client",
+    version := thehiveVersion,
     libraryDependencies ++= Seq(
       ws,
       alpakka,
@@ -272,6 +286,7 @@ lazy val thehiveMigration = (project in file("migration"))
   .dependsOn(thehiveCortex)
   .settings(
     name := "thehive-migration",
+    version := thehiveVersion,
     resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
     crossScalaVersions := Seq(scala212),
     libraryDependencies ++= Seq(
@@ -285,6 +300,30 @@ lazy val thehiveMigration = (project in file("migration"))
     ),
     dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
     fork := true,
-    javaOptions := Seq("-Dlogger.file=../conf/migration-logback.xml"),
     normalizedName := "migrate"
+  )
+
+lazy val rpmPackageRelease = (project in file("package/rpm-release"))
+  .enablePlugins(RpmPlugin)
+  .settings(
+    name := "thehive-project-release",
+    maintainer := "TheHive Project <support@thehive-project.org>",
+    version := "1.2.0",
+    rpmRelease := "1",
+    rpmVendor := "TheHive Project",
+    rpmUrl := Some("http://thehive-project.org/"),
+    rpmLicense := Some("AGPL"),
+    maintainerScripts in Rpm := Map.empty,
+    linuxPackageSymlinks in Rpm := Nil,
+    packageSummary := "TheHive-Project RPM repository",
+    packageDescription :=
+      """This package contains the TheHive-Project packages repository
+        |GPG key as well as configuration for yum.""".stripMargin,
+    linuxPackageMappings in Rpm := Seq(
+      packageMapping(
+        file("PGP-PUBLIC-KEY")                       -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
+        file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
+        file("LICENSE")                              -> "/usr/share/doc/thehive-project-release/LICENSE"
+      )
+    )
   )
