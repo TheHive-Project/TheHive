@@ -89,6 +89,7 @@ case "$1" in
     chown thehive:thehive /var/log/thehive
     chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/secret.conf
     chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/secret.conf
+    test -x /bin/systemd && /bin/systemd daemon-reload
     test -n "$2" && service thehive start
     exit 0
   ;;

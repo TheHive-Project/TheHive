@@ -89,6 +89,7 @@ then
   # Chown definitions created by SBT Native Packager
   chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/secret.conf
   chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/secret.conf
+  test -x /bin/systemd && /bin/systemd daemon-reload
 fi
 
 if [ -e /etc/sysconfig/thehive ] ;

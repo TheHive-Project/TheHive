@@ -28,7 +28,7 @@ linuxPackageMappings ~= {
       .mappings
       .map(remapPath("thehive4", "thehive", "/etc", "/opt", "/var/log"))
       .filterNot {
-        case (_, path) => path.startsWith("/opt/thehive/conf") || path.startsWith("/usr/bin")
+        case (_, path) => path.startsWith("/opt/thehive/conf") || path.startsWith("/usr/bin") || path == "/etc/thehive/application.conf"
       }
     com.typesafe.sbt.packager.linux.LinuxPackageMapping(mappings, pm.fileData)
   }

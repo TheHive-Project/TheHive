@@ -1,4 +1,4 @@
-import Common.{betaVersion, remapPath, snapshotVersion, stableVersion}
+import Common.{betaVersion, snapshotVersion, stableVersion}
 
 linuxPackageMappings in Debian += packageMapping(file("LICENSE") -> "/usr/share/doc/thehive/copyright").withPerms("644")
 version in Debian := {
