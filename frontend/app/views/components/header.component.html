@@ -122,24 +122,24 @@
                                 <span class="hpad5">Case custom fields</span>
                             </a>
                         </li>
-                        <li if-permission="manageAnalyzerTemplate">
-                            <a ui-sref="app.administration.analyzer-templates">
-                                <i class="fa fa-file-text"></i>
-                                <span class="hpad5">Analyzer templates</span>
-                            </a>
-                        </li>
                         <li if-permission="manageObservableTemplate">
                             <a ui-sref="app.administration.observables">
                                 <i class="glyphicon glyphicon-pushpin"></i>
                                 <span class="hpad5">Observable types</span>
                             </a>
                         </li>
-                        <li>
+                        <li if-permission="manageAnalyzerTemplate">
+                            <a ui-sref="app.administration.analyzer-templates">
+                                <i class="fa fa-file-text"></i>
+                                <span class="hpad5">Analyzer templates</span>
+                            </a>
+                        </li>                        
+                        <!-- <li>
                             <a ui-sref="app.administration.ui-settings">
                                 <i class="fa fa-cogs"></i>
                                 <span class="hpad5">UI settings</span>
                             </a>
-                        </li>
+                        </li> -->
                     </ul>
                 </li>
 
