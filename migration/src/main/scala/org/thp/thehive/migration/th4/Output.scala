@@ -26,7 +26,7 @@ import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
 import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
-import org.thp.thehive.models.{AlertCase, Case, Permissions, TheHiveSchema, SchemaUpdater => TheHiveSchemaUpdater}
+import org.thp.thehive.models.{AlertCase, AlertObservable, Case, Permissions, TheHiveSchema, SchemaUpdater => TheHiveSchemaUpdater}
 import org.thp.thehive.services.{
   AlertSrv,
   AttachmentSrv,
@@ -405,7 +405,7 @@ class Output @Inject() (
           case Left(data) => observableSrv.create(inputObservable.observable, observableType, data, inputObservable.tags, Nil)
         }
         alert <- alertSrv.getOrFail(alertId)
-        _     <- alertSrv.addObservable(alert, richObservable)
+        _     <- alertSrv.alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
 
