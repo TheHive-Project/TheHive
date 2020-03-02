@@ -1,3 +1,12 @@
+---
+name: Bug report 
+about: Create a report to help us improve
+title: "[Bug]"
+labels: bug
+assignees: ''
+
+---
+
 # EDIT THIS TITLE BEFORE POSTING. Use this template for bug reports. If you'd like to request a feature, please be as descriptive as possible and delete the template except the first section (Request Type)
 
 ### Request Type
