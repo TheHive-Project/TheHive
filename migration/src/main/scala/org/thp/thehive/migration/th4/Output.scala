@@ -1,8 +1,12 @@
 package org.thp.thehive.migration.th4
 
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
+import play.api.cache.SyncCacheApi
+import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
 import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
 import play.api.libs.concurrent.AkkaGuiceSupport
@@ -26,7 +30,16 @@ import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
 import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
-import org.thp.thehive.models.{AlertCase, AlertObservable, Case, Permissions, TheHiveSchema, SchemaUpdater => TheHiveSchemaUpdater}
+import org.thp.thehive.models.{
+  AlertCase,
+  AlertObservable,
+  Case,
+  ObservableType,
+  Organisation,
+  Permissions,
+  TheHiveSchema,
+  SchemaUpdater => TheHiveSchemaUpdater
+}
 import org.thp.thehive.services.{
   AlertSrv,
   AttachmentSrv,
@@ -53,35 +66,39 @@ object Output {
 
   private def buildApp(configuration: Configuration)(implicit actorSystem: ActorSystem) =
     Guice
-      .createInjector(new ScalaModule with AkkaGuiceSupport {
-        override def configure(): Unit = {
-          bind[Configuration].toInstance(configuration)
-          bind[ActorSystem].toInstance(actorSystem)
-          bind[Materializer].toInstance(Materializer(actorSystem))
-          bind[ExecutionContext].toInstance(actorSystem.dispatcher)
-          bind[Injector].to[GuiceInjector]
-          bind[UserDB].to[LocalUserSrv]
-          bindActor[DummyActor]("notification-actor")
-          bindActor[DummyActor]("config-actor")
-          bindActor[DummyActor]("cortex-actor")
-          bind[Database].to[JanusDatabase]
-          //    bind[Database].to[OrientDatabase]
-          //    bind[Database].to[RemoteJanusDatabase]
-          bind[Configuration].toInstance(configuration)
-          bind[Environment].toInstance(Environment.simple())
-          bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-          bind[Schema].to[TheHiveSchema]
-          bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
-          configuration.get[String]("storage.provider") match {
-            case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
-            case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
-            case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
-            case "s3"       => bind(classOf[StorageSrv]).to(classOf[S3StorageSrv])
-          }
-          bind[TheHiveSchemaUpdater].asEagerSingleton()
-          bind[CortexSchemaUpdater].asEagerSingleton()
-        }
-      })
+      .createInjector(
+        (play.api.inject.guice.GuiceableModule.guiceable(new EhCacheModule).guiced(Environment.simple(), configuration, Set.empty) :+
+          new ScalaModule with AkkaGuiceSupport {
+            override def configure(): Unit = {
+              bind[Configuration].toInstance(configuration)
+              bind[ActorSystem].toInstance(actorSystem)
+              bind[Materializer].toInstance(Materializer(actorSystem))
+              bind[ExecutionContext].toInstance(actorSystem.dispatcher)
+              bind[Injector].to[GuiceInjector]
+              bind[UserDB].to[LocalUserSrv]
+              bindActor[DummyActor]("notification-actor")
+              bindActor[DummyActor]("config-actor")
+              bindActor[DummyActor]("cortex-actor")
+              bind[AuditSrv].to[NoAuditSrv]
+              bind[Database].to[JanusDatabase]
+              //    bind[Database].to[OrientDatabase]
+              //    bind[Database].to[RemoteJanusDatabase]
+              bind[Configuration].toInstance(configuration)
+              bind[Environment].toInstance(Environment.simple())
+              bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
+              bind[Schema].to[TheHiveSchema]
+              bind[Int].annotatedWith(Names.named("schemaVersion")).toInstance(1)
+              configuration.get[String]("storage.provider") match {
+                case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
+                case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
+                case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
+                case "s3"       => bind(classOf[StorageSrv]).to(classOf[S3StorageSrv])
+              }
+              bind[TheHiveSchemaUpdater].asEagerSingleton()
+              bind[CortexSchemaUpdater].asEagerSingleton()
+            }
+          }).asJava
+      )
 
   def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Output = {
     if (configuration.getOptional[Boolean]("dropDatabase").contains(true)) {
@@ -116,24 +133,33 @@ class Output @Inject() (
     resolutionStatusSrv: ResolutionStatusSrv,
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
-    db: Database
+    db: Database,
+    cache: SyncCacheApi
 ) extends migration.Output {
   lazy val logger: Logger               = Logger(getClass)
   lazy val observableSrv: ObservableSrv = observableSrvProvider.get
 
-  def getAuthContext(userId: String)(implicit graph: Graph): AuthContext =
-    userSrv
-      .getOrFail(userId)
-      .map { user =>
-        AuthContextImpl(user.login, user.name, "admin", "mig-request", Permissions.all)
+  def getAuthContext(userId: String)(implicit graph: Graph): AuthContext = {
+    val cacheId = s"user-$userId"
+    cache
+      .getOrElseUpdate(cacheId) {
+        userSrv
+          .getOrFail(userId)
+          .map { user =>
+            AuthContextImpl(user.login, user.name, "admin", "mig-request", Permissions.all)
+          }
       }
       .getOrElse {
-        if (userId != "init") logger.warn(s"User $userId not found, use system user")
+        if (userId != "init") {
+          cache.remove(cacheId)
+          logger.warn(s"User $userId not found, use system user")
+        }
         localUserSrv.getSystemAuthContext
       }
+  }
 
   def authTransaction[A](userId: String)(body: Graph => AuthContext => Try[A]): Try[A] = db.tryTransaction { implicit graph =>
-    auditSrv.mergeAudits(body(graph)(getAuthContext(userId)))(_ => Success(()))
+    body(graph)(getAuthContext(userId))
   }
 
   def shareCase(`case`: Case with Entity, organisationName: String, profileName: String)(
@@ -141,7 +167,7 @@ class Output @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      organisation <- organisationSrv.getOrFail(organisationName)
+      organisation <- getOrganisation(organisationName)
       profile      <- profileSrv.getOrFail(profileName)
       _            <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
     } yield ()
@@ -182,7 +208,7 @@ class Output @Inject() (
         _ <- inputUser.organisations.toTry {
           case (organisationName, profileName) =>
             for {
-              organisation <- organisationSrv.getOrFail(organisationName)
+              organisation <- getOrganisation(organisationName)
               profile      <- profileSrv.getOrFail(profileName)
             } yield roleSrv.create(createdUser, organisation, profile)
         }
@@ -249,7 +275,7 @@ class Output @Inject() (
     implicit graph => implicit authContext =>
       logger.info(s"Create case template ${inputCaseTemplate.caseTemplate.name}")
       for {
-        organisation     <- organisationSrv.getOrFail(inputCaseTemplate.organisation)
+        organisation     <- getOrganisation(inputCaseTemplate.organisation)
         richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.caseTemplate, organisation, inputCaseTemplate.tags, Nil, Nil)
         _                <- caseTemplateSrv.addTags(richCaseTemplate.caseTemplate, inputCaseTemplate.tags)
         _ = inputCaseTemplate.customFields.foreach {
@@ -285,7 +311,7 @@ class Output @Inject() (
         tags         <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
         caseTemplate <- inputCase.caseTemplate.map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail()).flip
         organisation <- inputCase.organisations.find(_._2 == ProfileSrv.orgAdmin.name) match {
-          case Some(o) => organisationSrv.getOrFail(o._1)
+          case Some(o) => getOrganisation(o._1)
           case None    => Failure(InternalError("Organisation not found"))
         }
         richCase <- caseSrv.create(inputCase.`case`, user, organisation, tags.toSet, Map.empty, caseTemplate, Nil)
@@ -309,9 +335,9 @@ class Output @Inject() (
       for {
         owner    <- inputTask.owner.map(userSrv.getOrFail).flip
         richTask <- taskSrv.create(inputTask.task, owner)
-        case0    <- caseSrv.getOrFail(caseId)
+        case0    <- getCase(caseId)
         _ <- inputTask.organisations.toTry { organisation =>
-          organisationSrv.getOrFail(organisation).flatMap(shareSrv.shareTask(richTask, case0, _))
+          getOrganisation(organisation).flatMap(shareSrv.shareTask(richTask, case0, _))
         }
       } yield IdMapping(inputTask.metaData.id, richTask._id)
     }
@@ -330,11 +356,32 @@ class Output @Inject() (
       } yield IdMapping(inputLog.metaData.id, log._id)
     }
 
+  def getObservableType(typeName: String)(implicit graph: Graph): Try[ObservableType with Entity] = {
+    val cacheKey = s"observableType-$typeName"
+    cache.getOrElseUpdate(cacheKey) {
+      observableTypeSrv.initSteps.getByName(typeName).getOrFail()
+    }
+  }
+
+  def getCase(caseId: String)(implicit graph: Graph): Try[Case with Entity] = {
+    val cacheKey = s"case-$caseId"
+    cache.getOrElseUpdate(cacheKey, 5.minutes) {
+      caseSrv.getByIds(caseId).getOrFail()
+    }
+  }
+
+  def getOrganisation(organisationName: String)(implicit graph: Graph): Try[Organisation with Entity] = {
+    val cacheKey = s"organisation-$organisationName"
+    cache.getOrElseUpdate(cacheKey) {
+      organisationSrv.initSteps.getByName(organisationName).getOrFail()
+    }
+  }
+
   override def createCaseObservable(caseId: String, inputObservable: InputObservable): Try[IdMapping] =
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
       for {
-        observableType <- observableTypeSrv.getOrFail(inputObservable.`type`)
+        observableType <- getObservableType(inputObservable.`type`)
         richObservable <- inputObservable.dataOrAttachment match {
           case Right(inputAttachment) =>
             attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
@@ -343,8 +390,8 @@ class Output @Inject() (
             }
           case Left(data) => observableSrv.create(inputObservable.observable, observableType, data, inputObservable.tags, Nil)
         }
-        case0 <- caseSrv.getOrFail(caseId)
-        orgs  <- inputObservable.organisations.toTry(organisationSrv.getOrFail)
+        case0 <- getCase(caseId)
+        orgs  <- inputObservable.organisations.toTry(getOrganisation)
         _     <- orgs.toTry(o => shareSrv.shareObservable(richObservable, case0, o))
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
@@ -363,7 +410,7 @@ class Output @Inject() (
       logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in job $jobId")
       for {
         job            <- jobSrv.getOrFail(jobId)
-        observableType <- observableTypeSrv.getOrFail(inputObservable.`type`)
+        observableType <- getObservableType(inputObservable.`type`)
         richObservable <- inputObservable.dataOrAttachment match {
           case Right(inputAttachment) =>
             attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
@@ -384,10 +431,10 @@ class Output @Inject() (
     implicit graph => implicit authContext =>
       logger.info(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
       for {
-        organisation <- organisationSrv.getOrFail(inputAlert.organisation)
+        organisation <- getOrganisation(inputAlert.organisation)
         caseTemplate = inputAlert.caseTemplate.flatMap(caseTemplateSrv.get(_).headOption()) // TODO add warning if case template is not found
         alert <- alertSrv.create(inputAlert.alert, organisation, inputAlert.tags, inputAlert.customFields, caseTemplate)
-        _     <- inputAlert.caseId.map(caseSrv.getOrFail(_).flatMap(case0 => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, case0))).flip
+        _     <- inputAlert.caseId.map(getCase(_).flatMap(case0 => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, case0))).flip
       } yield IdMapping(inputAlert.metaData.id, alert._id)
   }
 
@@ -395,7 +442,7 @@ class Output @Inject() (
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
       for {
-        observableType <- observableTypeSrv.getOrFail(inputObservable.`type`)
+        observableType <- getObservableType(inputObservable.`type`)
         richObservable <- inputObservable.dataOrAttachment match {
           case Right(inputAttachment) =>
             attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
@@ -411,7 +458,7 @@ class Output @Inject() (
 
   def getEntity(entityType: String, entityId: String)(implicit graph: Graph): Try[Entity] = entityType match {
     case "Task"       => taskSrv.getOrFail(entityId)
-    case "Case"       => caseSrv.getOrFail(entityId)
+    case "Case"       => getCase(entityId)
     case "Observable" => observableSrv.getOrFail(entityId)
     case "Log"        => logSrv.getOrFail(entityId)
     case "Alert"      => alertSrv.getOrFail(entityId)

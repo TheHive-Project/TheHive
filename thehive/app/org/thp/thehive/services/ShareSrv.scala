@@ -58,7 +58,7 @@ class ShareSrv @Inject() (
     }
 
   def get(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph): ShareSteps =
-    initSteps.relatedTo(`case`).relatedTo(organisation)
+    caseSrv.get(`case`).share(organisation.name)
 
   def update(
       share: Share with Entity,
