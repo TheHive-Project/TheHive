@@ -2,9 +2,11 @@ package org.thp.thehive.connector.misp.services
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
-import play.api.libs.json.{Format, JsObject, JsString, Json}
+
+import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClientConfig
+
 import akka.stream.Materializer
 import gremlin.scala.P
 import javax.inject.Inject
@@ -34,7 +36,57 @@ case class TheHiveMispClientConfig(
 
 object TheHiveMispClientConfig {
   implicit val purposeFormat: Format[MispPurpose.Value] = Json.formatEnum(MispPurpose)
-  implicit val format: Format[TheHiveMispClientConfig]  = Json.using[Json.WithDefaultValues].format[TheHiveMispClientConfig]
+  val reads: Reads[TheHiveMispClientConfig] = {
+    for {
+      name                         <- (JsPath \ "name").read[String]
+      url                          <- (JsPath \ "url").read[String]
+      auth                         <- (JsPath \ "auth").read[Authentication]
+      wsConfig                     <- (JsPath \ "wsConfig").readWithDefault[ProxyWSConfig](ProxyWSConfig(AhcWSClientConfig(), None))
+      maxAge                       <- (JsPath \ "maxAge").readNullable[Duration]
+      excludedOrganisations        <- (JsPath \ "exclusion" \ "organisations").readWithDefault[Seq[String]](Nil)
+      excludedTags                 <- (JsPath \ "exclusion" \ "tags").readWithDefault[Set[String]](Set.empty)
+      whitelistTags                <- (JsPath \ "whitelist" \ "tags").readWithDefault[Set[String]](Set.empty)
+      purpose                      <- (JsPath \ "purpose").readWithDefault[MispPurpose.Value](MispPurpose.ImportAndExport)
+      caseTemplate                 <- (JsPath \ "caseTemplate").readNullable[String]
+      artifactTags                 <- (JsPath \ "tags").readWithDefault[Seq[String]](Nil)
+      exportCaseTags               <- (JsPath \ "exportCaseTags").readWithDefault[Boolean](false)
+      includedTheHiveOrganisations <- (JsPath \ "includedTheHiveOrganisations").readWithDefault[Seq[String]](Seq("*"))
+      excludedTheHiveOrganisations <- (JsPath \ "excludedTheHiveOrganisations").readWithDefault[Seq[String]](Nil)
+    } yield TheHiveMispClientConfig(
+      name,
+      url,
+      auth,
+      wsConfig,
+      maxAge,
+      excludedOrganisations,
+      excludedTags,
+      whitelistTags,
+      purpose,
+      caseTemplate,
+      artifactTags,
+      exportCaseTags,
+      includedTheHiveOrganisations,
+      excludedTheHiveOrganisations
+    )
+  }
+  val writes: Writes[TheHiveMispClientConfig] = Writes[TheHiveMispClientConfig] { cfg =>
+    Json.obj(
+      "name"                         -> cfg.name,
+      "url"                          -> cfg.url,
+      "auth"                         -> cfg.auth,
+      "wsConfig"                     -> cfg.wsConfig,
+      "maxAge"                       -> cfg.maxAge,
+      "exclusion"                    -> Json.obj("organisations" -> cfg.excludedOrganisations, "tags" -> cfg.excludedTags),
+      "whitelistTags"                -> Json.obj("whitelist" -> cfg.whitelistTags),
+      "purpose"                      -> cfg.purpose,
+      "caseTemplate"                 -> cfg.caseTemplate,
+      "tags"                         -> cfg.artifactTags,
+      "exportCaseTags"               -> cfg.exportCaseTags,
+      "includedTheHiveOrganisations" -> cfg.includedTheHiveOrganisations,
+      "excludedTheHiveOrganisations" -> cfg.excludedTheHiveOrganisations
+    )
+  }
+  implicit val format: Format[TheHiveMispClientConfig] = Format[TheHiveMispClientConfig](reads, writes)
 }
 
 class TheHiveMispClient(
