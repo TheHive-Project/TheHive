@@ -93,6 +93,7 @@ object Conversion {
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
         .withFieldComputed(_.pap, _.pap.getOrElse(2))
+        .withFieldComputed(_.date, _.date.getOrElse(new Date))
         .withFieldConst(_.read, false)
         .withFieldConst(_.lastSyncDate, new Date)
         .withFieldConst(_.follow, true)

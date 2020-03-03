@@ -29,7 +29,7 @@ class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
                   title = "alert title (create alert test)",
                   description = "alert description (create alert test)",
                   severity = Some(2),
-                  date = new Date(),
+                  date = Some(new Date()),
                   tags = Set("tag1", "tag2"),
                   flag = Some(false),
                   tlp = Some(1),
