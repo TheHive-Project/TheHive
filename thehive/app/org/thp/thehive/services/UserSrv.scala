@@ -59,11 +59,13 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    for {
-      _        <- roleSrv.create(user, organisation, profile)
-      richUser <- get(user).richUser(organisation.name).getOrFail()
-      _        <- auditSrv.user.create(user, richUser.toJson)
-    } yield richUser
+    get(user).richUser(organisation.name).getOrFail().orElse {
+      for {
+        _        <- roleSrv.create(user, organisation, profile)
+        richUser <- get(user).richUser(organisation.name).getOrFail()
+        _        <- auditSrv.user.create(user, richUser.toJson)
+      } yield richUser
+    }
 
   def addOrCreateUser(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
