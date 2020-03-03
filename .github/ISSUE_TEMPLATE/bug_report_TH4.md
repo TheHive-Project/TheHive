@@ -1,6 +1,6 @@
 ---
-name: Bug report for TheHive4
-about: Create a report to help us improve
+name: Bug Report / Feature Request for TheHive4
+about: Create a bug report or a feature request to help us improve TheHive 4.
 title: "[Bug]"
 labels: bug, TheHive4
 assignees: ''
@@ -10,7 +10,7 @@ assignees: ''
 # EDIT THIS TITLE BEFORE POSTING. Use this template for bug reports. If you'd like to request a feature, please be as descriptive as possible and delete the template except the first section (Request Type)
 
 ### Request Type
-(select Bug or Feature Request and **remove this part**)
+(select Bug or Feature Request and **remove this part**. If you select Feature Request, please change the issue title prefix to [Feature Request])
 Bug / Feature Request
 
 ### Work Environment
