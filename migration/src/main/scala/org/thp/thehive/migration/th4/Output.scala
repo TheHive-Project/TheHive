@@ -210,7 +210,8 @@ class Output @Inject() (
             for {
               organisation <- getOrganisation(organisationName)
               profile      <- profileSrv.getOrFail(profileName)
-            } yield roleSrv.create(createdUser, organisation, profile)
+              _            <- userSrv.add(createdUser, organisation, profile)
+            } yield ()
         }
       } yield IdMapping(inputUser.metaData.id, createdUser._id)
   }

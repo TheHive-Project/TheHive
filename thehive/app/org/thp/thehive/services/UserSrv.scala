@@ -59,9 +59,11 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    get(user).richUser(organisation.name).getOrFail().orElse {
+    (if (!get(user).organisations.getByName(organisation.name).exists())
+       roleSrv.create(user, organisation, profile)
+     else
+       Success(())).flatMap { _ =>
       for {
-        _        <- roleSrv.create(user, organisation, profile)
         richUser <- get(user).richUser(organisation.name).getOrFail()
         _        <- auditSrv.user.create(user, richUser.toJson)
       } yield richUser
@@ -182,8 +184,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def organisations(requiredPermission: String): OrganisationSteps = {
-    val isInDefaultOrganisation = newInstance().organisations0(requiredPermission).get(OrganisationSrv.administration.name).exists()
-    if (isInDefaultOrganisation) new OrganisationSteps(db.labelFilter(Model.vertex[Organisation])(graph.V))
+    val isInAdminOrganisation = newInstance().organisations0(requiredPermission).get(OrganisationSrv.administration.name).exists()
+    if (isInAdminOrganisation) new OrganisationSteps(db.labelFilter(Model.vertex[Organisation])(graph.V))
     else organisations0(requiredPermission)
   }
 
