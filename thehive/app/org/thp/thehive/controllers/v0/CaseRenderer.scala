@@ -72,13 +72,16 @@ trait CaseRenderer {
     _.project(
       _.apply(
         By(
-          new CaseSteps(__[Vertex])
-            .share
-            .project(
-              _.apply(By(taskStats(__[Vertex])))
-                .and(By(observableStats(__[Vertex])))
-            )
-            .raw
+          __[Vertex].coalesce(
+            new CaseSteps(_)
+              .share
+              .project(
+                _.apply(By(taskStats(__[Vertex])))
+                  .and(By(observableStats(__[Vertex])))
+              )
+              .raw,
+            _.constant(JsObject.empty -> JsObject.empty)
+          )
         )
       ).and(By(alertStats(__[Vertex])))
         .and(By(mergeFromStats(__[Vertex])))
