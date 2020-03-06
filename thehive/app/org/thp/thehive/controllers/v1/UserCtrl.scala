@@ -102,13 +102,13 @@ class UserCtrl @Inject() (
         } yield Results.NoContent
       }
 
-  def delete(userId: String): Action[AnyContent] =
+  def delete(userId: String, organisation: Option[String]): Action[AnyContent] =
     entrypoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          organisation <- userSrv.current.organisations(Permissions.manageUser).has("name", request.organisation).getOrFail()
-          user         <- organisationSrv.get(organisation).users.get(userId).getOrFail()
-          _            <- userSrv.delete(user, organisation)
+          org  <- organisationSrv.getOrFail(organisation.getOrElse(request.organisation))
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail()
+          _    <- userSrv.delete(user, org)
         } yield Results.NoContent
       }
 

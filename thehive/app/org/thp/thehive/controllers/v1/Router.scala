@@ -46,18 +46,18 @@ class Router @Inject() (
     case PATCH(p"/caseTemplate/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId)
     //case DELETE(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.delete(caseTemplateId)
 
-    case POST(p"/user")                         => userCtrl.create
-    case GET(p"/user/current")                  => userCtrl.current
-    case GET(p"/user/$userId")                  => userCtrl.get(userId)
-    case PATCH(p"/user/$userId")                => userCtrl.update(userId)
-    case DELETE(p"/user/$userId")               => userCtrl.lock(userId)
-    case DELETE(p"/user/$userId/force")         => userCtrl.delete(userId)
-    case POST(p"/user/$userId/password/set")    => userCtrl.setPassword(userId)
-    case POST(p"/user/$userId/password/change") => userCtrl.changePassword(userId)
-    case GET(p"/user/$userId/key")              => userCtrl.getKey(userId)
-    case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId)
-    case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)
-    case GET(p"/user/$userId/avatar$file*")     => userCtrl.avatar(userId)
+    case POST(p"/user")                                                   => userCtrl.create
+    case GET(p"/user/current")                                            => userCtrl.current
+    case GET(p"/user/$userId")                                            => userCtrl.get(userId)
+    case PATCH(p"/user/$userId")                                          => userCtrl.update(userId)
+    case DELETE(p"/user/$userId")                                         => userCtrl.lock(userId)
+    case DELETE(p"/user/$userId/force" ? q_o"organisation=$organisation") => userCtrl.delete(userId, organisation)
+    case POST(p"/user/$userId/password/set")                              => userCtrl.setPassword(userId)
+    case POST(p"/user/$userId/password/change")                           => userCtrl.changePassword(userId)
+    case GET(p"/user/$userId/key")                                        => userCtrl.getKey(userId)
+    case DELETE(p"/user/$userId/key")                                     => userCtrl.removeKey(userId)
+    case POST(p"/user/$userId/key/renew")                                 => userCtrl.renewKey(userId)
+    case GET(p"/user/$userId/avatar$file*")                               => userCtrl.avatar(userId)
 
     case POST(p"/organisation")                  => organisationCtrl.create
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
