@@ -1,15 +1,16 @@
 package org.thp.thehive.controllers.v0
 
 import play.api.mvc.{Action, AnyContent, Results}
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputDashboard
-import org.thp.thehive.models.{Dashboard, RichDashboard}
+import org.thp.thehive.models.RichDashboard
 import org.thp.thehive.services.{DashboardSrv, DashboardSteps, OrganisationSrv, UserSrv}
 
 @Singleton
@@ -25,7 +26,14 @@ class DashboardCtrl @Inject() (
   val publicProperties: List[PublicProperty[_, _]] = properties.dashboard ::: metaProperties[DashboardSteps]
 
   val initialQuery: Query =
-    Query.init[DashboardSteps]("listDashboard", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).dashboards)
+    Query.init[DashboardSteps](
+      "listDashboard",
+      (graph, authContext) =>
+        union(dashboardSrv)(
+          t => organisationSrv.steps(db.labelFilter(organisationSrv.model)(t))(graph).get(authContext.organisation).dashboards,
+          t => userSrv.steps(db.labelFilter(userSrv.model)(t))(graph).current(authContext).dashboards
+        )(graph)
+    )
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, DashboardSteps](
     "getDashboard",
@@ -33,10 +41,10 @@ class DashboardCtrl @Inject() (
     (param, graph, authContext) => dashboardSrv.get(param.idOrName)(graph).visible(authContext)
   )
 
-  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, DashboardSteps, PagedResult[Dashboard with Entity]](
+  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, DashboardSteps, PagedResult[RichDashboard]](
     "page",
     FieldsParser[OutputParam],
-    (range, dashboardSteps, _) => dashboardSteps.page(range.from, range.to, withTotal = true)
+    (range, dashboardSteps, _) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard)
   )
   val outputQuery: Query = Query.output[RichDashboard]()
 

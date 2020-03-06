@@ -283,7 +283,7 @@ class Properties @Inject() (
       .property("description", UniMapping.string)(_.field.updatable)
       .property("definition", UniMapping.string)(_.field.updatable)
       .property("status", UniMapping.string)(
-        _.select(_.richDashboard.map(d => if (d.organisationShares.nonEmpty) "Shared" else "Private")).custom { // TODO replace by choose step
+        _.select(_.organisation.fold.map(d => if (d.isEmpty) "Private" else "Shared")).custom { // TODO replace by choose step
           case (_, "Shared", vertex, _, graph, authContext) =>
             for {
               dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail()
