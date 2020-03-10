@@ -97,8 +97,8 @@ class Properties @Inject() (
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string)(_.field.updatable)
       .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue.map(_._2)
-        case (_, alertSteps)                                => alertSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue
+        case (_, alertSteps)                                => alertSteps.customFields.nameJsonValue.fold.map(l => JsObject(l.asScala))
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
@@ -182,12 +182,19 @@ class Properties @Inject() (
             }
           } yield Json.obj("impactStatus" -> impactStatus)
       })
-      .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), caseSteps) => caseSteps.customFields(name).jsonValue.map(_._2)
-        case (_, caseSteps)                                => caseSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+      .property("customFields", UniMapping.jsonNative)(_.subSelect {
+        case (FPathElem(_, FPathElem(name, _)), caseSteps) =>
+          caseSteps
+            .customFields(name)
+            .value
+            .cast(UniMapping.jsonNative)
+            .get // can't fail
+
+        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.map(l => JsObject(l.asScala)).cast(UniMapping.jsonNative).get
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
+//            v <- UniMapping.jsonNative.toGraphOpt(value).fold[Try[Any]](???)(Success.apply)
             c <- caseSrv.getOrFail(vertex)(graph)
             _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
@@ -236,8 +243,8 @@ class Properties @Inject() (
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string)(_.field.updatable)
       .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFields(name).jsonValue.map(_._2)
-        case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+        case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFields(name).jsonValue
+        case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.nameJsonValue.fold.map(l => JsObject(l.asScala))
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {

@@ -81,8 +81,8 @@ class Properties @Inject() (
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string)(_.field.updatable)
       .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue.map(_._2)
-        case (_, alertSteps)                                => alertSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue
+        case (_, alertSteps)                                => alertSteps.customFields.nameJsonValue.fold.map(l => JsObject(l.asScala))
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
@@ -162,8 +162,8 @@ class Properties @Inject() (
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string)(_.field.updatable)
       .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue.map(_._2)
-        case (_, alertSteps)                                => alertSteps.customFields.jsonValue.fold.map(l => JsObject(l.asScala))
+        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue
+        case (_, alertSteps)                                => alertSteps.customFields.nameJsonValue.fold.map(l => JsObject(l.asScala))
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {

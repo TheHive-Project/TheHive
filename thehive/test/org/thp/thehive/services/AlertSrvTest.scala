@@ -138,7 +138,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       } must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get("testType;testSource;ref1").customFields("string1").jsonValue.headOption()
+        app[AlertSrv].get("testType;testSource;ref1").customFields("string1").nameJsonValue.headOption()
       } must beSome("string1" -> JsString("sad"))
     }
 

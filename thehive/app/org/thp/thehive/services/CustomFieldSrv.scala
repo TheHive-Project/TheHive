@@ -5,7 +5,7 @@ import java.util.{Map => JMap}
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-import play.api.libs.json.{JsObject, JsValue}
+import play.api.libs.json.{JsNull, JsObject, JsValue}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -101,23 +101,53 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
       .map(_ => ())
   }
 
-  def jsonValue: Traversal[(String, JsValue), (String, JsValue)] = {
+  private def edgeNameType: GremlinScala[(Edge, JMap[AnyRef, AnyRef])] = {
     val customFieldValueLabel = StepLabel[Edge]()
     val typeLabel             = StepLabel[JMap[AnyRef, AnyRef]]()
+    raw
+      .asInstanceOf[GremlinScala.Aux[Edge, HNil]]
+      .as(customFieldValueLabel)
+      .inV()
+      .valueMap("name", "type")
+      .as(typeLabel)
+      .select()
+  }
+
+  def nameJsonValue: Traversal[(String, JsValue), (String, JsValue)] =
     Traversal(
-      raw
-        .asInstanceOf[GremlinScala.Aux[Edge, HNil]]
-        .as(customFieldValueLabel)
-        .inV()
-        .valueMap("name", "type")
-        .as(typeLabel)
-        .select()
+      edgeNameType
         .map {
           case (edge, ValueMap(map)) =>
             map.get[String]("name") -> CustomFieldType.get(map.get[String]("type")).getJsonValue(new CustomFieldValueEdge(db, edge))
         }
     )
-  }
+
+  def jsonValue: Traversal[JsValue, JsValue] =
+    Traversal(
+      edgeNameType
+        .map {
+          case (edge, ValueMap(map)) =>
+            CustomFieldType.get(map.get[String]("type")).getJsonValue(new CustomFieldValueEdge(db, edge))
+        }
+    )
+
+  def nameValue: Traversal[(String, Option[Any]), (String, Option[Any])] =
+    Traversal(
+      edgeNameType
+        .map {
+          case (edge, ValueMap(map)) =>
+            map.get[String]("name") -> CustomFieldType.get(map.get[String]("type")).getValue(new CustomFieldValueEdge(db, edge))
+        }
+    )
+
+  def value: Traversal[Any, Any] =
+    Traversal(
+      edgeNameType
+        .map {
+          case (edge, ValueMap(map)) =>
+            CustomFieldType.get(map.get[String]("type")).getValue(new CustomFieldValueEdge(db, edge)).getOrElse(JsNull)
+        }
+    )
 
   def richCustomField: Traversal[RichCustomField, RichCustomField] = {
     val customFieldValueLabel = StepLabel[Edge]()

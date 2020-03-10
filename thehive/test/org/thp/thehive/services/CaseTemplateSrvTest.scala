@@ -110,7 +110,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
 
       val expected: Seq[(String, JsValue)] = Seq("string1" -> JsString("hate"), "boolean1" -> JsTrue, "integer1" -> JsNumber(1))
       app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get("spam").customFields.jsonValue.toList
+        app[CaseTemplateSrv].get("spam").customFields.nameJsonValue.toList
       } must contain(exactly(expected: _*))
     }
   }
