@@ -15,7 +15,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{RichOptionTry, RichSeq, _}
+import org.thp.scalligraph.{RichSeq, _}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable}
 import org.thp.thehive.models._
@@ -84,9 +84,9 @@ class AlertCtrl @Inject() (
         val inputAlert: InputAlert            = request.body("alert")
         val observables: Seq[InputObservable] = request.body("observables")
         val customFields                      = inputAlert.customFields.map(c => c.name -> c.value).toMap
+        val caseTemplate                      = caseTemplateName.flatMap(caseTemplateSrv.get(_).visible.headOption())
         for {
           organisation    <- userSrv.current.organisations(Permissions.manageAlert).get(request.organisation).getOrFail()
-          caseTemplate    <- caseTemplateName.map(caseTemplateSrv.get(_).visible.getOrFail()).flip
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
           _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o)))(_ => Success(()))

@@ -3,7 +3,6 @@ package org.thp.thehive.controllers.v1
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -53,13 +52,8 @@ class AlertCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputAlert: InputAlert           = request.body("alert")
+        val caseTemplate                     = caseTemplateName.flatMap(ct => caseTemplateSrv.get(ct).visible.headOption())
         for {
-          caseTemplate <- caseTemplateName.map { ct =>
-            caseTemplateSrv
-              .get(ct)
-              .visible
-              .getOrFail()
-          }.flip
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail()
           customFields = inputAlert.customFieldValue.map(cf => cf.name -> cf.value).toMap
           richAlert <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
