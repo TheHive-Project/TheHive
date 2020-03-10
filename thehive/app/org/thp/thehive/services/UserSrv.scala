@@ -48,8 +48,8 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
 
   def checkUser(user: User): Try[User] = {
     val login =
-      if (!user.login.contains('@') && defaultUserDomain.isDefined) s"${user.login}@${defaultUserDomain.get}"
-      else user.login
+      if (!user.login.contains('@') && defaultUserDomain.isDefined) s"${user.login}@${defaultUserDomain.get}".toLowerCase
+      else user.login.toLowerCase
 
     if (fullUserNameRegex.matcher(login).matches() && login != "system@thehive.local") Success(user.copy(login = login))
     else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
@@ -158,7 +158,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     if (db.isValidId(idOrName)) this.getByIds(idOrName)
     else getByName(idOrName)
 
-  def getByName(login: String): UserSteps = new UserSteps(raw.has(Key("login") of login))
+  def getByName(login: String): UserSteps = this.has("login", login.toLowerCase)
 
   def visible(implicit authContext: AuthContext): UserSteps =
     if (authContext.isPermitted(Permissions.manageOrganisation.permission)) this
