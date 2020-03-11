@@ -56,6 +56,7 @@ object Conversion {
             case (_, false)    => "Updated"
           }
       )
+      .withFieldConst(_.similarCases, Nil)
       .transform
   )
 
@@ -82,6 +83,7 @@ object Conversion {
             }
         )
         .withFieldConst(_.artifacts, richAlertWithObservables._2.map(_.toOutput))
+        .withFieldConst(_.similarCases, Nil)
         .transform
     )
 

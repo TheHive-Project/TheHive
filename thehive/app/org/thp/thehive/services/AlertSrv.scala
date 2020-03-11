@@ -15,7 +15,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -371,6 +371,40 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     new CustomFieldValueSteps(raw.outToE[AlertCustomField])
 
   def observables: ObservableSteps = new ObservableSteps(raw.outTo[AlertObservable])
+
+  def richAlertWithCustomRenderer[A](
+      entityRenderer: AlertSteps => TraversalLike[_, A]
+  )(implicit authContext: AuthContext): Traversal[(RichAlert, A), (RichAlert, A)] =
+    Traversal(
+      raw
+        .project(
+          _.apply(By[Vertex]())
+            .and(By(__[Vertex].outTo[AlertOrganisation].values[String]("name").fold))
+            .and(By(__[Vertex].outTo[AlertTag].fold))
+            .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
+            .and(By(__[Vertex].outTo[AlertCase].id().fold))
+            .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
+            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
+        )
+        .map {
+          case (alert, organisation, tags, customFields, caseId, caseTemplate, renderedEntity) =>
+            val customFieldValues = (customFields: JList[Path])
+              .asScala
+              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
+              .map {
+                case List(acf, cf) => RichCustomField(cf.as[CustomField], acf.as[AlertCustomField])
+                case _             => throw InternalError("Not possible")
+              }
+            RichAlert(
+              alert.as[Alert],
+              onlyOneOf[String](organisation),
+              tags.asScala.map(_.as[Tag]),
+              customFieldValues,
+              atMostOneOf[AnyRef](caseId).map(_.toString),
+              atMostOneOf[String](caseTemplate)
+            ) -> renderedEntity
+        }
+    )
 
   def richAlert: Traversal[RichAlert, RichAlert] =
     Traversal(

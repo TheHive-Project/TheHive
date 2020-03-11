@@ -2,22 +2,26 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import gremlin.scala.Graph
+import gremlin.scala.{__, By, Graph, Key, StepLabel, Vertex}
+import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{RichSeq, _}
+import org.thp.scalligraph.steps.{PagedResult, Traversal}
+import org.thp.scalligraph.{InvalidFormatAttributeError, RichJMap, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputAlert, InputObservable}
+import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 
@@ -93,18 +97,92 @@ class AlertCtrl @Inject() (
         } yield Results.Created((richAlert -> richObservables).toJson)
       }
 
+  def alertSimilarityRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): AlertSteps => Traversal[JsArray, JsArray] = {
+    alertSteps =>
+      val observableLabel = StepLabel[Vertex]()
+      val caseLabel       = StepLabel[Vertex]()
+      Traversal(
+        alertSteps
+          .observables
+          .similar
+          .as(observableLabel)
+          .`case`
+          .as(caseLabel)
+          .raw
+          .select(observableLabel.name, caseLabel.name)
+          .fold
+          .map { resultMapList =>
+            val similarCases = resultMapList
+              .asScala
+              .map { m =>
+                val cid = m.getValue(caseLabel).id()
+                val ioc = m.getValue(observableLabel).value[Boolean]("ioc")
+                cid -> ioc
+              }
+              .groupBy(_._1)
+              .map {
+                case (cid, cidIoc) =>
+                  val iocStats = cidIoc.groupBy(_._2).mapValues(_.size)
+                  val (caseVertex, observableCount, resolutionStatus) = caseSrv
+                    .getByIds(cid.toString)
+                    .project(
+                      _(By[Vertex]())
+                        .and(By(new CaseSteps(__[Vertex]).observables(authContext).groupCount(By(Key[Boolean]("ioc"))).raw))
+                        .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+                    )
+                    .head()
+                  val case0 = caseVertex
+                    .as[Case]
+                  val similarCase = case0
+                    .asInstanceOf[Case]
+                    .into[OutputSimilarCase]
+                    .withFieldConst(_.artifactCount, observableCount.getOrDefault(false, 0L).toInt)
+                    .withFieldConst(_.iocCount, observableCount.getOrDefault(true, 0L).toInt)
+                    .withFieldConst(_.similarArtifactCount, iocStats.getOrElse(false, 0))
+                    .withFieldConst(_.similarIOCCount, iocStats.getOrElse(true, 0))
+                    .withFieldConst(_.resolutionStatus, atMostOneOf[String](resolutionStatus))
+                    .withFieldComputed(_.status, _.status.toString)
+                    .withFieldConst(_.id, case0._id)
+                    .withFieldConst(_._id, case0._id)
+                    .withFieldRenamed(_.number, _.caseId)
+                    .transform
+                  Json.toJson(similarCase)
+              }
+            JsArray(similarCases.toSeq)
+          }
+      )
+  }
+
   def get(alertId: String): Action[AnyContent] =
     entrypoint("get alert")
+      .extract("similarity", FieldsParser[Boolean].optional.on("similarity"))
       .authRoTransaction(db) { implicit request => implicit graph =>
-        alertSrv
-          .get(alertId)
-          .visible
-          .richAlert
-          .getOrFail()
-          .map { richAlert =>
-            val alertWithObservables: (RichAlert, Seq[RichObservable]) = richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList
-            Results.Ok(alertWithObservables.toJson)
-          }
+        val similarity: Option[Boolean] = request.body("similarity")
+        val alert =
+          alertSrv
+            .get(alertId)
+            .visible
+        if (similarity.contains(true))
+          alert
+            .richAlertWithCustomRenderer(alertSimilarityRenderer(request, db, graph))
+            .getOrFail()
+            .map {
+              case (richAlert, similarCases) =>
+                val alertWithObservables: (RichAlert, Seq[RichObservable]) =
+                  richAlert -> alertSrv.get(richAlert.alert).observables.richObservableWithSeen.toList
+
+                Results.Ok(alertWithObservables.toJson.as[JsObject] + ("similarCases" -> similarCases))
+            }
+        else
+          alert
+            .richAlert
+            .getOrFail()
+            .map { richAlert =>
+              val alertWithObservables: (RichAlert, Seq[RichObservable]) =
+                richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toList
+              Results.Ok(alertWithObservables.toJson)
+            }
+
       }
 
   def update(alertId: String): Action[AnyContent] =

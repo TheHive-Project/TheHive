@@ -40,7 +40,7 @@ class ObservableSrvTest extends PlaySpecification with TestAppBuilder {
                 _                 <- printTiming("linkData")(observableSrv.observableDataSrv.create(ObservableData(), createdObservable, data))
                 tags              <- printTiming("createTags")(observableSrv.addTags(createdObservable, tagNames))
                 //          ext               <- observableSrv.addExtensions(createdObservable, extensions)
-              } yield RichObservable(createdObservable, tpe, Some(data), None, tags, Nil, Nil)
+              } yield RichObservable(createdObservable, tpe, Some(data), None, tags, None, Nil, Nil)
             }
           }
         }

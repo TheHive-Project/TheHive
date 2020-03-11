@@ -26,6 +26,7 @@ case class RichObservable(
     data: Option[Data with Entity],
     attachment: Option[Attachment with Entity],
     tags: Seq[Tag with Entity],
+    seen: Option[Boolean],
     extensions: Seq[KeyValue with Entity],
     reportTags: Seq[ReportTag with Entity]
 ) {

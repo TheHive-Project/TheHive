@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, Json, OWrites, Reads}
+import play.api.libs.json._
 
 import org.thp.scalligraph.controllers.WithParser
 
@@ -25,6 +25,28 @@ case class InputAlert(
 
 object InputAlert {
   implicit val writes: OWrites[InputAlert] = Json.writes[InputAlert]
+}
+
+case class OutputSimilarCase(
+    _id: String,
+    id: String,
+    caseId: Int, // number
+    title: String,
+    severity: Int,
+    startDate: Date,
+    endDate: Option[Date] = None,
+    resolutionStatus: Option[String] = None,
+    tags: Set[String] = Set.empty,
+    tlp: Int,
+    status: String,
+    similarIOCCount: Int,
+    iocCount: Int,
+    similarArtifactCount: Int,
+    artifactCount: Int
+)
+
+object OutputSimilarCase {
+  implicit val format: OFormat[OutputSimilarCase] = Json.format[OutputSimilarCase]
 }
 
 case class OutputAlert(
@@ -51,7 +73,8 @@ case class OutputAlert(
     `case`: Option[String],
     customFields: JsObject,
     caseTemplate: Option[String] = None,
-    artifacts: Seq[OutputObservable] = Nil
+    artifacts: Seq[OutputObservable] = Nil,
+    similarCases: Seq[OutputSimilarCase]
 )
 
 object OutputAlert {
@@ -81,6 +104,7 @@ object OutputAlert {
       customFields <- (json \ "customFields").validate[JsObject]
       caseTemplate <- (json \ "caseTemplate").validateOpt[String]
       artifacts    <- (json \ "artifacts").validate[Seq[OutputObservable]]
+      similarCases <- (json \ "similarCases").validate[Seq[OutputSimilarCase]]
     } yield OutputAlert(
       _id,
       id,
@@ -105,7 +129,8 @@ object OutputAlert {
       case0,
       customFields,
       caseTemplate,
-      artifacts
+      artifacts,
+      similarCases
     )
   }
   implicit val writes: OWrites[OutputAlert] = OWrites[OutputAlert] { outputAlert =>
