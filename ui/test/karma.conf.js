@@ -68,7 +68,7 @@ module.exports = function(config) {
       'bower_components/angular-drag-and-drop-lists/angular-drag-and-drop-lists.js',
       'bower_components/angular-bootstrap-colorpicker/js/bootstrap-colorpicker-module.js',
       'bower_components/file-saver/FileSaver.js',
-      'bower_components/js-url/url.js',
+      'bower_components/js-url/dist/es5-url.min.js',
       'bower_components/bootstrap-sass/assets/javascripts/bootstrap.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
