@@ -121,6 +121,13 @@ then
 		done
 	fi
 
+	if test -n "$CONFIG_FILE_BASE64"
+	then
+		CONF_64=$(mktemp).64.conf
+		echo $CONFIG_FILE_BASE64 | base64 --decode >> $CONF_64
+		echo "include file(\"${CONF_64}\")" >> $CONFIG_FILE
+        fi
+
 	echo 'include file("/etc/thehive/application.conf")' >> $CONFIG_FILE
 fi
 
