@@ -330,15 +330,22 @@ class CortexAnalyzerSrv @Inject()(
             .set("status", JobStatus.Failure.toString)
             .set("endDate", Json.toJson(new Date))
           update(jobId, jobFields)
-        case _ if maxRetryOnError > 0 ⇒
-          logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
+        /* Workaround */
+        case CortexError(500, _, body) if Try((Json.parse(body) \ "type").as[String]) == Success("akka.pattern.AskTimeoutException") ⇒
+          logger.debug("Got a 500 Timeout, retry")
+          updateJobWithCortex(jobId, cortexJobId, cortex)
+        case e if maxRetryOnError > 0 ⇒
+          logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...", e)
           val result = Promise[Job]
           system.scheduler.scheduleOnce(retryDelay) {
             updateJobWithCortex(jobId, cortexJobId, cortex, retryDelay, maxRetryOnError - 1).onComplete(result.complete)
           }
           result.future
-        case _ ⇒
-          logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
+        case e ⇒
+          logger.error(
+            s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting",
+            e
+          )
           update(
             jobId,
             Fields
