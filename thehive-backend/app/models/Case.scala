@@ -177,9 +177,9 @@ class CaseModel @Inject()(
     }
 
   override val computedMetrics = Map(
-    "handlingDurationInSeconds" → "(doc['endDate'].value - doc['startDate'].value) / 1000",
-    "handlingDurationInHours"   → "(doc['endDate'].value - doc['startDate'].value) / 3600000",
-    "handlingDurationInDays"    → "(doc['endDate'].value - doc['startDate'].value) / (3600000 * 24)"
+    "handlingDurationInSeconds" → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 1000",
+    "handlingDurationInHours"   → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 3600000",
+    "handlingDurationInDays"    → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / (3600000 * 24)"
   )
 }
 

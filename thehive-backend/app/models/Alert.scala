@@ -83,10 +83,15 @@ trait AlertAttributes {
 @Singleton
 class AlertModel @Inject()(dblists: DBLists) extends ModelDef[AlertModel, Alert]("alert", "Alert", "/alert") with AlertAttributes with AuditedModel {
 
-  private[AlertModel] lazy val logger               = Logger(getClass)
-  override val defaultSortBy: Seq[String]           = Seq("-date")
-  override val removeAttribute: JsObject            = Json.obj("status" → AlertStatus.Ignored)
-  override val computedMetrics: Map[String, String] = Map("observableCount" → "_source['artifacts']?.size()")
+  private[AlertModel] lazy val logger     = Logger(getClass)
+  override val defaultSortBy: Seq[String] = Seq("-date")
+  override val removeAttribute: JsObject  = Json.obj("status" → AlertStatus.Ignored)
+  override val computedMetrics: Map[String, String] = Map(
+    "observableCount"           → "if (params._source.containsKey('artifacts')) { params._source['artifacts'].size() } else 0",
+    "handlingDurationInSeconds" → "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / 1000",
+    "handlingDurationInHours"   → "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / 3600000",
+    "handlingDurationInDays"    → "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / (3600000 * 24)"
+  )
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     // check if data attribute is present on all artifacts
