@@ -114,12 +114,12 @@ class MispSynchro @Inject()(
         }
         .runWith(Sink.seq)
       newAttributes ← Future.traverse(mispArtifacts) {
-        case artifact @ MispArtifact(SimpleArtifactData(data), _, _, _, _, _) if !existingArtifacts.contains(Right(data)) ⇒
+        case artifact @ MispArtifact(SimpleArtifactData(data), _, _, _, _, _, _) if !existingArtifacts.contains(Right(data)) ⇒
           Future.successful(Fields(Json.toJson(artifact).as[JsObject]))
-        case artifact @ MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _)
+        case artifact @ MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _, _)
             if !existingArtifacts.contains(Left(filename)) ⇒
           Future.successful(Fields(Json.toJson(artifact).as[JsObject]))
-        case artifact @ MispArtifact(RemoteAttachmentArtifact(filename, reference, tpe), _, _, _, _, _)
+        case artifact @ MispArtifact(RemoteAttachmentArtifact(filename, reference, tpe), _, _, _, _, _, _)
             if !existingArtifacts.contains(Left(filename)) ⇒
           mispSrv
             .downloadAttachment(mispConnection, reference)

@@ -34,7 +34,7 @@ case class MispAlert(
     caseTemplate: String
 )
 
-case class MispAttribute(id: String, category: String, tpe: String, date: Date, comment: String, value: String, tags: Seq[String])
+case class MispAttribute(id: String, category: String, tpe: String, date: Date, comment: String, value: String, tags: Seq[String], toIds: Boolean)
 
 case class ExportedMispAttribute(
     artifact: Artifact,
@@ -45,6 +45,6 @@ case class ExportedMispAttribute(
     comment: Option[String]
 )
 
-case class MispArtifact(value: ArtifactData, dataType: String, message: String, tlp: Long, tags: Seq[String], startDate: Date)
+case class MispArtifact(value: ArtifactData, dataType: String, message: String, tlp: Long, tags: Seq[String], startDate: Date, ioc: Boolean)
 
 case class MispExportError(message: String, artifact: Artifact) extends ErrorWithObject(message, artifact.attributes)
