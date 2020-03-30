@@ -5,13 +5,11 @@ import java.util.Date
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
+import scala.util.{Success, Try}
 import scala.util.control.NonFatal
-
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-
 import akka.NotUsed
 import akka.actor.{Actor, ActorSystem}
 import akka.stream.Materializer
@@ -21,7 +19,6 @@ import connectors.cortex.models._
 import javax.inject.{Inject, Singleton}
 import models.{Artifact, Case}
 import services.{UserSrv ⇒ _, _}
-
 import org.elastic4play.controllers.{Fields, FileInputValue}
 import org.elastic4play.database.{DBRemove, ModifyConfig}
 import org.elastic4play.services.JsonFormat.attachmentFormat
@@ -139,7 +136,7 @@ class CortexAnalyzerSrv @Inject()(
   def realDeleteJob(job: Job): Future[Unit] =
     dbRemove(job).map(_ ⇒ ())
 
-  def stats(query: QueryDef, aggs: Seq[Agg]) = findSrv(jobModel, query, aggs: _*)
+  def stats(query: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(jobModel, query, aggs: _*)
 
   def getAnalyzer(analyzerId: String): Future[Analyzer] =
     Future
@@ -368,9 +365,20 @@ class CortexAnalyzerSrv @Inject()(
           }
 
       case None ⇒
-        Future.firstCompletedOf {
-          cortexConfig.instances.map(c ⇒ c.getAnalyzer(analyzerName).map(c → _))
-        }
+        Future
+          .traverse(cortexConfig.instances) { c ⇒
+            c.getAnalyzer(analyzerName)
+              .transform {
+                case Success(w) ⇒ Success(Some(c → w))
+                case _          ⇒ Success(None)
+              }
+          }
+          .flatMap { analyzers ⇒
+            analyzers
+              .flatten
+              .headOption
+              .fold[Future[(CortexClient, Analyzer)]](Future.failed(NotFoundError(s"Analyzer not found")))(Future.successful)
+          }
     }
 
     cortexClientAnalyzer.flatMap {
