@@ -137,9 +137,9 @@ class MispSrv @Inject()(
           .filter(_.date after refDate)
           .flatMap(convertAttribute)
           .groupBy {
-            case MispArtifact(SimpleArtifactData(data), dataType, _, _, _, _)                             ⇒ dataType → Right(data)
-            case MispArtifact(RemoteAttachmentArtifact(filename, _, _), dataType, _, _, _, _)             ⇒ dataType → Left(filename)
-            case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), dataType, _, _, _, _) ⇒ dataType → Left(filename)
+            case MispArtifact(SimpleArtifactData(data), dataType, _, _, _, _, _)                             ⇒ dataType → Right(data)
+            case MispArtifact(RemoteAttachmentArtifact(filename, _, _), dataType, _, _, _, _, _)             ⇒ dataType → Left(filename)
+            case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), dataType, _, _, _, _, _) ⇒ dataType → Left(filename)
           }
           .values
           .map { mispArtifact ⇒
