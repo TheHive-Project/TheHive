@@ -45,57 +45,110 @@ search {
 
 # Authentication
 auth {
-	# "provider" parameter contains authentication provider. It can be multi-valued (useful for migration)
-	# available auth types are:
-	# services.LocalAuthSrv : passwords are stored in user entity (in Elasticsearch). No configuration is required.
-	# ad : use ActiveDirectory to authenticate users. Configuration is under "auth.ad" key
-	# ldap : use LDAP to authenticate users. Configuration is under "auth.ldap" key
-	provider = [local]
+  # "provider" parameter contains authentication provider. It can be multi-valued (useful for migration)
+  # available auth types are:
+  # services.LocalAuthSrv : passwords are stored in user entity (in Elasticsearch). No configuration is required.
+  # ad : use ActiveDirectory to authenticate users. Configuration is under "auth.ad" key
+  # ldap : use LDAP to authenticate users. Configuration is under "auth.ldap" key
+  # oauth2 : use OAuth/OIDC to authenticate users. Configuration is under "auth.oauth2" and "auth.sso" keys
+  provider = [local]
 
   # By default, basic authentication is disabled. You can enable it by setting "method.basic" to true.
   #method.basic = true
 
+  ad {
+    # The Windows domain name in DNS format. This parameter is required if you do not use
+    # 'serverNames' below.
+    #domainFQDN = "mydomain.local"
 
-	ad {
-		# The Windows domain name in DNS format. This parameter is required if you do not use
-		# 'serverNames' below.
-		#domainFQDN = "mydomain.local"
+    # Optionally you can specify the host names of the domain controllers instead of using 'domainFQDN
+    # above. If this parameter is not set, TheHive uses 'domainFQDN'.
+    #serverNames = [ad1.mydomain.local, ad2.mydomain.local]
 
-		# Optionally you can specify the host names of the domain controllers instead of using 'domainFQDN
-		# above. If this parameter is not set, TheHive uses 'domainFQDN'.
-        #serverNames = [ad1.mydomain.local, ad2.mydomain.local]
+    # The Windows domain name using short format. This parameter is required.
+    #domainName = "MYDOMAIN"
 
-		# The Windows domain name using short format. This parameter is required.
-		#domainName = "MYDOMAIN"
+    # If 'true', use SSL to connect to the domain controller.
+    #useSSL = true
+  }
 
-		# If 'true', use SSL to connect to the domain controller.
-		#useSSL = true
-	}
+  ldap {
+    # The LDAP server name or address. The port can be specified using the 'host:port'
+    # syntax. This parameter is required if you don't use 'serverNames' below.
+    #serverName = "ldap.mydomain.local:389"
 
-	ldap {
-		# The LDAP server name or address. The port can be specified using the 'host:port'
-		# syntax. This parameter is required if you don't use 'serverNames' below.
-		#serverName = "ldap.mydomain.local:389"
+    # If you have multiple LDAP servers, use the multi-valued setting 'serverNames' instead.
+    #serverNames = [ldap1.mydomain.local, ldap2.mydomain.local]
 
-		# If you have multiple LDAP servers, use the multi-valued setting 'serverNames' instead.
-        #serverNames = [ldap1.mydomain.local, ldap2.mydomain.local]
+    # Account to use to bind to the LDAP server. This parameter is required.
+    #bindDN = "cn=thehive,ou=services,dc=mydomain,dc=local"
 
-		# Account to use to bind to the LDAP server. This parameter is required.
-		#bindDN = "cn=thehive,ou=services,dc=mydomain,dc=local"
+    # Password of the binding account. This parameter is required.
+    #bindPW = "***secret*password***"
 
-		# Password of the binding account. This parameter is required.
-		#bindPW = "***secret*password***"
+    # Base DN to search users. This parameter is required.
+    #baseDN = "ou=users,dc=mydomain,dc=local"
 
-		# Base DN to search users. This parameter is required.
-		#baseDN = "ou=users,dc=mydomain,dc=local"
+    # Filter to search user in the directory server. Please note that {0} is replaced
+    # by the actual user name. This parameter is required.
+    #filter = "(cn={0})"
 
-		# Filter to search user in the directory server. Please note that {0} is replaced
-		# by the actual user name. This parameter is required.
-		#filter = "(cn={0})"
+    # If 'true', use SSL to connect to the LDAP directory server.
+    #useSSL = true
+  }
 
-		# If 'true', use SSL to connect to the LDAP directory server.
-		#useSSL = true
-	}
+  oauth2 {
+    # URL of the authorization server
+    #clientId = "client-id"
+    #clientSecret = "client-secret"
+    #redirectUri = "https://my-thehive-instance.example/index.html#!/login"
+    #responseType = "code"
+    #grantType = "authorization_code"
+
+    # URL from where to get the access token
+    #authorizationUrl = "https://auth-site.com/OAuth/Authorize"
+    #tokenUrl = "https://auth-site.com/OAuth/Token"
+
+    # The endpoint from which to obtain user details using the OAuth token, after successful login
+    #userUrl = "https://auth-site.com/api/User"
+    #scope = "openid profile"
+  }
+
+  # Single-Sign On
+  sso {
+    # Autocreate user in database?
+    #autocreate = false
+
+    # Autoupdate its profile and roles?
+    #autoupdate = false
+
+    # Autologin user using SSO?
+    #autologin = false
+
+    # Attributes mappings
+    #attributes {
+    #  login = "sub"
+    #  name = "name"
+    #  groups = "groups"
+    #  #roles = "roles"
+    #}
+
+    # Name of mapping class from user resource to backend user ('simple' or 'group')
+    #mapper = group
+    # Default roles for users with no groups mapped ("read", "write", "admin")
+    #defaultRoles = []
+
+    #groups {
+    #  # URL to retreive groups (leave empty if you are using OIDC)
+    #  #url = "https://auth-site.com/api/Groups"
+    #  # Group mappings, you can have multiple roles for each group: they are merged
+    #  mappings {
+    #    admin-profile-name = ["admin"]
+    #    editor-profile-name = ["write"]
+    #    reader-profile-name = ["read"]
+    #  }
+    #}
+  }
 }
 
 # Maximum time between two requests without requesting authentication
