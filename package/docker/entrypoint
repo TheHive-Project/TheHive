@@ -1,131 +1,220 @@
 #!/bin/bash
 
-ES_HOSTNAME=elasticsearch
-CONFIG_SECRET=1
-CONFIG_ES=1
-CONFIG_CORTEX=1
-CORTEX_HOSTNAME=cortex
-CORTEX_PROTO=http
-CORTEX_PORT=9001
-CORTEX_URLS=()
-CONFIG=1
-CONFIG_FILE=/etc/thehive/application.conf
-CORTEX_KEYS=()
+ES_HOSTNAME=${TH_ES_HOSTNAME:-elasticsearch}
+test "${TH_NO_CONFIG_SECRET}" == 1
+CONFIG_SECRET=$?
+SECRET=${TH_SECRET}
+SHOW_SECRET=${TH_SHOW_SECRET:-0}
+test "${TH_NO_CONFIG_ES}" == 1
+CONFIG_ES=$?
+test "${TH_NO_CONFIG_CORTEX}" == 1
+CONFIG_CORTEX=$?
+CORTEX_HOSTNAME=${TH_CORTEX_HOSTNAME:-cortex}
+CORTEX_PROTO=${TH_CORTEX_PROTO:-http}
+CORTEX_PORT=${TH_CORTEX_PORT:9001}
+IFS=',' read -r -a CORTEX_URLS <<< "${TH_CORTEX_URLS}"
+test "${TH_NO_CONFIG}" == 1
+CONFIG=$?
+CONFIG_FILE=${TH_CONFIG_FILE:-/etc/thehive/application.conf}
+IFS=',' read -r -a CORTEX_KEYS <<< "${TH_CORTEX_KEYS}"
+AUTO_MIGRATION=${TH_AUTO_MIGRATION:-0}
+CREATE_ADMIN_LOGIN=${TH_CREATE_ADMIN_LOGIN}
+CREATE_ADMIN_PASSWORD=${TH_CREATE_ADMIN_PASSWORD}
+CREATE_USER_LOGIN=${TH_CREATE_USER_LOGIN}
+IFS=',' read -r -a CREATE_USER_ROLE <<< "${TH_CREATE_USER_ROLE}"
+CREATE_USER_PASSWORD=${TH_CREATE_USER_PASSWORD}
 
 function usage {
-	cat <<- _EOF_
-		Available options:
-		--no-config		| do not try to configure TheHive (add secret and elasticsearch)
-		--no-config-secret	| do not add random secret to configuration
-		--no-config-es		| do not add elasticsearch hosts to configuration
-		--es-uri <uri>		| use this string to configure elasticsearch hosts (format: http(s)://host:port,host:port(/prefix)?querystring)
-		--es-hostname <host>	| resolve this hostname to find elasticseach instances
-		--secret <secret>	| secret to secure sessions
-		--cortex-proto <proto>	| define protocol to connect to Cortex (default: http)
-		--cortex-port <port>	| define port to connect to Cortex (default: 9000)
-		--cortex-url <url>	| add Cortex connection
-		--cortex-hostname <host>| resolve this hostname to find Cortex instances
-		--cortex-key <key>      | define Cortex key 
-	_EOF_
-	exit 1
+  cat <<- _EOF_
+    Available options:
+    --no-config                           | do not try to configure TheHive (add secret and elasticsearch)
+    --no-config-secret                    | do not add random secret to configuration
+    --no-config-es                        | do not add elasticsearch hosts to configuration
+    --es-uri <uri>                        | use this string to configure elasticsearch hosts (format: http(s)://host:port,host:port(/prefix)?querystring)
+    --es-hostname <host>                  | resolve this hostname to find elasticsearch instances
+    --secret <secret>                     | secret to secure sessions
+    --show-secret                         | show the generated secret
+    --cortex-proto <proto>                | define protocol to connect to Cortex (default: http)
+    --cortex-port <port>                  | define port to connect to Cortex (default: 9000)
+    --cortex-url <url>                    | add Cortex connection
+    --cortex-hostname <host>              | resolve this hostname to find Cortex instances
+    --cortex-key <key>                    | define Cortex key
+    --auto-migration                      | migrate the database, if needed
+    --create-admin <user> <password>      | create the first admin user, if not exist yet
+    --create-user <user> <role> <password>| create a user, only in conjunction with admin creation
+_EOF_
+  exit 1
 }
 
+
 STOP=0
-while test $# -gt 0 -o $STOP = 1
+while test $# -gt 0 -o "${STOP}" = 1
 do
-	case "$1" in
-		"--no-config")		CONFIG=0;;
-		"--no-config-secret")	CONFIG_SECRET=0;;
-		"--secret")		shift; SECRET=$1;;
-		"--no-config-es")	CONFIG_ES=0;;
-		"--es-hosts")		echo "--es-hosts is deprecated, please use --es-uri"
-					usage;;
-		"--es-uri")		shift; ES_URI=$1;;
-		"--es-hostname")	shift; ES_HOSTNAME=$1;;
-		"--no-config-cortex")	CONFIG_CORTEX=0;;
-		"--cortex-proto")	shift; CORTEX_PROTO=$1;;
-		"--cortex-port")	shift; CORTEX_PORT=$1;;
-		"--cortex-url")		shift; CORTEX_URLS+=($1);;
-		"--cortex-hostname")	shift; CORTEX_HOSTNAME=$1;;
-		"--cortex-key")  	shift; CORTEX_KEYS=($1);;
-		"--")			STOP=1;;
-		*)			usage
-	esac
-	shift
+  case "$1" in
+    "--no-config")         CONFIG=0 ;;
+    "--no-config-secret")  CONFIG_SECRET=0 ;;
+    "--secret")            shift; SECRET=$1 ;;
+    "--show-secret")       SHOW_SECRET=1 ;;
+    "--no-config-es")      CONFIG_ES=0 ;;
+    "--es-hosts")          echo "--es-hosts is deprecated, please use --es-uri"
+                           usage ;;
+    "--es-uri")            shift; ES_URI=$1 ;;
+    "--es-hostname")       shift; ES_HOSTNAME=$1 ;;
+    "--no-config-cortex")  CONFIG_CORTEX=0 ;;
+    "--cortex-proto")      shift; CORTEX_PROTO=$1 ;;
+    "--cortex-port")       shift; CORTEX_PORT=$1 ;;
+    "--cortex-url")        shift; CORTEX_URLS+=($1) ;;
+    "--cortex-hostname")   shift; CORTEX_HOSTNAME=$1 ;;
+    "--cortex-key")        shift; CORTEX_KEYS=($1) ;;
+    "--auto-migration")    AUTO_MIGRATION=1 ;;
+    "--create-admin")      shift; CREATE_ADMIN_LOGIN=$1
+                           shift; CREATE_ADMIN_PASSWORD=$1 ;;
+    "--create-user")       shift; CREATE_USER_LOGIN=$1
+                           shift; IFS=',' read -r -a CREATE_USER_ROLE <<< "$1"
+                           shift; CREATE_USER_PASSWORD=$1 ;;
+    "--")                  STOP=1;;
+    *)                     usage
+  esac
+  shift
 done
 
-if test $CONFIG = 1
+if test "${CONFIG}" = 1
 then
-	CONFIG_FILE=$(mktemp).conf
-	if test $CONFIG_SECRET = 1
-	then
-		if test -z "$SECRET"
-		then
-			SECRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
-		fi
-		echo Using secret: $SECRET
-		echo play.http.secret.key=\"$SECRET\" >> $CONFIG_FILE
-	fi
+  CONFIG_FILE=$(mktemp).conf
+  if test "${CONFIG_SECRET}" = 1
+  then
+    if test -z "${SECRET}"
+    then
+      SECRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
+      test "${SHOW_SECRET}" = 1 && echo Using secret: ${SECRET}
+    fi
+    echo "play.http.secret.key=\"${SECRET}\"" >> ${CONFIG_FILE}
+  fi
 
-	if test $CONFIG_ES = 1
-	then
-		if test -z "$ES_URI"
-		then
-			function join_es_hosts {
-				echo -n $1:9200
-				shift
-				printf "%s," "${@/#/:9200}"
-			}
+  if test "${CONFIG_ES}" = 1
+  then
+    if test -z "${ES_URI}"
+    then
+      ES=$(getent ahostsv4 "${ES_HOSTNAME}" | awk '{ print $1 }' | sort -u)
+      if test -z "${ES}"
+      then
+        echo "Warning automatic elasticsearch host config fails"
+      else
+        JOIN_ES_HOST=$(printf "%s:9200," "${ES}")
+        ES_URI=http://${JOIN_ES_HOST::-1}
+      fi
+    fi
+    if test -n "${ES_URI}"
+    then
+      echo "Using elasticsearch uri: ${ES_URI}"
+      echo "search.uri=\"${ES_URI}\"" >> ${CONFIG_FILE}
+    else
+      echo "elasticsearch uri not configured"
+    fi
+  fi
 
-			ES=$(getent ahostsv4 $ES_HOSTNAME | awk '{ print $1 }' | sort -u)
-			if test -z "$ES"
-			then
-				echo "Warning automatic elasticsearch host config fails"
-			else
-				ES_URI=http://$(join_es_hosts $ES)
-			fi
-		fi
-		if test -n "$ES_URI"
-		then
-			echo Using elasticsearch uri: $ES_URI
-			echo search.uri=\"$ES_URI\" >> $CONFIG_FILE
-		else
-			echo elasticsearch host not configured
-		fi
-	fi
+  if test -n "${CREATE_USER_LOGIN}"; then
+    echo "Enable basic authentication method to permit user creation"
+    echo "auth.method.basic=true" >> ${CONFIG_FILE}
+  fi
 
-	if test $CONFIG_CORTEX = 1
-	then
-		if test -n "$CORTEX_HOSTNAME"
-		then
-			CORTEX_URLS+=($(getent ahostsv4 $CORTEX_HOSTNAME | awk "{ print \"$CORTEX_PROTO://\"\$1\":$CORTEX_PORT\" }" | sort -u))
-		fi
+  if test "${CONFIG_CORTEX}" = 1
+  then
+    if test -n "${CORTEX_HOSTNAME}"
+    then
+      CORTEX_URLS+=($(getent ahostsv4 "${CORTEX_HOSTNAME}" | awk "{ print \"${CORTEX_PROTO}://\"\$1\":${CORTEX_PORT}\" }" | sort -u))
+    fi
 
-		if test ${#CORTEX_URLS[@]} -gt 0
-		then
-			echo "play.modules.enabled += connectors.cortex.CortexConnector" >> $CONFIG_FILE
-		fi
-		I=1
-		for C in ${CORTEX_URLS[@]}
-		do
-			echo Add Cortex cortex$I: $C
-			echo cortex.cortex$I.url=\"$C\" >> $CONFIG_FILE
-			I=$(($I+1))
-		done
-		I=1
-		for K in ${CORTEX_KEYS[@]}
-		do
-			echo Add Cortex cortex$I key: $K
-			echo cortex.cortex$I.key=\"$K\" >> $CONFIG_FILE
-			I=$(($I+1))
-		done
-	fi
+    if test ${#CORTEX_URLS[@]} -gt 0
+    then
+      echo "play.modules.enabled += connectors.cortex.CortexConnector" >> ${CONFIG_FILE}
+    fi
+    I=1
+    for C in ${CORTEX_URLS[@]}
+    do
+      echo "Add Cortex cortex${I}: ${C}"
+      echo "cortex.cortex${I}.url=\"${C}\"" >> ${CONFIG_FILE}
+      I=$((${I}+1))
+    done
+    I=1
+    for K in ${CORTEX_KEYS[@]}
+    do
+      echo "Add Cortex cortex${I} key: ${K}"
+      echo "cortex.cortex${I}.key=\"${K}\"" >> ${CONFIG_FILE}
+      I=$((${I}+1))
+    done
+  fi
 
-	echo 'include file("/etc/thehive/application.conf")' >> $CONFIG_FILE
+  echo 'include file("/etc/thehive/application.conf")' >> ${CONFIG_FILE}
 fi
 
-exec bin/thehive \
-	-Dconfig.file=$CONFIG_FILE \
-	-Dlogger.file=/etc/thehive/logback.xml \
-	-Dpidfile.path=/dev/null \
-	$@
+
+bin/thehive \
+  -Dconfig.file=${CONFIG_FILE} \
+  -Dlogger.file=/etc/thehive/logback.xml \
+  -Dpidfile.path=/dev/null \
+  $@ &
+PID=$!
+trap 'kill -SIGTERM "${PID}"; wait "${PID}"; exit 143' SIGTERM SIGINT
+
+if test "${AUTO_MIGRATION}" = 1 -o -n "${CREATE_ADMIN_LOGIN}"; then
+  echo -n "Wait until TheHive starts"
+  MAX_WAIT=15
+  IS_STARTED=0
+  while test "${MAX_WAIT}" -gt 0 -a "${IS_STARTED}" = 0; do
+    sleep 3
+    echo -n .
+    HTTP_CODE=$(curl -s -w '%{http_code}' -m 2 -o /dev/null http://127.0.0.1:9000/api/status)
+    test "${HTTP_CODE}" != 200
+    IS_STARTED=$?
+    MAX_WAIT=$(("${MAX_WAIT}"-1))
+  done
+  echo
+  if test "${IS_STARTED}" = 0; then
+    echo "Thehive fails to start"
+  else
+    HTTP_CODE=$(curl -s -w '%{http_code}' -o /dev/null http://127.0.0.1:9000/api/user/current)
+    if test "${HTTP_CODE}" = 520 -a "${AUTO_MIGRATION}" = 1; then
+      echo -n "Migrating database ..."
+      HTTP_CODE=$(curl -s -w '%{http_code}' -o /dev/null -XPOST http://127.0.0.1:9000/api/maintenance/migrate)
+      if test "${HTTP_CODE}" != 204; then
+        echo "fails! ${HTTP_CODE}"
+      else
+        echo "ok"
+        if test -n "${CREATE_ADMIN_LOGIN}"; then
+          echo -n "Create admin user ..."
+          HTTP_CODE=$(curl -s -w '%{http_code}' -o /dev/null http://127.0.0.1:9000/api/user \
+            -H "Content-type: application/json" \
+            -d '{
+              "login": "'${CREATE_ADMIN_LOGIN}'",
+              "name": "'${CREATE_ADMIN_LOGIN}'",
+              "roles": ["ADMIN","READ","WRITE","ALERT"],
+              "password":"'${CREATE_ADMIN_PASSWORD}'"}')
+          if test ${HTTP_CODE} != 201; then
+            echo "fails"
+          else
+            echo "ok"
+            if test -n "${CREATE_USER_LOGIN}"; then
+              echo -n "Create user ${CREATE_USER_LOGIN} ..."
+              ROLE=$(printf '"%s",' ${CREATE_USER_ROLE[@]})
+              HTTP_CODE=$(curl -s -w '%{http_code}' -o /dev/null http://127.0.0.1:9000/api/user \
+                -u ${CREATE_ADMIN_LOGIN}:${CREATE_ADMIN_PASSWORD} \
+                -H "Content-type: application/json" \
+                -d '{
+                  "login": "'${CREATE_USER_LOGIN}'",
+                  "name": "'${CREATE_USER_LOGIN}'",
+                  "roles": ['${ROLE::-1}'],
+                  "password": "'${CREATE_USER_PASSWORD}'"}')
+              if test ${HTTP_CODE} = 201; then
+                echo "ok"
+              else
+                echo "fails"
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  fi
+fi
+wait ${PID}
