@@ -11,7 +11,7 @@ import org.elastic4play.{AttributeError, InvalidFormatAttributeError}
 
 object SeverityAttributeFormat extends NumberAttributeFormat {
 
-  def isValidValue(value: Long): Boolean = 1 <= value && value <= 3
+  def isValidValue(value: Long): Boolean = 1 <= value && value <= 4
 
   override def definition(dblists: DBLists, attribute: Attribute[Long]): Seq[AttributeDefinition] =
     Seq(
@@ -19,8 +19,8 @@ object SeverityAttributeFormat extends NumberAttributeFormat {
         attribute.attributeName,
         name,
         attribute.description,
-        Seq(JsNumber(1), JsNumber(2), JsNumber(3)),
-        Seq("low", "medium", "high")
+        Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)),
+        Seq("low", "medium", "high", "critical")))
       )
     )
 
