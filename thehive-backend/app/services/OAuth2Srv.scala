@@ -43,7 +43,19 @@ object OAuth2Config {
       scope            ← configuration.getOptional[String]("auth.oauth2.scope")
       autocreate = configuration.getOptional[Boolean]("auth.sso.autocreate").getOrElse(false)
       autoupdate = configuration.getOptional[Boolean]("auth.sso.autoupdate").getOrElse(false)
-    } yield OAuth2Config(clientId, clientSecret, redirectUri, responseType, grantType, authorizationUrl, tokenUrl, userUrl, scope, autocreate, autoupdate)
+    } yield OAuth2Config(
+      clientId,
+      clientSecret,
+      redirectUri,
+      responseType,
+      grantType,
+      authorizationUrl,
+      tokenUrl,
+      userUrl,
+      scope,
+      autocreate,
+      autoupdate
+    )
 }
 
 @Singleton
@@ -101,7 +113,7 @@ class OAuth2Srv(
             case Status.OK ⇒
               logger.debug("Getting user info using access token")
               val accessToken = (r.json \ "access_token").asOpt[String].getOrElse("")
-              val authHeader  = "Authorization" → s"bearer $accessToken"
+              val authHeader  = "Authorization" → s"Bearer $accessToken"
               ws.url(cfg.userUrl)
                 .addHttpHeaders(authHeader)
                 .get()
