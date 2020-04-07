@@ -20,7 +20,7 @@ object SeverityAttributeFormat extends NumberAttributeFormat {
         name,
         attribute.description,
         Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)),
-        Seq("low", "medium", "high", "critical")))
+        Seq("low", "medium", "high", "critical")
       )
     )
 

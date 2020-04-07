@@ -38,6 +38,7 @@ class StatusCtrl @Inject()(
   private def updateStatus(): Unit = {
     clusterStatusName = Try(dbIndex.clusterStatusName).getOrElse("ERROR")
     system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
+    ()
   }
   updateStatus()
 
