@@ -81,10 +81,12 @@ class CaseModel @Inject()(
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] =
     sequenceSrv("case").map { caseId ⇒
-      attrs + ("caseId" → JsNumber(caseId))
+      attrs +
+        ("caseId" → JsNumber(caseId)) +
+        ("owner"  → (attrs \ "owner").asOpt[String].fold[JsValue](JsNull)(o ⇒ JsString(o.toLowerCase())))
     }
 
-  override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {
+  private def updateStatus(updateAttrs: JsObject): JsObject =
     (updateAttrs \ "status").asOpt[CaseStatus.Type] match {
       case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
         updateAttrs +
@@ -95,7 +97,12 @@ class CaseModel @Inject()(
       case _ ⇒
         updateAttrs
     }
-  }
+
+  private def lowercaseOwner(updateAttrs: JsObject): JsObject =
+    (updateAttrs \ "owner").asOpt[String].fold(updateAttrs)(o ⇒ updateAttrs + ("owner" → JsString(o.toLowerCase)))
+
+  override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] =
+    Future.successful(lowercaseOwner(updateStatus(updateAttrs)))
 
   private[models] def buildArtifactStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
