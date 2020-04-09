@@ -26,7 +26,7 @@ mappings in Docker ~= (_.filterNot {
 })
 dockerCommands := Seq(
   Cmd("FROM", "openjdk:8"),
-  Cmd("LABEL", "MAINTAINER=\"TheHive Project <support@thehive-project.org>\""),
+  Cmd("LABEL", "MAINTAINER=\"TheHive Project <support@thehive-project.org>\"", "repository=\"https://github.com/TheHive-Project/TheHive\""),
   Cmd("WORKDIR", "/opt/thehive"),
   // format: off
   Cmd("RUN",
@@ -36,13 +36,12 @@ dockerCommands := Seq(
     "apt", "autoremove", "-y", "-q",  "&&",
     "rm", "-rf", "/var/lib/apt/lists/*", "&&",
     "(", "type", "groupadd", "1>/dev/null", "2>&1", "&&",
-    "groupadd", "-g", "1000", "thehive", "||",
-    "addgroup", "-g", "1000", "-S", "thehive",
-    ")",
-    "&&",
+      "groupadd", "-g", "1000", "thehive", "||",
+      "addgroup", "-g", "1000", "-S", "thehive",
+    ")", "&&",
     "(", "type", "useradd", "1>/dev/null", "2>&1", "&&",
-    "useradd", "--system", "--uid", "1000", "--gid", "1000", "thehive", "||",
-    "adduser", "-S", "-u", "1000", "-G", "thehive", "thehive",
+      "useradd", "--system", "--uid", "1000", "--gid", "1000", "thehive", "||",
+      "adduser", "-S", "-u", "1000", "-G", "thehive", "thehive",
     ")"),
   //format: on
   Cmd("ADD", "--chown=root:root", "opt", "/opt"),
