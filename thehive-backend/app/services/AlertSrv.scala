@@ -109,8 +109,27 @@ class AlertSrv(
         case a ⇒ Future.successful(a)
       }
     artifactsFields.flatMap { af ⇒
+      val validArtifacts = af.filter { a ⇒
+        val hasAttachment = (a \ "attachment").asOpt[JsObject].isDefined
+        val hasData       = (a \ "data").asOpt[String].isDefined
+        val dataType      = (a \ "dataType").asOpt[String]
+        val isValid = dataType match {
+          case None         ⇒ false
+          case Some("file") ⇒ hasAttachment && !hasData
+          case _            ⇒ !hasAttachment && hasData
+        }
+        if (!isValid) {
+          val dataTypeStr   = dataType.fold("DataType is not set!")(d ⇒ s"DataType is $d")
+          val dataStr       = if (hasData) "data is set" else "data is not set"
+          val attachmentStr = if (hasAttachment) "attachment is set" else "attachment is not set"
+          logger.warn(
+            s"The alert contains an invalid artifact: $dataTypeStr, $dataStr, $attachmentStr"
+          )
+        }
+        isValid
+      }
       /* remove duplicate artifacts */
-      val distinctArtifacts = Collection.distinctBy(af) { a ⇒
+      val distinctArtifacts = Collection.distinctBy(validArtifacts) { a ⇒
         val data       = (a \ "data").asOpt[String]
         val attachment = (a \ "attachment" \ "id").asOpt[String]
         val dataType   = (a \ "dataType").asOpt[String]
@@ -280,31 +299,33 @@ class AlertSrv(
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
     val artifactsFields = alert
       .artifacts()
-      .map { artifact ⇒
+      .flatMap { artifact ⇒
         val tags    = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
         val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
-        val artifactFields = Fields(
-          artifact +
-            ("tags"    → JsArray(tags)) +
-            ("message" → message)
-        )
-        if (artifactFields.getString("dataType").contains("file")) {
-          artifactFields
-            .getString("data")
-            .map {
+        (artifact \ "dataType").asOpt[String].flatMap {
+          case "file" ⇒
+            (artifact \ "data").asOpt[String].collect {
               case dataExtractor(filename, contentType, data) ⇒
                 val f = Files.createTempFile("alert-", "-attachment")
                 Files.write(f, java.util.Base64.getDecoder.decode(data))
-                artifactFields
-                  .set("attachment", FileInputValue(filename, f, contentType))
+                Fields(
+                  artifact +
+                    ("tags"    → JsArray(tags)) +
+                    ("message" → message)
+                ).set("attachment", FileInputValue(filename, f, contentType))
                   .unset("data")
-              case data ⇒
-                logger.warn(s"Invalid data format for file artifact: $data")
-                artifactFields
             }
-            .getOrElse(artifactFields)
-        } else {
-          artifactFields
+          case _ if artifact.value.contains("data") ⇒
+            Some(
+              Fields(
+                artifact +
+                  ("tags"    → JsArray(tags)) +
+                  ("message" → message)
+              )
+            )
+          case _ ⇒
+            logger.warn(s"Invalid artifact format: $artifact")
+            None
         }
       }
 
