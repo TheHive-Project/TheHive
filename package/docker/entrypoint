@@ -29,11 +29,12 @@ function usage {
     Available options:
     --no-config                           | do not try to configure TheHive (add secret and elasticsearch)
     --no-config-secret                    | do not add random secret to configuration
+    --secret <secret>                     | secret to secure sessions
+    --show-secret                         | show the generated secret
     --no-config-es                        | do not add elasticsearch hosts to configuration
     --es-uri <uri>                        | use this string to configure elasticsearch hosts (format: http(s)://host:port,host:port(/prefix)?querystring)
     --es-hostname <host>                  | resolve this hostname to find elasticsearch instances
-    --secret <secret>                     | secret to secure sessions
-    --show-secret                         | show the generated secret
+    --no-config-cortex                    | do not add Cortex configuration
     --cortex-proto <proto>                | define protocol to connect to Cortex (default: http)
     --cortex-port <port>                  | define port to connect to Cortex (default: 9000)
     --cortex-url <url>                    | add Cortex connection
