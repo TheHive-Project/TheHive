@@ -1,17 +1,16 @@
 package connectors.misp
 
 import java.util.Date
+
 import javax.inject.{Inject, Provider, Singleton}
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import play.api.Logger
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
-
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
@@ -21,10 +20,11 @@ import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.model.FileHeader
 import services._
-
 import org.elastic4play.controllers.{Fields, FileInputValue}
 import org.elastic4play.services.{Attachment, AuthContext, TempSrv}
 import org.elastic4play.{InternalError, NotFoundError}
+
+import scala.util.Try
 
 @Singleton
 class MispSrv @Inject()(
@@ -69,13 +69,14 @@ class MispSrv @Inject()(
           .post(Json.obj("searchpublish_timestamp" → date))
       }
       .mapConcat { response ⇒
-        val eventJson = Json
-          .parse(response.body)
-          .asOpt[Seq[JsValue]]
-          .getOrElse {
-            logger.warn(s"Invalid MISP event format:\n${response.body}")
-            Nil
-          }
+        val eventJson = Try {
+          response
+            .body[JsValue]
+            .as[Seq[JsValue]]
+        }.getOrElse {
+          logger.warn(s"Invalid MISP event format:\n${response.body}")
+          Nil
+        }
         val events = eventJson
           .flatMap { j ⇒
             j.asOpt[MispAlert]
@@ -192,7 +193,7 @@ class MispSrv @Inject()(
           )
         )
         .set("tlp", tlp)
-      if attachment.isDefined != data.isDefined
+      if (attachment.isDefined && data.isEmpty) || (dataType != "file" && data.isDefined)
     } yield attachment.fold(Future.successful(fields.set("data", data.get)))(_.map { fiv ⇒
       fields.set("attachment", fiv)
     })) match {
