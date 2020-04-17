@@ -162,7 +162,7 @@ class CortexCtrl(
     for {
       job ← cortexAnalyzerSrv.getJob(jobId)
       jobJson = job.toJson
-      jobWithStats ← if (withStats) cortexAnalyzerSrv.addImportFieldInArtifacts(jobJson) else Future.successful(Json.toJson(job))
+      jobWithStats ← if (withStats) cortexAnalyzerSrv.addImportFieldInArtifacts(jobJson) else Future.successful(jobJson)
     } yield Ok(jobWithStats)
   }
 
