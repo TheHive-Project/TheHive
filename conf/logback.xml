@@ -46,6 +46,11 @@
     <!--logger name="services.LocalStreamActor" level="DEBUG" /-->
     <!--logger name="services.StreamActor" level="DEBUG" /-->
 
+    <!-- Uncomment the next lines to log debug information for OAuth/OIDC login -->
+    <!--logger name="org.elastic4play.services.auth" level="DEBUG" /-->
+    <!--logger name="services.OAuth2Srv" level="DEBUG" /-->
+    <!--logger name="services.mappers" level="DEBUG" /-->
+
     <root level="INFO">
         <appender-ref ref="ASYNCFILE" />
         <appender-ref ref="ASYNCSTDOUT" />

@@ -9,7 +9,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
             $state.go('maintenance');
             return;
         }else if(!currentUser || !currentUser.id) {
-            $state.go('login', {autoLogin: appConfig.config.ssoAutoLogin });
+            $state.go('login');
             return;
         }
 
@@ -141,7 +141,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
 
         $scope.logout = function() {
             AuthenticationSrv.logout(function() {
-                $state.go('login');
+                $state.go('login', {disableSsoAutoLogin: true});
             }, function(data, status) {
                 NotificationSrv.error('RootCtrl', data, status);
             });

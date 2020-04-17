@@ -12,7 +12,8 @@ trait MispConverter {
           message = mispAttribute.comment,
           tlp = 0,
           tags = tags ++ mispAttribute.tags,
-          startDate = mispAttribute.date
+          startDate = mispAttribute.date,
+          ioc = mispAttribute.toIds
         )
       )
     } else {
@@ -24,7 +25,8 @@ trait MispConverter {
           message = mispAttribute.comment,
           tlp = 0,
           tags = tags ++ mispAttribute.tags,
-          startDate = mispAttribute.date
+          startDate = mispAttribute.date,
+          ioc = mispAttribute.toIds
         )
 
       val types = mispAttribute.tpe.split('|').toSeq

@@ -65,7 +65,8 @@ object JsonFormat {
         value    ← (json \ "value").validate[String]
         category ← (json \ "category").validate[String]
         tags     ← JsArray(json \ "EventTag" \\ "name").validate[Seq[String]]
-      } yield MispAttribute(id, category, tpe, date, comment, value, tags)
+        toIds    ← (json \ "to_ids").validate[Boolean]
+      } yield MispAttribute(id, category, tpe, date, comment, value, tags, toIds)
   )
 
   val tlpWrites: Writes[Long] = Writes[Long] {
@@ -82,7 +83,8 @@ object JsonFormat {
       "type"     → attribute.tpe,
       "value"    → attribute.value.fold[String](identity, _.name),
       "comment"  → attribute.comment,
-      "Tag"      → Json.arr(Json.obj("name" → tlpWrites.writes(attribute.tlp)))
+      "Tag"      → Json.arr(Json.obj("name" → tlpWrites.writes(attribute.tlp))),
+      "to_ids"   → attribute.artifact.ioc()
     )
   }
 
@@ -92,7 +94,8 @@ object JsonFormat {
       "message"   → artifact.message,
       "tlp"       → artifact.tlp,
       "tags"      → artifact.tags,
-      "startDate" → artifact.startDate
+      "startDate" → artifact.startDate,
+      "ioc"       → artifact.ioc
     ) + (artifact.value match {
       case SimpleArtifactData(data) ⇒ "data" → JsString(data)
       case RemoteAttachmentArtifact(filename, reference, tpe) ⇒

@@ -115,7 +115,7 @@ class MispExport @Inject()(
 
   def exportAttribute(mispConnection: MispConnection, eventId: String, attribute: ExportedMispAttribute): Future[Artifact] = {
     val mispResponse = attribute match {
-      case ExportedMispAttribute(_, _, _, _, Right(attachment), comment) ⇒
+      case ExportedMispAttribute(artifact, _, _, _, Right(attachment), comment) ⇒
         attachmentSrv
           .source(attachment.id)
           .runReduce(_ ++ _)
@@ -126,7 +126,8 @@ class MispExport @Inject()(
                 "category" → "Payload delivery",
                 "type"     → "malware-sample",
                 "comment"  → comment,
-                "files"    → Json.arr(Json.obj("filename" → attachment.name, "data" → b64data))
+                "files"    → Json.arr(Json.obj("filename" → attachment.name, "data" → b64data)),
+                "to_ids"   → artifact.ioc()
               )
             )
             mispConnection(s"events/upload_sample/$eventId").post(body)
@@ -205,9 +206,9 @@ class MispExport @Inject()(
           logger.debug(s"Updating MISP event $eventId")
           mispSrv.getAttributesFromMisp(mispConnection, eventId, None).map { attributes ⇒
             (eventId, Nil, attributes.map {
-              case MispArtifact(SimpleArtifactData(data), _, _, _, _, _)                             ⇒ Left(data)
-              case MispArtifact(RemoteAttachmentArtifact(filename, _, _), _, _, _, _, _)             ⇒ Right(filename)
-              case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _) ⇒ Right(filename)
+              case MispArtifact(SimpleArtifactData(data), _, _, _, _, _, _)                             ⇒ Left(data)
+              case MispArtifact(RemoteAttachmentArtifact(filename, _, _), _, _, _, _, _, _)             ⇒ Right(filename)
+              case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), _, _, _, _, _, _) ⇒ Right(filename)
             })
           }
         }

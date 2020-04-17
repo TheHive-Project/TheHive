@@ -37,7 +37,7 @@ trait CaseAttributes { _: AttributeDef ⇒
   val caseId: A[Long]             = attribute("caseId", F.numberFmt, "Id of the case (auto-generated)", O.model)
   val title: A[String]            = attribute("title", F.textFmt, "Title of the case")
   val description: A[String]      = attribute("description", F.textFmt, "Description of the case")
-  val severity: A[Long]           = attribute("severity", SeverityAttributeFormat, "Severity if the case is an incident (0-3)", 2L)
+  val severity: A[Long]           = attribute("severity", SeverityAttributeFormat, "Severity if the case is an incident (1-4)", 2L)
   val owner: A[String]            = attribute("owner", F.userFmt, "Owner of the case")
   val startDate: A[Date]          = attribute("startDate", F.dateFmt, "Creation date", new Date)
   val endDate: A[Option[Date]]    = optionalAttribute("endDate", F.dateFmt, "Resolution date")
@@ -81,10 +81,12 @@ class CaseModel @Inject()(
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] =
     sequenceSrv("case").map { caseId ⇒
-      attrs + ("caseId" → JsNumber(caseId))
+      attrs +
+        ("caseId" → JsNumber(caseId)) +
+        ("owner"  → (attrs \ "owner").asOpt[String].fold[JsValue](JsNull)(o ⇒ JsString(o.toLowerCase())))
     }
 
-  override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] = Future.successful {
+  private def updateStatus(updateAttrs: JsObject): JsObject =
     (updateAttrs \ "status").asOpt[CaseStatus.Type] match {
       case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
         updateAttrs +
@@ -95,7 +97,12 @@ class CaseModel @Inject()(
       case _ ⇒
         updateAttrs
     }
-  }
+
+  private def lowercaseOwner(updateAttrs: JsObject): JsObject =
+    (updateAttrs \ "owner").asOpt[String].fold(updateAttrs)(o ⇒ updateAttrs + ("owner" → JsString(o.toLowerCase)))
+
+  override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] =
+    Future.successful(lowercaseOwner(updateStatus(updateAttrs)))
 
   private[models] def buildArtifactStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
@@ -177,9 +184,9 @@ class CaseModel @Inject()(
     }
 
   override val computedMetrics = Map(
-    "handlingDurationInSeconds" → "(doc['endDate'].value - doc['startDate'].value) / 1000",
-    "handlingDurationInHours"   → "(doc['endDate'].value - doc['startDate'].value) / 3600000",
-    "handlingDurationInDays"    → "(doc['endDate'].value - doc['startDate'].value) / (3600000 * 24)"
+    "handlingDurationInSeconds" → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 1000",
+    "handlingDurationInHours"   → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 3600000",
+    "handlingDurationInDays"    → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / (3600000 * 24)"
   )
 }
 

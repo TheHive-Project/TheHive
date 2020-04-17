@@ -24,7 +24,8 @@ case class OAuth2Config(
     tokenUrl: String,
     userUrl: String,
     scope: String,
-    autocreate: Boolean
+    autocreate: Boolean,
+    autoupdate: Boolean
 )
 
 object OAuth2Config {
@@ -41,7 +42,20 @@ object OAuth2Config {
       tokenUrl         ← configuration.getOptional[String]("auth.oauth2.tokenUrl")
       scope            ← configuration.getOptional[String]("auth.oauth2.scope")
       autocreate = configuration.getOptional[Boolean]("auth.sso.autocreate").getOrElse(false)
-    } yield OAuth2Config(clientId, clientSecret, redirectUri, responseType, grantType, authorizationUrl, tokenUrl, userUrl, scope, autocreate)
+      autoupdate = configuration.getOptional[Boolean]("auth.sso.autoupdate").getOrElse(false)
+    } yield OAuth2Config(
+      clientId,
+      clientSecret,
+      redirectUri,
+      responseType,
+      grantType,
+      authorizationUrl,
+      tokenUrl,
+      userUrl,
+      scope,
+      autocreate,
+      autoupdate
+    )
 }
 
 @Singleton
@@ -77,7 +91,7 @@ class OAuth2Srv(
     }
 
   private def getAuthTokenAndAuthenticate(clientId: String, code: String)(implicit request: RequestHeader): Future[AuthContext] = {
-    logger.debug("Getting user token with the code from the response!")
+    logger.debug("Getting user token with the code from the response")
     withOAuth2Config { cfg ⇒
       ws.url(cfg.tokenUrl)
         .post(
@@ -97,22 +111,23 @@ class OAuth2Srv(
         .flatMap { r ⇒
           r.status match {
             case Status.OK ⇒
+              logger.debug("Getting user info using access token")
               val accessToken = (r.json \ "access_token").asOpt[String].getOrElse("")
-              val authHeader  = "Authorization" → s"bearer $accessToken"
+              val authHeader  = "Authorization" → s"Bearer $accessToken"
               ws.url(cfg.userUrl)
                 .addHttpHeaders(authHeader)
                 .get()
                 .flatMap { userResponse ⇒
                   if (userResponse.status != Status.OK) {
-                    Future.failed(AuthenticationError(s"unexpected response from server: ${userResponse.status} ${userResponse.body}"))
+                    Future.failed(AuthenticationError(s"Unexpected response from server: ${userResponse.status} ${userResponse.body}"))
                   } else {
                     val response = userResponse.json.asInstanceOf[JsObject]
                     getOrCreateUser(response, authHeader)
                   }
                 }
             case _ ⇒
-              logger.error(s"unexpected response from server: ${r.status} ${r.body}")
-              Future.failed(AuthenticationError("unexpected response from server"))
+              logger.error(s"Unexpected response from server: ${r.status} ${r.body}")
+              Future.failed(AuthenticationError("Unexpected response from server"))
           }
         }
     }
@@ -125,11 +140,24 @@ class OAuth2Srv(
         userSrv
           .get(userId)
           .flatMap(user ⇒ {
-            userSrv.getFromUser(request, user, name)
+            if (cfg.autoupdate) {
+              logger.debug(s"Updating OAuth/OIDC user")
+              userSrv.inInitAuthContext { implicit authContext ⇒
+                // Only update name and roles, not login (can't change it)
+                userSrv
+                  .update(user, userFields.unset("login"))
+                  .flatMap(user ⇒ {
+                    userSrv.getFromUser(request, user, name)
+                  })
+              }
+            } else {
+              userSrv.getFromUser(request, user, name)
+            }
           })
           .recoverWith {
             case authErr: AuthorizationError ⇒ Future.failed(authErr)
             case _ if cfg.autocreate ⇒
+              logger.debug(s"Creating OAuth/OIDC user")
               userSrv.inInitAuthContext { implicit authContext ⇒
                 userSrv
                   .create(userFields)
