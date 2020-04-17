@@ -165,7 +165,11 @@ class CortexClient(val name: String, baseUrl: String, authentication: Option[Cor
     request(s"api/analyzer/type/$dataType", _.get, _.json.as[Seq[Analyzer]]).map(_.map(_.copy(cortexIds = List(name))))
 
   def waitReport(jobId: String, atMost: Duration)(implicit ec: ExecutionContext): Future[JsObject] =
-    request(s"api/job/$jobId/waitreport", _.withQueryStringParameters("atMost" → atMost.toString).get, _.json.as[JsObject])
+    request(
+      s"api/job/$jobId/waitreport",
+      _.withQueryStringParameters("atMost" → atMost.toString).withRequestTimeout(atMost + 1.second).get,
+      _.json.as[JsObject]
+    )
 
   def getVersion()(implicit ec: ExecutionContext): Future[Option[String]] =
     request("api/status", _.get, identity)

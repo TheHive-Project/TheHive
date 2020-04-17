@@ -19,7 +19,7 @@
 
                     if (angular.isDefined(scope.value)) {
                         if (!compiledContents) {
-                            // Get the link function with the contents frome top
+                            // Get the link function with the contents from top
                             // level template with
                             // the transclude
                             compiledContents = $compile(contents, transclude);

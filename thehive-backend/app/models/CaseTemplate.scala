@@ -19,7 +19,7 @@ trait CaseTemplateAttributes { _: AttributeDef ⇒
   val templateName: A[String]             = attribute("name", F.stringFmt, "Name of the template")
   val titlePrefix: A[Option[String]]      = optionalAttribute("titlePrefix", F.textFmt, "Title of the case")
   val description: A[Option[String]]      = optionalAttribute("description", F.textFmt, "Description of the case")
-  val severity: A[Option[Long]]           = optionalAttribute("severity", SeverityAttributeFormat, "Severity if the case is an incident (0-5)")
+  val severity: A[Option[Long]] = optionalAttribute("severity", SeverityAttributeFormat, "Severity if the case is an incident (1-4)")
   val tags: A[Seq[String]]                = multiAttribute("tags", F.stringFmt, "Case tags")
   val flag: A[Option[Boolean]]            = optionalAttribute("flag", F.booleanFmt, "Flag of the case")
   val tlp: A[Option[Long]]                = optionalAttribute("tlp", TlpAttributeFormat, "TLP level")

@@ -4,6 +4,7 @@ import java.util.Date
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Success
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
@@ -42,7 +43,7 @@ class CortexActionSrv @Inject()(
     implicit val mat: Materializer
 ) {
 
-  lazy val logger                  = Logger(getClass)
+  lazy val logger: Logger          = Logger(getClass)
   lazy val responderIdRegex: Regex = "(.*)-(.*)".r
 
   def getResponderById(id: String): Future[Responder] =
@@ -221,9 +222,20 @@ class CortexActionSrv @Inject()(
             }
         }
         .getOrElse {
-          Future.firstCompletedOf {
-            cortexConfig.instances.map(c ⇒ getResponder(c).map(c → _))
-          }
+          Future
+            .traverse(cortexConfig.instances) { c ⇒
+              getResponder(c)
+                .transform {
+                  case Success(w) ⇒ Success(Some(c → w))
+                  case _          ⇒ Success(None)
+                }
+            }
+            .flatMap { responders ⇒
+              responders
+                .flatten
+                .headOption
+                .fold[Future[(CortexClient, Responder)]](Future.failed(NotFoundError(s"Responder not found")))(Future.successful)
+            }
         }
 
     for {
