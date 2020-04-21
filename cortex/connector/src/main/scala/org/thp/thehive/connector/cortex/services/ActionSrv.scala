@@ -72,7 +72,7 @@ class ActionSrv @Inject() (
         case None => Future.failed(NotFoundError(s"Responder $workerId not found"))
       }
       (label, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
-      inputCortexAction = CortexAction(label, writes.writes(entity), s"thehive:${entity._model.label}", tlp, pap, parameters)
+      inputCortexAction = CortexAction(label, writes.writes(entity), s"thehive:${fromObjectType(entity._model.label)}", tlp, pap, parameters)
       job <- client.execute(workerId, inputCortexAction)
       action = Action(
         job.workerId,
