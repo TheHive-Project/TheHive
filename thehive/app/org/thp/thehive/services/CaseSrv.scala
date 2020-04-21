@@ -219,6 +219,7 @@ class CaseSrv @Inject() (
       `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(`case`).unsetImpactStatus()
     caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
     auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> impactStatus.value))
   }
