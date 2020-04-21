@@ -1,15 +1,17 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-
-import play.api.Logger
+import java.util.Date
 
 import akka.actor._
 import akka.pattern.pipe
 import javax.inject.Inject
+import org.thp.client.ApplicationError
 import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.AuthContext
+import play.api.Logger
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 object CortexActor {
   final case class CheckJob(
@@ -60,7 +62,13 @@ class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: Ac
               .clients
               .find(_.name == cortexId)
               .fold(logger.error(s"Receive a CheckJob for an unknown cortexId: $cortexId")) { client =>
-                client.getReport(cortexJobId, 1.second).pipeTo(self)
+                client
+                  .getReport(cortexJobId, 1.second)
+                  .recover { // this is a workaround for a timeout bug in Cortex
+                    case ApplicationError(500, body) if (body \ "type").asOpt[String].contains("akka.pattern.AskTimeoutException") =>
+                      CortexJob(cortexJobId, "", "", "", new Date, None, None, JobStatus.InProgress, None, None, "", "", None, JobType.analyzer)
+                  }
+                  .pipeTo(self)
                 ()
               }
         }
