@@ -79,19 +79,13 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, db: Database, attachme
             }
             val href = if (resource.url.isEmpty) request.uri else baseUrl + resource.url
             <D:response>
-              <D:href>
-                {href}
-              </D:href>
+              <D:href>{href}</D:href>
               <D:propstat xmlns:D="DAV:">
-                <D:prop>
-                  {knownProps}
-                </D:prop>
+                <D:prop>{knownProps}</D:prop>
                 <D:status>HTTP/1.1 200 OK</D:status>
               </D:propstat>
               <D:propstat xmlns:D="DAV:">
-                <D:prop>
-                  {unknownProps}
-                </D:prop>
+                <D:prop>{unknownProps}</D:prop>
                 <D:status>HTTP/1.1 404 Not Found</D:status>
               </D:propstat>
             </D:response>
