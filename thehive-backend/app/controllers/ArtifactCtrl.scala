@@ -103,7 +103,9 @@ class ArtifactCtrl @Inject()(
     } yield {
       for {
         hashes ← attachmentSrv.getHashes(attachmentId)
-        size   ← attachmentSrv.getSize(attachmentId)
+        size ← attachmentSrv.getSize(attachmentId).recover {
+          case _: NoSuchElementException ⇒ 0 // workaround until elastic4play#93 is fixed
+        }
       } yield fields.set("attachment", AttachmentInputValue(name, hashes, size.toLong, contentType, attachmentId))
     }
     artifactFields.fold[Future[Seq[Fields]]](Future.successful(Nil))(_.map(f ⇒ Seq(f)))
