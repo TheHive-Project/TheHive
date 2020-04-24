@@ -302,31 +302,43 @@ class AlertSrv(
       .flatMap { artifact ⇒
         val tags    = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
         val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
-        (artifact \ "dataType").asOpt[String].flatMap {
-          case "file" ⇒
-            (artifact \ "data").asOpt[String].collect {
-              case dataExtractor(filename, contentType, data) ⇒
-                val f = Files.createTempFile("alert-", "-attachment")
-                Files.write(f, java.util.Base64.getDecoder.decode(data))
+        (artifact \ "dataType")
+          .asOpt[String]
+          .flatMap {
+            case "file" if !artifact.value.contains("attachment") ⇒
+              (artifact \ "data").asOpt[String].collect {
+                case dataExtractor(filename, contentType, data) ⇒
+                  val f = Files.createTempFile("alert-", "-attachment")
+                  Files.write(f, java.util.Base64.getDecoder.decode(data))
+                  Fields(
+                    artifact +
+                      ("tags"    → JsArray(tags)) +
+                      ("message" → message)
+                  ).set("attachment", FileInputValue(filename, f, contentType))
+                    .unset("data")
+              }
+            case "file" ⇒
+              Some(
                 Fields(
                   artifact +
                     ("tags"    → JsArray(tags)) +
                     ("message" → message)
-                ).set("attachment", FileInputValue(filename, f, contentType))
-                  .unset("data")
-            }
-          case _ if artifact.value.contains("data") ⇒
-            Some(
-              Fields(
-                artifact +
-                  ("tags"    → JsArray(tags)) +
-                  ("message" → message)
+                )
               )
-            )
-          case _ ⇒
+            case _ if artifact.value.contains("data") ⇒
+              Some(
+                Fields(
+                  artifact +
+                    ("tags"    → JsArray(tags)) +
+                    ("message" → message)
+                )
+              )
+            case _ ⇒ None
+          }
+          .orElse {
             logger.warn(s"Invalid artifact format: $artifact")
             None
-        }
+          }
       }
 
     val updatedCase = artifactSrv
