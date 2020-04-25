@@ -18,11 +18,18 @@
                     'InProgress': 'label-warning',
                     'Failure': 'label-danger'}[action.status]">{{action.status}}</span>
                 </td>
-                <td>{{action.responderName}}</td>
+                <td>
+                    <div>{{action.responderName}}</div>
+                    <div ng-if="action.status === 'Failure'" class="text-danger wrap mt-xxs">
+                        <a class="text-danger" href
+                            ng-click="action.showError = !!!action.showError">{{action.showError ? 'Hide' : 'Show'}} error</a>
+                        <pre ng-show="action.showError" class="error-trace">{{action.errorMessage}}</pre>
+                    </div>
+                </td>
                 <td>{{action.cortexId}}</td>
                 <td>{{action.startDate | shortDate}}</td>
                 <td class="text-center">
-                    <a href class="noline" ng-click="showResponderJob(action)"><i class="fa fa-search"></i></a>
+                    <a ng-if="action.status !== 'Failure'" href class="noline" ng-click="showResponderJob(action)" uib-tooltip="Show action report" tooltip-placement="left-middle"><i class="fa fa-search"></i></a>
                 </td>
             </tr>
         </tbody>

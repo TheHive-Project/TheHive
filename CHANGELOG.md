@@ -1,5 +1,16 @@
 # Change Log
 
+## [3.4.2](https://github.com/TheHive-Project/TheHive/milestone/57) (2020-04-25)
+
+**Implemented enhancements:**
+
+- [Feature Request] Providing output details for Responders [\#962](https://github.com/TheHive-Project/TheHive/issues/962)
+
+**Fixed bugs:**
+
+- Analyzer's artifacts tags and message are not kept when importing observables [\#1285](https://github.com/TheHive-Project/TheHive/issues/1285)
+- [Bug] File observables in alert are not created in case [\#1292](https://github.com/TheHive-Project/TheHive/issues/1292)
+
 ## [3.4.1](https://github.com/TheHive-Project/TheHive/milestone/53) (2020-04-17)
 
 **Implemented enhancements:**

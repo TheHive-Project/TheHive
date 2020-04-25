@@ -80,3 +80,13 @@ table.case-list .case-tags .label,
     font-size: 12px !important;
     font-weight: normal;
 }
+
+pre.error-trace {
+  color: #a94442;
+  border: none;
+  font-size: 10px;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: pre-wrap;
+  background-color: #f9f1f1;
+}
