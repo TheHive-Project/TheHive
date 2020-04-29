@@ -9,18 +9,26 @@
                 <th>Organisation</th>
                 <th width="250">Profile</th>
                 <th width="160">Shared At</th>
-                <th width="160" class="text-right">Actions</th>
+                <th width="160" class="text-right" if-permission="manageShare" allowed="{{$ctrl.permissions}}">Actions</th>
             </thead>
             <tbody>
                 <tr ng-repeat="share in $ctrl.shares | orderBy:'organisationName'">
-                    <td>{{share.organisationName}}</td>
-                    <td ng-if="!$ctrl.readOnly">
-                        <updatable-select options="$ctrl.profiles" value="share.profileName" on-update="$ctrl.updateProfile(share._id, newValue)"></updatable-select>
+                    <td>{{share.organisationName}} - {{share.owner}}</td>
+                    <td ng-if="$ctrl.readOnly">
+                        <span>{{share.profileName}}</span>
                     </td>
-                    <td ng-if="$ctrl.readOnly">{{share.profileName}}</td>
+                    <td ng-if="!$ctrl.readOnly">
+                        <span if-not-permission="manageShare" allowed="{{$ctrl.permissions}}">{{share.profileName}}</span>
+                        <span if-permission="manageShare" allowed="{{$ctrl.permissions}}">
+                            <span ng-if="share.owner === true">{{share.profileName}}</span>
+                            <span ng-if="share.owner !== true">
+                                <updatable-select options="$ctrl.profiles" value="share.profileName" on-update="$ctrl.updateProfile(share._id, newValue)"></updatable-select>
+                            </span>
+                        </span>
+                    </td>
                     <td>{{share.createdAt | shortDate}}</td>
-                    <td class="text-right">
-                        <span class="clickable text-danger" ng-click="$ctrl.remove(share)">
+                    <td class="text-right" if-permission="manageShare" allowed="{{$ctrl.permissions}}">
+                        <span class="clickable text-danger" ng-if="share.owner !== true" ng-click="$ctrl.remove(share)">
                             <i class="fa fa-trash"></i> Delete
                         </span>
                     </td>

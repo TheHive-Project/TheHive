@@ -1,7 +1,7 @@
-<div class="row mb-s">
+<div class="row mb-s" if-permission="manageCase" allowed="{{userPermissions}}">
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group" if-permission="manageCase" allowed="{{userPermissions}}">
+            <div class="btn-group">
                 <button class="btn btn-sm btn-primary" ng-click="$vm.shareCase()" ng-disabled="!$vm.enableAddButton">
                     <i class="fa fa-plus"></i>
                     Add share
@@ -29,6 +29,7 @@
             profiles="$vm.profiles"
             on-delete="$vm.removeShare(share)"
             on-update-profile="$vm.updateShareProfile(org, profile)"
+            permissions="userPermissions"
             ></sharing-list>
     </div>
 </div>

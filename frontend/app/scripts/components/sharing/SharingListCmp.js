@@ -26,7 +26,8 @@
                 readOnly: '<',
                 //onReload: '&',
                 onUpdateProfile: '&',
-                onDelete: '&'
+                onDelete: '&',
+                permissions: '='
             }
         });
 })();
