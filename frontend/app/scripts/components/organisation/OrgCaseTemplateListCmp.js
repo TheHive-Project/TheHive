@@ -102,6 +102,7 @@
                         pap: 2,
                         tlp: 2
                     });
+                    self.template.tasks = _.sortBy(self.template.tasks, 'order');
                     self.tags = UtilsSrv.objectify(self.template.tags, 'text');
                     self.templateCustomFields = getTemplateCustomFields(template.customFields);
 
@@ -154,7 +155,7 @@
                     var order = self.template.tasks ? self.template.tasks.length : 0;
 
                     self.openTaskDialog({
-                        order: order                        
+                        order: order
                     }, 'Add');
                 };
 
@@ -321,7 +322,7 @@
             controllerAs: '$vm',
             templateUrl: 'views/components/org/case-template/case-templates.html',
             bindings: {
-                templates: '<',
+                templates: '=',
                 fields: '<',
                 onReload: '&',
                 onEdit: '&'

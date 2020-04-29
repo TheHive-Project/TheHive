@@ -9,9 +9,8 @@
     <div class="empty-message" ng-if="!$vm.template.tasks || $vm.template.tasks.length === 0">
         No tasks have been specified. <a href class="mr-xxxs" ng-click="$vm.addTask()">Add a task</a>
     </div>
-
     <div ng-if="$vm.template.tasks.length !== 0" ui-sortable="$vm.sortableOptions" ng-model="$vm.template.tasks">
-        <div class="task-item" ng-init="isCollapsed=true" ng-repeat="t in $vm.template.tasks | orderBy:'order'">
+        <div class="task-item" ng-init="isCollapsed=true" ng-repeat="t in $vm.template.tasks | orderBy:'order' track by $index">
             <div class="panel-heading">
                 <span class="drag-handle text-primary clickable mr-xxs">
                     <i class="fa fa-bars"></i>
