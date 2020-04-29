@@ -13,7 +13,7 @@
             </thead>
             <tbody>
                 <tr ng-repeat="share in $ctrl.shares | orderBy:'organisationName'">
-                    <td>{{share.organisationName}} - {{share.owner}}</td>
+                    <td>{{share.organisationName}}</td>
                     <td ng-if="$ctrl.readOnly">
                         <span>{{share.profileName}}</span>
                     </td>
