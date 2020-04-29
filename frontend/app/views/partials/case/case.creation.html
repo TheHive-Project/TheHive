@@ -15,7 +15,7 @@
                         <input class="form-control input-sm" name="title" ng-if="!fromTemplate" ng-model="newCase.title" placeholder="Title" required type="text"/>
 
                         <div class="input-group" ng-if="fromTemplate">
-                            <span class="input-group-addon">{{template.titlePrefix}}</span>
+                            <span class="input-group-addonspan: >{{template.displayNitl || template.titlePrefixePrefix}}/>
                             <input class="form-control input-sm" name="title" ng-model="newCase.title" placeholder="Title" required type="text"/>
                         </div>
 
@@ -101,7 +101,7 @@
 
         <div if-permission="manageTask">
             <h4 class="vpad10 text-primary">Case tasks
-                <small ng-if="fromTemplate">(from [{{template.name}}] template)</small>
+                <small ng-if="fromTemplate">(from template: {{template.displayName || template.name}} )</small>
             </h4>
             <div class="row" ng-if="!fromTemplate">
                 <div class="col-md-12">

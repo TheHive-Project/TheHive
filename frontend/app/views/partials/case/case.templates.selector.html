@@ -31,7 +31,7 @@
                   ng-class="{'active': dialog.state.selected === template.id}"
                   ng-click="dialog.next(template)">
                       <td>
-                          <strong>{{template.name}}</strong><br>
+                          <strong>{{template.displayName || template.name}}</strong><br>
                           <p class="list-group-item-text text-muted">{{template.description | ellipsis:200}}</p>
                       </td>
                   </tr>

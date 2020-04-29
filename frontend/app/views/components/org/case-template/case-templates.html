@@ -23,20 +23,27 @@
 </div>
 
 <div class="row" ng-if="$vm.template || $vm.templates.length > 0">
-    <div class="col-md-2">
-
-
-        <h4 class="mt-m text-primary">Current templates</h4>
+    <div class="col-md-3">
+        <h4 class="mv-s text-primary">Current templates</h4>
         <ul class="nav nav-pills nav-stacked" ng-show="$vm.templates">
-            <li ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
-                <a href ng-click="$vm.loadTemplate(template)">{{template.name}}</a>
-            </li>
+            <div class="list-group">
+                <a href ng-click="$vm.loadTemplate(template)" class="list-group-item" ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
+                    <h4 class="list-group-item-heading">{{template.name}}</h4>
+                    <p class="list-group-item-text">{{template.displayName}}</p>
+                </a>
+            </div>
+            <!-- <li ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
+                <a href ng-click="$vm.loadTemplate(template)">
+                    <div>{{template.name}}</div>
+                    <div class="help-block small">{{template.displayName}}</div>
+                </a>
+            </li> -->
         </ul>
         <div ng-hide="$vm.templates.length != 0">
             There are no templates
         </div>
     </div>
-    <div class="col-md-10 left-border">
+    <div class="col-md-9 left-border">
         <form class="form-horizontal" name="templateEditForm" ng-submit="$vm.saveTemplate()" novalidate>
             <div class="row">
                 <div class="col-md-6">
