@@ -57,9 +57,11 @@
                 return defer.promise;
             };
 
-            this.remove = function(id) {
+            this.remove = function(id, organisation) {
                 return $http
-                    .delete('./api/v1/user/' + id + '/force')
+                    .delete('./api/v1/user/' + id + '/force', {
+                        params: {organisation: organisation}
+                    })
                     .then(function(response) {
                         return $q.resolve(response.data);
                     })

@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgUserList', {
-            controller: function($scope, UserSrv, NotificationSrv, ModalSrv, AuthenticationSrv, clipboard) {
+            controller: function($scope, $stateParams, UserSrv, NotificationSrv, ModalSrv, AuthenticationSrv, clipboard) {
                 var self = this;
 
                 self.userKeyCache = {};
@@ -157,7 +157,7 @@
 
                     modalInstance.result
                         .then(function(/*response*/) {
-                            return UserSrv.remove(user._id);
+                            return UserSrv.remove(user._id, $stateParams.organisation);
                         })
                         .then(function() {
                             NotificationSrv.success('User ' + user.login + ' has been successfully removed.');
