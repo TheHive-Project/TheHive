@@ -23,11 +23,12 @@ import org.thp.thehive.services.notification.triggers.JobFinished
 
 class JobSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all).authContext
-  override val appConfigure: AppBuilder = super
-    .appConfigure
-    .bindActor[CortexActor]("cortex-actor")
-    .bindToProvider[CortexClient, TestCortexClientProvider]
-    .bind[Connector, TestConnector]
+  override def appConfigure: AppBuilder =
+    super
+      .appConfigure
+      .bindActor[CortexActor]("cortex-actor")
+      .bindToProvider[CortexClient, TestCortexClientProvider]
+      .bind[Connector, TestConnector]
 
   //  def shutdownActorSystem(app: AppBuilder): Future[Terminated] = app.app.actorSystem.terminate()
   "job service" should {

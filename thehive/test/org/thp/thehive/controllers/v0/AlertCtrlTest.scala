@@ -274,7 +274,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     observables must contain(
       exactly(
         beLike[RichObservable] {
-          case RichObservable(_, tpe, Some(data), None, _, _, _) if tpe.name == "domain" && data.data == "c.fr" => ok
+          case RichObservable(_, tpe, Some(data), None, _, _, _, _) if tpe.name == "domain" && data.data == "c.fr" => ok
         } /*,
         beLike[RichObservable] {
           case RichObservable(obs, tpe, None, Some(attachment), tags, _, _) if tpe.name == "file" && attachment.name == "hello.txt" => ok

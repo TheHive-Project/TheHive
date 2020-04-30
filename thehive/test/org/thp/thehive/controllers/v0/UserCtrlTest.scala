@@ -58,7 +58,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val resultUser = contentAsJson(result).as[OutputUser]
       val expected = TestUser(
-        login = "certXX@thehive.local",
+        login = "certxx@thehive.local",
         name = "new user",
         roles = Set("read", "write", "alert"),
         organisation = "cert",

@@ -26,7 +26,7 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder {
         app[Database].transaction { implicit graph =>
           app[UserSrv].createEntity(
             User(
-              login = "getByLoginTest@thehive.local",
+              login = "getbylogintest@thehive.local",
               name = "test user (getByLogin)",
               apikey = None,
               locked = false,
