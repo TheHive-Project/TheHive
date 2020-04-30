@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('updatableUser', function(UserSrv, UtilsSrv, PSearchSrv) {
+        .directive('updatableUser', function(UserSrv, UtilsSrv, AuthenticationSrv, NotificationSrv) {
             return {
                 restrict: 'E',
                 link: function(scope, element, attrs, ctrl, transclude) {
@@ -17,15 +17,15 @@
                     scope.$watch('updatable.updating', function(value) {
 
                         if(value === true && !cached) {
-                            scope.userList = PSearchSrv(undefined, 'user', {
-                                scope: scope,
-                                baseFilter: {
-                                    'status': 'Ok'
-                                },
-                                loadAll: true,
-                                sort:  '+name',
-                                skipStream: true
-                            });
+                            UserSrv.list(AuthenticationSrv.currentUser.organisation, {_is: { locked: false }})
+                                .then(function(users) {
+                                    scope.userList = users;
+
+                                    console.log(scope.userList);
+                                })
+                                .catch(function(err) {
+                                    NotificationSrv.error('Fetching users', err.data, err.status);
+                                });
                             cached = true;
                         }
                     });

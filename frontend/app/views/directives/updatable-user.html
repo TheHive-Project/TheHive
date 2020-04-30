@@ -15,7 +15,7 @@
             <span class="caret"></span>
         </button>
         <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
-            <li ng-repeat="user in userList.allValues">
+            <li ng-repeat="user in userList">
                 <a ng-click="update(user.login)">{{user.organisation}}/{{user.name}}</a>
             </li>
         </ul>
