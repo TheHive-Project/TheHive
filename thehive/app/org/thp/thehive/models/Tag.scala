@@ -48,9 +48,7 @@ object Tag {
       case namespacePredicate(namespace, predicate)             => Tag(namespace, predicate, None, None, colour)
       case PredicateValue(predicate, value)                     => Tag(defaultNamespace, predicate, Some(value), None, colour)
       case predicate(predicate)                                 => Tag(defaultNamespace, predicate, None, None, colour)
-      case _ =>
-        logger.error(s"Invalid tag format: $name")
-        Tag(defaultNamespace, name, None, None, colour)
+      case _                                                    => Tag(defaultNamespace, name, None, None, colour)
     }
   }
 }
