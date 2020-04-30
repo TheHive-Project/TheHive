@@ -1,15 +1,14 @@
 package org.thp.client
 
-import play.api.libs.json._
-import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfig}
-import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSClientConfig, WSProxyServer, WSRequest}
-
 import akka.stream.Materializer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.sslconfig.ssl.{KeyStoreConfig, SSLConfigFactory, SSLConfigSettings, SSLDebugConfig, SSLLooseConfig, TrustStoreConfig}
+import play.api.libs.json._
+import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfig}
+import play.api.libs.ws.{DefaultWSProxyServer, WSClient, WSClientConfig, WSProxyServer, WSRequest}
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 
-case class ProxyWSConfig(wsConfig: AhcWSClientConfig = AhcWSClientConfig(), proxyConfig: Option[WSProxyServer])
+case class ProxyWSConfig(wsConfig: AhcWSClientConfig = AhcWSClientConfig(), proxyConfig: Option[WSProxyServer] = None)
 
 object ProxyWSConfig {
   implicit val defaultWSProxyServerFormat: Format[DefaultWSProxyServer] = Json.format[DefaultWSProxyServer]
@@ -76,21 +75,36 @@ object ProxyWSConfig {
         "default"                     -> c.default,
         "protocol"                    -> c.protocol,
         "checkRevocation"             -> c.checkRevocation,
-        "revocationLists"             -> c.revocationLists.fold[JsValue](JsNull)(url => JsArray(url.map(u => JsString(u.toString)))),
+        "revocationLists"             -> c.revocationLists.fold[JsValue](JsArray.empty)(url => JsArray(url.map(u => JsString(u.toString)))),
         "debug"                       -> c.debug,
         "loose"                       -> c.loose,
-        "enabledCipherSuites"         -> c.enabledCipherSuites,
-        "enabledProtocols"            -> c.enabledProtocols,
+        "enabledCipherSuites"         -> c.enabledCipherSuites.fold[JsValue](JsArray.empty)(Json.toJson(_)),
+        "enabledProtocols"            -> c.enabledProtocols.fold[JsValue](JsArray.empty)(Json.toJson(_)),
         "hostnameVerifierClass"       -> c.hostnameVerifierClass.getCanonicalName,
         "disabledSignatureAlgorithms" -> c.disabledSignatureAlgorithms,
         "disabledKeyAlgorithms"       -> c.disabledKeyAlgorithms,
         "keyManager" -> Json.obj(
           "algorithm" -> c.keyManagerConfig.algorithm,
-          "keyStore"  -> c.keyManagerConfig.keyStoreConfigs
+          "stores"    -> c.keyManagerConfig.keyStoreConfigs,
+          "prototype" -> Json.obj(
+            "stores" -> Json.obj(
+              "type"     -> JsNull,
+              "path"     -> JsNull,
+              "data"     -> JsNull,
+              "password" -> JsNull
+            )
+          )
         ),
         "trustManager" -> Json.obj(
-          "algorithm"  -> c.trustManagerConfig.algorithm,
-          "trustStore" -> c.trustManagerConfig.trustStoreConfigs
+          "algorithm" -> c.trustManagerConfig.algorithm,
+          "stores"    -> c.trustManagerConfig.trustStoreConfigs,
+          "prototype" -> Json.obj(
+            "stores" -> Json.obj(
+              "type" -> JsNull,
+              "path" -> JsNull,
+              "data" -> JsNull
+            )
+          )
         ),
         "sslParameters" -> Json.obj(
           "clientAuth" -> c.sslParametersConfig.clientAuth.toString,
