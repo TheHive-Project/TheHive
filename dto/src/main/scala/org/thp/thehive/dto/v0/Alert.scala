@@ -158,7 +158,8 @@ object OutputAlert {
       "follow"       -> outputAlert.follow,
       "customFields" -> outputAlert.customFields,
       "caseTemplate" -> outputAlert.caseTemplate,
-      "artifacts"    -> outputAlert.artifacts
+      "artifacts"    -> outputAlert.artifacts,
+      "similarCases" -> outputAlert.similarCases
     )
   }
 }
