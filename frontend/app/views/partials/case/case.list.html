@@ -99,9 +99,15 @@
                                         <user user-id="currentCase.owner" icon-only="true" icon-size="m"></user>
                                     </td>
                                     <td>
-                                        <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
-                                            <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
-                                        </a>
+                                        <div>
+                                            <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
+                                                <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
+                                            </a>
+                                        </div>
+                                        <div>
+                                            <strong ng-if="currentCase.endDate" class="text-success"><i class="fa fa-clock-o"></i> {{currentCase.startDate | duration:currentCase.endDate}}</strong>
+                                            <strong ng-if="!currentCase.endDate" class="text-danger"><i class="fa fa-clock-o"></i> {{currentCase.startDate | duration}}</strong>
+                                        </div>
                                     </td>
                                     <td if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">
                                         <span class="ml-xs" uib-dropdown>
