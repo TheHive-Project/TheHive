@@ -14,9 +14,9 @@ trait Trigger {
 
   def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean
 
-  def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
+  def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: Option[User with Entity])(
       implicit graph: Graph
-  ): Boolean = !user.locked
+  ): Boolean = user.fold(true)(!_.locked)
 
   override def toString: String = s"Trigger($name)"
 }

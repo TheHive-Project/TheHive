@@ -81,13 +81,16 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
   override def newInstance(): ConfigSteps                             = new ConfigSteps(raw.clone())
 
   def triggerMap(notificationSrv: NotificationSrv): Map[String, Map[Trigger, (Boolean, Seq[String])]] = {
+
+    // Traversal of configuration version of type "notification"
     def notificationRaw: GremlinScala.Aux[Vertex, HNil] =
       raw
         .clone()
         .has(Key[String]("name"), P.eq[String]("notification"))
         .asInstanceOf[GremlinScala.Aux[Vertex, HNil]]
 
-    val organisationTriggers: Iterator[(String, Trigger, Either[Boolean, String])] = for {
+    // Retrieve triggers configured for each organisation
+    val organisationTriggers: Iterator[(String, Trigger, Option[String])] = for {
       (notifConfig, orgId) <- notificationRaw
         .as("config")
         .in("OrganisationConfig")
@@ -96,10 +99,13 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
         .select
         .traversal
         .asScala
+//      cfg     <- notificationSrv.getConfig(notifConfig.value[String]("value"))
+//      trigger <- notificationSrv.getTrigger(cfg.triggerConfig).toOption
       trigger <- notificationSrv.getTriggers(notifConfig.value[String]("value"))
-    } yield (orgId.toString, trigger, Left(true))
+    } yield (orgId.toString, trigger, None)
 
-    val userTriggers: Iterator[(String, Trigger, Either[Boolean, String])] = for {
+    // Retrieve triggers configured for each user
+    val userTriggers: Iterator[(String, Trigger, Option[String])] = for {
       (notifConfig, user, orgId) <- notificationRaw
         .as("config")
         .in("UserConfig")
@@ -112,7 +118,7 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
         .traversal
         .asScala
       trigger <- notificationSrv.getTriggers(notifConfig.value[String]("value"))
-    } yield (orgId.toString, trigger, Right(user.id().toString))
+    } yield (orgId.toString, trigger, Some(user.id().toString))
 
     (organisationTriggers ++ userTriggers)
       .toSeq
@@ -121,8 +127,8 @@ class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph
         tuple
           .groupBy(_._2)
           .mapValues { tuple2 =>
-            val inOrg   = tuple2.exists(_._3.isLeft)
-            val userIds = tuple2.collect { case (_, _, Right(userId)) => userId }
+            val inOrg   = tuple2.exists(_._3.isEmpty)
+            val userIds = tuple2.flatMap(_._3.toSeq)
             (inOrg, userIds)
           }
       }

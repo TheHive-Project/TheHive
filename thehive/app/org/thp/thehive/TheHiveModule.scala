@@ -1,7 +1,6 @@
 package org.thp.thehive
 
 import play.api.libs.concurrent.AkkaGuiceSupport
-
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
@@ -9,7 +8,7 @@ import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{HadoopStorageSrv, S3StorageSrv}
 import org.thp.thehive.services.TOTPAuthSrvProvider
-import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, MattermostProvider, NotifierProvider}
+import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, MattermostProvider, NotifierProvider, WebhookProvider}
 import org.thp.thehive.services.notification.triggers._
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
@@ -48,16 +47,19 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     // TODO add more authSrv
 
     val triggerBindings = ScalaMultibinder.newSetBinder[TriggerProvider](binder)
-    triggerBindings.addBinding.to[LogInMyTaskProvider]
-    triggerBindings.addBinding.to[CaseCreatedProvider]
-    triggerBindings.addBinding.to[TaskAssignedProvider]
     triggerBindings.addBinding.to[AlertCreatedProvider]
+    triggerBindings.addBinding.to[AnyEventProvider]
+    triggerBindings.addBinding.to[CaseCreatedProvider]
+    triggerBindings.addBinding.to[FilteredEventProvider]
     triggerBindings.addBinding.to[JobFinishedProvider]
+    triggerBindings.addBinding.to[LogInMyTaskProvider]
+    triggerBindings.addBinding.to[TaskAssignedProvider]
 
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
     notifierBindings.addBinding.to[EmailerProvider]
     notifierBindings.addBinding.to[MattermostProvider]
+    notifierBindings.addBinding.to[WebhookProvider]
 
     configuration.get[String]("db.provider") match {
       case "janusgraph" => bind(classOf[Database]).to(classOf[JanusDatabase])

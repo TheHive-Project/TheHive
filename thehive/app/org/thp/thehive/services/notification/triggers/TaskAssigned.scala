@@ -23,13 +23,14 @@ class TaskAssigned(taskSrv: TaskSrv) extends Trigger {
   override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =
     audit.action == Audit.update && audit.objectType.contains("Task")
 
-  override def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
+  override def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: Option[User with Entity])(
       implicit graph: Graph
-  ): Boolean =
+  ): Boolean = user.fold(false) { u =>
     preFilter(audit, context, organisation) &&
-      super.filter(audit, context, organisation, user) &&
-      user.login != audit._createdBy &&
-      audit.objectId.fold(false)(taskAssignee(_, user.login).isDefined)
+    super.filter(audit, context, organisation, user) &&
+    u.login != audit._createdBy &&
+    audit.objectId.fold(false)(taskAssignee(_, u.login).isDefined)
+  }
 
   def taskAssignee(taskId: String, login: String)(implicit graph: Graph): Option[User with Entity] =
     taskSrv.getByIds(taskId).user.has("login", login).headOption()

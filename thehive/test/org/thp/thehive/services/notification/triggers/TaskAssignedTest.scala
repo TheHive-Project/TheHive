@@ -23,8 +23,8 @@ class TaskAssignedTest extends PlaySpecification with TestAppBuilder {
           audit <- app[AuditSrv].initSteps.has("objectId", task1._id).getOrFail()
           orga  <- app[OrganisationSrv].get("cert").getOrFail()
           taskAssignedTrigger = new TaskAssigned(app[TaskSrv])
-          _                   = taskAssignedTrigger.filter(audit, Some(task1), orga, user1) must beTrue
-          _                   = taskAssignedTrigger.filter(audit, Some(task1), orga, user2) must beFalse
+          _                   = taskAssignedTrigger.filter(audit, Some(task1), orga, Some(user1)) must beTrue
+          _                   = taskAssignedTrigger.filter(audit, Some(task1), orga, Some(user2)) must beFalse
         } yield ()
       } must beASuccessfulTry
     }

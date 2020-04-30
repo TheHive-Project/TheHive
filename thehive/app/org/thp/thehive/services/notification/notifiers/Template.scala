@@ -62,12 +62,12 @@ trait Template {
       audit: Audit with Entity,
       context: Option[Entity],
       `object`: Option[Entity],
-      user: User with Entity,
+      user: Option[User with Entity],
       baseUrl: String
   ): Try[String] = {
     val model = new JHashMap[String, AnyRef]
     model.put("audit", getMap(audit).asJava)
-    model.put("user", getMap(user).asJava)
+    user.foreach(u => model.put("user", getMap(u).asJava))
     context.foreach(c => model.put("context", getMap(c).asJava))
     `object`.foreach(o => model.put("object", getMap(o).asJava))
     buildUrl(baseUrl, `object`, context).foreach(url => model.put("url", url))

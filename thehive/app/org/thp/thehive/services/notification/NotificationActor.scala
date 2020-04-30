@@ -1,13 +1,5 @@
 package org.thp.thehive.services.notification
 
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.util.Try
-
-import play.api.libs.json.{Format, Json}
-import play.api.{Configuration, Logger}
-
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
 import gremlin.scala.{__, By, Graph, Key, P, Vertex}
@@ -20,13 +12,22 @@ import org.thp.thehive.models.{Audit, Organisation, User, UserConfig}
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import org.thp.thehive.services.notification.triggers.{Trigger, TriggerProvider}
+import play.api.cache.SyncCacheApi
+import play.api.libs.json.{Format, JsValue, Json}
+import play.api.{Configuration, Logger}
+
+import scala.collection.JavaConverters._
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.util.Try
 
 object NotificationTopic {
   def apply(role: String = ""): String = if (role.isEmpty) "notification" else s"notification-$role"
 }
 
 sealed trait NotificationMessage
-case class NotificationExecution(userId: String, auditId: String, notificationConfig: NotificationConfig) extends NotificationMessage
+case class NotificationExecution(userId: Option[String], auditId: String, notificationConfig: NotificationConfig) extends NotificationMessage
 
 object NotificationExecution {
   implicit val format: Format[NotificationExecution] = Json.format[NotificationExecution]
@@ -44,11 +45,14 @@ class NotificationSrv @Inject() (
 
   val triggers: Map[String, TriggerProvider] = availableTriggers.map(t => t.name -> t).toMap
 
-  def getTriggers(config: String): Seq[Trigger] =
+  def getConfig(config: String): Seq[NotificationConfig] =
     Json
       .parse(config)
       .asOpt[Seq[NotificationConfig]]
-      .fold(Seq.empty[Trigger])(_.flatMap(n => getTrigger(n.triggerConfig).toOption))
+      .getOrElse(Nil)
+
+  def getTriggers(config: String): Seq[Trigger] =
+    getConfig(config).flatMap(n => getTrigger(n.triggerConfig).toOption)
 
   def getTrigger(config: Configuration): Try[Trigger] =
     for {
@@ -75,17 +79,16 @@ class NotificationActor @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     notificationSrv: NotificationSrv,
+    cache: SyncCacheApi,
     implicit val db: Database
 ) extends Actor {
   import context.dispatcher
   lazy val logger: Logger = Logger(getClass)
   val roles: Set[String]  = configuration.get[Seq[String]]("roles").toSet
 
-  // TODO this map must be updated (or cached)
-  /* Map of OrganisationId -> Trigger -> (applied for that org ?, list of UserId) */
-  def getTriggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] = db.roTransaction(graph => configSrv.triggerMap(notificationSrv)(graph))
-
-  val triggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] = getTriggerMap
+  // Map of OrganisationId -> Trigger -> (present in org, list of UserId) */
+  def triggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] =
+    cache.getOrElseUpdate("notification-triggers", 5.minutes)(db.roTransaction(graph => configSrv.triggerMap(notificationSrv)(graph)))
 
   override def preStart(): Unit = {
     roles.foreach(role => eventSrv.subscribe(NotificationTopic(role), self))
@@ -98,15 +101,15 @@ class NotificationActor @Inject() (
     * notification configuration, send it to an actor which can execute this notification. The role restriction is
     * related to the host, not to the user. When TheHive is executed in a cluster, a role can be assigned to each host.
     * @param user the targeted user
-    * @param notificationConfig the notification config. Contains the trigger, the role restriction and the notifier
+    * @param notificationConfigs the notification config. Contains the trigger, the role restriction and the notifier
     * @param audit message to be notified
     * @param context context element of the audit
     * @param organisation organisation of the user
     * @param graph the graph
     */
-  def executeForUser(
-      user: User with Entity,
-      notificationConfig: Seq[NotificationConfig],
+  def executeNotification(
+      user: Option[User with Entity],
+      notificationConfigs: Seq[NotificationConfig],
       audit: Audit with Entity,
       context: Option[Entity],
       `object`: Option[Entity],
@@ -114,16 +117,19 @@ class NotificationActor @Inject() (
   )(
       implicit graph: Graph
   ): Unit =
-    notificationConfig
+    notificationConfigs
       .foreach {
         case notificationConfig if notificationConfig.roleRestriction.isEmpty || (notificationConfig.roleRestriction & roles).nonEmpty =>
-          for {
+          val result = for {
             trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
             if trigger.filter(audit, context, organisation, user)
             notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
             _ = logger.info(s"Execution of notifier ${notifier.name} for user $user")
           } yield notifier.execute(audit, context, `object`, organisation, user).failed.foreach { error =>
             logger.error(s"Execution of notifier ${notifier.name} has failed for user $user", error)
+          }
+          result.failed.foreach { error =>
+            logger.error(s"Execution of notification $notificationConfig has failed for user $user / ${organisation.name}", error)
           }
         case notificationConfig =>
           logger.debug(s"Notification has role restriction($notificationConfig.roleRestriction) and it is not applicable here ($roles)")
@@ -134,7 +140,7 @@ class NotificationActor @Inject() (
             .map {
               case ActorIdentity(1, Some(notificationActor)) =>
                 logger.debug(s"Send notification to $notificationActor")
-                notificationActor ! NotificationExecution(user._id, audit._id, notificationConfig)
+                notificationActor ! NotificationExecution(user.map(_._id), audit._id, notificationConfig)
             }
       }
 
@@ -154,22 +160,28 @@ class NotificationActor @Inject() (
                 .foreach {
                   case (trigger, (inOrg, userIds)) if trigger.preFilter(audit, context, organisation) =>
                     logger.debug(s"Notification trigger ${trigger.name} is applicable")
-                    userSrv
-                      .getByIds(userIds: _*)
-                      .project(
-                        _.and(By[Vertex]())
-                          .apply(By(__[Vertex].outTo[UserConfig].has(Key[String]("name"), P.eq[String]("notification")).value[String]("value")))
-                      )
-                      .toIterator
-                      .foreach {
-                        case (userVertex, notificationConfig) =>
-                          val user = userVertex.as[User]
-                          val config = Json
-                            .parse(notificationConfig)
-                            .asOpt[Seq[NotificationConfig]]
-                            .getOrElse(Nil)
-                          executeForUser(user, config, audit, context, obj, organisation)
-                      }
+                    if (userIds.nonEmpty)
+                      userSrv
+                        .getByIds(userIds: _*)
+                        .project(
+                          _.and(By[Vertex]())
+                            .apply(
+                              By(__[Vertex].outTo[UserConfig].has(Key[String]("name"), P.eq[String]("notification")).value[String]("value").fold)
+                            )
+                        )
+                        .toIterator
+                        .foreach {
+                          case (userVertex, notificationConfig) =>
+                            val user = userVertex.as[User]
+                            val config = notificationConfig
+                              .asScala
+                              .flatMap(
+                                Json
+                                  .parse(_)
+                                  .asOpt[NotificationConfig]
+                              )
+                            executeNotification(Some(user), config, audit, context, obj, organisation)
+                        }
                     if (inOrg) {
                       organisationSrv
                         .get(organisation)
@@ -177,18 +189,20 @@ class NotificationActor @Inject() (
                         .has("name", "notification")
                         .value
                         .toIterator
-                        .foreach { notificationConfig =>
-                          val config = notificationConfig
+                        .foreach { notificationConfig: JsValue =>
+                          val (userConfig, orgConfig) = notificationConfig
                             .asOpt[Seq[NotificationConfig]]
                             .getOrElse(Nil)
+                            .partition(_.delegate)
                           organisationSrv
                             .get(organisation)
                             .users
                             .filter(_.config.hasNot("name", "notification"))
                             .toIterator
                             .foreach { user =>
-                              executeForUser(user, config, audit, context, obj, organisation)
+                              executeNotification(Some(user), userConfig, audit, context, obj, organisation)
                             }
+                          executeNotification(None, orgConfig, audit, context, obj, organisation)
                         }
                     }
                   case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable")
@@ -201,7 +215,7 @@ class NotificationActor @Inject() (
         auditSrv.getByIds(auditId).auditContextObjectOrganisation.getOrFail().foreach {
           case (audit, context, obj, Some(organisation)) =>
             for {
-              user    <- userSrv.getOrFail(userId)
+              user    <- userId.map(userSrv.getOrFail).flip
               trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
               if trigger.filter(audit, context, organisation, user)
               notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)

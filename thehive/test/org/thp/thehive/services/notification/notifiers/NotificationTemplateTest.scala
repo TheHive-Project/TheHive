@@ -81,7 +81,7 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
           _     <- app[CaseSrv].addTags(case4, Set("emailer test")) // this is needed to make AuditSrv write Audit in DB
           audit <- app[AuditSrv].initSteps.has("objectId", case4._id).getOrFail()
           user  <- app[UserSrv].get("certuser@thehive.local").getOrFail()
-          msg   <- templateEngine.buildMessage(template, audit, Some(case4), Some(case4), user, "http://localhost/")
+          msg   <- templateEngine.buildMessage(template, audit, Some(case4), Some(case4), Some(user), "http://localhost/")
         } yield msg
       }
       message must beSuccessfulTry.which { m =>

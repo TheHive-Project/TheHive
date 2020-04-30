@@ -1,6 +1,6 @@
 import Dependencies._
 
-val thehiveVersion         = "4.0.0-RC1"
+val thehiveVersion         = "4.0.0-RC2-1-SNAPSHOT"
 val scala212               = "2.12.10"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
@@ -98,6 +98,7 @@ lazy val thehiveCore = (project in file("thehive"))
   .dependsOn(scalligraph % "test -> test")
   .dependsOn(cortexClient % "test -> test")
   .dependsOn(thehiveDto)
+  .dependsOn(clientCommon)
   .dependsOn(thehiveClient % Test)
   .settings(
     name := "thehive-core",

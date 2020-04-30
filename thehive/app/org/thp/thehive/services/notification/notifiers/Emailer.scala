@@ -2,10 +2,8 @@ package org.thp.thehive.services.notification.notifiers
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
-
-import play.api.Configuration
+import play.api.{Configuration, Logger}
 import play.api.libs.mailer.{Email, MailerClient}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
@@ -38,6 +36,7 @@ class EmailerProvider @Inject() (appConfig: ApplicationConfig, mailerClient: Mai
 class Emailer(mailerClient: MailerClient, subject: String, from: String, template: String, baseUrl: String, implicit val ec: ExecutionContext)
     extends Notifier
     with Template {
+  lazy val logger: Logger   = Logger(getClass)
   override val name: String = "Emailer"
 
   override def execute(
@@ -45,13 +44,15 @@ class Emailer(mailerClient: MailerClient, subject: String, from: String, templat
       context: Option[Entity],
       `object`: Option[Entity],
       organisation: Organisation with Entity,
-      user: User with Entity
+      user: Option[User with Entity]
   )(
       implicit graph: Graph
   ): Future[Unit] =
-    buildMessage(template, audit, context, `object`, user, baseUrl)
-      .fold(
-        Future.failed[Unit],
-        message => Future(mailerClient.send(Email(subject = subject, from = from, to = Seq(user.login), bodyText = Some(message)))).map(_ => ())
-      )
+    user.fold(Future.successful(logger.warn(s"Email can't be sent to an organisation"))) { u =>
+      buildMessage(template, audit, context, `object`, user, baseUrl)
+        .fold(
+          Future.failed[Unit],
+          message => Future(mailerClient.send(Email(subject = subject, from = from, to = Seq(u.login), bodyText = Some(message)))).map(_ => ())
+        )
+    }
 }

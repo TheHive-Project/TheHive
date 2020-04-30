@@ -6,12 +6,13 @@ import play.api.libs.json.{JsPath, Json, Reads, Writes}
 
 import org.thp.scalligraph.services.config.ApplicationConfig.configurationFormat
 
-case class NotificationConfig(triggerConfig: Configuration, notifierConfig: Configuration, roleRestriction: Set[String])
+case class NotificationConfig(delegate: Boolean, triggerConfig: Configuration, notifierConfig: Configuration, roleRestriction: Set[String])
 
 object NotificationConfig {
 
   implicit val reads: Reads[NotificationConfig] =
-    ((JsPath \ "trigger").read[Configuration] and
+    ((JsPath \ "delegate").readWithDefault[Boolean](false) and
+      (JsPath \ "trigger").read[Configuration] and
       (JsPath \ "notifier").read[Configuration] and
       (JsPath \ "hostRestriction").readWithDefault[Set[String]](Set.empty))(NotificationConfig.apply _)
 

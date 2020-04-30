@@ -42,7 +42,7 @@ class AppendToFile(filename: String, template: String, charset: Charset, baseUrl
       context: Option[Entity],
       `object`: Option[Entity],
       organisation: Organisation with Entity,
-      user: User with Entity
+      user: Option[User with Entity]
   )(
       implicit graph: Graph
   ): Future[Unit] =

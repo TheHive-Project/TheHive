@@ -71,9 +71,9 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
 
           for {
             audit        <- app[AuditSrv].initSteps.has("objectId", updatedJob._id).getOrFail()
-            organisatopn <- app[OrganisationSrv].get("cert").getOrFail()
+            organisation <- app[OrganisationSrv].get("cert").getOrFail()
             user         <- app[UserSrv].initSteps.getByName("certuser@thehive.local").getOrFail()
-          } yield new JobFinished().filter(audit, Some(updatedJob), organisatopn, user)
+          } yield new JobFinished().filter(audit, Some(updatedJob), organisation, Some(user))
         } must beASuccessfulTry(true)
       }
     }

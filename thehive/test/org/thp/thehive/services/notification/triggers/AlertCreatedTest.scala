@@ -65,8 +65,8 @@ class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
 
         val alertCreated = new AlertCreated()
 
-        alertCreated.filter(audit.get, Some(alert.get), organisation.get, user1.get) must beFalse
-        alertCreated.filter(audit.get, Some(alert.get), organisation.get, user2.get) must beTrue
+        alertCreated.filter(audit.get, Some(alert.get), organisation.get, user1.toOption) must beFalse
+        alertCreated.filter(audit.get, Some(alert.get), organisation.get, user2.toOption) must beTrue
       }
     }
   }

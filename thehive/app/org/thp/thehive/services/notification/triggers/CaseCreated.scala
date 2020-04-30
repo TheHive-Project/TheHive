@@ -21,10 +21,10 @@ class CaseCreated() extends Trigger {
   override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =
     audit.action == Audit.create && audit.objectType.contains("Case")
 
-  override def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: User with Entity)(
+  override def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: Option[User with Entity])(
       implicit graph: Graph
   ): Boolean =
     super.filter(audit, context, organisation, user) &&
       preFilter(audit, context, organisation) &&
-      user.login != audit._createdBy
+      user.fold(true)(_.login != audit._createdBy)
 }
