@@ -1,17 +1,5 @@
 package org.thp.thehive.migration.th4
 
-import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success, Try}
-
-import play.api.cache.SyncCacheApi
-import play.api.cache.ehcache.EhCacheModule
-import play.api.inject.guice.GuiceInjector
-import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
-import play.api.libs.concurrent.AkkaGuiceSupport
-import play.api.{Configuration, Environment, Logger}
-
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.google.inject.Guice
@@ -55,12 +43,23 @@ import org.thp.thehive.services.{
   OrganisationSrv,
   ProfileSrv,
   ResolutionStatusSrv,
-  RoleSrv,
   ShareSrv,
   TagSrv,
   TaskSrv,
   UserSrv
 }
+import play.api.cache.SyncCacheApi
+import play.api.cache.ehcache.EhCacheModule
+import play.api.inject.guice.GuiceInjector
+import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
+import play.api.libs.concurrent.AkkaGuiceSupport
+import play.api.{Configuration, Environment, Logger}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 object Output {
 
@@ -126,7 +125,6 @@ class Output @Inject() (
     attachmentSrv: AttachmentSrv,
     profileSrv: ProfileSrv,
     logSrv: LogSrv,
-    roleSrv: RoleSrv,
     auditSrv: AuditSrv,
     customFieldSrv: CustomFieldSrv,
     impactStatusSrv: ImpactStatusSrv,
@@ -136,8 +134,9 @@ class Output @Inject() (
     db: Database,
     cache: SyncCacheApi
 ) extends migration.Output {
-  lazy val logger: Logger               = Logger(getClass)
-  lazy val observableSrv: ObservableSrv = observableSrvProvider.get
+  lazy val logger: Logger                                   = Logger(getClass)
+  lazy val observableSrv: ObservableSrv                     = observableSrvProvider.get
+  private val pendingAlertCase: mutable.Map[String, String] = mutable.HashMap.empty[String, String]
 
   def getAuthContext(userId: String)(implicit graph: Graph): AuthContext = {
     val cacheId = s"user-$userId"
@@ -191,11 +190,10 @@ class Output @Inject() (
       logger.info(s"Create user ${inputUser.user.login}")
       for {
         validUser <- userSrv.checkUser(inputUser.user)
-        createdUser <- if (userSrv.get(validUser.login).exists())
-          userSrv
-            .get(UserSrv.init.login)
-            .updateOne("name" -> inputUser.user.name, "apikey" -> inputUser.user.apikey, "password" -> inputUser.user.password)
-        else userSrv.createEntity(validUser)
+        createdUser <- userSrv
+          .get(validUser.login)
+          .updateOne("name" -> inputUser.user.name, "apikey" -> inputUser.user.apikey, "password" -> inputUser.user.password)
+          .recoverWith { case _: NotFoundError => userSrv.createEntity(validUser) }
         _ <- inputUser
           .avatar
           .map { inputAttachment =>
@@ -327,6 +325,14 @@ class Output @Inject() (
               .failed
               .foreach(error => logger.warn(s"Add custom field $name:$value to case #${richCase.number} failure: $error"))
         }
+        _ = pendingAlertCase.get(inputCase.metaData.id).foreach { alertId =>
+          alertSrv
+            .getOrFail(alertId)
+            .flatMap(a => alertSrv.alertCaseSrv.create(AlertCase(), a, richCase.`case`))
+            .failed
+            .foreach(error => logger.warn(s"Cannot create link between alert $alertId and case #${richCase.number}", error))
+          pendingAlertCase -= inputCase.metaData.id
+        }
       } yield IdMapping(inputCase.metaData.id, richCase._id)
     }
 
@@ -433,9 +439,23 @@ class Output @Inject() (
       logger.info(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
       for {
         organisation <- getOrganisation(inputAlert.organisation)
-        caseTemplate = inputAlert.caseTemplate.flatMap(caseTemplateSrv.get(_).headOption()) // TODO add warning if case template is not found
+        caseTemplate = inputAlert
+          .caseTemplate
+          .flatMap(ct =>
+            caseTemplateSrv.get(ct).headOption().orElse {
+              logger.warn(
+                s"Case template $ct not found (used in alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef})"
+              )
+              None
+            }
+          )
         alert <- alertSrv.create(inputAlert.alert, organisation, inputAlert.tags, inputAlert.customFields, caseTemplate)
-        _     <- inputAlert.caseId.map(getCase(_).flatMap(case0 => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, case0))).flip
+        _ = inputAlert.caseId.foreach { caseId =>
+          getCase(caseId) match {
+            case Success(c) => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, c)
+            case _          => pendingAlertCase += (caseId -> alert._id)
+          }
+        }
       } yield IdMapping(inputAlert.metaData.id, alert._id)
   }
 

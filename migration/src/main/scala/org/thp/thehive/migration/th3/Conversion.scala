@@ -252,7 +252,7 @@ trait Conversion {
           InputAttachment(s"$login.avatar", data.size.toLong, "image/png", Nil, Source.single(ByteString(data)))
         }
       organisation = if (profile == ProfileSrv.admin.name) OrganisationSrv.administration.name else mainOrganisation
-    } yield InputUser(metaData, User(login, name, apikey, locked, password, None), Map(organisation -> profile), avatar)
+    } yield InputUser(metaData, User(login.replaceAll("\\W+", "."), name, apikey, locked, password, None), Map(organisation -> profile), avatar)
   }
 
   val metricsReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>

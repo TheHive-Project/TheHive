@@ -16,6 +16,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
+
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -73,7 +74,7 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    get(user.id)
+    get(user.login)
       .getOrFail()
       .orElse {
         for {
