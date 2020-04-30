@@ -1,26 +1,24 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success, Try}
-
+import com.typesafe.config.{Config, ConfigRenderOptions}
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.{AuthorizationError, NotFoundError}
+import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.{OrganisationConfigContext, UserConfigContext}
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{Action, AnyContent, Results}
 import play.api.{ConfigLoader, Logger}
 
-import com.typesafe.config.{Config, ConfigRenderOptions}
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.AuthorizationError
-import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.UserConfigContext
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ConfigCtrl @Inject() (
     appConfig: ApplicationConfig,
     userConfigContext: UserConfigContext,
-    entrypoint: Entrypoint,
-    db: Database
+    organisationConfigContext: OrganisationConfigContext,
+    entrypoint: Entrypoint
 ) {
 
   lazy val logger: Logger = Logger(getClass)
@@ -39,26 +37,41 @@ class ConfigCtrl @Inject() (
 
   def list: Action[AnyContent] =
     entrypoint("list configuration items")
-      .auth {
-        case request if request.isPermitted(Permissions.manageConfig) =>
+      .authPermitted(Permissions.manageConfig) { request =>
+        if (request.organisation != "admin")
+          Failure(AuthorizationError("You must be in `admin` organisation to view global configuration"))
+        else
           Success(Results.Ok(Json.toJson(appConfig.list)))
-        case _ => Failure(AuthorizationError("You need manageConfig permission to view configuration"))
       }
 
   def set(path: String): Action[AnyContent] =
     entrypoint("set configuration item")
       .extract("value", FieldsParser.json.on("value"))
-      .auth {
-        case request if request.isPermitted(Permissions.manageConfig) =>
+      .authPermitted(Permissions.manageConfig) { request =>
+        if (request.organisation != "admin")
+          Failure(AuthorizationError("You must be in `admin` organisation to change global configuration"))
+        else {
           logger.info(s"app config value set: $path ${request.body("value")}")
           appConfig.set(path, request.body("value"))(request).map(_ => Results.NoContent)
-        case _ => Failure(AuthorizationError("You need manageConfig permission to set configuration"))
+        }
+      }
+
+  def get(path: String): Action[AnyContent] =
+    entrypoint("get configuration item")
+      .authPermitted(Permissions.manageConfig) { request =>
+        if (request.organisation != "admin")
+          Failure(AuthorizationError("You must be in `admin` organisation to change global configuration"))
+        else
+          appConfig.get(path) match {
+            case Some(c) => Success(Results.Ok(configWrites.writes(c)))
+            case None    => Failure(NotFoundError(s"Configuration item $path not found"))
+          }
       }
 
   def userSet(path: String): Action[AnyContent] =
     entrypoint("set user configuration item")
       .extract("value", FieldsParser.json.on("value"))
-      .authTransaction(db) { implicit request => _ =>
+      .auth { implicit request =>
         val config = appConfig.context(userConfigContext).item[JsValue](path, "")
         logger.info(s"user config value set: $path ${request.body("value")}")
         config.setJson(request, request.body("value")).map { _ =>
@@ -74,9 +87,41 @@ class ConfigCtrl @Inject() (
 
   def userGet(path: String): Action[AnyContent] =
     entrypoint("get user configuration item")
-      .authTransaction(db) { implicit request => _ =>
+      .auth { implicit request =>
         Try {
           val config = appConfig.context(userConfigContext).item[JsValue](path, "")
+          Results.Ok(
+            Json.obj(
+              "path"         -> config.path,
+              "defaultValue" -> config.getDefaultValueJson,
+              "value"        -> config.getJson(request)
+            )
+          )
+        }
+      }
+
+  def organisationGet(path: String): Action[AnyContent] =
+    entrypoint("get organisation configuration item")
+      .authPermitted(Permissions.manageConfig) { implicit request =>
+        Try {
+          val config = appConfig.context(organisationConfigContext).item[JsValue](path, "")
+          Results.Ok(
+            Json.obj(
+              "path"         -> config.path,
+              "defaultValue" -> config.getDefaultValueJson,
+              "value"        -> config.getJson(request)
+            )
+          )
+        }
+      }
+
+  def organisationSet(path: String): Action[AnyContent] =
+    entrypoint("set organisation configuration item")
+      .extract("value", FieldsParser.json.on("value"))
+      .auth { implicit request =>
+        val config = appConfig.context(organisationConfigContext).item[JsValue](path, "")
+        logger.info(s"organisation config value set: $path ${request.body("value")}")
+        config.setJson(request, request.body("value")).map { _ =>
           Results.Ok(
             Json.obj(
               "path"         -> config.path,

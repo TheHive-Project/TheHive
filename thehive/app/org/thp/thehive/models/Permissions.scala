@@ -12,7 +12,7 @@ object Permissions extends Perms {
   lazy val manageAnalyzerTemplate: PermissionDesc   = PermissionDesc("manageAnalyzerTemplate", "Manage analyzer templates", "admin")
   lazy val manageTask: PermissionDesc               = PermissionDesc("manageTask", "Manage tasks", "organisation")
   lazy val manageAction: PermissionDesc             = PermissionDesc("manageAction", "Run Cortex responders ", "organisation")
-  lazy val manageConfig: PermissionDesc             = PermissionDesc("manageConfig", "Manage configurations", "admin")
+  lazy val manageConfig: PermissionDesc             = PermissionDesc("manageConfig", "Manage configurations", "organisation", "admin")
   lazy val manageProfile: PermissionDesc            = PermissionDesc("manageProfile", "Manage user profiles", "admin")
   lazy val manageTag: PermissionDesc                = PermissionDesc("manageTag", "Manage tags", "admin")
   lazy val manageCustomField: PermissionDesc        = PermissionDesc("manageCustomField", "Manage custom fields", "admin")
