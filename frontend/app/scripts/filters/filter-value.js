@@ -22,6 +22,8 @@
                 return _.map(value.list, function(item) {
                     return item.label || item.text;
                 }).join(', ');
+            } else if(angular.isObject(value) && value.operator !== undefined) {
+                return [value.operator, value.value].join(' ');
             }
 
             return value || 'Any';

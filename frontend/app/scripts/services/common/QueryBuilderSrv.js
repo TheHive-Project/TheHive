@@ -166,7 +166,7 @@
                 return this._buildQueryFromFreeTextFilter(fieldDef, filter);
             } else if(filter.value.list || fieldDef.values.length > 0) {
                 return this._buildQueryFromListFilter(fieldDef, filter);
-            } else if(filter.type === 'number') {
+            } else if(filter.type === 'number' || filter.type === 'integer' || filter.type === 'float') {
                 return this._buildQueryFromNumberFilter(fieldDef, filter);
             }
 

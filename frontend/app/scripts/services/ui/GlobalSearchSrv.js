@@ -63,6 +63,7 @@
             } else {
                 switch(fieldDef.type) {
                     case 'number':
+                    case 'integer':
                         return {
                             value: Number.parseInt(value.id)
                         };

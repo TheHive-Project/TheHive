@@ -21,7 +21,7 @@
                     }
                     var type = field.type;
 
-                    if ((type === 'string' || type === 'number') && field.values.length > 0) {
+                    if ((type === 'string' || type === 'number' || type === 'integer'  || type === 'float' ) && field.values.length > 0) {
                         return 'enumeration';
                     }
 
