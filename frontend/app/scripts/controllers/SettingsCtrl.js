@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('SettingsCtrl',
-        function($scope, $state, UserSrv, AuthenticationSrv, NotificationSrv, clipboard, resizeService, readLocalPicService, currentUser, appConfig) {
+        function($scope, $state, UserSrv, ModalSrv, AuthenticationSrv, NotificationSrv, clipboard, resizeService, readLocalPicService, currentUser, appConfig) {
             $scope.currentUser = currentUser;
             $scope.appConfig = appConfig;
 
@@ -126,14 +126,26 @@
             };
 
             $scope.resetMfa = function() {
-                UserSrv.resetMfa()
-                    .then(function(/*response*/) {                        
+                var modalInstance = ModalSrv.confirm(
+                    'Disable MFA',
+                    'Are you sure you want to disabble MFA settings?', {
+                        okText: 'Yes, disable it',
+                        flavor: 'danger'
+                    }
+                );
+
+                modalInstance.result
+                    .then(function() {
+                        UserSrv.resetMfa();
+                    })
+                    .then(function() {
                         NotificationSrv.log('Your multi-factor authentication has been successfully disabled', 'success');
                         $state.reload();
-
                     })
                     .catch(function(err) {
-                        NotificationSrv.error('SettingsCtrl', err.data, err.status);
+                        if (!_.isString(err)) {
+                            NotificationSrv.error('SettingsCtrl', err.data, err.status);
+                        }
                     });
             };
 
