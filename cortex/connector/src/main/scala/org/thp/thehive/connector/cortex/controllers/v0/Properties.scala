@@ -4,6 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.connector.cortex.models.ActionContext
 import org.thp.thehive.connector.cortex.services.{ActionSteps, AnalyzerTemplateSteps, JobSteps}
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
 
@@ -16,7 +17,7 @@ class Properties @Inject() () {
       .property("objectType", UniMapping.string)(_.select(_.context.map(o => fromObjectType(o._model.label))).readonly)
       .property("status", UniMapping.string)(_.field.readonly)
       .property("startDate", UniMapping.date)(_.field.readonly)
-      .property("objectId", UniMapping.string)(_.field.readonly)
+      .property("objectId", UniMapping.id)(_.select(_.outTo[ActionContext]._id).readonly)
       .property("responderName", UniMapping.string.optional)(_.field.readonly)
       .property("cortexId", UniMapping.string.optional)(_.field.readonly)
       .property("tlp", UniMapping.int.optional)(_.field.readonly)
