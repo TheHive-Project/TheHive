@@ -5,7 +5,9 @@
     'use strict';
     angular.module('theHiveControllers')
         .controller('AuthenticationCtrl', function($rootScope, $scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, UtilsSrv, UrlParser, appConfig) {
-            $scope.params = {};
+            $scope.params = {
+                requireMfa: false
+            };
 
             $uibModalStack.dismissAll();
 
@@ -38,13 +40,15 @@
 
             $scope.login = function() {
                 $scope.params.username = $scope.params.username.toLowerCase();
-                AuthenticationSrv.login($scope.params.username, $scope.params.password)
+                AuthenticationSrv.login($scope.params.username, $scope.params.password, $scope.params.mfaCode)
                     .then(function() {
                         $state.go('app.index');
                     })
                     .catch(function(err) {
                         if (err.status === 520) {
                             NotificationSrv.error('AuthenticationCtrl', err.data.message, err.status);
+                        } else if(err.status === 402){
+                            $scope.params.requireMfa = true;
                         } else {
                             NotificationSrv.log(err.data.message, 'error');
                         }

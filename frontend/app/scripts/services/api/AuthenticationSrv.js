@@ -1,70 +1,75 @@
 (function() {
-  'use strict';
-  angular
-    .module('theHiveServices')
-    .factory('AuthenticationSrv', function($http, $q, UtilsSrv, SecuritySrv) {
-      var self = {
-        currentUser: null,
-        login: function(username, password) {
-          return $http
-            .post('./api/login', {
-              user: username,
-              password: password
-            });
-        },
-        logout: function(success, failure) {
-          $http
-            .get('./api/logout')
-            .then(function(data, status, headers, config) {
-              self.currentUser = null;
+    'use strict';
+    angular
+        .module('theHiveServices')
+        .factory('AuthenticationSrv', function($http, $q, UtilsSrv, SecuritySrv) {
+            var self = {
+                currentUser: null,
+                login: function(username, password, code) {
+                    var post = {
+                        user: username,
+                        password: password
+                    };
 
-              if (angular.isFunction(success)) {
-                success(data, status, headers, config);
-              }
-            })
-            .catch(function(data, status, headers, config) {
-              if (angular.isFunction(failure)) {
-                failure(data, status, headers, config);
-              }
-            });
-        },
-        current: function() {
-          var result = {};
-          return $http
-            .get('./api/v1/user/current')
-            .then(function(response) {
-              self.currentUser = response.data;
-              UtilsSrv.shallowClearAndCopy(response.data, result);
+                    if(code) {
+                        post.code = code;
+                    }
 
-              return $q.resolve(result);
-            })
-            .catch(function(err) {
-              self.currentUser = null;
-              return $q.reject(err);
-            });
-        },
-        ssoLogin: function(code, state) {
-          var url = angular.isDefined(code) && angular.isDefined(state) ? './api/ssoLogin?code=' + code + '&state=' + state : './api/ssoLogin';
-          return $http.post(url, {});
-        },
-        isSuperAdmin: function() {
-            var user = self.currentUser;
+                    return $http.post('./api/login', post);
+                },
+                logout: function(success, failure) {
+                    $http
+                        .get('./api/logout')
+                        .then(function(data, status, headers, config) {
+                            self.currentUser = null;
 
-            return user && user.organisation === 'admin';
-        },
-        hasPermission: function(permissions) {
-            var user = self.currentUser;
+                            if (angular.isFunction(success)) {
+                                success(data, status, headers, config);
+                            }
+                        })
+                        .catch(function(data, status, headers, config) {
+                            if (angular.isFunction(failure)) {
+                                failure(data, status, headers, config);
+                            }
+                        });
+                },
+                current: function() {
+                    var result = {};
+                    return $http
+                        .get('./api/v1/user/current')
+                        .then(function(response) {
+                            self.currentUser = response.data;
+                            UtilsSrv.shallowClearAndCopy(response.data, result);
 
-            if (!user) {
-                return false;
-            }
+                            return $q.resolve(result);
+                        })
+                        .catch(function(err) {
+                            self.currentUser = null;
+                            return $q.reject(err);
+                        });
+                },
+                ssoLogin: function(code, state) {
+                    var url = angular.isDefined(code) && angular.isDefined(state) ? './api/ssoLogin?code=' + code + '&state=' + state : './api/ssoLogin';
+                    return $http.post(url, {});
+                },
+                isSuperAdmin: function() {
+                    var user = self.currentUser;
 
-            //return !_.isEmpty(_.intersection(user.permissions, permissions));
+                    return user && user.organisation === 'admin';
+                },
+                hasPermission: function(permissions) {
+                    var user = self.currentUser;
 
-            return SecuritySrv.checkPermissions(user.permissions, permissions);
-        }
-      };
+                    if (!user) {
+                        return false;
+                    }
 
-      return self;
-    });
+                    //return !_.isEmpty(_.intersection(user.permissions, permissions));
+
+                    return SecuritySrv.checkPermissions(user.permissions, permissions);
+                }
+            };
+
+            return self;
+        });
 })();

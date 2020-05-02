@@ -71,6 +71,9 @@ module.exports = function(config) {
       'bower_components/js-url/url.js',
       'bower_components/bootstrap-sass/assets/javascripts/bootstrap.js',
       'bower_components/angular-bootstrap-multiselect/dist/angular-bootstrap-multiselect.js',
+      'bower_components/qrcode.js/lib/qrcode.js',
+      'bower_components/qrcode/lib/qrcode.js',
+      'bower_components/angular-qr/src/angular-qr.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       "bower_components/cryptojslib/components/core-min.js",

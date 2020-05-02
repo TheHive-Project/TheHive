@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('SettingsCtrl',
-        function($scope, $state, UserSrv, AuthenticationSrv, NotificationSrv, resizeService, readLocalPicService, currentUser, appConfig) {
+        function($scope, $state, UserSrv, AuthenticationSrv, NotificationSrv, clipboard, resizeService, readLocalPicService, currentUser, appConfig) {
             $scope.currentUser = currentUser;
             $scope.appConfig = appConfig;
 
@@ -23,6 +23,14 @@
                 password: '',
                 passwordConfirm: ''
             };
+
+            $scope.mfaData = {
+                enabled: $scope.currentUser.hasMFA,
+                secret: null,
+                uri: null,
+                code: null
+            };
+
             $scope.canChangePass = appConfig.config.capabilities.indexOf('changePassword') !== -1;
 
 
@@ -84,6 +92,49 @@
                 } else {
                     $state.go('app.cases');
                 }
+            };
+
+            $scope.copySecret = function(secret) {
+                clipboard.copyText(secret);
+                NotificationSrv.success('MFA Secret has been successfully copied to clipboard.');
+            };
+
+            $scope.enableMfa = function() {
+                if($scope.mfaData.enabled) {
+                    // Fetch the secret
+                    UserSrv.fetchMfaSecret()
+                        .then(function(response) {
+                            $scope.mfaData.secret = response.data.secret;
+                            $scope.mfaData.uri = response.data.uri;
+                        })
+                        .catch(function(err) {
+                            NotificationSrv.error('SettingsCtrl', err.data, err.status);
+                        });
+                }
+            };
+
+            $scope.setMfaSettings = function(form) {
+                UserSrv.setMfa($scope.mfaData.code)
+                    .then(function(/*response*/) {
+                        NotificationSrv.log('Your multi-factor authentication has been successfully configured', 'success');
+                        $state.reload();
+                    })
+                    .catch(function(/*err*/) {
+                        $scope.mfaData.enabled = true;
+                        form.mfaCode.$setValidity('mfaInvalid', false);
+                    });
+            };
+
+            $scope.resetMfa = function() {
+                UserSrv.resetMfa()
+                    .then(function(/*response*/) {                        
+                        NotificationSrv.log('Your multi-factor authentication has been successfully disabled', 'success');
+                        $state.reload();
+
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('SettingsCtrl', err.data, err.status);
+                    });
             };
 
             $scope.clearPassword = function(form, changePassword) {

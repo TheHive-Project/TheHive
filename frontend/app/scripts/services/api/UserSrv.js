@@ -156,6 +156,22 @@
                     });
             };
 
+            this.fetchMfaSecret = function() {
+                return $http
+                    .post('./api/v1/auth/totp/set', {});
+            };
+
+            this.setMfa = function(code) {
+                return $http
+                    .post('./api/v1/auth/totp/set', {
+                        code: code
+                    });
+            };
+
+            this.resetMfa = function() {
+                return $http.post('./api/v1/auth/totp/unset');
+            };
+
             this.list = function(organisation, query) {
                 // var post = {
                 //     range: 'all',

@@ -1,5 +1,5 @@
 <div class="row">
-    <div class="col-md-6 col-md-offset-3">
+    <div class="col-md-10 col-md-offset-1">
         <h3>
             <center>Settings</center>
         </h3>
@@ -136,8 +136,69 @@
             </div>
         </form>
 
-        <form name="form">
+        <!-- Update mfa -->
+        <form class="mt-s" name="mfaForm" ng-submit="setMfaSettings(mfaForm);" novalidate>
+            <div class="box">
+                <div class="box-header">
+                    <h3 class="box-title">
+                        <input type="checkbox" ng-model="mfaData.enabled" ng-change="enableMfa()" ng-disabled="currentUser.hasMFA">
+                        Enable Multi-Factor Authentication
+                    </h3>
+                </div>
+                <div class="box-body" ng-show="mfaData.enabled === true">
+                    <div ng-if="currentUser.hasMFA === true" class="text-center">
+                        Your have enable Multi-Factor Authentication, do you want to disabled it?
+                        <div class="mv-s">
+                            <button type="button" class="btn btn-danger" ng-click="resetMfa()">Disable MFA</button>
+                        </div>
+                    </div>
 
+                    <div ng-if="currentUser.hasMFA === false">
+                        <div class="mb-m text-center">
+                            Your are going to enable Multi-Factor Authentication.
+                            Use the QRCode or the Secret to generate a MFA code and submit it.
+                        </div>
+
+                        <div class="text-center" ng-if="mfaData.uri">
+                            <qr text="mfaData.uri"></qr>
+                        </div>
+
+                        <div class="text-center mv-s" ng-if="mfaData.secret">
+                            <h3>{{mfaData.secret}}</h3>
+                            <div>
+                                <a href ng-click="copySecret(mfaData.secret)"><i class="fa fa-copy"></i> Copy secret </a>
+                            </div>
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-xs-offset-3 col-xs-6 form-group" ng-class="{ 'has-error' : !mfaForm.mfaCode.$pristine && mfaForm.mfaCode.$invalid}">
+                                <label class="control-label">Code
+                                    <i class="fa fa-asterisk text-danger"></i>
+                                </label>
+                                <input type="number" name="mfaCode" class="form-control input-lg text-center"
+                                    placeholder="MFA Code" autocomplete="off"
+                                    ng-model="mfaData.code"
+                                    ng-required="!currentUser.hasMFA"/>
+                                <div ng-messages="mfaForm.mfaCode.$error" ng-show="!mfaForm.mfaCode.$pristine && mfaForm.mfaCode.$error">
+                                    <div ng-messages-include="settings-error.html"></div>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+                        <div class="mt-s">
+                            <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
+                            <span class="ml-xxs">
+                                <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
+                            <!-- <button class="btn btn-primary pull-right" ng-disabled="mfaForm.$invalid" type="submit">Save</button> -->
+                            <button class="btn btn-primary pull-right" ng-disabled="!mfaData.code" type="submit">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </form>
 
     </div>
@@ -158,5 +219,8 @@
     </div>
     <div class="mt-xxs text-danger" ng-message="compareTo">
         Oops, that's not the same password as the first one
+    </div>
+    <div class="mt-xxs text-danger" ng-message="mfaInvalid">
+        Oops, that's not a valid MFA code
     </div>
 </script>

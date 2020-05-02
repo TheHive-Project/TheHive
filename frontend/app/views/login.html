@@ -13,6 +13,16 @@
                 <input type="password" class="input form-control" placeholder="Password" ng-model="params.password" autocomplete="off" required>
                 <i class="form-control-feedback glyphicon glyphicon-lock "></i>
             </div>
+            <div class="mv-s" ng-if="params.requireMfa === true">
+                <div class="text-danger text-center">
+                    Please provide MFA code
+                </div>
+                <div class="form-group has-feedback has-feedback-left">
+                    <input type="text" class="input form-control" placeholder="Code" ng-model="params.mfaCode" autocomplete="off" ng-required="params.requireMfa">
+                    <i class="form-control-feedback glyphicon glyphicon-qrcode"></i>
+                </div>
+            </div>
+
 
             <div class="row">
                 <div class="col-xs-offset-8 col-xs-4">

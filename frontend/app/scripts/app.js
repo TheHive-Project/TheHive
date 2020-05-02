@@ -30,6 +30,7 @@ angular.module('thehive', [
     'dndLists',
     'colorpicker.module',
     'btorfs.multiselect',
+    'ja.qr',
     'theHiveControllers',
     'theHiveServices',
     'theHiveFilters',
