@@ -168,8 +168,10 @@
                     });
             };
 
-            this.resetMfa = function() {
-                return $http.post('./api/v1/auth/totp/unset');
+            this.resetMfa = function(user) {
+                var url = './api/v1/auth/totp/unset';
+
+                return $http.post(user ? (url+'/'+ user) : url );
             };
 
             this.list = function(organisation, query) {

@@ -32,6 +32,32 @@
                     });
                 };
 
+                self.resetMfa = function(user) {
+                    var modalInstance = ModalSrv.confirm(
+                        'Reset MFA',
+                        'Are you sure you want to reset MFA settings for this user?', {
+                            okText: 'Yes, reset it',
+                            flavor: 'danger'
+                        }
+                    );
+
+                    modalInstance.result
+                        .then(function() {
+                            UserSrv.resetMfa(user._id);
+                        })
+                        .then(function() {
+                            self.onReload();
+                            NotificationSrv.success(
+                                'MFA configuration of user ' + user.login + ' has been successfully disabled.'
+                            );
+                        })
+                        .catch(function(err) {
+                            if (!_.isString(err)) {
+                                NotificationSrv.error('OrgUserCtrl', err.data, err.status);
+                            }
+                        });
+                };
+
                 self.createKey = function(user) {
                     var modalInstance = ModalSrv.confirm(
                         'Create API key',

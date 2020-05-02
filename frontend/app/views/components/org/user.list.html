@@ -18,7 +18,8 @@
                     <th></th>
                     <th>Password</th>
                     <th>API Key</th>
-                    <th style="width: 200px"></th>
+                    <th class="text-center" style="width: 100px">MFA</th>
+                    <th style="width: 180px"></th>
                 </tr>
             </thead>
             <tbody>
@@ -81,6 +82,14 @@
                                     </button>
                                 </span>
                             </div>
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span ng-if="!user.hasMFA">
+                            No
+                        </span>
+                        <span ng-if="user.hasMFA">
+                            <button type="button" class="btn btn-danger btn-sm" ng-click="$ctrl.resetMfa(user)">Reset</button>
                         </span>
                     </td>
                     <td>
