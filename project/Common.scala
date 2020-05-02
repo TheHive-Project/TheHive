@@ -11,12 +11,19 @@ object Common {
   }
 
   val stableVersion: Regex = "(\\d+\\.\\d+\\.\\d+)-(\\d+)".r
-  val betaVersion: Regex   = "(\\d+\\.\\d+\\.\\d+)-[Rr][Cc](\\d+)".r
+  val betaVersion: Regex   = "(\\d+\\.\\d+\\.\\d+)-[Rr][Cc](\\d+)-(\\d+)".r
   object snapshotVersion {
-    def unapplySeq(version: String): Option[List[String]] =
-      if (version.endsWith("-SNAPSHOT")) {
-        val v = version.dropRight(9)
-        stableVersion.unapplySeq(v) orElse betaVersion.unapplySeq(v)
-      } else None
+    def unapply(version: String): Option[String] =
+      if (version.endsWith("-SNAPSHOT")) Some(version.dropRight(9))
+      else None
   }
+  def versionUsage(version: String): Nothing =
+    sys.error(
+      s"Invalid version: $version\n" +
+        "The accepted formats for version are:\n" +
+        " - 1.2.3-4\n" +
+        " - 1.2.3-RC4-5\n" +
+        " - 1.2.3-4-SNAPSHOT\n" +
+        " - 1.2.3-RC4-5-SNAPSHOT"
+    )
 }

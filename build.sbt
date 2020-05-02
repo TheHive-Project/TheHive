@@ -1,4 +1,5 @@
 import Dependencies._
+import com.typesafe.sbt.packager.Keys.bashScriptDefines
 
 val thehiveVersion         = "4.0.0-RC2-1-SNAPSHOT"
 val scala212               = "2.12.10"
@@ -65,30 +66,39 @@ lazy val scalligraph = (project in file("ScalliGraph"))
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala)
-  .dependsOn(thehiveCore, thehiveCortex, thehiveMisp, thehiveFrontend)
-  .aggregate(
-    scalligraph,
-    thehiveCore,
-    thehiveDto,
-    thehiveClient,
-    thehiveFrontend,
-    thehiveCortex,
-    thehiveMisp,
-    cortexClient,
-    mispClient
-  )
+  .dependsOn(thehiveCore, thehiveCortex, thehiveMisp, thehiveFrontend, thehiveMigration)
   .settings(
     name := "thehive",
     version := thehiveVersion,
     crossScalaVersions := Nil,
     PlayKeys.playMonitoredFiles ~= (_.filter(f => f.compareTo(file("frontend/app").getAbsoluteFile) != 0)),
     PlayKeys.devSettings += "play.server.provider" -> "org.thp.thehive.CustomAkkaHttpServerProvider",
-    Universal / mappings ++= (thehiveMigration / Universal / mappings).value,
-    Debian / aggregate := false,
-    Rpm / aggregate := false,
+//    Universal / mappings ++= (thehiveMigration / Universal / mappings).value,
     Compile / run := {
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated
+    },
+    discoveredMainClasses in Compile := Seq("play.core.server.ProdServerStart", "org.thp.thehive.migration.Migrate"),
+    mainClass in (Compile, bashScriptDefines) := None,
+    makeBashScripts ~= {
+      _.map {
+        case (f, "bin/prod-server-start") => (f, "bin/thehive")
+        case other                        => other
+      }
+    },
+    test := {
+      (test in Test in scalligraph).value
+      (test in Test in thehiveCore).value
+      (test in Test in thehiveDto).value
+      (test in Test in thehiveClient).value
+      (test in Test in thehiveFrontend).value
+      (test in Test in thehiveCortex).value
+      (test in Test in thehiveMisp).value
+      (test in Test in cortexClient).value
+      (test in Test in mispClient).value
+      (test in Test in thehiveMigration).value
+      (test in Test in clientCommon).value
+      (test in Test in cortexDto).value
     }
   )
 
@@ -301,7 +311,8 @@ lazy val thehiveMigration = (project in file("migration"))
     ),
     dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
     fork := true,
-    normalizedName := "migrate"
+    normalizedName := "migrate",
+    mainClass := None
   )
 
 lazy val rpmPackageRelease = (project in file("package/rpm-release"))

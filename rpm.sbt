@@ -1,19 +1,21 @@
-import Common.{betaVersion, snapshotVersion, stableVersion}
+import Common.{betaVersion, snapshotVersion, stableVersion, versionUsage}
 
 version in Rpm := {
   version.value match {
-    case stableVersion(v1, v2)   => v1
-    case betaVersion(v1, v2)     => v1
-    case snapshotVersion(v1, v2) => v1
-    case _                       => version.value // sys.error("Invalid version: " + version.value)
+    case stableVersion(v1, _)                   => v1
+    case betaVersion(v1, _)                     => v1
+    case snapshotVersion(stableVersion(v1, _))  => v1
+    case snapshotVersion(betaVersion(v1, _, _)) => v1
+    case _                                      => versionUsage(version.value)
   }
 }
 rpmRelease := {
   version.value match {
-    case stableVersion(_, v2)    => v2
-    case betaVersion(v1, v2)     => "0.1RC" + v2
-    case snapshotVersion(v1, v2) => v2 + "-SNAPSHOT"
-    case _                       => version.value // sys.error("Invalid version: " + version.value)
+    case stableVersion(_, v2)                    => v2
+    case betaVersion(_, v2, v3)                  => "0." + v3 + "RC" + v2
+    case snapshotVersion(stableVersion(_, v2))   => v2 + "-SNAPSHOT"
+    case snapshotVersion(betaVersion(_, v2, v3)) => "0." + v3 + "RC" + v2 + "-SNAPSHOT"
+    case _                                       => versionUsage(version.value)
   }
 }
 rpmVendor := organizationName.value
