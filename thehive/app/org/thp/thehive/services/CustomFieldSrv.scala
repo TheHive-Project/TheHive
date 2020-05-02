@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.{Map => JMap}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.{JsNull, JsObject, JsValue}
-
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
@@ -15,11 +10,15 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{RichElement, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{EdgeSteps, Traversal, ValueMap, VertexSteps}
+import org.thp.scalligraph.steps.{EdgeSteps, SelectMap, Traversal, ValueMap, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsNull, JsObject, JsValue}
 import shapeless.HNil
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class CustomFieldSrv @Inject() (implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
@@ -101,7 +100,7 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
       .map(_ => ())
   }
 
-  private def edgeNameType: GremlinScala[(Edge, JMap[AnyRef, AnyRef])] = {
+  private def edgeNameType: GremlinScala[(Edge, String, String)] = {
     val customFieldValueLabel = StepLabel[Edge]()
     val typeLabel             = StepLabel[JMap[AnyRef, AnyRef]]()
     raw
@@ -110,15 +109,20 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
       .inV()
       .valueMap("name", "type")
       .as(typeLabel)
-      .select()
+      .select(customFieldValueLabel.name, typeLabel.name)
+      .map {
+        case SelectMap(map) =>
+          val ValueMap(values) = map.get(typeLabel)
+          (map.get(customFieldValueLabel), values.get("name").asInstanceOf[String], values.get("type").asInstanceOf[String])
+      }
   }
 
   def nameJsonValue: Traversal[(String, JsValue), (String, JsValue)] =
     Traversal(
       edgeNameType
         .map {
-          case (edge, ValueMap(map)) =>
-            map.get[String]("name") -> CustomFieldType.get(map.get[String]("type")).getJsonValue(new CustomFieldValueEdge(db, edge))
+          case (edge, name, tpe) =>
+            name -> CustomFieldType.get(tpe).getJsonValue(new CustomFieldValueEdge(db, edge))
         }
     )
 
@@ -126,8 +130,8 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
     Traversal(
       edgeNameType
         .map {
-          case (edge, ValueMap(map)) =>
-            CustomFieldType.get(map.get[String]("type")).getJsonValue(new CustomFieldValueEdge(db, edge))
+          case (edge, _, tpe) =>
+            CustomFieldType.get(tpe).getJsonValue(new CustomFieldValueEdge(db, edge))
         }
     )
 
@@ -135,8 +139,8 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
     Traversal(
       edgeNameType
         .map {
-          case (edge, ValueMap(map)) =>
-            map.get[String]("name") -> CustomFieldType.get(map.get[String]("type")).getValue(new CustomFieldValueEdge(db, edge))
+          case (edge, name, tpe) =>
+            name -> CustomFieldType.get(tpe).getValue(new CustomFieldValueEdge(db, edge))
         }
     )
 
@@ -144,8 +148,8 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
     Traversal(
       edgeNameType
         .map {
-          case (edge, ValueMap(map)) =>
-            CustomFieldType.get(map.get[String]("type")).getValue(new CustomFieldValueEdge(db, edge)).getOrElse(JsNull)
+          case (edge, _, tpe) =>
+            CustomFieldType.get(tpe).getValue(new CustomFieldValueEdge(db, edge)).getOrElse(JsNull)
         }
     )
 
@@ -158,9 +162,9 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
         .as(customFieldValueLabel)
         .inV()
         .as(customFieldLabel)
-        .select()
+        .select(customFieldValueLabel.name, customFieldLabel.name)
         .map {
-          case (cfv, cf) => RichCustomField(cf.as[CustomField], new CustomFieldValueEdge(db, cfv))
+          case SelectMap(m) => RichCustomField(m.get(customFieldLabel).as[CustomField], new CustomFieldValueEdge(db, m.get(customFieldValueLabel)))
         }
     )
   }
