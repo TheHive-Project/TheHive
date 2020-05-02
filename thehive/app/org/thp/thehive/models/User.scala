@@ -34,6 +34,7 @@ case class RichUser(user: User with Entity, avatar: Option[String], profile: Str
   def login: String              = user.login
   def name: String               = user.name
   def hasPassword: Boolean       = user.password.isDefined
+  def hasMFA: Boolean            = user.totpSecret.isDefined
   def apikey: Option[String]     = user.apikey
   def locked: Boolean            = user.locked
 }

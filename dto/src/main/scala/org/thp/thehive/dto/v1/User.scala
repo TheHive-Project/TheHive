@@ -22,6 +22,7 @@ case class OutputUser(
     name: String,
     hasKey: Boolean,
     hasPassword: Boolean,
+    hasMFA: Boolean,
     locked: Boolean,
     profile: String,
     permissions: Set[String],
