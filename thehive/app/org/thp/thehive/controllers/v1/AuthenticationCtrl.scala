@@ -82,7 +82,7 @@ class AuthenticationCtrl @Inject() (
             .getOrFail(userId.getOrElse(request.userId))
             .flatMap { user =>
               if (request.userId == user.login || userSrv.current.organisations(Permissions.manageUser).users.get(user._id).exists())
-                totpAuthSrv.unsetSecret(request.userId)
+                totpAuthSrv.unsetSecret(user.login)
               else Failure(AuthorizationError("You cannot unset TOTP secret of this user"))
             }
             .map(_ => Results.NoContent)
