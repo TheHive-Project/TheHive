@@ -75,7 +75,7 @@ class TOTPAuthSrv(
     userSrv.get(username).headOption().flatMap(_.totpSecret)
 
   def unsetSecret(username: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    userSrv.get(username).update("totpSecret" -> None).map(_ => ())
+    userSrv.get(username).updateOne("totpSecret" -> None).map(_ => ())
 
   def generateSecret(): String = {
     val key = Array.ofDim[Byte](20)
@@ -93,7 +93,7 @@ class TOTPAuthSrv(
       .map(_ => secret)
 
   def getSecretURI(username: String, secret: String): URI =
-    new URI("otauth", "totp", s"/TheHive:$username", s"secret=$secret&issuer=$issuerName", null)
+    new URI("otpauth", "totp", s"/TheHive:$username", s"secret=$secret&issuer=$issuerName", null)
 }
 
 @Singleton

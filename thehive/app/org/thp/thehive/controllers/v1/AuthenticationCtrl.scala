@@ -69,8 +69,8 @@ class AuthenticationCtrl @Inject() (
                     case Some(_)                                       => Failure(AuthenticationError("MFA code is invalid"))
                     case None                                          => Failure(MultiFactorCodeRequired("MFA code is required"))
                   }
+                  totpAuthSrv.setSecret(request.userId).map(Results.Ok(_))
               }
-              totpAuthSrv.setSecret(request.userId).map(Results.Ok(_))
           }
         }
       }
