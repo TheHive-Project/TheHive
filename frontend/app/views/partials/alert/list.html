@@ -5,7 +5,6 @@
                 <h3 class="box-title">List of alerts ({{$vm.list.total || 0}} of {{alertEvents.count}})</h3>
             </div>
             <div class="box-body">
-
                 <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
 
                 <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
@@ -156,7 +155,7 @@
                                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as unread" ng-if="$vm.canMarkAsUnread(event)">
                                                 <i class="text-info text-20 fa fa-envelope-open-o"></i>
                                             </a>
-                                            <span class="btn btn-xs btn-icon btn-clear" uib-dropdown>
+                                            <span class="btn btn-xs btn-icon btn-clear" uib-dropdown ng-if="$vm.appConfig.connectors.cortex.enabled" if-permission="manageAction">
                                                 <a href class="text-primary noline nowrap" ng-click="$vm.getResponders(event.id, true)" uib-dropdown-toggle>
                                                     <i class="text-info text-20 fa fa-cog"></i>
                                                 </a>
