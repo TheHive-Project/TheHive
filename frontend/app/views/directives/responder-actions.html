@@ -27,8 +27,7 @@
                 </td>
                 <td>{{action.cortexId}}</td>
                 <td>{{action.startDate | shortDate}}</td>
-                <td class="text-center">
-                    <a href class="noline" ng-click="showResponderJob(action)"><i class="fa fa-search"></i></a>
+                <td class="text-center">                    
                     <a href class="noline" ng-click="showResponderJob(action)" ng-if="action.status !== 'Failure'" uib-tooltip="Show action report" tooltip-placement="left-middle"><i class="fa fa-search"></i></a>
                 </td>
             </tr>
