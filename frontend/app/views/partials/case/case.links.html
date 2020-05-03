@@ -83,7 +83,8 @@
             </div>
 
             <div class="case-date">
-                <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span>
+                <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span><br/>
+                <case-duration start="item.startDate" end="item.endDate" icon="fa-clock-o"></case-duration>
             </div>
 
             <div class="case-observables-count">

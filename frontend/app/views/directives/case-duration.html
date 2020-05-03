@@ -1,0 +1,8 @@
+<span>
+    <strong ng-if="end" class="text-success" uib-tooltip="Closed after">
+        <i class="fa" ng-class="icon"></i> {{indicator ? 'During ' : ''}}{{start | duration:end}}
+    </strong>
+    <strong ng-if="!end" class="text-danger" uib-tooltip="Open since">
+        <i class="fa" ng-class="icon"></i> {{start | duration}} {{indicator ? 'ago' : ''}}
+    </strong>
+</span>

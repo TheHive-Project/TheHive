@@ -17,7 +17,7 @@
                     <div class="col-md-12 clearfix">
                         <filters-preview filters="$vm.filtering.context.filters"
                             on-clear-item="$vm.removeFilter(field)"
-                            on-clear-all="$vm.clearFilters()"></filters-preview>                                                
+                            on-clear-all="$vm.clearFilters()"></filters-preview>
                     </div>
                 </div>
 
@@ -142,7 +142,9 @@
                                         </div>
                                     </td>
                                     <td class="text-center">{{::event.artifacts.length || 0}}</td>
-                                    <td><a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | showDate}}</a></td>
+                                    <td>
+                                        <a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | shortDate}}</a>
+                                    </td>
                                     <td class="clearfix">
                                         <div class="pull-right" if-permission="manageAlert">
                                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">

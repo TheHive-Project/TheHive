@@ -23,20 +23,26 @@
     </div>
 
     <div class="box-body">
-        <span>
+        <span uib-tooltip="Creation by">
             <i class="glyphicon glyphicon-user"></i>
-            Created by <user-info value="caze.createdBy" field="name"></user-info>
+            <user-info value="caze.createdBy" field="name"></user-info>
         </span>
-        <span class="ml-xxs">
-            <i class="glyphicon glyphicon-calendar"></i>
-            <span class="mr-xxxs">{{caze.createdAt | showDate}}</span>
-        <span ng-show="isCaseClosed()" class="text-success">(Closed at
-                {{caze.endDate | shortDate}}
-                as
-                <strong>{{CaseResolutionStatus[caze.resolutionStatus]}}</strong>
-                <span ng-show="isCaseTruePositive()"> with <strong>{{caze.impactStatus === 'NoImpact' ? 'No Impact' : 'Impact'}}</strong></span>)</span>
+
+        <span class="ml-xxs" uib-tooltip="Created at">
+            <i class="fa fa-calendar"></i>
+            <span class="mr-xxxs">{{caze.createdAt | shortDate}}</span>
         </span>
-        <span class="ml-xxs text-danger" ng-show="links.length > 0">
+
+        <span class="text-success" uib-tooltip="Closed at" ng-show="isCaseClosed()">
+            <span><i class="fa fa-calendar-times-o"></i></span>
+            <span>{{caze.endDate | shortDate}} as </span>
+            <strong>{{CaseResolutionStatus[caze.resolutionStatus]}}</strong>
+            <span ng-show="isCaseTruePositive()"> with <strong>{{caze.impactStatus === 'NoImpact' ? 'No Impact' : 'Impact'}}</strong></span>
+        </span>
+
+        <case-duration class="ml-xxs" start="caze.startDate" end="caze.endDate" icon="fa-clock-o"></case-duration>
+
+        <span class="ml-xxs text-danger" ng-show="links.length > 0" uib-tooltip="Related to">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
                 <a class="text-danger" href ui-sref="app.case.links({caseId:caze.id})">
@@ -44,7 +50,8 @@
                 </a>
             </strong>
         </span>
-        <span class="ml-xxs text-danger" ng-show="alerts.count > 0">
+
+        <span class="ml-xxs text-danger" ng-show="alerts.count > 0"uib-tooltip="Related to">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
                 <a class="text-danger" href ui-sref="app.case.alerts({caseId:caze.id})">

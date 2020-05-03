@@ -105,8 +105,7 @@
                                             </a>
                                         </div>
                                         <div>
-                                            <strong ng-if="currentCase.endDate" class="text-success"><i class="fa fa-clock-o"></i> {{currentCase.startDate | duration:currentCase.endDate}}</strong>
-                                            <strong ng-if="!currentCase.endDate" class="text-danger"><i class="fa fa-clock-o"></i> {{currentCase.startDate | duration}}</strong>
+                                            <case-duration start="currentCase.startDate" end="currentCase.endDate" icon="fa-clock-o"></case-duration>
                                         </div>
                                     </td>
                                     <td if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">
