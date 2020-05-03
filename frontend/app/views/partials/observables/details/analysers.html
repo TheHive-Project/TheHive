@@ -6,7 +6,12 @@
                 <small><a href class="text-primary" ng-click="runAll()">Run all</a></small>
             </span>
         </h4>
-        <table class="table table-striped">
+
+        <div ng-if="!jobs || !analyzers || analyzers.length === 0">
+            <div class="empty-message">No records</div>
+        </div>
+
+        <table class="table table-striped" ng-if="jobs || analyzers.length > 0">
             <thead>
                 <th>Analyzer</th>
                 <th width="450">Last analysis</th>

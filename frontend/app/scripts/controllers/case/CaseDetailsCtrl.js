@@ -40,30 +40,34 @@
             nparent: 1
         });
 
-        $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
-            scope: $scope,
-            streamObjectType: 'action',
-            filter: {
-                _and: [
-                    {
-                        _not: {
-                            status: 'Deleted'
+
+        var connectors = $scope.appConfig.connectors;
+        if(connectors.cortex && connectors.cortex.enabled) {
+            $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                scope: $scope,
+                streamObjectType: 'action',
+                filter: {
+                    _and: [
+                        {
+                            _not: {
+                                status: 'Deleted'
+                            }
+                        }, {
+                            objectType: 'case'
+                        }, {
+                            objectId: $scope.caseId
                         }
-                    }, {
-                        objectType: 'case'
-                    }, {
-                        objectId: $scope.caseId
-                    }
-                ]
-            },
-            sort: ['-startDate'],
-            pageSize: 100,
-            guard: function(updates) {
-                return _.find(updates, function(item) {
-                    return (item.base.object.objectType === 'case') && (item.base.object.objectId === $scope.caseId);
-                }) !== undefined;
-            }
-        });
+                    ]
+                },
+                sort: ['-startDate'],
+                pageSize: 100,
+                guard: function(updates) {
+                    return _.find(updates, function(item) {
+                        return (item.base.object.objectType === 'case') && (item.base.object.objectId === $scope.caseId);
+                    }) !== undefined;
+                }
+            });
+        }
 
         $scope.openAttachment = function(attachment) {
             $state.go('app.case.tasks-item', {

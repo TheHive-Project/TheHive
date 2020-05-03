@@ -82,30 +82,33 @@
                     }
                 });
 
-                $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
-                    scope: $scope,
-                    streamObjectType: 'action',
-                    filter: {
-                        _and: [
-                            {
-                                _not: {
-                                    status: 'Deleted'
+                var connectors = $scope.appConfig.connectors;
+                if(connectors.cortex && connectors.cortex.enabled) {
+                    $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                        scope: $scope,
+                        streamObjectType: 'action',
+                        filter: {
+                            _and: [
+                                {
+                                    _not: {
+                                        status: 'Deleted'
+                                    }
+                                }, {
+                                    objectType: 'case_task'
+                                }, {
+                                    objectId: taskId
                                 }
-                            }, {
-                                objectType: 'case_task'
-                            }, {
-                                objectId: taskId
-                            }
-                        ]
-                    },
-                    sort: ['-startDate'],
-                    pageSize: 100,
-                    guard: function(updates) {
-                        return _.find(updates, function(item) {
-                            return (item.base.object.objectType === 'case_task') && (item.base.object.objectId === taskId);
-                        }) !== undefined;
-                    }
-                });
+                            ]
+                        },
+                        sort: ['-startDate'],
+                        pageSize: 100,
+                        guard: function(updates) {
+                            return _.find(updates, function(item) {
+                                return (item.base.object.objectType === 'case_task') && (item.base.object.objectId === taskId);
+                            }) !== undefined;
+                        }
+                    });
+                }
             };
 
             $scope.switchFlag = function () {
