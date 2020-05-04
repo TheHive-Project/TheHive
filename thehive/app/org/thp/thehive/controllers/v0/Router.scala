@@ -154,7 +154,7 @@ class Router @Inject() (
     case POST(p"/alert/_stats")                 => queryExecutor.alert.stats
     case DELETE(p"/alert/$alertId")             => alertCtrl.delete(alertId) // Audit ok
     case POST(p"/alert/$alertId/merge/$caseId") => alertCtrl.mergeWithCase(alertId, caseId) // Audit ok
-    case POST(p"/api/alert/merge/_bulk")        => alertCtrl.bulkMergeWithCase
+    case POST(p"/alert/merge/_bulk")            => alertCtrl.bulkMergeWithCase
 
     case GET(p"/dashboard")                 => queryExecutor.dashboard.search
     case POST(p"/dashboard/_search")        => queryExecutor.dashboard.search
