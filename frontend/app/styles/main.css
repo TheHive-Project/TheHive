@@ -315,6 +315,16 @@ ul.observable-reports-summary li {
     width: 200px !important;
 }
 
+.case-custom-fields dt {
+    background-color: #f9f9f9;
+    padding-left: 5px;
+    border-left: 2px solid #337ab7;
+}
+
+.case-custom-fields dd {
+    margin-left: 205px;
+}
+
 .scrollable {
     height: 100%;
     overflow: auto;

@@ -90,9 +90,7 @@
                     name: name,
                     order: definition.order
                 };
-            }), function(item){
-                return item.order;
-            }), 'name');
+            }), 'order'), 'name');
 
             return result;
         };

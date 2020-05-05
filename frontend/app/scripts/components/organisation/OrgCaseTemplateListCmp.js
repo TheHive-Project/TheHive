@@ -40,9 +40,7 @@
                                 type: type
                             };
                         }),
-                        function(item) {
-                            return item.order;
-                        }
+                        'order'
                     );
 
                     return result;
