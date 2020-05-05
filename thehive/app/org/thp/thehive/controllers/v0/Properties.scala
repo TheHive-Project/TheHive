@@ -276,7 +276,7 @@ class Properties @Inject() (
 
   lazy val customField: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CustomFieldSteps]
-      .property("name", UniMapping.string)(_.field.readonly)
+      .property("name", UniMapping.string)(_.field.updatable)
       .property("description", UniMapping.string)(_.field.updatable)
       .property("reference", UniMapping.string)(_.field.readonly)
       .property("mandatory", UniMapping.boolean)(_.field.updatable)
