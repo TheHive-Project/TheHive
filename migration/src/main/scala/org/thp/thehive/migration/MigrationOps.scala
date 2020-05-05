@@ -1,12 +1,10 @@
 package org.thp.thehive.migration
 
-import scala.collection.immutable
+import scala.collection.{immutable, mutable}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.{classTag, ClassTag}
 import scala.util.{Failure, Success, Try}
-
 import play.api.Logger
-
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
@@ -159,6 +157,7 @@ trait MigrationOps {
       implicit ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] = {
+    val pendingAlertCase: mutable.Map[String, Seq[InputAlert]] = mutable.HashMap.empty[String, Seq[InputAlert]]
     def migrateCasesAndAlerts(): Future[Unit] = {
       val ordering: Ordering[Either[InputAlert, InputCase]] = new Ordering[Either[InputAlert, InputCase]] {
         def createdAt(x: Either[InputAlert, InputCase]): Long = x.fold(_.metaData.createdAt.getTime, _.metaData.createdAt.getTime)
@@ -174,15 +173,23 @@ trait MigrationOps {
           case (caseIds, Right(case0)) =>
             migrateAWholeCase(input, output, filter)(case0).transform(_.fold(_ => Success(caseIds), cid => Success(caseIds :+ cid)))
           case (caseIds, Left(alert)) =>
-            val caseId = alert.caseId.map(caseIds.fromInput).flip.getOrElse {
-              logger.error(s"case Id not found in alert $alert")
-              None
-            }
-            migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId)).map(_ => caseIds)
+            alert
+              .caseId
+              .map { caseId =>
+                caseIds.fromInput(caseId).recoverWith {
+                  case error =>
+                    pendingAlertCase += caseId -> (pendingAlertCase.getOrElse(caseId, Nil) :+ alert)
+                    Failure(error)
+                }
+              }
+              .flip
+              .fold(
+                _ => Future.successful(caseIds),
+                caseId => migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId)).map(_ => caseIds)
+              )
         }
-        .runWith(Sink.ignore)
-        .map(_ => ())
-    }
+    }.runWith(Sink.ignore)
+      .map(_ => ())
 
     for {
       _ <- migrate(input.listProfiles(filter).filterNot(output.profileExists), output.createProfile)

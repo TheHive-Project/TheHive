@@ -56,7 +56,6 @@ import play.api.libs.concurrent.AkkaGuiceSupport
 import play.api.{Configuration, Environment, Logger}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
@@ -134,9 +133,8 @@ class Output @Inject() (
     db: Database,
     cache: SyncCacheApi
 ) extends migration.Output {
-  lazy val logger: Logger                                   = Logger(getClass)
-  lazy val observableSrv: ObservableSrv                     = observableSrvProvider.get
-  private val pendingAlertCase: mutable.Map[String, String] = mutable.HashMap.empty[String, String]
+  lazy val logger: Logger               = Logger(getClass)
+  lazy val observableSrv: ObservableSrv = observableSrvProvider.get
 
   def getAuthContext(userId: String)(implicit graph: Graph): AuthContext = {
     val cacheId = s"user-$userId"
@@ -325,14 +323,6 @@ class Output @Inject() (
               .failed
               .foreach(error => logger.warn(s"Add custom field $name:$value to case #${richCase.number} failure: $error"))
         }
-        _ = pendingAlertCase.get(inputCase.metaData.id).foreach { alertId =>
-          alertSrv
-            .getOrFail(alertId)
-            .flatMap(a => alertSrv.alertCaseSrv.create(AlertCase(), a, richCase.`case`))
-            .failed
-            .foreach(error => logger.warn(s"Cannot create link between alert $alertId and case #${richCase.number}", error))
-          pendingAlertCase -= inputCase.metaData.id
-        }
       } yield IdMapping(inputCase.metaData.id, richCase._id)
     }
 
@@ -450,12 +440,7 @@ class Output @Inject() (
             }
           )
         alert <- alertSrv.create(inputAlert.alert, organisation, inputAlert.tags, inputAlert.customFields, caseTemplate)
-        _ = inputAlert.caseId.foreach { caseId =>
-          getCase(caseId) match {
-            case Success(c) => alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, c)
-            case _          => pendingAlertCase += (caseId -> alert._id)
-          }
-        }
+        _ = inputAlert.caseId.flatMap(getCase(_).toOption).foreach(alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, _))
       } yield IdMapping(inputAlert.metaData.id, alert._id)
   }
 
