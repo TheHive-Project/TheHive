@@ -6,18 +6,6 @@
 
             this.cache = null;
 
-            this._convert = function(field) {
-                return {
-                    reference: field.name,
-                    name: field.displayName,
-                    description: field.description,
-                    options: field.options,
-                    type: field.type,
-                    mandatory: field.mandatory
-                };
-            };
-
-
             this.removeField = function(field) {
                 return $http.delete('./api/customField/' + field.reference);
             };
@@ -31,11 +19,13 @@
             };
 
             this.create = function(field) {
-                return $http.post('./api/customField', self._convert(field));
+                //return $http.post('./api/customField', self._convert(field));
+                return $http.post('./api/customField', field);
             };
 
             this.update = function(id, field) {
-                return $http.patch('./api/customField/'+id, self._convert(field));
+                //return $http.patch('./api/customField/'+id, self._convert(field));
+                return $http.patch('./api/customField/'+id, field);
             };
 
             this.remove = function(id) {

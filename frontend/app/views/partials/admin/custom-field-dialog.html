@@ -3,56 +3,56 @@
         <h3 class="modal-title">{{$vm.customField.id ? 'Update' : 'Add'}} custom field</h3>
     </div>
     <div class="modal-body">
-        <div class="form-group" ng-class="{ 'has-error' : fieldsForm.displayName.$invalid && !fieldsForm.displayName.$pristine }">
-            <label class="col-sm-2 control-label">
-                Display Name
-                <i class="fa fa-asterisk text-danger"></i>
-            </label>
-            <div class="col-sm-10">
-                <input class="form-control" name="displayName"
-                    placeholder="Field's title, Ex: CVSS, Threat actor, Business risk"
-                    ng-model="$vm.customField.displayName"
-                    ng-keyup="$vm.onNamechanged(fieldsForm)"
-                    required type="text">
-                <p class="help-block" ng-show="fieldsForm.displayName.$invalid && !fieldsForm.displayName.$pristine">This field is required.</p>
-            </div>
-        </div>
-
-        <div class="form-group" ng-class="{ 'has-error' : fieldsForm.name.$invalid && fieldsForm.name.$dirty }">
-            <label class="col-sm-2 control-label">
+        <div class="form-group" ng-class="{ 'has-error' : fieldsForm.name.$invalid && !fieldsForm.name.$pristine }">
+            <label class="col-sm-3 control-label">
                 Name
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
-            <div class="col-sm-10">
-                <input class="form-control" name="name" type="text"
-                    placeholder="Internal name, Ex: cvss, threatActor, businessRisk"
+            <div class="col-sm-9">
+                <input class="form-control" name="name"
+                    placeholder="Field's display name, Ex: CVSS, Threat actor, Business risk"
                     ng-model="$vm.customField.name"
+                    ng-keyup="$vm.onNamechanged(fieldsForm)"
+                    required type="text">
+                <p class="help-block" ng-show="fieldsForm.name.$invalid && !fieldsForm.name.$pristine">This field is required.</p>
+            </div>
+        </div>
+
+        <div class="form-group" ng-class="{ 'has-error' : fieldsForm.reference.$invalid && fieldsForm.reference.$dirty }">
+            <label class="col-sm-3 control-label">
+                Internal Reference
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+            <div class="col-sm-9">
+                <input class="form-control" name="reference" type="text"
+                    placeholder="Internal name, Ex: cvss, threatActor, businessRisk"
+                    ng-model="$vm.customField.reference"
                     ng-keyup="$vm.clearUniqueNameError(fieldsForm)"
-                    ng-pattern="$vm.config.namePattern"
+                    ng-pattern="$vm.config.referencePattern"
                     ng-readonly="!!$vm.customField.id"
                     required>
-                <p class="help-block" ng-show="fieldsForm.name.$error.unique">There is already a field with this name. It should be unique.</p>
-                <p class="help-block" ng-show="fieldsForm.name.$error.required && fieldsForm.name.$dirty">This field is required.</p>
-                <p class="help-block" ng-show="fieldsForm.name.$error.pattern && fieldsForm.name.$dirty">This field is should satisfy the following pattern: {{$vm.config.namePattern}}</p>
+                <p class="help-block" ng-show="fieldsForm.reference.$error.unique">There is already a field with this reference. It should be unique.</p>
+                <p class="help-block" ng-show="fieldsForm.reference.$error.required && fieldsForm.reference.$dirty">This field is required.</p>
+                <p class="help-block" ng-show="fieldsForm.reference.$error.pattern && fieldsForm.reference.$dirty">This field is should satisfy the following pattern: {{$vm.config.referencePattern}}</p>
             </div>
         </div>
 
         <div class="form-group" ng-class="{ 'has-error' : fieldsForm.description.$invalid && !fieldsForm.description.$pristine }">
-            <label class="col-sm-2 control-label">
+            <label class="col-sm-3 control-label">
                 Description
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
-            <div class="col-sm-10">
+            <div class="col-sm-9">
                 <input class="form-control" name="description" ng-model="$vm.customField.description" placeholder="A brief description of the custom field" required type="text">
                 <p class="help-block" ng-show="fieldsForm.description.$invalid && !fieldsForm.description.$pristine">This field is required.</p>
             </div>
         </div>
         <div class="form-group" ng-class="{ 'has-error' : fieldsForm.type.$invalid && !fieldsForm.type.$pristine }">
-            <label class="col-sm-2 control-label">
+            <label class="col-sm-3 control-label">
                 Type
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
-            <div class="col-sm-10">
+            <div class="col-sm-9">
                 <select class="form-control" name="type" ng-model="$vm.customField.type"
                     ng-options="fieldType for fieldType in $vm.config.types"
                     placeholder="Field's type" required></select>
@@ -61,17 +61,17 @@
         </div>
 
         <div class="form-group" ng-show="$vm.customField.type === 'string' || $vm.customField.type === 'integer'  || $vm.customField.type === 'float'">
-            <label class="col-sm-2 control-label">
+            <label class="col-sm-3 control-label">
                 Possible values
             </label>
-            <div class="col-sm-10">
+            <div class="col-sm-9">
                 <textarea class="form-control" name="options" ng-model="$vm.customField.options" rows="5" placeholder="Possible values, one per line" type="text"></textarea>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="col-sm-2 control-label">&nbsp;</label>
-            <div class="col-sm-10">
+            <label class="col-sm-3 control-label">&nbsp;</label>
+            <div class="col-sm-9">
                 <div class="checkbox">
                     <label>
                         <input name="mandatory" type="checkbox" ng-model="$vm.customField.mandatory"> Is mandatory

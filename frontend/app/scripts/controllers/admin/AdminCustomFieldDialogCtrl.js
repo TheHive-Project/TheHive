@@ -7,7 +7,7 @@
             types: [
                 'string', 'integer', 'boolean', 'date', 'float'
             ],
-            namePattern: '^[a-zA-Z]{1}[a-zA-Z0-9_-]*'
+            reference: '^[a-zA-Z]{1}[a-zA-Z0-9_-]*'
         };
 
         self.customField = customField;
@@ -48,18 +48,13 @@
                 return;
             }
 
-            var postData = _.pick(self.customField, 'name', 'displayName', 'description', 'type', 'mandatory');
+            var postData = _.pick(self.customField, 'name', 'reference', 'description', 'type', 'mandatory');
             postData.options = buildOptionsCollection(self.customField.options);
 
             if (self.customField.id) {
                 CustomFieldsSrv.update(self.customField.id, postData)
                     .then(onSuccess)
                     .catch(onFailure);
-                // ListSrv.update({
-                //     'itemId': self.customField.id
-                // }, {
-                //     'value': postData
-                // }, onSuccess, onFailure);
             } else {
 
                 CustomFieldsSrv.create(postData)
@@ -88,8 +83,8 @@
         };
 
         self.clearUniqueNameError = function(form) {
-            form.name.$setValidity('unique', true);
-            form.name.$setPristine();
+            form.reference.$setValidity('unique', true);
+            form.reference.$setPristine();
         };
 
         self.cancel = function() {
@@ -97,13 +92,13 @@
         };
 
         self.onNamechanged = function(form) {
-            if (self.customField.id || !self.customField.displayName) {
+            if (self.customField.id || !self.customField.name) {
                 return;
             }
 
-            var name = s.trim(s.slugify(self.customField.displayName));
+            var reference = s.trim(s.slugify(self.customField.name));
 
-            self.customField.name = name;
+            self.customField.reference = reference;
 
             self.clearUniqueNameError(form);
         };
