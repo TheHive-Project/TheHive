@@ -29,6 +29,7 @@
                     ng-model="$vm.customField.name"
                     ng-keyup="$vm.clearUniqueNameError(fieldsForm)"
                     ng-pattern="$vm.config.namePattern"
+                    ng-readonly="!!$vm.customField.id"
                     required>
                 <p class="help-block" ng-show="fieldsForm.name.$error.unique">There is already a field with this name. It should be unique.</p>
                 <p class="help-block" ng-show="fieldsForm.name.$error.required && fieldsForm.name.$dirty">This field is required.</p>

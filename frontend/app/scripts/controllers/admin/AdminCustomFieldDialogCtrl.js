@@ -97,12 +97,11 @@
         };
 
         self.onNamechanged = function(form) {
-            if (!self.customField.displayName) {
+            if (self.customField.id || !self.customField.displayName) {
                 return;
             }
 
             var name = s.trim(s.slugify(self.customField.displayName));
-            //name = name.charAt(0).toLowerCase() + name.slice(1);
 
             self.customField.name = name;
 
