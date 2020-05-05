@@ -141,7 +141,7 @@ class Properties @Inject() (
 
   lazy val caseTemplate: List[PublicProperty[_, _]] =
     PublicPropertyListBuilder[CaseTemplateSteps]
-      .property("name", UniMapping.string)(_.field.readonly)
+      .property("name", UniMapping.string)(_.field.updatable)
       .property("displayName", UniMapping.string)(_.field.updatable)
       .property("titlePrefix", UniMapping.string.optional)(_.field.updatable)
       .property("description", UniMapping.string.optional)(_.field.updatable)
