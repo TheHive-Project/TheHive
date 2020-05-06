@@ -136,6 +136,7 @@ class Router @Inject() (
 
     case GET(p"/customField")          => customFieldCtrl.list
     case POST(p"/customField")         => customFieldCtrl.create
+    case GET(p"/customField/$id")      => customFieldCtrl.get(id)
     case DELETE(p"/customField/$id")   => customFieldCtrl.delete(id)
     case PATCH(p"/customField/$id")    => customFieldCtrl.update(id)
     case GET(p"/customFields/$id/use") => customFieldCtrl.useCount(id)

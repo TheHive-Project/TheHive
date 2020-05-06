@@ -37,6 +37,12 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, propertie
         Success(Results.Ok(customFields.toJson))
       }
 
+  def get(id: String): Action[AnyContent] =
+    entrypoint("get custom field")
+      .authRoTransaction(db) { _ => implicit graph =>
+        customFieldSrv.get(id).getOrFail().map(cf => Results.Ok(cf.toJson))
+      }
+
   def delete(id: String): Action[AnyContent] =
     entrypoint("delete custom field")
       .extract("force", FieldsParser.boolean.optional.on("force"))
