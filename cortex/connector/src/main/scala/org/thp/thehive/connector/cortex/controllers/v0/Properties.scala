@@ -36,5 +36,6 @@ class Properties @Inject() () {
       .property("cortexId", UniMapping.string.optional)(_.field.readonly)
       .property("startDate", UniMapping.date)(_.field.readonly)
       .property("status", UniMapping.string)(_.field.readonly)
+      .property("analyzerDefinition", UniMapping.string)(_.rename("workerDefinition").readonly)
       .build
 }
