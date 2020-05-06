@@ -61,7 +61,8 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
     db.addProperty(model, propertyName, mapping)
   override def removeProperty(model: String, propertyName: String, usedOnlyByThisModel: Boolean): Try[Unit] =
     db.removeProperty(model, propertyName, usedOnlyByThisModel)
-  override def drop(): Unit = db.drop()
+  override def addIndex(model: String, indexType: IndexType.Value, properties: Seq[String]): Try[Unit] = db.addIndex(model, indexType, properties)
+  override def drop(): Unit                                                                            = db.drop()
 
   override def getSingleProperty[D, G](element: Element, key: String, mapping: SingleMapping[D, G]): D = db.getSingleProperty(element, key, mapping)
 

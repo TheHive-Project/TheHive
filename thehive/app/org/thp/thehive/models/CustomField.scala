@@ -3,12 +3,10 @@ package org.thp.thehive.models
 import java.util.Date
 
 import scala.util.{Failure, Success, Try}
-
 import play.api.libs.json._
-
 import gremlin.scala.Edge
 import org.thp.scalligraph._
-import org.thp.scalligraph.models.{Database, Entity, Model, UniMapping}
+import org.thp.scalligraph.models.{Database, DefineIndex, Entity, IndexType, Model, UniMapping}
 
 trait CustomFieldValue[C] extends Product {
   def order: Option[Int]
@@ -197,6 +195,7 @@ object CustomFieldDate extends CustomFieldType[Date] {
   override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue
 }
 
+@DefineIndex(IndexType.unique, "name")
 @VertexEntity
 case class CustomField(
     name: String,
