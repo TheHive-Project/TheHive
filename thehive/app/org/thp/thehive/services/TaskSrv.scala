@@ -75,7 +75,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Task with Entity] = {
-    def setStatus() = get(t).updateOne("status" -> s)
+    def setStatus(): Try[Task with Entity] = get(t).updateOne("status" -> s)
 
     s match {
       case TaskStatus.Cancel | TaskStatus.Waiting => setStatus()

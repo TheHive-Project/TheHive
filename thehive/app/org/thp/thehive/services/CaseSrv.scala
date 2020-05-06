@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Date, List => JList, Set => JSet}
+import java.util.{List => JList, Set => JSet}
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
@@ -80,15 +80,24 @@ class CaseSrv @Inject() (
       steps: CaseSteps,
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] = {
-    def endDateSetter(endDate: Date): PropertyUpdater =
-      PropertyUpdater(FPathElem("endDate"), endDate.getTime) { (vertex, _, _, _) =>
-        vertex.property("endDate", endDate.getTime)
-        Success(Json.obj("endDate" -> endDate.getTime))
-      }
+    val closeCase = PropertyUpdater(FPathElem("closeCase"), "") { (vertex, _, _, _) =>
+      get(vertex)
+        .tasks
+        .or(_.has("status", "Waiting"), _.has("status", "InProgress"))
+        .toIterator
+        .toTry {
+          case task if task.status == TaskStatus.InProgress => taskSrv.updateStatus(task, null, TaskStatus.Completed)
+          case task                                         => taskSrv.updateStatus(task, null, TaskStatus.Cancel)
+        }
+        .flatMap { _ =>
+          vertex.property("endDate", System.currentTimeMillis())
+          Success(Json.obj("endDate" -> System.currentTimeMillis()))
+        }
+    }
 
-    val closeCase = propertyUpdaters.exists(p => p.path.matches(FPathElem("status")) && p.value == CaseStatus.Resolved)
+    val isCloseCase = propertyUpdaters.exists(p => p.path.matches(FPathElem("status")) && p.value == CaseStatus.Resolved)
 
-    val newPropertyUpdaters = if (closeCase) endDateSetter(new Date) +: propertyUpdaters else propertyUpdaters
+    val newPropertyUpdaters = if (isCloseCase) closeCase +: propertyUpdaters else propertyUpdaters
     auditSrv.mergeAudits(super.update(steps, newPropertyUpdaters)) {
       case (caseSteps, updatedFields) =>
         caseSteps
