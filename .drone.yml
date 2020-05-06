@@ -1,19 +1,14 @@
 ---
 kind: pipeline
 name: default
-
-# Disable default clone
-clone:
-  disable: true
+type: docker
 
 steps:
-  # This clone step doesn't use "root" user
-  - name: clone
-    image: thehiveproject/drone-git
-    settings:
-      submodule_override:
-        - ScalliGraph: https://github.com/TheHive-Project/ScalliGraph.git
-
+  # Fetch git submodules
+  - name: submodules
+    image: alpine/git
+    commands:
+      - git submodule update --recursive --init --remote
 
   # Restore cache of downloaded dependencies
   - name: restore-cache
@@ -29,7 +24,7 @@ steps:
   - name: run-tests
     image: thehiveproject/drone-scala-node
     commands:
-      - sbt -Duser.home=$PWD +test:compile +test
+      - sbt -Duser.home=$PWD test:compile test
 
   # Save external libraries in cache
   - name: save-cache
