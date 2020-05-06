@@ -14,6 +14,7 @@
         self.customField.options = (customField.options || []).join('\n');
 
         var onSuccess = function(data) {
+            NotificationSrv.log('The Custom field has been successfully saved.', 'success');
             $uibModalInstance.close(data);
         };
 
@@ -57,28 +58,20 @@
                     .catch(onFailure);
             } else {
 
-                CustomFieldsSrv.create(postData)
-                    .then(onSuccess)
-                    .catch(onFailure);
-
-                // ListSrv.exists({
-                //     'listId': 'custom_fields'
-                // }, {
-                //     key: 'reference',
-                //     value: postData.reference
-                // }, function(response) {
-                //
-                //     if (response.toJSON().found === true) {
-                //         form.name.$setValidity('unique', false);
-                //         form.name.$setDirty();
-                //     } else {
-                //         ListSrv.save({
-                //             'listId': 'custom_fields'
-                //         }, {
-                //             'value': postData
-                //         }, onSuccess, onFailure);
-                //     }
-                // }, onFailure);
+                CustomFieldsSrv.get(postData.reference)
+                    .then(function() {
+                        form.reference.$setValidity('unique', false);
+                        form.reference.$setDirty();
+                    }, function(err) {
+                        if(err.status === 404) {
+                            CustomFieldsSrv.create(postData)
+                                .then(onSuccess)
+                                .catch(onFailure);
+                        }
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('AdminCustomFieldDialogCtrl', err.data, err.status);
+                    });
             }
         };
 

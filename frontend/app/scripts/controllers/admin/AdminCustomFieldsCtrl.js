@@ -51,16 +51,6 @@
                     size: 'lg',
                     resolve: {
                         customField: function() {
-                            // return customField.id ? {
-                            //       id: customField.id,
-                            //       name: customField.reference,
-                            //       displayName: customField.name,
-                            //       description: customField.description,
-                            //       type: customField.type,
-                            //       options: customField.options,
-                            //       mandatory: customField.mandatory
-                            // } : {};
-
                             return customField.id ? angular.copy(customField, {}) : {};
                         }
                     }

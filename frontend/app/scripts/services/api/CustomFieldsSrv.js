@@ -18,6 +18,10 @@
                 return $http.get('./api/customField');
             };
 
+            this.get = function(idOrReference) {
+                return $http.get('./api/customField/' + idOrReference);
+            };
+
             this.create = function(field) {
                 //return $http.post('./api/customField', self._convert(field));
                 return $http.post('./api/customField', field);
