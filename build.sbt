@@ -1,7 +1,8 @@
 import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
+import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.0.0-RC2-1-SNAPSHOT"
+val thehiveVersion         = "4.0.0-RC2-1"
 val scala212               = "2.12.10"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
@@ -60,6 +61,7 @@ libraryDependencies in ThisBuild ++= {
   }
 }
 PlayKeys.includeDocumentationInBinary := false
+milestoneFilter := ((milestone: Milestone) => milestone.title.startsWith("4"))
 
 lazy val scalligraph = (project in file("ScalliGraph"))
   .settings(name := "scalligraph")
