@@ -3,7 +3,7 @@ import Common.{betaVersion, snapshotVersion, stableVersion, versionUsage}
 version in Rpm := {
   version.value match {
     case stableVersion(v1, _)                   => v1
-    case betaVersion(v1, _)                     => v1
+    case betaVersion(v1, _, _)                  => v1
     case snapshotVersion(stableVersion(v1, _))  => v1
     case snapshotVersion(betaVersion(v1, _, _)) => v1
     case _                                      => versionUsage(version.value)
