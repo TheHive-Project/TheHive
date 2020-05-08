@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val janusVersion        = "0.4.0"
+  val janusVersion        = "0.5.1"
   val akkaVersion: String = play.core.PlayVersion.akkaVersion
   val elastic4sVersion    = "6.7.4"
 
@@ -21,15 +21,15 @@ object Dependencies {
   lazy val janusGraphLucene        = "org.janusgraph"           % "janusgraph-lucene"                   % janusVersion
   lazy val janusGraphElasticSearch = "org.janusgraph"           % "janusgraph-es"                       % janusVersion
   lazy val cassandra               = "org.janusgraph"           % "janusgraph-cql"                      % janusVersion
-  lazy val gremlinScala            = "com.michaelpollmeier"     %% "gremlin-scala"                      % "3.4.4.3"
+  lazy val gremlinScala            = "com.michaelpollmeier"     %% "gremlin-scala"                      % "3.4.4.5"
   lazy val gremlinOrientdb         = "com.orientechnologies"    % "orientdb-gremlin"                    % "3.0.18"
   lazy val hbaseClient             = "org.apache.hbase"         % "hbase-shaded-client"                 % "1.4.9" exclude ("org.slf4j", "slf4j-log4j12")
-  lazy val scalactic               = "org.scalactic"            %% "scalactic"                          % "3.1.0"
+  lazy val scalactic               = "org.scalactic"            %% "scalactic"                          % "3.1.1"
   lazy val scalaGuice              = "net.codingwell"           %% "scala-guice"                        % "4.2.6"
   lazy val sangria                 = "org.sangria-graphql"      %% "sangria"                            % "1.4.2"
   lazy val sangriaPlay             = "org.sangria-graphql"      %% "sangria-play-json"                  % "1.0.5"
   lazy val shapeless               = "com.chuusai"              %% "shapeless"                          % "2.3.3"
-  lazy val bouncyCastle            = "org.bouncycastle"         % "bcprov-jdk15on"                      % "1.64"
+  lazy val bouncyCastle            = "org.bouncycastle"         % "bcprov-jdk15on"                      % "1.65"
   lazy val neo4jGremlin            = "org.apache.tinkerpop"     % "neo4j-gremlin"                       % "3.3.4"
   lazy val neo4jTinkerpop          = "org.neo4j"                % "neo4j-tinkerpop-api-impl"            % "0.7-3.2.3" exclude ("org.slf4j", "slf4j-nop")
   lazy val apacheConfiguration     = "commons-configuration"    % "commons-configuration"               % "1.10"
