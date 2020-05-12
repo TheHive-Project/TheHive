@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import java.util.{List => JList}
 import java.util.regex.Pattern
 
 import gremlin.scala._
@@ -10,7 +11,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{BadRequestError, EntitySteps, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -190,6 +191,15 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     else organisations0(requiredPermission)
   }
 
+  def organisationWithRole: Traversal[JList[(String, String)], JList[(String, String)]] =
+    this
+      .outTo[UserRole]
+      .project(
+        _.apply(By(__[Vertex].outTo[RoleOrganisation].value[String]("name")))
+          .and(By(__[Vertex].outTo[RoleProfile].value[String]("name")))
+      )
+      .fold
+
   def config: ConfigSteps = new ConfigSteps(raw.outTo[UserConfig])
 
   def getAuthContext(requestId: String, organisation: Option[String]): Traversal[AuthContext, AuthContext] = {
@@ -249,6 +259,33 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         case (user, _, attachment) =>
           val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
           RichUser(user.as[User], avatar, "", Set.empty, organisation)
+      }
+
+  def richUserWithCustomRenderer[A](organisation: String, entityRenderer: UserSteps => TraversalLike[_, A])(
+      implicit authContext: AuthContext
+  ): Traversal[(RichUser, A), (RichUser, A)] =
+    this
+      .project(
+        _.apply(By[Vertex]())
+          .and(
+            By(
+              __[Vertex].coalesce(
+                _.outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold(),
+                _.constant(List.empty[Vertex].asJava)
+              )
+            )
+          )
+          .and(By(__[Vertex].outTo[UserAttachment].fold()))
+          .and(By(entityRenderer(newInstance(__[Vertex])).raw))
+      )
+      .collect {
+        case (user, profiles, attachment, renderedEntity) if profiles.size() == 1 =>
+          val profile = profiles.get(0).as[Profile]
+          val avatar  = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
+          RichUser(user.as[User], avatar, profile.name, profile.permissions, organisation) -> renderedEntity
+        case (user, _, attachment, renderedEntity) =>
+          val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
+          RichUser(user.as[User], avatar, "", Set.empty, organisation) -> renderedEntity
       }
 
   def role: RoleSteps = new RoleSteps(raw.outTo[UserRole])

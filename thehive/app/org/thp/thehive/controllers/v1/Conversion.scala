@@ -187,11 +187,22 @@ object Conversion {
     _.into[OutputUser]
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
       .withFieldComputed(_.hasKey, _.apikey.isDefined)
-      //        .withFieldComputed(_.permissions, _.permissions)
-      //        .withFieldConst(_.permissions, Set.empty[String]
+      .withFieldConst(_.organisations, Nil)
       .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
       .transform
   )
+
+  implicit val userWithOrganisationOutput: Outputer.Aux[(RichUser, Seq[(String, String)]), OutputUser] =
+    Outputer[(RichUser, Seq[(String, String)]), OutputUser] { userWithOrganisations =>
+      val (user, organisations) = userWithOrganisations
+      user
+        .into[OutputUser]
+        .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
+        .withFieldComputed(_.hasKey, _.apikey.isDefined)
+        .withFieldConst(_.organisations, organisations.map { case (org, role) => OutputOrganisationRole(org, role) })
+        .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
+        .transform
+    }
 
   implicit val profileOutput: Outputer.Aux[Profile with Entity, OutputProfile] = Outputer[Profile with Entity, OutputProfile](profile =>
     profile

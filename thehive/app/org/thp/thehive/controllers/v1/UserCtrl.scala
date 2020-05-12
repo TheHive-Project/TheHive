@@ -18,6 +18,7 @@ import play.api.http.HttpEntity
 import play.api.libs.json.{JsNull, JsObject, Json}
 import play.api.mvc._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
@@ -63,7 +64,7 @@ class UserCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .current
-          .richUser(request.organisation)
+          .richUserWithCustomRenderer(request.organisation, _.organisationWithRole.map(_.asScala.toSeq))
           .getOrFail()
           .map(user => Results.Ok(user.toJson))
       }
