@@ -63,7 +63,7 @@ class UserCtrl @Inject() (
           .current
           .richUserWithCustomRenderer(request.organisation, _.organisationWithRole.map(_.asScala.toSeq))
           .getOrFail()
-          .map(user => Results.Ok(user.toJson))
+          .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation))
       }
 
   def create: Action[AnyContent] =
