@@ -6,18 +6,22 @@ import org.thp.scalligraph.auth.UserSrv
 import org.thp.scalligraph.models.{Database, IndexType, Operations}
 import org.thp.scalligraph.steps.StepsOps._
 import play.api.Logger
+import play.api.inject.ApplicationLifecycle
 
-import scala.util.Success
+import scala.concurrent.Future
+import scala.util.{Success, Try}
 
 @Singleton
-class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userSrv: UserSrv) {
+class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userSrv: UserSrv, applicationLifeCycle: ApplicationLifecycle) {
   lazy val logger: Logger = Logger(getClass)
+
+  applicationLifeCycle.addStopHook(() => Future.successful(db.close()))
 
   Operations("thehive", theHiveSchema)
     .forVersion(2)
     .addProperty[Option[Boolean]]("Observable", "seen")
     .updateGraph("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
-      traversal.has("name", "org-admin").raw.property(Key("permissions") -> "manageConfig").iterate()
+      Try(traversal.has("name", "org-admin").raw.property(Key("permissions") -> "manageConfig").iterate())
       Success(())
     }
     .forVersion(3)
