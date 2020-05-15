@@ -9,7 +9,7 @@ object Dependencies {
   lazy val playLogback             = "com.typesafe.play"        %% "play-logback"                       % play.core.PlayVersion.current
   lazy val playGuice               = "com.typesafe.play"        %% "play-guice"                         % play.core.PlayVersion.current
   lazy val playFilters             = "com.typesafe.play"        %% "filters-helpers"                    % play.core.PlayVersion.current
-  lazy val playMockws              = "de.leanovate.play-mockws" %% "play-mockws"                        % "2.7.1" // FIXME play.core.PlayVersion.current
+  lazy val playMockws              = "de.leanovate.play-mockws" %% "play-mockws"                        % "2.8.0" // FIXME play.core.PlayVersion.current
   lazy val akkaCluster             = "com.typesafe.akka"        %% "akka-cluster"                       % akkaVersion
   lazy val akkaClusterTools        = "com.typesafe.akka"        %% "akka-cluster-tools"                 % akkaVersion
   lazy val akkaClusterTyped        = "com.typesafe.akka"        %% "akka-cluster-typed"                 % akkaVersion
