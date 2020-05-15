@@ -203,13 +203,9 @@
                     operations.push(query);
                 }
 
-                operations.push({
-                    '_name': 'toList'
-                });
-
                 return QuerySrv.query('v1', operations)
                     .then(function(response) {
-                        return $q.resolve(response.data.result);
+                        return $q.resolve(response.data);
                     });
             };
 

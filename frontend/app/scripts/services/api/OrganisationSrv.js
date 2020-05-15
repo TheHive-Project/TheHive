@@ -53,16 +53,13 @@
                     },
                     {
                         '_name': 'users'
-                    },
-                    {
-                        '_name': 'toList'
                     }
                 ], {
                     headers: {
                         'X-Organisation': orgId
                     }
                 }).then(function(response) {
-                    return $q.resolve(response.data.result);
+                    return $q.resolve(response.data);
                 });
             };
 
@@ -73,12 +70,9 @@
                     },
                     {
                         '_name': 'caseTemplates'
-                    },
-                    {
-                        '_name': 'toList'
                     }
                 ]).then(function(response) {
-                    return $q.resolve(response.data.result);
+                    return $q.resolve(response.data);
                 });
             };
         });
