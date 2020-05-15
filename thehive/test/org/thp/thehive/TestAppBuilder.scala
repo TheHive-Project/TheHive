@@ -8,10 +8,8 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.thehive.models.TheHiveSchema
-import org.thp.thehive.services.notification._
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
@@ -35,8 +33,8 @@ trait TestAppBuilder {
       .multiBind[TriggerProvider](classOf[TaskAssignedProvider])
       .multiBind[TriggerProvider](classOf[AlertCreatedProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
-      .bindActor[ConfigActor]("config-actor")
-      .bindActor[NotificationActor]("notification-actor")
+      .bindActor[DummyActor]("config-actor")
+      .bindActor[DummyActor]("notification-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
       .addConfiguration("play.mailer.mock = yes")
@@ -65,20 +63,23 @@ trait TestAppBuilder {
     }
     val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
     FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
-    try body(
-      appConfigure
-        .bind[Database, JanusDatabase]
-        .addConfiguration(s"""
-                             |db {
-                             |  provider: janusgraph
-                             |  janusgraph {
-                             |    storage.backend: berkeleyje
-                             |    storage.directory: $storageDirectory
-                             |    berkeleyje.freeDisk: 2
-                             |  }
-                             |}
-                             |""".stripMargin)
-    )
-    finally FileUtils.deleteDirectory(storageDirectory)
+    val app = appConfigure
+      .bind[Database, JanusDatabase]
+      .addConfiguration(s"""
+                           |db {
+                           |  provider: janusgraph
+                           |  janusgraph {
+                           |    storage.backend: berkeleyje
+                           |    storage.directory: $storageDirectory
+                           |    berkeleyje.freeDisk: 2
+                           |  }
+                           |}
+                           |""".stripMargin)
+
+    try body(app)
+    finally {
+      app[Database].close()
+      FileUtils.deleteDirectory(storageDirectory)
+    }
   }
 }
