@@ -2,30 +2,29 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, JsValue}
-
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.controllers.Outputer
+import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
 import org.thp.thehive.services.ProfileSrv
+import play.api.libs.json.{JsObject, JsValue}
 
 object Conversion {
 
-  implicit class OutputOps[O, D](o: O)(implicit outputer: Outputer.Aux[O, D]) {
-    def toJson: JsValue = outputer.toOutput(o).toJson
-    def toOutput: D     = outputer.toOutput(o).toOutput
+  implicit class RendererOps[O, D](o: O)(implicit renderer: Renderer.Aux[O, D]) {
+    def toJson: JsValue = renderer.toOutput(o).toJson
+    def toOutput: D     = renderer.toOutput(o).toValue
   }
 
-  implicit val alertOutput: Outputer.Aux[RichAlert, OutputAlert] = Outputer[RichAlert, OutputAlert](
+  implicit val alertOutput: Renderer.Aux[RichAlert, OutputAlert] = Renderer.json[RichAlert, OutputAlert](
     _.into[OutputAlert]
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .transform
   )
 
-  implicit val auditOutput: Outputer.Aux[RichAudit, OutputAudit] = Outputer[RichAudit, OutputAudit](
+  implicit val auditOutput: Renderer.Aux[RichAudit, OutputAudit] = Renderer.json[RichAudit, OutputAudit](
     _.into[OutputAudit]
       .withFieldComputed(_.operation, _.action)
       .withFieldComputed(_._id, _._id)
@@ -62,7 +61,7 @@ object Conversion {
         .transform
   }
 
-  implicit val caseOutput: Outputer.Aux[RichCase, OutputCase] = Outputer[RichCase, OutputCase](
+  implicit val caseOutput: Renderer.Aux[RichCase, OutputCase] = Renderer.json[RichCase, OutputCase](
     _.into[OutputCase]
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
@@ -70,8 +69,8 @@ object Conversion {
       .transform
   )
 
-  implicit val caseWithStatsOutput: Outputer[(RichCase, JsObject)] =
-    Outputer[(RichCase, JsObject), OutputCase](_._1.toOutput) // TODO add stats
+  implicit val caseWithStatsOutput: Renderer[(RichCase, JsObject)] =
+    Renderer.json[(RichCase, JsObject), OutputCase](_._1.toOutput) // TODO add stats
 
   implicit class InputCaseOps(inputCase: InputCase) {
 
@@ -115,27 +114,28 @@ object Conversion {
         .transform
   }
 
-  implicit val caseTemplateOutput: Outputer.Aux[RichCaseTemplate, OutputCaseTemplate] = Outputer[RichCaseTemplate, OutputCaseTemplate](
+  implicit val caseTemplateOutput: Renderer.Aux[RichCaseTemplate, OutputCaseTemplate] = Renderer.json[RichCaseTemplate, OutputCaseTemplate](
     _.into[OutputCaseTemplate]
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .transform
   )
 
-  implicit val richCustomFieldOutput: Outputer.Aux[RichCustomField, OutputCustomFieldValue] = Outputer[RichCustomField, OutputCustomFieldValue](
+  implicit val richCustomFieldOutput: Renderer.Aux[RichCustomField, OutputCustomFieldValue] = Renderer.json[RichCustomField, OutputCustomFieldValue](
     _.into[OutputCustomFieldValue]
       .withFieldComputed(_.value, _.value.map(_.toString))
       .withFieldComputed(_.tpe, _.typeName)
       .transform
   )
 
-  implicit val customFieldOutput: Outputer.Aux[CustomField with Entity, OutputCustomField] = Outputer[CustomField with Entity, OutputCustomField](
-    _.asInstanceOf[CustomField]
-      .into[OutputCustomField]
-      .withFieldComputed(_.`type`, _.`type`.toString)
-      .withFieldComputed(_.mandatory, _.mandatory)
-      .transform
-  )
+  implicit val customFieldOutput: Renderer.Aux[CustomField with Entity, OutputCustomField] =
+    Renderer.json[CustomField with Entity, OutputCustomField](
+      _.asInstanceOf[CustomField]
+        .into[OutputCustomField]
+        .withFieldComputed(_.`type`, _.`type`.toString)
+        .withFieldComputed(_.mandatory, _.mandatory)
+        .transform
+    )
 
   implicit class InputOrganisationOps(inputOrganisation: InputOrganisation) {
 
@@ -145,8 +145,8 @@ object Conversion {
         .transform
   }
 
-  implicit val organisationOutputer: Outputer.Aux[Organisation with Entity, OutputOrganisation] =
-    Outputer[Organisation with Entity, OutputOrganisation](
+  implicit val organisationRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
+    Renderer.json[Organisation with Entity, OutputOrganisation](
       _.asInstanceOf[Organisation]
         .into[OutputOrganisation]
         .transform
@@ -163,7 +163,7 @@ object Conversion {
         .transform
   }
 
-  implicit val taskOutput: Outputer.Aux[RichTask, OutputTask] = Outputer[RichTask, OutputTask](
+  implicit val taskOutput: Renderer.Aux[RichTask, OutputTask] = Renderer.json[RichTask, OutputTask](
     _.into[OutputTask]
       .withFieldComputed(_.status, _.status.toString)
       .transform
@@ -183,7 +183,7 @@ object Conversion {
         .transform
   }
 
-  implicit val userOutput: Outputer.Aux[RichUser, OutputUser] = Outputer[RichUser, OutputUser](
+  implicit val userOutput: Renderer.Aux[RichUser, OutputUser] = Renderer.json[RichUser, OutputUser](
     _.into[OutputUser]
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
       .withFieldComputed(_.hasKey, _.apikey.isDefined)
@@ -192,8 +192,8 @@ object Conversion {
       .transform
   )
 
-  implicit val userWithOrganisationOutput: Outputer.Aux[(RichUser, Seq[(String, String)]), OutputUser] =
-    Outputer[(RichUser, Seq[(String, String)]), OutputUser] { userWithOrganisations =>
+  implicit val userWithOrganisationOutput: Renderer.Aux[(RichUser, Seq[(String, String)]), OutputUser] =
+    Renderer.json[(RichUser, Seq[(String, String)]), OutputUser] { userWithOrganisations =>
       val (user, organisations) = userWithOrganisations
       user
         .into[OutputUser]
@@ -204,7 +204,7 @@ object Conversion {
         .transform
     }
 
-  implicit val profileOutput: Outputer.Aux[Profile with Entity, OutputProfile] = Outputer[Profile with Entity, OutputProfile](profile =>
+  implicit val profileOutput: Renderer.Aux[Profile with Entity, OutputProfile] = Renderer.json[Profile with Entity, OutputProfile](profile =>
     profile
       .asInstanceOf[Profile]
       .into[OutputProfile]
@@ -221,7 +221,7 @@ object Conversion {
       .transform
   )
 
-  implicit val dashboardOutput: Outputer.Aux[RichDashboard, OutputDashboard] = Outputer[RichDashboard, OutputDashboard](dashboard =>
+  implicit val dashboardOutput: Renderer.Aux[RichDashboard, OutputDashboard] = Renderer.json[RichDashboard, OutputDashboard](dashboard =>
     dashboard
       .into[OutputDashboard]
       .withFieldConst(_._id, dashboard._id)
@@ -235,7 +235,7 @@ object Conversion {
       .transform
   )
 
-  implicit val attachmentOutput: Outputer.Aux[Attachment with Entity, OutputAttachment] = Outputer[Attachment with Entity, OutputAttachment](
+  implicit val attachmentOutput: Renderer.Aux[Attachment with Entity, OutputAttachment] = Renderer.json[Attachment with Entity, OutputAttachment](
     _.asInstanceOf[Attachment]
       .into[OutputAttachment]
       .withFieldComputed(_.hashes, _.hashes.map(_.toString).sortBy(_.length)(Ordering.Int.reverse))
@@ -243,7 +243,7 @@ object Conversion {
       .transform
   )
 
-  implicit val observableOutput: Outputer.Aux[RichObservable, OutputObservable] = Outputer[RichObservable, OutputObservable](richObservable =>
+  implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.json[RichObservable, OutputObservable](richObservable =>
     richObservable
       .into[OutputObservable]
       .withFieldConst(_._type, "case_artifact")
@@ -261,7 +261,7 @@ object Conversion {
       .transform
   )
 
-  implicit val logOutput: Outputer.Aux[RichLog, OutputLog] = Outputer[RichLog, OutputLog](richLog =>
+  implicit val logOutput: Renderer.Aux[RichLog, OutputLog] = Renderer.json[RichLog, OutputLog](richLog =>
     richLog
       .into[OutputLog]
       .withFieldConst(_._type, "case_task_log")

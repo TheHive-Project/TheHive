@@ -1,12 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -19,6 +12,12 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 
 @Singleton
 class UserCtrl @Inject() (
@@ -50,11 +49,10 @@ class UserCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[RichUser]()
+  override val outputQuery: Query =
+    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext.organisation))
 
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
-  )
+  override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
   def current: Action[AnyContent] =
     entrypoint("current user")

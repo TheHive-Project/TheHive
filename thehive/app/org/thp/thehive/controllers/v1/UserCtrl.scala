@@ -53,11 +53,8 @@ class UserCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[RichUser]()
-
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
-  )
+  override val outputQuery: Query =
+    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext.organisation))
 
   def current: Action[AnyContent] =
     entrypoint("current user")

@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -12,6 +10,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputAlert
 import org.thp.thehive.models.{Permissions, RichAlert}
 import org.thp.thehive.services._
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class AlertCtrl @Inject() (
@@ -40,10 +39,8 @@ class AlertCtrl @Inject() (
       alertSteps
         .richPage(range.from, range.to, withTotal = true)(_.richAlert)
   )
-  override val outputQuery: Query = Query.output[RichAlert]()
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList)
-  )
+  override val outputQuery: Query               = Query.output[RichAlert, AlertSteps](_.richAlert)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
   def create: Action[AnyContent] =
     entrypoint("create alert")

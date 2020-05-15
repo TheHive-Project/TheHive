@@ -44,19 +44,23 @@ class StatsCtrl @Inject() (
               queries <- queryCtrl.statsParser(s)
             } yield queries
           }
-          .map { queries =>
-            val results = queries
-              .flatten
-              .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
-              .foldLeft(JsObject.empty) {
-                case (acc, o: JsObject) => acc ++ o
-                case (acc, r) =>
-                  logger.warn(s"Invalid stats result: $r")
-                  acc
-              }
-            Results.Ok(results)
-          }
           .badMap(errors => AttributeCheckingError(errors.toSeq))
           .toTry
+          .flatMap { queries =>
+            queries
+              .flatten
+              .toTry(query => queryExecutor.execute(query, graph, request.authContext))
+              .map { outputs =>
+                val results = outputs
+                  .map(_.toJson)
+                  .foldLeft(JsObject.empty) {
+                    case (acc, o: JsObject) => acc ++ o
+                    case (acc, r) =>
+                      logger.warn(s"Invalid stats result: $r")
+                      acc
+                  }
+                Results.Ok(results)
+              }
+          }
       }
 }

@@ -1,14 +1,14 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-
+import akka.stream.Materializer
 import org.thp.scalligraph.AuthenticationError
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputUser
 import org.thp.thehive.services.UserSrv
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestUser(login: String, name: String, roles: Set[String], organisation: String, hasKey: Boolean, status: String)
 
@@ -32,7 +32,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TheHiveQueryExecutor].user.search(request)
       status(result) must_=== 200
 
-      val resultUsers = contentAsJson(result)
+      val resultUsers = contentAsJson(result)(defaultAwaitTimeout, app[Materializer])
       val expected =
         Seq(
           TestUser(

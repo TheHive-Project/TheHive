@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Failure
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -15,6 +11,9 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputProfile
 import org.thp.thehive.models.{Permissions, Profile}
 import org.thp.thehive.services.{ProfileSrv, ProfileSteps}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Failure
 
 @Singleton
 class ProfileCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Properties, profileSrv: ProfileSrv) extends QueryableCtrl {
@@ -35,7 +34,7 @@ class ProfileCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: P
     FieldsParser[OutputParam],
     (range, profileSteps, _) => profileSteps.page(range.from, range.to, withTotal = true)
   )
-  val outputQuery: Query = Query.output[Profile with Entity]()
+  override val outputQuery: Query = Query.output[Profile with Entity]
 
   def create: Action[AnyContent] =
     entrypoint("create profile")

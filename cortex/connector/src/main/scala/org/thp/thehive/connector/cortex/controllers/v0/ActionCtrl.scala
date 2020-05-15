@@ -61,7 +61,7 @@ class ActionCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
-  override val outputQuery: Query = Query.output[RichAction]()
+  override val outputQuery: Query = Query.output[RichAction, ActionSteps](_.richAction)
 
   def create: Action[AnyContent] =
     entrypoint("create action")

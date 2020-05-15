@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.{Success, Try}
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -15,6 +11,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
 import org.thp.thehive.models.{Permissions, RichCase, User}
 import org.thp.thehive.services._
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject() (
@@ -52,10 +51,9 @@ class CaseCtrl @Inject() (
           }
     }
   )
-  override val outputQuery: Query = Query.output[RichCase]()
+  override val outputQuery: Query = Query.outputWithContext[RichCase, CaseSteps]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
-    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList)
+    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
   )
 
   def create: Action[AnyContent] =

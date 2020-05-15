@@ -31,7 +31,7 @@ class TagCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[Tag with Entity]()
+  override val outputQuery: Query = Query.output[Tag with Entity]
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TagSteps](
     "getTag",
     FieldsParser[IdOrName],
