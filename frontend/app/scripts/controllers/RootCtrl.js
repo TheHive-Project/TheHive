@@ -133,6 +133,40 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
 
+        $scope.switchOrg = function() {
+            var modal = $uibModal.open({
+                templateUrl: 'views/components/org/orgSwitch.modal.html',
+                controller: 'OrgSwitchCtrl',
+                controllerAs: '$dialog',
+                resolve: {
+                    currentUser: $scope.currentUser
+                }
+            });
+
+            modal.result
+                .then(function(organisation) {
+                    console.log(organisation);
+
+                    $rootScope.isLoading = true;
+
+                    AuthenticationSrv.current(organisation)
+                        .then(function(/*userData*/) {
+                            $rootScope.isLoading = false;
+                            $state.go('app.index');
+                        })
+                        .catch( function(err) {
+                            NotificationSrv.error('App', err.data, err.status);
+                            $rootScope.isLoading = false;
+                        });
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('Switch organisation', err.data, err.status);
+                    }
+                });
+
+        };
+
         $scope.createNewCase = function(template) {
             var modal = $uibModal.open({
                 templateUrl: 'views/partials/case/case.creation.html',

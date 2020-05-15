@@ -33,10 +33,18 @@
                             }
                         });
                 },
-                current: function() {
+                current: function(organisation) {
                     var result = {};
+
+                    var options = {};
+                    if(organisation) {
+                        options.headers = {
+                            'X-Organisation': organisation
+                        };
+                    }
+
                     return $http
-                        .get('./api/v1/user/current')
+                        .get('./api/v1/user/current', options)
                         .then(function(response) {
                             self.currentUser = response.data;
                             UtilsSrv.shallowClearAndCopy(response.data, result);
