@@ -27,7 +27,7 @@ case class TestTask(
 )
 
 object TestTask {
-  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput)
+  def apply(richTask: RichTask): TestTask = apply(richTask.toValue)
 
   def apply(outputTask: OutputTask): TestTask =
     outputTask.into[TestTask].transform

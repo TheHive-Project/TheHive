@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -14,6 +10,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv, TaskSteps}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class TaskCtrl @Inject() (
@@ -40,10 +39,7 @@ class TaskCtrl @Inject() (
     FieldsParser[IdOrName],
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask]()
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList)
-  )
+  override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
 
   def create: Action[AnyContent] =
     entrypoint("create task")

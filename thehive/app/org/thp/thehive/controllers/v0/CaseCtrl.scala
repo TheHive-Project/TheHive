@@ -1,11 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsNumber, JsObject}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -17,6 +11,11 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsNumber, JsObject}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class CaseCtrl @Inject() (
@@ -54,13 +53,10 @@ class CaseCtrl @Inject() (
           }
     }
   )
-  override val outputQuery: Query = Query.output[(RichCase, JsObject)]()
+  override val outputQuery: Query = Query.outputWithContext[RichCase, CaseSteps]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList),
-    Query.withParam[IdOrName, CaseSteps, CaseSteps]("getCase", FieldsParser[IdOrName], (idOrName, caseSteps, _) => caseSteps.get(idOrName.idOrName)),
     Query[CaseSteps, ObservableSteps]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
-    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
-    Query.output[RichCase]()
+    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
   )
 
   def create: Action[AnyContent] =

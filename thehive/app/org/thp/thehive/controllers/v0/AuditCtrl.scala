@@ -2,11 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import scala.util.Success
-
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.{By, Key}
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
@@ -18,6 +13,10 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services._
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class AuditCtrl @Inject() (
@@ -37,22 +36,19 @@ class AuditCtrl @Inject() (
     (param, graph, authContext) => auditSrv.get(param.idOrName)(graph).visible(authContext)
   )
 
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[AuditSteps, List[RichAudit]]("toList", (auditSteps, _) => auditSteps.richAudit.toList)
-  )
-  val entityName: String = "audit"
+  override val entityName: String = "audit"
 
-  val initialQuery: org.thp.scalligraph.query.Query =
+  override val initialQuery: Query =
     Query.init[AuditSteps]("listAudit", (graph, authContext) => auditSrv.initSteps(graph).visible(authContext))
-  val publicProperties: List[org.thp.scalligraph.query.PublicProperty[_, _]] = properties.audit ::: metaProperties[LogSteps]
+  override val publicProperties: List[org.thp.scalligraph.query.PublicProperty[_, _]] = properties.audit ::: metaProperties[LogSteps]
 
-  val pageQuery: org.thp.scalligraph.query.ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
+  override val pageQuery: ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
     Query.withParam[OutputParam, AuditSteps, PagedResult[RichAudit]](
       "page",
       FieldsParser[OutputParam],
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
-  val outputQuery: org.thp.scalligraph.query.Query = Query.output[RichAudit]()
+  override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
 
   def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
     entryPoint("audit flow")

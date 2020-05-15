@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers._
@@ -14,6 +11,8 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.{Permissions, RichCase, RichTask}
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class TaskCtrl @Inject() (
@@ -45,10 +44,9 @@ class TaskCtrl @Inject() (
     FieldsParser[IdOrName],
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask]()
+  override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList),
-    Query.output[(RichTask, Option[RichCase])]()
+    Query.output[(RichTask, Option[RichCase])]
   )
 
   def create(caseId: String): Action[AnyContent] =

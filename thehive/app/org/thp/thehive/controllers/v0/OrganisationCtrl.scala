@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success}
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -15,6 +11,9 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.{Organisation, Permissions}
 import org.thp.thehive.services._
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success}
 
 @Singleton
 class OrganisationCtrl @Inject() (
@@ -34,7 +33,7 @@ class OrganisationCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[Organisation with Entity]()
+  override val outputQuery: Query = Query.output[Organisation with Entity]
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](
     "getOrganisation",
     FieldsParser[IdOrName],

@@ -1,12 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.reflect.runtime.{universe => ru}
-import scala.util.{Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
@@ -15,7 +8,13 @@ import org.scalactic.Good
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UniMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.steps.{BaseVertexSteps, PagedResult}
+import org.thp.scalligraph.steps.BaseVertexSteps
+import play.api.Logger
+import play.api.libs.json.JsObject
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.reflect.runtime.{universe => ru}
+import scala.util.Try
 
 case class IdOrName(idOrName: String)
 
@@ -116,14 +115,9 @@ class QueryCtrl(entrypoint: Entrypoint, db: Database, ctrl: QueryableCtrl, query
   def search: Action[AnyContent] =
     entrypoint(s"search ${ctrl.entityName}")
       .extract("query", searchParser)
-      .authRoTransaction(db) { implicit request => graph =>
+      .auth { implicit request =>
         val query: Query = request.body("query")
-        val result       = queryExecutor.execute(query, graph, request.authContext)
-        val resp         = Results.Ok((result.toJson \ "result").as[JsValue])
-        result.toOutput match {
-          case PagedResult(_, Some(size)) => Success(resp.withHeaders("X-Total" -> size.toString))
-          case _                          => Success(resp)
-        }
+        queryExecutor.execute(query, request)
       }
 
   def stats: Action[AnyContent] =
@@ -131,15 +125,17 @@ class QueryCtrl(entrypoint: Entrypoint, db: Database, ctrl: QueryableCtrl, query
       .extract("query", statsParser)
       .authRoTransaction(db) { implicit request => graph =>
         val queries: Seq[Query] = request.body("query")
-        val results = queries
-          .map(query => queryExecutor.execute(query, graph, request.authContext).toJson)
-          .foldLeft(JsObject.empty) {
-            case (acc, o: JsObject) => acc ++ o
-            case (acc, r) =>
-              logger.warn(s"Invalid stats result: $r")
-              acc
+        queries
+          .toTry(query => queryExecutor.execute(query, graph, request.authContext))
+          .map { outputs =>
+            val results = outputs.map(_.toJson).foldLeft(JsObject.empty) {
+              case (acc, o: JsObject) => acc ++ o
+              case (acc, r) =>
+                logger.warn(s"Invalid stats result: $r")
+                acc
+            }
+            Results.Ok(results)
           }
-        Success(Results.Ok(results))
       }
 }
 

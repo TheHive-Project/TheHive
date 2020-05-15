@@ -44,7 +44,7 @@ class JobCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, jobSteps, authContext) => jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob(authContext))
   )
-  override val outputQuery: Query = Query.output[RichJob]()
+  override val outputQuery: Query = Query.outputWithContext[RichJob, JobSteps]((jobSteps, authContext) => jobSteps.richJob(authContext))
 
   def get(jobId: String): Action[AnyContent] =
     entrypoint("get job")

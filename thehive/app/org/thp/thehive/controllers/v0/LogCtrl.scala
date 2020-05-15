@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -13,6 +10,8 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputLog
 import org.thp.thehive.models.{Permissions, RichLog}
 import org.thp.thehive.services.{LogSrv, LogSteps, OrganisationSrv, TaskSrv}
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class LogCtrl @Inject() (
@@ -39,10 +38,7 @@ class LogCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog)
   )
-  override val outputQuery: Query = Query.output[RichLog]()
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[LogSteps, List[RichLog]]("toList", (logSteps, _) => logSteps.richLog.toList)
-  )
+  override val outputQuery: Query = Query.output[RichLog, LogSteps](_.richLog)
 
   def create(taskId: String): Action[AnyContent] =
     entrypoint("create log")

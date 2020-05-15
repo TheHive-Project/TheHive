@@ -2,13 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.{__, By, Graph, Key, StepLabel, Vertex}
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
@@ -24,6 +17,12 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject() (
@@ -60,12 +59,11 @@ class AlertCtrl @Inject() (
           richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
         }
   )
-  override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable])]()
+  override val outputQuery: Query = Query.output[RichAlert, AlertSteps](_.richAlert)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AlertSteps, CaseSteps]("cases", (alertSteps, _) => alertSteps.`case`),
     Query[AlertSteps, ObservableSteps]("observables", (alertSteps, _) => alertSteps.observables),
-    Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList),
-    Query[AlertSteps, List[(RichAlert, Seq[RichObservable])]](
+    Query[AlertSteps, Traversal[(RichAlert, Seq[RichObservable]), (RichAlert, Seq[RichObservable])]](
       "withObservables",
       (alertSteps, _) =>
         alertSteps
@@ -73,9 +71,8 @@ class AlertCtrl @Inject() (
           .map { richAlert =>
             richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
           }
-          .toList
     ),
-    Query.output[RichAlert]()
+    Query.output[(RichAlert, Seq[RichObservable])]
   )
 
   def create: Action[AnyContent] =

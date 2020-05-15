@@ -1,11 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.Logger
-import play.api.libs.json.JsObject
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
@@ -17,6 +11,11 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.JsObject
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -53,9 +52,9 @@ class ObservableCtrl @Inject() (
           }
     }
   )
-  override val outputQuery: Query = Query.output[(RichObservable, JsObject)]()
+  override val outputQuery: Query = Query.output[RichObservable, ObservableSteps](_.richObservable)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) => observableSteps.richObservable.toList)
+    Query.output[(RichObservable, JsObject)]
   )
 
   def create(caseId: String): Action[AnyContent] =
