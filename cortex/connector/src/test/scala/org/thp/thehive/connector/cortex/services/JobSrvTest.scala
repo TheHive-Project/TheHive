@@ -53,7 +53,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
 
       val createdJobTry = app[Database].tryTransaction { implicit graph =>
         for {
-          observable <- app[ObservableSrv].initSteps.has("message", "hello world").getOrFail()
+          observable <- app[ObservableSrv].initSteps.has("message", "hello world").getOrFail("Observable")
           createdJob <- app[JobSrv].create(job, observable)
         } yield createdJob
       }
@@ -71,9 +71,9 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
           }
 
           for {
-            audit        <- app[AuditSrv].initSteps.has("objectId", updatedJob._id).getOrFail()
-            organisation <- app[OrganisationSrv].get("cert").getOrFail()
-            user         <- app[UserSrv].initSteps.getByName("certuser@thehive.local").getOrFail()
+            audit        <- app[AuditSrv].initSteps.has("objectId", updatedJob._id).getOrFail("Audit")
+            organisation <- app[OrganisationSrv].get("cert").getOrFail("Organisation")
+            user         <- app[UserSrv].initSteps.getByName("certuser@thehive.local").getOrFail("User")
           } yield new JobFinished().filter(audit, Some(updatedJob), organisation, Some(user))
         } must beASuccessfulTry(true)
       }
@@ -82,7 +82,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
     "submit a job" in testApp { app =>
       val x = for {
         observable <- app[Database].roTransaction { implicit graph =>
-          app[ObservableSrv].initSteps.has("message", "Some weird domain").richObservable.getOrFail()
+          app[ObservableSrv].initSteps.has("message", "Some weird domain").richObservable.getOrFail("Observable")
         }
         case0 <- app[Database].roTransaction { implicit graph =>
           app[CaseSrv].getOrFail("#1")

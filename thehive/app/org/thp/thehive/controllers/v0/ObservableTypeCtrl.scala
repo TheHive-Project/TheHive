@@ -38,7 +38,7 @@ class ObservableTypeCtrl @Inject() (
   def get(idOrName: String): Action[AnyContent] = entrypoint("get observable type").authRoTransaction(db) { _ => implicit graph =>
     observableTypeSrv
       .get(idOrName)
-      .getOrFail()
+      .getOrFail("Observable")
       .map(ot => Results.Ok(ot.toJson))
   }
 

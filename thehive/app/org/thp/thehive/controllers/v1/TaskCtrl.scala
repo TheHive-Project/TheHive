@@ -61,7 +61,7 @@ class TaskCtrl @Inject() (
           .getByIds(taskId)
           .visible
           .richTask
-          .getOrFail()
+          .getOrFail("Task")
           .map(task => Results.Ok(task.toJson))
       }
 

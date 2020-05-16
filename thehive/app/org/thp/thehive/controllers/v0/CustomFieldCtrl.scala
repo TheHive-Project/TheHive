@@ -40,7 +40,7 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, propertie
   def get(id: String): Action[AnyContent] =
     entrypoint("get custom field")
       .authRoTransaction(db) { _ => implicit graph =>
-        customFieldSrv.get(id).getOrFail().map(cf => Results.Ok(cf.toJson))
+        customFieldSrv.get(id).getOrFail("CustomField").map(cf => Results.Ok(cf.toJson))
       }
 
   def delete(id: String): Action[AnyContent] =
@@ -62,7 +62,7 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, propertie
 
         for {
           updated <- customFieldSrv.update(customFieldSrv.get(id), propertyUpdaters)
-          cf      <- updated._1.getOrFail()
+          cf      <- updated._1.getOrFail("CustomField")
         } yield Results.Ok(cf.toJson)
       }
 

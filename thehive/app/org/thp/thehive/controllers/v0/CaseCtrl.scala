@@ -70,9 +70,13 @@ class CaseCtrl @Inject() (
         val inputTasks: Seq[InputTask]       = request.body("tasks")
         val customFields                     = inputCase.customFields.map(c => c.name -> c.value).toMap
         for {
-          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
-          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail()).flip
-          user         <- inputCase.user.map(userSrv.get(_).visible.getOrFail()).flip
+          organisation <- userSrv
+            .current
+            .organisations(Permissions.manageCase)
+            .get(request.organisation)
+            .orFail(AuthorizationError("Operation not permitted"))
+          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
+          user         <- inputCase.user.map(userSrv.get(_).visible.getOrFail("User")).flip
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
           tasks        <- inputTasks.toTry(t => t.owner.map(userSrv.getOrFail).flip.map(owner => t.toTask -> owner))
           richCase <- caseSrv.create(

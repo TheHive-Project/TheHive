@@ -62,7 +62,7 @@ class UserCtrl @Inject() (
         userSrv
           .current
           .richUserWithCustomRenderer(request.organisation, _.organisationWithRole.map(_.asScala.toSeq))
-          .getOrFail()
+          .getOrFail("User")
           .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation))
       }
 
@@ -95,7 +95,7 @@ class UserCtrl @Inject() (
     entrypoint("lock user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail()
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail("User")
           _    <- userSrv.lock(user)
         } yield Results.NoContent
       }
@@ -105,7 +105,7 @@ class UserCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           org  <- organisationSrv.getOrFail(organisation.getOrElse(request.organisation))
-          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail()
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail("User")
           _    <- userSrv.delete(user, org)
         } yield Results.NoContent
       }
@@ -117,7 +117,7 @@ class UserCtrl @Inject() (
           .get(userId)
           .visible
           .richUser(request.organisation)
-          .getOrFail()
+          .getOrFail("User")
           .map(user => Results.Ok(user.toJson))
       }
 
@@ -151,7 +151,7 @@ class UserCtrl @Inject() (
         def requireAdmin[A](body: => Try[A]): Try[A] =
           if (isUserAdmin) body else Failure(AuthorizationError("You are not permitted to update this user"))
 
-        userSrv.get(userId).visible.getOrFail().flatMap {
+        userSrv.get(userId).visible.getOrFail("User").flatMap {
           case _ if !isCurrentUser && !isUserAdmin => Failure(AuthorizationError("You are not permitted to update this user"))
           case user =>
             auditSrv
@@ -203,7 +203,7 @@ class UserCtrl @Inject() (
               .organisations(Permissions.manageUser)
               .users
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
           }
           _ <- authSrv.setPassword(userId, request.body("password"))
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
@@ -216,7 +216,7 @@ class UserCtrl @Inject() (
       .extract("currentPassword", FieldsParser[String].on("currentPassword"))
       .auth { implicit request =>
         for {
-          user <- db.roTransaction(implicit graph => userSrv.current.get(userId).getOrFail())
+          user <- db.roTransaction(implicit graph => userSrv.current.get(userId).getOrFail("User"))
           _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
           _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
         } yield Results.NoContent
@@ -232,7 +232,7 @@ class UserCtrl @Inject() (
               .organisations(Permissions.manageUser)
               .users
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
           }
           key <- authSrv.getKey(user._id)
         } yield Results.Ok(key)
@@ -248,7 +248,7 @@ class UserCtrl @Inject() (
               .organisations(Permissions.manageUser)
               .users
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
           }
           _ <- authSrv.removeKey(userId)
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
@@ -266,7 +266,7 @@ class UserCtrl @Inject() (
               .organisations(Permissions.manageUser)
               .users
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
           }
           key <- authSrv.renewKey(userId)
           _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))

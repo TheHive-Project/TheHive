@@ -66,9 +66,9 @@ class CaseCtrl @Inject() (
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
         for {
-          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail()).flip
+          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
           customFields = inputCase.customFieldValue.map(cf => cf.name -> cf.value).toMap
-          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
+          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail("Organisation")
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
           richCase <- caseSrv.create(
@@ -90,7 +90,7 @@ class CaseCtrl @Inject() (
           .get(caseIdOrNumber)
           .visible
           .richCase
-          .getOrFail()
+          .getOrFail("Case")
           .map(richCase => Results.Ok(richCase.toJson))
       }
 
@@ -124,7 +124,7 @@ class CaseCtrl @Inject() (
             caseSrv
               .get(_)
               .visible
-              .getOrFail()
+              .getOrFail("Case")
           )
           .map { cases =>
             val mergedCase = caseSrv.merge(cases)

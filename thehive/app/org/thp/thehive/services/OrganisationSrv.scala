@@ -59,7 +59,7 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
         case (orgSteps, updatedFields) =>
           orgSteps
             .newInstance()
-            .getOrFail()
+            .getOrFail("Organisation")
             .flatMap(auditSrv.organisation.update(_, updatedFields))
       }
     }

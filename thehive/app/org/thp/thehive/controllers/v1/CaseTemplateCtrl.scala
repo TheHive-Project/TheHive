@@ -60,7 +60,7 @@ class CaseTemplateCtrl @Inject() (
           .get(caseTemplateNameOrId)
           .visible
           .richCaseTemplate
-          .getOrFail()
+          .getOrFail("CaseTemplate")
           .map(richCaseTemplate => Results.Ok(richCaseTemplate.toJson))
       }
 

@@ -32,7 +32,7 @@ class LogCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "be able to create and remove a log" in testApp { app =>
       val log = app[Database].roTransaction { implicit graph =>
-        app[LogSrv].initSteps.has("message", "log for action test").getOrFail().get
+        app[LogSrv].initSteps.has("message", "log for action test").getOrFail("Log").get
       }
 
       val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log._id}").withHeaders("user" -> "certuser@thehive.local")

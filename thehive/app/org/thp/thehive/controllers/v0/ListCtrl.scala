@@ -85,7 +85,7 @@ class ListCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFieldSrv: 
             customFieldSrv
               .initSteps
               .get(v)
-              .getOrFail()
+              .getOrFail("CustomField")
               .map(f => Results.Conflict(Json.obj("found" -> f.toJson)))
               .orElse(Success(Results.Ok))
           case _ => Success(Results.Locked(""))

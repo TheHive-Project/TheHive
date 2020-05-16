@@ -12,7 +12,7 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{PagedResult, Traversal}
-import org.thp.scalligraph.{InvalidFormatAttributeError, RichJMap, RichSeq}
+import org.thp.scalligraph.{AuthorizationError, InvalidFormatAttributeError, RichJMap, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.models._
@@ -87,7 +87,11 @@ class AlertCtrl @Inject() (
         val customFields                      = inputAlert.customFields.map(c => c.name -> c.value).toMap
         val caseTemplate                      = caseTemplateName.flatMap(caseTemplateSrv.get(_).visible.headOption())
         for {
-          organisation    <- userSrv.current.organisations(Permissions.manageAlert).get(request.organisation).getOrFail()
+          organisation <- userSrv
+            .current
+            .organisations(Permissions.manageAlert)
+            .get(request.organisation)
+            .orFail(AuthorizationError("Operation not permitted"))
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
           _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o)))(_ => Success(()))

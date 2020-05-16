@@ -40,7 +40,7 @@ class ConfigSrv @Inject() (
         case None =>
           for {
             createdConfig <- createEntity(Config(name, value))
-            organisation  <- organisationSrv.get(organisationName).getOrFail()
+            organisation  <- organisationSrv.get(organisationName).getOrFail("Organisation")
             _             <- organisationConfigSrv.create(OrganisationConfig(), organisation, createdConfig)
           } yield ()
       }
@@ -61,7 +61,7 @@ class ConfigSrv @Inject() (
         case None =>
           for {
             createdConfig <- createEntity(Config(name, value))
-            user          <- userSrv.get(userName).getOrFail()
+            user          <- userSrv.get(userName).getOrFail("User")
             _             <- userConfigSrv.create(UserConfig(), user, createdConfig)
           } yield ()
       }

@@ -36,7 +36,7 @@ class ShareCtrl @Inject() (
         caseSrv
           .get(caseId)
           .can(Permissions.manageShare)
-          .getOrFail()
+          .getOrFail("Case")
           .flatMap { `case` =>
             inputShares.toTry { inputShare =>
               for {
@@ -44,10 +44,10 @@ class ShareCtrl @Inject() (
                   .get(request.organisation)
                   .visibleOrganisationsFrom
                   .get(inputShare.organisationName)
-                  .getOrFail()
+                  .getOrFail("Organisation")
                 profile   <- profileSrv.getOrFail(inputShare.profile)
                 share     <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
-                richShare <- shareSrv.get(share).richShare.getOrFail()
+                richShare <- shareSrv.get(share).richShare.getOrFail("Share")
                 _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
                 _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
               } yield richShare
@@ -78,10 +78,16 @@ class ShareCtrl @Inject() (
         organisations
           .toTry { organisationId =>
             for {
-              organisation <- organisationSrv.get(organisationId).getOrFail()
+              organisation <- organisationSrv.get(organisationId).getOrFail("Organisation")
               _            <- if (organisation.name == request.organisation) Failure(BadRequestError("You cannot remove your own share")) else Success(())
-              shareId      <- caseSrv.get(caseId).can(Permissions.manageShare).share(organisationId).has("owner", false)._id.getOrFail()
-              _            <- shareSrv.remove(shareId)
+              shareId <- caseSrv
+                .get(caseId)
+                .can(Permissions.manageShare)
+                .share(organisationId)
+                .has("owner", false)
+                ._id
+                .orFail(AuthorizationError("Operation not permitted"))
+              _ <- shareSrv.remove(shareId)
             } yield ()
           }
           .map(_ => Results.NoContent)
@@ -141,12 +147,12 @@ class ShareCtrl @Inject() (
         if (!shareSrv.get(shareId).`case`.can(Permissions.manageShare).exists())
           Failure(AuthorizationError("You are not authorized to remove share"))
         for {
-          richShare <- shareSrv.get(shareId).richShare.getOrFail()
+          richShare <- shareSrv.get(shareId).richShare.getOrFail("Share")
           _ <- organisationSrv
             .get(request.organisation)
             .visibleOrganisationsFrom
             .get(richShare.organisationName)
-            .getOrFail()
+            .getOrFail("Share")
           profile <- profileSrv.getOrFail(profile)
           _       <- shareSrv.update(richShare.share, profile)
         } yield Results.Ok
@@ -204,7 +210,7 @@ class ShareCtrl @Inject() (
         for {
           task          <- taskSrv.getOrFail(taskId)
           _             <- taskSrv.get(task).`case`.can(Permissions.manageShare).existsOrFail()
-          organisations <- organisationIds.toTry(organisationSrv.get(_).visible.getOrFail())
+          organisations <- organisationIds.toTry(organisationSrv.get(_).visible.getOrFail("Organisation"))
           _             <- shareSrv.addTaskShares(task, organisations)
         } yield Results.NoContent
       }
@@ -217,7 +223,7 @@ class ShareCtrl @Inject() (
         for {
           observable    <- observableSrv.getOrFail(observableId)
           _             <- observableSrv.get(observable).`case`.can(Permissions.manageShare).existsOrFail()
-          organisations <- organisationIds.toTry(organisationSrv.get(_).visible.getOrFail())
+          organisations <- organisationIds.toTry(organisationSrv.get(_).visible.getOrFail("Organisation"))
           _             <- shareSrv.addObservableShares(observable, organisations)
         } yield Results.NoContent
       }

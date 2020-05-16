@@ -63,7 +63,7 @@ class ObservableCtrl @Inject() (
           case0 <- caseSrv
             .get(caseId)
             .can(Permissions.manageObservable)
-            .getOrFail()
+            .getOrFail("Case")
           observableType <- observableTypeSrv.getOrFail(inputObservable.dataType)
           observablesWithData <- inputObservable
             .data
@@ -87,7 +87,7 @@ class ObservableCtrl @Inject() (
           .getByIds(observableId)
           //            .availableFor(request.organisation)
           .richObservable
-          .getOrFail()
+          .getOrFail("Observable")
           .map { observable =>
             Results.Ok(observable.toJson)
           }
@@ -140,7 +140,7 @@ class ObservableCtrl @Inject() (
           observable <- observableSrv
             .getByIds(obsId)
             .can(Permissions.manageObservable)
-            .getOrFail()
+            .getOrFail("Observable")
           _ <- observableSrv.cascadeRemove(observable)
         } yield Results.NoContent
       }

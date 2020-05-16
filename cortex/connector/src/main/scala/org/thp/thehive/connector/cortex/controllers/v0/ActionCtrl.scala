@@ -37,11 +37,11 @@ class ActionCtrl @Inject() (
   implicit val entityWrites: OWrites[Entity] = OWrites[Entity] { entity =>
     db.roTransaction { implicit graph =>
         entity match {
-          case c: Case       => caseSrv.get(c).richCaseWithoutPerms.getOrFail().map(_.toJson.as[JsObject])
-          case t: Task       => taskSrv.get(t).richTask.getOrFail().map(_.toJson.as[JsObject])
-          case o: Observable => observableSrv.get(o).richObservable.getOrFail().map(_.toJson.as[JsObject])
-          case l: Log        => logSrv.get(l).richLog.getOrFail().map(_.toJson.as[JsObject])
-          case a: Alert      => alertSrv.get(a).richAlert.getOrFail().map(_.toJson.as[JsObject])
+          case c: Case       => caseSrv.get(c).richCaseWithoutPerms.getOrFail("Case").map(_.toJson.as[JsObject])
+          case t: Task       => taskSrv.get(t).richTask.getOrFail("Task").map(_.toJson.as[JsObject])
+          case o: Observable => observableSrv.get(o).richObservable.getOrFail("Observable").map(_.toJson.as[JsObject])
+          case l: Log        => logSrv.get(l).richLog.getOrFail("Log").map(_.toJson.as[JsObject])
+          case a: Alert      => alertSrv.get(a).richAlert.getOrFail("Alert").map(_.toJson.as[JsObject])
         }
       }
       .getOrElse(Json.obj("_type" -> entity._model.label, "_id" -> entity._id))

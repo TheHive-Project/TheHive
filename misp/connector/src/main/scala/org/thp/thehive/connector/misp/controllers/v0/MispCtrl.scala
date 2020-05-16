@@ -40,7 +40,7 @@ class MispCtrl @Inject() (
           c <- Future.fromTry(db.roTransaction { implicit graph =>
             caseSrv
               .get(caseIdOrNumber)
-              .getOrFail()
+              .getOrFail("Case")
           })
           _ <- mispExportSrv.export(mispId, c)
         } yield Results.NoContent

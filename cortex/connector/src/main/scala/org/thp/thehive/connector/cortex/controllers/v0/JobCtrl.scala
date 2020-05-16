@@ -69,8 +69,8 @@ class JobCtrl @Inject() (
           db.roTransaction { implicit graph =>
               val artifactId: String = request.body("artifactId")
               for {
-                o <- observableSrv.getByIds(artifactId).richObservable.getOrFail()
-                c <- observableSrv.getByIds(artifactId).`case`.getOrFail()
+                o <- observableSrv.getByIds(artifactId).richObservable.getOrFail("Observable")
+                c <- observableSrv.getByIds(artifactId).`case`.getOrFail("Case")
               } yield (o, c)
             }
             .fold(error => errorHandler.onServerError(request, error), {

@@ -34,7 +34,7 @@ class AttachmentCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationCo
           attachmentSrv
             .get(id)
             .visible
-            .getOrFail()
+            .getOrFail("Attachment")
             .filter(attachmentSrv.exists)
             .map { attachment =>
               Result(
@@ -62,7 +62,7 @@ class AttachmentCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationCo
           attachmentSrv
             .get(id)
             .visible
-            .getOrFail()
+            .getOrFail("Attachment")
             .filter(attachmentSrv.exists)
             .flatMap { attachment =>
               Try {

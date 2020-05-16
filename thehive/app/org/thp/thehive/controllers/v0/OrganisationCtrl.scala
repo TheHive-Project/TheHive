@@ -64,7 +64,7 @@ class OrganisationCtrl @Inject() (
           .get(organisationId)
           .visible
           .richOrganisation
-          .getOrFail()
+          .getOrFail("Organisation")
           .map(organisation => Results.Ok(organisation.toJson))
       }
 

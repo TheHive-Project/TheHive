@@ -51,7 +51,7 @@ class AlertCtrl @Inject() (
         val inputAlert: InputAlert           = request.body("alert")
         val caseTemplate                     = caseTemplateName.flatMap(ct => caseTemplateSrv.get(ct).visible.headOption())
         for {
-          organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail()
+          organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail("Organisation")
           customFields = inputAlert.customFieldValue.map(cf => cf.name -> cf.value).toMap
           richAlert <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
@@ -64,7 +64,7 @@ class AlertCtrl @Inject() (
           .getByIds(alertId)
           .visible
           .richAlert
-          .getOrFail()
+          .getOrFail("Alert")
           .map(alert => Results.Ok(alert.toJson))
       }
 
@@ -114,7 +114,7 @@ class AlertCtrl @Inject() (
     entrypoint("create case from alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          (alert, organisation) <- alertSrv.getByIds(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail()
+          (alert, organisation) <- alertSrv.getByIds(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail("Alert")
           richCase              <- alertSrv.createCase(alert, None, organisation)
         } yield Results.Created(richCase.toJson)
       }

@@ -74,7 +74,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
       await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].initSteps.getBySourceId("misp", "ORGNAME", "1").getOrFail()
+        app[AlertSrv].initSteps.getBySourceId("misp", "ORGNAME", "1").getOrFail("Alert")
       } must beSuccessfulTry(
         Alert(
           `type` = "misp",
