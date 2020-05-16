@@ -166,7 +166,7 @@ object Conversion {
       InputCase(
         title = caseTemplate.titlePrefix.getOrElse("") + inputCase.title,
         description = inputCase.description,
-        severity = caseTemplate.severity orElse inputCase.severity,
+        severity = inputCase.severity orElse caseTemplate.severity,
         startDate = inputCase.startDate,
         endDate = inputCase.endDate,
         tags = inputCase.tags,
