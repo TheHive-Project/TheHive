@@ -240,7 +240,7 @@ trait Conversion {
       status   <- (json \ "status").validate[String]
       locked = status == "Locked"
       password <- (json \ "password").validateOpt[String]
-      role     <- (json \ "roles").validate[Seq[String]]
+      role     <- (json \ "roles").validateOpt[Seq[String]].map(_.getOrElse(Nil))
       profile = if (role.contains("admin")) ProfileSrv.admin.name
       else if (role.contains("write")) ProfileSrv.analyst.name
       else if (role.contains("read")) ProfileSrv.readonly.name
