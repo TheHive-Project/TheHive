@@ -271,14 +271,17 @@ class AlertCtrl @Inject() (
 
   def createCase(alertId: String): Action[AnyContent] =
     entrypoint("create case from alert")
+      .extract("caseTemplate", FieldsParser.string.optional.on("caseTemplate"))
       .authTransaction(db) { implicit request => implicit graph =>
+        val caseTemplate: Option[String] = request.body("caseTemplate")
         for {
           (alert, organisation) <- alertSrv
             .get(alertId)
             .can(Permissions.manageAlert)
             .alertUserOrganisation(Permissions.manageCase)
-            .getOrFail()
-          richCase <- alertSrv.createCase(alert, None, organisation)
+            .getOrFail("Alert")
+          alertWithCaseTemplate = caseTemplate.fold(alert)(ct => alert.copy(caseTemplate = Some(ct)))
+          richCase <- alertSrv.createCase(alertWithCaseTemplate, None, organisation)
         } yield Results.Created(richCase.toJson)
       }
 
