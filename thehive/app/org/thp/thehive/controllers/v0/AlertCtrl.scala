@@ -212,6 +212,24 @@ class AlertCtrl @Inject() (
         } yield Results.NoContent
       }
 
+  def bulkDelete: Action[AnyContent] =
+    entrypoint("bulk delete alerts")
+      .extract("ids", FieldsParser.string.sequence.on("ids"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val ids: Seq[String] = request.body("ids")
+        ids
+          .toTry { alertId =>
+            for {
+              alert <- alertSrv
+                .get(alertId)
+                .can(Permissions.manageAlert)
+                .getOrFail()
+              _ <- alertSrv.cascadeRemove(alert)
+            } yield ()
+          }
+          .map(_ => Results.NoContent)
+      }
+
   def mergeWithCase(alertId: String, caseId: String): Action[AnyContent] =
     entrypoint("merge alert with case")
       .authTransaction(db) { implicit request => implicit graph =>
