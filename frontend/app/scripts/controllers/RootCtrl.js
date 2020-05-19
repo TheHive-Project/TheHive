@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -145,24 +145,29 @@ angular.module('theHiveControllers').controller('RootCtrl',
 
             modal.result
                 .then(function(organisation) {
-                    console.log(organisation);
-
                     $rootScope.isLoading = true;
 
-                    AuthenticationSrv.current(organisation)
-                        .then(function(/*userData*/) {
-                            $rootScope.isLoading = false;
-                            $state.go('app.index');
-                        })
-                        .catch( function(err) {
-                            NotificationSrv.error('App', err.data, err.status);
-                            $rootScope.isLoading = false;
+                    return AuthenticationSrv.current(organisation)
+                        .then(function(userData) {
+                            $scope.currentUser = userData;
+                            StreamSrv.cancelPoll();
                         });
+                })
+                .then(function() {
+                    $state.go('app.index', {}, {reload:true});
                 })
                 .catch(function(err) {
                     if(err && !_.isString(err)) {
                         NotificationSrv.error('Switch organisation', err.data, err.status);
                     }
+
+                    NotificationSrv.error('App', err.data, err.status);
+                })
+                .finally(function() {
+                    $timeout(function() {
+                        $rootScope.isLoading = false;
+                    }, 500);
+
                 });
 
         };

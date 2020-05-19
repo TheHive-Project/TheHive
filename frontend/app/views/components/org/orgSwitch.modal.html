@@ -18,7 +18,7 @@
                 <a href ng-click="$dialog.selectOrg(item.organisation)" class="list-group-item"
                     ng-class="{'active': $dialog.currentUser.organisation === item.organisation}"
                     ng-repeat="item in $dialog.currentUser.organisations | filter:$modal.filter track by $index">
-                    <h4 class="list-group-item-heading">{{item.organisation}}</h4>
+                    <h4 class="list-group-item-heading">{{item.organisation}} <em class="pull-right" ng-if="$dialog.currentUser.organisation === item.organisation">(current)</em></h4>
                     <p class="list-group-item-text">Profile: <strong>{{item.role}}</strong></p>
                 </a>
             </div>

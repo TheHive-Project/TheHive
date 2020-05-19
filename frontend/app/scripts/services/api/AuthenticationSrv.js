@@ -2,7 +2,7 @@
     'use strict';
     angular
         .module('theHiveServices')
-        .factory('AuthenticationSrv', function($http, $q, UtilsSrv, SecuritySrv) {
+        .factory('AuthenticationSrv', function($http, $q, UtilsSrv, SecuritySrv, UserSrv) {
             var self = {
                 currentUser: null,
                 login: function(username, password, code) {
@@ -46,8 +46,11 @@
                     return $http
                         .get('./api/v1/user/current', options)
                         .then(function(response) {
-                            self.currentUser = response.data;
-                            UtilsSrv.shallowClearAndCopy(response.data, result);
+                            var userData = response.data;
+
+                            self.currentUser = userData;
+                            UserSrv.updateCache(userData.login, userData);
+                            UtilsSrv.shallowClearAndCopy(userData, result);
 
                             return $q.resolve(result);
                         })
