@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -10,6 +11,7 @@ import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{TOTPAuthSrv, UserSrv}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.scalligraph.steps.StepsOps._
 import play.api.libs.json.Json
 
@@ -35,9 +37,14 @@ class AuthenticationCtrl @Inject() (
         val code: Option[String]         = request.body("code")
         for {
           authContext <- authSrv.authenticate(login, password, organisation, code)
-          user        <- db.roTransaction(userSrv.getOrFail(authContext.userId)(_))
-          _           <- if (user.locked) Failure(AuthorizationError("Your account is locked")) else Success(())
-        } yield authSrv.setSessionUser(authContext)(Results.Ok)
+          user <- db.roTransaction { implicit graph =>
+            userSrv
+              .get(authContext.userId)
+              .richUserWithCustomRenderer(authContext.organisation, _.organisationWithRole.map(_.asScala.toSeq))(authContext)
+              .getOrFail("User")
+          }
+          _ <- if (user._1.locked) Failure(AuthorizationError("Your account is locked")) else Success(())
+        } yield authSrv.setSessionUser(authContext)(Results.Ok(user.toJson))
       }
 
   def withTotpAuthSrv[A](body: TOTPAuthSrv => Try[A]): Try[A] =
