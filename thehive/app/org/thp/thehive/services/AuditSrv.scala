@@ -371,9 +371,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schem
           _.inTo[ShareObservable].inTo[OrganisationShare],
           _.outTo[AlertOrganisation]
         )
-        .inTo[RoleOrganisation]
-        .inTo[UserRole]
-        .has(Key("login") of authContext.userId)
+        .has(Key("name") of authContext.organisation)
     )
   )
 
