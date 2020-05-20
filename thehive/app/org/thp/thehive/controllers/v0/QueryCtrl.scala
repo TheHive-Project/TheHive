@@ -40,16 +40,16 @@ class QueryCtrl(entrypoint: Entrypoint, db: Database, ctrl: QueryableCtrl, query
   lazy val logger: Logger = Logger(getClass)
 
   val publicProperties: List[PublicProperty[_, _]] = queryExecutor.publicProperties
-  val filterQuery: FilterQuery                     = new FilterQuery(db, publicProperties)
+  val filterQuery: FilterQuery                     = queryExecutor.filterQuery
   val queryType: ru.Type                           = ctrl.initialQuery.toType(ru.typeOf[Graph])
 
   val inputFilterParser: FieldsParser[InputFilter] = queryExecutor
     .filterQuery
-    .paramParser(queryType, publicProperties)
+    .paramParser(queryType)
 
   val aggregationParser: FieldsParser[GroupAggregation[_, _, _]] = queryExecutor
     .aggregationQuery
-    .paramParser(queryType, publicProperties)
+    .paramParser(queryType)
 
   val sortParser: FieldsParser[InputSort] = FieldsParser("sort") {
     case (_, FAny(s))    => Good(s)
