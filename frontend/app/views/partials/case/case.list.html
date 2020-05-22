@@ -40,7 +40,8 @@
                                 <tr>
                                     <th style="width: 10px;" class="p-0"></th>
                                     <th>Title</th>
-                                    <th style="width: 100px;text-align:center;">Severity</th>
+                                    <th style="width: 70px;"></th>
+                                    <th style="width: 80px;text-align:center;">Severity</th>
                                     <th style="width: 100px;">Tasks</th>
                                     <th style="width: 100px;">Observables</th>
                                     <th style="width: 60px;">Assignee</th>
@@ -79,6 +80,15 @@
                                                 <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].caseId}}</a>
                                             </small>
                         				        </div>
+                                    </td>
+                                    <td align="center">
+                                        <a href ng-if="currentCase.stats.shareCount > 0" ui-sref="app.case.sharing({caseId: currentCase.id})" class="noline"
+                                                uib-tooltip="{{'Shared with ' + currentCase.stats.shareCount + ' organisation(s)'}}"
+                                                tooltip-placement="left-middle">
+
+                                            <i class="fa fa-users"></i>
+                                            ({{currentCase.stats.shareCount || 0}})
+                                        </a>
                                     </td>
                                     <td align="center">
                                         <div class="clickable" ng-click="$vm.addFilterValue('severity', currentCase.severity)">
