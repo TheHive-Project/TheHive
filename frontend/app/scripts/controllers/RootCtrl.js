@@ -160,8 +160,6 @@ angular.module('theHiveControllers').controller('RootCtrl',
                     if(err && !_.isString(err)) {
                         NotificationSrv.error('Switch organisation', err.data, err.status);
                     }
-
-                    NotificationSrv.error('App', err.data, err.status);
                 })
                 .finally(function() {
                     $timeout(function() {
@@ -211,9 +209,15 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 }
             });
 
-            modal.result.then(function(template) {
-                $scope.createNewCase(template);
-            });
+            modal.result
+                .then(function(template) {
+                    $scope.createNewCase(template);
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('Template Selection', err.data, err.status);
+                    }
+                });
         };
 
         $scope.aboutTheHive = function() {
