@@ -35,13 +35,17 @@
         </div>
     </div>
 
-    <div class="row" ng-show="log.attachment != undefined">
+    <div class="row">
         <div class="col-md-12">
-            <div class="description-pane">
+            <div class="description-pane" if-permission="manageTask" allowed="{{permissions}}">
                 <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
             </div>
+            <div class="description-pane" if-not-permission="manageTask" allowed="{{permissions}}">
+                <!-- <updatable-text on-update="updateLog()" value="log.message"></updatable-text> -->
+                <div marked="log.message" class="markdown"></div>
+            </div>
         </div>
-        <div class="col-md-12">
+        <div class="col-md-12" ng-show="log.attachment != undefined">
             <div class="clearfix mt-xxs">
                 <div class="file-box">
                     <div class="file">
@@ -63,13 +67,15 @@
         </div>
     </div>
 
-    <div class="row" ng-show="log.attachment == undefined">
+     <!-- if-permission="manageAction" allowed="{{permissions}}" -->
+
+    <!-- <div class="row" ng-show="log.attachment == undefined">
         <div class="col-md-12">
             <div class="description-pane">
                 <updatable-text on-update="updateLog()" value="log.message"></updatable-text>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <div class="row" ng-if="log.nbActions > 0">
         <div class="col-md-12">
