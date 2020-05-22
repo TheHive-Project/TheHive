@@ -17,62 +17,14 @@
         <em>No additional information have been specified</em>
     </div>
 
-    <div ng-if="canEdit" class="row">
-        <div ng-repeat="k in orderedFields track by $index" ng-init="fieldDef = customFieldsCache[k];">
+    <div class="row">
+        <div ng-repeat="k in orderedFields track by $index">
             <div class="clearfix" ng-if="$index % 3 == 0"></div>
             <div class="col-xs-4">
-                <dl class="dl-horizontal">
-                    <dt class="pull-left" uib-tooltip="{{fieldDef.description}}">{{fieldDef.name}}</dt>
-                    <dd ng-if="fieldDef.options.length > 0">
-                        <updatable-select
-                            options="fieldDef.options"
-                            on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                            value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-select>
-                    </dd>
-                    <dd ng-if="fieldDef.options.length === 0" ng-switch="fieldDef.type">
-                        <updatable-simple-text ng-switch-when="string"
-                            input-type="text"
-                            on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                            value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
-                        <updatable-date ng-switch-when="date"
-                            on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                            value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-date>
-                        <updatable-simple-text ng-switch-when="integer"
-                            input-type="integer"
-                            on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                            value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
-                        <updatable-simple-text ng-switch-when="float"
-                           input-type="float"
-                           on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                           value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
-                        <updatable-boolean ng-switch-when="boolean"
-                            input-type="number"
-                            on-update="updateField(getCustomFieldName(fieldDef), newValue)"
-                            value="caze.customFields[fieldDef.reference][fieldDef.type]"></updatable-boolean>
-                        <span ng-switch-default>Not Editable</span>
-                    </dd>
-                </dl>
+                <custom-field-input
+                    field="customFieldsCache[k]" on-update="updateField(fieldName, value)" editable="canEdit"
+                    value="caze.customFields[customFieldsCache[k].reference][customFieldsCache[k].type]"></custom-field-input>
             </div>
         </div>
     </div>
-
-    <div ng-if="!canEdit">
-        <div ng-repeat="k in orderedFields track by $index" ng-init="fieldDef = customFieldsCache[k];">
-            <div class="clearfix" ng-if="$index % 3 == 0"></div>
-            <div class="col-xs-4">
-                <dl class="dl-horizontal clear">
-                    <dt class="pull-left" uib-tooltip="{{fieldDef.description}}">{{fieldDef.name}}</dt>
-                    <dd ng-switch="fieldDef.type">
-                        <span ng-switch-when="date">{{caze.customFields[fieldDef.reference][fieldDef.type] | shortDate}}</span>
-                        <span ng-switch-default>
-                            {{caze.customFields[fieldDef.reference][fieldDef.type]}}
-                            <em class="text-warning" ng-if="!caze.customFields[fieldDef.reference][fieldDef.type]">Not Specified</em>
-                        </span>
-                    </dd>
-                </dl>
-            </div>
-        </div>
-
-    </div>
-
 </div>
