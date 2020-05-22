@@ -17,11 +17,12 @@
                     scope.$watch('updatable.updating', function(value) {
 
                         if(value === true && !cached) {
-                            UserSrv.list(AuthenticationSrv.currentUser.organisation, {_is: { locked: false }})
+                            UserSrv.list(AuthenticationSrv.currentUser.organisation, {
+                                filter: {_is: { locked: false }},
+                                sort: [{'name': 'asc'}]
+                            })
                                 .then(function(users) {
                                     scope.userList = users;
-
-                                    console.log(scope.userList);
                                 })
                                 .catch(function(err) {
                                     NotificationSrv.error('Fetching users', err.data, err.status);

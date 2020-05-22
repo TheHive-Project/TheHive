@@ -175,7 +175,13 @@
                                 return _.extend({}, task);
                             },
                             users: function() {
-                                return UserSrv.list(self.currentUser.organisation, {_is: { locked: false }});
+                                return UserSrv.list(
+                                    self.currentUser.organisation,
+                                    {
+                                        filter: {_is: { locked: false }},
+                                        sort: [{'name': 'asc'}]
+                                    }                                    
+                                );
                             },
                             groups: function() {
                                 var existingGroups = _.uniq(_.pluck(self.template.tasks, 'group').sort());
