@@ -311,7 +311,10 @@ lazy val thehiveMigration = (project in file("migration"))
       scopt,
       specs % Test
     ),
-    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
+    dependencyOverrides ++= Seq(
+      "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
+      "org.elasticsearch.client"   % "elasticsearch-rest-client" % "6.7.2"
+    ),
     fork := true,
     normalizedName := "migrate",
     mainClass := None
