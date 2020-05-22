@@ -2,7 +2,9 @@ package org.thp.thehive.models
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
+import org.janusgraph.core.schema.ConsistencyModifier
 import org.thp.scalligraph.auth.UserSrv
+import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, IndexType, Operations}
 import org.thp.scalligraph.steps.StepsOps._
 import play.api.Logger
@@ -37,5 +39,27 @@ class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userS
       Success(())
     }
     .addIndex("CustomField", IndexType.unique, "name")
+    .forVersion(4)
+    .dbOperation[JanusDatabase]("Remove locks") { db =>
+      def removePropertyLock(name: String) =
+        db.managementTransaction { mgmt =>
+          Try(mgmt.setConsistency(mgmt.getPropertyKey(name), ConsistencyModifier.DEFAULT))
+            .recover {
+              case error => logger.warn(s"Unable to remove lock on property $name: $error")
+            }
+        }
+      def removeIndexLock(name: String) =
+        db.managementTransaction { mgmt =>
+          Try(mgmt.setConsistency(mgmt.getGraphIndex(name), ConsistencyModifier.DEFAULT))
+            .recover {
+              case error => logger.warn(s"Unable to remove lock on index $name: $error")
+            }
+        }
+
+      removeIndexLock("CaseNumber")
+      removePropertyLock("number")
+      removeIndexLock("DataData")
+      removePropertyLock("data")
+    }
     .execute(db)(userSrv.getSystemAuthContext)
 }

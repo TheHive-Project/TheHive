@@ -2,10 +2,10 @@ package org.thp.thehive.services
 
 import java.lang.{Long => JLong}
 
-import scala.util.{Success, Try}
-
+import akka.actor.{ActorRef, ActorSystem}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import gremlin.scala.{Graph, GremlinScala, P, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
@@ -15,9 +15,18 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.util.{Success, Try}
+
 @Singleton
-class DataSrv @Inject() ()(implicit db: Database) extends VertexSrv[Data, DataSteps] {
+class DataSrv @Inject() (@Named("data-dedup-actor") dataDedupActor: ActorRef)(implicit db: Database) extends VertexSrv[Data, DataSteps] {
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DataSteps = new DataSteps(raw)
+
+  override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
+    super.createEntity(e).map { data =>
+      dataDedupActor ! DedupActor.EntityAdded
+      data
+    }
 
   def create(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     initSteps
@@ -48,4 +57,28 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def getByData(data: String): DataSteps = this.has("data", data)
 
   def useCount: Traversal[JLong, JLong] = Traversal(raw.inTo[ObservableData].count())
+}
+
+class DataDedupActor @Inject() (val db: Database, val service: DataSrv) extends DedupActor[Data] {
+  override val min: FiniteDuration = 10.seconds
+  override val max: FiniteDuration = 1.minute
+
+  override def resolve(entities: List[Data with Entity])(implicit graph: Graph): Try[Unit] = entities match {
+    case head :: tail =>
+      tail.foreach(copyEdge(_, head))
+      tail.foreach(service.get(_).remove())
+      Success(())
+    case _ => Success(())
+  }
+}
+
+class DataDedupActorProvider @Inject() (system: ActorSystem, @Named("data-dedup-actor-singleton") DataDedupActorSingleton: ActorRef)
+    extends Provider[ActorRef] {
+  override def get(): ActorRef =
+    system.actorOf(
+      ClusterSingletonProxy.props(
+        singletonManagerPath = DataDedupActorSingleton.path.toStringWithoutAddress,
+        settings = ClusterSingletonProxySettings(system)
+      )
+    )
 }
