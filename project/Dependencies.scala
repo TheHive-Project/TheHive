@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val janusVersion        = "0.5.1"
+  val janusVersion        = "0.5.2"
   val akkaVersion: String = play.core.PlayVersion.akkaVersion
   val elastic4sVersion    = "6.7.4"
 
@@ -20,7 +20,8 @@ object Dependencies {
   lazy val janusGraphHBase         = "org.janusgraph"           % "janusgraph-hbase"                    % janusVersion
   lazy val janusGraphLucene        = "org.janusgraph"           % "janusgraph-lucene"                   % janusVersion
   lazy val janusGraphElasticSearch = "org.janusgraph"           % "janusgraph-es"                       % janusVersion
-  lazy val cassandra               = "org.janusgraph"           % "janusgraph-cql"                      % janusVersion
+  lazy val janusGraphCassandra     = "org.janusgraph"           % "janusgraph-cql"                      % janusVersion
+  lazy val janusGraphInMemory      = "org.janusgraph"           % "janusgraph-inmemory"                 % janusVersion
   lazy val gremlinScala            = "com.michaelpollmeier"     %% "gremlin-scala"                      % "3.4.4.5"
   lazy val gremlinOrientdb         = "com.orientechnologies"    % "orientdb-gremlin"                    % "3.0.18"
   lazy val hbaseClient             = "org.apache.hbase"         % "hbase-shaded-client"                 % "1.4.9" exclude ("org.slf4j", "slf4j-log4j12")
