@@ -18,7 +18,7 @@
 
                         if(value === true && !cached) {
                             UserSrv.list(AuthenticationSrv.currentUser.organisation, {
-                                filter: {_is: { locked: false }},
+                                filter: { locked: false },
                                 sort: [{'name': 'asc'}]
                             })
                                 .then(function(users) {

@@ -178,9 +178,9 @@
                                 return UserSrv.list(
                                     self.currentUser.organisation,
                                     {
-                                        filter: {_is: { locked: false }},
+                                        filter: { locked: false },
                                         sort: [{'name': 'asc'}]
-                                    }                                    
+                                    }
                                 );
                             },
                             groups: function() {

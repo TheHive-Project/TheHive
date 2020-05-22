@@ -184,13 +184,15 @@
                     }
                 ];
 
+                // Apply filter is defined
                 if (options && options.filter) {
-                    options.filter._name = 'filter';
-
-                    operations.push(options.filter);
+                    operations.push({
+                        '_name': 'filter',
+                        '_is': options.filter
+                    });
                 }
 
-                // Sort users by name
+                // Apply sort is defined
                 if (options && options.sort) {
                     operations.push({
                         '_name': 'sort',
