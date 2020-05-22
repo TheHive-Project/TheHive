@@ -87,6 +87,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     bindActor[NotificationActor]("notification-actor")
 
     bind[SchemaUpdater].asEagerSingleton()
+    bind[ClusterSetup].asEagerSingleton()
     ()
   }
 }

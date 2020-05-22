@@ -1,15 +1,13 @@
 package org.thp.thehive.connector.misp.services
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-
 import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable}
-import akka.cluster.Cluster
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import javax.inject.{Inject, Named, Provider}
 import org.thp.scalligraph.auth.UserSrv
+import play.api.Logger
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 object MispActor {
   case object Synchro
@@ -61,17 +59,11 @@ class MispActor @Inject() (
 }
 
 class MispActorProvider @Inject() (system: ActorSystem, @Named("misp-actor-singleton") mispActorSingleton: ActorRef) extends Provider[ActorRef] {
-  lazy val logger: Logger = Logger(getClass)
-  override def get(): ActorRef = {
-    val cluster = Cluster(system)
-    logger.info("Initialising cluster")
-    cluster.join(mispActorSingleton.path.address)
-    logger.info(s"cluster members are ${cluster.state.members}")
+  override def get(): ActorRef =
     system.actorOf(
       ClusterSingletonProxy.props(
         singletonManagerPath = mispActorSingleton.path.toStringWithoutAddress,
         settings = ClusterSingletonProxySettings(system)
       )
     )
-  }
 }
