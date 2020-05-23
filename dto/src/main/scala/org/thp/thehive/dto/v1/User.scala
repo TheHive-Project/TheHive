@@ -12,9 +12,9 @@ object InputUser {
   implicit val writes: Writes[InputUser] = Json.writes[InputUser]
 }
 
-case class OutputOrganisationRole(organisation: String, role: String)
-object OutputOrganisationRole {
-  implicit val format: OFormat[OutputOrganisationRole] = Json.format[OutputOrganisationRole]
+case class OutputOrganisationProfile(organisation: String, profile: String)
+object OutputOrganisationProfile {
+  implicit val format: OFormat[OutputOrganisationProfile] = Json.format[OutputOrganisationProfile]
 }
 
 case class OutputUser(
@@ -33,7 +33,7 @@ case class OutputUser(
     permissions: Set[String],
     organisation: String,
     avatar: Option[String],
-    organisations: Seq[OutputOrganisationRole]
+    organisations: Seq[OutputOrganisationProfile]
 )
 
 object OutputUser {
