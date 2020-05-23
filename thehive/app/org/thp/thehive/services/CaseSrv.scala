@@ -439,6 +439,9 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].inTo[OrganisationShare])
 
+  def organisations(permission: Permission) =
+    new OrganisationSteps(raw.inTo[ShareCase].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
+
   def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
 
   // Warning: this method doesn't generate audit log
@@ -602,6 +605,12 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
         .outTo[ShareObservable]
     )
+
+  def assignableUsers(implicit authContext: AuthContext): UserSteps =
+    organisations(Permissions.manageCase)
+      .visible
+      .users(Permissions.manageCase)
+      .dedup
 
   def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])
 }
