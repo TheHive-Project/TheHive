@@ -4,7 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.scalactic.Good
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.{Field, FieldsParser}
+import org.thp.scalligraph.controllers.{FObject, Field, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.{InputFilter, _}
 import org.thp.scalligraph.steps.StepsOps._
@@ -14,6 +14,18 @@ import org.thp.thehive.services.{ObservableSteps, _}
 import scala.reflect.runtime.{universe => ru}
 
 case class OutputParam(from: Long, to: Long, withStats: Boolean, withParents: Int)
+
+object OutputParam {
+  implicit val parser: FieldsParser[OutputParam] = FieldsParser[OutputParam]("OutputParam") {
+    case (_, field: FObject) =>
+      for {
+        from        <- FieldsParser.long.on("from")(field)
+        to          <- FieldsParser.long.on("to")(field)
+        withStats   <- FieldsParser.boolean.optional.on("withStats")(field)
+        withParents <- FieldsParser.int.optional.on("withParents")(field)
+      } yield OutputParam(from, to, withStats.getOrElse(false), withParents.getOrElse(0))
+  }
+}
 
 @Singleton
 class TheHiveQueryExecutor @Inject() (
