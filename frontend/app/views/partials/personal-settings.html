@@ -137,7 +137,7 @@
         </form>
 
         <!-- Update mfa -->
-        <form class="mt-s" name="mfaForm" ng-submit="setMfaSettings(mfaForm);" novalidate>
+        <form ng-if="canChangeMfa" class="mt-s" name="mfaForm" ng-submit="setMfaSettings(mfaForm);" novalidate>
             <div class="box">
                 <div class="box-header">
                     <h3 class="box-title">
