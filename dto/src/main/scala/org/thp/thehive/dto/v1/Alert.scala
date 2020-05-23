@@ -29,6 +29,7 @@ object InputAlert {
 
 case class OutputAlert(
     _id: String,
+    _type: String,
     _createdBy: String,
     _updatedBy: Option[String] = None,
     _createdAt: Date,

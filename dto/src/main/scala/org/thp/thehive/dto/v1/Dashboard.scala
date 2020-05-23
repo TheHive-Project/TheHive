@@ -12,11 +12,11 @@ object InputDashboard {
 
 case class OutputDashboard(
     _id: String,
-    _createdBy: String,
-    _updatedBy: Option[String],
-    _createdAt: Date,
-    _updatedAt: Option[Date],
     _type: String,
+    _createdBy: String,
+    _updatedBy: Option[String] = None,
+    _createdAt: Date,
+    _updatedAt: Option[Date] = None,
     title: String,
     description: String,
     status: String,

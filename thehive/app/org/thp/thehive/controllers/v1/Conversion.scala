@@ -19,6 +19,7 @@ object Conversion {
 
   implicit val alertOutput: Renderer.Aux[RichAlert, OutputAlert] = Renderer.json[RichAlert, OutputAlert](
     _.into[OutputAlert]
+      .withFieldConst(_._type, "Alert")
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .transform
@@ -28,6 +29,7 @@ object Conversion {
     _.into[OutputAudit]
       .withFieldComputed(_.operation, _.action)
       .withFieldComputed(_._id, _._id)
+      .withFieldConst(_._type, "Audit")
       .withFieldComputed(_._createdAt, _._createdAt)
       .withFieldComputed(_._createdBy, _._createdBy)
       .withFieldComputed(_.obj, a => a.`object`.map(OutputEntity.apply))
@@ -63,6 +65,7 @@ object Conversion {
 
   implicit val caseOutput: Renderer.Aux[RichCase, OutputCase] = Renderer.json[RichCase, OutputCase](
     _.into[OutputCase]
+      .withFieldConst(_._type, "Case")
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.status, _.status.toString)
@@ -116,6 +119,7 @@ object Conversion {
 
   implicit val caseTemplateOutput: Renderer.Aux[RichCaseTemplate, OutputCaseTemplate] = Renderer.json[RichCaseTemplate, OutputCaseTemplate](
     _.into[OutputCaseTemplate]
+      .withFieldConst(_._type, "CaseTemplate")
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .transform
@@ -214,7 +218,7 @@ object Conversion {
       .withFieldConst(_.updatedBy, profile._updatedBy)
       .withFieldConst(_.createdAt, profile._createdAt)
       .withFieldConst(_.createdBy, profile._createdBy)
-      .withFieldConst(_._type, "profile")
+      .withFieldConst(_._type, "Profile")
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted) // Permission is String
       .withFieldComputed(_.editable, ProfileSrv.isEditable)
       .withFieldComputed(_.isAdmin, p => Permissions.containsRestricted(p.permissions))
@@ -226,7 +230,7 @@ object Conversion {
       .into[OutputDashboard]
       .withFieldConst(_._id, dashboard._id)
       .withFieldComputed(_.status, d => if (d.organisationShares.nonEmpty) "Shared" else "Private")
-      .withFieldConst(_._type, "dashboard")
+      .withFieldConst(_._type, "Dashboard")
       .withFieldConst(_._updatedAt, dashboard._updatedAt)
       .withFieldConst(_._updatedBy, dashboard._updatedBy)
       .withFieldConst(_._createdAt, dashboard._createdAt)
@@ -246,7 +250,7 @@ object Conversion {
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.json[RichObservable, OutputObservable](richObservable =>
     richObservable
       .into[OutputObservable]
-      .withFieldConst(_._type, "case_artifact")
+      .withFieldConst(_._type, "Observable")
       .withFieldComputed(_._id, _.observable._id)
       .withFieldComputed(_._updatedAt, _.observable._updatedAt)
       .withFieldComputed(_._updatedBy, _.observable._updatedBy)
@@ -264,7 +268,7 @@ object Conversion {
   implicit val logOutput: Renderer.Aux[RichLog, OutputLog] = Renderer.json[RichLog, OutputLog](richLog =>
     richLog
       .into[OutputLog]
-      .withFieldConst(_._type, "case_task_log")
+      .withFieldConst(_._type, "Log")
       .withFieldComputed(_._id, _._id)
       .withFieldComputed(_._updatedAt, _._updatedAt)
       .withFieldComputed(_._updatedBy, _._updatedBy)

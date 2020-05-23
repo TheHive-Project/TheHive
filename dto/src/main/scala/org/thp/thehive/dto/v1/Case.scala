@@ -29,6 +29,7 @@ object InputCase {
 
 case class OutputCase(
     _id: String,
+    _type: String,
     _createdBy: String,
     _updatedBy: Option[String] = None,
     _createdAt: Date,
