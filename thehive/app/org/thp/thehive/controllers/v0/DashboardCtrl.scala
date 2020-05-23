@@ -31,7 +31,7 @@ class DashboardCtrl @Inject() (
         union(dashboardSrv)(
           t => organisationSrv.steps(db.labelFilter(organisationSrv.model)(t))(graph).get(authContext.organisation).dashboards,
           t => userSrv.steps(db.labelFilter(userSrv.model)(t))(graph).current(authContext).dashboards
-        )(graph)
+        )(graph).dedup
     )
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, DashboardSteps](
