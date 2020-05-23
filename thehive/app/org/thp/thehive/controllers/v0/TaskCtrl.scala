@@ -46,7 +46,8 @@ class TaskCtrl @Inject() (
   )
   override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query.output[(RichTask, Option[RichCase])]
+    Query.output[(RichTask, Option[RichCase])],
+    Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext))
   )
 
   def create(caseId: String): Action[AnyContent] =

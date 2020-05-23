@@ -9,7 +9,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models.{Permissions, RichTask}
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv, TaskSteps}
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv, TaskSteps, UserSteps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -40,6 +40,9 @@ class TaskCtrl @Inject() (
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
   override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext))
+  )
 
   def create: Action[AnyContent] =
     entrypoint("create task")

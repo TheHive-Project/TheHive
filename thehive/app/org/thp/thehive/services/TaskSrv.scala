@@ -2,10 +2,6 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json.{JsNull, JsObject, Json}
-
 import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
@@ -16,6 +12,9 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.models.{TaskStatus, _}
+import play.api.libs.json.{JsNull, JsObject, Json}
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
@@ -135,6 +134,16 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def logs = new LogSteps(raw.outTo[TaskLog])
 
   def user = new UserSteps(raw.outTo[TaskUser])
+
+  def organisations = new OrganisationSteps(raw.inTo[ShareTask].inTo[OrganisationShare])
+  def organisations(permission: Permission) =
+    new OrganisationSteps(raw.inTo[ShareTask].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
+
+  def assignableUsers(implicit authContext: AuthContext): UserSteps =
+    organisations(Permissions.manageTask)
+      .visible
+      .users(Permissions.manageTask)
+      .dedup
 
   def richTask: Traversal[RichTask, RichTask] =
     Traversal(
