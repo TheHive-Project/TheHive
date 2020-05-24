@@ -159,6 +159,25 @@
                             Use the QRCode or the Secret to generate a MFA code and submit it.
                         </div>
 
+                        <div class="row">
+                            <div class="col-lg-6 col-lg-offset-3 col-md-8 col-md-offset-2 col-sm-10 col-sm-offset-1">
+                                <div class="alert bg-primary">
+                                    Need a two-step authanticator app? Download on of the folliwing
+                                    <div>
+                                        <i class="fa fa-apple"></i> iOS devices: <a href="https://apps.apple.com/fr/app/authy/id494168017" target="_blank">Authy</a>
+                                    </div>
+                                    <div>
+                                        <i class="fa fa-android"></i> Android devices: <a href="https://play.google.com/store/apps/details?id=com.authy.authy&hl=fr" target="_blank">Authy</a>
+                                    </div>
+                                    <div>
+                                        <i class="fa fa-windiws"></i> Windows devices: <a href="https://www.microsoft.com/en-us/p/microsoft-authenticator/9nblgggzmcj6" target="_blank">Microsoft Authenticator</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
                         <div class="text-center" ng-if="mfaData.uri">
                             <qr text="mfaData.uri"></qr>
                         </div>
@@ -186,8 +205,6 @@
                             </div>
 
                         </div>
-
-
 
                         <div class="mt-s">
                             <button class="btn btn-default" ng-click="cancel()" type="button">Cancel</button>
