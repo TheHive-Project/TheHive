@@ -34,7 +34,7 @@ class TOTPAuthSrv(
   val issuerNameConfig: ConfigItem[String, String] = appConfig.item[String]("auth.multifactor.issuer", "name of the multifactor issuer")
   def issuerName: String                           = issuerNameConfig.get
 
-  override def capabilities: Set[AuthCapability.Value] = super.capabilities + AuthCapability.mfa
+  override def capabilities: Set[AuthCapability.Value] = if (enabled) super.capabilities + AuthCapability.mfa else super.capabilities
 
   def codeIsValid(secret: String, code: Int): Boolean = {
     val key     = new Base32().decode(secret)
