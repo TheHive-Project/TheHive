@@ -202,6 +202,7 @@
             templateUrl: 'views/components/org/user.list.html',
             bindings: {
                 users: '<',
+                mfaEnabled: '<',
                 onReload: '&',
                 onEdit: '&'
             }

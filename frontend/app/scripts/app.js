@@ -237,6 +237,9 @@ angular.module('thehive', [
                     },
                     fields: function(CustomFieldsSrv){
                         return CustomFieldsSrv.all();
+                    },
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
                     }
                 },
                 permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
