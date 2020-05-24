@@ -32,6 +32,16 @@
                     return deferred.promise;
                 },
 
+                hasCortexConnector: function() {
+                    try {
+                        var service = cache.connectors.cortex;
+
+                        return service.enabled;
+                    } catch (err) {
+                        return false;
+                    }
+                },
+
                 hasCortex: function() {
                     try {
                         var service = cache.connectors.cortex;
@@ -52,7 +62,7 @@
 
                     (misp.servers || []).forEach(function(item) {
                         urls[item.name] = item.url;
-                    });                    
+                    });
                     return urls;
                 }
             };

@@ -24,25 +24,6 @@
                         <span class="hpad5">New Case</span>
                     </a>
                 </li>
-                <!-- <li class="dropdown" uib-dropdown>
-                    <a class="dropdown-toggle" uib-dropdown-toggle href>
-                        <i class="fa fa-plus"></i>
-                        <span class="hpad5">New Case</span>
-                        <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu scroll-dropdown-2x" uib-dropdown-menu>
-                        <li>
-                            <a href ng-click="createNewCase()">Empty Case</a>
-                        </li>
-                        <li class="divider" ng-if="templates && templates.length > 0"></li>
-                        <li ng-repeat="template in templates">
-                            <a href ng-click="createNewCase(template)">{{template.name}}</a>
-                        </li>
-                        <li ng-if="templates && templates.length > 0">
-                            <a href ng-click="openTemplateSelector()">From a template...</a>
-                        </li>
-                    </ul>
-                </li> -->
                 <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
                         <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
@@ -110,12 +91,6 @@
                             </a>
                         </li>
                         <li class="divider"></li>
-                        <!-- <li>
-                            <a ui-sref="app.administration.case-templates">
-                                <i class="fa fa-file-text"></i>
-                                <span class="hpad5">Case templates</span>
-                            </a>
-                        </li> -->
                         <li if-permission="manageCustomField">
                             <a ui-sref="app.administration.custom-fields">
                                 <i class="fa fa-edit"></i>
@@ -128,7 +103,7 @@
                                 <span class="hpad5">Observable types</span>
                             </a>
                         </li>
-                        <li if-permission="manageAnalyzerTemplate">
+                        <li if-permission="manageAnalyzerTemplate" ng-if="hasCortexConnector">
                             <a ui-sref="app.administration.analyzer-templates">
                                 <i class="fa fa-file-text"></i>
                                 <span class="hpad5">Analyzer templates</span>

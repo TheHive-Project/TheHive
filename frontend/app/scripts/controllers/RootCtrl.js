@@ -15,6 +15,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
 
         $rootScope.layoutSrv = AppLayoutSrv;
         $scope.appConfig = appConfig;
+        $scope.hasCortexConnector = VersionSrv.hasCortexConnector();
 
         $scope.querystring = '';
         $scope.view = {
@@ -46,6 +47,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
           });
 
           $scope.appConfig = conf;
+          $scope.hasCortexConnector = VersionSrv.hasCortexConnector();
         });
 
         CaseTemplateSrv.list().then(function(templates) {
