@@ -39,7 +39,7 @@ object InputCustomFieldValue {
     obj.get("integer") match {
       case FUndefined     => None
       case FNull          => Some(Good(InputCustomFieldValue(name, None, obj.getNumber("order").map(_.toInt))))
-      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value.toLong), obj.getNumber("order").map(_.toInt))))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value.toInt), obj.getNumber("order").map(_.toInt))))
       case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.integer", "integer", Set.empty, other))))
     }
 
