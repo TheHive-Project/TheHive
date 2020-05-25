@@ -132,7 +132,10 @@ object Conversion {
 
   implicit val caseOutput: Renderer.Aux[RichCase, OutputCase] = Renderer.json[RichCase, OutputCase](
     _.into[OutputCase]
-      .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
+      .withFieldComputed(
+        _.customFields,
+        rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson, "order" -> cf.order)))
+      )
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_._type, "case")
       .withFieldComputed(_.id, _._id)
