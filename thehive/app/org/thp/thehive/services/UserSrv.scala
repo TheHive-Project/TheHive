@@ -57,7 +57,7 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
     else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
   }
 
-  def add(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
+  def addUserToOrganisation(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
@@ -84,7 +84,7 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
           _           <- avatar.map(setAvatar(createdUser, _)).flip
         } yield createdUser
       }
-      .flatMap(add(_, organisation, profile))
+      .flatMap(addUserToOrganisation(_, organisation, profile))
 
   def canSetPassword(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Boolean = {
     val userOrganisations     = get(user).organisations.name.toList.toSet
