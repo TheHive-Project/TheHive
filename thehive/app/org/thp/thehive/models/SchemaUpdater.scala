@@ -20,13 +20,11 @@ class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userS
   applicationLifeCycle.addStopHook(() => Future.successful(db.close()))
 
   Operations("thehive", theHiveSchema)
-    .forVersion(2)
     .addProperty[Option[Boolean]]("Observable", "seen")
     .updateGraph("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
       Try(traversal.has("name", "org-admin").raw.property(Key("permissions") -> "manageConfig").iterate())
       Success(())
     }
-    .forVersion(3)
     .updateGraph("Remove duplicate custom fields", "CustomField") { traversal =>
       traversal.toIterator.foldLeft(Set.empty[String]) { (names, vertex) =>
         val name = vertex.value[String]("name")
@@ -39,7 +37,6 @@ class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userS
       Success(())
     }
     .addIndex("CustomField", IndexType.unique, "name")
-    .forVersion(4)
     .dbOperation[JanusDatabase]("Remove locks") { db =>
       def removePropertyLock(name: String) =
         db.managementTransaction { mgmt =>
