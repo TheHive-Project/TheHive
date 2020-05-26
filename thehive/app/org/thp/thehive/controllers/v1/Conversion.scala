@@ -150,9 +150,13 @@ object Conversion {
   }
 
   implicit val organisationRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
-    Renderer.json[Organisation with Entity, OutputOrganisation](
-      _.asInstanceOf[Organisation]
+    Renderer.json[Organisation with Entity, OutputOrganisation](organisation =>
+      organisation
+        .asInstanceOf[Entity]
         .into[OutputOrganisation]
+        .withFieldConst(_._type, "Organisation")
+        .withFieldConst(_.name, organisation.name)
+        .withFieldConst(_.description, organisation.description)
         .transform
     )
 
@@ -169,6 +173,7 @@ object Conversion {
 
   implicit val taskOutput: Renderer.Aux[RichTask, OutputTask] = Renderer.json[RichTask, OutputTask](
     _.into[OutputTask]
+      .withFieldConst(_._type, "Task")
       .withFieldComputed(_.status, _.status.toString)
       .transform
   )
@@ -213,11 +218,10 @@ object Conversion {
       .asInstanceOf[Profile]
       .into[OutputProfile]
       .withFieldConst(_._id, profile._id)
-      .withFieldConst(_.id, profile._id)
-      .withFieldConst(_.updatedAt, profile._updatedAt)
-      .withFieldConst(_.updatedBy, profile._updatedBy)
-      .withFieldConst(_.createdAt, profile._createdAt)
-      .withFieldConst(_.createdBy, profile._createdBy)
+      .withFieldConst(_._updatedAt, profile._updatedAt)
+      .withFieldConst(_._updatedBy, profile._updatedBy)
+      .withFieldConst(_._createdAt, profile._createdAt)
+      .withFieldConst(_._createdBy, profile._createdBy)
       .withFieldConst(_._type, "Profile")
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted) // Permission is String
       .withFieldComputed(_.editable, ProfileSrv.isEditable)
