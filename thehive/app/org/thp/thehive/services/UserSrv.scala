@@ -5,6 +5,7 @@ import java.util.regex.Pattern
 
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -208,6 +209,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         this
           .newInstance()
           .outTo[UserRole]
+          .order(List(By(Key[Long]("_createdAt"), Order.asc)))
           .outTo[RoleOrganisation]
           .value[String](Key("name"))
           .headOption()
