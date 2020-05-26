@@ -39,8 +39,11 @@ class AlertCtrl @Inject() (
       alertSteps
         .richPage(range.from, range.to, withTotal = true)(_.richAlert)
   )
-  override val outputQuery: Query               = Query.output[RichAlert, AlertSteps](_.richAlert)
-  override val extraQueries: Seq[ParamQuery[_]] = Seq()
+  override val outputQuery: Query = Query.output[RichAlert, AlertSteps](_.richAlert)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[AlertSteps, ObservableSteps]("observables", (alertSteps, _) => alertSteps.observables),
+    Query[AlertSteps, CaseSteps]("case", (alertSteps, _) => alertSteps.`case`)
+  )
 
   def create: Action[AnyContent] =
     entrypoint("create alert")

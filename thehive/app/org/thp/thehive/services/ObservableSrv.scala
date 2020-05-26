@@ -193,6 +193,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
         .has("login", authContext.userId)
     )
 
+  def organisations = new OrganisationSteps(raw.inTo[ShareObservable].inTo[OrganisationShare])
+
   override def newInstance(): ObservableSteps = new ObservableSteps(raw.clone())
 
   def richObservable: Traversal[RichObservable, RichObservable] =

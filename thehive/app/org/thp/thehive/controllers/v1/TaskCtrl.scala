@@ -9,7 +9,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models.{Permissions, RichTask}
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv, TaskSteps, UserSteps}
+import org.thp.thehive.services.{CaseSrv, CaseSteps, LogSteps, OrganisationSrv, OrganisationSteps, ShareSrv, TaskSrv, TaskSteps, UserSteps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -41,7 +41,10 @@ class TaskCtrl @Inject() (
   )
   override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext))
+    Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
+    Query[TaskSteps, LogSteps]("logs", (taskSteps, _) => taskSteps.logs),
+    Query[TaskSteps, CaseSteps]("case", (taskSteps, _) => taskSteps.`case`),
+    Query[TaskSteps, OrganisationSteps]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
   )
 
   def create: Action[AnyContent] =

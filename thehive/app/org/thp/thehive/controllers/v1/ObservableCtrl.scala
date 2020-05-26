@@ -54,6 +54,12 @@ class ObservableCtrl @Inject() (
   )
   override val outputQuery: Query = Query.output[RichObservable, ObservableSteps](_.richObservable)
 
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[ObservableSteps, OrganisationSteps]("organisations", (observableSteps, authContext) => observableSteps.organisations.visible(authContext)),
+    Query[ObservableSteps, ObservableSteps]("similar", (observableSteps, authContext) => observableSteps.similar.visible(authContext)),
+    Query[ObservableSteps, CaseSteps]("case", (observableSteps, _) => observableSteps.`case`)
+  )
+
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
       .extract("artifact", FieldsParser[InputObservable])

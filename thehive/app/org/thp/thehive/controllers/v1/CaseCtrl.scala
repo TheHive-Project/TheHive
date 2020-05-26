@@ -55,7 +55,8 @@ class CaseCtrl @Inject() (
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
     Query[CaseSteps, ObservableSteps]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
-    Query[CaseSteps, UserSteps]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext))
+    Query[CaseSteps, UserSteps]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
+    Query[CaseSteps, OrganisationSteps]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext))
   )
 
   def create: Action[AnyContent] =
