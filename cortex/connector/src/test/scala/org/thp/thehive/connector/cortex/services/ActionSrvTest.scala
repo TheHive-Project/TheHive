@@ -107,7 +107,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
     "handle action related to an Alert" in testApp { app =>
       implicit val entityWrites: OWrites[Entity] = app[ActionCtrl].entityWrites
       val alert = app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get("testType;testSource;ref2").head()
+        app[AlertSrv].get("testType;testSource;ref2").visible.head()
       }
       alert.read must beFalse
       val richAction = await(app[ActionSrv].execute(alert, None, "respTest1", JsObject.empty))
@@ -120,7 +120,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
       updatedActionTry must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        val updatedAlert = app[AlertSrv].get("testType;testSource;ref2").richAlert.head()
+        val updatedAlert = app[AlertSrv].get("testType;testSource;ref2").visible.richAlert.head() // FIXME
         updatedAlert.read must beTrue
         updatedAlert.tags.map(_.toString) must contain("test tag from action") // TODO
       }

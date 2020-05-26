@@ -54,7 +54,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
     "find a manageable entity only (alert)" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         for {
-          alert <- app[AlertSrv].getOrFail("testType;testSource;ref2")
+          alert <- app[AlertSrv].get("testType;testSource;ref2").visible.getOrFail("Alert")
           t     <- app[EntityHelper].get("Alert", alert._id, Permissions.manageAction)
         } yield t
       } must beSuccessfulTry

@@ -302,14 +302,13 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
   def visible(implicit authContext: AuthContext): AlertSteps =
     this.filter(
       _.outTo[AlertOrganisation]
-        .inTo[RoleOrganisation]
-        .inTo[UserRole]
-        .has("login", authContext.userId)
+        .has("name", authContext.organisation)
     )
 
   def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps =
     this.filter(
       _.outTo[AlertOrganisation]
+        .has("name", authContext.organisation)
         .inTo[RoleOrganisation]
         .filter(_.outTo[RoleProfile].has("permissions", permission))
         .inTo[UserRole]
@@ -328,7 +327,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     Traversal(
       raw
         .`match`(
-          _.as(alertLabel).out("AlertOrganisation").as(organisationLabel),
+          _.as(alertLabel).out("AlertOrganisation").has(Key("name") of authContext.organisation).as(organisationLabel),
           _.as(alertLabel).out("AlertTag").fold().as(tagLabel),
           _.as(organisationLabel)
             .inTo[RoleOrganisation]

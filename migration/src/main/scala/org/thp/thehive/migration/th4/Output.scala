@@ -425,7 +425,11 @@ class Output @Inject() (
     }
 
   override def alertExists(inputAlert: InputAlert): Boolean = db.roTransaction { implicit graph =>
-    alertSrv.initSteps.getBySourceId(inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef).exists()
+    alertSrv
+      .initSteps
+      .getBySourceId(inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef)
+      .filter(_.organisation.get(inputAlert.organisation))
+      .exists()
   }
 
   override def createAlert(inputAlert: InputAlert): Try[IdMapping] = authTransaction(inputAlert.metaData.createdBy) {
