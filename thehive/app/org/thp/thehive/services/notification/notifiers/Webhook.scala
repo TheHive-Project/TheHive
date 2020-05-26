@@ -117,7 +117,7 @@ class Webhook(config: WebhookNotification, auditSrv: AuditSrv, customFieldSrv: C
               val fieldName = key.drop(12)
               customFieldSrv
                 .getOrFail(fieldName)
-                .fold(_ => keyValue, cf => "customField" -> Json.obj(fieldName -> Json.obj(cf.`type`.toString -> value)))
+                .fold(_ => keyValue, cf => "customFields" -> Json.obj(fieldName -> Json.obj(cf.`type`.toString -> value)))
             case keyValue => keyValue
           })
         }
