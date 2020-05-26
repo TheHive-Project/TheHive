@@ -288,7 +288,7 @@ class UserCtrl @Inject() (
                 )
               )
             )
-          case None => Failure(NotFoundError(s"user $userId has no avatar"))
+          case _ => Failure(NotFoundError(s"user $userId has no avatar"))
         }
       }
 }
