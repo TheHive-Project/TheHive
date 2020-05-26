@@ -7,7 +7,7 @@
         this.list = function(scope, caseId, observableId, callback) {
             return PSearchSrv(undefined, 'connector/cortex/job', {
                 scope: scope,
-                sort: '-startDate',
+                sort: ['-startDate'],
                 loadAll: false,
                 pageSize: 200,
                 onUpdate: callback || angular.noop,
@@ -25,7 +25,7 @@
 
         this.getJobs = function(caseId, observableId, analyzerId, limit) {
             return $http.post(baseUrl + '/job/_search', {
-                sort: '-startDate',
+                sort: ['-startDate'],
                 range: '0-' + (
                 limit || 10),
                 query: {
