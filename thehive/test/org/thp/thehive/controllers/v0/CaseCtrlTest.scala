@@ -9,7 +9,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsNull, JsObject, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestCase(
@@ -88,9 +88,9 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         summary = None,
         owner = Some("certuser@thehive.local"),
         customFields = Json.obj(
-          "boolean1" -> Json.obj("boolean" -> true),
-          "string1"  -> Json.obj("string"  -> "string1 custom field"),
-          "date1"    -> Json.obj("date"    -> now.getTime)
+          "boolean1" -> Json.obj("boolean" -> true, "order"                   -> JsNull),
+          "string1"  -> Json.obj("string"  -> "string1 custom field", "order" -> JsNull),
+          "date1"    -> Json.obj("date"    -> now.getTime, "order"            -> JsNull)
         ),
         stats = Json.obj()
       )

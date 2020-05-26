@@ -35,6 +35,8 @@ trait TestAppBuilder {
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
+      .bindActor[DummyActor]("case-dedup-actor")
+      .bindActor[DummyActor]("data-dedup-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
       .addConfiguration("play.mailer.mock = yes")
