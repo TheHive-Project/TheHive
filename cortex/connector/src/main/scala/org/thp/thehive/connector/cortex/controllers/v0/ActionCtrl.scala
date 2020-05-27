@@ -11,7 +11,7 @@ import org.thp.thehive.connector.cortex.dto.v0.InputAction
 import org.thp.thehive.connector.cortex.models.RichAction
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, EntityHelper}
 import org.thp.thehive.controllers.v0.Conversion.{toObjectType, _}
-import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
+import org.thp.thehive.controllers.v0.{AuditRenderer, IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, Json, OWrites}
@@ -32,16 +32,17 @@ class ActionCtrl @Inject() (
     logSrv: LogSrv,
     alertSrv: AlertSrv,
     implicit val executionContext: ExecutionContext
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with AuditRenderer {
 
   implicit val entityWrites: OWrites[Entity] = OWrites[Entity] { entity =>
     db.roTransaction { implicit graph =>
         entity match {
-          case c: Case       => caseSrv.get(c).richCaseWithoutPerms.getOrFail().map(_.toJson.as[JsObject])
-          case t: Task       => taskSrv.get(t).richTask.getOrFail().map(_.toJson.as[JsObject])
-          case o: Observable => observableSrv.get(o).richObservable.getOrFail().map(_.toJson.as[JsObject])
-          case l: Log        => logSrv.get(l).richLog.getOrFail().map(_.toJson.as[JsObject])
-          case a: Alert      => alertSrv.get(a).richAlert.getOrFail().map(_.toJson.as[JsObject])
+          case c: Case       => caseToJson(caseSrv.get(c)).getOrFail("Case")
+          case t: Task       => taskToJson(taskSrv.get(t)).getOrFail("Task")
+          case o: Observable => observableToJson(observableSrv.get(o)).getOrFail("Observable")
+          case l: Log        => logToJson(logSrv.get(l)).getOrFail("Log")
+          case a: Alert      => alertToJson(alertSrv.get(a)).getOrFail("Alert")
         }
       }
       .getOrElse(Json.obj("_type" -> entity._model.label, "_id" -> entity._id))
@@ -61,7 +62,7 @@ class ActionCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
-  override val outputQuery: Query = Query.output[RichAction]()
+  override val outputQuery: Query = Query.output[RichAction, ActionSteps](_.richAction)
 
   def create: Action[AnyContent] =
     entrypoint("create action")

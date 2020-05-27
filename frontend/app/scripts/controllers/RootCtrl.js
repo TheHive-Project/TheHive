@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -15,6 +15,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
 
         $rootScope.layoutSrv = AppLayoutSrv;
         $scope.appConfig = appConfig;
+        $scope.hasCortexConnector = VersionSrv.hasCortexConnector();
 
         $scope.querystring = '';
         $scope.view = {
@@ -46,6 +47,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
           });
 
           $scope.appConfig = conf;
+          $scope.hasCortexConnector = VersionSrv.hasCortexConnector();
         });
 
         CaseTemplateSrv.list().then(function(templates) {
@@ -133,6 +135,43 @@ angular.module('theHiveControllers').controller('RootCtrl',
             });
         };
 
+        $scope.switchOrg = function() {
+            var modal = $uibModal.open({
+                templateUrl: 'views/components/org/orgSwitch.modal.html',
+                controller: 'OrgSwitchCtrl',
+                controllerAs: '$dialog',
+                resolve: {
+                    currentUser: $scope.currentUser
+                }
+            });
+
+            modal.result
+                .then(function(organisation) {
+                    $rootScope.isLoading = true;
+
+                    return AuthenticationSrv.current(organisation)
+                        .then(function(userData) {
+                            $scope.currentUser = userData;
+                            StreamSrv.cancelPoll();
+                        });
+                })
+                .then(function() {
+                    $state.go('app.index', {}, {reload:true});
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('Switch organisation', err.data, err.status);
+                    }
+                })
+                .finally(function() {
+                    $timeout(function() {
+                        $rootScope.isLoading = false;
+                    }, 500);
+
+                });
+
+        };
+
         $scope.createNewCase = function(template) {
             var modal = $uibModal.open({
                 templateUrl: 'views/partials/case/case.creation.html',
@@ -172,9 +211,15 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 }
             });
 
-            modal.result.then(function(template) {
-                $scope.createNewCase(template);
-            });
+            modal.result
+                .then(function(template) {
+                    $scope.createNewCase(template);
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('Template Selection', err.data, err.status);
+                    }
+                });
         };
 
         $scope.aboutTheHive = function() {

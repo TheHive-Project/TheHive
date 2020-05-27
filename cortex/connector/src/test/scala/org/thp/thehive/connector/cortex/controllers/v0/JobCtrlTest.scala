@@ -28,7 +28,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
   "job controller" should {
     "get a job" in testApp { app =>
       val observable = app[Database].roTransaction { implicit graph =>
-        app[ObservableSrv].initSteps.has("message", "Some weird domain").getOrFail().get
+        app[ObservableSrv].initSteps.has("message", "Some weird domain").getOrFail("Observable").get
       }
 
       val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")

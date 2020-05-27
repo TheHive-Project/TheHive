@@ -1,12 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -19,6 +12,12 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.Json
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 
 @Singleton
 class UserCtrl @Inject() (
@@ -50,11 +49,10 @@ class UserCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[RichUser]()
+  override val outputQuery: Query =
+    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext.organisation))
 
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[UserSteps, List[RichUser]]("toList", (userSteps, authContext) => userSteps.richUser(authContext.organisation).toList)
-  )
+  override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
   def current: Action[AnyContent] =
     entrypoint("current user")
@@ -62,14 +60,14 @@ class UserCtrl @Inject() (
         userSrv
           .get(request.userId)
           .richUser(request.organisation)
-          .getOrFail()
+          .getOrFail("User")
           .orElse(
             userSrv
               .get(request.userId)
               .richUser(OrganisationSrv.administration.name)
-              .getOrFail()
+              .getOrFail("User")
           )
-          .map(user => Results.Ok(user.toJson))
+          .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation))
       }
 
   def create: Action[AnyContent] =
@@ -104,7 +102,7 @@ class UserCtrl @Inject() (
     entrypoint("lock user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail()
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail("User")
           _    <- userSrv.lock(user)
         } yield Results.NoContent
       }
@@ -113,8 +111,8 @@ class UserCtrl @Inject() (
     entrypoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          organisation <- userSrv.current.organisations(Permissions.manageUser).has("name", request.organisation).getOrFail()
-          user         <- organisationSrv.get(organisation).users.get(userId).getOrFail()
+          organisation <- userSrv.current.organisations(Permissions.manageUser).has("name", request.organisation).getOrFail("Organisation")
+          user         <- organisationSrv.get(organisation).users.get(userId).getOrFail("User")
           _            <- userSrv.delete(user, organisation)
         } yield Results.NoContent
       }
@@ -126,7 +124,7 @@ class UserCtrl @Inject() (
           .get(userId)
           .visible
           .richUser(request.organisation)
-          .getOrFail()
+          .getOrFail("User")
           .map(user => Results.Ok(user.toJson))
       }
 
@@ -138,7 +136,7 @@ class UserCtrl @Inject() (
         for {
           user <- userSrv
             .update(userSrv.get(userId), propertyUpdaters) // Authorisation is managed in public properties
-            .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail() }
+            .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail("User") }
         } yield Results.Ok(user.toJson)
 
       }
@@ -151,14 +149,14 @@ class UserCtrl @Inject() (
           user <- db.roTransaction { implicit graph =>
             userSrv
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
                   .get(u)
-                  .getOrFail()
+                  .getOrFail("User")
               }
           }
           _ <- authSrv.setPassword(userId, request.body("password"))
@@ -173,7 +171,7 @@ class UserCtrl @Inject() (
       .auth { implicit request =>
         if (userId == request.userId) {
           for {
-            user <- db.roTransaction(implicit graph => userSrv.get(userId).getOrFail())
+            user <- db.roTransaction(implicit graph => userSrv.get(userId).getOrFail("User"))
             _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
             _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
           } yield Results.NoContent
@@ -187,14 +185,14 @@ class UserCtrl @Inject() (
           user <- db.roTransaction { implicit graph =>
             userSrv
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
                   .get(u)
-                  .getOrFail()
+                  .getOrFail("User")
               }
           }
           key <- authSrv
@@ -209,14 +207,14 @@ class UserCtrl @Inject() (
           user <- db.roTransaction { implicit graph =>
             userSrv
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
                   .get(u)
-                  .getOrFail()
+                  .getOrFail("User")
               }
           }
           _ <- authSrv.removeKey(userId)
@@ -232,14 +230,14 @@ class UserCtrl @Inject() (
           user <- db.roTransaction { implicit graph =>
             userSrv
               .get(userId)
-              .getOrFail()
+              .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
                   .get(u)
-                  .getOrFail()
+                  .getOrFail("User")
               }
           }
           key <- authSrv.renewKey(userId)

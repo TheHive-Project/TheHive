@@ -3,68 +3,16 @@
         <em>No aditional information have been specified</em>
     </div>
 
-    <div ng-if="dialog.canEdit">
+    <div class="row">
         <div ng-repeat="k in dialog.orderedFields track by $index" ng-init="fieldDef = dialog.customFieldsCache.getCache(k);">
             <div class="clearfix" ng-if="$index % 2 == 0"></div>
             <div class="col-xs-6">
-                <dl class="dl-horizontal clear">
-                    <dt class="pull-left" uib-tooltip="{{fieldDef.description}}">{{fieldDef.name}}</dt>
-                    <dd ng-if="fieldDef.options.length > 0">
-                        <updatable-select
-                            options="fieldDef.options"
-                            on-update="dialog.updateField(dialog.getCustomFieldName(fieldDef), newValue)"
-                            value="dialog.event.customFields[fieldDef.reference][fieldDef.type]"></updatable-select>
-                    </dd>
-
-                    <dd ng-if="fieldDef.options.length === 0" ng-switch="fieldDef.type">
-                        <updatable-simple-text ng-switch-when="string"
-                            input-type="text"
-                            on-update="dialog.updateField(dialog.getCustomFieldName(fieldDef), newValue)"
-                            value="dialog.event.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
-
-                        <updatable-date ng-switch-when="date"
-                            on-update="dialog.updateField(dialog.getCustomFieldName(fieldDef), newValue)"
-                            value="dialog.event.customFields[fieldDef.reference][fieldDef.type]"></updatable-date>
-
-                        <updatable-simple-text ng-switch-when="integer"
-                            input-type="integer"
-                            on-update="dialog.updateField(dialog.getCustomFieldName(fieldDef), newValue)"
-                            value="dialog.event.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
-
-                        <updatable-simple-text ng-switch-when="float"
-                           input-type="float"
-                           on-update="dialog.updateField(dialog.getCustomFieldName(fieldDef), newValue)"
-                           value="dialog.event.customFields[fieldDef.reference][fieldDef.type]"></updatable-simple-text>
-
-                        <updatable-boolean ng-switch-when="boolean"
-                            input-type="number"
-                            on-update="dialog.updateField(dialog.getCustomFieldName(fieldDef), newValue)"
-                            value="dialog.event.customFields[fieldDef.reference][fieldDef.type]"></updatable-boolean>
-
-                        <span ng-switch-default>Not Editable</span>
-                    </dd>
-                </dl>
+                <custom-field-input
+                    editable="dialog.canEdit"
+                    field="fieldDef"
+                    on-update="dialog.updateField(fieldName, value)"
+                    value="dialog.event.customFields[fieldDef.reference][fieldDef.type]"></custom-field-input>
             </div>
         </div>
     </div>
-
-    <div ng-if="!dialog.canEdit">
-        <div ng-repeat="k in dialog.orderedFields track by $index" ng-init="fieldDef = dialog.customFieldsCache.getCache(k);">
-            <div class="clearfix" ng-if="$index % 2 == 0"></div>
-            <div class="col-xs-6">
-                <dl class="dl-horizontal clear">
-                    <dt class="pull-left" uib-tooltip="{{fieldDef.description}}">{{fieldDef.name}}</dt>
-                    <dd ng-switch="fieldDef.type">
-                        <span ng-switch-when="date">{{dialog.event.customFields[fieldDef.reference][fieldDef.type] | shortDate}}</span>
-                        <span ng-switch-default>
-                            {{dialog.event.customFields[fieldDef.reference][fieldDef.type]}}
-                            <em class="text-warning" ng-if="!dialog.event.customFields[fieldDef.reference][fieldDef.type]">Not Specified</em>
-                        </span>
-                    </dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-
-
 </div>

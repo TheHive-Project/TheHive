@@ -174,20 +174,7 @@
                 return $http.post(user ? (url+'/'+ user) : url );
             };
 
-            this.list = function(organisation, query) {
-                // var post = {
-                //     range: 'all',
-                //     query: query
-                // };
-                // return $http
-                //     .post('./api/v1/user/_search', post)
-                //     .then(function(response) {
-                //         return $q.resolve(response.data);
-                //     })
-                //     .catch(function(err) {
-                //         return $q.reject(err);
-                //     });
-
+            this.list = function(organisation, options) {
                 var operations = [{
                         '_name': 'getOrganisation',
                         'idOrName': organisation
@@ -197,19 +184,25 @@
                     }
                 ];
 
-                if (query) {
-                    query._name = 'filter';
-
-                    operations.push(query);
+                // Apply filter is defined
+                if (options && options.filter) {
+                    operations.push({
+                        '_name': 'filter',
+                        '_is': options.filter
+                    });
                 }
 
-                operations.push({
-                    '_name': 'toList'
-                });
+                // Apply sort is defined
+                if (options && options.sort) {
+                    operations.push({
+                        '_name': 'sort',
+                        '_fields': options.sort
+                    });
+                }
 
                 return QuerySrv.query('v1', operations)
                     .then(function(response) {
-                        return $q.resolve(response.data.result);
+                        return $q.resolve(response.data);
                     });
             };
 

@@ -2,13 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Base64
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.{__, By, Graph, Key, StepLabel, Vertex}
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
@@ -19,11 +12,17 @@ import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Q
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{PagedResult, Traversal}
-import org.thp.scalligraph.{InvalidFormatAttributeError, RichJMap, RichSeq}
+import org.thp.scalligraph.{AuthorizationError, InvalidFormatAttributeError, RichJMap, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject() (
@@ -60,12 +59,11 @@ class AlertCtrl @Inject() (
           richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
         }
   )
-  override val outputQuery: Query = Query.output[(RichAlert, Seq[RichObservable])]()
+  override val outputQuery: Query = Query.output[RichAlert, AlertSteps](_.richAlert)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AlertSteps, CaseSteps]("cases", (alertSteps, _) => alertSteps.`case`),
     Query[AlertSteps, ObservableSteps]("observables", (alertSteps, _) => alertSteps.observables),
-    Query[AlertSteps, List[RichAlert]]("toList", (alertSteps, _) => alertSteps.richAlert.toList),
-    Query[AlertSteps, List[(RichAlert, Seq[RichObservable])]](
+    Query[AlertSteps, Traversal[(RichAlert, Seq[RichObservable]), (RichAlert, Seq[RichObservable])]](
       "withObservables",
       (alertSteps, _) =>
         alertSteps
@@ -73,9 +71,8 @@ class AlertCtrl @Inject() (
           .map { richAlert =>
             richAlert -> alertSrv.get(richAlert.alert)(alertSteps.graph).observables.richObservable.toList
           }
-          .toList
     ),
-    Query.output[RichAlert]()
+    Query.output[(RichAlert, Seq[RichObservable])]
   )
 
   def create: Action[AnyContent] =
@@ -90,7 +87,11 @@ class AlertCtrl @Inject() (
         val customFields                      = inputAlert.customFields.map(c => c.name -> c.value).toMap
         val caseTemplate                      = caseTemplateName.flatMap(caseTemplateSrv.get(_).visible.headOption())
         for {
-          organisation    <- userSrv.current.organisations(Permissions.manageAlert).get(request.organisation).getOrFail()
+          organisation <- userSrv
+            .current
+            .organisations(Permissions.manageAlert)
+            .get(request.organisation)
+            .orFail(AuthorizationError("Operation not permitted"))
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
           _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o)))(_ => Success(()))
@@ -211,6 +212,24 @@ class AlertCtrl @Inject() (
         } yield Results.NoContent
       }
 
+  def bulkDelete: Action[AnyContent] =
+    entrypoint("bulk delete alerts")
+      .extract("ids", FieldsParser.string.sequence.on("ids"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val ids: Seq[String] = request.body("ids")
+        ids
+          .toTry { alertId =>
+            for {
+              alert <- alertSrv
+                .get(alertId)
+                .can(Permissions.manageAlert)
+                .getOrFail()
+              _ <- alertSrv.cascadeRemove(alert)
+            } yield ()
+          }
+          .map(_ => Results.NoContent)
+      }
+
   def mergeWithCase(alertId: String, caseId: String): Action[AnyContent] =
     entrypoint("merge alert with case")
       .authTransaction(db) { implicit request => implicit graph =>
@@ -270,14 +289,17 @@ class AlertCtrl @Inject() (
 
   def createCase(alertId: String): Action[AnyContent] =
     entrypoint("create case from alert")
+      .extract("caseTemplate", FieldsParser.string.optional.on("caseTemplate"))
       .authTransaction(db) { implicit request => implicit graph =>
+        val caseTemplate: Option[String] = request.body("caseTemplate")
         for {
           (alert, organisation) <- alertSrv
             .get(alertId)
             .can(Permissions.manageAlert)
             .alertUserOrganisation(Permissions.manageCase)
-            .getOrFail()
-          richCase <- alertSrv.createCase(alert, None, organisation)
+            .getOrFail("Alert")
+          alertWithCaseTemplate = caseTemplate.fold(alert)(ct => alert.copy(caseTemplate = Some(ct)))
+          richCase <- alertSrv.createCase(alertWithCaseTemplate, None, organisation)
         } yield Results.Created(richCase.toJson)
       }
 

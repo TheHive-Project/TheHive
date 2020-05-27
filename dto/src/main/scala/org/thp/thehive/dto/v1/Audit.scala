@@ -23,6 +23,7 @@ object OutputEntity {
 
 case class OutputAudit(
     _id: String,
+    _type: String,
     _createdBy: String,
     _updatedBy: Option[String] = None,
     _createdAt: Date,

@@ -4,14 +4,7 @@ import java.io.File
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
-import play.api.Configuration
-import play.api.libs.Files
-import play.api.libs.Files.TemporaryFileCreator
-import play.api.libs.json.Json
-import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
-import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
-
+import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models._
@@ -21,6 +14,13 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services.DataSrv
+import play.api.Configuration
+import play.api.libs.Files
+import play.api.libs.Files.TemporaryFileCreator
+import play.api.libs.json.Json
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
+import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
 
 case class TestObservable(
     dataType: String,
@@ -132,7 +132,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
 
       status(resultSearch) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
 
-      val resSearchObservables = contentAsJson(resultSearch).as[Seq[OutputObservable]]
+      val resSearchObservables = contentAsJson(resultSearch)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputObservable]]
 
       resSearchObservables must have size 4
       resSearchObservables.flatMap(_.data) must contain(exactly("observable", "in", "array", "h.fr"))

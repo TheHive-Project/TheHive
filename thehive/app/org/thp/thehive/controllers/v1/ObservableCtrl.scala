@@ -1,11 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.Logger
-import play.api.libs.json.JsObject
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
@@ -17,6 +11,11 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.JsObject
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -53,9 +52,12 @@ class ObservableCtrl @Inject() (
           }
     }
   )
-  override val outputQuery: Query = Query.output[(RichObservable, JsObject)]()
+  override val outputQuery: Query = Query.output[RichObservable, ObservableSteps](_.richObservable)
+
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[ObservableSteps, List[RichObservable]]("toList", (observableSteps, _) => observableSteps.richObservable.toList)
+    Query[ObservableSteps, OrganisationSteps]("organisations", (observableSteps, authContext) => observableSteps.organisations.visible(authContext)),
+    Query[ObservableSteps, ObservableSteps]("similar", (observableSteps, authContext) => observableSteps.similar.visible(authContext)),
+    Query[ObservableSteps, CaseSteps]("case", (observableSteps, _) => observableSteps.`case`)
   )
 
   def create(caseId: String): Action[AnyContent] =
@@ -67,7 +69,7 @@ class ObservableCtrl @Inject() (
           case0 <- caseSrv
             .get(caseId)
             .can(Permissions.manageObservable)
-            .getOrFail()
+            .getOrFail("Case")
           observableType <- observableTypeSrv.getOrFail(inputObservable.dataType)
           observablesWithData <- inputObservable
             .data
@@ -91,7 +93,7 @@ class ObservableCtrl @Inject() (
           .getByIds(observableId)
           //            .availableFor(request.organisation)
           .richObservable
-          .getOrFail()
+          .getOrFail("Observable")
           .map { observable =>
             Results.Ok(observable.toJson)
           }
@@ -144,7 +146,7 @@ class ObservableCtrl @Inject() (
           observable <- observableSrv
             .getByIds(obsId)
             .can(Permissions.manageObservable)
-            .getOrFail()
+            .getOrFail("Observable")
           _ <- observableSrv.cascadeRemove(observable)
         } yield Results.NoContent
       }

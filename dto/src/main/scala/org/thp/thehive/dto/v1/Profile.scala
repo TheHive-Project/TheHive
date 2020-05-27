@@ -12,12 +12,11 @@ object InputProfile {
 
 case class OutputProfile(
     _id: String,
-    id: String,
-    createdBy: String,
-    updatedBy: Option[String] = None,
-    createdAt: Date,
-    updatedAt: Option[Date] = None,
     _type: String,
+    _createdBy: String,
+    _updatedBy: Option[String] = None,
+    _createdAt: Date,
+    _updatedAt: Option[Date] = None,
     name: String,
     permissions: Seq[String],
     editable: Boolean,

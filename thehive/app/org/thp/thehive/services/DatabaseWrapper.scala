@@ -3,15 +3,17 @@ package org.thp.thehive.services
 import java.util.Date
 import java.util.function.Consumer
 
-import scala.reflect.runtime.{universe => ru}
-import scala.util.Try
-
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import gremlin.scala._
 import javax.inject.Provider
-import org.apache.tinkerpop.gremlin.structure.Transaction
+import org.apache.tinkerpop.gremlin.structure.{Graph, Transaction}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Model.Base
 import org.thp.scalligraph.models._
+
+import scala.reflect.runtime.{universe => ru}
+import scala.util.Try
 
 class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   lazy val db: Database                                               = dbProvider.get()
@@ -20,6 +22,8 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   override lazy val updatedAtMapping: OptionMapping[Date, _]          = db.updatedAtMapping
   override lazy val updatedByMapping: OptionMapping[String, String]   = db.updatedByMapping
   override lazy val binaryMapping: SingleMapping[Array[Byte], String] = db.binaryMapping
+
+  override def close(): Unit = db.close()
 
   override def isValidId(id: String): Boolean = db.isValidId(id)
 
@@ -46,6 +50,8 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   override def roTransaction[A](body: Graph => A): A                                                           = db.roTransaction(body)
   override def transaction[A](body: Graph => A): A                                                             = db.transaction(body)
   override def tryTransaction[A](body: Graph => Try[A]): Try[A]                                                = db.tryTransaction(body)
+  override def source[A](query: Graph => Iterator[A]): Source[A, NotUsed]                                      = db.source(query)
+  override def source[A, B](body: Graph => (Iterator[A], B)): (Source[A, NotUsed], B)                          = db.source(body)
   override def currentTransactionId(graph: Graph): AnyRef                                                      = db.currentTransactionId(graph)
   override def addCallback(callback: () => Try[Unit])(implicit graph: Graph): Unit                             = db.addCallback(callback)
   override def takeCallbacks(graph: Graph): List[() => Try[Unit]]                                              = db.takeCallbacks(graph)

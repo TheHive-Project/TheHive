@@ -3,18 +3,18 @@ package org.thp.thehive.controllers.v0
 import java.io.File
 import java.nio.file.{Path, Files => JFiles}
 
+import akka.stream.Materializer
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
+import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.dto.v0.OutputTag
+import org.thp.thehive.services.TagSrv
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
 import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
-
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.dto.v0.OutputTag
-import org.thp.thehive.services.TagSrv
 
 class TagCtrlTest extends PlaySpecification with TestAppBuilder {
   "tag controller" should {
@@ -166,7 +166,7 @@ class TagCtrlTest extends PlaySpecification with TestAppBuilder {
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      val l = contentAsJson(result).as[List[OutputTag]]
+      val l = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[List[OutputTag]]
 
       l.length shouldEqual 2
       l.find(_.value.get == "testDomain") must beSome

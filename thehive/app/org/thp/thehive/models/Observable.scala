@@ -41,6 +41,6 @@ case class RichObservable(
   def sighted: Boolean           = observable.sighted
 }
 
-@DefineIndex(IndexType.unique, "data")
+@DefineIndex(IndexType.tryUnique, "data")
 @VertexEntity
 case class Data(data: String)

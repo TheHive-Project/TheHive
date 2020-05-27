@@ -47,7 +47,7 @@ class TagSrv @Inject() (appConfig: ApplicationConfig)(implicit db: Database) ext
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     val tag = parseString(tagName)
-    get(tag).getOrFail().recoverWith {
+    get(tag).getOrFail("Tag").recoverWith {
       case _ if autoCreate => create(tag)
     }
   }

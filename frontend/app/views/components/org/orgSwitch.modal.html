@@ -1,0 +1,30 @@
+<form ng-submit="$modal.confirm()">
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title"><i class="fa fa-random"></i> Switch organisation</h3>
+    </div>
+    <div class="modal-body">
+        <p class="mb-xs">
+            Please select the organisation you want to switch to:
+        </p>
+
+        <div class="form-group has-feedback has-feedback-left" ng-if="$dialog.currentUser.organisations.length > 5">
+            <input type="text" class="input input-lg form-control" placeholder="Filter organisations" ng-model="$modal.filter" autocomplete="off">
+            <i class="form-control-feedback glyphicon glyphicon-search"></i>
+        </div>
+
+
+        <ul class="nav nav-pills nav-stacked">
+            <div class="list-group">
+                <a href ng-click="$dialog.selectOrg(item.organisation)" class="list-group-item"
+                    ng-class="{'active': $dialog.currentUser.organisation === item.organisation}"
+                    ng-repeat="item in $dialog.currentUser.organisations | filter:$modal.filter track by $index">
+                    <h4 class="list-group-item-heading">{{item.organisation}} <em class="pull-right" ng-if="$dialog.currentUser.organisation === item.organisation">(current)</em></h4>
+                    <p class="list-group-item-text">Profile: <strong>{{item.profile}}</strong></p>
+                </a>
+            </div>
+        </ul>
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="$dialog.cancel()" type="button">Cancel</button>
+    </div>
+</form>

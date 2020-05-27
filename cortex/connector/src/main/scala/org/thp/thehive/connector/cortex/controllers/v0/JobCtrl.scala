@@ -44,7 +44,7 @@ class JobCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, jobSteps, authContext) => jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob(authContext))
   )
-  override val outputQuery: Query = Query.output[RichJob]()
+  override val outputQuery: Query = Query.outputWithContext[RichJob, JobSteps]((jobSteps, authContext) => jobSteps.richJob(authContext))
 
   def get(jobId: String): Action[AnyContent] =
     entrypoint("get job")
@@ -69,8 +69,8 @@ class JobCtrl @Inject() (
           db.roTransaction { implicit graph =>
               val artifactId: String = request.body("artifactId")
               for {
-                o <- observableSrv.getByIds(artifactId).richObservable.getOrFail()
-                c <- observableSrv.getByIds(artifactId).`case`.getOrFail()
+                o <- observableSrv.getByIds(artifactId).richObservable.getOrFail("Observable")
+                c <- observableSrv.getByIds(artifactId).`case`.getOrFail("Case")
               } yield (o, c)
             }
             .fold(error => errorHandler.onServerError(request, error), {

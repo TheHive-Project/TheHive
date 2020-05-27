@@ -27,7 +27,7 @@ case class TestTask(
 )
 
 object TestTask {
-  def apply(richTask: RichTask): TestTask = apply(richTask.toOutput)
+  def apply(richTask: RichTask): TestTask = apply(richTask.toValue)
 
   def apply(outputTask: OutputTask): TestTask =
     outputTask.into[TestTask].transform
@@ -37,7 +37,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
   "task controller" should {
     "list available tasks and get one task" in testApp { app =>
       val taskId = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail().get
+        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail("Task").get
       }
       val request    = FakeRequest("GET", s"/api/case/task/$taskId").withHeaders("user" -> "certuser@thehive.local")
       val result     = app[TaskCtrl].get(taskId)(request)
@@ -61,7 +61,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "patch a task" in testApp { app =>
       val taskId = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail().get
+        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail("Task").get
       }
       val request = FakeRequest("PATCH", s"/api/case/task/$taskId")
         .withHeaders("user" -> "certuser@thehive.local")
@@ -83,7 +83,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val newTask = app[Database]
         .roTransaction { implicit graph =>
-          app[TaskSrv].initSteps.has("title", "new title task 1").richTask.getOrFail()
+          app[TaskSrv].initSteps.has("title", "new title task 1").richTask.getOrFail("Task")
         }
         .map(TestTask.apply)
         .map(_.copy(startDate = None))
@@ -132,7 +132,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "unset task owner" in testApp { app =>
       val taskId = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail().get
+        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail("Task").get
       }
       val request = FakeRequest("PATCH", s"/api/case/task/$taskId")
         .withHeaders("user" -> "certuser@thehive.local")
@@ -143,7 +143,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val newTask = app[Database]
         .roTransaction { implicit graph =>
-          app[TaskSrv].initSteps.has("title", "case 1 task 1").richTask.getOrFail()
+          app[TaskSrv].initSteps.has("title", "case 1 task 1").richTask.getOrFail("Task")
         }
         .map(TestTask.apply)
 
@@ -163,7 +163,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get tasks stats" in testApp { app =>
-      val case1 = app[Database].roTransaction(graph => app[CaseSrv].initSteps(graph).has("title", "case#1").getOrFail())
+      val case1 = app[Database].roTransaction(graph => app[CaseSrv].initSteps(graph).has("title", "case#1").getOrFail("Case"))
 
       case1 must beSuccessfulTry
 

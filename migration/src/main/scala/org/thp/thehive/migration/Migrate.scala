@@ -90,8 +90,10 @@ object Migrate extends App with MigrationOps {
     val output = th4.Output(Configuration(config.getConfig("output").withFallback(config)))
     val filter = Filter.fromConfig(config.getConfig("input.filter"))
 
-    val process = migrate(input, output, filter)
-    Await.ready(process, Duration.Inf)
+    val process        = migrate(input, output, filter)
+    val migrationStats = Await.result(process, Duration.Inf)
+    println("Migration finished")
+    println(migrationStats)
     System.exit(0)
   }
 }

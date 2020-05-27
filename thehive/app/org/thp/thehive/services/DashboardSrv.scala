@@ -31,7 +31,7 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
   def create(dashboard: Dashboard)(implicit graph: Graph, authContext: AuthContext): Try[RichDashboard] =
     for {
       createdDashboard <- createEntity(dashboard)
-      user             <- userSrv.current.getOrFail()
+      user             <- userSrv.current.getOrFail("User")
       _                <- dashboardUserSrv.create(DashboardUser(), createdDashboard, user)
       _                <- auditSrv.dashboard.create(createdDashboard, RichDashboard(createdDashboard, Map.empty).toJson)
     } yield RichDashboard(createdDashboard, Map.empty)
@@ -44,7 +44,7 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
       case (dashboardSteps, updatedFields) =>
         dashboardSteps
           .newInstance()
-          .getOrFail()
+          .getOrFail("Dashboard")
           .flatMap(auditSrv.dashboard.update(_, updatedFields))
     }
 

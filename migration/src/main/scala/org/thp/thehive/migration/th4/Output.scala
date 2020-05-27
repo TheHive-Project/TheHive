@@ -77,6 +77,8 @@ object Output {
               bindActor[DummyActor]("notification-actor")
               bindActor[DummyActor]("config-actor")
               bindActor[DummyActor]("cortex-actor")
+              bindActor[DummyActor]("data-dedup-actor")
+              bindActor[DummyActor]("case-dedup-actor")
               bind[AuditSrv].to[NoAuditSrv]
               bind[Database].to[JanusDatabase]
               //    bind[Database].to[OrientDatabase]
@@ -206,7 +208,7 @@ class Output @Inject() (
             for {
               organisation <- getOrganisation(organisationName)
               profile      <- profileSrv.getOrFail(profileName)
-              _            <- userSrv.add(createdUser, organisation, profile)
+              _            <- userSrv.addUserToOrganisation(createdUser, organisation, profile)
             } yield ()
         }
       } yield IdMapping(inputUser.metaData.id, createdUser._id)
@@ -277,8 +279,10 @@ class Output @Inject() (
         _                <- caseTemplateSrv.addTags(richCaseTemplate.caseTemplate, inputCaseTemplate.tags)
         _ = inputCaseTemplate.customFields.foreach {
           case (name, value, order) =>
-            caseTemplateSrv.setOrCreateCustomField(richCaseTemplate.caseTemplate, name, value, order).getOrElse {
-              logger.warn(s"Add custom field $name:$value to case template ${richCaseTemplate.name} failure")
+            caseTemplateSrv.setOrCreateCustomField(richCaseTemplate.caseTemplate, name, value, order).recoverWith {
+              case error =>
+                logger.warn(s"Add custom field `$name:${value.getOrElse("<not set>")}` to case template `${richCaseTemplate.name}` fails: $error")
+                Success(())
             }
         }
 
@@ -421,7 +425,11 @@ class Output @Inject() (
     }
 
   override def alertExists(inputAlert: InputAlert): Boolean = db.roTransaction { implicit graph =>
-    alertSrv.initSteps.getBySourceId(inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef).exists()
+    alertSrv
+      .initSteps
+      .getBySourceId(inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef)
+      .filter(_.organisation.get(inputAlert.organisation))
+      .exists()
   }
 
   override def createAlert(inputAlert: InputAlert): Try[IdMapping] = authTransaction(inputAlert.metaData.createdBy) {

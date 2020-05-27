@@ -55,7 +55,7 @@ class Properties @Inject() (
           .custom { (_, value, vertex, _, graph, authContext) =>
             alertSrv
               .get(vertex)(graph)
-              .getOrFail()
+              .getOrFail("Alert")
               .flatMap(alert => alertSrv.updateTagNames(alert, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
@@ -117,7 +117,7 @@ class Properties @Inject() (
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
-              .getOrFail()
+              .getOrFail("Case")
               .flatMap(`case` => caseSrv.updateTagNames(`case`, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
@@ -129,8 +129,8 @@ class Properties @Inject() (
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string.optional)(_.select(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
         for {
-          c    <- caseSrv.get(vertex)(graph).getOrFail()
-          user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
+          c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
+          user <- login.map(userSrv.get(_)(graph).getOrFail("User")).flip
           _ <- user match {
             case Some(u) => caseSrv.assign(c, u)(graph, authContext)
             case None    => caseSrv.unassign(c)(graph, authContext)
@@ -151,7 +151,7 @@ class Properties @Inject() (
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseTemplateSrv
               .get(vertex)(graph)
-              .getOrFail()
+              .getOrFail("CaseTemplate")
               .flatMap(caseTemplate => caseTemplateSrv.updateTagNames(caseTemplate, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }

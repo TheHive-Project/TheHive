@@ -2,24 +2,23 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
-import scala.io.Source
-
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
-
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv}
+import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
+import org.thp.thehive.connector.cortex.models.{Job, JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.triggers.JobFinished
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
+
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+import scala.io.Source
 
 class JobSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all).authContext
@@ -29,8 +28,8 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexClient, TestCortexClientProvider]
       .bind[Connector, TestConnector]
+      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
 
-  //  def shutdownActorSystem(app: AppBuilder): Future[Terminated] = app.app.actorSystem.terminate()
   "job service" should {
     "handle creation and then finished job" in testApp { app =>
       val job = Job(
@@ -54,7 +53,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
 
       val createdJobTry = app[Database].tryTransaction { implicit graph =>
         for {
-          observable <- app[ObservableSrv].initSteps.has("message", "hello world").getOrFail()
+          observable <- app[ObservableSrv].initSteps.has("message", "hello world").getOrFail("Observable")
           createdJob <- app[JobSrv].create(job, observable)
         } yield createdJob
       }
@@ -67,12 +66,14 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
 
         app[Database].roTransaction { implicit graph =>
           app[JobSrv].get(updatedJob).observable.has("message", "hello world").exists() must beTrue
-          app[JobSrv].get(updatedJob).reportObservables.toList.length must equalTo(2)
+          app[JobSrv].get(updatedJob).reportObservables.toList.length must equalTo(2).updateMessage { s =>
+            s"$s\nreport observables are : ${app[JobSrv].get(updatedJob).reportObservables.richObservable.toList.mkString("\n")}"
+          }
 
           for {
-            audit        <- app[AuditSrv].initSteps.has("objectId", updatedJob._id).getOrFail()
-            organisation <- app[OrganisationSrv].get("cert").getOrFail()
-            user         <- app[UserSrv].initSteps.getByName("certuser@thehive.local").getOrFail()
+            audit        <- app[AuditSrv].initSteps.has("objectId", updatedJob._id).getOrFail("Audit")
+            organisation <- app[OrganisationSrv].get("cert").getOrFail("Organisation")
+            user         <- app[UserSrv].initSteps.getByName("certuser@thehive.local").getOrFail("User")
           } yield new JobFinished().filter(audit, Some(updatedJob), organisation, Some(user))
         } must beASuccessfulTry(true)
       }
@@ -81,7 +82,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
     "submit a job" in testApp { app =>
       val x = for {
         observable <- app[Database].roTransaction { implicit graph =>
-          app[ObservableSrv].initSteps.has("message", "Some weird domain").richObservable.getOrFail()
+          app[ObservableSrv].initSteps.has("message", "Some weird domain").richObservable.getOrFail("Observable")
         }
         case0 <- app[Database].roTransaction { implicit graph =>
           app[CaseSrv].getOrFail("#1")

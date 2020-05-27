@@ -1,15 +1,17 @@
 package org.thp.thehive
 
-import play.api.libs.concurrent.AkkaGuiceSupport
+import akka.actor.{ActorRef, PoisonPill}
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{HadoopStorageSrv, S3StorageSrv}
-import org.thp.thehive.services.TOTPAuthSrvProvider
-import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, MattermostProvider, NotifierProvider, WebhookProvider}
+import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
+import org.thp.thehive.services.{CaseDedupActor, CaseDedupActorProvider, DataDedupActor, DataDedupActorProvider, TOTPAuthSrvProvider}
+import play.api.libs.concurrent.AkkaGuiceSupport
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
@@ -18,12 +20,11 @@ import org.thp.thehive.services.notification.NotificationActor
 import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
 //import org.thp.scalligraph.orientdb.OrientDatabase
-import play.api.routing.{Router => PlayRouter}
-import play.api.{Configuration, Environment, Logger}
-
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor => TheHiveQueryExecutorV0}
 import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
+import play.api.routing.{Router => PlayRouter}
+import play.api.{Configuration, Environment, Logger}
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
   lazy val logger: Logger = Logger(getClass)
@@ -86,7 +87,38 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     bindActor[ConfigActor]("config-actor")
     bindActor[NotificationActor]("notification-actor")
 
+    bindActor[DataDedupActor](
+      "data-dedup-actor-singleton",
+      props =>
+        ClusterSingletonManager
+          .props(
+            singletonProps = props,
+            terminationMessage = PoisonPill,
+            settings = ClusterSingletonManagerSettings(configuration.get[Configuration]("akka.cluster.singleton").underlying)
+          )
+    )
+    bind[ActorRef]
+      .annotatedWithName("data-dedup-actor")
+      .toProvider[DataDedupActorProvider]
+      .asEagerSingleton()
+
+    bindActor[CaseDedupActor](
+      "case-dedup-actor-singleton",
+      props =>
+        ClusterSingletonManager
+          .props(
+            singletonProps = props,
+            terminationMessage = PoisonPill,
+            settings = ClusterSingletonManagerSettings(configuration.get[Configuration]("akka.cluster.singleton").underlying)
+          )
+    )
+    bind[ActorRef]
+      .annotatedWithName("case-dedup-actor")
+      .toProvider[CaseDedupActorProvider]
+      .asEagerSingleton()
+
     bind[SchemaUpdater].asEagerSingleton()
+    bind[ClusterSetup].asEagerSingleton()
     ()
   }
 }

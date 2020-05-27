@@ -71,7 +71,7 @@ class Properties @Inject() (
           .custom { (_, value, vertex, _, graph, authContext) =>
             alertSrv
               .get(vertex)(graph)
-              .getOrFail()
+              .getOrFail("Alert")
               .flatMap(alert => alertSrv.updateTagNames(alert, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
@@ -107,7 +107,7 @@ class Properties @Inject() (
           } yield Json.obj(s"customField.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {
-            c   <- alertSrv.get(vertex)(graph).getOrFail()
+            c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
             cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
             _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
           } yield Json.obj("customFields" -> values)
@@ -142,7 +142,7 @@ class Properties @Inject() (
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
-              .getOrFail()
+              .getOrFail("Case")
               .flatMap(`case` => caseSrv.updateTagNames(`case`, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
@@ -154,8 +154,8 @@ class Properties @Inject() (
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("owner", UniMapping.string.optional)(_.select(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
         for {
-          c    <- caseSrv.get(vertex)(graph).getOrFail()
-          user <- login.map(userSrv.get(_)(graph).getOrFail()).flip
+          c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
+          user <- login.map(userSrv.get(_)(graph).getOrFail("User")).flip
           _ <- user match {
             case Some(u) => caseSrv.assign(c, u)(graph, authContext)
             case None    => caseSrv.unassign(c)(graph, authContext)
@@ -165,7 +165,7 @@ class Properties @Inject() (
       .property("resolutionStatus", UniMapping.string.optional)(_.select(_.resolutionStatus.value).custom {
         (_, resolutionStatus, vertex, _, graph, authContext) =>
           for {
-            c <- caseSrv.get(vertex)(graph).getOrFail()
+            c <- caseSrv.get(vertex)(graph).getOrFail("Case")
             _ <- resolutionStatus match {
               case Some(s) => caseSrv.setResolutionStatus(c, s)(graph, authContext)
               case None    => caseSrv.unsetResolutionStatus(c)(graph, authContext)
@@ -200,7 +200,7 @@ class Properties @Inject() (
           } yield Json.obj(s"customField.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {
-            c   <- caseSrv.get(vertex)(graph).getOrFail()
+            c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
             cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
             _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
           } yield Json.obj("customFields" -> values)
@@ -232,7 +232,7 @@ class Properties @Inject() (
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseTemplateSrv
               .get(vertex)(graph)
-              .getOrFail()
+              .getOrFail("CaseTemplate")
               .flatMap(caseTemplate => caseTemplateSrv.updateTagNames(caseTemplate, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
@@ -253,7 +253,7 @@ class Properties @Inject() (
           } yield Json.obj(s"customFields.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {
-            c   <- caseTemplateSrv.get(vertex)(graph).getOrFail()
+            c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
             cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
             _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
           } yield Json.obj("customFields" -> values)
@@ -293,19 +293,19 @@ class Properties @Inject() (
         _.select(_.organisation.fold.map(d => if (d.isEmpty) "Private" else "Shared")).custom { // TODO replace by choose step
           case (_, "Shared", vertex, _, graph, authContext) =>
             for {
-              dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail()
+              dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
             } yield Json.obj("status" -> "Shared")
 
           case (_, "Private", vertex, _, graph, authContext) =>
             for {
-              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail()
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _ <- dashboardSrv.unshare(d, authContext.organisation)(graph, authContext)
             } yield Json.obj("status" -> "Private")
 
           case (_, "Deleted", vertex, _, graph, authContext) =>
             for {
-              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail()
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _ <- dashboardSrv.remove(d)(graph, authContext)
             } yield Json.obj("status" -> "Deleted")
 
@@ -377,10 +377,10 @@ class Properties @Inject() (
       .property("description", UniMapping.string.optional)(_.field.updatable)
       .property("status", UniMapping.enum(TaskStatus))(_.field.custom { (_, value, vertex, _, graph, authContext) =>
         for {
-          task <- taskSrv.get(vertex)(graph).getOrFail()
+          task <- taskSrv.get(vertex)(graph).getOrFail("Task")
           user <- userSrv
             .current(graph, authContext)
-            .getOrFail()
+            .getOrFail("User")
           _ <- taskSrv.updateStatus(task, user, value)(graph, authContext)
         } yield Json.obj("status" -> value)
       })
@@ -394,7 +394,7 @@ class Properties @Inject() (
         _.select(_.user.login)
           .custom { (_, login: Option[String], vertex, _, graph, authContext) =>
             for {
-              task <- taskSrv.get(vertex)(graph).getOrFail()
+              task <- taskSrv.get(vertex)(graph).getOrFail("Task")
               user <- login.map(userSrv.getOrFail(_)(graph)).flip
               _ <- user match {
                 case Some(u) => taskSrv.assign(task, u)(graph, authContext)

@@ -32,6 +32,7 @@
             };
 
             $scope.canChangePass = appConfig.config.capabilities.indexOf('changePassword') !== -1;
+            $scope.canChangeMfa = appConfig.config.capabilities.indexOf('mfa') !== -1;
 
 
             $scope.updateBasicInfo = function(form) {

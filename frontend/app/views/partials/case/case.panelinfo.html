@@ -60,6 +60,8 @@
             </strong>
         </span>
 
+        <!-- Right side -->
+
         <div class="pull-right" if-permission="manageCase" allowed="{{userPermissions}}">
             <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
                 <span class="mr-xxs text-primary">|</span>
@@ -132,17 +134,16 @@
             </span>
 
             <span class="ml-xxs text-primary pull-right">|</span>
+        </div>
 
+        <div class="pull-right">
             <span class="ml-xxs pull-right">
                 <a href ui-sref="app.case.sharing({caseId: caze.id})" class="noline">
                     <i class="fa fa-users"></i>
                     Sharing ({{caze.stats.shareCount || 0}})
                 </a>
             </span>
-
         </div>
-
-        <!-- Right side -->
     </div>
 </div>
 

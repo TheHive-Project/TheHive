@@ -1,20 +1,19 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.reflect.runtime.{currentMirror => rm, universe => ru}
-
 import javax.inject.{Inject, Singleton}
-import org.scalactic.Accumulation._
 import org.scalactic.Good
+import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.{FSeq, FieldsParser}
+import org.thp.scalligraph.controllers.FieldsParser
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.query.InputFilter.{and, not, or}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
-import org.thp.thehive.connector.cortex.services.JobSteps
+import org.thp.thehive.connector.cortex.services.{JobSteps, RichObservableSteps}
 import org.thp.thehive.controllers.v0._
 import org.thp.thehive.services.ObservableSteps
+
+import scala.reflect.runtime.{universe => ru}
 
 @Singleton
 class CortexQueryExecutor @Inject() (
@@ -27,8 +26,7 @@ class CortexQueryExecutor @Inject() (
   override lazy val publicProperties: List[PublicProperty[_, _]] =
     jobCtrl.publicProperties ++ reportCtrl.publicProperties ++ actionCtrl.publicProperties
   override lazy val queries: Seq[ParamQuery[_]] =
-    new CortexParentFilterQuery(db, publicProperties) ::
-      actionCtrl.initialQuery ::
+    actionCtrl.initialQuery ::
       actionCtrl.pageQuery ::
       actionCtrl.outputQuery ::
       jobCtrl.initialQuery ::
@@ -38,11 +36,41 @@ class CortexQueryExecutor @Inject() (
       reportCtrl.pageQuery ::
       reportCtrl.outputQuery ::
       Nil
-  override lazy val filterQuery    = new CortexParentFilterQuery(db, publicProperties)
+
+  val childTypes: PartialFunction[(ru.Type, String), ru.Type] = {
+    case (tpe, "case_artifact_job") if SubType(tpe, ru.typeOf[ObservableSteps]) => ru.typeOf[ObservableSteps]
+  }
+  val parentTypes: PartialFunction[ru.Type, ru.Type] = {
+    case tpe if SubType(tpe, ru.typeOf[JobSteps]) => ru.typeOf[ObservableSteps]
+  }
+
+  override val customFilterQuery: FilterQuery = FilterQuery(db, publicProperties) { (tpe, globalParser) =>
+    FieldsParser("parentChildFilter") {
+      case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) if parentTypes.isDefinedAt(tpe) =>
+        Good(new CortexParentIdInputFilter(parentId))
+      case (path, FObjOne("_parent", ParentQueryFilter(_, parentFilterField))) if parentTypes.isDefinedAt(tpe) =>
+        globalParser(parentTypes(tpe)).apply(path, parentFilterField).map(query => new CortexParentQueryInputFilter(query))
+      case (path, FObjOne("_child", ChildQueryFilter(childType, childQueryField))) if childTypes.isDefinedAt((tpe, childType)) =>
+        globalParser(childTypes((tpe, childType))).apply(path, childQueryField).map(query => new CortexChildQueryInputFilter(childType, query))
+    }
+  }
+
   override val version: (Int, Int) = 0 -> 0
   val job: QueryCtrl               = queryCtrlBuilder.apply(jobCtrl, this)
   val report: QueryCtrl            = queryCtrlBuilder.apply(reportCtrl, this)
   val action: QueryCtrl            = queryCtrlBuilder.apply(actionCtrl, this)
+}
+
+class CortexParentIdInputFilter(parentId: String) extends InputFilter {
+  override def apply[S <: BaseTraversal](
+      db: Database,
+      publicProperties: List[PublicProperty[_, _]],
+      stepType: ru.Type,
+      step: S,
+      authContext: AuthContext
+  ): S =
+    if (stepType =:= ru.typeOf[JobSteps]) step.asInstanceOf[JobSteps].filter(_.observable.getByIds(parentId)).asInstanceOf[S]
+    else throw BadRequestError(s"$stepType hasn't parent")
 }
 
 /**
@@ -60,37 +88,18 @@ class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilte
   ): S =
     if (stepType =:= ru.typeOf[JobSteps])
       step.filter(t => parentFilter.apply(db, publicProperties, ru.typeOf[ObservableSteps], t.asInstanceOf[JobSteps].observable, authContext))
-    else ???
+    else throw BadRequestError(s"$stepType hasn't parent")
 }
 
-/**
-  * Query parser for parent traversing heavily relaying on the v0/TheHiveQueryExecutor ParentFilterQuery and dependencies
-  *
-  * @param publicProperties the models properties
-  */
-class CortexParentFilterQuery(db: Database, publicProperties: List[PublicProperty[_, _]]) extends FilterQuery(db, publicProperties) {
-  override val name: String = "filter"
-
-  override def paramParser(tpe: ru.Type, properties: Seq[PublicProperty[_, _]]): FieldsParser[InputFilter] =
-    FieldsParser("parentIdFilter") {
-      case (path, FObjOne("_and", FSeq(fields))) =>
-        fields.zipWithIndex.validatedBy { case (field, index) => paramParser(tpe, properties)((path :/ "_and").toSeq(index), field) }.map(and)
-      case (path, FObjOne("_or", FSeq(fields))) =>
-        fields.zipWithIndex.validatedBy { case (field, index) => paramParser(tpe, properties)((path :/ "_or").toSeq(index), field) }.map(or)
-      case (path, FObjOne("_not", field))                       => paramParser(tpe, properties)(path :/ "_not", field).map(not)
-      case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) => Good(new ParentIdInputFilter(parentId))
-      case (path, FObjOne("_parent", ParentQueryFilter(_, queryField))) =>
-        paramParser(tpe, properties).apply(path, queryField).map(query => new CortexParentQueryInputFilter(query))
-    }.orElse(InputFilter.fieldsParser(tpe, properties))
-
-  override def checkFrom(t: ru.Type): Boolean = SubType(t, ru.typeOf[JobSteps])
-  override def toType(t: ru.Type): ru.Type    = t
-  override def apply(inputFilter: InputFilter, from: Any, authContext: AuthContext): Any =
-    inputFilter(
-      db,
-      publicProperties,
-      rm.classSymbol(from.getClass).toType,
-      from.asInstanceOf[BaseVertexSteps],
-      authContext
-    )
+class CortexChildQueryInputFilter(childType: String, childFilter: InputFilter) extends InputFilter {
+  override def apply[S <: BaseVertexSteps](
+      db: Database,
+      publicProperties: List[PublicProperty[_, _]],
+      stepType: ru.Type,
+      step: S,
+      authContext: AuthContext
+  ): S =
+    if (stepType =:= ru.typeOf[ObservableSteps] && childType == "case_artifact_job")
+      step.filter(t => childFilter.apply(db, publicProperties, ru.typeOf[JobSteps], t.asInstanceOf[ObservableSteps].jobs, authContext))
+    else throw BadRequestError(s"$stepType hasn't child of type $childType")
 }

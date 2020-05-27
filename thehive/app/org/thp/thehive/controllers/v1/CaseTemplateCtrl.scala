@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -14,6 +10,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCaseTemplate
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
 import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class CaseTemplateCtrl @Inject() (
@@ -38,10 +37,8 @@ class CaseTemplateCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
-  override val outputQuery: Query = Query.output[RichCaseTemplate]()
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
-  )
+  override val outputQuery: Query               = Query.output[RichCaseTemplate, CaseTemplateSteps](_.richCaseTemplate)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
   def create: Action[AnyContent] =
     entrypoint("create case template")
@@ -63,7 +60,7 @@ class CaseTemplateCtrl @Inject() (
           .get(caseTemplateNameOrId)
           .visible
           .richCaseTemplate
-          .getOrFail()
+          .getOrFail("CaseTemplate")
           .map(richCaseTemplate => Results.Ok(richCaseTemplate.toJson))
       }
 

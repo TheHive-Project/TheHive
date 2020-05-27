@@ -95,16 +95,22 @@
                 });
             };
 
-            $scope.sortBy = function(field) {
-                if($scope.artifacts.sort.substr(1) !== field) {
-                    $scope.artifacts.sort = '+' + field;
+            $scope.sortByField = function(field) {
+                var context = this.filtering.context;
+                var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
+                var sort = null;
+
+                if(currentSort.substr(1) !== field) {
+                    sort = ['+' + field];
                 } else {
-                    $scope.artifacts.sort = ($scope.artifacts.sort === '+' + field) ? '-'+field : '+'+field;
+                    sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
                 }
 
+                $scope.artifacts.sort = sort;
                 $scope.artifacts.update();
+                $scope.filtering.setSort(sort);
             };
-
+            
             $scope.keys = function(obj) {
                 return _.keys(obj || {});
             };
@@ -191,7 +197,7 @@
                                 $scope.analyzersList.selected[analyzer.name] = false;
                             });
                         });
-                }                
+                }
             };
 
             //

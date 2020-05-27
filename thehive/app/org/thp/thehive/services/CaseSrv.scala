@@ -2,8 +2,10 @@ package org.thp.thehive.services
 
 import java.util.{List => JList, Set => JSet}
 
+import akka.actor.{ActorRef, ActorSystem}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
@@ -18,6 +20,7 @@ import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -32,7 +35,8 @@ class CaseSrv @Inject() (
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
-    impactStatusSrv: ImpactStatusSrv
+    impactStatusSrv: ImpactStatusSrv,
+    @Named("case-dedup-actor") caseDedupActor: ActorRef
 )(implicit db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
@@ -43,6 +47,12 @@ class CaseSrv @Inject() (
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
+
+  override def createEntity(e: Case)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
+    super.createEntity(e).map { `case` =>
+      caseDedupActor ! DedupActor.EntityAdded
+      `case`
+    }
 
   def create(
       `case`: Case,
@@ -429,6 +439,9 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def organisations: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].inTo[OrganisationShare])
 
+  def organisations(permission: Permission) =
+    new OrganisationSteps(raw.inTo[ShareCase].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
+
   def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
 
   // Warning: this method doesn't generate audit log
@@ -593,5 +606,41 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .outTo[ShareObservable]
     )
 
+  def assignableUsers(implicit authContext: AuthContext): UserSteps =
+    organisations(Permissions.manageCase)
+      .visible
+      .users(Permissions.manageCase)
+      .dedup
+
   def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])
+}
+
+class CaseDedupActor @Inject() (val db: Database, val service: CaseSrv) extends DedupActor[Case] {
+  override val min: FiniteDuration = 5.seconds
+  override val max: FiniteDuration = 10.seconds
+
+  override def resolve(entities: List[Case with Entity])(implicit graph: Graph): Try[Unit] = {
+    val nextNumber = service.nextCaseNumber
+    entities
+      .sorted(createdFirst)
+      .tail
+      .flatMap(service.get(_).raw.headOption())
+      .zipWithIndex
+      .foreach {
+        case (vertex, index) =>
+          db.setSingleProperty(vertex, "number", nextNumber + index, UniMapping.int)
+      }
+    Success(())
+  }
+}
+
+class CaseDedupActorProvider @Inject() (system: ActorSystem, @Named("case-dedup-actor-singleton") CaseDedupActorSingleton: ActorRef)
+    extends Provider[ActorRef] {
+  override def get(): ActorRef =
+    system.actorOf(
+      ClusterSingletonProxy.props(
+        singletonManagerPath = CaseDedupActorSingleton.path.toStringWithoutAddress,
+        settings = ClusterSingletonProxySettings(system)
+      )
+    )
 }

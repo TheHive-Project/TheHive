@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ListSrv, NotificationSrv, TagSrv, params) {
+        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ObservableTypeSrv, NotificationSrv, TagSrv, params) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
@@ -29,13 +29,14 @@
             });
 
             $scope.getDataTypeList = function() {
-                ListSrv.query({
-                    listId: 'list_artifactDataType'
-                }, function(data) {
-                    $scope.types = _.filter(_.values(data), _.isString).sort();
-                }, function(response) {
-                    NotificationSrv.error('ObservableCreationCtrl', response.data, response.status);
-                });
+
+                ObservableTypeSrv.list()
+                    .then(function(response) {
+                        $scope.types = _.pluck(response.data, 'name').sort();
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('ObservableCreationCtrl', err.data, err.status);
+                    });
             };
             $scope.getDataTypeList();
             $scope.updateTlp = function(tlp) {

@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -13,6 +9,9 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.RichAudit
 import org.thp.thehive.services.{AuditSrv, AuditSteps, LogSteps}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class AuditCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Properties, auditSrv: AuditSrv) extends QueryableCtrl {
@@ -34,10 +33,7 @@ class AuditCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Pro
       FieldsParser[OutputParam],
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
-  val outputQuery: Query = Query.output[RichAudit]()
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[AuditSteps, List[RichAudit]]("toList", (auditSteps, _) => auditSteps.richAudit.toList)
-  )
+  override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
 
   def flow(): Action[AnyContent] =
     entrypoint("audit flow")

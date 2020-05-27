@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.{Success, Try}
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -15,6 +11,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
 import org.thp.thehive.models.{Permissions, RichCase, User}
 import org.thp.thehive.services._
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseCtrl @Inject() (
@@ -52,10 +51,12 @@ class CaseCtrl @Inject() (
           }
     }
   )
-  override val outputQuery: Query = Query.output[RichCase]()
+  override val outputQuery: Query = Query.outputWithContext[RichCase, CaseSteps]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
-    Query[CaseSteps, List[RichCase]]("toList", (caseSteps, authContext) => caseSteps.richCase(authContext).toList)
+    Query[CaseSteps, ObservableSteps]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
+    Query[CaseSteps, UserSteps]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
+    Query[CaseSteps, OrganisationSteps]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext))
   )
 
   def create: Action[AnyContent] =
@@ -68,9 +69,9 @@ class CaseCtrl @Inject() (
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
         for {
-          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail()).flip
+          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
           customFields = inputCase.customFieldValue.map(cf => cf.name -> cf.value).toMap
-          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail()
+          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail("Organisation")
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
           richCase <- caseSrv.create(
@@ -92,7 +93,7 @@ class CaseCtrl @Inject() (
           .get(caseIdOrNumber)
           .visible
           .richCase
-          .getOrFail()
+          .getOrFail("Case")
           .map(richCase => Results.Ok(richCase.toJson))
       }
 
@@ -126,7 +127,7 @@ class CaseCtrl @Inject() (
             caseSrv
               .get(_)
               .visible
-              .getOrFail()
+              .getOrFail("Case")
           )
           .map { cases =>
             val mergedCase = caseSrv.merge(cases)

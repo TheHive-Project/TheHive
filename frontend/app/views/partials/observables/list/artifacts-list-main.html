@@ -27,7 +27,7 @@
                 <th style="width: 15px"></th>
                 <th style="width: 15px"></th>
                 <th style="width: 100px">
-                  <a href class="text-default" ng-click="sortBy('dataType')">
+                  <a href class="text-default" ng-click="sortByField('dataType')">
                     Type
                     <i ng-show="artifacts.sort !== '+dataType' && artifacts.sort !== '-dataType'" class="fa fa-sort"></i>
                     <i ng-show="artifacts.sort === '+dataType'" class="fa fa-caret-up"></i>
@@ -35,7 +35,7 @@
                   </a>
                 </th>
                 <th>
-                  <a href class="text-default" ng-click="sortBy('data')">
+                  <a href class="text-default" ng-click="sortByField('data')">
                     Value/Filename
                     <i ng-show="artifacts.sort !== '+data' && artifacts.sort !== '-data'" class="fa fa-sort"></i>
                     <i ng-show="artifacts.sort === '+data'" class="fa fa-caret-up"></i>
@@ -43,7 +43,7 @@
                   </a>
                 </th>
                 <th style="width: 120px">
-                  <a href class="text-default" ng-click="sortBy('startDate')">
+                  <a href class="text-default" ng-click="sortByField('startDate')">
                     Date Added
                     <i ng-show="artifacts.sort !== '+startDate' && artifacts.sort !== '-startDate'" class="fa fa-sort"></i>
                     <i ng-show="artifacts.sort === '+startDate'" class="fa fa-caret-up"></i>

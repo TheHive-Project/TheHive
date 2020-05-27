@@ -34,11 +34,11 @@ object InputObservable {
 
 case class OutputObservable(
     _id: String,
+    _type: String,
     _createdBy: String,
     _updatedBy: Option[String] = None,
     _createdAt: Date,
     _updatedAt: Option[Date] = None,
-    _type: String,
     dataType: String,
     data: Option[String],
     startDate: Date,

@@ -57,6 +57,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       val createdAlert = contentAsJson(result).as[OutputAlert]
       val expected = OutputAlert(
         _id = createdAlert._id,
+        _type = "Alert",
         _createdBy = createdAlert._createdBy,
         _updatedBy = None,
         _createdAt = createdAlert._createdAt,
@@ -100,6 +101,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       val createdAlert = contentAsJson(result).as[OutputAlert]
       val expected = OutputAlert(
         _id = createdAlert._id,
+        _type = "Alert",
         _createdBy = createdAlert._createdBy,
         _updatedBy = None,
         _createdAt = createdAlert._createdAt,

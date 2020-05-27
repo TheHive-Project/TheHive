@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
-
 import org.specs2.mock.Mockito
 import org.thp.scalligraph.controllers.{Entrypoint, Field}
 import org.thp.scalligraph.models.Database
@@ -19,6 +16,8 @@ import org.thp.thehive.services.{
   TaskSrv,
   UserSrv
 }
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
 
 class QueryTest extends PlaySpecification with Mockito {
 

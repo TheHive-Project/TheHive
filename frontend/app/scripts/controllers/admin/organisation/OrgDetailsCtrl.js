@@ -2,13 +2,14 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('OrgDetailsCtrl',
-        function($scope, $q, $uibModal, OrganisationSrv, NotificationSrv, UserSrv, organisation, users, templates, fields) {
+        function($scope, $q, $uibModal, OrganisationSrv, NotificationSrv, UserSrv, organisation, users, templates, fields, appConfig) {
             var self = this;
 
             this.org = organisation;
             this.users = users;
             this.templates = templates;
             this.fields = fields;
+            this.canChangeMfa = appConfig.config.capabilities.indexOf('mfa') !== -1;
 
             this.getUserInfo = UserSrv.getCache;
 

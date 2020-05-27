@@ -2,12 +2,6 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import java.util.zip.ZipFile
 
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-import play.api.libs.json.{JsFalse, JsObject, JsTrue}
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -21,6 +15,11 @@ import org.thp.thehive.connector.cortex.services.{AnalyzerTemplateSrv, AnalyzerT
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models.Permissions
+import play.api.Logger
+import play.api.libs.json.{JsFalse, JsObject, JsTrue}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success}
 
 @Singleton
 class AnalyzerTemplateCtrl @Inject() (
@@ -45,7 +44,7 @@ class AnalyzerTemplateCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, AnalyzerTemplateSteps, _) => AnalyzerTemplateSteps.page(range.from, range.to, withTotal = true)
   )
-  override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]()
+  override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]
 
   def get(id: String): Action[AnyContent] =
     entrypoint("get content")

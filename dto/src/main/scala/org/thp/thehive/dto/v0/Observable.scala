@@ -50,7 +50,8 @@ case class OutputObservable(
     message: Option[String],
     reports: JsObject,
     stats: JsObject,
-    seen: Option[Boolean]
+    seen: Option[Boolean],
+    `case`: Option[OutputCase]
 )
 
 object OutputObservable {

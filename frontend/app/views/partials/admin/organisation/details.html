@@ -65,7 +65,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()" on-edit="$vm.showUserDialog(user)"></org-user-list>
+                            <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()" on-edit="$vm.showUserDialog(user)" mfa-enabled="$vm.canChangeMfa"></org-user-list>
                         </div>
                     </uib-tab>
                     <uib-tab index="1" if-permission="manageCaseTemplate">

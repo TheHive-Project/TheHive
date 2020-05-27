@@ -1,19 +1,18 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.RichSeq
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCaseTemplate
 import org.thp.thehive.models.{Permissions, RichCaseTemplate}
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class CaseTemplateCtrl @Inject() (
@@ -41,10 +40,7 @@ class CaseTemplateCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
-  override val outputQuery: Query = Query.output[RichCaseTemplate]()
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[CaseTemplateSteps, List[RichCaseTemplate]]("toList", (caseTemplateSteps, _) => caseTemplateSteps.richCaseTemplate.toList)
-  )
+  override val outputQuery: Query = Query.output[RichCaseTemplate, CaseTemplateSteps](_.richCaseTemplate)
 
   def create: Action[AnyContent] =
     entrypoint("create case template")

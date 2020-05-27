@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -12,6 +10,7 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputDashboard
 import org.thp.thehive.models.RichDashboard
 import org.thp.thehive.services.{DashboardSrv, DashboardSteps, OrganisationSrv, UserSrv}
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class DashboardCtrl @Inject() (
@@ -32,7 +31,7 @@ class DashboardCtrl @Inject() (
         union(dashboardSrv)(
           t => organisationSrv.steps(db.labelFilter(organisationSrv.model)(t))(graph).get(authContext.organisation).dashboards,
           t => userSrv.steps(db.labelFilter(userSrv.model)(t))(graph).current(authContext).dashboards
-        )(graph)
+        )(graph).dedup
     )
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, DashboardSteps](
@@ -46,7 +45,7 @@ class DashboardCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, dashboardSteps, _) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard)
   )
-  val outputQuery: Query = Query.output[RichDashboard]()
+  override val outputQuery: Query = Query.output[RichDashboard, DashboardSteps](_.richDashboard)
 
   def create: Action[AnyContent] =
     entrypoint("create dashboard")

@@ -2,8 +2,8 @@ import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.0.0-RC2-1"
-val scala212               = "2.12.10"
+val thehiveVersion         = "4.0.0-RC3-2"
+val scala212               = "2.12.11"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
 
@@ -311,7 +311,10 @@ lazy val thehiveMigration = (project in file("migration"))
       scopt,
       specs % Test
     ),
-    dependencyOverrides += "org.locationtech.spatial4j" % "spatial4j" % "0.6",
+    dependencyOverrides ++= Seq(
+      "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
+      "org.elasticsearch.client"   % "elasticsearch-rest-client" % "6.7.2"
+    ),
     fork := true,
     normalizedName := "migrate",
     mainClass := None

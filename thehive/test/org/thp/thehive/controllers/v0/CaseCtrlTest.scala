@@ -2,13 +2,14 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsNull, JsObject, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestCase(
@@ -36,6 +37,7 @@ object TestCase {
 }
 
 class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
+
   "case controller" should {
 
     "create a new case from spam template" in testApp { app =>
@@ -86,9 +88,9 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         summary = None,
         owner = Some("certuser@thehive.local"),
         customFields = Json.obj(
-          "boolean1" -> Json.obj("boolean" -> true),
-          "string1"  -> Json.obj("string"  -> "string1 custom field"),
-          "date1"    -> Json.obj("date"    -> now.getTime)
+          "boolean1" -> Json.obj("boolean" -> true, "order"                   -> JsNull),
+          "string1"  -> Json.obj("string"  -> "string1 custom field", "order" -> JsNull),
+          "date1"    -> Json.obj("date"    -> now.getTime, "order"            -> JsNull)
         ),
         stats = Json.obj()
       )
@@ -146,7 +148,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val resultList  = app[TheHiveQueryExecutor].task.search(requestList)
 
       status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
-      val tasksList = contentAsJson(resultList).as[Seq[OutputTask]]
+      val tasksList = contentAsJson(resultList)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputTask]]
       tasksList.find(_.title == "task x") must beSome
 
       val assignee = app[Database].roTransaction(implicit graph => app[CaseSrv].get(outputCase._id).assignee.getOrFail())
@@ -251,7 +253,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TheHiveQueryExecutor].`case`.search()(request)
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       header("X-Total", result) must beSome("2")
-      val resultCases = contentAsJson(result).as[Seq[OutputCase]]
+      val resultCases = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputCase]]
 
       resultCases.map(_.caseId) must contain(exactly(1, 2))
     }
@@ -295,7 +297,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         )
       val resultSearch = app[TheHiveQueryExecutor].`case`.search()(requestSearch)
       status(resultSearch) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
-      contentAsJson(resultSearch).as[List[OutputCase]] must not(beEmpty)
+      contentAsJson(resultSearch)(defaultAwaitTimeout, app[Materializer]).as[List[OutputCase]] must not(beEmpty)
     }
 
     // FIXME doesn't work with SBT ?!

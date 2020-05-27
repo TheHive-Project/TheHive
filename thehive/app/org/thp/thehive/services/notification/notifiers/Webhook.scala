@@ -1,4 +1,5 @@
 package org.thp.thehive.services.notification.notifiers
+
 import akka.stream.Materializer
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
@@ -7,10 +8,11 @@ import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.steps.{BranchCase, BranchOtherwise, Traversal, VertexSteps}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
 import org.thp.thehive.models.{Audit, Organisation, User}
-import org.thp.thehive.services.AuditSrv
+import org.thp.thehive.services.{AuditSrv, AuditSteps, _}
 import play.api.libs.json.Json.WithDefaultValues
 import play.api.libs.json.{Format, JsObject, JsValue, Json}
 import play.api.{Configuration, Logger}
@@ -38,7 +40,13 @@ object WebhookNotification {
 }
 
 @Singleton
-class WebhookProvider @Inject() (appConfig: ApplicationConfig, auditSrv: AuditSrv, ec: ExecutionContext, mat: Materializer) extends NotifierProvider {
+class WebhookProvider @Inject() (
+    appConfig: ApplicationConfig,
+    auditSrv: AuditSrv,
+    customFieldSrv: CustomFieldSrv,
+    ec: ExecutionContext,
+    mat: Materializer
+) extends NotifierProvider {
   override val name: String = "webhook"
 
   val webhookConfigs: ConfigItem[Seq[WebhookNotification], Seq[WebhookNotification]] =
@@ -52,23 +60,95 @@ class WebhookProvider @Inject() (appConfig: ApplicationConfig, auditSrv: AuditSr
         .find(_.name == name)
         .fold[Try[WebhookNotification]](Failure(BadConfigurationError(s"Webhook configuration `$name` not found`")))(Success.apply)
 
-    } yield new Webhook(config, auditSrv, mat, ec)
+    } yield new Webhook(config, auditSrv, customFieldSrv, mat, ec)
 }
 
-class Webhook(config: WebhookNotification, auditSrv: AuditSrv, mat: Materializer, implicit val ec: ExecutionContext) extends Notifier {
+class Webhook(config: WebhookNotification, auditSrv: AuditSrv, customFieldSrv: CustomFieldSrv, mat: Materializer, implicit val ec: ExecutionContext)
+    extends Notifier {
   override val name: String = "webhook"
 
   lazy val logger: Logger = Logger(getClass)
 
+  object v0 extends AuditRenderer
+
+  object v1 {
+    import org.thp.thehive.controllers.v0.Conversion._
+    def caseToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
+      _.asCase.richCaseWithoutPerms.map(_.toJson)
+
+    def taskToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
+      _.asTask.richTask.map(_.toJson)
+
+    def alertToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
+      _.asAlert.richAlert.map(_.toJson)
+
+    def logToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
+      _.asLog.richLog.map(_.toJson)
+
+    def observableToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
+      _.asObservable.richObservable.map(_.toJson)
+
+    def auditRenderer: AuditSteps => Traversal[JsValue, JsValue] =
+      (_: AuditSteps)
+        .coalesce[JsValue](
+          _.`object`
+            .choose(
+              on = _.label,
+              BranchCase("Case", caseToJson),
+              BranchCase("Task", taskToJson),
+              BranchCase("Log", logToJson),
+              BranchCase("Observable", observableToJson),
+              BranchCase("Alert", alertToJson),
+              BranchOtherwise(_.constant(JsObject.empty))
+            ),
+          _.constant(JsObject.empty)
+        )
+  }
+
+  // This method change the format of audit details when it contains custom field.
+  // The custom field type is added to match TheHive 3 webhook format.
+  def fixCustomFieldDetails(objectType: String, details: String)(implicit graph: Graph): JsValue =
+    objectType match {
+      case "Case" | "Alert" | "CaseTemplate" =>
+        val j = Json.parse(details)
+        j.asOpt[JsObject].fold(j) { o =>
+          JsObject(o.fields.map {
+            case keyValue @ (key, value) if key.startsWith("customField.") =>
+              val fieldName = key.drop(12)
+              customFieldSrv
+                .getOrFail(fieldName)
+                .fold(_ => keyValue, cf => "customFields" -> Json.obj(fieldName -> Json.obj(cf.`type`.toString -> value)))
+            case keyValue => keyValue
+          })
+        }
+    }
+
   def buildMessage(version: Int, audit: Audit with Entity)(implicit graph: Graph): Try[JsObject] =
     version match {
       case 0 =>
-        auditSrv.get(audit).richAuditWithCustomRenderer(new AuditRenderer {}.auditRenderer).getOrFail().map {
+        auditSrv.get(audit).richAuditWithCustomRenderer(v0.auditRenderer).getOrFail().map {
           case (audit, obj) =>
+            val objectType = audit.objectType.getOrElse(audit.context._model.label)
             Json.obj(
               "operation"  -> audit.action,
-              "details"    -> audit.details.fold[JsValue](JsObject.empty)(Json.parse),
-              "objectType" -> fromObjectType(audit.objectType.getOrElse(audit.context._model.label)),
+              "details"    -> audit.details.fold[JsValue](JsObject.empty)(fixCustomFieldDetails(objectType, _)),
+              "objectType" -> fromObjectType(objectType),
+              "objectId"   -> audit.objectId,
+              "base"       -> audit.mainAction,
+              "startDate"  -> audit._createdAt,
+              "rootId"     -> audit.context._id,
+              "requestId"  -> audit.requestId,
+              "object"     -> obj
+            )
+        }
+      case 1 =>
+        auditSrv.get(audit).richAuditWithCustomRenderer(v1.auditRenderer).getOrFail().map {
+          case (audit, obj) =>
+            val objectType = audit.objectType.getOrElse(audit.context._model.label)
+            Json.obj(
+              "operation"  -> audit.action,
+              "details"    -> audit.details.fold[JsValue](JsObject.empty)(fixCustomFieldDetails(objectType, _)),
+              "objectType" -> fromObjectType(objectType),
               "objectId"   -> audit.objectId,
               "base"       -> audit.mainAction,
               "startDate"  -> audit._createdAt,

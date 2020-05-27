@@ -1,13 +1,16 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').factory('StreamSrv', function($rootScope, $http, $timeout, UserSrv, AuthenticationSrv, AfkSrv, NotificationSrv) {
+    angular.module('theHiveServices').factory('StreamSrv', function($q, $rootScope, $http, $timeout, UserSrv, AuthenticationSrv, AfkSrv, NotificationSrv) {
 
         var self = {
             isPolling: false,
             streamId: null,
+            httpRequestCanceller: $q.defer(),
+            disabled: true,
 
             init: function() {
                 self.streamId = null;
+                self.disabled = false;
                 self.requestStream();
             },
 
@@ -82,6 +85,14 @@
                 self.runCallbacks('any', 'any', data);
             },
 
+            cancelPoll: function() {
+                if(self.httpRequestCanceller) {
+                    self.httpRequestCanceller.resolve('cancel');
+                }
+
+                self.disabled = true;
+            },
+
             poll: function() {
                 // Skip polling is a poll is already running
                 if (self.streamId === null || self.isPolling === true) {
@@ -91,8 +102,13 @@
                 // Flag polling start
                 self.isPolling = true;
 
+                // Initiate stream canceller
+                self.httpRequestCanceller = $q.defer();
+
                 // Poll stream changes
-                $http.get('./api/stream/' + self.streamId).then(function(res) {
+                self.pollPromise = $http.get('./api/stream/' + self.streamId, {
+                    timeout: self.httpRequestCanceller.promise
+                }).then(function(res) {
                     // Flag polling end
                     self.isPolling = false;
 
@@ -115,6 +131,10 @@
                 }).catch(function(err) {
                     // Initialize the stream;
                     self.isPolling = false;
+
+                    if(err && err.xhrStatus === 'abort') {
+                        return;
+                    }
 
                     if (err.status !== 404) {
                         NotificationSrv.error('StreamSrv', err.data, err.status);
@@ -160,9 +180,10 @@
 
                 var eventName = 'stream:' + config.rootId + '-' + config.objectType;
                 config.scope.$on(eventName, function(event, data) {
-                    config.callback(data);
+                    if(!self.disabled) {
+                        config.callback(data);
+                    }                    
                 });
-
             }
         };
 

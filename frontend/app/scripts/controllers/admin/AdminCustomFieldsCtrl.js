@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AdminCustomFieldsCtrl',
-        function($scope, $uibModal, ListSrv, CustomFieldsSrv, NotificationSrv, ModalUtilsSrv) {
+        function($scope, $uibModal, CustomFieldsSrv, NotificationSrv, ModalUtilsSrv) {
             var self = this;
 
             self.reference = {

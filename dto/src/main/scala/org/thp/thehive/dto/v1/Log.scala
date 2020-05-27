@@ -10,11 +10,11 @@ case class InputLog(message: String, startDate: Option[Date] = None, attachment:
 
 case class OutputLog(
     _id: String,
+    _type: String,
     _createdBy: String,
     _updatedBy: Option[String] = None,
     _createdAt: Date,
     _updatedAt: Option[Date] = None,
-    _type: String,
     message: String,
     startDate: Date,
     attachment: Option[OutputAttachment] = None,

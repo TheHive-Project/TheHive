@@ -237,6 +237,9 @@ angular.module('thehive', [
                     },
                     fields: function(CustomFieldsSrv){
                         return CustomFieldsSrv.all();
+                    },
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
                     }
                 },
                 permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
@@ -247,7 +250,24 @@ angular.module('thehive', [
                 controller: 'AdminAnalyzerTemplatesCtrl',
                 controllerAs: 'vm',
                 title: 'Analyzer templates administration',
-                permissions: ['manageAnalyzerTemplate']
+                permissions: ['manageAnalyzerTemplate'],
+                resolve: {
+                    appConfig: function($q, VersionSrv) {
+                        var defer = $q.defer();
+
+                        VersionSrv.get()
+                            .then(function(config) {
+                                // Check if Cortex is enabled
+                                if(VersionSrv.hasCortexConnector()) {
+                                    defer.resolve(config);
+                                } else {
+                                    defer.reject();
+                                }
+                            });
+
+                        return defer.promise;
+                    },
+                }
             })
             .state('app.administration.custom-fields', {
                 url: '/custom-fields',

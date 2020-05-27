@@ -21,9 +21,10 @@ import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
-  override val appConfigure: AppBuilder = super
-    .appConfigure
-    .bindToProvider[TheHiveMispClient, TestMispClientProvider]
+  override def appConfigure: AppBuilder =
+    super
+      .appConfigure
+      .bindToProvider[TheHiveMispClient, TestMispClientProvider]
 
   "MISP client" should {
     "get current user name" in testApp { app =>
@@ -73,7 +74,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
       await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].initSteps.getBySourceId("misp", "ORGNAME", "1").getOrFail()
+        app[AlertSrv].initSteps.getBySourceId("misp", "ORGNAME", "1").visible.getOrFail("Alert")
       } must beSuccessfulTry(
         Alert(
           `type` = "misp",

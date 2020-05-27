@@ -30,7 +30,7 @@ class PageCtrl @Inject() (entrypoint: Entrypoint, pageSrv: PageSrv, db: Database
     FieldsParser[OutputParam],
     (range, pageSteps, _) => pageSteps.page(range.from, range.to, withTotal = true)
   )
-  val outputQuery: Query = Query.output[Page with Entity]()
+  override val outputQuery: Query = Query.output[Page with Entity]
 
   def get(idOrTitle: String): Action[AnyContent] =
     entrypoint("get a page")

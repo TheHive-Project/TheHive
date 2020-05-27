@@ -67,8 +67,8 @@ class ShareSrv @Inject() (
     get(share).outToE[ShareProfile].remove()
     for {
       newShareProfile <- shareProfileSrv.create(ShareProfile(), share, profile)
-      case0           <- get(share).`case`.getOrFail()
-      organisation    <- get(share).organisation.getOrFail()
+      case0           <- get(share).`case`.getOrFail("Case")
+      organisation    <- get(share).organisation.getOrFail("Organisation")
       _               <- auditSrv.share.shareCase(case0, organisation, profile)
     } yield newShareProfile
   }
@@ -78,8 +78,8 @@ class ShareSrv @Inject() (
 
   def remove(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      case0        <- get(shareId).`case`.getOrFail()
-      organisation <- get(shareId).organisation.getOrFail()
+      case0        <- get(shareId).`case`.getOrFail("Case")
+      organisation <- get(shareId).organisation.getOrFail("Organisation")
       _            <- auditSrv.share.unshareCase(case0, organisation)
     } yield get(shareId).remove()
 
@@ -98,8 +98,8 @@ class ShareSrv @Inject() (
         .get(task)
         .inToE[ShareTask]
         .filter(st => new ShareSteps(st.outV().raw).byOrganisationName(organisation.name))
-        .getOrFail()
-      case0 <- taskSrv.get(task).`case`.getOrFail()
+        .getOrFail("Task")
+      case0 <- taskSrv.get(task).`case`.getOrFail("Case")
       _     <- auditSrv.share.unshareTask(task, case0, organisation)
     } yield shareTaskSrv.get(shareTask.id().toString).remove()
 
@@ -118,8 +118,8 @@ class ShareSrv @Inject() (
         .get(observable)
         .inToE[ShareObservable]
         .filter(st => new ShareSteps(st.outV().raw).byOrganisationName(organisation.name))
-        .getOrFail()
-      case0 <- observableSrv.get(observable).`case`.getOrFail()
+        .getOrFail("Share")
+      case0 <- observableSrv.get(observable).`case`.getOrFail("Case")
       _     <- auditSrv.share.unshareObservable(observable, case0, organisation)
     } yield shareObservableSrv.get(shareObservable.id().toString).remove()
 
@@ -146,7 +146,7 @@ class ShareSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation).getOrFail()
+      share <- get(`case`, organisation).getOrFail("Case")
       _     <- shareTaskSrv.create(ShareTask(), share, richTask.task)
       _     <- auditSrv.task.create(richTask.task, richTask.toJson)
     } yield ()
@@ -160,7 +160,7 @@ class ShareSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation).getOrFail()
+      share <- get(`case`, organisation).getOrFail("Case")
       _     <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
       _     <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
     } yield ()
@@ -199,8 +199,8 @@ class ShareSrv @Inject() (
     orgsToAdd
       .toTry { organisation =>
         for {
-          case0 <- taskSrv.get(task).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
+          case0 <- taskSrv.get(task).`case`.getOrFail("Task")
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail("Share")
           _     <- shareTaskSrv.create(ShareTask(), share, task)
           _     <- auditSrv.share.shareTask(task, case0, organisation)
         } yield ()
@@ -222,8 +222,8 @@ class ShareSrv @Inject() (
       .filterNot(existingOrgs.contains)
       .toTry { organisation =>
         for {
-          case0 <- taskSrv.get(task).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
+          case0 <- taskSrv.get(task).`case`.getOrFail("Task")
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail("Case")
           _     <- shareTaskSrv.create(ShareTask(), share, task)
           _     <- auditSrv.share.shareTask(task, case0, organisation)
         } yield ()
@@ -245,8 +245,8 @@ class ShareSrv @Inject() (
       .filterNot(existingOrgs.contains)
       .toTry { organisation =>
         for {
-          case0 <- observableSrv.get(observable).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
+          case0 <- observableSrv.get(observable).`case`.getOrFail("Observable")
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail("Case")
           _     <- shareObservableSrv.create(ShareObservable(), share, observable)
           _     <- auditSrv.share.shareObservable(observable, case0, organisation)
         } yield ()
@@ -278,8 +278,8 @@ class ShareSrv @Inject() (
     orgsToAdd
       .toTry { organisation =>
         for {
-          case0 <- observableSrv.get(observable).`case`.getOrFail()
-          share <- caseSrv.get(case0).share(organisation.name).getOrFail()
+          case0 <- observableSrv.get(observable).`case`.getOrFail("Observable")
+          share <- caseSrv.get(case0).share(organisation.name).getOrFail("Case")
           _     <- shareObservableSrv.create(ShareObservable(), share, observable)
           _     <- auditSrv.share.shareObservable(observable, case0, organisation)
         } yield ()

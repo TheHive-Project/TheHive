@@ -111,7 +111,8 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
           Permissions.managePage,
           Permissions.manageObservable,
           Permissions.manageAlert,
-          Permissions.manageAction
+          Permissions.manageAction,
+          Permissions.manageConfig
         ),
         organisation = "cert"
       )

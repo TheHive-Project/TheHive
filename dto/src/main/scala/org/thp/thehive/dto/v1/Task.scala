@@ -22,6 +22,12 @@ object InputTask {
 }
 
 case class OutputTask(
+    _id: String,
+    _type: String,
+    _createdBy: String,
+    _updatedBy: Option[String] = None,
+    _createdAt: Date,
+    _updatedAt: Option[Date] = None,
     title: String,
     group: String,
     description: Option[String],

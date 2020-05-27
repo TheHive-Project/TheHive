@@ -18,7 +18,7 @@
                     <th></th>
                     <th>Password</th>
                     <th>API Key</th>
-                    <th class="text-center" style="width: 100px">MFA</th>
+                    <th class="text-center" style="width: 100px" ng-if="$ctrl.mfaEnabled">MFA</th>
                     <th style="width: 180px"></th>
                 </tr>
             </thead>
@@ -84,7 +84,7 @@
                             </div>
                         </span>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center" ng-if="$ctrl.mfaEnabled">
                         <span ng-if="!user.hasMFA">
                             No
                         </span>

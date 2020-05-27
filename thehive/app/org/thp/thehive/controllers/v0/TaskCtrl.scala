@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.Logger
-import play.api.mvc.{Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers._
@@ -14,6 +11,8 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.{Permissions, RichCase, RichTask}
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class TaskCtrl @Inject() (
@@ -37,7 +36,7 @@ class TaskCtrl @Inject() (
     FieldsParser[OutputParam], {
       case (OutputParam(from, to, _, 0), taskSteps, _) => taskSteps.richPage(from, to, withTotal = true)(_.richTask.map(_ -> None))
       case (OutputParam(from, to, _, _), taskSteps, authContext) =>
-        taskSteps.richPage(from, to, withTotal = true)(_.richTaskWithCustomRenderer(_.`case`.richCase(authContext).map(c => Option(c)))(authContext))
+        taskSteps.richPage(from, to, withTotal = true)(_.richTaskWithCustomRenderer(_.`case`.richCase(authContext).map(c => Some(c))))
     }
   )
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
@@ -45,10 +44,10 @@ class TaskCtrl @Inject() (
     FieldsParser[IdOrName],
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask]()
+  override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[TaskSteps, List[RichTask]]("toList", (taskSteps, _) => taskSteps.richTask.toList),
-    Query.output[(RichTask, Option[RichCase])]()
+    Query.output[(RichTask, Option[RichCase])],
+    Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext))
   )
 
   def create(caseId: String): Action[AnyContent] =

@@ -1,11 +1,11 @@
 package org.thp.thehive.services
 
 import gremlin.scala._
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{BadRequestError, EntitySteps, RichSeq}
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
@@ -14,6 +14,7 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
+
 import scala.util.{Failure, Success, Try}
 
 object OrganisationSrv {
@@ -59,7 +60,7 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
         case (orgSteps, updatedFields) =>
           orgSteps
             .newInstance()
-            .getOrFail()
+            .getOrFail("Organisation")
             .flatMap(auditSrv.organisation.update(_, updatedFields))
       }
     }
@@ -119,7 +120,7 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def caseTemplates: CaseTemplateSteps = new CaseTemplateSteps(raw.inTo[CaseTemplateOrganisation])
 
-  def users(requiredPermission: String): UserSteps = new UserSteps(
+  def users(requiredPermission: Permission): UserSteps = new UserSteps(
     raw
       .inTo[RoleOrganisation]
       .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
