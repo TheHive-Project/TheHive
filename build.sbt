@@ -60,6 +60,10 @@ libraryDependencies in ThisBuild ++= {
     case _                       => compilerPlugin(macroParadise) :: Nil
   }
 }
+dependencyOverrides in ThisBuild ++= Seq(
+  "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
+  "org.elasticsearch.client"   % "elasticsearch-rest-client" % "6.7.2"
+)
 PlayKeys.includeDocumentationInBinary := false
 milestoneFilter := ((milestone: Milestone) => milestone.title.startsWith("4"))
 
@@ -310,10 +314,6 @@ lazy val thehiveMigration = (project in file("migration"))
       ehcache,
       scopt,
       specs % Test
-    ),
-    dependencyOverrides ++= Seq(
-      "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
-      "org.elasticsearch.client"   % "elasticsearch-rest-client" % "6.7.2"
     ),
     fork := true,
     normalizedName := "migrate",
