@@ -1,5 +1,44 @@
 # Change Log
 
+## [4.0.0-RC3](https://github.com/TheHive-Project/TheHive/milestone/58) (2020-05-27)
+
+**Implemented enhancements:**
+
+- [Feature] Show case sharing information on main case overview page [\#1277](https://github.com/TheHive-Project/TheHive/issues/1277)
+- [Feature] Allow users to be part of multiple organisations [\#1316](https://github.com/TheHive-Project/TheHive/issues/1316)
+- [Enhancement] Hide multifactor option in user-dialog if Enable Multi-Factor Authentication is disabled. [\#1317](https://github.com/TheHive-Project/TheHive/issues/1317)
+- [Feature] Authentication API should return user information [\#1346](https://github.com/TheHive-Project/TheHive/issues/1346)
+- [Enhancement] Enrich queries [\#1353](https://github.com/TheHive-Project/TheHive/issues/1353)
+
+**Fixed bugs:**
+
+- [Bug] Unable to add new datatypes [\#1288](https://github.com/TheHive-Project/TheHive/issues/1288)
+- [Bug] Unable to bulk delete an alert [\#1310](https://github.com/TheHive-Project/TheHive/issues/1310)
+- [Bug] importing alert as template not working [\#1311](https://github.com/TheHive-Project/TheHive/issues/1311)
+- [Bug] Tasks not displayed when importing alert into case with case template [\#1312](https://github.com/TheHive-Project/TheHive/issues/1312)
+- [Bug] WebHook creation does not work [\#1318](https://github.com/TheHive-Project/TheHive/issues/1318)
+- [Bug] Opening Analyzer Templates without Cortex brings error message [\#1319](https://github.com/TheHive-Project/TheHive/issues/1319)
+- [Bug] Case Statistics does not correctly display top 5 tags  [\#1320](https://github.com/TheHive-Project/TheHive/issues/1320)
+- [Bug] Importing of some user failes [\#1323](https://github.com/TheHive-Project/TheHive/issues/1323)
+- [Bug] invisible dashborards [\#1324](https://github.com/TheHive-Project/TheHive/issues/1324)
+- [Bug] Assignee List in Case and Tasks is no longer sorted Alphabetical [\#1327](https://github.com/TheHive-Project/TheHive/issues/1327)
+- [Bug] Sorting in Observables of a case does not work [\#1328](https://github.com/TheHive-Project/TheHive/issues/1328)
+- [Bug] Read-only has options to edit task-logs [\#1334](https://github.com/TheHive-Project/TheHive/issues/1334)
+- [Bug] Adding a custom-field on an open case requires a reload, otherwise field is not visible [\#1336](https://github.com/TheHive-Project/TheHive/issues/1336)
+- [Bug] severity change when create new case don't work [\#1338](https://github.com/TheHive-Project/TheHive/issues/1338)
+- [Bug] Migration issues from ES to Cassandra [\#1340](https://github.com/TheHive-Project/TheHive/issues/1340)
+- [Bug] The filter operator "_child" is missing [\#1344](https://github.com/TheHive-Project/TheHive/issues/1344)
+- [Bug] Webhook compatibility issues on custom-fields [\#1345](https://github.com/TheHive-Project/TheHive/issues/1345)
+- [Bug] Object sent to responder doesn't contain parent [\#1348](https://github.com/TheHive-Project/TheHive/issues/1348)
+- [Bug] Show Sharing link to all users [\#1351](https://github.com/TheHive-Project/TheHive/issues/1351)
+- [Bug] Unable to create case or alert using integer custom field [\#1356](https://github.com/TheHive-Project/TheHive/issues/1356)
+- [Bug] Get observables of a case using API not working [\#1357](https://github.com/TheHive-Project/TheHive/issues/1357)
+- [Bug] OAuth2 authentication doesn't redirect to home page on success [\#1360](https://github.com/TheHive-Project/TheHive/issues/1360)
+- [Bug] Confusion on same alert on different organisations [\#1361](https://github.com/TheHive-Project/TheHive/issues/1361)
+- [Bug] Search link to observable does not work [\#1365](https://github.com/TheHive-Project/TheHive/issues/1365)
+- [Bug] Unable to vienw analysis report from observable list [\#1366](https://github.com/TheHive-Project/TheHive/issues/1366)
+- [Bug] MISP export succeeds but show an error message [\#1367](https://github.com/TheHive-Project/TheHive/issues/1367)
+
 ## [4.0.0-RC2](https://github.com/TheHive-Project/TheHive/milestone/54) (2020-05-07)
 
 **Implemented enhancements:**
