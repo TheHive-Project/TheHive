@@ -39,22 +39,27 @@ class ObservableCtrl @Inject() (
     FieldsParser[IdOrName],
     (param, graph, authContext) => observableSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
-    "page",
-    FieldsParser[OutputParam], {
-      case (OutputParam(from, to, withStats, _), observableSteps, authContext) =>
-        observableSteps
-          .richPage(from, to, withTotal = true) {
-            case o if withStats =>
-              o.richObservableWithCustomRenderer(observableStatsRenderer(authContext))
-            case o =>
-              o.richObservable.map(_ -> JsObject.empty)
-          }
-    }
-  )
+  override val pageQuery: ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject, Option[RichCase])]](
+      "page",
+      FieldsParser[OutputParam], {
+        case (OutputParam(from, to, withStats, 0), observableSteps, authContext) =>
+          observableSteps
+            .richPage(from, to, withTotal = true) {
+              case o if withStats =>
+                o.richObservableWithCustomRenderer(observableStatsRenderer(authContext)).map(ros => (ros._1, ros._2, None))
+              case o =>
+                o.richObservable.map(ro => (ro, JsObject.empty, None))
+            }
+        case (OutputParam(from, to, _, _), observableSteps, authContext) =>
+          observableSteps.richPage(from, to, withTotal = true)(
+            _.richObservableWithCustomRenderer(o => o.`case`.richCase(authContext)).map(roc => (roc._1, JsObject.empty, Some(roc._2)))
+          )
+      }
+    )
   override val outputQuery: Query = Query.output[RichObservable, ObservableSteps](_.richObservable)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query.output[(RichObservable, JsObject)]
+//    Query.output[(RichObservable, JsObject, Option[RichCase])]
   )
 
   def create(caseId: String): Action[AnyContent] =

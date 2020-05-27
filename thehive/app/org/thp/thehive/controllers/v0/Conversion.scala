@@ -364,40 +364,75 @@ object Conversion {
           )
       )
       .withFieldConst(_.stats, JsObject.empty)
+      .withFieldConst(_.`case`, None)
       .transform
   )
 
+  implicit val observableWithExtraOutput: Renderer.Aux[(RichObservable, JsObject, Option[RichCase]), OutputObservable] =
+    Renderer.json[(RichObservable, JsObject, Option[RichCase]), OutputObservable] {
+      case (richObservable, stats, richCase) =>
+        richObservable
+          .into[OutputObservable]
+          .withFieldConst(_._type, "case_artifact")
+          .withFieldComputed(_.id, _.observable._id)
+          .withFieldComputed(_._id, _.observable._id)
+          .withFieldComputed(_.updatedAt, _.observable._updatedAt)
+          .withFieldComputed(_.updatedBy, _.observable._updatedBy)
+          .withFieldComputed(_.createdAt, _.observable._createdAt)
+          .withFieldComputed(_.createdBy, _.observable._createdBy)
+          .withFieldComputed(_.dataType, _.`type`.name)
+          .withFieldComputed(_.startDate, _.observable._createdAt)
+          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+          .withFieldComputed(_.data, _.data.map(_.data))
+          .withFieldComputed(_.attachment, _.attachment.map(_.toValue))
+          .withFieldComputed(
+            _.reports, { a =>
+              JsObject(a.reportTags.groupBy(_.origin).map {
+                case (origin, tags) =>
+                  origin -> Json.obj(
+                    "taxonomies" -> tags
+                      .map(t => Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value))
+                  )
+              })
+            }
+          )
+          .withFieldConst(_.stats, stats)
+          .withFieldConst(_.`case`, richCase.map(_.toValue))
+          .transform
+    }
+
   implicit val observableWithStatsOutput: Renderer.Aux[(RichObservable, JsObject), OutputObservable] =
-    Renderer.json[(RichObservable, JsObject), OutputObservable](richObservableWithStats =>
-      richObservableWithStats
-        ._1
-        .into[OutputObservable]
-        .withFieldConst(_._type, "case_artifact")
-        .withFieldComputed(_.id, _.observable._id)
-        .withFieldComputed(_._id, _.observable._id)
-        .withFieldComputed(_.updatedAt, _.observable._updatedAt)
-        .withFieldComputed(_.updatedBy, _.observable._updatedBy)
-        .withFieldComputed(_.createdAt, _.observable._createdAt)
-        .withFieldComputed(_.createdBy, _.observable._createdBy)
-        .withFieldComputed(_.dataType, _.`type`.name)
-        .withFieldComputed(_.startDate, _.observable._createdAt)
-        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-        .withFieldComputed(_.data, _.data.map(_.data))
-        .withFieldComputed(_.attachment, _.attachment.map(_.toValue))
-        .withFieldComputed(
-          _.reports, { a =>
-            JsObject(a.reportTags.groupBy(_.origin).map {
-              case (origin, tags) =>
-                origin -> Json.obj(
-                  "taxonomies" -> tags
-                    .map(t => Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value))
-                )
-            })
-          }
-        )
-        .withFieldConst(_.stats, richObservableWithStats._2)
-        .transform
-    )
+    Renderer.json[(RichObservable, JsObject), OutputObservable] {
+      case (richObservable, stats) =>
+        richObservable
+          .into[OutputObservable]
+          .withFieldConst(_._type, "case_artifact")
+          .withFieldComputed(_.id, _.observable._id)
+          .withFieldComputed(_._id, _.observable._id)
+          .withFieldComputed(_.updatedAt, _.observable._updatedAt)
+          .withFieldComputed(_.updatedBy, _.observable._updatedBy)
+          .withFieldComputed(_.createdAt, _.observable._createdAt)
+          .withFieldComputed(_.createdBy, _.observable._createdBy)
+          .withFieldComputed(_.dataType, _.`type`.name)
+          .withFieldComputed(_.startDate, _.observable._createdAt)
+          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+          .withFieldComputed(_.data, _.data.map(_.data))
+          .withFieldComputed(_.attachment, _.attachment.map(_.toValue))
+          .withFieldComputed(
+            _.reports, { a =>
+              JsObject(a.reportTags.groupBy(_.origin).map {
+                case (origin, tags) =>
+                  origin -> Json.obj(
+                    "taxonomies" -> tags
+                      .map(t => Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value))
+                  )
+              })
+            }
+          )
+          .withFieldConst(_.stats, stats)
+          .withFieldConst(_.`case`, None)
+          .transform
+    }
 
   implicit class InputOrganisationOps(inputOrganisation: InputOrganisation) {
 

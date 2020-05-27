@@ -161,9 +161,7 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         }
     )
 
-  def richTaskWithCustomRenderer[A](
-      entityRenderer: TaskSteps => TraversalLike[_, A]
-  )(implicit authContext: AuthContext): Traversal[(RichTask, A), (RichTask, A)] =
+  def richTaskWithCustomRenderer[A](entityRenderer: TaskSteps => TraversalLike[_, A]): Traversal[(RichTask, A), (RichTask, A)] =
     Traversal(
       raw
         .project(

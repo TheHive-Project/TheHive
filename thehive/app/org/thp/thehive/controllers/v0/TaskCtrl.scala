@@ -36,7 +36,7 @@ class TaskCtrl @Inject() (
     FieldsParser[OutputParam], {
       case (OutputParam(from, to, _, 0), taskSteps, _) => taskSteps.richPage(from, to, withTotal = true)(_.richTask.map(_ -> None))
       case (OutputParam(from, to, _, _), taskSteps, authContext) =>
-        taskSteps.richPage(from, to, withTotal = true)(_.richTaskWithCustomRenderer(_.`case`.richCase(authContext).map(c => Option(c)))(authContext))
+        taskSteps.richPage(from, to, withTotal = true)(_.richTaskWithCustomRenderer(_.`case`.richCase(authContext).map(c => Some(c))))
     }
   )
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
