@@ -38,6 +38,8 @@
 - [Bug] Search link to observable does not work [\#1365](https://github.com/TheHive-Project/TheHive/issues/1365)
 - [Bug] Unable to vienw analysis report from observable list [\#1366](https://github.com/TheHive-Project/TheHive/issues/1366)
 - [Bug] MISP export succeeds but show an error message [\#1367](https://github.com/TheHive-Project/TheHive/issues/1367)
+- [Bug] rc3 migration script failure [\#1369](https://github.com/TheHive-Project/TheHive/issues/1369)
+- [Bug] set HTTP redirect correctly when behind a reverse proxy  [\#1370](https://github.com/TheHive-Project/TheHive/issues/1370)
 
 ## [4.0.0-RC2](https://github.com/TheHive-Project/TheHive/milestone/54) (2020-05-07)
 
