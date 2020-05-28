@@ -1,15 +1,12 @@
 package models
 
 import scala.concurrent.Future
-
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
-
 import models.JsonFormat.userStatusFormat
 import services.AuditedModel
-
-import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O}
-import org.elastic4play.services.{User ⇒ EUser}
+import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat => F, AttributeOption => O}
+import org.elastic4play.services.{Role, User => EUser}
 
 object UserStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -40,8 +37,8 @@ class UserModel extends ModelDef[UserModel, User]("user", "User", "/user") with 
 }
 
 class User(model: UserModel, attributes: JsObject) extends EntityDef[UserModel, User](model, attributes) with UserAttributes with EUser {
-  override def getUserName = userName()
-  override def getRoles    = roles()
+  override def getUserName: String = userName()
+  override def getRoles: Seq[Role] = roles()
 
   override def toJson: JsObject =
     super.toJson +

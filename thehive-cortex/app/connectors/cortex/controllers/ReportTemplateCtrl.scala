@@ -1,29 +1,26 @@
 package connectors.cortex.controllers
 
-import javax.inject.{Inject, Singleton}
-
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
-import scala.util.control.NonFatal
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
+import connectors.cortex.services.ReportTemplateSrv
+import javax.inject.{Inject, Singleton}
+import models.Roles
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.FileHeader
+import org.elastic4play.controllers._
+import org.elastic4play.models.JsonFormat.baseModelEntityWrites
+import org.elastic4play.services.JsonFormat.queryReads
+import org.elastic4play.services.{AuxSrv, QueryDSL, QueryDef}
+import org.elastic4play.{BadRequestError, Timed}
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{JsBoolean, JsFalse, JsObject, JsTrue}
 import play.api.mvc._
 
-import org.elastic4play.{BadRequestError, Timed}
-import org.elastic4play.controllers._
-import org.elastic4play.models.JsonFormat.baseModelEntityWrites
-import org.elastic4play.services.{QueryDSL, QueryDef}
-import org.elastic4play.services.AuxSrv
-import org.elastic4play.services.JsonFormat.queryReads
-import connectors.cortex.services.ReportTemplateSrv
-import models.Roles
-import net.lingala.zip4j.core.ZipFile
-import net.lingala.zip4j.model.FileHeader
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
+import scala.util.control.NonFatal
 
 @Singleton
 class ReportTemplateCtrl @Inject()(
@@ -48,14 +45,14 @@ class ReportTemplateCtrl @Inject()(
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     reportTemplateSrv
       .get(id)
       .map(reportTemplate ⇒ renderer.toOutput(OK, reportTemplate))
   }
 
   @Timed
-  def getContent(analyzerId: String, reportType: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def getContent(analyzerId: String, reportType: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     import org.elastic4play.services.QueryDSL._
     val (reportTemplates, total) = reportTemplateSrv.find(and("analyzerId" ~= analyzerId, "reportType" ~= reportType), Some("0-1"), Nil)
     total.foreach { t ⇒

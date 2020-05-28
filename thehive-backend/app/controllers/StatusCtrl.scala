@@ -1,25 +1,24 @@
 package controllers
 
 import akka.actor.ActorSystem
-
-import scala.collection.immutable
-import scala.concurrent.ExecutionContext
-import scala.util.Try
-import play.api.Configuration
-import play.api.libs.json.Json.toJsFieldJsValueWrapper
-import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
-import com.sksamuel.elastic4s.http.ElasticDsl
+import com.sksamuel.elastic4s.ElasticDsl
 import connectors.Connector
 import javax.inject.{Inject, Singleton}
 import models.HealthStatus
-import org.elasticsearch.client.Node
 import org.elastic4play.Timed
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services.AuthSrv
 import org.elastic4play.services.auth.MultiAuthSrv
+import org.elasticsearch.client.Node
+import play.api.Configuration
+import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
+import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.util.Try
 
 @Singleton
 class StatusCtrl @Inject()(

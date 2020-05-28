@@ -1,3 +1,3 @@
 package object models {
-  val modelVersion = 15
+  val modelVersion = 16
 }

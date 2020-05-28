@@ -3,20 +3,17 @@ package connectors.misp
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-
 import play.api.http.Status
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
-import play.api.routing.SimpleRouter
+import play.api.routing.{Router, SimpleRouter}
 import play.api.routing.sird.{GET, POST, UrlContext}
 import play.api.{Configuration, Logger}
-
 import akka.actor.ActorSystem
 import connectors.Connector
 import javax.inject.{Inject, Singleton}
 import models.{HealthStatus, _}
 import services.{AlertTransformer, CaseSrv}
-
 import org.elastic4play.JsonFormat.tryWrites
 import org.elastic4play.controllers.{Authenticated, Renderer}
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
@@ -116,7 +113,7 @@ class MispCtrl(
 
   private[MispCtrl] lazy val logger = Logger(getClass)
 
-  val router = SimpleRouter {
+  val router: Router = SimpleRouter {
     case GET(p"/_syncAlerts")               ⇒ syncAlerts
     case GET(p"/_syncAllAlerts")            ⇒ syncAllAlerts
     case GET(p"/_syncArtifacts")            ⇒ syncArtifacts

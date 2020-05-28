@@ -3,31 +3,27 @@ package connectors.misp
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
+import connectors.misp.JsonFormat.{exportedAttributeWrites, tlpWrites}
 import javax.inject.{Inject, Provider, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
-
+import models.{Artifact, Case}
+import org.elastic4play.controllers.Fields
+import org.elastic4play.services.JsonFormat.attachmentFormat
+import org.elastic4play.services.{Attachment, AttachmentSrv, AuthContext}
+import org.elastic4play.utils.RichFuture
+import org.elastic4play.{BadRequestError, InternalError}
 import play.api.Logger
 import play.api.libs.json._
+import services.AlertSrv
 
-import akka.stream.scaladsl.Sink
-import connectors.misp.JsonFormat.tlpWrites
-import models.{Artifact, Case}
-import services.{AlertSrv, ArtifactSrv}
-import JsonFormat.exportedAttributeWrites
-import akka.stream.Materializer
-
-import org.elastic4play.{BadRequestError, InternalError}
-import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{Attachment, AttachmentSrv, AuthContext}
-import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.utils.RichFuture
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 @Singleton
 class MispExport @Inject()(
     mispConfig: MispConfig,
     mispSrv: MispSrv,
-    artifactSrv: ArtifactSrv,
     alertSrvProvider: Provider[AlertSrv],
     attachmentSrv: AttachmentSrv,
     implicit val ec: ExecutionContext,
@@ -36,7 +32,7 @@ class MispExport @Inject()(
 
   lazy val dateFormat             = new SimpleDateFormat("yy-MM-dd")
   private[misp] lazy val alertSrv = alertSrvProvider.get
-  lazy val logger                 = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   def relatedMispEvent(mispName: String, caseId: String): Future[(Option[String], Option[String])] = {
     import org.elastic4play.services.QueryDSL._

@@ -99,16 +99,16 @@ case class AssignCase(owner: String, status: ActionOperationStatus.Type = Action
 }
 
 object ActionOperation {
-  val addTagToCaseWrites      = Json.writes[AddTagToCase]
-  val addTagToArtifactWrites  = Json.writes[AddTagToArtifact]
-  val createTaskWrites        = Json.writes[CreateTask]
-  val addCustomFieldsWrites   = Json.writes[AddCustomFields]
-  val closeTaskWrites         = Json.writes[CloseTask]
-  val markAlertAsReadWrites   = Json.writes[MarkAlertAsRead]
-  val addLogToTaskWrites      = Json.writes[AddLogToTask]
-  val addTagToAlertWrites     = Json.writes[AddTagToAlert]
-  val addArtifactToCaseWrites = Json.writes[AddArtifactToCase]
-  val assignCaseWrites        = Json.writes[AssignCase]
+  val addTagToCaseWrites: OWrites[AddTagToCase] = Json.writes[AddTagToCase]
+  val addTagToArtifactWrites: OWrites[AddTagToArtifact] = Json.writes[AddTagToArtifact]
+  val createTaskWrites: OWrites[CreateTask] = Json.writes[CreateTask]
+  val addCustomFieldsWrites: OWrites[AddCustomFields] = Json.writes[AddCustomFields]
+  val closeTaskWrites: OWrites[CloseTask] = Json.writes[CloseTask]
+  val markAlertAsReadWrites: OWrites[MarkAlertAsRead] = Json.writes[MarkAlertAsRead]
+  val addLogToTaskWrites: OWrites[AddLogToTask] = Json.writes[AddLogToTask]
+  val addTagToAlertWrites: OWrites[AddTagToAlert] = Json.writes[AddTagToAlert]
+  val addArtifactToCaseWrites: OWrites[AddArtifactToCase] = Json.writes[AddArtifactToCase]
+  val assignCaseWrites: OWrites[AssignCase] = Json.writes[AssignCase]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](
     json ⇒
       (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
@@ -170,7 +170,7 @@ class ActionOperationSrv @Inject()(
     implicit val mat: Materializer
 ) {
 
-  lazy val logger             = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
   lazy val alertSrv: AlertSrv = alertSrvProvider.get
 
   def findCaseEntity(entity: BaseEntity): Future[Case] = {
@@ -294,7 +294,7 @@ class ActionOperationSrv @Inject()(
           case AddArtifactToCase(data, dataType, dataMessage, _, _) ⇒
             for {
               initialCase ← findCaseEntity(entity)
-              artifact    ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", dataMessage))
+              _    ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", dataMessage))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case AssignCase(owner, _, _) ⇒
             for {

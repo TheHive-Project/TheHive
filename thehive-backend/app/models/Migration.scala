@@ -3,26 +3,24 @@ package models
 import java.nio.file.{Files, Path}
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.math.BigDecimal.int2bigDecimal
-import scala.util.Try
-
-import play.api.libs.json.JsValue.jsValueToJsLookup
-import play.api.libs.json._
-import play.api.{Configuration, Environment, Logger}
-
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import javax.inject.{Inject, Singleton}
-import services.{AlertSrv, DashboardSrv}
-
 import org.elastic4play.ConflictError
 import org.elastic4play.controllers.Fields
 import org.elastic4play.services.JsonFormat.attachmentFormat
-import org.elastic4play.services.{IndexType, _}
+import org.elastic4play.services._
 import org.elastic4play.utils.Hasher
+import play.api.libs.json.JsValue.jsValueToJsLookup
+import play.api.libs.json._
+import play.api.{Configuration, Environment, Logger}
+import services.{AlertSrv, DashboardSrv}
+
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.math.BigDecimal.int2bigDecimal
+import scala.util.Try
 
 case class UpdateMispAlertArtifact() extends EventMessage
 
@@ -143,8 +141,6 @@ class Migration(
 
   }
 
-  override def indexType(version: Int): IndexType.Value = if (version > 14) IndexType.indexWithoutMappingTypes else IndexType.indexWithMappingTypes
-
   override val operations: PartialFunction[DatabaseState, Seq[Operation]] = {
     case DatabaseState(version) if version < 7 ⇒ Nil
     case DatabaseState(7) ⇒
@@ -248,7 +244,7 @@ class Migration(
                         dataStr       ← (artifact \ "data").asOpt[String]
                         dataJson      ← Try(Json.parse(dataStr)).toOption
                         dataObj       ← dataJson.asOpt[JsObject]
-                        filename      ← (dataObj \ "filename").asOpt[String].map(_.split("|").head)
+                        filename      ← (dataObj \ "filename").asOpt[String].map(_.split("\\|").head)
                         attributeId   ← (dataObj \ "attributeId").asOpt[String]
                         attributeType ← (dataObj \ "attributeType").asOpt[String]
                       } yield Future.successful(
@@ -280,7 +276,7 @@ class Migration(
                     }
                 }
                 Source
-                  .fromFuture(artifactsAndData)
+                  .future(artifactsAndData)
                   .mapConcat { ad ⇒
                     val updatedAlert = alert + ("artifacts" → JsArray(ad.map(_._1)))
                     updatedAlert :: ad.flatMap(_._2)
@@ -355,7 +351,7 @@ class Migration(
                         audit
                     }
                 }
-                Source.fromFuture(updatedAudit)
+                Source.future(updatedAudit)
               case audit ⇒ Source.single(audit)
             }
           case other ⇒ f(other)
@@ -378,6 +374,7 @@ class Migration(
             ("sequenceCounter" → counter)
         }
       )
+    case DatabaseState(15) ⇒ Nil
   }
 
   private def generateAlertId(alert: JsObject): String = {

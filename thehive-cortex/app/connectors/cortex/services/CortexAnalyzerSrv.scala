@@ -263,7 +263,6 @@ class CortexAnalyzerSrv @Inject()(
       cortex
         .getAttachment(id)
         .flatMap(src ⇒ src.runWith(FileIO.toPath(file)))
-        .flatMap(ioResult ⇒ Future.fromTry(ioResult.status))
         .flatMap(_ ⇒ attachmentSrv.save(fiv))
         .andThen { case _ ⇒ Files.delete(file) }
         .map(a ⇒ Some(artifact + ("attachment" → Json.toJson(a))))

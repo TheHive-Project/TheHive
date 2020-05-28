@@ -1,16 +1,14 @@
 package models
 
-import play.api.libs.json.{JsString, JsValue}
-
-import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
-import com.sksamuel.elastic4s.mappings.KeywordField
-import org.scalactic.{Every, Good, One, Or}
+import com.sksamuel.elastic4s.ElasticDsl.keywordField
+import com.sksamuel.elastic4s.requests.mappings.KeywordField
 import models.JsonFormat.roleFormat
-
-import org.elastic4play.{AttributeError, InvalidFormatAttributeError}
 import org.elastic4play.controllers.{InputValue, JsonInputValue, StringInputValue}
 import org.elastic4play.models.AttributeFormat
 import org.elastic4play.services.Role
+import org.elastic4play.{AttributeError, InvalidFormatAttributeError}
+import org.scalactic.{Every, Good, One, Or}
+import play.api.libs.json.{JsString, JsValue}
 
 object Roles {
   object read  extends Role("read")

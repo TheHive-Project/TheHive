@@ -44,5 +44,5 @@ class CaseTemplateModel @Inject()(taskModel: TaskModel)
 class CaseTemplate(model: CaseTemplateModel, attributes: JsObject)
     extends EntityDef[CaseTemplateModel, CaseTemplate](model, attributes)
     with CaseTemplateAttributes {
-  def taskAttributes = Nil
+  def taskAttributes: Seq[Attribute[_]] = Nil
 }

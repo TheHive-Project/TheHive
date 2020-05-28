@@ -1,9 +1,8 @@
 package controllers
 
 import javax.inject.{Inject, Singleton}
-
 import models.UserStatus
-import org.elastic4play.controllers.{Authenticated, Fields, FieldsBodyParser, Renderer}
+import org.elastic4play.controllers.{Authenticated, Fields, FieldsBodyParser}
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services.AuthSrv
 import org.elastic4play.{AuthorizationError, OAuth2Redirect, Timed}
@@ -18,7 +17,6 @@ class AuthenticationCtrl @Inject()(
     userSrv: UserSrv,
     authenticated: Authenticated,
     dbIndex: DBIndex,
-    renderer: Renderer,
     components: ControllerComponents,
     fieldsBodyParser: FieldsBodyParser,
     implicit val ec: ExecutionContext
@@ -63,7 +61,7 @@ class AuthenticationCtrl @Inject()(
   }
 
   @Timed
-  def logout = Action {
+  def logout: Action[AnyContent] = Action {
     Ok.withNewSession
   }
 }

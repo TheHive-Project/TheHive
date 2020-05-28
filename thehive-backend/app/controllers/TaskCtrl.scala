@@ -36,7 +36,7 @@ class TaskCtrl @Inject()(
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     taskSrv
       .get(id)
       .map(task ⇒ renderer.toOutput(OK, task))

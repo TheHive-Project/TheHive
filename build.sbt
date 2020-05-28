@@ -17,6 +17,7 @@ lazy val thehiveBackend = (project in file("thehive-backend"))
       Library.zip4j,
       Library.reflections,
       Library.akkaCluster,
+      Library.akkaClusterTyped,
       Library.akkaClusterTools
     ),
     play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"

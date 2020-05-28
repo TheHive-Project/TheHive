@@ -102,10 +102,9 @@ class ArtifactModel @Inject()(
     mm.addValue((attrs \ "data").asOpt[JsValue].getOrElse(JsNull))
     mm.addValue((attrs \ "dataType").asOpt[JsValue].getOrElse(JsNull))
     for {
-      IOResult(_, done) ← (attrs \ "attachment" \ "filepath")
+      IOResult(_, _) ← (attrs \ "attachment" \ "filepath")
         .asOpt[String]
         .fold(Future.successful(IOResult(0, Success(Done))))(file ⇒ mm.addFile(file))
-      _ ← Future.fromTry(done)
       _ ← (attrs \ "attachment" \ "id")
         .asOpt[String]
         .fold(Future.successful(NotUsed: NotUsed)) { fileId ⇒

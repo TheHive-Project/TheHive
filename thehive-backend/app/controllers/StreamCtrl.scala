@@ -1,30 +1,27 @@
 package controllers
 
+import akka.actor.{ActorIdentity, ActorSystem, Identify, Props}
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.pubsub.DistributedPubSubMediator.{Put, Send}
+import akka.pattern.{AskTimeoutException, ask}
+import akka.util.Timeout
 import javax.inject.{Inject, Singleton}
-
-import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{DurationLong, FiniteDuration}
-import scala.util.Random
-
+import models.Roles
+import org.elastic4play.Timed
+import org.elastic4play.controllers._
+import org.elastic4play.services.{MigrationSrv, UserSrv}
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.mvc._
 import play.api.{Configuration, Logger}
-
-import akka.actor.{ActorIdentity, ActorSystem, Identify, Props}
-import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.{Put, Send}
-import akka.pattern.{ask, AskTimeoutException}
-import akka.util.Timeout
-import models.Roles
 import services.StreamActor
 import services.StreamActor.StreamMessages
 
-import org.elastic4play.controllers._
-import org.elastic4play.services.{AuxSrv, EventSrv, MigrationSrv, UserSrv}
-import org.elastic4play.Timed
+import scala.collection.immutable
+import scala.concurrent.duration.{DurationLong, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Random
 
 @Singleton
 class StreamCtrl(
@@ -32,9 +29,7 @@ class StreamCtrl(
     refresh: FiniteDuration,
     authenticated: Authenticated,
     renderer: Renderer,
-    eventSrv: EventSrv,
     userSrv: UserSrv,
-    auxSrv: AuxSrv,
     migrationSrv: MigrationSrv,
     components: ControllerComponents,
     implicit val system: ActorSystem,
@@ -46,9 +41,7 @@ class StreamCtrl(
       configuration: Configuration,
       authenticated: Authenticated,
       renderer: Renderer,
-      eventSrv: EventSrv,
       userSrv: UserSrv,
-      auxSrv: AuxSrv,
       migrationSrv: MigrationSrv,
       components: ControllerComponents,
       system: ActorSystem,
@@ -59,9 +52,7 @@ class StreamCtrl(
       configuration.getMillis("stream.longpolling.refresh").millis,
       authenticated,
       renderer,
-      eventSrv,
       userSrv,
-      auxSrv,
       migrationSrv,
       components,
       system,
@@ -125,7 +116,7 @@ class StreamCtrl(
   }
 
   @Timed("controllers.StreamCtrl.status")
-  def status = Action { implicit request ⇒
+  def status: Action[AnyContent] = Action { implicit request ⇒
     val status = authenticated.expirationStatus(request) match {
       case ExpirationWarning(duration) ⇒ Json.obj("remaining" → duration.toSeconds, "warning" → true)
       case ExpirationError             ⇒ Json.obj("remaining" → 0, "warning"                  → true)

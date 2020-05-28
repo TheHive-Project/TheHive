@@ -3,25 +3,24 @@ package controllers
 import java.io.FilterInputStream
 import java.nio.file.{Files, Path}
 
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-
+import javax.inject.{Inject, Singleton}
+import models.Roles
+import net.lingala.zip4j.ZipFile
 import play.api.http.Status
 import play.api.libs.json.{JsArray, JsValue}
 import play.api.mvc._
 import play.api.{Configuration, Logger}
 
-import javax.inject.{Inject, Singleton}
-import models.Roles
-import net.lingala.zip4j.core.ZipFile
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+//import net.lingala.zip4j.core.ZipFile
 import net.lingala.zip4j.model.FileHeader
-import services.ArtifactSrv
-
 import org.elastic4play.controllers._
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{aggReads, queryReads}
 import org.elastic4play.services._
 import org.elastic4play.{BadRequestError, InternalError, InvalidFormatAttributeError, Timed}
+import services.ArtifactSrv
 
 @Singleton
 class ArtifactCtrl @Inject()(
@@ -70,7 +69,7 @@ class ArtifactCtrl @Inject()(
     }
   }
 
-  private def getFieldsFromZipFile(caseId: String, fields: Fields, filepath: Path)(implicit authContext: AuthContext): Seq[Fields] = {
+  private def getFieldsFromZipFile(fields: Fields, filepath: Path)(implicit authContext: AuthContext): Seq[Fields] = {
     val zipFile                = new ZipFile(filepath.toFile)
     val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
 
@@ -79,7 +78,7 @@ class ArtifactCtrl @Inject()(
         .getString("zipPassword")
         .filterNot(_.isEmpty)
         .getOrElse(configuration.get[String]("datastore.attachment.password"))
-      zipFile.setPassword(pw)
+      zipFile.setPassword(pw.toCharArray)
     }
 
     /*val multiFields = */
@@ -125,7 +124,7 @@ class ArtifactCtrl @Inject()(
         .get("attachment")
         .map {
           case FileInputValue(_, filepath, _) if fields.getBoolean("isZip").getOrElse(false) ⇒
-            Future.successful(getFieldsFromZipFile(caseId, fields, filepath))
+            Future.successful(getFieldsFromZipFile(fields, filepath))
           case _: FileInputValue ⇒ Future.successful(Seq(fields))
           case JsonInputValue(JsArray(attachments)) ⇒
             Future.traverse(attachments)(attachment ⇒ getFieldsFromAttachment(fields, attachment)).map(_.flatten)
@@ -155,7 +154,7 @@ class ArtifactCtrl @Inject()(
   }
 
   @Timed
-  def get(id: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def get(id: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { _ ⇒
     artifactSrv
       .get(id)
       .map(artifact ⇒ renderer.toOutput(OK, artifact))

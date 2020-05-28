@@ -126,7 +126,7 @@ class CaseCtrl @Inject()(
   }
 
   @Timed
-  def linkedCases(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def linkedCases(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     caseSrv
       .linkedCases(id)
       .runWith(Sink.seq)

@@ -4,13 +4,13 @@ import javax.inject.Inject
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.parsing.combinator._
-
 import play.api.{Configuration, Logger}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-
 import org.elastic4play.{AuthenticationError, AuthorizationError}
 import org.elastic4play.controllers.Fields
+
+import scala.util.matching.Regex
 
 class GroupUserMapper(
     loginAttrName: String,
@@ -40,9 +40,9 @@ class GroupUserMapper(
   private[GroupUserMapper] lazy val logger = Logger(getClass)
 
   private class RoleListParser extends RegexParsers {
-    val str     = "[a-zA-Z0-9_]+".r
-    val strSpc  = "[a-zA-Z0-9_ ]+".r
-    val realStr = ("\""~>strSpc<~"\"" | "'"~>strSpc<~"'" | str)
+    val str: Regex = "[a-zA-Z0-9_]+".r
+    val strSpc: Regex = "[a-zA-Z0-9_ ]+".r
+    val realStr: Parser[String] = "\""~>strSpc<~"\"" | "'"~>strSpc<~"'" | str
 
     def expr: Parser[Seq[String]] = {
       "[" ~ opt(realStr ~ rep("," ~ realStr)) ~ "]" ^^ {
@@ -59,39 +59,36 @@ class GroupUserMapper(
 
   override def getUserFields(jsValue: JsValue, authHeader: Option[(String, String)]): Future[Fields] = {
     groupsUrl match {
-      case Some(groupsEndpointUrl) ⇒ {
+      case Some(groupsEndpointUrl) ⇒
         logger.debug(s"Retreiving groups from ${groupsEndpointUrl}")
         val apiCall = authHeader.fold(ws.url(groupsEndpointUrl))(headers ⇒ ws.url(groupsEndpointUrl).addHttpHeaders(headers))
         apiCall.get.flatMap { r ⇒ extractGroupsThenBuildUserFields(jsValue, r.json) }
-      }
-      case None ⇒ {
+      case None ⇒
         logger.debug(s"Extracting groups from user info")
         extractGroupsThenBuildUserFields(jsValue, jsValue)
-      }
     }
   }
 
   private def extractGroupsThenBuildUserFields(jsValue: JsValue, groupsContainer: JsValue): Future[Fields] = {
-    (groupsContainer \ groupsAttrName) match {
+    groupsContainer \ groupsAttrName match {
       // Groups received as valid JSON array
       case JsDefined(JsArray(groupsList)) ⇒ mapGroupsAndBuildUserFields(jsValue, groupsList.map(_.as[String]).toList)
 
       // Groups list received as string (invalid JSON, for example: "ROLE" or "['Role 1', ROLE2, 'Role_3']")
-      case JsDefined(JsString(groupsStr)) ⇒ {
+      case JsDefined(JsString(groupsStr)) ⇒
         val parser = new RoleListParser
         parser.parseAll(parser.expr, groupsStr) match {
           case parser.Success(result, _) ⇒ mapGroupsAndBuildUserFields(jsValue, result)
           case err: parser.NoSuccess     ⇒ Future.failed(AuthenticationError(s"User info fails: can't parse groups list (${err.msg})"))
         }
-      }
 
       // Invalid group list
       case JsDefined(error) ⇒
-        Future.failed(AuthenticationError(s"User info fails: invalid groups list received in user info ('${error}' of type ${error.getClass})"))
+        Future.failed(AuthenticationError(s"User info fails: invalid groups list received in user info ('$error' of type ${error.getClass})"))
 
       // Groups field is undefined
       case _: JsUndefined ⇒
-        Future.failed(AuthenticationError(s"User info fails: groups attribute ${groupsAttrName} doesn't exist in user info"))
+        Future.failed(AuthenticationError(s"User info fails: groups attribute $groupsAttrName doesn't exist in user info"))
     }
   }
 

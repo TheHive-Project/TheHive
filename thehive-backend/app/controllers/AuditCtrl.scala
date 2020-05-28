@@ -30,7 +30,7 @@ class AuditCtrl @Inject()(
     * Return audit logs. For each item, include ancestor entities
     */
   @Timed
-  def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     val (audits, total) = auditSrv(rootId.filterNot(_ == "any"), count.getOrElse(10))
     renderer.toOutput(OK, audits, total)
   }

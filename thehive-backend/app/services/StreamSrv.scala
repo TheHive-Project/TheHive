@@ -29,7 +29,7 @@ object StreamActor {
   case class StreamMessages(messages: Seq[JsObject]) extends StreamActorMessage
 
   object StreamMessages {
-    val empty = StreamMessages(Nil)
+    val empty: StreamMessages = StreamMessages(Nil)
   }
 }
 

@@ -43,7 +43,7 @@ class MispSynchro @Inject()(
   private[misp] lazy val alertSrv = alertSrvProvider.get
 
   private[misp] def initScheduler(): Unit = {
-    val task = system.scheduler.schedule(0.seconds, mispConfig.interval) {
+    val task = system.scheduler.scheduleWithFixedDelay(0.seconds, mispConfig.interval) {() =>
       if (migrationSrv.isReady) {
         logger.info("Update of MISP events is starting ...")
         userSrv

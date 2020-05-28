@@ -34,7 +34,7 @@ class LogCtrl @Inject()(
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     logSrv
       .get(id)
       .map(log ⇒ renderer.toOutput(OK, log))
