@@ -5,15 +5,14 @@ import java.util.{Base64, Date}
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.connector.cortex.models.{Action, Job, JobStatus}
+import org.thp.thehive.controllers.v0
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, UserSrv}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-
-import org.thp.scalligraph.utils.Hash
-import org.thp.thehive.controllers.v0
 
 case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
@@ -44,9 +43,9 @@ trait Conversion {
 
   implicit val metaDataReads: Reads[MetaData] =
     ((JsPath \ "_id").read[String] and
-      (JsPath \ "createdBy").readWithDefault[String]("admin") and
+      (JsPath \ "createdBy").readWithDefault[String]("system@thehive.local").map(normaliseLogin) and
       (JsPath \ "createdAt").readWithDefault[Date](new Date) and
-      (JsPath \ "updatedBy").readNullable[String] and
+      (JsPath \ "updatedBy").readNullable[String].map(_.map(normaliseLogin)) and
       (JsPath \ "updatedAt").readNullable[Date])(MetaData.apply _)
 
   implicit val caseReads: Reads[InputCase] = Reads[InputCase] { json =>
@@ -76,7 +75,7 @@ trait Conversion {
       }
     } yield InputCase(
       Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary),
-      user,
+      user.map(normaliseLogin),
       Map(mainOrganisation -> ProfileSrv.orgAdmin.name),
       tags,
       (metricsValue ++ customFieldsValue).toMap,
@@ -138,7 +137,7 @@ trait Conversion {
         order: Int,
         dueDate: Option[Date]
       ),
-      owner,
+      owner.map(normaliseLogin),
       Seq(mainOrganisation)
     )
   }
@@ -231,6 +230,20 @@ trait Conversion {
 
   }
 
+  def normaliseLogin(login: String): String = {
+    def validSegment(value: String) = {
+      var len   = value.length
+      var start = 0
+      while (start < len && (value(start) == '.' || value(start) == '-')) start += 1
+      while (start < len && (value(len - 1) == '.' || value(len - 1) == '-')) len -= 1
+      if (start == len) "empty.name" else value.substring(start, len)
+    }
+    (login.replaceAll("[^\\w@-]+", ".").replaceFirst("\\W*$", "").split('@') match {
+      case Array(l)         => validSegment(l) + '@' + mainOrganisation
+      case Array(l, d @ _*) => validSegment(l) + '@' + validSegment(d.mkString("."))
+    }).toLowerCase
+  }
+
   implicit val userReads: Reads[InputUser] = Reads[InputUser] { json =>
     for {
       metaData <- json.validate[MetaData]
@@ -252,7 +265,7 @@ trait Conversion {
           InputAttachment(s"$login.avatar", data.size.toLong, "image/png", Nil, Source.single(ByteString(data)))
         }
       organisation = if (profile == ProfileSrv.admin.name) OrganisationSrv.administration.name else mainOrganisation
-    } yield InputUser(metaData, User(login.replaceAll("\\W+", "."), name, apikey, locked, password, None), Map(organisation -> profile), avatar)
+    } yield InputUser(metaData, User(normaliseLogin(login), name, apikey, locked, password, None), Map(organisation -> profile), avatar)
   }
 
   val metricsReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>
@@ -371,7 +384,7 @@ trait Conversion {
         order.getOrElse(1),
         dueDate
       ),
-      owner,
+      owner.map(normaliseLogin),
       Seq(mainOrganisation)
     )
   }
@@ -409,7 +422,6 @@ trait Conversion {
 
   def jobObservableReads(metaData: MetaData): Reads[InputObservable] = Reads[InputObservable] { json =>
     for {
-      metaData <- json.validate[MetaData]
       message  <- (json \ "message").validateOpt[String] orElse (json \ "attributes" \ "message").validateOpt[String]
       tlp      <- (json \ "tlp").validate[Int] orElse (json \ "attributes" \ "tlp").validate[Int] orElse JsSuccess(2)
       ioc      <- (json \ "ioc").validate[Boolean] orElse (json \ "attributes" \ "ioc").validate[Boolean] orElse JsSuccess(false)
