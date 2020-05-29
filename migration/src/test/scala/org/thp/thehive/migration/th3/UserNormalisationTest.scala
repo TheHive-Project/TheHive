@@ -13,6 +13,9 @@ class UserNormalisationTest extends PlaySpecification with Conversion {
     "convert simple name" in {
       normaliseLogin("myLogin") must beEqualTo("mylogin@thehive.local")
     }
+    "convert simple name with dash" in {
+      normaliseLogin("my-Login") must beEqualTo("my-login@thehive.local")
+    }
     "convert email address" in {
       normaliseLogin("Firstname.Lastname@Example.com") must beEqualTo("firstname.lastname@example.com")
     }
@@ -33,6 +36,9 @@ class UserNormalisationTest extends PlaySpecification with Conversion {
     }
     "convert email with invalid domain" in {
       normaliseLogin("first@```") must beEqualTo("first@thehive.local")
+    }
+    "convert email with dash" in {
+      normaliseLogin("-first-name-@-domain-name-") must beEqualTo("first-name@domain-name")
     }
   }
 }
