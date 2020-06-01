@@ -294,9 +294,9 @@ class Output @Inject() (
       logger.info(s"Create task ${inputTask.task.title} in case template $caseTemplateId")
       for {
         caseTemplate <- caseTemplateSrv.getOrFail(caseTemplateId)
-        taskOwner    <- inputTask.owner.map(userSrv.getOrFail).flip
-        richTask     <- taskSrv.create(inputTask.task, taskOwner)
-        _            <- caseTemplateSrv.addTask(caseTemplate, richTask.task)
+        taskOwner = inputTask.owner.flatMap(userSrv.get(_).headOption())
+        richTask <- taskSrv.create(inputTask.task, taskOwner)
+        _        <- caseTemplateSrv.addTask(caseTemplate, richTask.task)
       } yield IdMapping(inputTask.metaData.id, richTask._id)
   }
 
@@ -307,10 +307,10 @@ class Output @Inject() (
   override def createCase(inputCase: InputCase): Try[IdMapping] =
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.info(s"Create case #${inputCase.`case`.number}")
-      val user = inputCase.user.map(userSrv.getOrFail).flip.getOrElse(None)
+      val user = inputCase.user.flatMap(userSrv.get(_).headOption())
       for {
-        tags         <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
-        caseTemplate <- inputCase.caseTemplate.map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail()).flip
+        tags <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
+        caseTemplate = inputCase.caseTemplate.flatMap(caseTemplateSrv.get(_).richCaseTemplate.headOption())
         organisation <- inputCase.organisations.find(_._2 == ProfileSrv.orgAdmin.name) match {
           case Some(o) => getOrganisation(o._1)
           case None    => Failure(InternalError("Organisation not found"))
@@ -333,8 +333,8 @@ class Output @Inject() (
   override def createCaseTask(caseId: String, inputTask: InputTask): Try[IdMapping] =
     authTransaction(inputTask.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.info(s"Create task ${inputTask.task.title} in case $caseId")
+      val owner = inputTask.owner.flatMap(userSrv.get(_).headOption())
       for {
-        owner    <- inputTask.owner.map(userSrv.getOrFail).flip
         richTask <- taskSrv.create(inputTask.task, owner)
         case0    <- getCase(caseId)
         _ <- inputTask.organisations.toTry { organisation =>
