@@ -58,5 +58,6 @@ class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userS
       removeIndexLock("DataData")
       removePropertyLock("data")
     }
+    .addIndex("Tag", IndexType.tryUnique, "namespace", "predicate", "value")
     .execute(db)(userSrv.getSystemAuthContext)
 }
