@@ -4,7 +4,7 @@ import Common.remapPath
 mappings in Universal ~= {
   _.flatMap {
     case (_, "conf/application.conf")                => Nil
-    case (file, "conf/application.sample.conf.conf") => Seq(file -> "conf/application.conf")
+    case (file, "conf/application.sample.conf") => Seq(file -> "conf/application.conf")
     case (_, "conf/logback.xml")                     => Nil
     case other                                       => Seq(other)
   } ++ Seq(
