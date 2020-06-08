@@ -217,20 +217,3 @@ class Router @Inject() (
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
   }
 }
-/*
-
-POST     /maintenance/migrate                 org.elastic4play.controllers.MigrationCtrl.migrate
-#POST          /maintenance/rehash                         controllers.MaintenanceCtrl.reHash
-
-GET      /list                                org.elastic4play.dBListCtrl.list
-DELETE   /list/:itemId                        org.elastic4play.dBListCtrl.deleteItem(itemId)
-PATCH    /list/:itemId                        org.elastic4play.dBListCtrl.updateItem(itemId)
-POST     /list/:listName                      org.elastic4play.dBListCtrl.addItem(listName)
-GET      /list/:listName                      org.elastic4play.dBListCtrl.listItems(listName)
-POST     /list/:listName/_exists              org.elastic4play.dBListCtrl.itemExists(listName)
-
-->       /connector                           connectors.ConnectorRouter
-
-GET      / *file                                   controllers.AssetCtrl.get(file)
-
- */
