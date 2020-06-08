@@ -46,7 +46,6 @@
     -->
     <logger name="org.janusgraph.graphdb.transaction.StandardJanusGraphTx" level="ERROR"/>
     <logger name="org.thp.thehive" level="INFO"/>
-    <logger name="org.elastic4play.services" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="ASYNCFILE"/>

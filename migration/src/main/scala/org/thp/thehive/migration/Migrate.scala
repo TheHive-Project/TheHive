@@ -13,6 +13,7 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory}
 import scopt.OParser
+import scala.concurrent.duration.DurationInt
 
 object Migrate extends App with MigrationOps {
   def getVersion: String = Option(getClass.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
@@ -90,9 +91,14 @@ object Migrate extends App with MigrationOps {
     val output = th4.Output(Configuration(config.getConfig("output").withFallback(config)))
     val filter = Filter.fromConfig(config.getConfig("input.filter"))
 
-    val process        = migrate(input, output, filter)
-    val migrationStats = Await.result(process, Duration.Inf)
+    val process = migrate(input, output, filter)
+    actorSystem.scheduler.scheduleAtFixedRate(1.seconds, 1.seconds) { () =>
+      logger.info(migrationStats.showStats())
+      migrationStats.flush()
+    }
+    Await.result(process, Duration.Inf)
     println("Migration finished")
+    migrationStats.flush()
     println(migrationStats)
     System.exit(0)
   }

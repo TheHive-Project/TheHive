@@ -177,7 +177,7 @@ class Output @Inject() (
 
   override def createOrganisation(inputOrganisation: InputOrganisation): Try[IdMapping] = authTransaction(inputOrganisation.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create organisation ${inputOrganisation.organisation.name}")
+      logger.debug(s"Create organisation ${inputOrganisation.organisation.name}")
       organisationSrv.create(inputOrganisation.organisation).map(o => IdMapping(inputOrganisation.metaData.id, o._id))
   }
 
@@ -187,7 +187,7 @@ class Output @Inject() (
 
   override def createUser(inputUser: InputUser): Try[IdMapping] = authTransaction(inputUser.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create user ${inputUser.user.login}")
+      logger.debug(s"Create user ${inputUser.user.login}")
       for {
         validUser <- userSrv.checkUser(inputUser.user)
         createdUser <- userSrv
@@ -220,7 +220,7 @@ class Output @Inject() (
 
   override def createCustomField(inputCustomField: InputCustomField): Try[IdMapping] = authTransaction(inputCustomField.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create custom field ${inputCustomField.customField.name}")
+      logger.debug(s"Create custom field ${inputCustomField.customField.name}")
       customFieldSrv.create(inputCustomField.customField).map(cf => IdMapping(inputCustomField.customField.name, cf._id))
   }
 
@@ -230,7 +230,7 @@ class Output @Inject() (
 
   override def createObservableTypes(inputObservableType: InputObservableType): Try[IdMapping] =
     authTransaction(inputObservableType.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create observable types ${inputObservableType.observableType.name}")
+      logger.debug(s"Create observable types ${inputObservableType.observableType.name}")
       observableTypeSrv.create(inputObservableType.observableType).map(cf => IdMapping(inputObservableType.observableType.name, cf._id))
     }
 
@@ -240,7 +240,7 @@ class Output @Inject() (
 
   override def createProfile(inputProfile: InputProfile): Try[IdMapping] = authTransaction(inputProfile.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create profile ${inputProfile.profile.name}")
+      logger.debug(s"Create profile ${inputProfile.profile.name}")
       profileSrv.create(inputProfile.profile).map(profile => IdMapping(inputProfile.profile.name, profile._id))
   }
 
@@ -250,7 +250,7 @@ class Output @Inject() (
 
   override def createImpactStatus(inputImpactStatus: InputImpactStatus): Try[IdMapping] = authTransaction(inputImpactStatus.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create impact status ${inputImpactStatus.impactStatus.value}")
+      logger.debug(s"Create impact status ${inputImpactStatus.impactStatus.value}")
       impactStatusSrv.create(inputImpactStatus.impactStatus).map(status => IdMapping(inputImpactStatus.impactStatus.value, status._id))
   }
 
@@ -260,7 +260,7 @@ class Output @Inject() (
 
   override def createResolutionStatus(inputResolutionStatus: InputResolutionStatus): Try[IdMapping] =
     authTransaction(inputResolutionStatus.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create resolution status ${inputResolutionStatus.resolutionStatus.value}")
+      logger.debug(s"Create resolution status ${inputResolutionStatus.resolutionStatus.value}")
       resolutionStatusSrv
         .create(inputResolutionStatus.resolutionStatus)
         .map(status => IdMapping(inputResolutionStatus.resolutionStatus.value, status._id))
@@ -272,7 +272,7 @@ class Output @Inject() (
 
   override def createCaseTemplate(inputCaseTemplate: InputCaseTemplate): Try[IdMapping] = authTransaction(inputCaseTemplate.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create case template ${inputCaseTemplate.caseTemplate.name}")
+      logger.debug(s"Create case template ${inputCaseTemplate.caseTemplate.name}")
       for {
         organisation     <- getOrganisation(inputCaseTemplate.organisation)
         richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.caseTemplate, organisation, inputCaseTemplate.tags, Nil, Nil)
@@ -291,7 +291,7 @@ class Output @Inject() (
 
   override def createCaseTemplateTask(caseTemplateId: String, inputTask: InputTask): Try[IdMapping] = authTransaction(inputTask.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create task ${inputTask.task.title} in case template $caseTemplateId")
+      logger.debug(s"Create task ${inputTask.task.title} in case template $caseTemplateId")
       for {
         caseTemplate <- caseTemplateSrv.getOrFail(caseTemplateId)
         taskOwner = inputTask.owner.flatMap(userSrv.get(_).headOption())
@@ -306,7 +306,7 @@ class Output @Inject() (
 
   override def createCase(inputCase: InputCase): Try[IdMapping] =
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create case #${inputCase.`case`.number}")
+      logger.debug(s"Create case #${inputCase.`case`.number}")
       val user = inputCase.user.flatMap(userSrv.get(_).headOption())
       for {
         tags <- inputCase.tags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
@@ -332,7 +332,7 @@ class Output @Inject() (
 
   override def createCaseTask(caseId: String, inputTask: InputTask): Try[IdMapping] =
     authTransaction(inputTask.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create task ${inputTask.task.title} in case $caseId")
+      logger.debug(s"Create task ${inputTask.task.title} in case $caseId")
       val owner = inputTask.owner.flatMap(userSrv.get(_).headOption())
       for {
         richTask <- taskSrv.create(inputTask.task, owner)
@@ -347,7 +347,7 @@ class Output @Inject() (
     authTransaction(inputLog.metaData.createdBy) { implicit graph => implicit authContext =>
       for {
         task <- taskSrv.getOrFail(taskId)
-        _ = logger.info(s"Create log in task ${task.title}")
+        _ = logger.debug(s"Create log in task ${task.title}")
         log <- logSrv.create(inputLog.log, task)
         _ <- inputLog.attachments.toTry { inputAttachment =>
           attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap { attachment =>
@@ -380,7 +380,7 @@ class Output @Inject() (
 
   override def createCaseObservable(caseId: String, inputObservable: InputObservable): Try[IdMapping] =
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
+      logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
       for {
         observableType <- getObservableType(inputObservable.`type`)
         richObservable <- inputObservable.dataOrAttachment match {
@@ -399,7 +399,7 @@ class Output @Inject() (
 
   override def createJob(observableId: String, inputJob: InputJob): Try[IdMapping] =
     authTransaction(inputJob.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create job ${inputJob.job.cortexId}:${inputJob.job.workerName}:${inputJob.job.cortexJobId}")
+      logger.debug(s"Create job ${inputJob.job.cortexId}:${inputJob.job.workerName}:${inputJob.job.cortexJobId}")
       for {
         observable <- observableSrv.getOrFail(observableId)
         job        <- jobSrv.create(inputJob.job, observable)
@@ -408,7 +408,7 @@ class Output @Inject() (
 
   override def createJobObservable(jobId: String, inputObservable: InputObservable): Try[IdMapping] =
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in job $jobId")
+      logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in job $jobId")
       for {
         job            <- jobSrv.getOrFail(jobId)
         observableType <- getObservableType(inputObservable.`type`)
@@ -434,7 +434,7 @@ class Output @Inject() (
 
   override def createAlert(inputAlert: InputAlert): Try[IdMapping] = authTransaction(inputAlert.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
+      logger.debug(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
       for {
         organisation <- getOrganisation(inputAlert.organisation)
         caseTemplate = inputAlert
@@ -454,7 +454,7 @@ class Output @Inject() (
 
   override def createAlertObservable(alertId: String, inputObservable: InputObservable): Try[IdMapping] =
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.info(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
+      logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
       for {
         observableType <- getObservableType(inputObservable.`type`)
         richObservable <- inputObservable.dataOrAttachment match {
@@ -482,7 +482,7 @@ class Output @Inject() (
 
   override def createAction(objectId: String, inputAction: InputAction): Try[IdMapping] = authTransaction(inputAction.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(
+      logger.debug(
         s"Create action ${inputAction.action.cortexId}:${inputAction.action.workerName}:${inputAction.action.cortexJobId} for ${inputAction.objectType} $objectId"
       )
       for {
@@ -493,7 +493,7 @@ class Output @Inject() (
 
   override def createAudit(contextId: String, inputAudit: InputAudit): Try[Unit] = authTransaction(inputAudit.metaData.createdBy) {
     implicit graph => implicit authContext =>
-      logger.info(s"Create audit ${inputAudit.audit.action} on ${inputAudit.audit.objectType} ${inputAudit.audit.objectId}")
+      logger.debug(s"Create audit ${inputAudit.audit.action} on ${inputAudit.audit.objectType} ${inputAudit.audit.objectId}")
       for {
         obj <- (for {
           t <- inputAudit.audit.objectType
