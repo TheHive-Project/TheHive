@@ -505,8 +505,8 @@ angular.module('thehive', [
     .config(function($httpProvider) {
         'use strict';
 
-        $httpProvider.defaults.xsrfCookieName = 'THE-HIVE-XSRF-TOKEN';
-        $httpProvider.defaults.xsrfHeaderName = 'X-THE-HIVE-XSRF-TOKEN';
+        $httpProvider.defaults.xsrfCookieName = 'THEHIVE-XSRF-TOKEN';
+        $httpProvider.defaults.xsrfHeaderName = 'X-THEHIVE-XSRF-TOKEN';
         $httpProvider.interceptors.push(function($rootScope, $q) {
             var isApiCall = function(url) {
                 return url && url.startsWith('./api') && !url.startsWith('./api/stream');
