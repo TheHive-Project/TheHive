@@ -59,5 +59,6 @@ class SchemaUpdater @Inject() (theHiveSchema: TheHiveSchema, db: Database, userS
       removePropertyLock("data")
     }
     .addIndex("Tag", IndexType.tryUnique, "namespace", "predicate", "value")
+    .dbOperation[JanusDatabase]("Enable indexes")(_.enableIndexes())
     .execute(db)(userSrv.getSystemAuthContext)
 }
