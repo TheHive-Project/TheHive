@@ -61,8 +61,8 @@ libraryDependencies in ThisBuild ++= {
   }
 }
 dependencyOverrides in ThisBuild ++= Seq(
-  "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
-  "org.elasticsearch.client"   % "elasticsearch-rest-client" % "6.7.2"
+//  "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
+  "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.7.2"
 )
 PlayKeys.includeDocumentationInBinary := false
 milestoneFilter := ((milestone: Milestone) => milestone.title.startsWith("4"))
@@ -310,7 +310,7 @@ lazy val thehiveMigration = (project in file("migration"))
       elastic4sCore,
       elastic4sHttpStreams,
       elastic4sHttp,
-      jts,
+//      jts,
       ehcache,
       scopt,
       specs % Test
