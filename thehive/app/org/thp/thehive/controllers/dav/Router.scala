@@ -37,11 +37,11 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, db: Database, attachme
   }
 
   def debug(): Action[AnyContent] = entrypoint("DAV options") { request =>
-    println(s"request ${request.method} ${request.path}")
+    logger.debug(s"request ${request.method} ${request.path}")
     request.headers.headers.foreach {
-      case (k, v) => println(s"$k: $v")
+      case (k, v) => logger.debug(s"$k: $v")
     }
-    println(request.body)
+    logger.debug(request.body.toString)
     Success(Results.Ok(""))
   }
 

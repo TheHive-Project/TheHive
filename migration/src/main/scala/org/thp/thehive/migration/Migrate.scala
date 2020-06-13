@@ -92,14 +92,14 @@ object Migrate extends App with MigrationOps {
     val filter = Filter.fromConfig(config.getConfig("input.filter"))
 
     val process = migrate(input, output, filter)
-    actorSystem.scheduler.scheduleAtFixedRate(1.seconds, 1.seconds) { () =>
+    actorSystem.scheduler.scheduleAtFixedRate(10.seconds, 10.seconds) { () =>
       logger.info(migrationStats.showStats())
       migrationStats.flush()
     }
     Await.result(process, Duration.Inf)
-    println("Migration finished")
+    logger.info("Migration finished")
     migrationStats.flush()
-    println(migrationStats)
+    logger.info(migrationStats.toString)
     System.exit(0)
   }
 }
