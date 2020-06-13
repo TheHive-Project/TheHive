@@ -9,7 +9,7 @@ import play.api.Logger
 
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
-import org.thp.misp.dto.{Attribute, Tag}
+import org.thp.misp.dto.{Attribute, Tag => MispTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.steps.StepsOps._
@@ -48,7 +48,7 @@ class MispExportSrv @Inject() (
             value = observable.data.fold(observable.attachment.get.name)(_.data),
             firstSeen = None,
             lastSeen = None,
-            tags = observable.tags.map(t => Tag(None, t.toString, Some(t.colour), None))
+            tags = observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None))
           )
       }
       .orElse {
@@ -128,7 +128,7 @@ class MispExportSrv @Inject() (
         )
       }
       org          <- organisationSrv.getOrFail(authContext.organisation)
-      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Set.empty, Map.empty, None)
+      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Map.empty[String, Option[Any]], None)
       _            <- alertSrv.alertCaseSrv.create(AlertCase(), createdAlert.alert, `case`)
     } yield createdAlert
 

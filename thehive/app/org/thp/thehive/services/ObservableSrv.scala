@@ -60,11 +60,23 @@ class ObservableSrv @Inject() (
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] =
+    tagNames.toTry(tagSrv.getOrCreate).flatMap(tags => create(observable, `type`, attachment, tags, extensions))
+
+  def create(
+      observable: Observable,
+      `type`: ObservableType with Entity,
+      attachment: Attachment with Entity,
+      tags: Seq[Tag with Entity],
+      extensions: Seq[KeyValue]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
     for {
       createdObservable <- createEntity(observable)
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
       _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
-      tags              <- addTags(createdObservable, tagNames)
+      _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       ext               <- addExtensions(createdObservable, extensions)
     } yield RichObservable(createdObservable, `type`, None, Some(attachment), tags, None, ext, Nil)
 
@@ -73,11 +85,26 @@ class ObservableSrv @Inject() (
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
+      tags           <- tagNames.toTry(tagSrv.getOrCreate)
+      data           <- dataSrv.create(Data(dataValue))
+      richObservable <- create(observable, `type`, data, tags, extensions)
+    } yield richObservable
+
+  def create(
+      observable: Observable,
+      `type`: ObservableType with Entity,
+      data: Data with Entity,
+      tags: Seq[Tag with Entity],
+      extensions: Seq[KeyValue]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
+    for {
       createdObservable <- createEntity(observable)
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
-      data              <- dataSrv.create(Data(dataValue))
       _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
-      tags              <- addTags(createdObservable, tagNames)
+      _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       ext               <- addExtensions(createdObservable, extensions)
     } yield RichObservable(createdObservable, `type`, Some(data), None, tags, None, ext, Nil)
 

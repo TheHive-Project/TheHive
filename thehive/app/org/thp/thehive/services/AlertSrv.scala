@@ -54,6 +54,18 @@ class AlertSrv @Inject() (
   )(
       implicit graph: Graph,
       authContext: AuthContext
+  ): Try[RichAlert] =
+    tagNames.toTry(tagSrv.getOrCreate).flatMap(create(alert, organisation, _, customFields, caseTemplate))
+
+  def create(
+      alert: Alert,
+      organisation: Organisation with Entity,
+      tags: Seq[Tag with Entity],
+      customFields: Map[String, Option[Any]],
+      caseTemplate: Option[CaseTemplate with Entity]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
   ): Try[RichAlert] = {
     val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).getCount
     if (alertAlreadyExist > 0)
@@ -63,7 +75,6 @@ class AlertSrv @Inject() (
         createdAlert <- createEntity(alert)
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
-        tags         <- tagNames.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
         cfs          <- customFields.toTry { case (name, value) => createCustomField(createdAlert, name, value) }
         richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
