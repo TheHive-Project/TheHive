@@ -63,6 +63,9 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   override def createSchemaFrom(schemaObject: Schema)(implicit authContext: AuthContext): Try[Unit]            = db.createSchemaFrom(schemaObject)(authContext)
   override def createSchema(model: Model, models: Model*): Try[Unit]                                           = db.createSchema(model, models: _*)
   override def createSchema(models: Seq[Model]): Try[Unit]                                                     = db.createSchema(models)
+  override def addSchemaIndexes(schemaObject: Schema): Try[Unit]                                               = db.addSchemaIndexes(schemaObject)
+  override def addSchemaIndexes(model: Model, models: Model*): Try[Unit]                                       = db.addSchemaIndexes(model, models: _*)
+  override def addSchemaIndexes(models: Seq[Model]): Try[Unit]                                                 = db.addSchemaIndexes(models)
   override def addProperty[T](model: String, propertyName: String, mapping: Mapping[_, _, _]): Try[Unit] =
     db.addProperty(model, propertyName, mapping)
   override def removeProperty(model: String, propertyName: String, usedOnlyByThisModel: Boolean): Try[Unit] =
