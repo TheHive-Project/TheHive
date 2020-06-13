@@ -21,6 +21,8 @@ import org.thp.thehive.migration.dto.{
 }
 
 trait Output {
+  def startMigration(): Try[Unit]
+  def endMigration(): Try[Unit]
   def profileExists(inputProfile: InputProfile): Boolean
   def createProfile(inputProfile: InputProfile): Try[IdMapping]
   def organisationExists(inputOrganisation: InputOrganisation): Boolean

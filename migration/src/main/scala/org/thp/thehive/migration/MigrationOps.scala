@@ -342,6 +342,7 @@ trait MigrationOps {
         }
     }
 
+    output.startMigration()
     input.countOrganisations(filter).foreach(count => migrationStats.setTotal("Organisation", count))
     input.countCases(filter).foreach(count => migrationStats.setTotal("Case", count))
     input.countCaseObservables(filter).foreach(count => migrationStats.setTotal("Case/Observable", count))
@@ -372,6 +373,7 @@ trait MigrationOps {
       _ <- migrate("ObservableType", input.listObservableTypes(filter), output.createObservableTypes, output.observableTypeExists)
       _ <- migrateWholeCaseTemplates(input, output, filter)
       _ <- migrateCasesAndAlerts()
+      _ <- Future.fromTry(output.endMigration())
     } yield ()
   }
 }
