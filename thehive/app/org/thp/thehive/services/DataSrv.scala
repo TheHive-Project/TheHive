@@ -2,10 +2,9 @@ package org.thp.thehive.services
 
 import java.lang.{Long => JLong}
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.actor.ActorRef
 import gremlin.scala.{Graph, GremlinScala, P, Vertex}
-import javax.inject.{Inject, Named, Provider, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
@@ -59,10 +58,7 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def useCount: Traversal[JLong, JLong] = Traversal(raw.inTo[ObservableData].count())
 }
 
-class DataDedupActor @Inject() (val db: Database, val service: DataSrv) extends DedupActor[Data] {
-  override val min: FiniteDuration = 10.seconds
-  override val max: FiniteDuration = 1.minute
-
+class DataDedupOps(val db: Database, val service: DataSrv) extends DedupOps[Data] {
   override def resolve(entities: List[Data with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
       tail.foreach(copyEdge(_, head))
@@ -72,13 +68,10 @@ class DataDedupActor @Inject() (val db: Database, val service: DataSrv) extends 
   }
 }
 
-class DataDedupActorProvider @Inject() (system: ActorSystem, @Named("data-dedup-actor-singleton") DataDedupActorSingleton: ActorRef)
-    extends Provider[ActorRef] {
-  override def get(): ActorRef =
-    system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = DataDedupActorSingleton.path.toStringWithoutAddress,
-        settings = ClusterSingletonProxySettings(system)
-      )
-    )
+class DataDedupActor @Inject() (db: Database, service: DataSrv) extends DataDedupOps(db, service) with DedupActor {
+  override val min: FiniteDuration = 10.seconds
+  override val max: FiniteDuration = 1.minute
 }
+
+@Singleton
+class DataDedupActorProvider extends DedupActorProvider[DataDedupActor]("Data")

@@ -1,7 +1,6 @@
 package org.thp.thehive
 
-import akka.actor.{ActorRef, PoisonPill}
-import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
+import akka.actor.ActorRef
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
@@ -10,7 +9,7 @@ import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{HadoopStorageSrv, S3StorageSrv}
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{CaseDedupActor, CaseDedupActorProvider, DataDedupActor, DataDedupActorProvider, TOTPAuthSrvProvider}
+import org.thp.thehive.services.{CaseDedupActorProvider, DataDedupActorProvider, TOTPAuthSrvProvider, TagDedupActorProvider}
 import play.api.libs.concurrent.AkkaGuiceSupport
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
@@ -87,35 +86,9 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     bindActor[ConfigActor]("config-actor")
     bindActor[NotificationActor]("notification-actor")
 
-    bindActor[DataDedupActor](
-      "data-dedup-actor-singleton",
-      props =>
-        ClusterSingletonManager
-          .props(
-            singletonProps = props,
-            terminationMessage = PoisonPill,
-            settings = ClusterSingletonManagerSettings(configuration.get[Configuration]("akka.cluster.singleton").underlying)
-          )
-    )
-    bind[ActorRef]
-      .annotatedWithName("data-dedup-actor")
-      .toProvider[DataDedupActorProvider]
-      .asEagerSingleton()
-
-    bindActor[CaseDedupActor](
-      "case-dedup-actor-singleton",
-      props =>
-        ClusterSingletonManager
-          .props(
-            singletonProps = props,
-            terminationMessage = PoisonPill,
-            settings = ClusterSingletonManagerSettings(configuration.get[Configuration]("akka.cluster.singleton").underlying)
-          )
-    )
-    bind[ActorRef]
-      .annotatedWithName("case-dedup-actor")
-      .toProvider[CaseDedupActorProvider]
-      .asEagerSingleton()
+    bind[ActorRef].annotatedWithName("data-dedup-actor").toProvider[DataDedupActorProvider]
+    bind[ActorRef].annotatedWithName("case-dedup-actor").toProvider[CaseDedupActorProvider]
+    bind[ActorRef].annotatedWithName("tag-dedup-actor").toProvider[TagDedupActorProvider]
 
     bind[SchemaUpdater].asEagerSingleton()
     bind[ClusterSetup].asEagerSingleton()

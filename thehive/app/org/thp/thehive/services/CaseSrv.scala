@@ -2,10 +2,9 @@ package org.thp.thehive.services
 
 import java.util.{List => JList, Set => JSet}
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.actor.ActorRef
 import gremlin.scala._
-import javax.inject.{Inject, Named, Provider, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
@@ -615,10 +614,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])
 }
 
-class CaseDedupActor @Inject() (val db: Database, val service: CaseSrv) extends DedupActor[Case] {
-  override val min: FiniteDuration = 5.seconds
-  override val max: FiniteDuration = 10.seconds
-
+class CaseDedupOps(val db: Database, val service: CaseSrv) extends DedupOps[Case] {
   override def resolve(entities: List[Case with Entity])(implicit graph: Graph): Try[Unit] = {
     val nextNumber = service.nextCaseNumber
     entities
@@ -634,13 +630,10 @@ class CaseDedupActor @Inject() (val db: Database, val service: CaseSrv) extends 
   }
 }
 
-class CaseDedupActorProvider @Inject() (system: ActorSystem, @Named("case-dedup-actor-singleton") CaseDedupActorSingleton: ActorRef)
-    extends Provider[ActorRef] {
-  override def get(): ActorRef =
-    system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = CaseDedupActorSingleton.path.toStringWithoutAddress,
-        settings = ClusterSingletonProxySettings(system)
-      )
-    )
+class CaseDedupActor @Inject() (db: Database, service: CaseSrv) extends CaseDedupOps(db, service) with DedupActor {
+  override val min: FiniteDuration = 5.seconds
+  override val max: FiniteDuration = 10.seconds
 }
+
+@Singleton
+class CaseDedupActorProvider extends DedupActorProvider[CaseDedupActor]("Case")
