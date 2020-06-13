@@ -36,7 +36,7 @@ object Tag {
   val namespacePredicateValueColour: Regex = "([^\".:=]+)[.:]([\".=]+)=\"([^\"]+)\"#(\\p{XDigit}{6})".r
   val namespacePredicateValue: Regex       = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
   val namespacePredicate: Regex            = "([^\".:=]+)[.:]([^\".=]+)".r
-  val PredicateValue: Regex                = "([^\".:=]+)=\"([^\"]+)\"".r
+  val PredicateValue: Regex                = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
   val predicate: Regex                     = "([^\".:=]+)".r
 
   def fromString(tagName: String, defaultNamespace: String, defaultColour: Int = 0): Tag = {
@@ -45,11 +45,12 @@ object Tag {
       case Array(n)    => n -> defaultColour
     }
     name match {
-      case namespacePredicateValue(namespace, predicate, value) => Tag(namespace, predicate, Some(value), None, colour)
-      case namespacePredicate(namespace, predicate)             => Tag(namespace, predicate, None, None, colour)
-      case PredicateValue(predicate, value)                     => Tag(defaultNamespace, predicate, Some(value), None, colour)
-      case predicate(predicate)                                 => Tag(defaultNamespace, predicate, None, None, colour)
-      case _                                                    => Tag(defaultNamespace, name, None, None, colour)
+      case namespacePredicateValue(namespace, predicate, value) if value.exists(_ != '=') =>
+        Tag(namespace.trim, predicate.trim, Some(value.trim), None, colour)
+      case namespacePredicate(namespace, predicate) => Tag(namespace.trim, predicate.trim, None, None, colour)
+      case PredicateValue(predicate, value)         => Tag(defaultNamespace, predicate.trim, Some(value.trim), None, colour)
+      case predicate(predicate)                     => Tag(defaultNamespace, predicate.trim, None, None, colour)
+      case _                                        => Tag(defaultNamespace, name, None, None, colour)
     }
   }
 }
