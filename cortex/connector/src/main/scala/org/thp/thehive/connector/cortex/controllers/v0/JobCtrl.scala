@@ -31,7 +31,7 @@ class JobCtrl @Inject() (
 ) extends QueryableCtrl {
   lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "job"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.job
+  override val publicProperties: List[PublicProperty[_, _]] = properties.job ::: metaProperties[JobSteps]
   override val initialQuery: Query =
     Query.init[JobSteps]("listJob", (graph, authContext) => jobSrv.initSteps(graph).visible(authContext))
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, JobSteps](
