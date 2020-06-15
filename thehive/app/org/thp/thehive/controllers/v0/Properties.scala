@@ -343,7 +343,10 @@ class Properties @Inject() (
       .property("tlp", UniMapping.int)(_.field.updatable)
       .property("dataType", UniMapping.string)(_.select(_.observableType.name).readonly)
       .property("data", UniMapping.string.optional)(_.select(_.data.data).readonly)
-      // TODO add attachment ?
+      .property("attachment.name", UniMapping.string.optional)(_.select(_.attachments.name).readonly)
+      .property("attachment.size", UniMapping.long.optional)(_.select(_.attachments.size).readonly)
+      .property("attachment.contentType", UniMapping.string.optional)(_.select(_.attachments.contentType).readonly)
+      .property("attachment.hashes", UniMapping.string)(_.select(_.attachments.hashes.map(_.toString)).readonly)
       .build
 
   lazy val organisation: List[PublicProperty[_, _]] =
