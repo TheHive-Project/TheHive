@@ -1,10 +1,10 @@
 package org.thp.thehive.controllers.v0
 
+import java.util.Date
+
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
-
 import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
 import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
@@ -210,8 +210,8 @@ class Properties @Inject() (
         _.select(
           _.coalesce(
             _.has("endDate")
-              .sack((_: Long, endDate: Long) => endDate, By(Key[Long]("endDate")))
-              .sack((_: Long) - (_: Long), By(Key[Long]("startDate")))
+              .sack((_: Long, endDate: Long) => endDate, By(__.value(Key[Date]("endDate")).map(_.getTime)))
+              .sack((_: Long) - (_: Long), By(__.value(Key[Date]("startDate")).map(_.getTime)))
               .sack((_: Long) / (_: Long), By(__.constant(3600000L)))
               .sack[Long](),
             _.constant(0L)
