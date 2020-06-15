@@ -35,7 +35,7 @@ object Tag {
   lazy val logger: Logger                  = Logger(getClass)
   val namespacePredicateValueColour: Regex = "([^\".:=]+)[.:]([\".=]+)=\"([^\"]+)\"#(\\p{XDigit}{6})".r
   val namespacePredicateValue: Regex       = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
-  val namespacePredicate: Regex            = "([^\".:=]+)[.:]([^\".=]+)".r
+  val namespacePredicate: Regex            = "([^\".:=]+)[.]([^\".=]+)".r
   val PredicateValue: Regex                = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
   val predicate: Regex                     = "([^\".:=]+)".r
 
