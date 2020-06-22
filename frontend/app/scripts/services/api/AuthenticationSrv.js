@@ -5,6 +5,7 @@
         .factory('AuthenticationSrv', function($http, $q, UtilsSrv, SecuritySrv, UserSrv) {
             var self = {
                 currentUser: null,
+                homeState: null,
                 login: function(username, password, code) {
                     var post = {
                         user: username,
@@ -49,8 +50,15 @@
                             var userData = response.data;
 
                             self.currentUser = userData;
-                            UserSrv.updateCache(userData.login, userData);
-                            UtilsSrv.shallowClearAndCopy(userData, result);
+
+                            if(self.isSuperAdmin()) {
+                                self.currentUser.homeState = 'app.administration.organisations';
+                            } else {
+                                self.currentUser.homeState = 'app.cases';
+                            }
+
+                            UserSrv.updateCache(self.currentUser.login, self.currentUser);
+                            UtilsSrv.shallowClearAndCopy(self.currentUser, result);
 
                             return $q.resolve(result);
                         })
