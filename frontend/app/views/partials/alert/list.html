@@ -7,7 +7,7 @@
             <div class="box-body">
                 <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
 
-                <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
+                <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-if="$vm.filtering.context.showStats"></div>
 
                 <div class="mt-s filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
 

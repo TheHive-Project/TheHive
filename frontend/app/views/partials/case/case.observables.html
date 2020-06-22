@@ -75,7 +75,7 @@
 
 <!-- <pre>{{uiSrv.context | json}}</pre> -->
 
-<div class="filter-panel" ng-include="'views/partials/observables/list/mini-stats.html'" ng-show="filtering.context.showStats"></div>
+<div class="filter-panel" ng-include="'views/partials/observables/list/mini-stats.html'" ng-if="filtering.context.showStats"></div>
 <br>
 
 <div class="filter-panel" ng-include="'views/partials/observables/list/filters.html'" ng-show="filtering.context.showFilters"></div>

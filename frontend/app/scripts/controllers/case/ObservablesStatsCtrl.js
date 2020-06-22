@@ -6,7 +6,7 @@
 
     angular.module('theHiveControllers').controller('ObservablesStatsCtrl',
         function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv) {
-            var self = this;            
+            var self = this;
 
             this.byType = {};
             this.byIoc = {};
@@ -25,46 +25,49 @@
                 }]
             };
 
-            // Get stats by tags
-            StreamStatSrv({
-                scope: $scope,
-                rootId: $stateParams.caseId,
-                query: defaultQuery,
-                objectType: 'case_artifact',
-                field: 'tags',
-                sort: ['_count'],
-                limit: 10,
-                result: {},
-                success: function(data){
-                    self.byTags = self.prepareResult(data);
-                }
-            });
+            self.$onInit = function() {
 
-            // Get stats by type
-            StreamStatSrv({
-                scope: $scope,
-                rootId: $stateParams.caseId,
-                query: defaultQuery,
-                objectType: 'case_artifact',
-                field: 'dataType',
-                result: {},
-                success: function(data){
-                    self.byType = self.prepareResult(data);
-                }
-            });
+                // Get stats by tags
+                StreamStatSrv({
+                    scope: $scope,
+                    rootId: $stateParams.caseId,
+                    query: defaultQuery,
+                    objectType: 'case_artifact',
+                    field: 'tags',
+                    sort: ['_count'],
+                    limit: 10,
+                    result: {},
+                    success: function(data){
+                        self.byTags = self.prepareResult(data);
+                    }
+                });
 
-            // Get stats by ioc
-            StreamStatSrv({
-                scope: $scope,
-                rootId: $stateParams.caseId,
-                query: defaultQuery,
-                objectType: 'case_artifact',
-                field: 'ioc',
-                result: {},
-                success: function(data){
-                    self.byIoc = self.prepareResult(data);
-                }
-            });
+                // Get stats by type
+                StreamStatSrv({
+                    scope: $scope,
+                    rootId: $stateParams.caseId,
+                    query: defaultQuery,
+                    objectType: 'case_artifact',
+                    field: 'dataType',
+                    result: {},
+                    success: function(data){
+                        self.byType = self.prepareResult(data);
+                    }
+                });
+
+                // Get stats by ioc
+                StreamStatSrv({
+                    scope: $scope,
+                    rootId: $stateParams.caseId,
+                    query: defaultQuery,
+                    objectType: 'case_artifact',
+                    field: 'ioc',
+                    result: {},
+                    success: function(data){
+                        self.byIoc = self.prepareResult(data);
+                    }
+                });
+            };
 
             this.prepareResult = function(rawStats) {
                 var total = rawStats.count;

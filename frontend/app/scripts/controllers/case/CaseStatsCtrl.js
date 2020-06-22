@@ -12,46 +12,49 @@
             this.byStatus = {};
             this.byTags = {};
 
-            // Get stats by tags
-            StreamStatSrv({
-                scope: $scope,
-                rootId: 'any',
-                query: {},
-                objectType: 'case',
-                field: 'tags',
-                sort: ['-count'],
-                limit: 5,
-                result: {},
-                success: function(data){
-                    self.byTags = self.prepareResult(data);
-                }
-            });
+            self.$onInit = function() {                
 
-            // Get stats by type
-            StreamStatSrv({
-                scope: $scope,
-                rootId: 'any',
-                query: {},
-                objectType: 'case',
-                field: 'status',
-                result: {},
-                success: function(data){
-                    self.byStatus = self.prepareResult(data);
-                }
-            });
+                // Get stats by tags
+                StreamStatSrv({
+                    scope: $scope,
+                    rootId: 'any',
+                    query: {},
+                    objectType: 'case',
+                    field: 'tags',
+                    sort: ['-count'],
+                    limit: 5,
+                    result: {},
+                    success: function(data){
+                        self.byTags = self.prepareResult(data);
+                    }
+                });
 
-            // Get stats by ioc
-            StreamStatSrv({
-                scope: $scope,
-                rootId: 'any',
-                query: {},
-                objectType: 'case',
-                field: 'resolutionStatus',
-                result: {},
-                success: function(data){
-                    self.byResolution = self.prepareResult(data);
-                }
-            });
+                // Get stats by type
+                StreamStatSrv({
+                    scope: $scope,
+                    rootId: 'any',
+                    query: {},
+                    objectType: 'case',
+                    field: 'status',
+                    result: {},
+                    success: function(data){
+                        self.byStatus = self.prepareResult(data);
+                    }
+                });
+
+                // Get stats by ioc
+                StreamStatSrv({
+                    scope: $scope,
+                    rootId: 'any',
+                    query: {},
+                    objectType: 'case',
+                    field: 'resolutionStatus',
+                    result: {},
+                    success: function(data){
+                        self.byResolution = self.prepareResult(data);
+                    }
+                });
+            };
 
             this.prepareResult = function(rawStats) {
                 var total = rawStats.count;
@@ -70,7 +73,7 @@
                     total: total,
                     details: columns
                 };
-            };            
+            };
         }
     );
 })();
