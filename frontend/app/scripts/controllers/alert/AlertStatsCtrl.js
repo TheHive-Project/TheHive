@@ -14,7 +14,7 @@
             this.byStatus = {};
             this.byTags = {};
 
-            self.$onInit = function() {                
+            self.$onInit = function() {
 
                 // Get stats by tags
                 StreamStatSrv({
@@ -27,7 +27,7 @@
                     limit: 5,
                     result: {},
                     success: function(data){
-                        self.byTags = self.prepareResult(data);
+                        self.byTags = StatSrv.prepareResult(data);
                     }
                 });
 
@@ -40,7 +40,7 @@
                     field: 'status',
                     result: {},
                     success: function(data){
-                        self.byStatus = self.prepareResult(data);
+                        self.byStatus = StatSrv.prepareResult(data);
                     }
                 });
 
@@ -55,28 +55,9 @@
                     limit: 5,
                     result: {},
                     success: function(data){
-                        self.byType = self.prepareResult(data);
+                        self.byType = StatSrv.prepareResult(data);
                     }
                 });
-            };
-
-            this.prepareResult = function(rawStats) {
-                var total = rawStats.count;
-
-                var keys = _.without(_.keys(rawStats), 'count');
-                var columns = keys.map(function(key) {
-                    return {
-                        key: key,
-                        count: rawStats[key].count
-                    };
-                }).sort(function(a, b) {
-                    return a.count <= b.count;
-                });
-
-                return {
-                    total: total,
-                    details: columns
-                };
             };
 
             this.filterBy = function(field, value) {

@@ -70,9 +70,27 @@
                 return result;
             }
 
+            function prepareResult(rawStats) {
+                var total = rawStats.count;
+
+                var keys = _.without(_.keys(rawStats), 'count');
+                var columns = keys.map(function(key) {
+                    return {
+                        key: key,
+                        count: rawStats[key].count
+                    };
+                });
+
+                return {
+                    total: total,
+                    details: _.sortBy(columns, 'count').reverse()
+                };
+            }
+
             return {
                 'get': get,
-                'getPromise': getPromise
+                'getPromise': getPromise,
+                'prepareResult': prepareResult
             };
         });
 })();
