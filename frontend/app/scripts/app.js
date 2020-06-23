@@ -617,5 +617,12 @@ angular.module('thehive', [
                 $rootScope.title = toState.title;
             }
         });
+
+        $rootScope.$on('$stateChangeError',  function(event, toState, toParams, fromState, fromParams, error){
+            if(error && error.status && error.status === 401) {
+                event.preventDefault();
+                $state.go('login');
+            }
+        });
     })
     .constant('UrlParser', url);
