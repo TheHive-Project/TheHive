@@ -50,12 +50,7 @@
                             var userData = response.data;
 
                             self.currentUser = userData;
-
-                            if(self.isSuperAdmin()) {
-                                self.currentUser.homeState = 'app.administration.organisations';
-                            } else {
-                                self.currentUser.homeState = 'app.cases';
-                            }
+                            self.currentUser.homeState = self.getHomePage();
 
                             UserSrv.updateCache(self.currentUser.login, self.currentUser);
                             UtilsSrv.shallowClearAndCopy(self.currentUser, result);
@@ -75,6 +70,23 @@
                     var user = self.currentUser;
 
                     return user && user.organisation === 'admin';
+                },
+                getHomePage: function() {
+                    if(self.isSuperAdmin()) {
+                        if(self.hasPermission('manageOrganisation')) {
+                            return 'app.administration.organisations';
+                        } else if(self.hasPermission('manageProfile')) {
+                            return 'app.administration.profiles';
+                        } else if (self.hasPermission('manageCustomField')) {
+                            return 'app.administration.custom-fields';
+                        } else if(self.hasPermission('manageAnalyzerTemplate')) {
+                            return 'app.administration.analyzer-templates';
+                        } else if(self.hasPermission('manageObservableTemplate')) {
+                            return 'app.administration.observables';
+                        }
+                    } else {
+                        return 'app.cases';
+                    }
                 },
                 hasPermission: function(permissions) {
                     var user = self.currentUser;

@@ -119,11 +119,7 @@ angular.module('thehive', [
             .state('app.index', {
                 url: 'index',
                 onEnter: function($state, AuthenticationSrv) {
-                    if(AuthenticationSrv.isSuperAdmin()) {
-                        $state.go('app.administration.organisations', {}, {reload: true});
-                    } else {
-                        $state.go('app.cases', {}, {reload: true});
-                    }
+                    $state.go(AuthenticationSrv.getHomePage(), {}, {reload: true});
                 }
             })
             .state('app.main', {
