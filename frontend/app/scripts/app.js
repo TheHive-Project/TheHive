@@ -129,14 +129,20 @@ angular.module('thehive', [
                 },
                 templateUrl: 'views/partials/main/list.html',
                 controller: 'MainPageCtrl',
-                controllerAs: '$vm'
+                controllerAs: '$vm',
+                guard: {
+                    isSuperAdmin: false
+                }
             })
             .state('app.cases', {
                 url: 'cases',
                 templateUrl: 'views/partials/case/case.list.html',
                 controller: 'CaseListCtrl',
                 controllerAs: '$vm',
-                title: 'Cases'
+                title: 'Cases',
+                guard: {
+                    isSuperAdmin: false
+                }
             })
             .state('app.search', {
                 url: 'search?q',
@@ -157,6 +163,9 @@ angular.module('thehive', [
 
                         return defer.promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.settings', {
@@ -201,7 +210,9 @@ angular.module('thehive', [
                         return VersionSrv.get();
                     }
                 },
-                permissions: ['manageProfile']
+                guard: {
+                    permissions: ['manageProfile']
+                }
             })
             .state('app.administration.organisations', {
                 url: '/organisations',
@@ -214,7 +225,9 @@ angular.module('thehive', [
                         return VersionSrv.get();
                     }
                 },
-                permissions: ['manageOrganisation']
+                guard: {
+                    permissions: ['manageOrganisation']
+                }
             })
             .state('app.administration.organisations-details', {
                 url: '/organisations/{organisation}/details',
@@ -238,7 +251,9 @@ angular.module('thehive', [
                         return VersionSrv.get();
                     }
                 },
-                permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
+                guard: {
+                    permissions: ['manageOrganisation', 'manageUser', 'manageCaseTemplate']
+                }
             })
             .state('app.administration.analyzer-templates', {
                 url: '/analyzer-templates',
@@ -246,7 +261,6 @@ angular.module('thehive', [
                 controller: 'AdminAnalyzerTemplatesCtrl',
                 controllerAs: 'vm',
                 title: 'Analyzer templates administration',
-                permissions: ['manageAnalyzerTemplate'],
                 resolve: {
                     appConfig: function($q, VersionSrv) {
                         var defer = $q.defer();
@@ -263,6 +277,9 @@ angular.module('thehive', [
 
                         return defer.promise;
                     },
+                },
+                guard: {
+                    permissions: ['manageAnalyzerTemplate']
                 }
             })
             .state('app.administration.custom-fields', {
@@ -271,7 +288,9 @@ angular.module('thehive', [
                 controller: 'AdminCustomFieldsCtrl',
                 controllerAs: '$vm',
                 title: 'Custom fields administration',
-                permissions: ['manageCustomField']
+                guard: {
+                    permissions: ['manageCustomField']
+                }
             })
             .state('app.administration.observables', {
                 url: '/observables',
@@ -287,7 +306,9 @@ angular.module('thehive', [
                             });
                     }
                 },
-                permissions: ['manageObservableTemplate']
+                guard: {
+                    permissions: ['manageObservableTemplate']
+                }
             })
             // .state('app.administration.ui-settings', {
             //     url: '/ui-settings',
@@ -326,6 +347,9 @@ angular.module('thehive', [
 
                         return deferred.promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.case.details', {
@@ -334,6 +358,9 @@ angular.module('thehive', [
                 controller: 'CaseDetailsCtrl',
                 data: {
                     tab: 'details'
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.case.tasks', {
@@ -342,12 +369,18 @@ angular.module('thehive', [
                 controller: 'CaseTasksCtrl',
                 data: {
                     tab: 'tasks'
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.case.links', {
                 url: '/links',
                 templateUrl: 'views/partials/case/case.links.html',
-                controller: 'CaseLinksCtrl'
+                controller: 'CaseLinksCtrl',
+                guard: {
+                    isSuperAdmin: false
+                }
             })
             .state('app.case.sharing', {
                 url: '/sharing',
@@ -382,7 +415,10 @@ angular.module('thehive', [
                             });
                     }
                 },
-                permissions: ['manageShare']
+                guard: {
+                    isSuperAdmin: false,
+                    permissions: ['manageShare']
+                }
             })
             .state('app.case.alerts', {
                 url: '/alerts',
@@ -396,6 +432,9 @@ angular.module('thehive', [
                             }
                         }).$promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.case.tasks-item', {
@@ -417,6 +456,9 @@ angular.module('thehive', [
 
                         return deferred.promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.case.observables', {
@@ -425,6 +467,9 @@ angular.module('thehive', [
                 controller: 'CaseObservablesCtrl',
                 data: {
                     tab: 'observables'
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.case.observables-item', {
@@ -449,19 +494,28 @@ angular.module('thehive', [
 
                         return deferred.promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             })
             .state('app.alert-list', {
                 url: 'alert/list',
                 templateUrl: 'views/partials/alert/list.html',
                 controller: 'AlertListCtrl',
-                controllerAs: '$vm'
+                controllerAs: '$vm',
+                guard: {
+                    isSuperAdmin: false
+                }
             })
             .state('app.dashboards', {
                 url: 'dashboards',
                 templateUrl: 'views/partials/dashboard/list.html',
                 controller: 'DashboardsCtrl',
-                controllerAs: '$vm'
+                controllerAs: '$vm',
+                guard: {
+                    isSuperAdmin: false
+                }
             })
             .state('app.dashboards-view', {
                 url: 'dashboards/{id}',
@@ -495,6 +549,9 @@ angular.module('thehive', [
 
                         return defer.promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
                 }
             });
     })
@@ -596,17 +653,36 @@ angular.module('thehive', [
             }
         ]);
     })
-    .run(function($rootScope, $state, AuthenticationSrv) {
+    .run(function($rootScope, $state, $q, AuthenticationSrv) {
         'use strict';
         $rootScope.async = 0;
 
-        $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams) {
-            // Check rout permissions
-            if(toState.permissions && !AuthenticationSrv.hasPermission(toState.permissions)) {
+        // Handle route guards
+        $rootScope.$on('$stateChangeSuccess', function(event, toState/*, toParams*/) {
+
+            if(!toState.guard){
+                return;
+            }
+
+            // Try Permissions
+            if(toState.guard.permissions !== undefined) {
+                var permissions = toState.guard.permissions;
+
+                if(permissions && !AuthenticationSrv.hasPermission(permissions)) {
+                    event.preventDefault();
+                    $state.go('app.index');
+                }
+            }
+
+            // Try isSupperAdmin
+            if(toState.guard.isSuperAdmin !== undefined && AuthenticationSrv.isSuperAdmin() !== toState.guard.isSuperAdmin) {
                 event.preventDefault();
                 $state.go('app.index');
             }
+        });
 
+        // Update page title based on the route
+        $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams) {
             if (_.isFunction(toState.title)) {
                 $rootScope.title = toState.title(toParams);
             } else {
@@ -614,6 +690,7 @@ angular.module('thehive', [
             }
         });
 
+        // Handle 401 errors when navigating to a route
         $rootScope.$on('$stateChangeError',  function(event, toState, toParams, fromState, fromParams, error){
             if(error && error.status && error.status === 401) {
                 event.preventDefault();
