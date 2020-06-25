@@ -1,6 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
@@ -22,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class ActionCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     actionSrv: ActionSrv,
     entityHelper: EntityHelper,

@@ -8,7 +8,7 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
@@ -28,6 +28,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexClient, TestCortexClientProvider]
       .bind[Connector, TestConnector]
+      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
       .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
 
   "job service" should {

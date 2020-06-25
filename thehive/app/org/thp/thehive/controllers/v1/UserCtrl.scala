@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Base64
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -25,7 +25,7 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class UserCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     userSrv: UserSrv,
     authSrv: AuthSrv,

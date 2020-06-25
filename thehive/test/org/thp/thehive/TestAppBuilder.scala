@@ -3,13 +3,13 @@ package org.thp.thehive
 import java.io.File
 import java.nio.file.{Files, Paths}
 
+import javax.inject.{Inject, Provider, Singleton}
 import org.apache.commons.io.FileUtils
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth._
-import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models.TheHiveSchema
+import org.thp.scalligraph.{janus, AppBuilder}
+import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
@@ -24,7 +24,7 @@ trait TestAppBuilder {
     (new AppBuilder)
       .bind[UserSrv, LocalUserSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
-      .bind[Schema, TheHiveSchema]
+      .bind[Schema, TheHiveSchemaDefinition]
       .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
       .multiBind[NotifierProvider](classOf[AppendToFileProvider])
       .multiBind[NotifierProvider](classOf[EmailerProvider])
@@ -35,8 +35,7 @@ trait TestAppBuilder {
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
-      .bindActor[DummyActor]("case-dedup-actor")
-      .bindActor[DummyActor]("data-dedup-actor")
+      .bindActor[DummyActor]("integrity-check-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
       .addConfiguration("play.mailer.mock = yes")
@@ -58,15 +57,17 @@ trait TestAppBuilder {
                                |}
                                |akka.cluster.jmx.multi-mbeans-in-same-jvm: on
                                |""".stripMargin)
-          .bind[Database, JanusDatabase]
+          .bind[Database, janus.JanusDatabase]
+          .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-schema")
 
-        app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
+        app[DatabaseBuilder].build()(app.apply[Database], app[UserSrv].getSystemAuthContext)
       }
     }
     val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
     FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
     val app = appConfigure
-      .bind[Database, JanusDatabase]
+      .bind[Database, janus.JanusDatabase]
+      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-schema")
       .addConfiguration(s"""
                            |db {
                            |  provider: janusgraph
@@ -84,4 +85,9 @@ trait TestAppBuilder {
       FileUtils.deleteDirectory(storageDirectory)
     }
   }
+}
+
+@Singleton
+class BasicDatabaseProvider @Inject() (database: Database) extends Provider[Database] {
+  override def get(): Database = database
 }

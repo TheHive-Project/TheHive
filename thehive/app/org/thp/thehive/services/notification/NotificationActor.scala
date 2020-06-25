@@ -3,7 +3,7 @@ package org.thp.thehive.services.notification
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
 import gremlin.scala.{__, By, Graph, Key, P, Vertex}
-import javax.inject.Inject
+import javax.inject.{Inject, Named}
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EventSrv, RichElement, RichVertexGremlinScala}
@@ -80,7 +80,7 @@ class NotificationActor @Inject() (
     userSrv: UserSrv,
     notificationSrv: NotificationSrv,
     cache: SyncCacheApi,
-    implicit val db: Database
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends Actor {
   import context.dispatcher
   lazy val logger: Logger = Logger(getClass)

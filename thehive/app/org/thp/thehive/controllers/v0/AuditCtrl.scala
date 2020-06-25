@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import gremlin.scala.{By, Key}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -26,7 +26,7 @@ class AuditCtrl @Inject() (
     val caseSrv: CaseSrv,
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
-    implicit val db: Database
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl
     with AuditRenderer {
 

@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
@@ -35,7 +35,7 @@ class DescribeCtrl @Inject() (
     auditCtrl: AuditCtrl,
     customFieldSrv: CustomFieldSrv,
     injector: Injector,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     applicationConfig: ApplicationConfig
 ) {
 

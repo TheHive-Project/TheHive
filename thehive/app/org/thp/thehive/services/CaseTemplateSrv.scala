@@ -25,8 +25,9 @@ class CaseTemplateSrv @Inject() (
     organisationSrv: OrganisationSrv,
     tagSrv: TagSrv,
     taskSrv: TaskSrv,
-    auditSrv: AuditSrv
-)(implicit db: Database)
+    auditSrv: AuditSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+)(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[CaseTemplate, CaseTemplateSteps] {
 
   val caseTemplateTagSrv          = new EdgeSrv[CaseTemplateTag, CaseTemplate, Tag]

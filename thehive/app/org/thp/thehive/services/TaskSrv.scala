@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import java.util.Date
 
 import gremlin.scala._
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -17,7 +17,7 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
+class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Task, TaskSteps] {
 
   lazy val caseSrv: CaseSrv = caseSrvProvider.get
@@ -101,7 +101,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
 }
 
 @EntitySteps[Task]
-class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Task](raw) {
+class TaskSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Task](raw) {
 
   def visible(implicit authContext: AuthContext): TaskSteps = newInstance(
     raw.filter(

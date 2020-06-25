@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -15,7 +15,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class OrganisationCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
@@ -39,7 +39,8 @@ class OrganisationCtrl @Inject() (
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[OrganisationSteps, OrganisationSteps]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
     Query[OrganisationSteps, UserSteps]("users", (organisationSteps, _) => organisationSteps.users),
-    Query[OrganisationSteps, CaseTemplateSteps]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
+    Query[OrganisationSteps, CaseTemplateSteps]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates),
+    Query[OrganisationSteps, AlertSteps]("alerts", (organisationSteps, _) => organisationSteps.alerts)
   )
 
   def create: Action[AnyContent] =

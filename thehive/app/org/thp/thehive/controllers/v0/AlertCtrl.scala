@@ -4,7 +4,7 @@ import java.util.Base64
 
 import gremlin.scala.{__, By, Graph, Key, StepLabel, Vertex}
 import io.scalaland.chimney.dsl._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -27,7 +27,7 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class AlertCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
@@ -98,60 +98,63 @@ class AlertCtrl @Inject() (
         } yield Results.Created((richAlert -> richObservables).toJson)
       }
 
-  def alertSimilarityRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): AlertSteps => Traversal[JsArray, JsArray] = {
-    alertSteps =>
-      val observableLabel = StepLabel[Vertex]()
-      val caseLabel       = StepLabel[Vertex]()
-      Traversal(
-        alertSteps
-          .observables
-          .similar
-          .as(observableLabel)
-          .`case`
-          .as(caseLabel)
-          .raw
-          .select(observableLabel.name, caseLabel.name)
-          .fold
-          .map { resultMapList =>
-            val similarCases = resultMapList
-              .asScala
-              .map { m =>
-                val cid = m.getValue(caseLabel).id()
-                val ioc = m.getValue(observableLabel).value[Boolean]("ioc")
-                cid -> ioc
-              }
-              .groupBy(_._1)
-              .map {
-                case (cid, cidIoc) =>
-                  val iocStats = cidIoc.groupBy(_._2).mapValues(_.size)
-                  val (caseVertex, observableCount, resolutionStatus) = caseSrv
-                    .getByIds(cid.toString)
-                    .project(
-                      _(By[Vertex]())
-                        .and(By(new CaseSteps(__[Vertex]).observables(authContext).groupCount(By(Key[Boolean]("ioc"))).raw))
-                        .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-                    )
-                    .head()
-                  val case0 = caseVertex
-                    .as[Case]
-                  val similarCase = case0
-                    .asInstanceOf[Case]
-                    .into[OutputSimilarCase]
-                    .withFieldConst(_.artifactCount, observableCount.getOrDefault(false, 0L).toInt)
-                    .withFieldConst(_.iocCount, observableCount.getOrDefault(true, 0L).toInt)
-                    .withFieldConst(_.similarArtifactCount, iocStats.getOrElse(false, 0))
-                    .withFieldConst(_.similarIOCCount, iocStats.getOrElse(true, 0))
-                    .withFieldConst(_.resolutionStatus, atMostOneOf[String](resolutionStatus))
-                    .withFieldComputed(_.status, _.status.toString)
-                    .withFieldConst(_.id, case0._id)
-                    .withFieldConst(_._id, case0._id)
-                    .withFieldRenamed(_.number, _.caseId)
-                    .transform
-                  Json.toJson(similarCase)
-              }
-            JsArray(similarCases.toSeq)
-          }
-      )
+  def alertSimilarityRenderer(
+      implicit authContext: AuthContext,
+      @Named("with-thehive-schema") db: Database,
+      graph: Graph
+  ): AlertSteps => Traversal[JsArray, JsArray] = { alertSteps =>
+    val observableLabel = StepLabel[Vertex]()
+    val caseLabel       = StepLabel[Vertex]()
+    Traversal(
+      alertSteps
+        .observables
+        .similar
+        .as(observableLabel)
+        .`case`
+        .as(caseLabel)
+        .raw
+        .select(observableLabel.name, caseLabel.name)
+        .fold
+        .map { resultMapList =>
+          val similarCases = resultMapList
+            .asScala
+            .map { m =>
+              val cid = m.getValue(caseLabel).id()
+              val ioc = m.getValue(observableLabel).value[Boolean]("ioc")
+              cid -> ioc
+            }
+            .groupBy(_._1)
+            .map {
+              case (cid, cidIoc) =>
+                val iocStats = cidIoc.groupBy(_._2).mapValues(_.size)
+                val (caseVertex, observableCount, resolutionStatus) = caseSrv
+                  .getByIds(cid.toString)
+                  .project(
+                    _(By[Vertex]())
+                      .and(By(new CaseSteps(__[Vertex]).observables(authContext).groupCount(By(Key[Boolean]("ioc"))).raw))
+                      .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+                  )
+                  .head()
+                val case0 = caseVertex
+                  .as[Case]
+                val similarCase = case0
+                  .asInstanceOf[Case]
+                  .into[OutputSimilarCase]
+                  .withFieldConst(_.artifactCount, observableCount.getOrDefault(false, 0L).toInt)
+                  .withFieldConst(_.iocCount, observableCount.getOrDefault(true, 0L).toInt)
+                  .withFieldConst(_.similarArtifactCount, iocStats.getOrElse(false, 0))
+                  .withFieldConst(_.similarIOCCount, iocStats.getOrElse(true, 0))
+                  .withFieldConst(_.resolutionStatus, atMostOneOf[String](resolutionStatus))
+                  .withFieldComputed(_.status, _.status.toString)
+                  .withFieldConst(_.id, case0._id)
+                  .withFieldConst(_._id, case0._id)
+                  .withFieldRenamed(_.number, _.caseId)
+                  .transform
+                Json.toJson(similarCase)
+            }
+          JsArray(similarCases.toSeq)
+        }
+    )
   }
 
   def get(alertId: String): Action[AnyContent] =

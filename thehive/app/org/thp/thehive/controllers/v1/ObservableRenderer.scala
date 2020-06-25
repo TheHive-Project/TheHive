@@ -1,20 +1,24 @@
 package org.thp.thehive.controllers.v1
 
-import scala.collection.JavaConverters._
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala.{__, By, Graph, Key, Vertex}
+import javax.inject.Named
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.Traversal
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services.ObservableSteps
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
 
 trait ObservableRenderer {
 
-  def observableStatsRenderer(implicit authContext: AuthContext, db: Database, graph: Graph): ObservableSteps => Traversal[JsObject, JsObject] =
+  def observableStatsRenderer(
+      implicit authContext: AuthContext,
+      @Named("with-thehive-schema") db: Database,
+      graph: Graph
+  ): ObservableSteps => Traversal[JsObject, JsObject] =
     _.project(
       _.apply(By(new ObservableSteps(__[Vertex]).shares.organisation.name.fold.raw))
         .and(

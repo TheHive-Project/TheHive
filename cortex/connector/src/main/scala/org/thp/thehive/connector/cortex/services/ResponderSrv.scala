@@ -1,22 +1,22 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-import play.api.libs.json.JsObject
-
+import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
 import org.thp.thehive.models.Permissions
+import play.api.Logger
+import play.api.libs.json.JsObject
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 @Singleton
 class ResponderSrv @Inject() (
     connector: Connector,
-    db: Database,
+    @Named("with-thehive-cortex-schema") db: Database,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
     implicit val ec: ExecutionContext

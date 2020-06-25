@@ -1,17 +1,16 @@
 package org.thp.thehive.connector.cortex.services
 
+import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
+import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
+import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
-
-import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.scalligraph.AppBuilder
-import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 
 class ResponderSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =
@@ -28,6 +27,7 @@ class ResponderSrvTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
+      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   "responder service" should {
     "fetch responders by type" in testApp { app =>

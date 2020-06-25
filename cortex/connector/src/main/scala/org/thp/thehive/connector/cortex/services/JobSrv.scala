@@ -3,12 +3,6 @@ package org.thp.thehive.connector.cortex.services
 import java.nio.file.Files
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json.Json
-
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
@@ -33,6 +27,11 @@ import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, ReportTagSrv}
+import play.api.libs.json.Json
+
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class JobSrv @Inject() (
@@ -44,7 +43,7 @@ class JobSrv @Inject() (
     reportTagSrv: ReportTagSrv,
     serviceHelper: ServiceHelper,
     auditSrv: CortexAuditSrv,
-    implicit val db: Database,
+    @Named("with-thehive-schema") implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) extends VertexSrv[Job, JobSteps] {
@@ -267,7 +266,7 @@ class JobSrv @Inject() (
 }
 
 @EntitySteps[Job]
-class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Job](raw) {
+class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Job](raw) {
 
   /**
     * Checks if a Job is visible from a certain UserRole end

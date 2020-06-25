@@ -3,13 +3,8 @@ package org.thp.thehive.services
 import java.lang.{Long => JLong}
 import java.util.{Set => JSet}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala.{KeyValue => _, _}
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
@@ -20,6 +15,10 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class ObservableSrv @Inject() (
@@ -30,7 +29,7 @@ class ObservableSrv @Inject() (
     caseSrvProvider: Provider[CaseSrv],
     auditSrv: AuditSrv
 )(
-    implicit db: Database
+    implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Observable, ObservableSteps] {
   lazy val caseSrv: CaseSrv    = caseSrvProvider.get
   val observableKeyValueSrv    = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
@@ -186,7 +185,8 @@ class ObservableSrv @Inject() (
 }
 
 @EntitySteps[Observable]
-class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Observable](raw) {
+class ObservableSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[Observable](raw) {
 
   def filterOnType(`type`: String): ObservableSteps =
     this.filter(_.outTo[ObservableObservableType].has("name", `type`))

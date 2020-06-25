@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
@@ -15,7 +15,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class ObservableTypeCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     observableTypeSrv: ObservableTypeSrv
 ) extends QueryableCtrl {

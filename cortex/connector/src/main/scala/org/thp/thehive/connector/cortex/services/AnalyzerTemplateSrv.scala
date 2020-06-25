@@ -2,28 +2,27 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.zip.{ZipEntry, ZipFile}
 
-import scala.collection.JavaConverters._
-import scala.io.Source
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.{JsObject, Json}
-
+import com.google.inject.name.Named
 import gremlin.scala._
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
 import org.thp.thehive.controllers.v0.Conversion._
+import play.api.libs.json.{JsObject, Json}
 
+import scala.collection.JavaConverters._
+import scala.io.Source
+import scala.util.{Failure, Try}
 @Singleton
 class AnalyzerTemplateSrv @Inject() (
-    implicit db: Database,
+    implicit @Named("with-thehive-cortex-schema") db: Database,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[AnalyzerTemplate, AnalyzerTemplateSteps] {
 
@@ -108,7 +107,8 @@ class AnalyzerTemplateSrv @Inject() (
 }
 
 @EntitySteps[AnalyzerTemplate]
-class AnalyzerTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[AnalyzerTemplate](raw) {
+class AnalyzerTemplateSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-cortex-schema") db: Database, graph: Graph)
+    extends VertexSteps[AnalyzerTemplate](raw) {
 
   def get(idOrAnalyzerId: String): AnalyzerTemplateSteps =
     if (db.isValidId(idOrAnalyzerId)) this.getByIds(idOrAnalyzerId)

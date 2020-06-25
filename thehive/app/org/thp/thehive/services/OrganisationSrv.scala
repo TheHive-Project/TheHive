@@ -1,35 +1,41 @@
 package org.thp.thehive.services
 
+import akka.actor.ActorRef
 import gremlin.scala._
-
-import scala.collection.JavaConverters._
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.{BadRequestError, EntitySteps, RichSeq}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.{BadRequestError, EntitySteps, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
 
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-object OrganisationSrv {
-  val administration: Organisation = Organisation("admin", "organisation for administration")
-}
-
 @Singleton
-class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, auditSrv: AuditSrv)(implicit db: Database)
-    extends VertexSrv[Organisation, OrganisationSteps] {
+class OrganisationSrv @Inject() (
+    roleSrv: RoleSrv,
+    profileSrv: ProfileSrv,
+    auditSrv: AuditSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+)(
+    implicit @Named("with-thehive-schema") db: Database
+) extends VertexSrv[Organisation, OrganisationSteps] {
 
-  override val initialValues: Seq[Organisation] = Seq(OrganisationSrv.administration)
-  val organisationOrganisationSrv               = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
-  val organisationShareSrv                      = new EdgeSrv[OrganisationShare, Organisation, Share]
+  val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
+  val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
+
+  override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
+    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Organisation")
+    super.createEntity(e)
+  }
 
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
@@ -49,11 +55,13 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else initSteps.getByName(idOrName)
 
+  override def exists(e: Organisation)(implicit graph: Graph): Boolean = initSteps.getByName(e.name).exists()
+
   override def update(
       steps: OrganisationSteps,
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(OrganisationSteps, JsObject)] =
-    if (steps.newInstance().has("name", OrganisationSrv.administration.name).exists())
+    if (steps.newInstance().has("name", Organisation.administration.name).exists())
       Failure(BadRequestError("Admin organisation is unmodifiable"))
     else {
       auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
@@ -108,7 +116,8 @@ class OrganisationSrv @Inject() (roleSrv: RoleSrv, profileSrv: ProfileSrv, audit
 }
 
 @EntitySteps[Organisation]
-class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Organisation](raw) {
+class OrganisationSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[Organisation](raw) {
 
   def links: OrganisationSteps = newInstance(raw.outTo[OrganisationOrganisation])
 
@@ -173,4 +182,15 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   def getByName(name: String): OrganisationSteps = this.has("name", name)
 
   override def newInstance(): OrganisationSteps = new OrganisationSteps(raw.clone())
+}
+
+class OrganisationIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: OrganisationSrv)
+    extends IntegrityCheckOps[Organisation] {
+  override def resolve(entities: List[Organisation with Entity])(implicit graph: Graph): Try[Unit] = entities match {
+    case head :: tail =>
+      tail.foreach(copyEdge(_, head))
+      tail.foreach(service.get(_).remove())
+      Success(())
+    case _ => Success(())
+  }
 }

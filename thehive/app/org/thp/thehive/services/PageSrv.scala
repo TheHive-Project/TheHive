@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import gremlin.scala.{Graph, GremlinScala, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -15,7 +15,8 @@ import play.api.libs.json.Json
 import scala.util.Try
 
 @Singleton
-class PageSrv @Inject() (implicit db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page, PageSteps] {
+class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv)
+    extends VertexSrv[Page, PageSteps] {
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 
@@ -47,7 +48,7 @@ class PageSrv @Inject() (implicit db: Database, organisationSrv: OrganisationSrv
 }
 
 @EntitySteps[Page]
-class PageSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Page](raw) {
+class PageSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Page](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): PageSteps = new PageSteps(newRaw)
   override def newInstance(): PageSteps                             = new PageSteps(raw.clone())
 

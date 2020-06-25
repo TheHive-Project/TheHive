@@ -20,7 +20,7 @@ import scala.util.Success
 @Singleton
 class CaseCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,

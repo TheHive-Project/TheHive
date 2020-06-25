@@ -1,21 +1,20 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.io.Source
-
-import play.api.libs.json._
-import play.api.test.PlaySpecification
-
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, LogSrv, TaskSrv}
+import play.api.libs.json._
+import play.api.test.PlaySpecification
+
+import scala.io.Source
 
 class ActionSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =
@@ -32,6 +31,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
+      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   def testAppBuilder[A](body: AppBuilder => A): A = testApp { app =>
     body(

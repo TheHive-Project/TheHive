@@ -1,21 +1,21 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Try}
-
 import gremlin.scala._
-import javax.inject.{Inject, Provider, Singleton}
-import org.thp.scalligraph.{CreateError, EntitySteps}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
+import scala.util.{Failure, Try}
+
 @Singleton
 class ShareSrv @Inject() (
-    implicit val db: Database,
+    @Named("with-thehive-schema") implicit val db: Database,
     auditSrv: AuditSrv,
     caseSrvProvider: Provider[CaseSrv],
     taskSrv: TaskSrv,
@@ -289,7 +289,7 @@ class ShareSrv @Inject() (
 }
 
 @EntitySteps[Share]
-class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Share](raw) {
+class ShareSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Share](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(newRaw)
   override def newInstance(): ShareSteps                             = new ShareSteps(raw.clone())
 

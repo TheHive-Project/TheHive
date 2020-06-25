@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.scalactic.Good
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.AuthContext
@@ -29,7 +29,7 @@ object OutputParam {
 
 @Singleton
 class TheHiveQueryExecutor @Inject() (
-    override val db: Database,
+    @Named("with-thehive-schema") override val db: Database,
     caseCtrl: CaseCtrl,
     taskCtrl: TaskCtrl,
     logCtrl: LogCtrl,

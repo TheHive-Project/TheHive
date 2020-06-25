@@ -15,7 +15,7 @@ class CortexAuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
-)(implicit db: Database, schema: Schema)
+)(implicit @Named("with-thehive-cortex-schema") db: Database, schema: Schema)
     extends AuditSrv(userSrvProvider, notificationActor, eventSrv) {
 
   val job              = new ObjectAudit[Job, Observable]

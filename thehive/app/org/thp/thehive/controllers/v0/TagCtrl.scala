@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.nio.file.Files
 
-import javax.inject.Inject
+import javax.inject.{Inject, Named}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -19,7 +19,7 @@ import scala.util.Try
 
 class TagCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     tagSrv: TagSrv
 ) extends QueryableCtrl {

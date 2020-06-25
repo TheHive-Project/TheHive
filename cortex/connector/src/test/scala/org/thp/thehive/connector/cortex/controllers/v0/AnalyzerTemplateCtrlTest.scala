@@ -1,17 +1,23 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import scala.util.Random
-
+import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.controllers.FakeTemporaryFile
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
+import org.thp.thehive.connector.cortex.dto.v0.OutputAnalyzerTemplate
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
 
-import org.thp.scalligraph.controllers.FakeTemporaryFile
-import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.connector.cortex.dto.v0.OutputAnalyzerTemplate
+import scala.util.Random
 
 class AnalyzerTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
+  override def appConfigure: AppBuilder =
+    super
+      .appConfigure
+      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
+
   "report controller" should {
 //      "create, fetch, update and delete a template" in testApp {app =>
 //

@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -19,7 +19,7 @@ class AuthenticationCtrl @Inject() (
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,
     userSrv: UserSrv,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     implicit val ec: ExecutionContext
 ) {
 

@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -22,7 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class JobCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-cortex-schema") db: Database,
     properties: Properties,
     jobSrv: JobSrv,
     observableSrv: ObservableSrv,

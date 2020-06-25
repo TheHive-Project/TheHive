@@ -2,13 +2,8 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.Logger
-
 import gremlin.scala.Graph
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.misp.dto.{Attribute, Tag => MispTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -16,6 +11,10 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{BadRequestError, NotFoundError}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
+import play.api.Logger
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class MispExportSrv @Inject() (
@@ -24,7 +23,7 @@ class MispExportSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
-    db: Database
+    @Named("with-thehive-schema") db: Database
 ) {
 
   lazy val logger: Logger = Logger(getClass)

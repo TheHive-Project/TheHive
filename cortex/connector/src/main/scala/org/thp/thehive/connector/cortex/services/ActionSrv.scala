@@ -2,11 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, Json, OWrites}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -26,6 +21,10 @@ import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Case, Task}
 import org.thp.thehive.services.{AlertSteps, CaseSteps, LogSteps, ObservableSteps, TaskSteps}
+import play.api.libs.json.{JsObject, Json, OWrites}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ActionSrv @Inject() (
     @Named("cortex-actor") cortexActor: ActorRef,
@@ -34,7 +33,7 @@ class ActionSrv @Inject() (
     serviceHelper: ServiceHelper,
     connector: Connector,
     implicit val schema: Schema,
-    implicit val db: Database,
+    @Named("with-thehive-cortex-schema") implicit val db: Database,
     implicit val ec: ExecutionContext,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[Action, ActionSteps] {
@@ -183,7 +182,8 @@ class ActionSrv @Inject() (
 }
 
 @EntitySteps[Action]
-class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph, schema: Schema) extends VertexSteps[Action](raw) {
+class ActionSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph, schema: Schema)
+    extends VertexSteps[Action](raw) {
 
   /**
     * Provides a RichAction model with additional Entity context

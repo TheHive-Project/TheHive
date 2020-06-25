@@ -2,11 +2,6 @@ package org.thp.thehive.models
 
 import java.lang.reflect.Modifier
 
-import scala.collection.JavaConverters._
-import scala.reflect.runtime.{universe => ru}
-import scala.util.{Success, Try}
-import play.api.Logger
-import play.api.inject.Injector
 import gremlin.scala.{Graph, Key}
 import javax.inject.{Inject, Singleton}
 import org.janusgraph.core.schema.ConsistencyModifier
@@ -15,13 +10,17 @@ import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{HasModel, IndexType, InitialValue, Model, Operations, Schema, UpdatableSchema}
-import org.thp.scalligraph.services.VertexSrv
-import org.thp.thehive.services.{OrganisationSrv, ProfileSrv, RoleSrv, UserSrv}
+import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
+import play.api.Logger
+import play.api.inject.Injector
+
+import scala.collection.JavaConverters._
+import scala.reflect.runtime.{universe => ru}
+import scala.util.{Success, Try}
 
 @Singleton
-class TheHiveSchema @Inject() (injector: Injector) extends Schema with UpdatableSchema {
+class TheHiveSchemaDefinition @Inject() (injector: Injector) extends Schema with UpdatableSchema {
 
   lazy val logger: Logger = Logger(getClass)
   val name: String        = "thehive"
@@ -65,7 +64,7 @@ class TheHiveSchema @Inject() (injector: Injector) extends Schema with Updatable
       removePropertyLock("data")
     }
     .addIndex("Tag", IndexType.tryUnique, "namespace", "predicate", "value")
-    .dbOperation[JanusDatabase]("Enable indexes")(_.enableIndexes())
+    .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
@@ -89,22 +88,9 @@ class TheHiveSchema @Inject() (injector: Injector) extends Schema with Updatable
       .toSeq
   }
 
-  override lazy val initialValues: Seq[InitialValue[_]] =
-    reflectionClasses
-      .getSubTypesOf(classOf[VertexSrv[_, _]])
-      .asScala
-      .filterNot(c => Modifier.isAbstract(c.getModifiers))
-      .toSeq
-      .map { vertexSrvClass =>
-        injector.instanceOf(vertexSrvClass).getInitialValues
-      }
-      .flatten
+  override lazy val initialValues: Seq[InitialValue[_]] = modelList.collect {
+    case vertexModel: VertexModel => vertexModel.getInitialValues
+  }.flatten
 
-  override def init(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      adminUser         <- injector.instanceOf[UserSrv].getOrFail(UserSrv.init.login)
-      adminProfile      <- injector.instanceOf[ProfileSrv].getOrFail(ProfileSrv.admin.name)
-      adminOrganisation <- injector.instanceOf[OrganisationSrv].getOrFail(OrganisationSrv.administration.name)
-      _                 <- injector.instanceOf[RoleSrv].create(adminUser, adminOrganisation, adminProfile)
-    } yield ()
+  override def init(db: Database)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
 }

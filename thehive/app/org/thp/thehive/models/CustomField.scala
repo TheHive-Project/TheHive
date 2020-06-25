@@ -2,11 +2,13 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import scala.util.{Failure, Success, Try}
-import play.api.libs.json._
 import gremlin.scala.Edge
+import javax.inject.Named
 import org.thp.scalligraph._
-import org.thp.scalligraph.models.{Database, DefineIndex, Entity, IndexType, Model, UniMapping}
+import org.thp.scalligraph.models._
+import play.api.libs.json._
+
+import scala.util.{Failure, Success, Try}
 
 trait CustomFieldValue[C] extends Product {
   def order: Option[Int]
@@ -23,7 +25,7 @@ trait CustomFieldValue[C] extends Product {
   def dateValue_=(value: Option[Date]): C
 }
 
-class CustomFieldValueEdge(db: Database, edge: Edge) extends CustomFieldValue[CustomFieldValueEdge] with Entity {
+class CustomFieldValueEdge(@Named("with-thehive-schema") db: Database, edge: Edge) extends CustomFieldValue[CustomFieldValueEdge] with Entity {
   override def order: Option[Int]            = db.getOptionProperty(edge, "order", UniMapping.int.optional)
   override def stringValue: Option[String]   = db.getOptionProperty(edge, "stringValue", UniMapping.string.optional)
   override def booleanValue: Option[Boolean] = db.getOptionProperty(edge, "booleanValue", UniMapping.boolean.optional)

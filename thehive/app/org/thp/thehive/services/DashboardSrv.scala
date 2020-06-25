@@ -2,13 +2,8 @@ package org.thp.thehive.services
 
 import java.util.{List => JList}
 
-import scala.collection.JavaConverters._
-import scala.util.{Success, Try}
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala.{__, By, Element, Graph, GremlinScala, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -19,10 +14,15 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, InternalError}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Success, Try}
 
 @Singleton
-class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)(implicit db: Database)
-    extends VertexSrv[Dashboard, DashboardSteps] {
+class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)(
+    implicit @Named("with-thehive-schema") db: Database
+) extends VertexSrv[Dashboard, DashboardSteps] {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
   val dashboardUserSrv         = new EdgeSrv[DashboardUser, Dashboard, User]
 
@@ -78,7 +78,8 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
 }
 
 @EntitySteps[Dashboard]
-class DashboardSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Dashboard](raw) {
+class DashboardSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[Dashboard](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex] = raw): DashboardSteps = new DashboardSteps(newRaw)
 
   def visible(implicit authContext: AuthContext): DashboardSteps =

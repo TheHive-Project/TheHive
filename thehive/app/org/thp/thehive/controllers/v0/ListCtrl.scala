@@ -1,21 +1,26 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success}
-
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
+import org.thp.thehive.models.ObservableType
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success}
 
 @Singleton
-class ListCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFieldSrv: CustomFieldSrv, observableTypeSrv: ObservableTypeSrv) {
+class ListCtrl @Inject() (
+    entrypoint: Entrypoint,
+    @Named("with-thehive-schema") db: Database,
+    customFieldSrv: CustomFieldSrv,
+    observableTypeSrv: ObservableTypeSrv
+) {
 
   def list: Action[AnyContent] =
     entrypoint("list")
@@ -28,7 +33,7 @@ class ListCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFieldSrv: 
       .auth { _ =>
         val result = listName match {
           case "list_artifactDataType" =>
-            val objectTypes = observableTypeSrv.initialValues.toList.map { ot =>
+            val objectTypes = ObservableType.initialValues.toList.map { ot =>
               val id = Hasher("MD5").fromString(ot.name).head.toString // this Traversable.head can't fail
               id -> JsString(ot.name)
             }

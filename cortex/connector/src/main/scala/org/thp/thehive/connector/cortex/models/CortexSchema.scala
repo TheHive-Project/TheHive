@@ -1,16 +1,17 @@
 package org.thp.thehive.connector.cortex.models
 
-import scala.collection.JavaConverters._
-import scala.reflect.runtime.{universe => ru}
-import play.api.Logger
 import javax.inject.{Inject, Singleton}
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
-import org.thp.scalligraph.models.{HasModel, Model, Operations, Schema, UpdatableSchema}
+import org.thp.scalligraph.models._
+import play.api.Logger
+
+import scala.collection.JavaConverters._
+import scala.reflect.runtime.{universe => ru}
 
 @Singleton
-class CortexSchema @Inject() () extends Schema with UpdatableSchema {
+class CortexSchemaDefinition @Inject() () extends Schema with UpdatableSchema {
 
   lazy val logger: Logger    = Logger(getClass)
   val name: String           = "thehive-cortex"

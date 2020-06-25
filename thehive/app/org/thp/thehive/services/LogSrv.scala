@@ -1,12 +1,7 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
@@ -17,9 +12,14 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
-class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit db: Database) extends VertexSrv[Log, LogSteps] {
+class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit @Named("with-thehive-schema") db: Database)
+    extends VertexSrv[Log, LogSteps] {
   val taskLogSrv                                                                 = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv                                                           = new EdgeSrv[LogAttachment, Log, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): LogSteps = new LogSteps(raw)
@@ -72,7 +72,7 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implic
 }
 
 @EntitySteps[Log]
-class LogSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Log](raw) {
+class LogSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Log](raw) {
 
   def task = new TaskSteps(raw.in("TaskLog"))
 

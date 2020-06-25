@@ -1,7 +1,6 @@
 package org.thp.thehive.connector.cortex.services
 
-import play.api.Logger
-
+import com.google.inject.name.Named
 import gremlin.scala.P
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
@@ -9,10 +8,11 @@ import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.services._
+import play.api.Logger
 
 @Singleton
 class ServiceHelper @Inject() (
-    db: Database,
+    @Named("with-thehive-cortex-schema") db: Database,
     organisationSrv: OrganisationSrv
 ) {
 

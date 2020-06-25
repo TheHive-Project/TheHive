@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -13,8 +13,13 @@ import org.thp.thehive.services.{OrganisationSrv, PageSrv, PageSteps}
 import play.api.mvc._
 
 @Singleton
-class PageCtrl @Inject() (entrypoint: Entrypoint, pageSrv: PageSrv, db: Database, properties: Properties, organisationSrv: OrganisationSrv)
-    extends QueryableCtrl {
+class PageCtrl @Inject() (
+    entrypoint: Entrypoint,
+    pageSrv: PageSrv,
+    @Named("with-thehive-schema") db: Database,
+    properties: Properties,
+    organisationSrv: OrganisationSrv
+) extends QueryableCtrl {
 
   override val entityName: String                           = "page"
   override val publicProperties: List[PublicProperty[_, _]] = properties.page ::: metaProperties[PageSteps]

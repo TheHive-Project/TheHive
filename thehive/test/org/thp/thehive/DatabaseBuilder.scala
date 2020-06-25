@@ -2,15 +2,8 @@ package org.thp.thehive
 
 import java.io.File
 
-import scala.io.Source
-import scala.reflect.runtime.{universe => ru}
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-
 import gremlin.scala.{KeyValue => _, _}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.scalactic.Or
 import org.thp.scalligraph.RichOption
 import org.thp.scalligraph.auth.AuthContext
@@ -19,6 +12,12 @@ import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+
+import scala.io.Source
+import scala.reflect.runtime.{universe => ru}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class DatabaseBuilder @Inject() (
@@ -48,7 +47,7 @@ class DatabaseBuilder @Inject() (
 
   lazy val logger: Logger = Logger(getClass)
 
-  def build()(implicit db: Database, authContext: AuthContext): Try[Unit] = {
+  def build()(implicit @Named("with-thehive-schema") db: Database, authContext: AuthContext): Try[Unit] = {
 
     lazy val logger: Logger = Logger(getClass)
     logger.info("Initialize database schema")

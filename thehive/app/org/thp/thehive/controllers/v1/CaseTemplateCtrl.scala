@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -17,7 +17,7 @@ import scala.util.Success
 @Singleton
 class CaseTemplateCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv

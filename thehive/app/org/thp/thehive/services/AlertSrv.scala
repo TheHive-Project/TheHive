@@ -2,13 +2,8 @@ package org.thp.thehive.services
 
 import java.util.{Date, List => JList}
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.{JsObject, Json}
-
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
@@ -19,6 +14,10 @@ import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
 
 @Singleton
 class AlertSrv @Inject() (
@@ -30,7 +29,7 @@ class AlertSrv @Inject() (
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv
 )(
-    implicit db: Database
+    implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Alert, AlertSteps] {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
@@ -286,7 +285,7 @@ class AlertSrv @Inject() (
 }
 
 @EntitySteps[Alert]
-class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Alert](raw) {
+class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Alert](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex] = raw): AlertSteps = new AlertSteps(newRaw)
 
   def get(idOrSource: String): AlertSteps = idOrSource.split(';') match {

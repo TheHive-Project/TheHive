@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Good
 import org.thp.scalligraph.BadRequestError
@@ -19,7 +20,7 @@ import scala.reflect.runtime.{universe => ru}
 class CortexQueryExecutor @Inject() (
     jobCtrl: JobCtrl,
     queryCtrlBuilder: QueryCtrlBuilder,
-    implicit val db: Database,
+    @Named("with-thehive-cortex-schema") implicit val db: Database,
     reportCtrl: AnalyzerTemplateCtrl,
     actionCtrl: ActionCtrl
 ) extends QueryExecutor {

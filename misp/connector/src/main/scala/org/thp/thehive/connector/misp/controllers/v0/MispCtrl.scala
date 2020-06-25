@@ -19,7 +19,7 @@ class MispCtrl @Inject() (
     mispExportSrv: MispExportSrv,
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     @Named("misp-actor") mispActor: ActorRef,
     implicit val ec: ExecutionContext
 ) {
