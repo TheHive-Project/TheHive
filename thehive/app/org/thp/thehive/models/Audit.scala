@@ -10,6 +10,7 @@ import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 @EdgeEntity[Audit, User]
 case class AuditUser()
 
+@DefineIndex(IndexType.basic, "requestId", "mainAction")
 @VertexEntity
 case class Audit(
     requestId: String,
@@ -124,6 +125,7 @@ object AuditContext extends HasEdgeModel[AuditContext, Audit, Product] {
       override def _createdAt: Date           = entity._createdAt
       override def _updatedAt: Option[Date]   = entity._updatedAt
     }
-    override def create(e: AuditContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
+    override def create(e: AuditContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge =
+      from.addEdge(label, to)
   }
 }
