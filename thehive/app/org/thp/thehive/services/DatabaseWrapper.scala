@@ -66,6 +66,7 @@ class DatabaseWrapper(dbProvider: Provider[Database]) extends Database {
   override def addSchemaIndexes(schemaObject: Schema): Try[Unit]                                               = db.addSchemaIndexes(schemaObject)
   override def addSchemaIndexes(model: Model, models: Model*): Try[Unit]                                       = db.addSchemaIndexes(model, models: _*)
   override def addSchemaIndexes(models: Seq[Model]): Try[Unit]                                                 = db.addSchemaIndexes(models)
+  override def enableIndexes(): Try[Unit]                                                                      = db.enableIndexes()
   override def addProperty[T](model: String, propertyName: String, mapping: Mapping[_, _, _]): Try[Unit] =
     db.addProperty(model, propertyName, mapping)
   override def removeProperty(model: String, propertyName: String, usedOnlyByThisModel: Boolean): Try[Unit] =
