@@ -1,25 +1,58 @@
 package org.thp.thehive.migration
 
+import java.text.{ParseException, SimpleDateFormat}
+import java.util.Date
+
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.config.Config
 import org.thp.thehive.migration.dto._
 
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Try}
 
-case class Filter(caseFromDate: Long, alertFromDate: Long, auditFromDate: Long)
+case class Filter(
+    caseDateRange: (Option[Long], Option[Long]),
+    caseNumberRange: (Option[Int], Option[Int]),
+    alertDateRange: (Option[Long], Option[Long]),
+    auditDateRange: (Option[Long], Option[Long])
+)
 
 object Filter {
   def fromConfig(config: Config): Filter = {
-    val now           = System.currentTimeMillis()
-    val maxCaseAge    = config.getDuration("maxCaseAge")
-    val caseFromDate  = if (maxCaseAge.isZero) 0L else now - maxCaseAge.getSeconds * 1000
-    val maxAlertAge   = config.getDuration("maxAlertAge")
-    val alertFromDate = if (maxAlertAge.isZero) 0L else now - maxAlertAge.getSeconds * 1000
-    val maxAuditAge   = config.getDuration("maxAuditAge")
-    val auditFromDate = if (maxAuditAge.isZero) 0L else now - maxAuditAge.getSeconds * 1000
-    Filter(caseFromDate, alertFromDate, auditFromDate)
+    val now = System.currentTimeMillis()
+    lazy val dateFormats = Seq(
+      new SimpleDateFormat("yyyyMMddHHmmss"),
+      new SimpleDateFormat("yyyyMMddHHmm"),
+      new SimpleDateFormat("yyyyMMddHH"),
+      new SimpleDateFormat("yyyyMMdd"),
+      new SimpleDateFormat("MMdd")
+    )
+    def parseDate(s: String): Try[Date] =
+      dateFormats.foldLeft[Try[Date]](Failure(new ParseException(s"Unparseable date: $s", 0))) { (acc, format) =>
+        acc.recoverWith { case _ => Try(format.parse(s)) }
+      }
+    def readDate(dateConfigName: String, ageConfigName: String) =
+      Try(config.getString(dateConfigName))
+        .flatMap(parseDate)
+        .map(d => d.getTime)
+        .toOption
+        .orElse {
+          Try {
+            val age = config.getDuration(ageConfigName)
+            if (age.isZero) None else Some(now - age.getSeconds * 1000)
+          }.toOption.flatten
+        }
+    val caseFromDate    = readDate("caseFromDate", "maxCaseAge")
+    val caseUntilDate   = readDate("caseUntilDate", "minCaseAge")
+    val caseFromNumber  = Try(config.getInt("caseFromNumber")).toOption
+    val caseUntilNumber = Try(config.getInt("caseUntilNumber")).toOption
+    val alertFromDate   = readDate("alertFromDate", "maxAlertAge")
+    val alertUntilDate  = readDate("alertUntilDate", "minAlertAge")
+    val auditFromDate   = readDate("auditFromDate", "maxAuditAge")
+    val auditUntilDate  = readDate("auditUntilDate", "minAuditAge")
+
+    Filter(caseFromDate -> caseUntilDate, caseFromNumber -> caseUntilNumber, alertFromDate -> alertUntilDate, auditFromDate -> auditUntilDate)
   }
 }
 

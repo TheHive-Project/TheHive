@@ -5,7 +5,7 @@
                     converterClass="play.api.libs.logback.ColoredLevel"/>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${application.home:-.}/logs/application.log</file>
+        <file>./logs/migration.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <fileNamePattern>${application.home:-.}/logs/application.%i.log.zip</fileNamePattern>
             <minIndex>1</minIndex>

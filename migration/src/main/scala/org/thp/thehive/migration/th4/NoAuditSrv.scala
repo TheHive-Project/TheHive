@@ -1,7 +1,5 @@
 package org.thp.thehive.migration.th4
 
-import scala.util.{Success, Try}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala.Graph
@@ -12,12 +10,14 @@ import org.thp.scalligraph.services.EventSrv
 import org.thp.thehive.models.Audit
 import org.thp.thehive.services.{AuditSrv, UserSrv}
 
+import scala.util.{Success, Try}
+
 @Singleton
 class NoAuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
-)(implicit db: Database, schema: Schema)
+)(implicit @Named("with-thehive-schema") db: Database, schema: Schema)
     extends AuditSrv(userSrvProvider, notificationActor, eventSrv)(db, schema) {
 
   override def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =

@@ -9,13 +9,13 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
 import com.sksamuel.elastic4s.http.ElasticDsl.{bool, hasParentQuery, idsQuery, rangeQuery, search, termQuery}
+import com.sksamuel.elastic4s.searches.queries.RangeQuery
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
 import org.thp.thehive.migration.Filter
 import org.thp.thehive.migration.dto._
-import org.thp.thehive.models.{ImpactStatus, Organisation, Profile, ResolutionStatus}
-import org.thp.thehive.services.UserSrv
+import org.thp.thehive.models._
 import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
@@ -76,25 +76,31 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
 
   override def countOrganisations(filter: Filter): Future[Long] = Future.successful(1)
 
-  override def listCases(filter: Filter): Source[Try[InputCase], NotUsed] = {
-    val f =
-      if (filter.alertFromDate == 0) Seq(termQuery("relations", "case"))
-      else Seq(termQuery("relations", "case"), rangeQuery("createdAt").gte(filter.alertFromDate))
-    dbFind(Some("all"), Seq("-createdAt"))(indexName => search(indexName).query(bool(f, Nil, Nil)))
-      ._1
-      .read[InputCase]
+  def caseFilter(filter: Filter): Seq[RangeQuery] = {
+    val dateFilter = if (filter.caseDateRange._1.isDefined || filter.caseDateRange._2.isDefined) {
+      val fromFilter  = filter.caseDateRange._1.fold(identity[RangeQuery] _)(from => (_: RangeQuery).gte(from))
+      val untilFilter = filter.caseDateRange._2.fold(identity[RangeQuery] _)(until => (_: RangeQuery).lt(until))
+      Seq(fromFilter.andThen(untilFilter).apply(rangeQuery("createdAt")))
+    } else Nil
+    val numberFilter = if (filter.caseNumberRange._1.isDefined || filter.caseNumberRange._2.isDefined) {
+      val fromFilter  = filter.caseNumberRange._1.fold(identity[RangeQuery] _)(from => (_: RangeQuery).gte(from.toLong))
+      val untilFilter = filter.caseNumberRange._2.fold(identity[RangeQuery] _)(until => (_: RangeQuery).lt(until.toLong))
+      Seq(fromFilter.andThen(untilFilter).apply(rangeQuery("caseId")))
+    } else Nil
+    dateFilter ++ numberFilter
   }
 
-  override def countCases(filter: Filter): Future[Long] = {
-    val f =
-      if (filter.alertFromDate == 0) Seq(termQuery("relations", "case"))
-      else Seq(termQuery("relations", "case"), rangeQuery("createdAt").gte(filter.alertFromDate))
+  override def listCases(filter: Filter): Source[Try[InputCase], NotUsed] =
+    dbFind(Some("all"), Seq("-createdAt"))(indexName => search(indexName).query(bool(caseFilter(filter) :+ termQuery("relations", "case"), Nil, Nil)))
+      ._1
+      .read[InputCase]
+
+  override def countCases(filter: Filter): Future[Long] =
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName)
-        .query(bool(f, Nil, Nil))
+        .query(bool(caseFilter(filter) :+ termQuery("relations", "case"), Nil, Nil))
         .limit(0)
     )._2
-  }
 
   override def listCaseObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
@@ -102,7 +108,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         bool(
           Seq(
             termQuery("relations", "case_artifact"),
-            hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false)
+            hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false)
           ),
           Nil,
           Nil
@@ -118,7 +124,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           bool(
             Seq(
               termQuery("relations", "case_artifact"),
-              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false)
+              hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false)
             ),
             Nil,
             Nil
@@ -164,7 +170,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         bool(
           Seq(
             termQuery("relations", "case_task"),
-            hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false)
+            hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false)
           ),
           Nil,
           Nil
@@ -180,7 +186,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
           bool(
             Seq(
               termQuery("relations", "case_task"),
-              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false)
+              hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false)
             ),
             Nil,
             Nil
@@ -228,7 +234,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             termQuery("relations", "case_task_log"),
             hasParentQuery(
               "case_task",
-              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
+              hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false),
               score = false
             )
           ),
@@ -248,7 +254,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
               termQuery("relations", "case_task_log"),
               hasParentQuery(
                 "case_task",
-                hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
+                hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false),
                 score = false
               )
             ),
@@ -298,26 +304,25 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         .limit(0)
     )._2
 
-  override def listAlerts(filter: Filter): Source[Try[InputAlert], NotUsed] = {
-    val f =
-      if (filter.alertFromDate == 0) Seq(termQuery("relations", "alert"))
-      else Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(filter.alertFromDate))
-    dbFind(Some("all"), Seq("-createdAt"))(indexName => search(indexName).query(bool(f, Nil, Nil)))
-      ._1
-      .read[InputAlert]
-  }
+  def alertFilter(filter: Filter): Seq[RangeQuery] =
+    if (filter.alertDateRange._1.isDefined || filter.alertDateRange._2.isDefined) {
+      val fromFilter  = filter.alertDateRange._1.fold(identity[RangeQuery] _)(from => (_: RangeQuery).gte(from))
+      val untilFilter = filter.alertDateRange._2.fold(identity[RangeQuery] _)(until => (_: RangeQuery).lt(until))
+      Seq(fromFilter.andThen(untilFilter).apply(rangeQuery("createdAt")))
+    } else Nil
 
-  override def countAlerts(filter: Filter): Future[Long] = {
-    val f =
-      if (filter.alertFromDate == 0) Seq(termQuery("relations", "alert"))
-      else Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(filter.alertFromDate))
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(f, Nil, Nil)).limit(0))._2
-  }
+  override def listAlerts(filter: Filter): Source[Try[InputAlert], NotUsed] =
+    dbFind(Some("all"), Seq("-createdAt"))(indexName =>
+      search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil))
+    )._1
+      .read[InputAlert]
+
+  override def countAlerts(filter: Filter): Future[Long] =
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil)).limit(0))._2
 
   override def listAlertObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed] =
-    dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(Seq(termQuery("relations", "alert"), rangeQuery("createdAt").gte(filter.alertFromDate)), Nil, Nil))
-    )._1
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil)))
+      ._1
       .map { json =>
         for {
           metaData        <- json.validate[MetaData]
@@ -356,7 +361,17 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       }
       .mapConcat {
         case (metaData, observablesJson) =>
-          observablesJson.map(observableJson => Try(metaData.id -> observableJson.as(alertObservableReads(metaData)))).toList
+          observablesJson.flatMap { observableJson =>
+            Try(metaData.id -> observableJson.as(alertObservableReads(metaData)))
+              .fold(
+                error =>
+                  if ((observableJson \ "remoteAttachment").isDefined) {
+                    logger.warn(s"Pre 2.13 file observables are ignored in MISP alert $alertId")
+                    Nil
+                  } else List(Failure(error)),
+                o => List(Success(o))
+              )
+          }.toList
       }
 
   override def countAlertObservables(alertId: String): Future[Long] = Future.failed(new NotImplementedError)
@@ -405,21 +420,21 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )._2
 
   override def listProfiles(filter: Filter): Source[Try[InputProfile], NotUsed] =
-    Source.empty[Profile].map(profile => Success(InputProfile(MetaData(profile.name, UserSrv.init.login, new Date, None, None), profile)))
+    Source.empty[Profile].map(profile => Success(InputProfile(MetaData(profile.name, User.init.login, new Date, None, None), profile)))
 
   override def countProfiles(filter: Filter): Future[Long] = Future.successful(0)
 
   override def listImpactStatus(filter: Filter): Source[Try[InputImpactStatus], NotUsed] =
     Source
       .empty[ImpactStatus]
-      .map(status => Success(InputImpactStatus(MetaData(status.value, UserSrv.init.login, new Date, None, None), status)))
+      .map(status => Success(InputImpactStatus(MetaData(status.value, User.init.login, new Date, None, None), status)))
 
   override def countImpactStatus(filter: Filter): Future[Long] = Future.successful(0)
 
   override def listResolutionStatus(filter: Filter): Source[Try[InputResolutionStatus], NotUsed] =
     Source
       .empty[ResolutionStatus]
-      .map(status => Success(InputResolutionStatus(MetaData(status.value, UserSrv.init.login, new Date, None, None), status)))
+      .map(status => Success(InputResolutionStatus(MetaData(status.value, User.init.login, new Date, None, None), status)))
 
   override def countResolutionStatus(filter: Filter): Future[Long] = Future.successful(0)
 
@@ -480,7 +495,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             termQuery("relations", "case_artifact_job"),
             hasParentQuery(
               "case_artifact",
-              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
+              hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false),
               score = false
             )
           ),
@@ -500,7 +515,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
               termQuery("relations", "case_artifact_job"),
               hasParentQuery(
                 "case_artifact",
-                hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
+                hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false),
                 score = false
               )
             ),
@@ -558,7 +573,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             termQuery("relations", "case_artifact_job"),
             hasParentQuery(
               "case_artifact",
-              hasParentQuery("case", rangeQuery("createdAt").gte(filter.caseFromDate), score = false),
+              hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false),
               score = false
             )
           ),
@@ -626,65 +641,28 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
   override def countAction(entityId: String): Future[Long] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(Seq(termQuery("relations", "action"), idsQuery(entityId)), Nil, Nil)).limit(0))._2
 
+  def auditFilter(filter: Filter): Seq[RangeQuery] =
+    if (filter.auditDateRange._1.isDefined || filter.auditDateRange._2.isDefined) {
+      val fromFilter  = filter.auditDateRange._1.fold(identity[RangeQuery] _)(from => (_: RangeQuery).gte(from))
+      val untilFilter = filter.auditDateRange._2.fold(identity[RangeQuery] _)(until => (_: RangeQuery).lt(until))
+      Seq(fromFilter.andThen(untilFilter).apply(rangeQuery("createdAt")))
+    } else Nil
+
   override def listAudit(filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
-    dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(
-        bool(
-          Seq(
-            termQuery("relations", "audit"),
-            rangeQuery("createdAt").gte(filter.auditFromDate)
-          ),
-          Nil,
-          Nil
-        )
-      )
-    )._1.read[(String, InputAudit)]
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit"), Nil, Nil)))
+      ._1
+      .read[(String, InputAudit)]
 
   override def countAudit(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
-      search(indexName)
-        .query(
-          bool(
-            Seq(
-              termQuery("relations", "audit"),
-              rangeQuery("createdAt").gte(filter.auditFromDate)
-            ),
-            Nil,
-            Nil
-          )
-        )
-        .limit(0)
-    )._2
+    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit"), Nil, Nil)).limit(0))._2
 
   override def listAudit(entityId: String, filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(
-        bool(
-          Seq(
-            termQuery("relations", "audit"),
-            rangeQuery("createdAt").gte(filter.auditFromDate),
-            termQuery("objectId", entityId)
-          ),
-          Nil,
-          Nil
-        )
-      )
+      search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId), Nil, Nil))
     )._1.read[(String, InputAudit)]
 
   def countAudit(entityId: String, filter: Filter): Future[Long] =
     dbFind(Some("all"), Nil)(indexName =>
-      search(indexName)
-        .query(
-          bool(
-            Seq(
-              termQuery("relations", "audit"),
-              rangeQuery("createdAt").gte(filter.auditFromDate),
-              termQuery("objectId", entityId)
-            ),
-            Nil,
-            Nil
-          )
-        )
-        .limit(0)
+      search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId), Nil, Nil)).limit(0)
     )._2
 }

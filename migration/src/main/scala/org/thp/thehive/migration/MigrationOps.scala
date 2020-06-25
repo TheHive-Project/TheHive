@@ -29,7 +29,14 @@ class MigrationStats() {
     override def toString: String = if (isEmpty) "0" else (sum / count).toString
   }
 
-  class StatEntry(var total: Long = -1, var nSuccess: Int = 0, var nFailure: Int = 0, global: AVG = new AVG, current: AVG = new AVG) {
+  class StatEntry(
+      var total: Long = -1,
+      var nSuccess: Int = 0,
+      var nFailure: Int = 0,
+      var nExist: Int = 0,
+      global: AVG = new AVG,
+      current: AVG = new AVG
+  ) {
     def update(isSuccess: Boolean, time: Long): Unit = {
       if (isSuccess) nSuccess += 1
       else nFailure += 1
@@ -37,6 +44,8 @@ class MigrationStats() {
     }
 
     def failure(): Unit = nFailure += 1
+
+    def exist(): Unit = nExist += 1
 
     def flush(): Unit = {
       global ++= current
@@ -54,22 +63,22 @@ class MigrationStats() {
     def setTotal(v: Long): Unit = total = v
 
     override def toString: String = {
-      val totalTxt   = if (total < 0) s"/${nSuccess + nFailure}" else s"/$total"
-      val avg        = if (global.isEmpty) "" else s" avg:${global}ms"
-      val failureTxt = if (nFailure > 0) s" ($nFailure failures)" else ""
-      s"$nSuccess$totalTxt$failureTxt$avg"
+      val totalTxt = if (total < 0) s"/${nSuccess + nFailure}" else s"/$total"
+      val avg      = if (global.isEmpty) "" else s" avg:${global}ms"
+      val failureAndExistTxt = if (nFailure > 0 || nExist > 0) {
+        val failureTxt = if (nFailure > 0) s"$nFailure failures" else ""
+        val existTxt   = if (nExist > 0) s"$nExist exists" else ""
+        if (nFailure > 0 && nExist > 0) s" ($failureTxt, $existTxt)" else s" ($failureTxt$existTxt)"
+      } else ""
+      s"$nSuccess$totalTxt$failureAndExistTxt$avg"
     }
-
-//    def +=(other: StatEntry): Unit = {
-//      nSuccess += other.nSuccess
-//      nFailure += other.nFailure
-//      timeSum += other.timeSum
-//    }
-//    def isEmpty: Boolean = timeSum == 0
   }
+
   val logger: Logger                        = Logger("org.thp.thehive.migration.Migration")
   val stats: mutable.Map[String, StatEntry] = mutable.Map.empty
   val startDate: Long                       = System.currentTimeMillis()
+  var stage: String                         = "initialisation"
+
   def apply[A](name: String)(body: => Try[A]): Try[A] = {
     val start = System.currentTimeMillis()
     val ret   = body
@@ -85,6 +94,8 @@ class MigrationStats() {
     stats.getOrElseUpdate(name, new StatEntry).failure()
   }
 
+  def exist(name: String): Unit = stats.getOrElseUpdate(name, new StatEntry).exist()
+
   def flush(): Unit = stats.foreach(_._2.flush())
 
   def showStats(): String =
@@ -92,7 +103,7 @@ class MigrationStats() {
       .collect {
         case (name, entry) if !entry.isEmpty => s"$name:${entry.currentStats}"
       }
-      .mkString(" ")
+      .mkString(s"[$stage] ", " ", "")
 
   override def toString: String =
     stats
@@ -101,7 +112,7 @@ class MigrationStats() {
       }
       .toSeq
       .sorted
-      .mkString("\n")
+      .mkString(s"Stage: $stage\n", "\n", "")
 
   def setTotal(name: String, count: Long): Unit =
     stats.getOrElseUpdate(name, new StatEntry).setTotal(count)
@@ -128,7 +139,9 @@ trait MigrationOps {
         case Failure(error) =>
           migrationStats.failure(name, error)
           Nil
-        case _ => Nil
+        case _ =>
+          migrationStats.exist(name)
+          Nil
       }
       .runWith(Sink.seq)
 
@@ -149,7 +162,9 @@ trait MigrationOps {
         case Failure(error) =>
           migrationStats.failure(name, error)
           Nil
-        case _ => Nil
+        case _ =>
+          migrationStats.exist(name)
+          Nil
       }
       .runWith(Sink.seq)
 
@@ -160,14 +175,17 @@ trait MigrationOps {
     source
       .runForeach {
         case Success((contextId, inputAudit)) =>
-          for {
-            cid <- ids.fromInput(contextId)
-            objId = inputAudit.audit.objectId.map(ids.fromInput).flip.getOrElse {
-              logger.warn(s"object Id not found in audit ${inputAudit.audit}")
-              None
-            }
-            _ <- migrationStats("Audit")(create(cid, inputAudit.updateObjectId(objId)))
-          } yield ()
+          migrationStats("Audit") {
+            for {
+              cid <- ids.fromInput(contextId)
+              objId = inputAudit.audit.objectId.map(ids.fromInput).flip.getOrElse {
+                logger.warn(s"object Id not found in audit ${inputAudit.audit}")
+                None
+              }
+              _ <- create(cid, inputAudit.updateObjectId(objId))
+            } yield ()
+          }
+          ()
         case Failure(error) =>
           migrationStats.failure("Audit", error)
       }
@@ -190,13 +208,15 @@ trait MigrationOps {
   ): Future[Unit] =
     input
       .listCaseTemplate(filter)
-      .collect {
+      .mapConcat {
         case Success(ct) if !output.caseTemplateExists(ct) => List(ct)
         case Failure(error) =>
           migrationStats.failure("CaseTemplate", error)
           Nil
+        case _ =>
+          migrationStats.exist("CaseTemplate")
+          Nil
       }
-      .mapConcat(identity)
       .mapAsync(1)(migrateAWholeCaseTemplate(input, output))
       .runWith(Sink.ignore)
       .map(_ => ())
@@ -295,7 +315,9 @@ trait MigrationOps {
           case Failure(error) =>
             migrationStats.failure("Case", error)
             Nil
-          case _ => Nil
+          case _ =>
+            migrationStats.exist("Case")
+            Nil
         }
         .mapConcat(identity)
       val alertSource = input
@@ -305,7 +327,9 @@ trait MigrationOps {
           case Failure(error) =>
             migrationStats.failure("Alert", error)
             Nil
-          case _ => Nil
+          case _ =>
+            migrationStats.exist("Alert")
+            Nil
         }
         .mapConcat(identity)
       caseSource
@@ -342,7 +366,7 @@ trait MigrationOps {
         }
     }
 
-    output.startMigration()
+    migrationStats.stage = "Get element count"
     input.countOrganisations(filter).foreach(count => migrationStats.setTotal("Organisation", count))
     input.countCases(filter).foreach(count => migrationStats.setTotal("Case", count))
     input.countCaseObservables(filter).foreach(count => migrationStats.setTotal("Case/Observable", count))
@@ -363,16 +387,28 @@ trait MigrationOps {
     input.countAction(filter).foreach(count => migrationStats.setTotal("Action", count))
     input.countAudit(filter).foreach(count => migrationStats.setTotal("Audit", count))
 
+    migrationStats.stage = "Prepare database"
     for {
+      _ <- Future.fromTry(output.startMigration())
+      _ = migrationStats.stage = "Migrate profiles"
       _ <- migrate("Profile", input.listProfiles(filter), output.createProfile, output.profileExists)
+      _ = migrationStats.stage = "Migrate organisations"
       _ <- migrate("Organisation", input.listOrganisations(filter), output.createOrganisation, output.organisationExists)
+      _ = migrationStats.stage = "Migrate users"
       _ <- migrate("User", input.listUsers(filter), output.createUser, output.userExists)
+      _ = migrationStats.stage = "Migrate impact statuses"
       _ <- migrate("ImpactStatus", input.listImpactStatus(filter), output.createImpactStatus, output.impactStatusExists)
+      _ = migrationStats.stage = "Migrate resolution statuses"
       _ <- migrate("ResolutionStatus", input.listResolutionStatus(filter), output.createResolutionStatus, output.resolutionStatusExists)
+      _ = migrationStats.stage = "Migrate custom fields"
       _ <- migrate("CustomField", input.listCustomFields(filter), output.createCustomField, output.customFieldExists)
+      _ = migrationStats.stage = "Migrate observable types"
       _ <- migrate("ObservableType", input.listObservableTypes(filter), output.createObservableTypes, output.observableTypeExists)
+      _ = migrationStats.stage = "Migrate case templates"
       _ <- migrateWholeCaseTemplates(input, output, filter)
+      _ = migrationStats.stage = "Migrate cases and alerts"
       _ <- migrateCasesAndAlerts()
+      _ = migrationStats.stage = "Finalisation"
       _ <- Future.fromTry(output.endMigration())
     } yield ()
   }

@@ -1,9 +1,9 @@
 package org.thp.thehive.migration
 import java.io.{PrintWriter, StringWriter}
 
-import scala.util.Try
-
 import play.api.Logger
+
+import scala.util.Try
 
 class ProgressBar(terminal: Terminal, message: String, max: Int) {
   private var isDisplayed   = false
