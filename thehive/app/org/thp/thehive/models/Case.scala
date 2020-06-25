@@ -2,11 +2,10 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import play.api.libs.json.{Format, Json}
-
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
+import play.api.libs.json.{Format, Json}
 
 object CaseStatus extends Enumeration {
   val Open, Resolved, Deleted, Duplicated = Value
@@ -19,12 +18,29 @@ case class ResolutionStatus(value: String) {
   require(!value.isEmpty, "ResolutionStatus can't be empty")
 }
 
+object ResolutionStatus {
+  val indeterminate: ResolutionStatus = ResolutionStatus("Indeterminate")
+  val falsePositive: ResolutionStatus = ResolutionStatus("FalsePositive")
+  val truePositive: ResolutionStatus  = ResolutionStatus("TruePositive")
+  val other: ResolutionStatus         = ResolutionStatus("Other")
+  val duplicated: ResolutionStatus    = ResolutionStatus("Duplicated")
+
+  val initialValues = Seq(indeterminate, falsePositive, truePositive, other, duplicated)
+}
+
 @EdgeEntity[Case, ResolutionStatus]
 case class CaseResolutionStatus()
 
 @VertexEntity
 case class ImpactStatus(value: String) {
   require(!value.isEmpty, "ImpactStatus can't be empty")
+}
+
+object ImpactStatus {
+  val noImpact: ImpactStatus           = ImpactStatus("NoImpact")
+  val withImpact: ImpactStatus         = ImpactStatus("WithImpact")
+  val notApplicable: ImpactStatus      = ImpactStatus("NotApplicable")
+  val initialValues: Seq[ImpactStatus] = Seq(noImpact, withImpact, notApplicable)
 }
 
 @EdgeEntity[Case, ImpactStatus]

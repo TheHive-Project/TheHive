@@ -8,7 +8,6 @@ import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
-import org.thp.thehive.services.ProfileSrv
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 
 object Conversion {
@@ -486,7 +485,7 @@ object Conversion {
       .withFieldConst(_.createdBy, profile._createdBy)
       .withFieldConst(_._type, "profile")
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]].toSeq.sorted) // Permission is String
-      .withFieldComputed(_.editable, ProfileSrv.isEditable)
+      .withFieldComputed(_.editable, _.isEditable)
       .withFieldComputed(_.isAdmin, p => Permissions.containsRestricted(p.permissions))
       .transform
   )

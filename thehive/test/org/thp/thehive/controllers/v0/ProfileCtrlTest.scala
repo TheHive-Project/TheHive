@@ -1,13 +1,13 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputProfile
+import org.thp.thehive.models.Profile
 import org.thp.thehive.services.ProfileSrv
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
 
 class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
   "profile controller" should {
@@ -44,10 +44,10 @@ class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "fail to update non editable profile" in testApp { app =>
-      val request = FakeRequest("PATCH", s"/api/profile/${ProfileSrv.orgAdmin.name}")
+      val request = FakeRequest("PATCH", s"/api/profile/${Profile.orgAdmin.name}")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"permissions": ["manageTask"]}"""))
-      val result = app[ProfileCtrl].update(ProfileSrv.orgAdmin.name)(request)
+      val result = app[ProfileCtrl].update(Profile.orgAdmin.name)(request)
 
       status(result) must equalTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
@@ -63,9 +63,9 @@ class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "refuse to delete protected profile" in testApp { app =>
-      val requestFailed = FakeRequest("DELETE", s"/api/profile/${ProfileSrv.orgAdmin.name}")
+      val requestFailed = FakeRequest("DELETE", s"/api/profile/${Profile.orgAdmin.name}")
         .withHeaders("user" -> "admin@thehive.local")
-      val resultFailed = app[ProfileCtrl].delete(ProfileSrv.orgAdmin.name)(requestFailed)
+      val resultFailed = app[ProfileCtrl].delete(Profile.orgAdmin.name)(requestFailed)
 
       status(resultFailed) must equalTo(400).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
     }
