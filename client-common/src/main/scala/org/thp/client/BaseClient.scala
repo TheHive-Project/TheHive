@@ -1,12 +1,12 @@
 package org.thp.client
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSResponse}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 case class ApplicationError(status: Int, body: JsValue) extends Exception(s"ApplicationError($status):\n${Json.prettyPrint(body)}")
 

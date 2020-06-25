@@ -11,7 +11,7 @@ class TagTest extends PlaySpecification {
     "be parsed from key:value" in {
       val tag = parseTag("Module:atest_blah_blah")
       tag must beEqualTo(Tag(defaultNamespace, "Module", Some("atest_blah_blah"), None, defaultColor))
-      tag.toString must beEqualTo("Module\"atest_blah_blah\"")
+      tag.toString must beEqualTo("Module=\"atest_blah_blah\"")
     }
 
     "be parsed from key:value=" in {

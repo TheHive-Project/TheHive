@@ -9,7 +9,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
-import play.api.libs.json.{JsNull, JsObject, JsString, JsValue, Json}
+import play.api.libs.json._
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestCase(

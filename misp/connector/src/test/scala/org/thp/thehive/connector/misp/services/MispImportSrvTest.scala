@@ -2,11 +2,6 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.{Date, UUID}
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
-
-import play.api.test.PlaySpecification
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
@@ -17,6 +12,10 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
+import play.api.test.PlaySpecification
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =

@@ -4,17 +4,16 @@ import java.io.{File, InputStream}
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
-import scala.annotation.tailrec
-
-import play.api.libs.Files
-import play.api.libs.Files.TemporaryFileCreator
-import play.api.test.{NoTemporaryFileCreator, PlaySpecification}
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
+import play.api.libs.Files
+import play.api.libs.Files.TemporaryFileCreator
+import play.api.test.{NoTemporaryFileCreator, PlaySpecification}
+
+import scala.annotation.tailrec
 
 class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").getSystemAuthContext
@@ -30,7 +29,8 @@ class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {
   "attachment service" should {
     "create an attachment from a file" in testApp { app =>
       WithFakeScalligraphFile { tempFile =>
-        val r = app[Database].tryTransaction(implicit graph => app[AttachmentSrv].create(FFile("test.txt", tempFile.path, "text/plain")))
+        val r =
+          app[Database].tryTransaction(implicit graph => app[AttachmentSrv].create(FFile("test.txt", tempFile.path, "text/plain")))
 
         r must beSuccessfulTry.which { a =>
           a.name shouldEqual "test.txt"

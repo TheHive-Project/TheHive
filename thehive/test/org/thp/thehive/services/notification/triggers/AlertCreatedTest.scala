@@ -2,15 +2,14 @@ package org.thp.thehive.services.notification.triggers
 
 import java.util.Date
 
-import play.api.libs.json.{JsObject, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.controllers.v0.AlertCtrl
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
 import org.thp.thehive.services.{AlertSrv, AuditSrv, OrganisationSrv, UserSrv}
+import play.api.libs.json.{JsObject, Json}
+import play.api.test.{FakeRequest, PlaySpecification}
 
 class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
 

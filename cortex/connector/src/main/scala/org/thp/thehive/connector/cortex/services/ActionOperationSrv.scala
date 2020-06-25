@@ -2,10 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-
 import gremlin.scala.Graph
 import javax.inject.Inject
 import org.thp.scalligraph.InternalError
@@ -17,6 +13,9 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+
+import scala.util.{Failure, Success, Try}
 
 class ActionOperationSrv @Inject() (
     caseSrv: CaseSrv,

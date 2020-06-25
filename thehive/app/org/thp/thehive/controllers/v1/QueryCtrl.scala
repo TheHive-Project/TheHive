@@ -1,10 +1,10 @@
 package org.thp.thehive.controllers.v1
 
-import scala.reflect.runtime.{universe => ru}
-
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, PublicPropertyListBuilder, Query}
 import org.thp.scalligraph.steps.BaseVertexSteps
+
+import scala.reflect.runtime.{universe => ru}
 
 case class IdOrName(idOrName: String)
 

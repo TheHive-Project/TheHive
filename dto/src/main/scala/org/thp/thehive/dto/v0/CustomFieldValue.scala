@@ -2,12 +2,11 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json._
-
 import org.scalactic.Accumulation._
-import org.scalactic.{Bad, Every, Good, One, Or}
-import org.thp.scalligraph.{AttributeError, InvalidFormatAttributeError}
+import org.scalactic._
 import org.thp.scalligraph.controllers.{FNull, _}
+import org.thp.scalligraph.{AttributeError, InvalidFormatAttributeError}
+import play.api.libs.json._
 
 case class OutputCustomField(
     id: String,

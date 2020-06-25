@@ -1,11 +1,10 @@
 package org.thp.thehive.services
 
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.test.PlaySpecification
 
 class ImpactStatusSrvTest extends PlaySpecification with TestAppBuilder {
   "impact status service" should {

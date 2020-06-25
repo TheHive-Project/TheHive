@@ -1,15 +1,14 @@
 package org.thp.thehive.client
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
-
+import org.thp.client.{ApplicationError, Authentication, BaseClient}
+import org.thp.thehive.dto.v1._
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.WSClient
 
-import org.thp.client.{ApplicationError, Authentication, BaseClient}
-import org.thp.thehive.dto.v1._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class TheHiveClient(baseUrl: String)(implicit ws: WSClient) {
   lazy val logger: Logger = Logger(getClass)

@@ -4,7 +4,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.connector.cortex.dto.v0.{InputAnalyzerTemplate, OutputAction, OutputAnalyzerTemplate, OutputJob, OutputWorker}
+import org.thp.thehive.connector.cortex.dto.v0._
 import org.thp.thehive.connector.cortex.models._
 import play.api.libs.json.{JsArray, JsFalse, Json}
 

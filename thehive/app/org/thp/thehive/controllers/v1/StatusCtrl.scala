@@ -1,16 +1,15 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.Success
-
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, Results}
-
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
 class StatusCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationConfig, authSrv: AuthSrv) {

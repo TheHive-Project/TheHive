@@ -1,12 +1,11 @@
 package org.thp.thehive.services.notification.triggers
 
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.services._
+import play.api.test.PlaySpecification
 
 class TaskAssignedTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certadmin@thehive.local").authContext

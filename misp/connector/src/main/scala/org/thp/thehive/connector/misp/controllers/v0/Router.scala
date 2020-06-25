@@ -1,11 +1,10 @@
 package org.thp.thehive.connector.misp.controllers.v0
 
+import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.NotFoundError
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
-
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.NotFoundError
 
 @Singleton
 class Router @Inject() (mispCtrl: MispCtrl) extends SimpleRouter {

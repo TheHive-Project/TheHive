@@ -3,15 +3,14 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Long => JLong}
 import java.util.{Map => JMap}
 
-import scala.collection.JavaConverters._
-
-import play.api.libs.json.{JsNumber, JsObject}
-
 import gremlin.scala.{__, By, Graph, Key, Vertex}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services._
+import play.api.libs.json.{JsNumber, JsObject}
+
+import scala.collection.JavaConverters._
 
 trait AuditRenderer {
 

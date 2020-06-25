@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import scala.collection.JavaConverters._
-import scala.util.Failure
-
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
 import gremlin.scala.{__, By, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.BadRequestError
@@ -30,6 +25,10 @@ import org.thp.thehive.services.{
   UserSrv,
   UserSteps
 }
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.Failure
 
 @Singleton
 class Properties @Inject() (

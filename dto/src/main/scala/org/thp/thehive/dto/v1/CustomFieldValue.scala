@@ -2,12 +2,11 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import play.api.libs.json._
-
 import org.scalactic.Accumulation._
 import org.scalactic.{Bad, Good, One}
 import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers._
+import play.api.libs.json._
 
 case class InputCustomField(name: String, description: String, `type`: String, mandatory: Option[Boolean])
 
@@ -43,6 +42,7 @@ object InputCustomFieldValue {
             )
         }
         .map(_.toSeq)
+    case _ => Good(Nil)
   }
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {

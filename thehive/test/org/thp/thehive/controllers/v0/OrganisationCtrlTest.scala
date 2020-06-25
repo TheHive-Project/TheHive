@@ -1,13 +1,12 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.services.OrganisationSrv
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
 
 class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
   "organisation controller" should {

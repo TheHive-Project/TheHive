@@ -28,7 +28,7 @@ class AuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
-)(implicit db: Database, schema: Schema)
+)(implicit @Named("with-thehive-schema") db: Database, schema: Schema)
     extends VertexSrv[Audit, AuditSteps] { auditSrv =>
   lazy val userSrv: UserSrv                               = userSrvProvider.get
   val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
@@ -273,7 +273,8 @@ class AuditSrv @Inject() (
 }
 
 @EntitySteps[Audit]
-class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schema, graph: Graph) extends VertexSteps[Audit](raw) {
+class AuditSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, schema: Schema, graph: Graph)
+    extends VertexSteps[Audit](raw) {
 
   def organisation: OrganisationSteps =
     new OrganisationSteps(getOrganisation(raw))

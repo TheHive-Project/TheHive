@@ -1,14 +1,15 @@
 package org.thp.thehive.services.notification.notifiers
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
-import play.api.{Configuration, Logger}
-import play.api.libs.mailer.{Email, MailerClient}
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.libs.mailer.{Email, MailerClient}
+import play.api.{Configuration, Logger}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 @Singleton
 class EmailerProvider @Inject() (appConfig: ApplicationConfig, mailerClient: MailerClient, ec: ExecutionContext) extends NotifierProvider {

@@ -2,9 +2,8 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat}
-
 import org.thp.scalligraph.models.Entity
+import play.api.libs.json.{Json, OFormat}
 
 case class OutputEntity(_type: String, _id: String, _createdAt: Date, _createdBy: String, _updatedAt: Option[Date], _updatedBy: Option[String])
 

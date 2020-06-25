@@ -2,15 +2,14 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import play.api.libs.json.JsString
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json.JsString
+import play.api.test.PlaySpecification
 
 class AlertSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext

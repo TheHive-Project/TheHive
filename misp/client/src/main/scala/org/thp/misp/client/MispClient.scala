@@ -2,15 +2,6 @@ package org.thp.misp.client
 
 import java.util.Date
 
-import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-import play.api.http.Status
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
-import play.api.libs.ws.{WSClient, WSRequest}
-
 import akka.NotUsed
 import akka.stream.alpakka.json.scaladsl.JsonReader
 import akka.stream.scaladsl.{JsonFraming, Source}
@@ -18,6 +9,14 @@ import akka.util.ByteString
 import org.thp.client.{ApplicationError, Authentication, ProxyWS}
 import org.thp.misp.dto.{Attribute, Event, Organisation, User}
 import org.thp.scalligraph.InternalError
+import play.api.Logger
+import play.api.http.Status
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.ws.{WSClient, WSRequest}
+
+import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 object MispPurpose extends Enumeration {
   val ImportOnly, ExportOnly, ImportAndExport = Value

@@ -1,7 +1,7 @@
 package org.thp.thehive.connector.cortex.services
 
 import io.scalaland.chimney.dsl._
-import org.thp.cortex.dto.v0.{OutputMinireport, OutputArtifact, JobStatus => CortexJobStatus}
+import org.thp.cortex.dto.v0.{OutputArtifact, OutputMinireport, JobStatus => CortexJobStatus}
 import org.thp.thehive.connector.cortex.models.JobStatus
 import org.thp.thehive.models.{Observable, ReportTag, ReportTagLevel}
 

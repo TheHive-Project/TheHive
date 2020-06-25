@@ -3,14 +3,6 @@ package org.thp.thehive.migration.th3
 import java.nio.file.{Files, Paths}
 import java.security.KeyStore
 
-import scala.collection.JavaConverters._
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future, Promise}
-
-import play.api.inject.ApplicationLifecycle
-import play.api.libs.json.JsObject
-import play.api.{Configuration, Logger}
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
@@ -29,6 +21,13 @@ import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.elasticsearch.client.RestClientBuilder.{HttpClientConfigCallback, RequestConfigCallback}
 import org.thp.scalligraph.{CreateError, InternalError, SearchError}
+import play.api.inject.ApplicationLifecycle
+import play.api.libs.json.JsObject
+import play.api.{Configuration, Logger}
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
   * This class is a wrapper of ElasticSearch client from Elastic4s

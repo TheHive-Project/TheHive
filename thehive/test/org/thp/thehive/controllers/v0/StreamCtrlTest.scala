@@ -2,13 +2,12 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
+import play.api.test.{FakeRequest, PlaySpecification}
 
 class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
   "stream controller" should {

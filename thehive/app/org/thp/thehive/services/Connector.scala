@@ -1,8 +1,7 @@
 package org.thp.thehive.services
 
-import play.api.libs.json.{JsObject, Json}
-
 import org.thp.thehive.models.HealthStatus
+import play.api.libs.json.{JsObject, Json}
 
 trait Connector {
   val name: String

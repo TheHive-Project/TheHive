@@ -2,11 +2,6 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import scala.util.Success
-
-import play.api.libs.json.Json
-import play.api.test.PlaySpecification
-
 import org.specs2.matcher.Matcher
 import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
@@ -16,6 +11,10 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json.Json
+import play.api.test.PlaySpecification
+
+import scala.util.Success
 
 class CaseSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
@@ -376,7 +375,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         .get
         .`case`
 
-      def checkAssignee(status: Matcher[Boolean]) = app[Database].roTransaction(implicit graph => app[CaseSrv].get(c8).assignee.exists() must status)
+      def checkAssignee(status: Matcher[Boolean]) =
+        app[Database].roTransaction(implicit graph => app[CaseSrv].get(c8).assignee.exists() must status)
 
       checkAssignee(beTrue)
       app[Database].tryTransaction(implicit graph => app[CaseSrv].unassign(c8)) must beSuccessfulTry

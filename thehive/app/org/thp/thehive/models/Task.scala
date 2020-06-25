@@ -2,10 +2,9 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import play.api.libs.json.{Format, Json}
-
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.Entity
+import play.api.libs.json.{Format, Json}
 
 object TaskStatus extends Enumeration {
   val Waiting, InProgress, Completed, Cancel = Value
