@@ -162,7 +162,7 @@ class CaseCtrl @Inject() (
         caseSrv
           .get(caseIdOrNumber)
           .can(Permissions.manageCase)
-          .update("status" -> "deleted")
+          .update("status" -> CaseStatus.Deleted)
           .map(_ => Results.NoContent)
       }
 
