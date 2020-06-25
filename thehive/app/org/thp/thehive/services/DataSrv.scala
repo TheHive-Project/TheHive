@@ -14,16 +14,16 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.{Success, Try}
 
 @Singleton
-class DataSrv @Inject() (@Named("data-dedup-actor") dataDedupActor: ActorRef)(implicit db: Database) extends VertexSrv[Data, DataSteps] {
+class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit @Named("with-thehive-schema") db: Database)
+    extends VertexSrv[Data, DataSteps] {
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): DataSteps = new DataSteps(raw)
 
   override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     super.createEntity(e).map { data =>
-      dataDedupActor ! DedupActor.EntityAdded
+      integrityCheckActor ! IntegrityCheckActor.EntityAdded("Data")
       data
     }
 
@@ -32,10 +32,12 @@ class DataSrv @Inject() (@Named("data-dedup-actor") dataDedupActor: ActorRef)(im
       .getByData(e.data)
       .headOption()
       .fold(createEntity(e))(Success(_))
+
+  override def exists(e: Data)(implicit graph: Graph): Boolean = initSteps.getByData(e.data).exists()
 }
 
 @EntitySteps[Data]
-class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Data](raw) {
+class DataSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Data](raw) {
 
   def observables = new ObservableSteps(raw.inTo[ObservableData])
 
@@ -58,7 +60,7 @@ class DataSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def useCount: Traversal[JLong, JLong] = Traversal(raw.inTo[ObservableData].count())
 }
 
-class DataDedupOps(val db: Database, val service: DataSrv) extends DedupOps[Data] {
+class DataIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
   override def resolve(entities: List[Data with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
       tail.foreach(copyEdge(_, head))
@@ -67,11 +69,3 @@ class DataDedupOps(val db: Database, val service: DataSrv) extends DedupOps[Data
     case _ => Success(())
   }
 }
-
-class DataDedupActor @Inject() (db: Database, service: DataSrv) extends DataDedupOps(db, service) with DedupActor {
-  override val min: FiniteDuration = 10.seconds
-  override val max: FiniteDuration = 1.minute
-}
-
-@Singleton
-class DataDedupActorProvider extends DedupActorProvider[DataDedupActor]("Data")

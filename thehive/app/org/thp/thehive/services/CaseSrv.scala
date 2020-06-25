@@ -19,7 +19,6 @@ import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -35,8 +34,8 @@ class CaseSrv @Inject() (
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     impactStatusSrv: ImpactStatusSrv,
-    @Named("case-dedup-actor") caseDedupActor: ActorRef
-)(implicit db: Database)
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+)(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
@@ -49,7 +48,7 @@ class CaseSrv @Inject() (
 
   override def createEntity(e: Case)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     super.createEntity(e).map { `case` =>
-      caseDedupActor ! DedupActor.EntityAdded
+      integrityCheckActor ! IntegrityCheckActor.EntityAdded("Case")
       `case`
     }
 
@@ -84,6 +83,8 @@ class CaseSrv @Inject() (
     } yield richCase
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
+
+  override def exists(e: Case)(implicit graph: Graph): Boolean = initSteps.getByNumber(e.number).exists()
 
   override def update(
       steps: CaseSteps,
@@ -334,7 +335,7 @@ class CaseSrv @Inject() (
 }
 
 @EntitySteps[Case]
-class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Case](raw) {
+class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Case](raw) {
   def resolutionStatus: ResolutionStatusSteps = new ResolutionStatusSteps(raw.outTo[CaseResolutionStatus])
 
   def get(id: String): CaseSteps =
@@ -614,26 +615,25 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])
 }
 
-class CaseDedupOps(val db: Database, val service: CaseSrv) extends DedupOps[Case] {
+class CaseIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {
+  def removeDuplicates(): Unit =
+    duplicateEntities
+      .foreach { entities =>
+        db.tryTransaction { implicit graph =>
+          resolve(entities)
+        }
+      }
   override def resolve(entities: List[Case with Entity])(implicit graph: Graph): Try[Unit] = {
     val nextNumber = service.nextCaseNumber
-    entities
-      .sorted(createdFirst)
-      .tail
-      .flatMap(service.get(_).raw.headOption())
-      .zipWithIndex
-      .foreach {
-        case (vertex, index) =>
-          db.setSingleProperty(vertex, "number", nextNumber + index, UniMapping.int)
-      }
+    firstCreatedEntity(entities).foreach(
+      _._2
+        .flatMap(service.get(_).raw.headOption())
+        .zipWithIndex
+        .foreach {
+          case (vertex, index) =>
+            db.setSingleProperty(vertex, "number", nextNumber + index, UniMapping.int)
+        }
+    )
     Success(())
   }
 }
-
-class CaseDedupActor @Inject() (db: Database, service: CaseSrv) extends CaseDedupOps(db, service) with DedupActor {
-  override val min: FiniteDuration = 5.seconds
-  override val max: FiniteDuration = 10.seconds
-}
-
-@Singleton
-class CaseDedupActorProvider extends DedupActorProvider[CaseDedupActor]("Case")

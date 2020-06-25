@@ -21,7 +21,14 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 @Singleton
-class CustomFieldSrv @Inject() (implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
+class CustomFieldSrv @Inject() (auditSrv: AuditSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
+    implicit @Named("with-thehive-schema") db: Database
+) extends VertexSrv[CustomField, CustomFieldSteps] {
+
+  override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
+    integrityCheckActor ! IntegrityCheckActor.EntityAdded("CustomField")
+    super.createEntity(e)
+  }
 
   def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] =
     for {
