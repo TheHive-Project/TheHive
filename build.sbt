@@ -92,6 +92,20 @@ lazy val thehive = (project in file("."))
         case other                        => other
       }
     },
+    clean := {
+      (clean in scalligraph).value
+      (clean in thehiveCore).value
+      (clean in thehiveDto).value
+      (clean in thehiveClient).value
+      (clean in thehiveFrontend).value
+      (clean in thehiveCortex).value
+      (clean in thehiveMisp).value
+      (clean in cortexClient).value
+      (clean in mispClient).value
+      (clean in thehiveMigration).value
+      (clean in clientCommon).value
+      (clean in cortexDto).value
+    },
     test := {
       (test in Test in scalligraph).value
       (test in Test in thehiveCore).value
@@ -105,6 +119,20 @@ lazy val thehive = (project in file("."))
       (test in Test in thehiveMigration).value
       (test in Test in clientCommon).value
       (test in Test in cortexDto).value
+    },
+    testQuick := {
+      (testQuick in Test in scalligraph).evaluated
+      (testQuick in Test in thehiveCore).evaluated
+      (testQuick in Test in thehiveDto).evaluated
+      (testQuick in Test in thehiveClient).evaluated
+      (testQuick in Test in thehiveFrontend).evaluated
+      (testQuick in Test in thehiveCortex).evaluated
+      (testQuick in Test in thehiveMisp).evaluated
+      (testQuick in Test in cortexClient).evaluated
+      (testQuick in Test in mispClient).evaluated
+      (testQuick in Test in thehiveMigration).evaluated
+      (testQuick in Test in clientCommon).evaluated
+      (testQuick in Test in cortexDto).evaluated
     }
   )
 
