@@ -5,12 +5,11 @@ import java.util.Date
 import play.api.libs.json.{Json, OFormat, OWrites}
 
 case class InputTask(
-    caseId: String,
     title: String,
     group: Option[String] = None,
     description: Option[String] = None,
     status: Option[String] = None,
-    flag: Boolean = false,
+    flag: Option[Boolean] = None,
     startDate: Option[Date] = None,
     endDate: Option[Date] = None,
     order: Option[Int] = None,
