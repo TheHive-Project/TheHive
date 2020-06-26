@@ -68,6 +68,7 @@ object Conversion {
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.status, _.status.toString)
+      .withFieldRenamed(_.user, _.assignee)
       .transform
   )
 
