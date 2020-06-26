@@ -126,7 +126,7 @@ class Properties @Inject() (
       .property("pap", UniMapping.int)(_.field.updatable)
       .property("status", UniMapping.string)(_.field.updatable)
       .property("summary", UniMapping.string.optional)(_.field.updatable)
-      .property("user", UniMapping.string.optional)(_.select(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
+      .property("assignee", UniMapping.string.optional)(_.select(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
           user <- login.map(userSrv.get(_)(graph).getOrFail("User")).flip

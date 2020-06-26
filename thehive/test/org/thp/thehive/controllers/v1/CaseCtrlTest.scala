@@ -38,7 +38,7 @@ object TestCase {
       outputCase.pap,
       outputCase.status,
       outputCase.summary,
-      outputCase.user,
+      outputCase.assignee,
       outputCase.customFields
     )
 }
