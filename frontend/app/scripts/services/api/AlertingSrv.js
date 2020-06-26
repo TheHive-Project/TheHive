@@ -1,20 +1,36 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv) {
+        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, PaginatedQuerySrv) {
 
             var baseUrl = './api/alert';
 
             var factory = {
 
                 list: function(config, callback) {
-                    return PSearchSrv(undefined, 'alert', {
+                    // return PSearchSrv(undefined, 'alert', {
+                    //     scope: config.scope,
+                    //     sort: config.sort || '-date',
+                    //     loadAll: config.loadAll || false,
+                    //     pageSize: config.pageSize || 10,
+                    //     filter: config.filter || '',
+                    //     onUpdate: callback || angular.noop
+                    // });
+
+                    return new PaginatedQuerySrv({
+                        root: undefined,
+                        objectType: 'alert',
+                        version: 'v0',
                         scope: config.scope,
-                        sort: config.sort || '-date',
+                        sort: config.sort || ['+createdAt'],
+                        //sort: [{'date': 'desc'}],
                         loadAll: config.loadAll || false,
                         pageSize: config.pageSize || 10,
-                        filter: config.filter || '',
-                        onUpdate: callback || angular.noop
+                        filter: config.filter || undefined,
+                        onUpdate: callback || undefined,
+                        operations: [
+                            {'_name': 'listAlert'}
+                        ]
                     });
                 },
 

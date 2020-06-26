@@ -186,18 +186,26 @@
 
                 // Apply filter is defined
                 if (options && options.filter) {
-                    operations.push({
-                        '_name': 'filter',
-                        '_is': options.filter
-                    });
+                    // operations.push({
+                    //     '_name': 'filter',
+                    //     '_is': options.filter
+                    // });
+
+                    operations.push(
+                        _.extend({'_name': 'filter'}, {'_is': options.filter})
+                    );
                 }
 
                 // Apply sort is defined
                 if (options && options.sort) {
-                    operations.push({
-                        '_name': 'sort',
-                        '_fields': options.sort
-                    });
+                    // operations.push({
+                    //     '_name': 'sort',
+                    //     '_fields': options.sort
+                    // });
+
+                    operations.push(
+                        _.extend({'_name': 'sort'}, {'_fields': options.sort})
+                    );
                 }
 
                 return QuerySrv.query('v1', operations)

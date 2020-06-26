@@ -17,6 +17,7 @@
                     scope.$watch('updatable.updating', function(value) {
 
                         if(value === true && !cached) {
+                            // TODO nadouani use {"_field": "locked": "_value": false}
                             UserSrv.list(AuthenticationSrv.currentUser.organisation, {
                                 filter: { locked: false },
                                 sort: [{'name': 'asc'}]
