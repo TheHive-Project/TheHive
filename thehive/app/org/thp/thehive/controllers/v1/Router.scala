@@ -16,7 +16,8 @@ class Router @Inject() (
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,
     statusCtrl: StatusCtrl,
-    authenticationCtrl: AuthenticationCtrl
+    authenticationCtrl: AuthenticationCtrl,
+    describeCtrl: DescribeCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -93,6 +94,9 @@ class Router @Inject() (
 //    GET      /audit                               controllers.AuditCtrl.find()
 //    POST     /audit/_search                       controllers.AuditCtrl.find()
 //    POST     /audit/_stats                        controllers.AuditCtrl.stats()
+
+    case GET(p"/describe/_all")       => describeCtrl.describeAll
+    case GET(p"/describe/$modelName") => describeCtrl.describe(modelName)
 
   }
 }
