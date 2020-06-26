@@ -161,7 +161,7 @@ class DescribeCtrl @Inject() (
       .auth { _ =>
         entityDescriptions
           .collectFirst {
-            case desc if desc.label == modelName => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.$modelName", cacheExpire)(desc.toJson)))
+            case desc if desc.label == modelName => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.v1.$modelName", cacheExpire)(desc.toJson)))
           }
           .getOrElse(Failure(NotFoundError(s"Model $modelName not found")))
       }
@@ -170,7 +170,7 @@ class DescribeCtrl @Inject() (
     entrypoint("describe all models")
       .auth { _ =>
         val descriptors = entityDescriptions.map { desc =>
-          desc.label -> cacheApi.getOrElseUpdate(s"describe.${desc.label}", cacheExpire)(desc.toJson)
+          desc.label -> cacheApi.getOrElseUpdate(s"describe.v1.${desc.label}", cacheExpire)(desc.toJson)
         }
         Success(Results.Ok(JsObject(descriptors)))
       }
