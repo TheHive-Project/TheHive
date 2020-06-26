@@ -3,7 +3,6 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Long => JLong}
 
 import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
-import javax.inject.Named
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services._
@@ -19,14 +18,14 @@ trait CaseRenderer {
 
   def observableStats(
       shareTraversal: GremlinScala[Vertex]
-  )(implicit @Named("with-thehive-schema") db: Database, graph: Graph): GremlinScala[JsObject] =
+  )(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
     new ShareSteps(shareTraversal)
       .observables
       .count
       .map(count => Json.obj("count" -> count))
       .raw
 
-  def taskStats(shareTraversal: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph): GremlinScala[JsObject] =
+  def taskStats(shareTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
     new ShareSteps(shareTraversal)
       .tasks
       .active
@@ -60,23 +59,23 @@ trait CaseRenderer {
 
   def sharedWithStats(
       caseTraversal: GremlinScala[Vertex]
-  )(implicit @Named("with-thehive-schema") db: Database, graph: Graph): GremlinScala[Seq[String]] =
+  )(implicit db: Database, graph: Graph): GremlinScala[Seq[String]] =
     new CaseSteps(caseTraversal).organisations.name.fold.map(_.asScala.toSeq).raw
 
-  def originStats(caseTraversal: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph): GremlinScala[String] =
+  def originStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[String] =
     new CaseSteps(caseTraversal).origin.name.raw
 
-  def shareCountStats(caseTraversal: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph): GremlinScala[JLong] =
+  def shareCountStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JLong] =
     new CaseSteps(caseTraversal).organisations.count.raw
 
   def isOwnerStats(
       caseTraversal: GremlinScala[Vertex]
-  )(implicit @Named("with-thehive-schema") db: Database, graph: Graph, authContext: AuthContext): GremlinScala[Boolean] =
+  )(implicit db: Database, graph: Graph, authContext: AuthContext): GremlinScala[Boolean] =
     new CaseSteps(caseTraversal).origin.name.map(_ == authContext.organisation).raw
 
   def caseStatsRenderer(
       implicit authContext: AuthContext,
-      @Named("with-thehive-schema") db: Database,
+      db: Database,
       graph: Graph
   ): CaseSteps => Traversal[JsObject, JsObject] =
     _.project(
