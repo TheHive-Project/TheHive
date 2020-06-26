@@ -23,6 +23,7 @@
 
             this.$onInit = function() {
                 self.filtering = new FilteringSrv('alert', 'alert.list', {
+                    version: 'v1',
                     defaults: {
                         showFilters: true,
                         showStats: false,

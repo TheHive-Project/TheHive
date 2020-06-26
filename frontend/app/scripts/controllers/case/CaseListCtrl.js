@@ -15,6 +15,7 @@
 
         this.$onInit = function() {
             self.filtering = new FilteringSrv('case', 'case.list', {
+                version: 'v1',
                 defaults: {
                     showFilters: true,
                     showStats: false,

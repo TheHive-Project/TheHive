@@ -4,7 +4,7 @@
         .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, FilteringSrv, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, FilteringSrv, CaseTabsSrv, PaginatedQuerySrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -21,6 +21,7 @@
 
         this.$onInit = function() {
             $scope.filtering = new FilteringSrv('case_task', 'task.list', {
+                version: 'v1',
                 defaults: {
                     showFilters: true,
                     showStats: false,
@@ -41,26 +42,45 @@
         };
 
         $scope.load = function() {
-            $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
+            // $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
+            //     scope: $scope,
+            //     baseFilter: {
+            //         _and: [{
+            //             _parent: {
+            //                 _type: 'case',
+            //                 _query: {
+            //                     '_id': $scope.caseId
+            //                 }
+            //             }
+            //         }, {
+            //             _not: {
+            //                 'status': 'Cancel'
+            //             }
+            //         }]
+            //     },
+            //     filter: $scope.filtering.buildQuery(),
+            //     loadAll: true,
+            //     sort: $scope.filtering.context.sort,
+            //     pageSize: $scope.filtering.context.pageSize,
+            //     onUpdate: function() {
+            //         $scope.buildTaskGroups($scope.tasks.values);
+            //     }
+            // });
+
+            $scope.tasks = new PaginatedQuerySrv({
+                root: $scope.caseId,
+                objectType: 'case_task',
+                version: 'v1',
                 scope: $scope,
-                baseFilter: {
-                    _and: [{
-                        _parent: {
-                            _type: 'case',
-                            _query: {
-                                '_id': $scope.caseId
-                            }
-                        }
-                    }, {
-                        _not: {
-                            'status': 'Cancel'
-                        }
-                    }]
-                },
-                filter: $scope.filtering.buildQuery(),
-                loadAll: true,
                 sort: $scope.filtering.context.sort,
+                loadAll: true,
                 pageSize: $scope.filtering.context.pageSize,
+                filter: $scope.filtering.buildQuery(),
+                withStats: true,
+                operations: [
+                    {'_name': 'getCase', "idOrName": $scope.caseId},
+                    {'_name': 'tasks'}
+                ],
                 onUpdate: function() {
                     $scope.buildTaskGroups($scope.tasks.values);
                 }

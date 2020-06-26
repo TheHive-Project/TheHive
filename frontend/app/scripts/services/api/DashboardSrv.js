@@ -4,7 +4,10 @@
         var baseUrl = './api/dashboard';
         var self = this;
 
-        this.metadata = null;
+        this.metadata = {
+            v0: null,
+            v1: null
+        };
 
         this.defaultDashboard = {
             period: 'all',
@@ -209,14 +212,18 @@
             return obj;
         };
 
-        this.getMetadata = function() {
+        this.getMetadata = function(version) {
             var defer = $q.defer();
 
-            if (this.metadata !== null) {
-                defer.resolve(this.metadata);
+            if(!version) {
+                version = 'v0';
+            }
+
+            if (this.metadata[version] !== null) {
+                defer.resolve(this.metadata[version]);
             } else {
                 $http
-                    .get('./api/describe/_all')
+                    .get('./api/' + version + '/describe/_all')
                     .then(function(response) {
                         var data = response.data;
                         var metadata = {
@@ -228,7 +235,7 @@
                             metadata[entity].attributes = self._objectifyBy(data[entity].attributes, 'name');
                         });
 
-                        self.metadata = metadata;
+                        self.metadata[version] = metadata;
 
                         defer.resolve(metadata);
                     })

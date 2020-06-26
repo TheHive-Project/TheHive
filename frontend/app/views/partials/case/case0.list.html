@@ -60,7 +60,7 @@
                                                 uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
                                             <span class="mr-xxs text-primary" ng-if="!!currentCase.stats.isOwner"><i class="fa fa-building-o"
                                                 uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span>
-                                            <a ui-sref="app.case.details({caseId: currentCase._id})">#{{currentCase.number}} - {{currentCase.title}}</a>
+                                            <a ui-sref="app.case.details({caseId: currentCase.id})">#{{currentCase.caseId}} - {{currentCase.title}}</a>
                                         </div>
                                         <div class="case-tags flexwrap mt-xxs">
                                             <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
@@ -76,15 +76,13 @@
                                         </div>
                                         <div class="text-danger" ng-if="currentCase.mergeFrom">
                         					          <small>
-                                                Merged from <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[0]})"> Case #{{currentCase.stats.mergeFrom[0].number}}</a> and
-                                                <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].number}}</a>
+                                                Merged from <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[0]})"> Case #{{currentCase.stats.mergeFrom[0].caseId}}</a> and
+                                                <a href ui-sref="app.case.details({caseId: currentCase.mergeFrom[1]})"> Case #{{currentCase.stats.mergeFrom[1].caseId}}</a>
                                             </small>
                         				        </div>
                                     </td>
                                     <td align="center">
-                                        <span class="label label-danger">TODO</span>
-                                        <!-- TODO nadouani: not yet implemented -->
-                                        <!-- <a href ng-if="currentCase.stats.shareCount > 0" ui-sref="app.case.sharing({caseId: currentCase._id})" class="noline"
+                                        <a href ng-if="currentCase.stats.shareCount > 0" ui-sref="app.case.sharing({caseId: currentCase.id})" class="noline"
                                                 uib-tooltip="{{ {
                                                     true: 'Current organisation has shared this Case with ' + currentCase.stats.shareCount + ' organisation(s)',
                                                     false: 'This Case has been shared by its owner with ' + currentCase.stats.shareCount + ' organisation(s)'
@@ -93,7 +91,7 @@
 
                                             <i class="fa fa-users"></i>
                                             ({{currentCase.stats.shareCount || 0}})
-                                        </a> -->
+                                        </a>
                                     </td>
                                     <td align="center">
                                         <div class="clickable" ng-click="$vm.addFilterValue('severity', currentCase.severity)">
@@ -101,21 +99,17 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="label label-danger">TODO</span>
-                                        <!-- TODO nadouani: not yet implemented -->
-                                        <!-- <a ui-sref="app.case.tasks({caseId: currentCase._id})">
+                                        <a ui-sref="app.case.tasks({caseId: currentCase.id})">
                                             <ng-pluralize count="currentCase.stats.tasks.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
                                         </a>
                                         <br>
-                                        <task-progress ng-show="currentCase.stats.tasks.total > 0" tasks="currentCase.stats.tasks"/> -->
+                                        <task-progress ng-show="currentCase.stats.tasks.total > 0" tasks="currentCase.stats.tasks"/>
                                     </td>
                                     <td>
-                                        <span class="label label-danger">TODO</span>
-                                        <!-- TODO nadouani: not yet implemented -->
-                                        <!-- <a ui-sref="app.case.observables({caseId: currentCase._id})">{{currentCase.stats.artifacts.count}}</a> -->
+                                        <a ui-sref="app.case.observables({caseId: currentCase.id})">{{currentCase.stats.artifacts.count}}</a>
                                     </td>
                                     <td class="nowrap">
-                                        <user user-id="currentCase.assignee" icon-only="true" icon-size="m"></user>
+                                        <user user-id="currentCase.owner" icon-only="true" icon-size="m"></user>
                                     </td>
                                     <td>
                                         <div>
@@ -129,14 +123,14 @@
                                     </td>
                                     <td if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">
                                         <span class="ml-xs" uib-dropdown>
-                                            <a href class="text-primary noline nowrap" ng-click="$vm.getCaseResponders(currentCase._id, true)" uib-dropdown-toggle>
+                                            <a href class="text-primary noline nowrap" ng-click="$vm.getCaseResponders(currentCase.id, true)" uib-dropdown-toggle>
                                                 <i class="text-primary fa fa-cog"></i>
                                                 <!-- Responders
                                                 <i class="text-primary fa fa-angle-down"></i> -->
                                             </a>
                                             <ul class="dropdown-menu align-right" uib-dropdown-menu>
                                               <li ng-if="$vm.caseResponders && $vm.caseResponders.length === 0">
-                                                <a href ng-click="$vm.getCaseResponders(currentCase._id, true)">
+                                                <a href ng-click="$vm.getCaseResponders(currentCase.id, true)">
                                                   <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
                                                 </a>
                                               </li>

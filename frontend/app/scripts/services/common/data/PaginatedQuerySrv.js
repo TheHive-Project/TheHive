@@ -51,8 +51,6 @@
                 Function to change the page
                 */
                 this.changePage = function() {
-                    console.log('Call to PaginatedQuerySrv.changePage()');
-
                     if (this.loadAll) {
                         this.values.length = 0;
                         var end = this.currentPage * this.pageSize;
@@ -87,8 +85,6 @@
                 Function to change the page
                 */
                 this.update = function(updates) {
-                    console.log('Call to PaginatedQuerySrv.update()', updates);
-
                     // Get the list
                     QuerySrv.call(this.version, this.operations, {
                         filter: self.filter,

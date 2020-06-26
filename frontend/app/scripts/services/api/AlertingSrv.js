@@ -20,9 +20,9 @@
                     return new PaginatedQuerySrv({
                         root: undefined,
                         objectType: 'alert',
-                        version: 'v0',
+                        version: 'v1',
                         scope: config.scope,
-                        sort: config.sort || ['-date'],                        
+                        sort: config.sort || ['-date'],
                         loadAll: config.loadAll || false,
                         pageSize: config.pageSize || 10,
                         filter: config.filter || undefined,

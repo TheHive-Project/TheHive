@@ -13,7 +13,7 @@
 
                 this.initContext = function(state) {
 
-                    return DashboardSrv.getMetadata()
+                    return DashboardSrv.getMetadata(this.config.version || 'v0')
                         .then(function(response) {
                             self.metadata = response;
                             self.attributes = angular.copy(response[self.entity].attributes);
