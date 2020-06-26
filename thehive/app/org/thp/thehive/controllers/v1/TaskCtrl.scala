@@ -50,10 +50,12 @@ class TaskCtrl @Inject() (
   def create: Action[AnyContent] =
     entrypoint("create task")
       .extract("task", FieldsParser[InputTask])
+      .extract("caseId", FieldsParser[String])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
+        val caseId: String       = request.body("caseId")
         for {
-          case0        <- caseSrv.getOrFail(inputTask.caseId)
+          case0        <- caseSrv.getOrFail(caseId)
           createdTask  <- taskSrv.create(inputTask.toTask, None)
           organisation <- organisationSrv.getOrFail(request.organisation)
           _            <- shareSrv.shareTask(createdTask, case0, organisation)

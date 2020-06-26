@@ -168,6 +168,7 @@ object Conversion {
         .withFieldComputed(_.status, _.status.fold(TaskStatus.Waiting)(TaskStatus.withName))
         .withFieldComputed(_.order, _.order.getOrElse(0))
         .withFieldComputed(_.group, _.group.getOrElse("default"))
+        .withFieldComputed(_.flag, _.flag.getOrElse(false))
         .transform
   }
 
