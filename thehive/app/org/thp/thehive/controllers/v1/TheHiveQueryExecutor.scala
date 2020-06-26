@@ -23,7 +23,7 @@ class TheHiveQueryExecutor @Inject() (
     caseCtrl: CaseCtrl,
     taskCtrl: TaskCtrl,
 //    logCtrl: LogCtrl,
-//    observableCtrl: ObservableCtrl,
+    observableCtrl: ObservableCtrl,
     alertCtrl: AlertCtrl,
     userCtrl: UserCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
@@ -34,7 +34,7 @@ class TheHiveQueryExecutor @Inject() (
 ) extends QueryExecutor {
 
   lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: organisationCtrl :: auditCtrl :: Nil
+    caseCtrl :: taskCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: organisationCtrl :: auditCtrl :: observableCtrl :: Nil
   override val version: (Int, Int) = 1 -> 1
 
   override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
