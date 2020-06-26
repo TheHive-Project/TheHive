@@ -65,7 +65,7 @@
             this.list = new PaginatedQuerySrv({
                 root: undefined,
                 objectType: 'case',
-                version: 'v0',
+                version: 'v1',
                 scope: $scope,
                 sort: self.filtering.context.sort,
                 loadAll: false,

@@ -107,11 +107,14 @@
                             }
                         }
                         // TODO nadouani: handle the total differently
-                        self.total = data.length;
+                        //self.total = data.length;
                     });
 
                     // get the total if not cached
-                    if(this.filterHash !== $filter('md5')(JSON.stringify(this.filter))) {
+                    var hash = $filter('md5')(JSON.stringify(this.filter));
+                    if(this.filterHash !== hash) {
+                        this.filterHash = hash;
+
                         // Compute the total again
                         QuerySrv.count('v1', this.operations, {
                             filter: self.filter,
