@@ -28,11 +28,19 @@
             };
 
 
+            /**
+             * List objects using the Query API
+             *
+             * @param  {type} version           API version
+             * @param  {type} selectorOperation Initial operations
+             * @param  {type} options           Options object defining filters, sort, pagination and addition $http options
+             * @return {type}                   Promise resolving to the list of the searched objects
+             */
             this.call = function(version, selectorOperation, options) {
                 var operations = [].concat(selectorOperation);
 
                 // Apply filter is defined
-                if (options && options.filter) {
+                if (options && options.filter && !_.isEmpty(options.filter)) {
                     operations.push(
                         _.extend({'_name': 'filter'}, options.filter)
                     );
@@ -44,6 +52,41 @@
                         _.extend({'_name': 'sort'}, {'_fields': this._buildSort(options.sort)})
                     );
                 }
+
+                // Apply pagination if isDefined
+                if(options && options.page) {
+                    operations.push(
+                        _.extend({'_name': 'page'}, options.page)
+                    );
+                }
+
+                return self.query(version, operations)
+                    .then(function(response) {
+                        return $q.resolve(response.data);
+                    });
+            };
+
+
+            /**
+             * Count objects using the Query API
+             *
+             * @param  {type} version           API version
+             * @param  {type} selectorOperation Initial operations
+             * @param  {type} options           Options object defining filters and addition $http options
+             * @return {type}                   Promise resolving to the total of the searched objects
+             */
+            this.count = function(version, selectorOperation, options) {
+                var operations = [].concat(selectorOperation);
+
+                // Apply filter is defined
+                if (options && options.filter && !_.isEmpty(options.filter)) {
+                    operations.push(
+                        _.extend({'_name': 'filter'}, options.filter)
+                    );
+                }
+
+                // Add filters
+                operations.push({'_name': 'count'});
 
                 return self.query(version, operations)
                     .then(function(response) {

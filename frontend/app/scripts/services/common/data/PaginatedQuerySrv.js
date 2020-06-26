@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('PaginatedQuerySrv', function(StreamSrv, QuerySrv) {
+        .service('PaginatedQuerySrv', function($filter, StreamSrv, QuerySrv) {
 
             return function(options) {
                 var self = this;
@@ -11,6 +11,7 @@
                 this.allValues = [];
                 this.total = 0;
                 this.currentPage = 1;
+                this.filterHash = null;
 
                 // Save options
                 this.options = options;
@@ -26,6 +27,7 @@
                 this.skipStream = options.skipStream;
                 this.streamObjectType = options.skipStream || options.objectType;
                 this.guard = options.guard || undefined;
+                this.withStats = options.withStats || undefined;
 
                 this.operations = options.operations;
 
@@ -50,6 +52,35 @@
                 */
                 this.changePage = function() {
                     console.log('Call to PaginatedQuerySrv.changePage()');
+
+                    if (this.loadAll) {
+                        this.values.length = 0;
+                        var end = this.currentPage * this.pageSize;
+                        var start = end - this.pageSize;
+                        angular.forEach(this.allValues.slice(start, end), function(d) {
+                            self.values.push(d);
+                        });
+
+                        if (angular.isFunction(this.onUpdate)) {
+                            this.onUpdate();
+                        }
+                    } else {
+                        this.update();
+                    }
+                };
+
+                /*
+                Function to compute the range of the page
+                */
+                this.getPage = function() {
+                    var to = this.currentPage * this.pageSize;
+                    var from = to - this.pageSize;
+                    //range = start + '-' + end;
+
+                    return _.extend({
+                        from: from,
+                        to: to
+                    }, self.withStats ? {withStats: true} : {});
                 };
 
                 /*
@@ -58,16 +89,12 @@
                 this.update = function(updates) {
                     console.log('Call to PaginatedQuerySrv.update()', updates);
 
-                    // Prepare pagination
-
-                    // Prepare filters
-
-
+                    // Get the list
                     QuerySrv.call(this.version, this.operations, {
                         filter: self.filter,
                         sort: self.sort,
+                        page: self.getPage(),
                         config: {},
-                        withStats: false,
                         withParent: false
                     }).then(function(data) {
                         if (self.loadAll) {
@@ -82,6 +109,18 @@
                         // TODO nadouani: handle the total differently
                         self.total = data.length;
                     });
+
+                    // get the total if not cached
+                    if(this.filterHash !== $filter('md5')(JSON.stringify(this.filter))) {
+                        // Compute the total again
+                        QuerySrv.count('v1', this.operations, {
+                            filter: self.filter,
+                            config: {}
+                        }).then(function(total) {
+                            self.total = total;
+                        });
+                    }
+
                 };
 
                 // Call the initial load

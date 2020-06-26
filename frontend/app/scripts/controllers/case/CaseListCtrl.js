@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, FilteringSrv, StreamStatSrv, PSearchSrv, EntitySrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $q, $state, $window, FilteringSrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -53,13 +53,28 @@
         };
 
         this.load = function() {
-            this.list = PSearchSrv(undefined, 'case', {
+            // this.list = PSearchSrv(undefined, 'case', {
+            //     scope: $scope,
+            //     filter: this.filtering.buildQuery(),
+            //     loadAll: false,
+            //     sort: self.filtering.context.sort,
+            //     pageSize: self.filtering.context.pageSize,
+            //     nstats: true
+            // });
+
+            this.list = new PaginatedQuerySrv({
+                root: undefined,
+                objectType: 'case',
+                version: 'v0',
                 scope: $scope,
-                filter: this.filtering.buildQuery(),
-                loadAll: false,
                 sort: self.filtering.context.sort,
+                loadAll: false,
                 pageSize: self.filtering.context.pageSize,
-                nstats: true
+                filter: this.filtering.buildQuery(),
+                withStats: true,
+                operations: [
+                    {'_name': 'listCase'}
+                ]
             });
         };
 
