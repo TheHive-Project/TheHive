@@ -129,7 +129,7 @@
             };
 
             self.bulkMarkAsRead = function(markAsReadFlag) {
-                var ids = _.pluck(self.selection, 'id');
+                var ids = _.pluck(self.selection, '_id');
                 var fn = angular.noop;
                 var markAsRead = markAsReadFlag && this.canMarkAsRead(self.selection[0]);
 
@@ -157,7 +157,7 @@
                   okText: 'Yes, remove them',
                   flavor: 'danger'
               }).then(function() {
-                  var ids = _.pluck(self.selection, 'id');
+                  var ids = _.pluck(self.selection, '_id');
 
                   AlertingSrv.bulkRemove(ids)
                       .then(function(/*response*/) {
@@ -233,11 +233,12 @@
                 self.menu.follow = temp.length === 1 && temp[0] === false;
 
 
-                temp = _.uniq(_.pluck(self.selection, 'status'));
+                temp = _.uniq(_.pluck(self.selection, 'read'));
 
-                self.menu.markAsRead = temp.indexOf('Ignored') === -1 && temp.indexOf('Imported') === -1;
-                self.menu.markAsUnread = temp.indexOf('New') === -1 && temp.indexOf('Updated') === -1;
+                self.menu.markAsRead = temp.length === 1 && temp[0] === false;
+                self.menu.markAsUnread = temp.length === 1 && temp[0] === true;
 
+                // TODO nadouani: don't rely on alert status
                 self.menu.createNewCase = temp.indexOf('Imported') === -1;
                 self.menu.mergeInCase = temp.indexOf('Imported') === -1;
 
@@ -276,7 +277,7 @@
             };
 
             self.createNewCase = function() {
-                var alertIds = _.pluck(self.selection, 'id');
+                var alertIds = _.pluck(self.selection, '_id');
 
                 CaseTemplateSrv.list()
                   .then(function(templates) {
@@ -364,7 +365,7 @@
                 });
 
                 caseModal.result.then(function(selectedCase) {
-                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, 'id'), selectedCase.id);
+                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, '_id'), selectedCase.id);
                 })
                 .then(function(response) {
                     $rootScope.$broadcast('alert:event-imported');

@@ -101,9 +101,7 @@
                             if (angular.isFunction(self.onUpdate)) {
                                 self.onUpdate(updates);
                             }
-                        }
-                        // TODO nadouani: handle the total differently
-                        //self.total = data.length;
+                        }                        
                     });
 
                     // get the total if not cached
