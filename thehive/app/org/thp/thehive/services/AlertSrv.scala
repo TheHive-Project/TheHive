@@ -325,6 +325,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
         .has("login", authContext.userId)
     )
 
+  def imported: Traversal[Boolean, Boolean] = this.outToE[AlertCase].count.map(_ > 0)
+
   def alertUserOrganisation(
       permission: Permission
   )(implicit authContext: AuthContext): Traversal[(RichAlert, Organisation with Entity), (RichAlert, Organisation with Entity)] = {
