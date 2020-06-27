@@ -86,7 +86,7 @@
                     fn = AlertingSrv.markAsUnread;
                 }
 
-                fn(event.id).then(function( /*data*/ ) {
+                fn(event._id).then(function( /*data*/ ) {
                 }, function(response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
@@ -101,7 +101,7 @@
                     fn = AlertingSrv.follow;
                 }
 
-                fn(event.id).then(function( /*data*/ ) {
+                fn(event._id).then(function( /*data*/ ) {
                 }, function(response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
@@ -251,7 +251,7 @@
                     self.selection.push(event);
                 } else {
                     self.selection = _.reject(self.selection, function(item) {
-                        return item.id === event.id;
+                        return item._id === event._id;
                     });
                 }
 

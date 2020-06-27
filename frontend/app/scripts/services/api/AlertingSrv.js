@@ -59,13 +59,13 @@
                         alertIds: alertIds
                     });
                 },
-
+                
                 canMarkAsRead: function(event) {
-                    return event.status === 'New' || event.status === 'Updated';
+                    return !!!event.read;
                 },
 
                 canMarkAsUnread: function(event) {
-                    return event.status === 'Imported' || event.status === 'Ignored';
+                    return !!event.read;
                 },
 
                 markAsRead: function(alertId) {

@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, AuthenticationSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, readonly) {
             var self = this;
-            var eventId = event.id;
+            var eventId = event._id;
 
             self.readonly = readonly;
             self.templates = _.pluck(templates, 'name');
@@ -101,7 +101,7 @@
                 var field = {};
                 field[fieldName] = newValue;
 
-                return AlertingSrv.update(self.event.id, field)
+                return AlertingSrv.update(self.event._id, field)
                   .then(function() {
                       NotificationSrv.log('Alert updated successfully', 'success');
                   })
@@ -112,7 +112,7 @@
 
             self.import = function() {
                 self.loading = true;
-                AlertingSrv.create(self.event.id, {
+                AlertingSrv.create(self.event._id, {
                     caseTemplate: self.event.caseTemplate
                 }).then(function(response) {
                     $uibModalInstance.dismiss();
@@ -130,7 +130,7 @@
 
             self.mergeIntoCase = function(caseId) {
                 self.loading = true;
-                AlertingSrv.mergeInto(self.event.id, caseId)
+                AlertingSrv.mergeInto(self.event._id, caseId)
                     .then(function(response) {
                         $uibModalInstance.dismiss();
 
@@ -182,7 +182,7 @@
                     fn = AlertingSrv.follow;
                 }
 
-                fn(self.event.id).then(function() {
+                fn(self.event._id).then(function() {
                     $uibModalInstance.close();
                 }).catch(function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
@@ -194,7 +194,7 @@
                     okText: 'Yes, remove it',
                     flavor: 'danger'
                 }).then(function() {
-                    AlertingSrv.forceRemove(self.event.id)
+                    AlertingSrv.forceRemove(self.event._id)
                     .then(function() {
                         $uibModalInstance.close();
                         NotificationSrv.log('Alert has been permanently deleted', 'success');
@@ -218,7 +218,7 @@
                     fn = AlertingSrv.markAsUnread;
                 }
 
-                fn(this.event.id).then(function( /*data*/ ) {
+                fn(this.event._id).then(function( /*data*/ ) {
                     $uibModalInstance.close();
                 }, function(response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
