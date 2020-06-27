@@ -62,7 +62,8 @@ case class RichAlert(
     tags: Seq[Tag with Entity],
     customFields: Seq[RichCustomField],
     caseId: Option[String],
-    caseTemplate: Option[String]
+    caseTemplate: Option[String],
+    observableCount: Long
 ) {
   def _id: String                  = alert._id
   def _createdAt: Date             = alert._createdAt
@@ -92,7 +93,8 @@ object RichAlert {
       tags: Seq[Tag with Entity],
       customFields: Seq[RichCustomField],
       caseId: Option[String],
-      caseTemplate: Option[String]
+      caseTemplate: Option[String],
+      observableCount: Long
   ): RichAlert =
     alert
       .asInstanceOf[Alert]
@@ -103,5 +105,6 @@ object RichAlert {
       .withFieldConst(_.customFields, customFields)
       .withFieldConst(_.caseId, caseId)
       .withFieldConst(_.caseTemplate, caseTemplate)
+      .withFieldConst(_.observableCount, observableCount)
       .transform
 }

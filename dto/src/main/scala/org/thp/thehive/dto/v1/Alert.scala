@@ -47,7 +47,8 @@ case class OutputAlert(
     read: Boolean,
     follow: Boolean,
     customFields: Set[OutputCustomFieldValue] = Set.empty,
-    caseTemplate: Option[String] = None
+    caseTemplate: Option[String] = None,
+    observableCount: Long
 )
 
 object OutputAlert {
