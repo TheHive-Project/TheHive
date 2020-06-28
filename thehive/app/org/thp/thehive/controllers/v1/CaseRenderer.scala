@@ -22,7 +22,7 @@ trait CaseRenderer {
       .share
       .observables
       .count
-      .map(count => Json.obj("count" -> count))
+      .map(count => Json.obj("total" -> count))
 
   def taskStats(caseSteps: CaseSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
     caseSteps
