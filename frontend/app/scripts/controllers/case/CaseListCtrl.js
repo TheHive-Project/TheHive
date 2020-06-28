@@ -54,14 +54,6 @@
         };
 
         this.load = function() {
-            // this.list = PSearchSrv(undefined, 'case', {
-            //     scope: $scope,
-            //     filter: this.filtering.buildQuery(),
-            //     loadAll: false,
-            //     sort: self.filtering.context.sort,
-            //     pageSize: self.filtering.context.pageSize,
-            //     nstats: true
-            // });
 
             this.list = new PaginatedQuerySrv({
                 root: undefined,

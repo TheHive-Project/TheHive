@@ -106,7 +106,7 @@
                                         <task-progress ng-show="currentCase.extraData.taskStats.total > 0" tasks="currentCase.extraData.taskStats"/>
                                     </td>
                                     <td>
-                                        <a ui-sref="app.case.observables({caseId: currentCase._id})">{{currentCase.extraData.observableStats.count}}</a>
+                                        <a ui-sref="app.case.observables({caseId: currentCase._id})">{{currentCase.extraData.observableStats.total}}</a>
                                     </td>
                                     <td class="nowrap">
                                         <user user-id="currentCase.assignee" icon-only="true" icon-size="m"></user>
