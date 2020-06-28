@@ -31,5 +31,17 @@ class TagTest extends PlaySpecification {
       tag must beEqualTo(Tag(defaultNamespace, "ip", Some("8.8.8.8"), None, defaultColor))
       tag.toString must beEqualTo("ip=\"8.8.8.8\"")
     }
+
+    "be parsed with colour" in {
+      val tag = parseTag("ip:8.8.8.8#FF00FF")
+      tag must beEqualTo(Tag(defaultNamespace, "ip", Some("8.8.8.8"), None, 0xFF00FF))
+      tag.toString must beEqualTo("ip=\"8.8.8.8\"")
+    }
+
+    "be parsed with hash sign and colour" in {
+      val tag = parseTag("case:#42#FF00FF")
+      tag must beEqualTo(Tag(defaultNamespace, "case", Some("#42"), None, 0xFF00FF))
+      tag.toString must beEqualTo("case=\"#42\"")
+    }
   }
 }
