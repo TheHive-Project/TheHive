@@ -59,7 +59,7 @@ trait CaseRenderer {
     caseSteps.origin.name.map(org => JsBoolean(org == authContext.organisation))
 
   def shareCountStats(caseSteps: CaseSteps): Traversal[JsValue, JsValue] =
-    caseSteps.organisations.count.map(JsNumber.apply(_))
+    caseSteps.organisations.count.map(c => JsNumber.apply(c - 1))
 
   def caseStatsRenderer(extraData: Set[String])(
       implicit authContext: AuthContext,
