@@ -240,10 +240,7 @@ class Output @Inject() (
         .flatMap(_ => cortexSchema.update(db)(LocalUserSrv.getSystemAuthContext))
         .map { _ =>
           retrieveExistingData()
-          db match {
-            case jdb: JanusDatabase => jdb.removeAllIndexes()
-            case _                  =>
-          }
+          db.removeAllIndexes()
         }
     }
   }
