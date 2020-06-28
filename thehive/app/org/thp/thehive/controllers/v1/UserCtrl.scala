@@ -159,7 +159,7 @@ class UserCtrl @Inject() (
                 for {
                   updateName <- maybeName.map(name => userSrv.get(user).update("name" -> name).map(_ => Json.obj("name" -> name))).flip
                   updateLocked <- maybeLocked
-                    .map(locked => requireAdmin(userSrv.get(user).update("locked" -> locked).map(_ => Json.obj("locked" -> locked))))
+                    .map(locked => requireAdmin(if (locked) userSrv.lock(user) else userSrv.unlock(user)).map(_ => Json.obj("locked" -> locked)))
                     .flip
                   updateProfile <- maybeProfile.map { profileName =>
                     requireAdmin {

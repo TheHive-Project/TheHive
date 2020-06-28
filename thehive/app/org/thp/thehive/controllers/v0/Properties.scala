@@ -11,7 +11,7 @@ import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBui
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, InvalidFormatAttributeError, RichSeq}
+import org.thp.scalligraph.{AttributeCheckingError, AuthorizationError, BadRequestError, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models.{AlertCase, CaseStatus, Permissions, TaskStatus}
@@ -436,19 +436,19 @@ class Properties @Inject() (
       })
       .property("status", UniMapping.string)(
         _.select(_.choose(predicate = _.locked.is(P.eq(true)), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
-          .custom { (_, value, vertex, db, graph, authContext) =>
+          .custom { (_, value, vertex, _, graph, authContext) =>
             userSrv
               .current(graph, authContext)
               .organisations(Permissions.manageUser)
               .users
               .get(vertex)
-              .existsOrFail()
+              .orFail(AuthorizationError("Operation not permitted"))
               .flatMap {
-                case _ if value == "Ok" =>
-                  db.setProperty(vertex, "locked", false, UniMapping.boolean)
+                case user if value == "Ok" =>
+                  userSrv.unlock(user)(graph, authContext)
                   Success(Json.obj("status" -> value))
-                case _ if value == "Locked" =>
-                  db.setProperty(vertex, "locked", true, UniMapping.boolean)
+                case user if value == "Locked" =>
+                  userSrv.lock(user)(graph, authContext)
                   Success(Json.obj("status" -> value))
                 case _ => Failure(InvalidFormatAttributeError("status", "UserStatus", Set("Ok", "Locked"), FString(value)))
               }
