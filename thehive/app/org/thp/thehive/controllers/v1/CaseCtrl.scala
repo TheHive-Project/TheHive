@@ -42,10 +42,9 @@ class CaseCtrl @Inject() (
     "page",
     FieldsParser[OutputParam], {
       case (OutputParam(from, to, extraData), caseSteps, authContext) =>
-        caseSteps
-          .richPage(from, to, extraData.contains("total")) { c =>
-            c.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext, db, caseSteps.graph))(authContext)
-          }
+        caseSteps.richPage(from, to, extraData.contains("total")) {
+          _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext, db, caseSteps.graph))(authContext)
+        }
     }
   )
   override val outputQuery: Query = Query.outputWithContext[RichCase, CaseSteps]((caseSteps, authContext) => caseSteps.richCase(authContext))

@@ -68,12 +68,22 @@ object Conversion {
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.status, _.status.toString)
-      .withFieldRenamed(_.user, _.assignee)
+      .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
 
   implicit val caseWithStatsOutput: Renderer[(RichCase, JsObject)] =
-    Renderer.json[(RichCase, JsObject), OutputCase](_._1.toOutput) // TODO add stats
+    Renderer.json[(RichCase, JsObject), OutputCase] { caseWithExtraData =>
+      caseWithExtraData
+        ._1
+        .into[OutputCase]
+        .withFieldConst(_._type, "Case")
+        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldComputed(_.status, _.status.toString)
+        .withFieldConst(_.extraData, caseWithExtraData._2)
+        .transform
+    }
 
   implicit class InputCaseOps(inputCase: InputCase) {
 
@@ -252,6 +262,15 @@ object Conversion {
       .transform
   )
 
+  implicit class InputObservableOps(inputObservable: InputObservable) {
+    def toObservable: Observable =
+      inputObservable
+        .into[Observable]
+        .withFieldComputed(_.ioc, _.ioc.getOrElse(false))
+        .withFieldComputed(_.sighted, _.sighted.getOrElse(false))
+        .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
+        .transform
+  }
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.json[RichObservable, OutputObservable](richObservable =>
     richObservable
       .into[OutputObservable]
@@ -266,9 +285,24 @@ object Conversion {
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.data, _.data.map(_.data))
       .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
-      .withFieldConst(_.stats, JsObject.empty)
+      .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
+
+  implicit val observableWithExtraData: Renderer.Aux[(RichObservable, JsObject), OutputObservable] =
+    Renderer.json[(RichObservable, JsObject), OutputObservable] {
+      case (richObservable, extraData) =>
+        richObservable
+          .into[OutputObservable]
+          .withFieldConst(_._type, "case_artifact")
+          .withFieldComputed(_.dataType, _.`type`.name)
+          .withFieldComputed(_.startDate, _.observable._createdAt)
+          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+          .withFieldComputed(_.data, _.data.map(_.data))
+          .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
+          .withFieldConst(_.extraData, extraData)
+          .transform
+    }
 
   implicit val logOutput: Renderer.Aux[RichLog, OutputLog] = Renderer.json[RichLog, OutputLog](richLog =>
     richLog

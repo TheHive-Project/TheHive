@@ -1,50 +1,63 @@
 package org.thp.thehive.controllers.v1
 
-import gremlin.scala.{__, By, Graph, Key, Vertex}
-import javax.inject.Named
+import java.util.{Map => JMap}
+
+import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.Traversal
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services.ObservableSteps
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json._
 
 import scala.collection.JavaConverters._
 
 trait ObservableRenderer {
 
-  def observableStatsRenderer(
-      implicit authContext: AuthContext,
-      @Named("with-thehive-schema") db: Database,
-      graph: Graph
-  ): ObservableSteps => Traversal[JsObject, JsObject] =
-    _.project(
-      _.apply(By(new ObservableSteps(__[Vertex]).shares.organisation.name.fold.raw))
-        .and(
-          By(
-            new ObservableSteps(__[Vertex])
-              .similar
-              .visible
-              .groupCount(By(Key[Boolean]("ioc")))
-              .raw
-          )
-        )
-    ).map {
-      case (organisationNames, stats) =>
+  def seenStats(observableSteps: ObservableSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+    observableSteps
+      .similar
+      .visible
+      .groupCount(By(Key[Boolean]("ioc")))
+      .map { stats =>
         val m      = stats.asScala
         val nTrue  = m.get(true).fold(0L)(_.toLong)
         val nFalse = m.get(false).fold(0L)(_.toLong)
         Json.obj(
-          "shares" -> organisationNames.asScala,
-          "seen"   -> (nTrue + nFalse),
-          "ioc"    -> (nTrue > 0)
+          "seen" -> (nTrue + nFalse),
+          "ioc"  -> (nTrue > 0)
         )
-    }
+      }
 
-  def observableLinkRenderer: ObservableSteps => Traversal[JsObject, JsObject] =
-    _.coalesce(
+  def sharesStats(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
+    observableSteps.shares.organisation.name.fold.map(orgs => Json.toJson(orgs.asScala))
+
+  def observableLinks(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
+    observableSteps.coalesce(
       _.alert.richAlert.map(a => Json.obj("alert"            -> a.toJson)),
       _.`case`.richCaseWithoutPerms.map(c => Json.obj("case" -> c.toJson))
     )
+
+  def observableStatsRenderer(extraData: Set[String])(
+      implicit authContext: AuthContext,
+      db: Database,
+      graph: Graph
+  ): ObservableSteps => Traversal[JsObject, JsObject] = {
+    def addData(f: ObservableSteps => Traversal[JsValue, JsValue]): GremlinScala[JMap[String, JsValue]] => GremlinScala[JMap[String, JsValue]] =
+      _.by(f(new ObservableSteps(__[Vertex])).raw.traversal)
+
+    if (extraData.isEmpty) _.constant(JsObject.empty)
+    else {
+      val dataName = extraData.toSeq
+      dataName
+        .foldLeft[ObservableSteps => GremlinScala[JMap[String, JsValue]]](_.raw.project(dataName.head, dataName.tail: _*)) {
+          case (f, "seen")   => f.andThen(addData(seenStats))
+          case (f, "shares") => f.andThen(addData(sharesStats))
+          case (f, "links")  => f.andThen(addData(observableLinks))
+          case (f, _)        => f.andThen(_.by(__.constant(JsNull).traversal))
+        }
+        .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))
+    }
+  }
 }

@@ -47,7 +47,7 @@ case class OutputObservable(
     ioc: Boolean,
     sighted: Boolean,
     message: Option[String],
-    stats: JsObject
+    extraData: JsObject
 )
 
 object OutputObservable {

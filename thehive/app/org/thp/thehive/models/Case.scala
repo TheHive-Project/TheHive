@@ -100,7 +100,7 @@ case class RichCase(
     tags: Seq[Tag with Entity],
     impactStatus: Option[String],
     resolutionStatus: Option[String],
-    user: Option[String],
+    assignee: Option[String],
     customFields: Seq[RichCustomField],
     userPermissions: Set[Permission]
 ) {

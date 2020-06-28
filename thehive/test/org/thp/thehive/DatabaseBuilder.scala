@@ -9,7 +9,7 @@ import org.thp.scalligraph.RichOption
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
-import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.Logger
