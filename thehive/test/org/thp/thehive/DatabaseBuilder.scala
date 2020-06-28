@@ -3,13 +3,13 @@ package org.thp.thehive
 import java.io.File
 
 import gremlin.scala.{KeyValue => _, _}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import org.scalactic.Or
 import org.thp.scalligraph.RichOption
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
-import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, IntegrityCheckOps, VertexSrv}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.Logger
@@ -42,18 +42,25 @@ class DatabaseBuilder @Inject() (
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
     dashboardSrv: DashboardSrv,
-    pageSrv: PageSrv
+    pageSrv: PageSrv,
+    integrityChecks: Set[GenIntegrityCheckOps]
 ) {
 
   lazy val logger: Logger = Logger(getClass)
 
-  def build()(implicit @Named("with-thehive-schema") db: Database, authContext: AuthContext): Try[Unit] = {
+  def build()(implicit db: Database, authContext: AuthContext): Try[Unit] = {
 
     lazy val logger: Logger = Logger(getClass)
     logger.info("Initialize database schema")
     db.createSchemaFrom(schema)
       .flatMap(_ => db.addSchemaIndexes(schema))
       .flatMap { _ =>
+        integrityChecks.foreach { check =>
+          db.tryTransaction { implicit graph =>
+            Success(check.initialCheck())
+          }
+          ()
+        }
         db.tryTransaction { implicit graph =>
           val idMap =
             createVertex(caseSrv, FieldsParser[Case]) ++

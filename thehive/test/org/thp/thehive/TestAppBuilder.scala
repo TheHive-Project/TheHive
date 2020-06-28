@@ -7,12 +7,27 @@ import javax.inject.{Inject, Provider, Singleton}
 import org.apache.commons.io.FileUtils
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.services.{LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.services.{GenIntegrityCheckOps, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{janus, AppBuilder}
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
+import org.thp.thehive.services.{
+  CaseIntegrityCheckOps,
+  CaseTemplateIntegrityCheckOps,
+  CustomFieldIntegrityCheckOps,
+  DataIntegrityCheckOps,
+  ImpactStatusIntegrityCheckOps,
+  LocalKeyAuthProvider,
+  LocalPasswordAuthProvider,
+  LocalUserSrv,
+  ObservableTypeIntegrityCheckOps,
+  OrganisationIntegrityCheckOps,
+  ProfileIntegrityCheckOps,
+  ResolutionStatusIntegrityCheckOps,
+  TagIntegrityCheckOps,
+  UserIntegrityCheckOps
+}
 
 object TestAppBuilderLock
 
@@ -33,6 +48,19 @@ trait TestAppBuilder {
       .multiBind[TriggerProvider](classOf[TaskAssignedProvider])
       .multiBind[TriggerProvider](classOf[AlertCreatedProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
+      .multiBind[GenIntegrityCheckOps](
+        classOf[ProfileIntegrityCheckOps],
+        classOf[OrganisationIntegrityCheckOps],
+        classOf[TagIntegrityCheckOps],
+        classOf[UserIntegrityCheckOps],
+        classOf[ImpactStatusIntegrityCheckOps],
+        classOf[ResolutionStatusIntegrityCheckOps],
+        classOf[ObservableTypeIntegrityCheckOps],
+        classOf[CustomFieldIntegrityCheckOps],
+        classOf[CaseTemplateIntegrityCheckOps],
+        classOf[DataIntegrityCheckOps],
+        classOf[CaseIntegrityCheckOps]
+      )
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
       .bindActor[DummyActor]("integrity-check-actor")
