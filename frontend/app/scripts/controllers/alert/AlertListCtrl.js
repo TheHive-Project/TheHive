@@ -31,17 +31,9 @@
                         sort: ['-date']
                     },
                     defaultFilter: [{
-                        field: 'status',
-                        type: 'enumeration',
-                        value: {
-                            list: [{
-                                text: 'New',
-                                label: 'New'
-                            }, {
-                                text: 'Updated',
-                                label: 'Updated'
-                            }]
-                        }
+                        field: 'imported',
+                        type: 'boolean',
+                        value: false
                     }]
                 });
                 self.filtering.initContext('list')
@@ -408,22 +400,30 @@
                 this.search();
             };
 
-            this.filterByStatus = function(status) {
+            this.filterByStatus = function(flag) {
                 self.filtering.clearFilters()
                     .then(function(){
-                        self.addFilterValue('status', status);
+                        self.addFilterValue('imported', flag);
                     });
             };
 
             this.filterByNewAndUpdated = function() {
                 self.filtering.clearFilters()
                     .then(function(){
-                        self.addFilterValue('status', ['New', 'Updated']);
+                        // TODO nadouani: how to support updated alerts
+                        self.addFilterValue('imported', true);
                     });
             };
 
             this.filterBySeverity = function(numericSev) {
                 self.addFilterValue('severity', Severity.values[numericSev]);
+            };
+
+            this.filterBy = function(field, value) {
+                self.filtering.clearFilters()
+                    .then(function(){
+                        self.addFilterValue(field, value);
+                    });
             };
 
             this.sortBy = function(sort) {

@@ -47,23 +47,22 @@
                     <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
+                    <!-- TODO nadouani: fix this filter -->
+                    <!-- <li>
+                        <a class="clickable" ng-click="$vm.filterByNewAndUpdated()">New & Updated events ({{(alertEvents.Updated.count || 0) + (alertEvents.New.count || 0)}})</a>
+                    </li> -->
                     <li>
-                        <!-- TODO nadouani: fix this filter -->
-                        <a ng-click="$vm.filterByNewAndUpdated()">New & Updated events ({{(alertEvents.Updated.count || 0) + (alertEvents.New.count || 0)}})</a>
+                        <a class="clickable" ng-click="$vm.filterByStatus(false)">New events ({{alertEvents.New.count || 0}})</a>
                     </li>
                     <li>
-                        <!-- TODO nadouani: fix this filter -->
-                        <a ng-click="$vm.filterByNewAndUpdated()">New & Updated events ({{(alertEvents.Updated.count || 0) + (alertEvents.New.count || 0)}})</a>
+                        <a class="clickable" ng-click="$vm.filterByStatus(true)">Imported events ({{alertEvents.Imported.count || 0}})</a>
                     </li>
                     <li>
-                        <!-- TODO nadouani: fix this filter -->
-                        <a ng-click="$vm.filterByStatus('New')">New events ({{alertEvents.New.count || 0}})</a>
+                        <a class="clickable" ng-click="$vm.filterBy('read', true)">Read events</a>
                     </li>
                     <li>
-                        <!-- TODO nadouani: fix this filter -->
-                        <a ng-click="$vm.filterByStatus('Updated')">Updated events({{alertEvents.Updated.count || 0}})</a>
+                        <a class="clickable" ng-click="$vm.filterBy('read', false)">Unread events</a>
                     </li>
-
                 </ul>
             </div>
 
