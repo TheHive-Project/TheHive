@@ -7,7 +7,7 @@ import play.api.Logger
 import scala.util.Try
 import scala.util.matching.Regex
 
-@DefineIndex(IndexType.tryUnique, "namespace", "predicate", "value")
+@DefineIndex(IndexType.unique, "namespace", "predicate", "value")
 @VertexEntity
 case class Tag(
     namespace: String,

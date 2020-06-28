@@ -76,7 +76,7 @@ case class CaseUser()
 case class CaseCaseTemplate()
 
 @VertexEntity
-@DefineIndex(IndexType.tryUnique, "number")
+@DefineIndex(IndexType.unique, "number")
 //@DefineIndex(IndexType.fulltext, "title")
 //@DefineIndex(IndexType.fulltext, "description")
 //@DefineIndex(IndexType.standard, "startDate")
