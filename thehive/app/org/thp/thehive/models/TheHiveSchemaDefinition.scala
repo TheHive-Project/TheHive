@@ -41,7 +41,7 @@ class TheHiveSchemaDefinition @Inject() (injector: Injector) extends Schema with
       }
       Success(())
     }
-    .addIndex("CustomField", IndexType.unique, "name")
+    .noop // .addIndex("CustomField", IndexType.unique, "name")
     .dbOperation[JanusDatabase]("Remove locks") { db =>
       def removePropertyLock(name: String) =
         db.managementTransaction { mgmt =>
@@ -50,21 +50,22 @@ class TheHiveSchemaDefinition @Inject() (injector: Injector) extends Schema with
               case error => logger.warn(s"Unable to remove lock on property $name: $error")
             }
         }
-      def removeIndexLock(name: String) =
-        db.managementTransaction { mgmt =>
-          Try(mgmt.setConsistency(mgmt.getGraphIndex(name), ConsistencyModifier.DEFAULT))
-            .recover {
-              case error => logger.warn(s"Unable to remove lock on index $name: $error")
-            }
-        }
+      // def removeIndexLock(name: String): Try[Unit] =
+      //   db.managementTransaction { mgmt =>
+      //     Try(mgmt.setConsistency(mgmt.getGraphIndex(name), ConsistencyModifier.DEFAULT))
+      //       .recover {
+      //         case error => logger.warn(s"Unable to remove lock on index $name: $error")
+      //       }
+      //   }
 
-      removeIndexLock("CaseNumber")
+      // removeIndexLock("CaseNumber")
       removePropertyLock("number")
-      removeIndexLock("DataData")
+      // removeIndexLock("DataData")
       removePropertyLock("data")
     }
-    .addIndex("Tag", IndexType.tryUnique, "namespace", "predicate", "value")
-    .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
+    .noop // .addIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
+    .noop // .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
+    .rebuildIndexes
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
