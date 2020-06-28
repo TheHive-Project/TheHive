@@ -28,6 +28,7 @@
                 this.streamObjectType = options.skipStream || options.objectType;
                 this.guard = options.guard || undefined;
                 this.withStats = options.withStats || undefined;
+                this.extraData = options.extraData || undefined;
 
                 this.operations = options.operations;
 
@@ -78,7 +79,7 @@
                     return _.extend({
                         from: from,
                         to: to
-                    }, self.withStats ? {withStats: true} : {});
+                    }, self.extraData ? {extraData: self.extraData} : {});
                 };
 
                 /*
@@ -101,7 +102,7 @@
                             if (angular.isFunction(self.onUpdate)) {
                                 self.onUpdate(updates);
                             }
-                        }                        
+                        }
                     });
 
                     // get the total if not cached

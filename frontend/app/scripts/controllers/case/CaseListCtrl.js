@@ -72,10 +72,10 @@
                 loadAll: false,
                 pageSize: self.filtering.context.pageSize,
                 filter: this.filtering.buildQuery(),
-                withStats: true,
                 operations: [
                     {'_name': 'listCase'}
-                ]
+                ],
+                extraData: ["observableStats", "taskStats", "isOwner", "shareCount"]
             });
         };
 

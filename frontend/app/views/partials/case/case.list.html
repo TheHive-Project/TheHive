@@ -56,9 +56,9 @@
                                     <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
                                     <td>
                                         <div class="case-title wrap">
-                                            <span class="mr-xxs text-primary" ng-if="!!!currentCase.stats.isOwner"><i class="fa fa-share-square"
+                                            <span class="mr-xxs text-primary" ng-if="!!!currentCase.extraData.isOwner"><i class="fa fa-share-square"
                                                 uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
-                                            <span class="mr-xxs text-primary" ng-if="!!currentCase.stats.isOwner"><i class="fa fa-building-o"
+                                            <span class="mr-xxs text-primary" ng-if="!!currentCase.extraData.isOwner"><i class="fa fa-building-o"
                                                 uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span>
                                             <a ui-sref="app.case.details({caseId: currentCase._id})">#{{currentCase.number}} - {{currentCase.title}}</a>
                                         </div>
@@ -82,18 +82,16 @@
                         				        </div>
                                     </td>
                                     <td align="center">
-                                        <span class="label label-danger">TODO</span>
-                                        <!-- TODO nadouani: not yet implemented -->
-                                        <!-- <a href ng-if="currentCase.stats.shareCount > 0" ui-sref="app.case.sharing({caseId: currentCase._id})" class="noline"
+                                        <a href ng-if="currentCase.extraData.shareCount > 0" ui-sref="app.case.sharing({caseId: currentCase._id})" class="noline"
                                                 uib-tooltip="{{ {
-                                                    true: 'Current organisation has shared this Case with ' + currentCase.stats.shareCount + ' organisation(s)',
-                                                    false: 'This Case has been shared by its owner with ' + currentCase.stats.shareCount + ' organisation(s)'
-                                                }[currentCase.stats.isOwner] }}"
+                                                    true: 'Current organisation has shared this Case with ' + currentCase.extraData.shareCount + ' organisation(s)',
+                                                    false: 'This Case has been shared by its owner with ' + currentCase.extraData.shareCount + ' organisation(s)'
+                                                }[currentCase.extraData.isOwner] }}"
                                                 tooltip-placement="left-middle">
 
                                             <i class="fa fa-users"></i>
-                                            ({{currentCase.stats.shareCount || 0}})
-                                        </a> -->
+                                            ({{currentCase.extraData.shareCount || 0}})
+                                        </a>
                                     </td>
                                     <td align="center">
                                         <div class="clickable" ng-click="$vm.addFilterValue('severity', currentCase.severity)">
@@ -101,18 +99,14 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="label label-danger">TODO</span>
-                                        <!-- TODO nadouani: not yet implemented -->
-                                        <!-- <a ui-sref="app.case.tasks({caseId: currentCase._id})">
-                                            <ng-pluralize count="currentCase.stats.tasks.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
+                                        <a ui-sref="app.case.tasks({caseId: currentCase._id})">
+                                            <ng-pluralize count="currentCase.extraData.taskStats.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
                                         </a>
                                         <br>
-                                        <task-progress ng-show="currentCase.stats.tasks.total > 0" tasks="currentCase.stats.tasks"/> -->
+                                        <task-progress ng-show="currentCase.extraData.taskStats.total > 0" tasks="currentCase.extraData.taskStats"/>
                                     </td>
                                     <td>
-                                        <span class="label label-danger">TODO</span>
-                                        <!-- TODO nadouani: not yet implemented -->
-                                        <!-- <a ui-sref="app.case.observables({caseId: currentCase._id})">{{currentCase.stats.artifacts.count}}</a> -->
+                                        <a ui-sref="app.case.observables({caseId: currentCase._id})">{{currentCase.extraData.observableStats.count}}</a>
                                     </td>
                                     <td class="nowrap">
                                         <user user-id="currentCase.assignee" icon-only="true" icon-size="m"></user>
@@ -128,6 +122,7 @@
                                         </div>
                                     </td>
                                     <td if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">
+
                                         <span class="ml-xs" uib-dropdown>
                                             <a href class="text-primary noline nowrap" ng-click="$vm.getCaseResponders(currentCase._id, true)" uib-dropdown-toggle>
                                                 <i class="text-primary fa fa-cog"></i>
