@@ -36,6 +36,102 @@ steps:
         - .ivy2
     volumes: [{name: cache, path: /cache}]
 
+  # Build packages
+  - name: build-packages
+    image: thehiveproject/drone-scala-node
+    settings:
+      pgp_key:
+        from_secret: pgp_key
+    commands:
+      - |
+        V=$(sbt -no-colors --error "print thehive/version" | tail -1)
+        if ( echo $V | grep -qi snapshot)
+        then
+          exit 1
+        fi
+        . ~/.nvm/nvm.sh
+        [ -n "$PLUGIN_PGP_KEY" ] && gpg --batch --import - <<< $PLUGIN_PGP_KEY
+        sbt -Duser.home=$PWD docker:stage debian:packageBin rpm:packageBin universal:packageBin
+        if ( echo $V | grep -qi rc )
+        then
+          echo $( echo $V | sed -re 's/([0-9]+.[0-9]+.[0-9]+)-RC([0-9]+)-([0-9]+)/\1-RC\2,\1-RC\2-\3/' ) > .tags
+        else
+          echo $( echo $V | sed -re 's/([0-9]+).([0-9]+).([0-9]+)-([0-9]+)/\1,\1.\2,\1.\2.\3,\1.\2.\3-\4,latest/' ) > .tags
+        fi
+        echo $V > thehive-version.txt
+        mv target/rpm/RPMS/noarch/thehive*.rpm target/
+        mv target/universal/thehive*.zip target/
+    when:
+      event: [tag]
+
+  # Send packages using scp
+  - name: send packages
+    image: appleboy/drone-scp
+    settings:
+      host:
+        from_secret: scp_host
+      username:
+        from_secret: scp_user
+      key:
+        from_secret: scp_key
+      target:
+        from_secret: incoming_path
+      source:
+        - target/thehive*.deb
+        - target/thehive*.rpm
+        - target/thehive*.zip
+      strip_components: 1
+    when:
+      event: [tag]
+
+  # Publish packages
+  - name: publish packages
+    image: appleboy/drone-ssh
+    settings:
+      host:
+        from_secret: scp_host
+      user:
+        from_secret: scp_user
+      key:
+        from_secret: scp_key
+      publish_script:
+        from_secret: publish_script
+    commands:
+      - PLUGIN_SCRIPT="bash $PLUGIN_PUBLISH_SCRIPT thehive4 $(cat thehive-version.txt)" /bin/drone-ssh
+    when:
+      event: [tag]
+
+  # Publish docker image on Docker Hub
+  - name: docker
+    image: plugins/docker
+    settings:
+      context: target/docker/stage
+      dockerfile: target/docker/stage/Dockerfile
+      repo: thehiveproject/thehive4
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      event: [tag]
+
+  # Publish docker image on Harbor
+  - name: harbor
+    image: plugins/docker
+    settings:
+      context: target/docker/stage
+      dockerfile: target/docker/stage/Dockerfile
+      registry:
+        from_secret: harbor_server
+      repo:
+        from_secret: harbor_repo
+      username:
+        from_secret: harbor_username
+      password:
+        from_secret: harbor_password
+    when:
+      event: [tag]
+
 volumes:
   - name: cache
     host:
