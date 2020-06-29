@@ -28,7 +28,7 @@ class OrganisationCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, OrganisationSteps, PagedResult[RichOrganisation]](
     "page",
     FieldsParser[OutputParam],
-    (range, organisationSteps, _) => organisationSteps.richPage(range.from, range.to, withTotal = true)(_.richOrganisation)
+    (range, organisationSteps, _) => organisationSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richOrganisation)
   )
   override val outputQuery: Query = Query.output[RichOrganisation, OrganisationSteps](_.richOrganisation)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](

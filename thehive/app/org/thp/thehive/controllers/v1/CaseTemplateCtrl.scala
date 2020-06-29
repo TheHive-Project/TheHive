@@ -35,7 +35,7 @@ class CaseTemplateCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
     "page",
     FieldsParser[OutputParam],
-    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
+    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richCaseTemplate)
   )
   override val outputQuery: Query               = Query.output[RichCaseTemplate, CaseTemplateSteps](_.richCaseTemplate)
   override val extraQueries: Seq[ParamQuery[_]] = Seq()

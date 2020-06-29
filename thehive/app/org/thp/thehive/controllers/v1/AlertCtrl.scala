@@ -37,7 +37,7 @@ class AlertCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, alertSteps, _) =>
       alertSteps
-        .richPage(range.from, range.to, withTotal = true)(_.richAlert)
+        .richPage(range.from, range.to, range.extraData.contains("total"))(_.richAlert)
   )
   override val outputQuery: Query = Query.output[RichAlert, AlertSteps](_.richAlert)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
