@@ -13,7 +13,7 @@ class AttachmentCtrlTest extends PlaySpecification with TestAppBuilder {
   val data: String                      = "DataFromAttachmentCtrlTest"
   "download a simple attachment from his id" in testApp { app =>
     app[Database].tryTransaction { implicit graph =>
-      app[AttachmentSrv].create("test.txt", data.length, "text/plain", Source.single(ByteString(data)))
+      app[AttachmentSrv].create("test.txt", data.length.toLong, "text/plain", Source.single(ByteString(data)))
     }
     val request = FakeRequest("GET", "/api/v0/datastore/810384dd79918958607f6a6e4c90f738c278c847b408864ea7ce84ee1970bcdf")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -25,7 +25,7 @@ class AttachmentCtrlTest extends PlaySpecification with TestAppBuilder {
 
   "download a zipped attachment from his hash" in testApp { app =>
     app[Database].tryTransaction { implicit graph =>
-      app[AttachmentSrv].create("test.txt", data.length, "text/plain", Source.single(ByteString(data)))
+      app[AttachmentSrv].create("test.txt", data.length.toLong, "text/plain", Source.single(ByteString(data)))
     }
     val request = FakeRequest("GET", "/api/v0/datastorezip/810384dd79918958607f6a6e4c90f738c278c847b408864ea7ce84ee1970bcdf")
       .withHeaders("user" -> "certuser@thehive.local")

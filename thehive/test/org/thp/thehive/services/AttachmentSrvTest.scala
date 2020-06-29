@@ -68,8 +68,7 @@ class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {
 object WithFakeScalligraphFile {
 
   def apply[A](body: Files.TemporaryFile => A): A = {
-    val tempDir  = new File("/tmp/thp")
-    val tempFile = File.createTempFile("thehive-", "-test", tempDir)
+    val tempFile = File.createTempFile("thehive-", "-test")
     JFiles.write(tempFile.toPath, s"hello ${UUID.randomUUID()}".getBytes)
     val fakeTempFile = new Files.TemporaryFile {
       override def path: Path                                 = tempFile.toPath
