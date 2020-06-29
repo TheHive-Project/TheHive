@@ -2,13 +2,13 @@ package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputOrganisation
-import org.thp.thehive.models.{Organisation, Permissions}
+import org.thp.thehive.models.{Permissions, RichOrganisation}
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -25,12 +25,12 @@ class OrganisationCtrl @Inject() (
   override val publicProperties: List[PublicProperty[_, _]] = properties.organisation ::: metaProperties[OrganisationSteps]
   override val initialQuery: Query =
     Query.init[OrganisationSteps]("listOrganisation", (graph, authContext) => organisationSrv.initSteps(graph).visible(authContext))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, OrganisationSteps, PagedResult[Organisation with Entity]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, OrganisationSteps, PagedResult[RichOrganisation]](
     "page",
     FieldsParser[OutputParam],
-    (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
+    (range, organisationSteps, _) => organisationSteps.richPage(range.from, range.to, withTotal = true)(_.richOrganisation)
   )
-  override val outputQuery: Query = Query.output[Organisation with Entity]
+  override val outputQuery: Query = Query.output[RichOrganisation, OrganisationSteps](_.richOrganisation)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](
     "getOrganisation",
     FieldsParser[IdOrName],

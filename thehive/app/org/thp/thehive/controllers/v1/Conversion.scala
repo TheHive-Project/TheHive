@@ -159,15 +159,30 @@ object Conversion {
         .transform
   }
 
-  implicit val organisationRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
-    Renderer.json[Organisation with Entity, OutputOrganisation](organisation =>
+  implicit val richOrganisationRenderer: Renderer.Aux[RichOrganisation, OutputOrganisation] =
+    Renderer.json[RichOrganisation, OutputOrganisation](organisation =>
       organisation
-        .asInstanceOf[Entity]
         .into[OutputOrganisation]
         .withFieldConst(_._type, "Organisation")
         .withFieldConst(_.name, organisation.name)
         .withFieldConst(_.description, organisation.description)
+        .withFieldComputed(_.links, _.links.map(_.name))
         .transform
+    )
+
+  implicit val organiastionRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
+    Renderer.json[Organisation with Entity, OutputOrganisation](organisation =>
+      OutputOrganisation(
+        organisation._id,
+        "organisation",
+        organisation._createdBy,
+        organisation._updatedBy,
+        organisation._createdAt,
+        organisation._updatedAt,
+        organisation.name,
+        organisation.description,
+        Nil
+      )
     )
 
   implicit class InputTaskOps(inputTask: InputTask) {
