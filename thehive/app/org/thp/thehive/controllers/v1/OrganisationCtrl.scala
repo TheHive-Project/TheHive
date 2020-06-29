@@ -57,12 +57,16 @@ class OrganisationCtrl @Inject() (
   def get(organisationId: String): Action[AnyContent] =
     entrypoint("get organisation")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        userSrv
-          .current
-          .organisations
-          .visibleOrganisationsFrom
-          .get(organisationId)
-          .getOrFail()
+        (if (request.organisation == "admin")
+           organisationSrv.get(organisationId)
+         else
+           userSrv
+             .current
+             .organisations
+             .visibleOrganisationsFrom
+             .get(organisationId))
+          .richOrganisation
+          .getOrFail("Organisation")
           .map(organisation => Results.Ok(organisation.toJson))
       }
 
