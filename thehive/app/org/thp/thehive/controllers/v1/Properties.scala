@@ -19,6 +19,7 @@ import org.thp.thehive.services.{
   ObservableSrv,
   ObservableSteps,
   OrganisationSteps,
+  ProfileSteps,
   TaskSteps,
   UserSrv,
   UserSteps
@@ -183,6 +184,12 @@ class Properties @Inject() (
     PublicPropertyListBuilder[OrganisationSteps]
       .property("name", UniMapping.string)(_.field.updatable)
       .property("description", UniMapping.string)(_.field.updatable)
+      .build
+
+  lazy val profile: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[ProfileSteps]
+      .property("name", UniMapping.string)(_.field.updatable)
+      .property("permissions", UniMapping.string.set)(_.field.updatable)
       .build
 
   lazy val task: List[PublicProperty[_, _]] =
