@@ -18,6 +18,8 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with TestAppBuilder {
+  sequential
+
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
   override def appConfigure: AppBuilder =
