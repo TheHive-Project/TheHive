@@ -71,6 +71,7 @@ trait TestAppBuilder {
       .addConfiguration(s"storage.localfs.location = ${System.getProperty("user.dir")}/target/storage")
 
   def testApp[A](body: AppBuilder => A): A = {
+    val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
     TestAppBuilderLock.synchronized {
       if (!Files.exists(Paths.get(s"target/janusgraph-test-database-$databaseName"))) {
         val app = appConfigure
@@ -90,9 +91,8 @@ trait TestAppBuilder {
 
         app[DatabaseBuilder].build()(app.apply[Database], app[UserSrv].getSystemAuthContext)
       }
+      FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
     }
-    val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
-    FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
     val app = appConfigure
       .bind[Database, janus.JanusDatabase]
       .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-schema")
