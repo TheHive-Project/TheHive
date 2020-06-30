@@ -19,8 +19,13 @@
                         if(value === true && !cached) {
                             // TODO nadouani use {"_field": "locked": "_value": false}
                             UserSrv.list(AuthenticationSrv.currentUser.organisation, {
-                                filter: { locked: false },
-                                sort: [{'name': 'asc'}]
+                                filter: {
+                                    _is: {
+                                        _field: 'locked',
+                                        _value: false
+                                    }
+                                },
+                                sort: ['+name']
                             })
                                 .then(function(users) {
                                     scope.userList = users;

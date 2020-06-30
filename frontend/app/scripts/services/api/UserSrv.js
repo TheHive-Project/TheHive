@@ -184,57 +184,45 @@
                     }
                 ];
 
+                var queryConfig = {};
+
                 // Apply filter is defined
                 if (options && options.filter) {
-                    // operations.push({
-                    //     '_name': 'filter',
-                    //     '_is': options.filter
-                    // });
-
-                    operations.push(
-                        _.extend({'_name': 'filter'}, {'_is': options.filter})
-                    );
+                    queryConfig.filter = options.filter;
                 }
 
                 // Apply sort is defined
                 if (options && options.sort) {
-                    // operations.push({
-                    //     '_name': 'sort',
-                    //     '_fields': options.sort
-                    // });
-
-                    operations.push(
-                        _.extend({'_name': 'sort'}, {'_fields': options.sort})
-                    );
+                    queryConfig.sort = options.sort;
                 }
 
-                return QuerySrv.query('v1', operations)
-                    .then(function(response) {
-                        return $q.resolve(response.data);
-                    });
+                return QuerySrv.call('v1', operations, queryConfig);
             };
 
             this.autoComplete = function(organisation, query) {
+                // TODO nadouani filter on server side
                 return this.list(organisation, {
+                    filter: {
                         _is: {
                             locked: false
                         }
-                    })
-                    .then(function(data) {
-                        return _.map(data, function(user) {
-                            return {
-                                label: user.name,
-                                text: user.login
-                            };
-                        });
-                    })
-                    .then(function(users) {
-                        return _.filter(users, function(user) {
-                            var regex = new RegExp(query, 'gi');
-
-                            return regex.test(user.label);
-                        });
+                    }
+                })
+                .then(function(data) {
+                    return _.map(data, function(user) {
+                        return {
+                            label: user.name,
+                            text: user.login
+                        };
                     });
+                })
+                .then(function(users) {
+                    return _.filter(users, function(user) {
+                        var regex = new RegExp(query, 'gi');
+
+                        return regex.test(user.label);
+                    });
+                });
             };
 
             this.getCache = function(userId) {
@@ -266,6 +254,29 @@
 
             this.updateCache = function(userId, userData) {
                 self.userCache[userId] = userData;
+            };
+
+
+            /**
+             * Cache the details of all the visible users
+             */
+            this.loadCache = function() {
+                var defer = $q.defer();
+
+                QuerySrv.call('v1', [
+                    {'_name': 'listOrganisation'},
+                    {'_name': 'users'},
+                ])
+                    .then(function(users) {
+                        _.each(users, function(u) {
+                            self.updateCache(u.login, u);
+                        });
+                        defer.resolve();
+                    }).catch(function(err){
+                        defer.reject(err);
+                    });
+
+                return defer.promise;
             };
 
             this.openModal = function(user, organisation) {
