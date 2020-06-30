@@ -18,6 +18,9 @@ steps:
       mount:
         - .sbt
         - .ivy2
+        - .cache
+        - frontend/node_modules
+        - frontend/bower_components
     volumes: [{name: cache, path: /cache}]
 
   # Run project tests
@@ -34,6 +37,9 @@ steps:
       mount:
         - .sbt
         - .ivy2
+        - .cache
+        - frontend/node_modules
+        - frontend/bower_components
     volumes: [{name: cache, path: /cache}]
 
   # Build packages
