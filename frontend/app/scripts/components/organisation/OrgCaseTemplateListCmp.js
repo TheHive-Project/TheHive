@@ -175,7 +175,6 @@
                                 return _.extend({}, task);
                             },
                             users: function() {
-                                // TODO nadouani use {"_field": "locked": "_value": false}
                                 return UserSrv.list(
                                     self.currentUser.organisation,
                                     {

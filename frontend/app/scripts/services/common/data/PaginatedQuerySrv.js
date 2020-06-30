@@ -21,6 +21,7 @@
                 this.scope = options.scope;
                 this.loadAll = !!options.loadAll;
                 this.pageSize = options.pageSize || 10;
+                this.baseFilter = options.baseFilter;
                 this.filter = options.filter;
                 this.sort = options.sort;
                 this.onUpdate = options.onUpdate;
@@ -82,14 +83,39 @@
                     }, self.extraData ? {extraData: self.extraData} : {});
                 };
 
+
+                /**
+                 * Prepare the filters collection to the Query service
+                 *
+                 * @return {type}  filters definition
+                 */
+                this.getFilter = function() {
+                    if(!this.baseFilter && !this.filter) {
+                        return;
+                    }
+
+                    var predicates = _.without([this.baseFilter, this.filter], null, undefined, {});
+
+                    return predicates.length === 1 ? predicates[0] : {'_and': predicates};
+                };
+
+                /**
+                 * Prepare the sort attributes to the Query service
+                 *
+                 * @return {type}  sort definition
+                 */
+                this.getSort = function() {
+                    return self.sort;
+                };
+
                 /*
                 Function to change the page
                 */
                 this.update = function(updates) {
                     // Get the list
                     QuerySrv.call(this.version, this.operations, {
-                        filter: self.filter,
-                        sort: self.sort,
+                        filter: self.getFilter(),
+                        sort: self.getSort(),
                         page: self.getPage(),
                         config: {},
                         withParent: false
@@ -112,7 +138,7 @@
 
                         // Compute the total again
                         QuerySrv.count('v1', this.operations, {
-                            filter: self.filter,
+                            filter: self.getFilter(),
                             config: {}
                         }).then(function(total) {
                             self.total = total;
