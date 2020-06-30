@@ -35,6 +35,11 @@
                 <div class="mv-xs">
                     <a class="btn btn-success btn-m btn-block" href="./api/ssoLogin">Sign In with SSO</a>
                 </div>
+
+                <div class="text-danger wrap" ng-if="ssoError">
+                    {{ssoError}}
+                </div>
+
             </div>
         </form>
     </div>
