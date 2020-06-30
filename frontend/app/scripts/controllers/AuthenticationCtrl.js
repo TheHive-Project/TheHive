@@ -11,28 +11,6 @@
 
             $uibModalStack.dismissAll();
 
-            $scope.ssoLogin = function (code, state) {
-                AuthenticationSrv.ssoLogin(code, state)
-                    .then(function(response) {
-                        var redirectLocation = response.headers().location;
-                        if(angular.isDefined(redirectLocation)) {
-                            window.location = redirectLocation;
-                        } else {
-                            $rootScope.isLoading = true;
-                            // Simple redirect to remove oauth2 query strings from url (before hash)
-                            window.location.replace(window.location.origin + window.location.pathname);
-                        }
-                    })
-                    .catch(function(err) {
-                        if (err.status === 520) {
-                            NotificationSrv.error('AuthenticationCtrl', err.data, err.status);
-                        } else {
-                            NotificationSrv.log(err.data.message, 'error');
-                        }
-                        $location.url($location.path());
-                    });
-            };
-
             $scope.ssoEnabled = function() {
                 return appConfig.config.authType.indexOf("oauth2") !== -1;
             };
@@ -54,11 +32,5 @@
                         }
                     });
             };
-
-            var code = UtilsSrv.extractQueryParam('code', UrlParser('query', $location.absUrl()));
-            var state = UtilsSrv.extractQueryParam('state', UrlParser('query', $location.absUrl()));
-            if((angular.isDefined(code) && angular.isDefined(state)) || $stateParams.autoLogin) {
-                $scope.ssoLogin(code, state);
-            }
         });
 })();
