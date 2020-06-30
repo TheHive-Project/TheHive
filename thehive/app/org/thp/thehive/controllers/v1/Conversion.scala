@@ -201,6 +201,7 @@ object Conversion {
     _.into[OutputTask]
       .withFieldConst(_._type, "Task")
       .withFieldComputed(_.status, _.status.toString)
+      .withFieldComputed(_.assignee, _.assignee.map(_.login))
       .transform
   )
 

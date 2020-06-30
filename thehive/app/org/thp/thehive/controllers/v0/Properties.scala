@@ -395,7 +395,7 @@ class Properties @Inject() (
       .property("dueDate", UniMapping.date.optional)(_.field.updatable)
       .property("group", UniMapping.string)(_.field.updatable)
       .property("owner", UniMapping.string.optional)(
-        _.select(_.user.login)
+        _.select(_.assignee.login)
           .custom { (_, login: Option[String], vertex, _, graph, authContext) =>
             for {
               task <- taskSrv.get(vertex)(graph).getOrFail("Task")

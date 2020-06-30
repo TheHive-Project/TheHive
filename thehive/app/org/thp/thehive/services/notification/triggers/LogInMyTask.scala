@@ -32,5 +32,5 @@ class LogInMyTask(logSrv: LogSrv) extends Trigger {
       audit.objectId.fold(false)(taskAssignee(_).fold(false)(_ == u.login))
     }
 
-  def taskAssignee(logId: String)(implicit graph: Graph): Option[String] = logSrv.getByIds(logId).task.user.login.headOption()
+  def taskAssignee(logId: String)(implicit graph: Graph): Option[String] = logSrv.getByIds(logId).task.assignee.login.headOption()
 }

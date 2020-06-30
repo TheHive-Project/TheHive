@@ -83,7 +83,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
 
       case TaskStatus.InProgress =>
         for {
-          _       <- get(t).user.headOption().fold(assign(t, o))(_ => Success(()))
+          _       <- get(t).assignee.headOption().fold(assign(t, o))(_ => Success(()))
           updated <- t.startDate.fold(get(t).updateOne("status" -> s, "startDate" -> Some(new Date())))(_ => setStatus())
         } yield updated
 
@@ -133,7 +133,7 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
 
   def logs = new LogSteps(raw.outTo[TaskLog])
 
-  def user = new UserSteps(raw.outTo[TaskUser])
+  def assignee = new UserSteps(raw.outTo[TaskUser])
 
   def organisations = new OrganisationSteps(raw.inTo[ShareTask].inTo[OrganisationShare])
   def organisations(permission: Permission) =

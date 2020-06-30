@@ -20,6 +20,7 @@ import org.thp.thehive.services.{
   ObservableSteps,
   OrganisationSteps,
   ProfileSteps,
+  TaskSrv,
   TaskSteps,
   UserSrv,
   UserSteps
@@ -33,6 +34,7 @@ import scala.util.Failure
 class Properties @Inject() (
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
+    taskSrv: TaskSrv,
     userSrv: UserSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv
@@ -202,6 +204,21 @@ class Properties @Inject() (
       .property("endDate", UniMapping.date.optional)(_.field.updatable)
       .property("order", UniMapping.int)(_.field.updatable)
       .property("dueDate", UniMapping.date.optional)(_.field.updatable)
+      .property("assignee", UniMapping.string.optional)(_.select(_.assignee.login).custom {
+        case (_, value, vertex, _, graph, authContext) =>
+          taskSrv
+            .get(vertex)(graph)
+            .getOrFail("Task")
+            .flatMap { task =>
+              value.fold(taskSrv.unassign(task)(graph, authContext)) { user =>
+                userSrv
+                  .get(user)(graph)
+                  .getOrFail("User")
+                  .flatMap(taskSrv.assign(task, _)(graph, authContext))
+              }
+            }
+            .map(_ => Json.obj("assignee" -> value))
+      })
       .build
 
   lazy val user: List[PublicProperty[_, _]] =

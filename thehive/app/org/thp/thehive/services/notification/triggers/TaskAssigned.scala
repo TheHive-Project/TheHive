@@ -32,5 +32,5 @@ class TaskAssigned(taskSrv: TaskSrv) extends Trigger {
   }
 
   def taskAssignee(taskId: String, login: String)(implicit graph: Graph): Option[User with Entity] =
-    taskSrv.getByIds(taskId).user.has("login", login).headOption()
+    taskSrv.getByIds(taskId).assignee.has("login", login).headOption()
 }

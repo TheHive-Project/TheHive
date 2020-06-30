@@ -33,7 +33,7 @@ case class Task(
 
 case class RichTask(
     task: Task with Entity,
-    owner: Option[User with Entity]
+    assignee: Option[User with Entity]
 ) {
   def _id: String                 = task._id
   def _createdBy: String          = task._createdBy

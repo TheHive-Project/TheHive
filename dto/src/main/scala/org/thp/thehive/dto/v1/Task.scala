@@ -34,6 +34,7 @@ case class OutputTask(
     flag: Boolean,
     startDate: Option[Date],
     endDate: Option[Date],
+    assignee: Option[String],
     order: Int,
     dueDate: Option[Date]
 )

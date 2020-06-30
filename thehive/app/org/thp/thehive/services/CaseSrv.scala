@@ -67,7 +67,7 @@ class CaseSrv @Inject() (
       _           <- caseUserSrv.create(CaseUser(), createdCase, assignee)
       _           <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
       _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
-      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.owner)).toTry {
+      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.assignee)).toTry {
         case (task, owner) => taskSrv.create(task, owner)
       }
       _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
