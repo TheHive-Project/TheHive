@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
-import org.thp.scalligraph.{BadRequestError, EntitySteps}
+import org.thp.scalligraph.{BadRequestError, CreateError, EntitySteps}
 import org.thp.thehive.models._
 
 import scala.util.{Failure, Success, Try}
@@ -33,7 +33,10 @@ class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityChec
   }
 
   def create(observableType: ObservableType)(implicit graph: Graph, authContext: AuthContext): Try[ObservableType with Entity] =
-    createEntity(observableType)
+    if (exists(observableType))
+      Failure(CreateError(s"Observable type ${observableType.name} already exists"))
+    else
+      createEntity(observableType)
 
   def remove(idOrName: String)(implicit graph: Graph): Try[Unit] =
     if (useCount(idOrName) == 0) Success(get(idOrName).remove())

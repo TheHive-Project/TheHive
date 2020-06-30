@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import java.lang.{Long => JLong}
 import java.util.{Date, List => JList}
 
 import gremlin.scala._
@@ -76,7 +77,7 @@ class AlertSrv @Inject() (
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
         cfs          <- customFields.toTry { case (name, value) => createCustomField(createdAlert, name, value) }
-        richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
+        richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name), 0)
         _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
       } yield richAlert
   }
@@ -325,6 +326,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
         .has("login", authContext.userId)
     )
 
+  def imported: Traversal[Boolean, Boolean] = this.outToE[AlertCase].count.map(_ > 0)
+
   def alertUserOrganisation(
       permission: Permission
   )(implicit authContext: AuthContext): Traversal[(RichAlert, Organisation with Entity), (RichAlert, Organisation with Entity)] = {
@@ -334,6 +337,7 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
     val customFieldLabel      = StepLabel[JList[Path]]()
     val caseIdLabel           = StepLabel[JList[AnyRef]]()
     val caseTemplateNameLabel = StepLabel[JList[String]]()
+    val observableCountLabel  = StepLabel[JLong]()
     Traversal(
       raw
         .`match`(
@@ -346,9 +350,18 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
             .has(Key("login") of authContext.userId),
           _.as(alertLabel).outToE[AlertCustomField].inV().path.fold.as(customFieldLabel),
           _.as(alertLabel).outTo[AlertCase].id().fold.as(caseIdLabel),
-          _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel)
+          _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel),
+          _.as(alertLabel).outToE[AlertObservable].count().as(observableCountLabel)
         )
-        .select(alertLabel.name, organisationLabel.name, tagLabel.name, customFieldLabel.name, caseIdLabel.name, caseTemplateNameLabel.name)
+        .select(
+          alertLabel.name,
+          organisationLabel.name,
+          tagLabel.name,
+          customFieldLabel.name,
+          caseIdLabel.name,
+          caseTemplateNameLabel.name,
+          observableCountLabel.name
+        )
         .map { resultMap =>
           val organisation = resultMap.getValue(organisationLabel).as[Organisation]
           val tags         = resultMap.getValue(tagLabel).asScala.map(_.as[Tag])
@@ -367,7 +380,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
             tags,
             customFieldValues,
             atMostOneOf(resultMap.getValue(caseIdLabel)).map(_.toString),
-            atMostOneOf(resultMap.getValue(caseTemplateNameLabel))
+            atMostOneOf(resultMap.getValue(caseTemplateNameLabel)),
+            resultMap.getValue(observableCountLabel)
           ) -> organisation
         }
     )
@@ -393,10 +407,11 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
             .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
             .and(By(__[Vertex].outTo[AlertCase].id().fold))
             .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
+            .and(By(__[Vertex].outToE[AlertObservable].count()))
             .and(By(entityRenderer(newInstance(__[Vertex])).raw))
         )
         .map {
-          case (alert, organisation, tags, customFields, caseId, caseTemplate, renderedEntity) =>
+          case (alert, organisation, tags, customFields, caseId, caseTemplate, observableCount, renderedEntity) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -410,7 +425,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
               tags.asScala.map(_.as[Tag]),
               customFieldValues,
               atMostOneOf[AnyRef](caseId).map(_.toString),
-              atMostOneOf[String](caseTemplate)
+              atMostOneOf[String](caseTemplate),
+              observableCount
             ) -> renderedEntity
         }
     )
@@ -425,9 +441,10 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
             .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
             .and(By(__[Vertex].outTo[AlertCase].id().fold))
             .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
+            .and(By(__[Vertex].outToE[AlertObservable].count()))
         )
         .map {
-          case (alert, organisation, tags, customFields, caseId, caseTemplate) =>
+          case (alert, organisation, tags, customFields, caseId, caseTemplate, observableCount) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -441,7 +458,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
               tags.asScala.map(_.as[Tag]),
               customFieldValues,
               atMostOneOf[AnyRef](caseId).map(_.toString),
-              atMostOneOf[String](caseTemplate)
+              atMostOneOf[String](caseTemplate),
+              observableCount
             )
         }
     )

@@ -32,17 +32,17 @@ case class Tag(
 }
 
 object Tag {
-  lazy val logger: Logger                  = Logger(getClass)
-  val namespacePredicateValueColour: Regex = "([^\".:=]+)[.:]([\".=]+)=\"([^\"]+)\"#(\\p{XDigit}{6})".r
-  val namespacePredicateValue: Regex       = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
-  val namespacePredicate: Regex            = "([^\".:=]+)[.]([^\".=]+)".r
-  val PredicateValue: Regex                = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
-  val predicate: Regex                     = "([^\".:=]+)".r
+  lazy val logger: Logger            = Logger(getClass)
+  val tagColour: Regex               = "(.*)#(\\p{XDigit}{6})".r
+  val namespacePredicateValue: Regex = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
+  val namespacePredicate: Regex      = "([^\".:=]+)[.]([^\".=]+)".r
+  val PredicateValue: Regex          = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
+  val predicate: Regex               = "([^\".:=]+)".r
 
   def fromString(tagName: String, defaultNamespace: String, defaultColour: Int = 0): Tag = {
-    val (name, colour) = tagName.split('#') match {
-      case Array(n, c) => n -> Try(Integer.parseUnsignedInt(c, 16)).getOrElse(defaultColour)
-      case Array(n)    => n -> defaultColour
+    val (name, colour) = tagName match {
+      case tagColour(n, c) => n       -> Try(Integer.parseUnsignedInt(c, 16)).getOrElse(defaultColour)
+      case _               => tagName -> defaultColour
     }
     name match {
       case namespacePredicateValue(namespace, predicate, value) if value.exists(_ != '=') =>

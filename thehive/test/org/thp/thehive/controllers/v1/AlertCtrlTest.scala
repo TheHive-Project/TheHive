@@ -75,7 +75,10 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         pap = 2,
         read = false,
         follow = true,
-        customFields = Set.empty
+        customFields = Set.empty,
+        caseTemplate = None,
+        observableCount = 0L,
+        caseId = None
       )
 
       createdAlert must_=== expected
@@ -120,7 +123,9 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         read = false,
         follow = true,
         customFields = Set.empty,
-        caseTemplate = Some("spam")
+        caseTemplate = Some("spam"),
+        observableCount = 0L,
+        caseId = None
       )
 
       createdAlert must_=== expected

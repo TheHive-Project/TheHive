@@ -14,6 +14,7 @@ object CaseStatus extends Enumeration {
 }
 
 @VertexEntity
+@DefineIndex(IndexType.unique, "value")
 case class ResolutionStatus(value: String) {
   require(!value.isEmpty, "ResolutionStatus can't be empty")
 }
@@ -32,6 +33,7 @@ object ResolutionStatus {
 case class CaseResolutionStatus()
 
 @VertexEntity
+@DefineIndex(IndexType.unique, "value")
 case class ImpactStatus(value: String) {
   require(!value.isEmpty, "ImpactStatus can't be empty")
 }
@@ -100,7 +102,7 @@ case class RichCase(
     tags: Seq[Tag with Entity],
     impactStatus: Option[String],
     resolutionStatus: Option[String],
-    user: Option[String],
+    assignee: Option[String],
     customFields: Seq[RichCustomField],
     userPermissions: Set[Permission]
 ) {

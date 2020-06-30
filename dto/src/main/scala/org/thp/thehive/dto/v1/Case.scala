@@ -3,7 +3,7 @@ package org.thp.thehive.dto.v1
 import java.util.Date
 
 import org.thp.scalligraph.controllers.WithParser
-import play.api.libs.json.{Json, OFormat, OWrites}
+import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
 
 case class InputCase(
     title: String,
@@ -46,7 +46,8 @@ case class OutputCase(
     status: String,
     summary: Option[String] = None,
     assignee: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty
+    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    extraData: JsObject
 )
 
 object OutputCase {

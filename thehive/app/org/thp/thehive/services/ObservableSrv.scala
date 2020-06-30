@@ -36,7 +36,6 @@ class ObservableSrv @Inject() (
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
   val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
   val observableAttachmentSrv  = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val alertObservableSrv       = new EdgeSrv[AlertObservable, Alert, Observable]
   val observableTagSrv         = new EdgeSrv[ObservableTag, Observable, Tag]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)

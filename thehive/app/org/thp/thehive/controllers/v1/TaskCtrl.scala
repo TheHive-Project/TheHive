@@ -32,7 +32,7 @@ class TaskCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
     "page",
     FieldsParser[OutputParam],
-    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, withTotal = true)(_.richTask)
+    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richTask)
   )
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
     "getTask",

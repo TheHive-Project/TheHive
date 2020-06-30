@@ -1,15 +1,13 @@
 package org.thp.thehive.controllers.v1
 
-import gremlin.scala.{__, By, Key, Vertex}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.models.AlertCase
+import org.thp.thehive.models.CaseStatus
 import org.thp.thehive.services.{
   AlertSrv,
   AlertSteps,
@@ -21,6 +19,7 @@ import org.thp.thehive.services.{
   ObservableSrv,
   ObservableSteps,
   OrganisationSteps,
+  ProfileSteps,
   TaskSteps,
   UserSrv,
   UserSteps
@@ -64,19 +63,8 @@ class Properties @Inject() (
       .property("pap", UniMapping.int)(_.field.updatable)
       .property("read", UniMapping.boolean)(_.field.updatable)
       .property("follow", UniMapping.boolean)(_.field.updatable)
-      .property("status", UniMapping.string)(
-        _.select(
-          _.project(
-            _.apply(By(Key[Boolean]("read")))
-              .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
-          ).map {
-            case (true, caseCount) if caseCount == 0L  => "Ignored"
-            case (true, caseCount) if caseCount == 1L  => "New"
-            case (false, caseCount) if caseCount == 0L => "Ignored"
-            case (false, caseCount) if caseCount == 1L => "Imported"
-          }
-        ).readonly
-      )
+      .property("read", UniMapping.boolean)(_.field.updatable)
+      .property("imported", UniMapping.boolean)(_.select(_.imported).readonly)
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("user", UniMapping.string)(_.field.updatable)
       .property("customFields", UniMapping.identity[JsValue])(_.subSelect {
@@ -124,7 +112,7 @@ class Properties @Inject() (
       .property("flag", UniMapping.boolean)(_.field.updatable)
       .property("tlp", UniMapping.int)(_.field.updatable)
       .property("pap", UniMapping.int)(_.field.updatable)
-      .property("status", UniMapping.string)(_.field.updatable)
+      .property("status", UniMapping.enum(CaseStatus))(_.field.updatable)
       .property("summary", UniMapping.string.optional)(_.field.updatable)
       .property("assignee", UniMapping.string.optional)(_.select(_.user.login).custom { (_, login, vertex, _, graph, authContext) =>
         for {
@@ -135,6 +123,25 @@ class Properties @Inject() (
             case None    => caseSrv.unassign(c)(graph, authContext)
           }
         } yield Json.obj("owner" -> user.map(_.login))
+      })
+      .property("impactStatus", UniMapping.string.optional)(_.select(_.impactStatus.value).custom { (_, value, vertex, _, graph, authContext) =>
+        caseSrv
+          .get(vertex)(graph)
+          .getOrFail("Case")
+          .flatMap { c =>
+            value.fold(caseSrv.unsetImpactStatus(c)(graph, authContext))(caseSrv.setImpactStatus(c, _)(graph, authContext))
+          }
+          .map(_ => Json.obj("impactStatus" -> value))
+      })
+      .property("resolutionStatus", UniMapping.string.optional)(_.select(_.resolutionStatus.value).custom {
+        (_, value, vertex, _, graph, authContext) =>
+          caseSrv
+            .get(vertex)(graph)
+            .getOrFail("Case")
+            .flatMap { c =>
+              value.fold(caseSrv.unsetResolutionStatus(c)(graph, authContext))(caseSrv.setResolutionStatus(c, _)(graph, authContext))
+            }
+            .map(_ => Json.obj("resolutionStatus" -> value))
       })
       .build
 
@@ -177,6 +184,12 @@ class Properties @Inject() (
     PublicPropertyListBuilder[OrganisationSteps]
       .property("name", UniMapping.string)(_.field.updatable)
       .property("description", UniMapping.string)(_.field.updatable)
+      .build
+
+  lazy val profile: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[ProfileSteps]
+      .property("name", UniMapping.string)(_.field.updatable)
+      .property("permissions", UniMapping.string.set)(_.field.updatable)
       .build
 
   lazy val task: List[PublicProperty[_, _]] =

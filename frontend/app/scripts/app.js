@@ -89,12 +89,15 @@ angular.module('thehive', [
                 templateUrl: 'views/app.html',
                 controller: 'RootCtrl',
                 resolve: {
-                    currentUser: function($q, $state, AuthenticationSrv, NotificationSrv) {
+                    currentUser: function($q, $state, UserSrv, AuthenticationSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         AuthenticationSrv.current()
                           .then(function(userData) {
-                            return deferred.resolve(userData);
+                              // Prepare user cache
+                              UserSrv.loadCache(userData.organisation);
+
+                              return deferred.resolve(userData);
                           })
                           .catch( function(err) {
                             NotificationSrv.error('App', err.data, err.status);

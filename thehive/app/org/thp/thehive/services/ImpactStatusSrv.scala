@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import akka.actor.ActorRef
 import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
@@ -11,7 +11,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models.ImpactStatus
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ImpactStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(
@@ -29,7 +29,11 @@ class ImpactStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckA
     super.createEntity(e)
   }
 
-  def create(impactStatus: ImpactStatus)(implicit graph: Graph, authContext: AuthContext): Try[ImpactStatus with Entity] = createEntity(impactStatus)
+  def create(impactStatus: ImpactStatus)(implicit graph: Graph, authContext: AuthContext): Try[ImpactStatus with Entity] =
+    if (exists(impactStatus))
+      Failure(CreateError(s"Impact status ${impactStatus.value} already exists"))
+    else
+      createEntity(impactStatus)
 
   override def exists(e: ImpactStatus)(implicit graph: Graph): Boolean = initSteps.getByName(e.value).exists()
 }

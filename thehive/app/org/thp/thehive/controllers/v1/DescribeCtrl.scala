@@ -12,7 +12,7 @@ import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.utils.Hash
-import org.thp.thehive.services.CustomFieldSrv
+import org.thp.thehive.services.{CustomFieldSrv, ImpactStatusSrv, ResolutionStatusSrv}
 import play.api.Logger
 import play.api.cache.SyncCacheApi
 import play.api.inject.Injector
@@ -34,6 +34,8 @@ class DescribeCtrl @Inject() (
 //    logCtrl: LogCtrl,
     auditCtrl: AuditCtrl,
     customFieldSrv: CustomFieldSrv,
+    impactStatusSrv: ImpactStatusSrv,
+    resolutionStatusSrv: ResolutionStatusSrv,
     injector: Injector,
     @Named("with-thehive-schema") db: Database,
     applicationConfig: ApplicationConfig
@@ -88,12 +90,22 @@ class DescribeCtrl @Inject() (
     customFieldSrv.initSteps.toList.map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString))
   }
 
+  def impactStatus: PropertyDescription = db.roTransaction { implicit graph =>
+    PropertyDescription("impactStatus", "enumeration", impactStatusSrv.initSteps.toList.map(s => JsString(s.value)))
+  }
+
+  def resolutionStatus: PropertyDescription = db.roTransaction { implicit graph =>
+    PropertyDescription("resolutionStatus", "enumeration", resolutionStatusSrv.initSteps.toList.map(s => JsString(s.value)))
+  }
+
   def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] = (model, propertyName) match {
-//    case (_, "owner") => Some(Seq(PropertyDescription("owner", "user")))
-//    case ("case", "status") =>
-//      Some(
-//        Seq(PropertyDescription("status", "enumeration", Seq(JsString("Open"), JsString("Resolved"), JsString("Deleted"), JsString("Duplicated"))))
-//      )
+    case (_, "assignee") => Some(Seq(PropertyDescription("assignee", "user")))
+    case ("case", "status") =>
+      Some(
+        Seq(PropertyDescription("status", "enumeration", Seq(JsString("Open"), JsString("Resolved"), JsString("Deleted"), JsString("Duplicated"))))
+      )
+    case ("case", "impactStatus")     => Some(Seq(impactStatus))
+    case ("case", "resolutionStatus") => Some(Seq(resolutionStatus))
 //    //case ("observable", "status") =>
 //    //  Some(PropertyDescription("status", "enumeration", Seq(JsString("Ok"))))
 //    //case ("observable", "dataType") =>
@@ -116,19 +128,19 @@ class DescribeCtrl @Inject() (
 //          )
 //        )
 //      )
-//    case (_, "tlp") =>
-//      Some(Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red"))))
-//    case (_, "pap") =>
-//      Some(Seq(PropertyDescription("pap", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red"))))
-//    case (_, "severity") =>
-//      Some(
-//        Seq(
-//          PropertyDescription("severity", "number", Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)), Seq("low", "medium", "high", "critical"))
-//        )
-//      )
-//    case (_, "createdBy")    => Some(Seq(PropertyDescription("createdBy", "user")))
-//    case (_, "updatedBy")    => Some(Seq(PropertyDescription("updatedBy", "user")))
-//    case (_, "customFields") => Some(customFields)
+    case (_, "tlp") =>
+      Some(Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red"))))
+    case (_, "pap") =>
+      Some(Seq(PropertyDescription("pap", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red"))))
+    case (_, "severity") =>
+      Some(
+        Seq(
+          PropertyDescription("severity", "number", Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)), Seq("low", "medium", "high", "critical"))
+        )
+      )
+    case (_, "_createdBy")   => Some(Seq(PropertyDescription("_createdBy", "user")))
+    case (_, "_updatedBy")   => Some(Seq(PropertyDescription("_updatedBy", "user")))
+    case (_, "customFields") => Some(customFields)
 //    case ("case_artifact_job" | "action", "status") =>
 //      Some(
 //        Seq(
@@ -161,7 +173,7 @@ class DescribeCtrl @Inject() (
       .auth { _ =>
         entityDescriptions
           .collectFirst {
-            case desc if desc.label == modelName => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.$modelName", cacheExpire)(desc.toJson)))
+            case desc if desc.label == modelName => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.v1.$modelName", cacheExpire)(desc.toJson)))
           }
           .getOrElse(Failure(NotFoundError(s"Model $modelName not found")))
       }
@@ -170,7 +182,7 @@ class DescribeCtrl @Inject() (
     entrypoint("describe all models")
       .auth { _ =>
         val descriptors = entityDescriptions.map { desc =>
-          desc.label -> cacheApi.getOrElseUpdate(s"describe.${desc.label}", cacheExpire)(desc.toJson)
+          desc.label -> cacheApi.getOrElseUpdate(s"describe.v1.${desc.label}", cacheExpire)(desc.toJson)
         }
         Success(Results.Ok(JsObject(descriptors)))
       }

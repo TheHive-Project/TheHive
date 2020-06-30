@@ -126,7 +126,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         richCase.status must_=== CaseStatus.Open
         richCase.summary must beNone
         richCase.impactStatus must beNone
-        richCase.user must beSome("socuser@thehive.local")
+        richCase.assignee must beSome("socuser@thehive.local")
         CustomField("boolean1", "boolean1", "boolean custom field", CustomFieldType.boolean, mandatory = false, options = Nil)
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
@@ -291,27 +291,26 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "remove a case and its dependencies" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        val c1 = app[Database]
-          .tryTransaction(implicit graph =>
-            app[CaseSrv].create(
-              Case(0, "case 9", "desc 9", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-              None,
-              app[OrganisationSrv].getOrFail("cert").get,
-              Set[Tag with Entity](),
-              Map.empty,
-              None,
-              Nil
-            )
+      val c1 = app[Database]
+        .tryTransaction(implicit graph =>
+          app[CaseSrv].create(
+            Case(0, "case 9", "desc 9", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+            None,
+            app[OrganisationSrv].getOrFail("cert").get,
+            Set[Tag with Entity](),
+            Map.empty,
+            None,
+            Nil
           )
-          .get
+        )
+        .get
 
-        app[Database].tryTransaction(implicit graph => app[CaseSrv].cascadeRemove(c1.`case`)) must beSuccessfulTry
-        app[Database].roTransaction { implicit graph =>
-          app[CaseSrv].get(c1._id).exists() must beFalse
-        }
+      app[Database].tryTransaction(implicit graph => app[CaseSrv].cascadeRemove(c1.`case`)) must beSuccessfulTry
+      app[Database].roTransaction { implicit graph =>
+        app[CaseSrv].get(c1._id).exists() must beFalse
       }
     }
+
     "set or unset case impact status" in testApp { app =>
       app[Database]
         .tryTransaction { implicit graph =>

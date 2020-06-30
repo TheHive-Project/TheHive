@@ -81,10 +81,12 @@ class OrganisationSrv @Inject() (
     else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
 
   def doubleLink(org1: Organisation with Entity, org2: Organisation with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
-    for {
-      _ <- link(org1, org2)
-      _ <- link(org2, org1)
-    } yield ()
+    if (org1.name == "admin" || org2.name == "admin") Failure(BadRequestError("Admin organisation cannot be link with other organisation"))
+    else
+      for {
+        _ <- link(org1, org2)
+        _ <- link(org2, org1)
+      } yield ()
 
   def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Try[Unit] =
     Success(

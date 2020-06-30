@@ -62,10 +62,6 @@
                             return $q.reject(err);
                         });
                 },
-                ssoLogin: function(code, state) {
-                    var url = angular.isDefined(code) && angular.isDefined(state) ? './api/ssoLogin?code=' + code + '&state=' + state : './api/ssoLogin';
-                    return $http.post(url, {});
-                },
                 isSuperAdmin: function() {
                     var user = self.currentUser;
 

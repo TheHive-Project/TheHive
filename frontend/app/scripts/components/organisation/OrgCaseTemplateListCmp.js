@@ -178,8 +178,13 @@
                                 return UserSrv.list(
                                     self.currentUser.organisation,
                                     {
-                                        filter: { locked: false },
-                                        sort: [{'name': 'asc'}]
+                                        filter: {
+                                            _is: {
+                                                _field: 'locked',
+                                                _value: false
+                                            }
+                                        },
+                                        sort: ['+name']
                                     }
                                 );
                             },

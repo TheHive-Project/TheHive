@@ -32,7 +32,7 @@ class AuditCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema")
     Query.withParam[OutputParam, AuditSteps, PagedResult[RichAudit]](
       "page",
       FieldsParser[OutputParam],
-      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
+      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richAudit)
     )
   override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
 

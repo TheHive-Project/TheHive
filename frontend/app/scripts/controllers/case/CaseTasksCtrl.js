@@ -1,10 +1,9 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, FilteringSrv, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, ModalUtilsSrv, FilteringSrv, CaseTabsSrv, PaginatedQuerySrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -21,6 +20,7 @@
 
         this.$onInit = function() {
             $scope.filtering = new FilteringSrv('case_task', 'task.list', {
+                version: 'v1',
                 defaults: {
                     showFilters: true,
                     showStats: false,
@@ -41,26 +41,51 @@
         };
 
         $scope.load = function() {
-            $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
+            // $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
+            //     scope: $scope,
+            //     baseFilter: {
+            //         _and: [{
+            //             _parent: {
+            //                 _type: 'case',
+            //                 _query: {
+            //                     '_id': $scope.caseId
+            //                 }
+            //             }
+            //         }, {
+            //             _not: {
+            //                 'status': 'Cancel'
+            //             }
+            //         }]
+            //     },
+            //     filter: $scope.filtering.buildQuery(),
+            //     loadAll: true,
+            //     sort: $scope.filtering.context.sort,
+            //     pageSize: $scope.filtering.context.pageSize,
+            //     onUpdate: function() {
+            //         $scope.buildTaskGroups($scope.tasks.values);
+            //     }
+            // });
+
+            $scope.tasks = new PaginatedQuerySrv({
+                root: $scope.caseId,
+                objectType: 'case_task',
+                version: 'v1',
                 scope: $scope,
-                baseFilter: {
-                    _and: [{
-                        _parent: {
-                            _type: 'case',
-                            _query: {
-                                '_id': $scope.caseId
-                            }
-                        }
-                    }, {
-                        _not: {
-                            'status': 'Cancel'
-                        }
-                    }]
-                },
-                filter: $scope.filtering.buildQuery(),
-                loadAll: true,
                 sort: $scope.filtering.context.sort,
+                loadAll: true,
                 pageSize: $scope.filtering.context.pageSize,
+                filter: $scope.filtering.buildQuery(),
+                baseFilter: {
+                    _not: {
+                        _field: 'status', 
+                        _value: 'Cancel'
+                    }
+                },
+                //withStats: true,
+                operations: [
+                    {'_name': 'getCase', "idOrName": $scope.caseId},
+                    {'_name': 'tasks'}
+                ],
                 onUpdate: function() {
                     $scope.buildTaskGroups($scope.tasks.values);
                 }
@@ -142,7 +167,7 @@
             var field = {};
             field[fieldName] = newValue;
             return CaseTaskSrv.update({
-                taskId: task.id
+                taskId: task._id
             }, field, function () {}, function (response) {
                 NotificationSrv.error('taskList', response.data, response.status);
             });
@@ -164,21 +189,12 @@
 
         $scope.removeTask = function(task) {
 
-            var modalInstance = $uibModal.open({
-                animation: true,
-                templateUrl: 'views/partials/case/case.task.delete.html',
-                controller: 'CaseTaskDeleteCtrl',
-                controllerAs: 'vm',
-                resolve: {
-                    title: function() {
-                        return task.title;
-                    }
-                }
-            });
-
-            modalInstance.result.then(function() {
+            ModalUtilsSrv.confirm('Delete task', 'Are you sure you want to delete the selected task?', {
+                okText: 'Yes, remove it',
+                flavor: 'danger'
+            }).then(function() {
                 CaseTaskSrv.update({
-                    'taskId': task.id
+                    'taskId': task._id
                 }, {
                     status: 'Cancel'
                 }, function() {
@@ -188,12 +204,11 @@
                     NotificationSrv.error('taskList', response.data, response.status);
                 });
             });
-
         };
 
         // open task tab with its details
         $scope.startTask = function(task) {
-            var taskId = task.id;
+            var taskId = task._id;
 
             if (task.status === 'Waiting') {
                 $scope.updateTaskStatus(taskId, 'InProgress')
@@ -207,16 +222,16 @@
 
         $scope.openTask = function(task) {
             if (task.status === 'Completed') {
-                $scope.updateTaskStatus(task.id, 'InProgress')
+                $scope.updateTaskStatus(task._id, 'InProgress')
                     .then(function(/*response*/) {
-                        $scope.showTask(task.id);
+                        $scope.showTask(task._id);
                     });
             }
         };
 
         $scope.closeTask = function(task) {
             if (task.status === 'InProgress') {
-                $scope.updateTaskStatus(task.id, 'Completed')
+                $scope.updateTaskStatus(task._id, 'Completed')
                     .then(function() {
                         NotificationSrv.success('Task has been successfully closed');
                     });
@@ -265,18 +280,6 @@
                       NotificationSrv.error('taskList', response.data, response.status);
                   }
               });
-        };
-    }
-
-    function CaseTaskDeleteCtrl($uibModalInstance, title) {
-        this.title = title;
-
-        this.ok = function() {
-            $uibModalInstance.close();
-        };
-
-        this.cancel = function() {
-            $uibModalInstance.dismiss();
         };
     }
 }());

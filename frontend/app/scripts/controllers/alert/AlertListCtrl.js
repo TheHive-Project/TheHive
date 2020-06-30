@@ -1,3 +1,4 @@
+
 (function() {
     'use strict';
     angular.module('theHiveControllers')
@@ -22,6 +23,7 @@
 
             this.$onInit = function() {
                 self.filtering = new FilteringSrv('alert', 'alert.list', {
+                    version: 'v1',
                     defaults: {
                         showFilters: true,
                         showStats: false,
@@ -29,17 +31,9 @@
                         sort: ['-date']
                     },
                     defaultFilter: [{
-                        field: 'status',
-                        type: 'enumeration',
-                        value: {
-                            list: [{
-                                text: 'New',
-                                label: 'New'
-                            }, {
-                                text: 'Updated',
-                                label: 'Updated'
-                            }]
-                        }
+                        field: 'imported',
+                        type: 'boolean',
+                        value: false
                     }]
                 });
                 self.filtering.initContext('list')
@@ -84,7 +78,7 @@
                     fn = AlertingSrv.markAsUnread;
                 }
 
-                fn(event.id).then(function( /*data*/ ) {
+                fn(event._id).then(function( /*data*/ ) {
                 }, function(response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
@@ -99,7 +93,7 @@
                     fn = AlertingSrv.follow;
                 }
 
-                fn(event.id).then(function( /*data*/ ) {
+                fn(event._id).then(function( /*data*/ ) {
                 }, function(response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
@@ -127,7 +121,7 @@
             };
 
             self.bulkMarkAsRead = function(markAsReadFlag) {
-                var ids = _.pluck(self.selection, 'id');
+                var ids = _.pluck(self.selection, '_id');
                 var fn = angular.noop;
                 var markAsRead = markAsReadFlag && this.canMarkAsRead(self.selection[0]);
 
@@ -155,7 +149,7 @@
                   okText: 'Yes, remove them',
                   flavor: 'danger'
               }).then(function() {
-                  var ids = _.pluck(self.selection, 'id');
+                  var ids = _.pluck(self.selection, '_id');
 
                   AlertingSrv.bulkRemove(ids)
                       .then(function(/*response*/) {
@@ -231,11 +225,12 @@
                 self.menu.follow = temp.length === 1 && temp[0] === false;
 
 
-                temp = _.uniq(_.pluck(self.selection, 'status'));
+                temp = _.uniq(_.pluck(self.selection, 'read'));
 
-                self.menu.markAsRead = temp.indexOf('Ignored') === -1 && temp.indexOf('Imported') === -1;
-                self.menu.markAsUnread = temp.indexOf('New') === -1 && temp.indexOf('Updated') === -1;
+                self.menu.markAsRead = temp.length === 1 && temp[0] === false;
+                self.menu.markAsUnread = temp.length === 1 && temp[0] === true;
 
+                // TODO nadouani: don't rely on alert status
                 self.menu.createNewCase = temp.indexOf('Imported') === -1;
                 self.menu.mergeInCase = temp.indexOf('Imported') === -1;
 
@@ -249,7 +244,7 @@
                     self.selection.push(event);
                 } else {
                     self.selection = _.reject(self.selection, function(item) {
-                        return item.id === event.id;
+                        return item._id === event._id;
                     });
                 }
 
@@ -274,7 +269,7 @@
             };
 
             self.createNewCase = function() {
-                var alertIds = _.pluck(self.selection, 'id');
+                var alertIds = _.pluck(self.selection, '_id');
 
                 CaseTemplateSrv.list()
                   .then(function(templates) {
@@ -362,7 +357,7 @@
                 });
 
                 caseModal.result.then(function(selectedCase) {
-                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, 'id'), selectedCase.id);
+                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, '_id'), selectedCase.id);
                 })
                 .then(function(response) {
                     $rootScope.$broadcast('alert:event-imported');
@@ -405,22 +400,30 @@
                 this.search();
             };
 
-            this.filterByStatus = function(status) {
+            this.filterByStatus = function(flag) {
                 self.filtering.clearFilters()
                     .then(function(){
-                        self.addFilterValue('status', status);
+                        self.addFilterValue('imported', flag);
                     });
             };
 
             this.filterByNewAndUpdated = function() {
                 self.filtering.clearFilters()
                     .then(function(){
-                        self.addFilterValue('status', ['New', 'Updated']);
+                        // TODO nadouani: how to support updated alerts
+                        self.addFilterValue('imported', true);
                     });
             };
 
             this.filterBySeverity = function(numericSev) {
                 self.addFilterValue('severity', Severity.values[numericSev]);
+            };
+
+            this.filterBy = function(field, value) {
+                self.filtering.clearFilters()
+                    .then(function(){
+                        self.addFilterValue(field, value);
+                    });
             };
 
             this.sortBy = function(sort) {

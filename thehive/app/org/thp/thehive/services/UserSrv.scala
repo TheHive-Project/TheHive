@@ -14,7 +14,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{BadRequestError, EntitySteps, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntitySteps, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.Configuration
@@ -101,9 +101,18 @@ class UserSrv @Inject() (
   override def exists(e: User)(implicit graph: Graph): Boolean = initSteps.getByName(e.login).exists()
 
   def lock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
+    if (user.login == authContext.userId)
+      Failure(AuthorizationError("You cannot lock yourself"))
+    else
+      for {
+        updatedUser <- get(user).updateOne("locked" -> true)
+        _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
+      } yield updatedUser
+
+  def unlock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
     for {
-      updatedUser <- get(user).updateOne("locked" -> true)
-      _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
+      updatedUser <- get(user).updateOne("locked" -> false)
+      _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> false))
     } yield updatedUser
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)

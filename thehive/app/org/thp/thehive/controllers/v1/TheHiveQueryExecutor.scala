@@ -5,7 +5,7 @@ import org.thp.scalligraph.controllers.{FObject, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 
-case class OutputParam(from: Long, to: Long, withStats: Boolean)
+case class OutputParam(from: Long, to: Long, extraData: Set[String])
 
 object OutputParam {
   implicit val parser: FieldsParser[OutputParam] = FieldsParser[OutputParam]("OutputParam") {
@@ -13,8 +13,8 @@ object OutputParam {
       for {
         from      <- FieldsParser.long.on("from")(field)
         to        <- FieldsParser.long.on("to")(field)
-        withStats <- FieldsParser.boolean.optional.on("withStats")(field)
-      } yield OutputParam(from, to, withStats.getOrElse(false))
+        extraData <- FieldsParser.string.set.on("extraData")(field)
+      } yield OutputParam(from, to, extraData)
   }
 }
 

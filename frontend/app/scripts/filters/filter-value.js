@@ -26,7 +26,7 @@
                 return [value.operator, value.value].join(' ');
             }
 
-            return value || 'Any';
+            return value !== undefined && value !== null ? value : 'Any';
         };
     });
 

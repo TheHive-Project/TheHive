@@ -1,3 +1,4 @@
+dev
 logs
 bin
 conf/application.conf
@@ -35,3 +36,5 @@ tmp
 /.idea/**
 !/.idea/runConfigurations/
 !/.idea/runConfigurations/*
+
+dev

@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import akka.actor.ActorRef
 import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
@@ -11,7 +11,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.thehive.models.ResolutionStatus
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(
@@ -30,7 +30,10 @@ class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCh
   }
 
   def create(resolutionStatus: ResolutionStatus)(implicit graph: Graph, authContext: AuthContext): Try[ResolutionStatus with Entity] =
-    createEntity(resolutionStatus)
+    if (exists(resolutionStatus))
+      Failure(CreateError(s"Resolution status ${resolutionStatus.value} already exists"))
+    else
+      createEntity(resolutionStatus)
 
   override def exists(e: ResolutionStatus)(implicit graph: Graph): Boolean = initSteps.getByName(e.value).exists()
 }

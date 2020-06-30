@@ -11,6 +11,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
 import org.thp.thehive.models.{Permissions, RichCase, User}
 import org.thp.thehive.services._
+import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.{Success, Try}
@@ -25,7 +26,8 @@ class CaseCtrl @Inject() (
     userSrv: UserSrv,
     tagSrv: TagSrv,
     organisationSrv: OrganisationSrv
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with CaseRenderer {
 
   override val entityName: String                           = "case"
   override val publicProperties: List[PublicProperty[_, _]] = properties.`case` ::: metaProperties[CaseSteps]
@@ -36,19 +38,13 @@ class CaseCtrl @Inject() (
     FieldsParser[IdOrName],
     (param, graph, authContext) => caseSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[RichCase]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
-      case (OutputParam(from, to, withStats), caseSteps, authContext) =>
-        caseSteps
-          .richPage(from, to, withTotal = true) { c =>
-            c.richCase(authContext)
-//            case c if withStats =>
-////              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph))
-//              c.richCase.map(_ -> JsObject.empty) // TODO add stats
-//            case c =>
-//              c.richCase.map(_ -> JsObject.empty)
-          }
+      case (OutputParam(from, to, extraData), caseSteps, authContext) =>
+        caseSteps.richPage(from, to, extraData.contains("total")) {
+          _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext, db, caseSteps.graph))(authContext)
+        }
     }
   )
   override val outputQuery: Query = Query.outputWithContext[RichCase, CaseSteps]((caseSteps, authContext) => caseSteps.richCase(authContext))
