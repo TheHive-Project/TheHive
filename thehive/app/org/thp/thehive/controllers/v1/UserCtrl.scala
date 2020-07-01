@@ -56,6 +56,11 @@ class UserCtrl @Inject() (
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext.organisation))
 
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[UserSteps]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
+    Query[UserSteps, TaskSteps]("tasks", (userSteps, authContext) => userSteps.tasks.visible(authContext)),
+    Query[UserSteps, CaseSteps]("cases", (userSteps, authContext) => userSteps.cases.visible(authContext))
+  )
   def current: Action[AnyContent] =
     entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>

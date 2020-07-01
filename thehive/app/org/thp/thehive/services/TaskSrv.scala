@@ -101,7 +101,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
 }
 
 @EntitySteps[Task]
-class TaskSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Task](raw) {
+class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Task](raw) {
 
   def visible(implicit authContext: AuthContext): TaskSteps = newInstance(
     raw.filter(
@@ -129,7 +129,13 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
       )
     )
 
-  def `case` = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase]) // TODO add distinct ? task/case can have several shares
+  def `case` = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase].dedup)
+
+  def caseTemplate = new CaseTemplateSteps(raw.inTo[CaseTemplateTask])
+
+  def caseTasks: TaskSteps = this.filter(_.inToE[ShareTask])
+
+  def caseTemplateTasks: TaskSteps = this.filter(_.inToE[CaseTemplateTask])
 
   def logs = new LogSteps(raw.outTo[TaskLog])
 

@@ -202,8 +202,21 @@ object Conversion {
       .withFieldConst(_._type, "Task")
       .withFieldComputed(_.status, _.status.toString)
       .withFieldComputed(_.assignee, _.assignee.map(_.login))
+      .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
+
+  implicit val taskWithStatsOutput: Renderer[(RichTask, JsObject)] =
+    Renderer.json[(RichTask, JsObject), OutputTask] { taskWithExtraData =>
+      taskWithExtraData
+        ._1
+        .into[OutputTask]
+        .withFieldConst(_._type, "Task")
+        .withFieldComputed(_.status, _.status.toString)
+        .withFieldComputed(_.assignee, _.assignee.map(_.login))
+        .withFieldConst(_.extraData, taskWithExtraData._2)
+        .transform
+    }
 
   implicit class InputUserOps(inputUser: InputUser) {
 

@@ -10,6 +10,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models.{Permissions, RichTask}
 import org.thp.thehive.services.{CaseSrv, CaseSteps, LogSteps, OrganisationSrv, OrganisationSteps, ShareSrv, TaskSrv, TaskSteps, UserSteps}
+import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -23,16 +24,20 @@ class TaskCtrl @Inject() (
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
     shareSrv: ShareSrv
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with TaskRenderer {
 
   override val entityName: String                           = "task"
   override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
   override val initialQuery: Query =
     Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[(RichTask, JsObject)]](
     "page",
     FieldsParser[OutputParam],
-    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richTask)
+    (range, taskSteps, authContext) =>
+      taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
+        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext, db, taskSteps.graph))
+      )
   )
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
     "getTask",

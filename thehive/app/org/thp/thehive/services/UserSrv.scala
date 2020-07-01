@@ -303,6 +303,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   def systemUser: UserSteps = this.has("login", User.system.login)
 
   def dashboards: DashboardSteps = new DashboardSteps(raw.inTo[DashboardUser])
+
+  def tasks: TaskSteps = new TaskSteps(raw.inTo[TaskUser])
+
+  def cases: CaseSteps = new CaseSteps(raw.inTo[CaseUser])
 }
 
 @Singleton

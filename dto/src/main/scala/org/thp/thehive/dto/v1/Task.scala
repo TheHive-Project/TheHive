@@ -2,7 +2,7 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat, OWrites}
+import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
 
 case class InputTask(
     title: String,
@@ -36,7 +36,8 @@ case class OutputTask(
     endDate: Option[Date],
     assignee: Option[String],
     order: Int,
-    dueDate: Option[Date]
+    dueDate: Option[Date],
+    extraData: JsObject
 )
 
 object OutputTask {
