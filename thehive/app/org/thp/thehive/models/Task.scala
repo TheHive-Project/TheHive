@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph._
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import play.api.libs.json.{Format, Json}
 
 object TaskStatus extends Enumeration {
@@ -19,6 +19,7 @@ case class TaskUser()
 case class TaskLog()
 
 @VertexEntity
+@DefineIndex(IndexType.basic, "status")
 case class Task(
     title: String,
     group: String,
