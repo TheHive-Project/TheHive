@@ -320,12 +320,20 @@ class UserIntegrityCheckOps @Inject() (
 
   override def initialCheck()(implicit graph: Graph, authContext: AuthContext): Unit = {
     super.initialCheck()
-    for {
-      adminUser         <- service.getOrFail(User.init.login)
-      adminProfile      <- profileSrv.getOrFail(Profile.admin.name)
-      adminOrganisation <- organisationSrv.getOrFail(Organisation.administration.name)
-      _                 <- roleSrv.create(adminUser, adminOrganisation, adminProfile)
-    } yield ()
+    val adminUserIsCreated = service
+      .get(User.init.login)
+      .role
+      .filter(_.profile.getByName(Profile.admin.name))
+      .organisation
+      .getByName(Organisation.administration.name)
+      .exists()
+    if (!adminUserIsCreated)
+      for {
+        adminUser         <- service.getOrFail(User.init.login)
+        adminProfile      <- profileSrv.getOrFail(Profile.admin.name)
+        adminOrganisation <- organisationSrv.getOrFail(Organisation.administration.name)
+        _                 <- roleSrv.create(adminUser, adminOrganisation, adminProfile)
+      } yield ()
     ()
   }
 

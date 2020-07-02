@@ -11,7 +11,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, IntegrityCheckOps}
 import org.thp.thehive.GuiceAkkaExtension
-import play.api.Configuration
+import play.api.{Configuration, Logger}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -27,6 +27,7 @@ class IntegrityCheckActor() extends Actor {
   case class Check(name: String)
   import IntegrityCheckActor._
 
+  lazy val logger: Logger               = Logger(getClass)
   lazy val injector: Injector           = GuiceAkkaExtension(context.system).injector
   lazy val configuration: Configuration = injector.getInstance(classOf[Configuration])
   lazy val integrityCheckOps: immutable.Set[IntegrityCheckOps[_ <: Product]] = injector
@@ -63,9 +64,11 @@ class IntegrityCheckActor() extends Actor {
   override def receive: Receive = receive(Map.empty)
   def receive(states: Map[String, (Boolean, Cancellable)]): Receive = {
     case EntityAdded(name) =>
+      logger.debug(s"An entity $name has been created")
       context.system.scheduler.scheduleOnce(initialDelay(name), self, NeedCheck(name))(context.system.dispatcher)
       ()
     case NeedCheck(name) if !states.contains(name) => // initial check
+      logger.debug(s"Initial integrity check of $name")
       check(name)
       val timer = context.system.scheduler.scheduleAtFixedRate(Duration.Zero, interval(name), self, Check(name))(context.system.dispatcher)
       context.become(receive(states + (name -> (false -> timer))))
@@ -75,10 +78,12 @@ class IntegrityCheckActor() extends Actor {
         context.become(receive(states + (name -> (true -> timer))))
       }
     case Check(name) if states.get(name).fold(false)(_._1) => // stats.needCheck == true
+      logger.debug(s"Integrity check of $name")
       check(name)
       val timer = states(name)._2
       context.become(receive(states + (name -> (false -> timer))))
     case Check(name) =>
+      logger.debug(s"Pause integrity checks of $name, wait new add")
       states(name)._2.cancel()
       context.become(receive(states - name))
   }
