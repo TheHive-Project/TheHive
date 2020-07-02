@@ -129,7 +129,7 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
       )
     )
 
-  def `case` = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase].dedup)
+  def `case`: CaseSteps = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase].dedup)
 
   def caseTemplate = new CaseTemplateSteps(raw.inTo[CaseTemplateTask])
 
@@ -137,9 +137,11 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def caseTemplateTasks: TaskSteps = this.filter(_.inToE[CaseTemplateTask])
 
-  def logs = new LogSteps(raw.outTo[TaskLog])
+  def logs: LogSteps = new LogSteps(raw.outTo[TaskLog])
 
-  def assignee = new UserSteps(raw.outTo[TaskUser])
+  def assignee: UserSteps = new UserSteps(raw.outTo[TaskUser])
+
+  def unassigned: TaskSteps = this.not(_.outToE[TaskUser])
 
   def organisations = new OrganisationSteps(raw.inTo[ShareTask].inTo[OrganisationShare])
   def organisations(permission: Permission) =
