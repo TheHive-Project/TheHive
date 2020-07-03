@@ -32,6 +32,7 @@
                 }
 
                 self.filtering = new FilteringSrv('case_task', $stateParams.viewId + '.list', {
+                    version: 'v1',
                     defaults: {
                         showFilters: true,
                         showStats: false,
@@ -105,7 +106,7 @@
             self.openWTask = function(task) {
                 if (task.status === 'Waiting') {
                     CaseTaskSrv.update({
-                        'taskId': task.id
+                        'taskId': task._id
                     }, {
                         'status': 'InProgress'
                     }, function(data) {
