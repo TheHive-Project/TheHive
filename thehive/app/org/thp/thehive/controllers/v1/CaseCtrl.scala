@@ -77,7 +77,7 @@ class CaseCtrl @Inject() (
             tags.toSet,
             customFields,
             caseTemplate,
-            inputTasks.map(_.toTask -> None)
+            inputTasks.map(t => t.toTask -> t.assignee.flatMap(userSrv.get(_).headOption()))
           )
         } yield Results.Created(richCase.toJson)
       }
