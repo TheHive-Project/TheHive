@@ -338,12 +338,7 @@ class UserIntegrityCheckOps @Inject() (
   }
 
   override def check(): Unit = {
-    duplicateEntities
-      .foreach { entities =>
-        db.tryTransaction { implicit graph =>
-          resolve(entities)
-        }
-      }
+    super.check()
     db.tryTransaction { implicit graph =>
       duplicateInEdges[TaskUser](service.initSteps.raw).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
       duplicateInEdges[CaseUser](service.initSteps.raw).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))

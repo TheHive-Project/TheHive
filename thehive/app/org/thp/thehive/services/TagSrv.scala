@@ -65,7 +65,7 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
   override def exists(e: Tag)(implicit graph: Graph): Boolean = initSteps.getByName(e.namespace, e.predicate, e.value).exists()
 }
 
-class TagSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Tag](raw) {
+class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Tag](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): TagSteps = new TagSteps(newRaw)
   override def newInstance(): TagSteps                             = new TagSteps(raw.clone())
 
@@ -84,6 +84,7 @@ class TagSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
 }
 
 class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
+
   override def resolve(entities: List[Tag with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
       tail.foreach(copyEdge(_, head))

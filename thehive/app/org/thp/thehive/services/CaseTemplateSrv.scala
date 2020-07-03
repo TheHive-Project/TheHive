@@ -3,9 +3,10 @@ package org.thp.thehive.services
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 import akka.actor.ActorRef
-import gremlin.scala.{__, By, Element, Graph, GremlinScala, Key, P, StepLabel, Vertex}
+import gremlin.scala.{__, By, Element, Graph, GremlinScala, Key, P, Vertex}
 import javax.inject.{Inject, Named}
 import org.apache.tinkerpop.gremlin.process.traversal.{Path, Scope}
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -251,24 +252,28 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive
     new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField])
 }
 
-class CaseTemplateIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CaseTemplateSrv)
-    extends IntegrityCheckOps[CaseTemplate] {
-  override def getDuplicates[A](property: String): List[List[CaseTemplate with Entity]] =
+class CaseTemplateIntegrityCheckOps @Inject() (
+    @Named("with-thehive-schema") val db: Database,
+    val service: CaseTemplateSrv,
+    organisationSrv: OrganisationSrv
+) extends IntegrityCheckOps[CaseTemplate] {
+  override def duplicateEntities: List[List[CaseTemplate with Entity]] =
     db.roTransaction { implicit graph =>
-      val ctLabel  = StepLabel()
-      val orgLabel = StepLabel()
-      service
+      organisationSrv
         .initSteps
-        .as(ctLabel)
-        .organisation
-        .as(orgLabel)
         .raw
-        .group(By(__.select(ctLabel.name, orgLabel.name).by("name").by()))
-        .unfold[JMap.Entry[Any, JCollection[Vertex]]]()
-        .selectValues
-        .where(_.count(Scope.local).is(P.gt(1)))
+        .traversal
+        .flatMap(
+          __.in("CaseTemplateOrganisation")
+            .group(By(Key[String]("name")), By(T.id))
+            .unfold[JMap.Entry[String, JCollection[Any]]]()
+            .selectValues
+            .where(_.count(Scope.local).is(P.gt(1)))
+            .traversal
+        )
+        .asScala
+        .map(ids => service.getByIds(ids.asScala.map(_.toString).toSeq: _*).toList)
         .toList
-        .map(_.asScala.toList.map(service.model.toDomain(_)(db)))
     }
 
   override def resolve(entities: List[CaseTemplate with Entity])(implicit graph: Graph): Try[Unit] = entities match {
