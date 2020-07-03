@@ -9,7 +9,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.Traversal
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.services.TaskSteps
-import play.api.libs.json.{JsNull, JsObject, JsValue}
+import play.api.libs.json.{JsNull, JsObject, JsString, JsValue}
 
 import scala.collection.JavaConverters._
 
@@ -18,8 +18,14 @@ trait TaskRenderer {
   def caseParent(taskSteps: TaskSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
     taskSteps.`case`.richCase.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(_.toJson))
 
+  def caseParentId(taskSteps: TaskSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+    taskSteps.`case`.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(c => JsString(c.id().toString)))
+
   def caseTemplateParent(taskSteps: TaskSteps): Traversal[JsValue, JsValue] =
     taskSteps.caseTemplate.richCaseTemplate.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(_.toJson))
+
+  def caseTemplateParentId(taskSteps: TaskSteps): Traversal[JsValue, JsValue] =
+    taskSteps.caseTemplate.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(ct => JsString(ct.id().toString)))
 
   def taskStatsRenderer(extraData: Set[String])(
       implicit authContext: AuthContext,
@@ -34,9 +40,11 @@ trait TaskRenderer {
       val dataName = extraData.toSeq
       dataName
         .foldLeft[TaskSteps => GremlinScala[JMap[String, JsValue]]](_.raw.project(dataName.head, dataName.tail: _*)) {
-          case (f, "case")         => f.andThen(addData(caseParent))
-          case (f, "caseTemplate") => f.andThen(addData(caseTemplateParent))
-          case (f, _)              => f.andThen(_.by(__.constant(JsNull).traversal))
+          case (f, "case")           => f.andThen(addData(caseParent))
+          case (f, "caseId")         => f.andThen(addData(caseParentId))
+          case (f, "caseTemplate")   => f.andThen(addData(caseTemplateParent))
+          case (f, "caseTemplateId") => f.andThen(addData(caseTemplateParentId))
+          case (f, _)                => f.andThen(_.by(__.constant(JsNull).traversal))
         }
         .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))
     }
