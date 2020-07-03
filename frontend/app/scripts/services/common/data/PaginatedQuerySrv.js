@@ -94,7 +94,9 @@
                         return;
                     }
 
-                    var predicates = _.without([this.baseFilter, this.filter], null, undefined, {});
+                    var predicates = _.filter([this.baseFilter, this.filter], function(item) {
+                        return !_.isEmpty(item);
+                    });
 
                     return predicates.length === 1 ? predicates[0] : {'_and': predicates};
                 };
@@ -112,9 +114,11 @@
                 Function to change the page
                 */
                 this.update = function(updates) {
+                    var filters = self.getFilter();
+
                     // Get the list
                     QuerySrv.call(this.version, this.operations, {
-                        filter: self.getFilter(),
+                        filter: filters,
                         sort: self.getSort(),
                         page: self.getPage(),
                         config: {},
@@ -138,7 +142,7 @@
 
                         // Compute the total again
                         QuerySrv.count('v1', this.operations, {
-                            filter: self.getFilter(),
+                            filter: filters,
                             config: {}
                         }).then(function(total) {
                             self.total = total;

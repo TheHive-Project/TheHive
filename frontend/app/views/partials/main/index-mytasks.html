@@ -18,7 +18,7 @@
 			ng-class="{'warning': (value.flag == true)}"
 			ng-click="$vm.openEntity(value)">
 			<td class="text-center">
-				<severity active="false" value="value.case.severity"></severity>
+				<severity active="false" value="value.extraData.case.severity"></severity>
 			</td>
 			<td>{{value.group}}</td>
 			<td>
@@ -30,7 +30,7 @@
 						Started <em am-time-ago="value.startDate"></em>
 				</div>
 				<div>
-					<small><entity-link value="value.case"></entity-link></small>
+					<small><entity-link value="value.extraData.case"></entity-link></small>
 				</div>
 			</td>
 			<td>

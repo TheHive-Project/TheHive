@@ -1,25 +1,26 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('MainPageCtrl',
-        function($rootScope, $scope, $window, $stateParams, $state, FilteringSrv, CaseTaskSrv, PSearchSrv, EntitySrv, UserSrv) {
+        function($rootScope, $scope, $window, $stateParams, $state, FilteringSrv, CaseTaskSrv, PaginatedQuerySrv, EntitySrv, UserSrv) {
             var self = this;
             var view = $stateParams.viewId;
 
             self.$onInit = function() {
                 self.view = {};
 
-                self.defaultFilter = view === 'mytasks' ? {
-                    '_and': [{
-                        '_in': {
-                            '_field': 'status',
-                            '_values': ['Waiting', 'InProgress']
-                        }
-                    }, {
-                        'owner': $scope.currentUser.login
-                    }]
-                } : {
-                    'status': 'Waiting'
+                self.defaultFilter = {
+                    '_ne': {
+                        '_field': 'status',
+                        '_value': 'Completed'
+                    }
                 };
+
+                self.queryOperations = view === 'mytasks' ? [
+                    {"_name": "currentUser"},
+                    {"_name": "tasks"}
+                ] : [
+                    {"_name": "waitingTask"}
+                ];
 
                 if ($stateParams.viewId === 'mytasks') {
                     $rootScope.title = 'My tasks';
@@ -51,14 +52,17 @@
             };
 
             self.load = function() {
-                self.list = PSearchSrv(undefined, 'case_task', {
+                self.list = new PaginatedQuerySrv({
+                    objectType: 'case_task',
+                    version: 'v1',
                     scope: $scope,
-                    baseFilter: self.defaultFilter,
-                    filter: self.filtering.buildQuery(),
-                    loadAll: false,
                     sort: self.filtering.context.sort,
+                    loadAll: true,
                     pageSize: self.filtering.context.pageSize,
-                    nparent: 1
+                    filter: self.filtering.buildQuery(),
+                    baseFilter: self.defaultFilter,
+                    operations: self.queryOperations,
+                    extraData: ['case']
                 });
             };
 

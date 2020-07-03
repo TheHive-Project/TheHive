@@ -4,8 +4,21 @@
 		&nbsp;#{{value.caseId}} - {{value.title}}&nbsp;
 	</a>
 </span>
+<span ng-if="value._type == 'Case'">
+	<a class="text-muted wrap"href ng-click="openLink(entityUrl(value))">
+		<i class="glyphicon glyphicon-folder-open"></i>
+		&nbsp;#{{value.caseId}} - {{value.title}}&nbsp;
+	</a>
+</span>
 <span ng-if="value._type == 'case_task'">
 	<entity-link value="value.case" target="target"></entity-link>
+	<a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
+		<i class=" glyphicon glyphicon-tasks"></i>
+		&nbsp;{{value.title}}
+	</a>
+</span>
+<span ng-if="value._type == 'Task'">
+	<entity-link value="value.extraData.case" target="target"></entity-link>
 	<a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
 		<i class=" glyphicon glyphicon-tasks"></i>
 		&nbsp;{{value.title}}

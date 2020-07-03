@@ -8,6 +8,11 @@
                 state.params = {
                     caseId: entity.id
                 };
+            } else if (entity._type === 'Case') {
+                state.name = 'app.case.details';
+                state.params = {
+                    caseId: entity._id
+                };
             } else if (entity._type === 'case_artifact') {
                 state.name = 'app.case.observables-item';
                 state.params = {
@@ -25,6 +30,12 @@
                 state.params = {
                     caseId: entity.case.id,
                     itemId: entity.id
+                };
+            } else if (entity._type === 'Task') {
+                state.name = 'app.case.tasks-item';
+                state.params = {
+                    caseId: entity.extraData.case._id,
+                    itemId: entity._id
                 };
             }
 

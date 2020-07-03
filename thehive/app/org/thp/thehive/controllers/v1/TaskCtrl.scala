@@ -48,7 +48,7 @@ class TaskCtrl @Inject() (
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[TaskSteps](
       "waitingTask",
-      (graph, authContext) => taskSrv.initSteps(graph).has("status", TaskStatus.Waiting).unassigned.visible(authContext)
+      (graph, authContext) => taskSrv.initSteps(graph).has("status", TaskStatus.Waiting).visible(authContext)
     ),
     Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query[TaskSteps, LogSteps]("logs", (taskSteps, _) => taskSteps.logs),
