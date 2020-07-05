@@ -85,8 +85,8 @@ class Properties @Inject() (
       .property("status", UniMapping.string)(
         _.select(
           _.project(
-            _.apply(By(Key[Boolean]("read")))
-              .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
+            _.by(Key[Boolean]("read"))
+              .by(_.`case`.limit(1).count)
           ).map {
             case (false, caseCount) if caseCount == 0L => "New"
             case (false, _)                            => "Updated"

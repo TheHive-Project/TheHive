@@ -138,6 +138,15 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive
       .inTo[UserRole]
   )
 
+  def userPermissions(userId: String): Traversal[Permission, String] =
+    this
+      .roles
+      .filter(_.user.has("login", userId))
+      .profile
+      .permissions
+
+  def roles: RoleSteps = new RoleSteps(raw.inTo[RoleOrganisation])
+
   def pages: PageSteps = new PageSteps(raw.outTo[OrganisationPage])
 
   def alerts: AlertSteps = new AlertSteps(raw.inTo[AlertOrganisation])
@@ -152,8 +161,8 @@ class OrganisationSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive
   def richOrganisation: Traversal[RichOrganisation, RichOrganisation] =
     this
       .project(
-        _.apply(By[Vertex]())
-          .and(By(__[Vertex].outTo[OrganisationOrganisation].fold))
+        _.by
+          .by(_.outTo[OrganisationOrganisation].fold)
       )
       .map {
         case (organisation, linkedOrganisations) =>

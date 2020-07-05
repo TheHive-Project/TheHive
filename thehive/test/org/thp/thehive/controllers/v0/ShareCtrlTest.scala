@@ -19,7 +19,7 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
     status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
     app[Database].roTransaction { implicit graph =>
-      app[CaseSrv].get("#1").visible(DummyUserSrv(userId = "socro@thehive.local").authContext).exists()
+      app[CaseSrv].get("#1").visible(DummyUserSrv(organisation = "soc").authContext).exists()
     } must beTrue
   }
 

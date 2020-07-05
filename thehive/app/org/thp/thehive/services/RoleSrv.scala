@@ -53,4 +53,5 @@ class RoleSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   }
 
   def profile: ProfileSteps = new ProfileSteps(raw.outTo[RoleProfile])
+  def user: UserSteps       = new UserSteps(raw.inTo[UserRole])
 }

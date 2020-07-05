@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services._
@@ -22,6 +22,7 @@ class StreamCtrl @Inject() (
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
     @Named("with-thehive-schema") implicit val db: Database,
+    implicit val schema: Schema,
     implicit val ec: ExecutionContext
 ) extends AuditRenderer {
 

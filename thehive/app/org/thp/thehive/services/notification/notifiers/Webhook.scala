@@ -5,7 +5,7 @@ import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.client.{ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.BadConfigurationError
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BranchCase, BranchOtherwise, Traversal, VertexSteps}
@@ -44,6 +44,7 @@ class WebhookProvider @Inject() (
     appConfig: ApplicationConfig,
     auditSrv: AuditSrv,
     customFieldSrv: CustomFieldSrv,
+    schema: Schema,
     ec: ExecutionContext,
     mat: Materializer
 ) extends NotifierProvider {
@@ -60,11 +61,17 @@ class WebhookProvider @Inject() (
         .find(_.name == name)
         .fold[Try[WebhookNotification]](Failure(BadConfigurationError(s"Webhook configuration `$name` not found`")))(Success.apply)
 
-    } yield new Webhook(config, auditSrv, customFieldSrv, mat, ec)
+    } yield new Webhook(config, auditSrv, customFieldSrv, mat, schema, ec)
 }
 
-class Webhook(config: WebhookNotification, auditSrv: AuditSrv, customFieldSrv: CustomFieldSrv, mat: Materializer, implicit val ec: ExecutionContext)
-    extends Notifier {
+class Webhook(
+    config: WebhookNotification,
+    auditSrv: AuditSrv,
+    customFieldSrv: CustomFieldSrv,
+    mat: Materializer,
+    implicit val schema: Schema,
+    implicit val ec: ExecutionContext
+) extends Notifier {
   override val name: String = "webhook"
 
   lazy val logger: Logger = Logger(getClass)

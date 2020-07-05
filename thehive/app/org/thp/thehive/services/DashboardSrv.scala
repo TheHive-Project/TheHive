@@ -1,17 +1,14 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList}
-
-import gremlin.scala.{__, By, Element, Graph, GremlinScala, Vertex}
+import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.Path
+import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.scalligraph.{EntitySteps, InternalError}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, Json}
@@ -92,24 +89,24 @@ class DashboardSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-sc
   def canUpdate(implicit authContext: AuthContext): DashboardSteps =
     this.filter(_.or(_.user.current(authContext), _.inToE[OrganisationDashboard].has("writable", true).outV.has("name", authContext.organisation)))
 
+  def organisationShares: Traversal[Seq[(String, Boolean)], Seq[(String, Boolean)]] =
+    this
+      .outToE[OrganisationDashboard]
+      .project(
+        _.by(Key[Boolean]("writable"))
+          .by(_.inV())
+      )
+      .fold
+      .map(_.asScala.map { case (writable, orgs) => (orgs.value[String]("name"), writable) })
+
   def richDashboard: Traversal[RichDashboard, RichDashboard] =
     this
       .project(
-        _.apply(By[Vertex]())
-          .and(By(__[Vertex].inToE[OrganisationDashboard].outV().path.fold))
+        _.by
+          .by(_.organisationShares)
       )
       .map {
-        case (dashboard, dashboardOrganisations) =>
-          val organisationShares = (dashboardOrganisations: JList[Path])
-            .asScala
-            .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-            .map {
-              case List(od, o) =>
-                o.as[Organisation].name -> od.as[OrganisationDashboard].writable //.RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
-              case _ => throw InternalError("Not possible")
-            }
-            .toMap
-          RichDashboard(dashboard.as[Dashboard], organisationShares)
+        case (dashboard, organisationShares) => RichDashboard(dashboard.as[Dashboard], organisationShares.toMap)
       }
 
 }

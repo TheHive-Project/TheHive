@@ -17,16 +17,15 @@ import scala.collection.JavaConverters._
 trait CaseRenderer {
 
   def observableStats(
-      shareTraversal: GremlinScala[Vertex]
-  )(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
-    new ShareSteps(shareTraversal)
+      shareSteps: ShareSteps
+  )(implicit db: Database, graph: Graph): Traversal[JsObject, JsObject] =
+    shareSteps
       .observables
       .count
       .map(count => Json.obj("count" -> count))
-      .raw
 
-  def taskStats(shareTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JsObject] =
-    new ShareSteps(shareTraversal)
+  def taskStats(shareSteps: ShareSteps)(implicit db: Database, graph: Graph): Traversal[JsObject, JsObject] =
+    shareSteps
       .tasks
       .active
       .groupCount(By(Key[String]("status")))
@@ -36,10 +35,9 @@ trait CaseRenderer {
         }
         result + ("total" -> JsNumber(total))
       }
-      .raw
 
-  def alertStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] =
-    caseTraversal
+  def alertStats(caseSteps: CaseSteps): Traversal[Seq[JsObject], Seq[JsObject]] =
+    caseSteps
       .inTo[AlertCase]
       .group(By(Key[String]("type")), By(Key[String]("source")))
       .map { alertAgg =>
@@ -53,25 +51,25 @@ trait CaseRenderer {
       }
   // seq({caseId, title})
 
-  def mergeFromStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] = caseTraversal.constant(Nil)
+  def mergeFromStats(caseSteps: CaseSteps): Traversal[JsValue, JsValue] = caseSteps.constant(JsNull)
 
-  def mergeIntoStats(caseTraversal: GremlinScala[Vertex]): GremlinScala[Seq[JsObject]] = caseTraversal.constant(Nil)
+  def mergeIntoStats(caseSteps: CaseSteps): Traversal[JsValue, JsValue] = caseSteps.constant(JsNull)
 
   def sharedWithStats(
-      caseTraversal: GremlinScala[Vertex]
-  )(implicit db: Database, graph: Graph): GremlinScala[Seq[String]] =
-    new CaseSteps(caseTraversal).organisations.name.fold.map(_.asScala.toSeq).raw
+      caseSteps: CaseSteps
+  )(implicit db: Database, graph: Graph): Traversal[Seq[String], Seq[String]] =
+    caseSteps.organisations.name.fold.map(_.asScala.toSeq)
 
-  def originStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[String] =
-    new CaseSteps(caseTraversal).origin.name.raw
+  def originStats(caseSteps: CaseSteps)(implicit db: Database, graph: Graph): Traversal[String, String] =
+    caseSteps.origin.name
 
-  def shareCountStats(caseTraversal: GremlinScala[Vertex])(implicit db: Database, graph: Graph): GremlinScala[JLong] =
-    new CaseSteps(caseTraversal).organisations.count.raw
+  def shareCountStats(caseSteps: CaseSteps)(implicit db: Database, graph: Graph): Traversal[Long, JLong] =
+    caseSteps.organisations.count
 
   def isOwnerStats(
-      caseTraversal: GremlinScala[Vertex]
-  )(implicit db: Database, graph: Graph, authContext: AuthContext): GremlinScala[Boolean] =
-    new CaseSteps(caseTraversal).origin.name.map(_ == authContext.organisation).raw
+      caseSteps: CaseSteps
+  )(implicit db: Database, graph: Graph, authContext: AuthContext): Traversal[Boolean, Boolean] =
+    caseSteps.origin.name.map(_ == authContext.organisation)
 
   def caseStatsRenderer(
       implicit authContext: AuthContext,
@@ -79,26 +77,21 @@ trait CaseRenderer {
       graph: Graph
   ): CaseSteps => Traversal[JsObject, JsObject] =
     _.project(
-      _.apply(
-        By(
-          __[Vertex].coalesce(
-            new CaseSteps(_)
-              .share
-              .project(
-                _.apply(By(taskStats(__[Vertex])))
-                  .and(By(observableStats(__[Vertex])))
-              )
-              .raw,
-            _.constant(JsObject.empty -> JsObject.empty)
-          )
+      _.by(
+        (_: CaseSteps).coalesce(
+          _.share.project(
+            _.by(taskStats(_))
+              .by(observableStats(_))
+          ),
+          _.constant((JsObject.empty, JsObject.empty))
         )
-      ).and(By(alertStats(__[Vertex])))
-        .and(By(mergeFromStats(__[Vertex])))
-        .and(By(mergeIntoStats(__[Vertex])))
-        //        .and(By(sharedWithStats(__[Vertex])))
-        //        .and(By(originStats(__[Vertex])))
-        .and(By(isOwnerStats(__[Vertex])))
-        .and(By(shareCountStats(__[Vertex])))
+      ).by(alertStats(_))
+        .by(mergeFromStats(_))
+        .by(mergeIntoStats(_))
+        //        .by(sharedWithStats(_))
+        //        .by(originStats(_))
+        .by(isOwnerStats(_))
+        .by(shareCountStats(_))
     ).map {
       case ((tasks, observables), alerts, mergeFrom, mergeInto, isOwner, shareCount) =>
         Json.obj(
@@ -108,7 +101,8 @@ trait CaseRenderer {
           "mergeFrom"  -> mergeFrom,
           "mergeInto"  -> mergeInto,
           "isOwner"    -> isOwner,
-          "shareCount" -> (shareCount.longValue() - 1)
+          "shareCount" -> (shareCount - 1)
         )
     }
+
 }

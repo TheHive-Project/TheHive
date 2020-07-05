@@ -5,7 +5,7 @@ import java.util.{List => JList, Set => JSet}
 import akka.actor.ActorRef
 import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
@@ -13,7 +13,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{CreateError, EntitySteps, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
@@ -347,23 +347,22 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
 
   def getByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
-  def visible(implicit authContext: AuthContext): CaseSteps = newInstance(
-    raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
-  )
+  def visible(implicit authContext: AuthContext): CaseSteps = visible(authContext.organisation)
 
-  def assignee = new UserSteps(raw.outTo[CaseUser])
+  def visible(organisationName: String): CaseSteps =
+    this.filter(_.inTo[ShareCase].inTo[OrganisationShare].has("name", organisationName))
+
+  def assignee: UserSteps = new UserSteps(raw.outTo[CaseUser])
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
-    newInstance(
-      raw.filter(
-        _.inTo[ShareCase]
-          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
-          .inTo[OrganisationShare]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
-      )
+    this.filter(
+      _.inTo[ShareCase]
+        .filter(_.outTo[ShareProfile].has("permissions", permission))
+        .inTo[OrganisationShare]
+        .inTo[RoleOrganisation]
+        .filter(_.outTo[RoleProfile].has("permissions", permission))
+        .inTo[UserRole]
+        .has("login", authContext.userId)
     )
 
   override def newInstance(newRaw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(newRaw)
@@ -376,49 +375,29 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   def richCaseWithCustomRenderer[A](
       entityRenderer: CaseSteps => TraversalLike[_, A]
   )(implicit authContext: AuthContext): Traversal[(RichCase, A), (RichCase, A)] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[CaseTag].fold))
-            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
-            .and(By(newInstance(__[Vertex]).share(authContext.organisation).profile.permissions.fold.raw))
-            .and(
-              By(
-                newInstance(__[Vertex])
-                  .organisations
-                  .has("name", authContext.organisation)
-                  .userProfile(authContext.userId)
-                  .permissions
-                  .fold
-                  .raw
-              )
-            )
-        )
-        .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, sharePermissions, userPermissions) =>
-            val customFieldValues = (customFields: JList[Path])
-              .asScala
-              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-              .map {
-                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             => throw InternalError("Not possible")
-              }
-            RichCase(
-              caze.as[Case],
-              tags.asScala.map(_.as[Tag]),
-              atMostOneOf[String](impactStatus),
-              atMostOneOf[String](resolutionStatus),
-              atMostOneOf[String](user),
-              customFieldValues,
-              (sharePermissions.asScala.toSet & userPermissions.asScala.toSet).map(Permission.apply)
-            ) -> renderedEntity
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.tags.fold)
+          .by(_.impactStatus.value.fold)
+          .by(_.resolutionStatus.value.fold)
+          .by(_.assignee.login.fold)
+          .by(_.richCustomFields.fold)
+          .by(entityRenderer)
+          .by(_.userPermissions)
+      )
+      .map {
+        case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, userPermissions) =>
+          RichCase(
+            caze.as[Case],
+            tags.asScala.map(_.as[Tag]),
+            atMostOneOf[String](impactStatus),
+            atMostOneOf[String](resolutionStatus),
+            atMostOneOf[String](user),
+            customFields.asScala,
+            userPermissions
+          ) -> renderedEntity
+      }
 
   def customFields(name: String): CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseCustomField].filter(_.inV().has(Key("name") of name)))
@@ -426,13 +405,16 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseCustomField])
 
+  def richCustomFields: Traversal[RichCustomField, RichCustomField] =
+    this.outToE[CaseCustomField].project(_.by.by(_.inV())).map {
+      case (cfv, cf) => RichCustomField(cf.as[CustomField], cfv.as[CaseCustomField])
+    }
+
   def share(implicit authContext: AuthContext): ShareSteps = share(authContext.organisation)
 
-  def share(organistionName: String): ShareSteps =
+  def share(organisationName: String): ShareSteps =
     new ShareSteps(
-      raw
-        .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of organistionName))
+      this.inTo[ShareCase].filter(_.inTo[OrganisationShare].has("name", organisationName)).raw
     )
 
   def shares: ShareSteps = new ShareSteps(raw.inTo[ShareCase])
@@ -442,7 +424,25 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   def organisations(permission: Permission) =
     new OrganisationSteps(raw.inTo[ShareCase].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
 
+  def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Set[Permission]] =
+    this
+      .share(authContext.organisation)
+      .project(
+        _.by(_.profile.permissions.fold)
+          .by(_.organisation.userPermissions(authContext.userId).fold)
+      )
+      .map {
+        case (sharePermissions: JList[String], userPermissions: JList[String]) =>
+          Permission(sharePermissions.asScala.toSet & userPermissions.asScala.toSet)
+      }
+
   def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
+
+  def audits(implicit authContext: AuthContext): AuditSteps = audits(authContext.organisation)
+
+  def audits(organisationName: String): AuditSteps = new AuditSteps(
+    this.union(_.visible(organisationName), _.observables(organisationName), _.tasks(organisationName)).inTo[AuditContext].raw
+  )
 
   // Warning: this method doesn't generate audit log
   def unassign(): Unit = {
@@ -509,102 +509,67 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   }
 
   def richCase(implicit authContext: AuthContext): Traversal[RichCase, RichCase] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[CaseTag].fold))
-            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-            .and(By(newInstance(__[Vertex]).share(authContext.organisation).profile.permissions.fold.raw))
-            .and(
-              By(
-                newInstance(__[Vertex])
-                  .organisations
-                  .has("name", authContext.organisation)
-                  .userProfile(authContext.userId)
-                  .permissions
-                  .fold
-                  .raw
-              )
-            )
-        )
-        .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, sharePermissions, userPermissions) =>
-            val customFieldValues = (customFields: JList[Path])
-              .asScala
-              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-              .map {
-                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             => throw InternalError("Not possible")
-              }
-            RichCase(
-              caze.as[Case],
-              tags.asScala.map(_.as[Tag]),
-              atMostOneOf[String](impactStatus),
-              atMostOneOf[String](resolutionStatus),
-              atMostOneOf[String](user),
-              customFieldValues,
-              (sharePermissions.asScala.toSet & userPermissions.asScala.toSet).map(Permission.apply)
-            )
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.tags.fold)
+          .by(_.impactStatus.value.fold)
+          .by(_.resolutionStatus.value.fold)
+          .by(_.assignee.login.fold)
+          .by(_.richCustomFields.fold)
+          .by(_.userPermissions)
+      )
+      .map {
+        case (caze, tags, impactStatus, resolutionStatus, user, customFields, userPermissions) =>
+          RichCase(
+            caze.as[Case],
+            tags.asScala.map(_.as[Tag]),
+            atMostOneOf[String](impactStatus),
+            atMostOneOf[String](resolutionStatus),
+            atMostOneOf[String](user),
+            customFields.asScala,
+            userPermissions
+          )
+      }
 
   def user: UserSteps = new UserSteps(raw.outTo[CaseUser])
 
   def richCaseWithoutPerms: Traversal[RichCase, RichCase] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[CaseTag].fold))
-            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-        )
-        .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
-            val customFieldValues = (customFields: JList[Path])
-              .asScala
-              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-              .map {
-                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             => throw InternalError("Not possible")
-              }
-            RichCase(
-              caze.as[Case],
-              tags.asScala.map(_.as[Tag]),
-              atMostOneOf[String](impactStatus),
-              atMostOneOf[String](resolutionStatus),
-              atMostOneOf[String](user),
-              customFieldValues,
-              Set.empty
-            )
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.tags.fold)
+          .by(_.impactStatus.value.fold)
+          .by(_.resolutionStatus.value.fold)
+          .by(_.assignee.login.fold)
+          .by(_.richCustomFields.fold)
+      )
+      .map {
+        case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
+          RichCase(
+            caze.as[Case],
+            tags.asScala.map(_.as[Tag]),
+            atMostOneOf[String](impactStatus),
+            atMostOneOf[String](resolutionStatus),
+            atMostOneOf[String](user),
+            customFields.asScala,
+            Set.empty
+          )
+      }
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTag])
 
   def impactStatus: ImpactStatusSteps = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
-  def tasks(implicit authContext: AuthContext): TaskSteps =
-    new TaskSteps(
-      raw
-        .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
-        .outTo[ShareTask]
-    )
+  def tasks(implicit authContext: AuthContext): TaskSteps = tasks(authContext.organisation)
 
-  def observables(implicit authContext: AuthContext): ObservableSteps =
-    new ObservableSteps(
-      raw
-        .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
-        .outTo[ShareObservable]
-    )
+  def tasks(organisationName: String): TaskSteps =
+    share(organisationName).tasks
+
+  def observables(implicit authContext: AuthContext): ObservableSteps = observables(authContext.organisation)
+
+  def observables(organisationName: String): ObservableSteps =
+    share(organisationName).observables
 
   def assignableUsers(implicit authContext: AuthContext): UserSteps =
     organisations(Permissions.manageCase)

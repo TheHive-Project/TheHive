@@ -18,7 +18,7 @@ class NoAuditSrv @Inject() (
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
 )(implicit @Named("with-thehive-schema") db: Database, schema: Schema)
-    extends AuditSrv(userSrvProvider, notificationActor, eventSrv)(db, schema) {
+    extends AuditSrv(userSrvProvider, notificationActor, eventSrv)(db) {
 
   override def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     Success(())

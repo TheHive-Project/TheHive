@@ -21,40 +21,34 @@ trait AuditRenderer {
     val taskSteps = entitySteps.asTask
     taskSteps
       .project(
-        _.apply(By(taskSteps.start().richTask.map[JsObject](_.toJson.as[JsObject]).raw))
-          .and(By(caseToJson(taskSteps.start().`case`).raw))
+        _.by(_.richTask.map(_.toJson))
+          .by(t => caseToJson(t.`case`))
       )
       .map {
-        case (task, case0) => task + ("case" -> case0)
+        case (task, case0) => task.as[JsObject] + ("case" -> case0)
       }
   }
 
   def alertToJson: VertexSteps[_ <: Product] => Traversal[JsObject, JsObject] =
     _.asAlert.richAlert.map(_.toJson.as[JsObject])
 
-  def logToJson: VertexSteps[_ <: Product] => Traversal[JsObject, JsObject] = entitySteps => {
-    val logSteps = entitySteps.asLog
-    logSteps
+  def logToJson: VertexSteps[_ <: Product] => Traversal[JsObject, JsObject] =
+    _.asLog
       .project(
-        _.apply(By(logSteps.start().richLog.map[JsObject](_.toJson.as[JsObject]).raw))
-          .and(By(taskToJson(logSteps.start().task).raw))
+        _.by(_.richLog.map(_.toJson))
+          .by(l => taskToJson(l.task))
       )
-      .map {
-        case (log, task) => log + ("case_task" -> task)
-      }
-  }
+      .map { case (log, task) => log.as[JsObject] + ("case_task" -> task) }
 
-  def observableToJson: VertexSteps[_ <: Product] => Traversal[JsObject, JsObject] = entitySteps => {
-    val observableSteps = entitySteps.asObservable
-    observableSteps
+  def observableToJson: VertexSteps[_ <: Product] => Traversal[JsObject, JsObject] =
+    _.asObservable
       .project(
-        _.apply(By(observableSteps.start().richObservable.map[JsObject](_.toJson.as[JsObject]).raw))
-          .and(By(observableSteps.start().coalesce(o => caseToJson(o.`case`), o => alertToJson(o.alert)).raw))
+        _.by(_.richObservable.map(_.toJson))
+          .by(_.coalesce(o => caseToJson(o.`case`), o => alertToJson(o.alert)))
       )
       .map {
-        case (obs, c) => obs + ((c \ "_type").asOpt[String].getOrElse("???") -> c)
+        case (obs, caseOrAlert) => obs.as[JsObject] + ((caseOrAlert \ "_type").asOpt[String].getOrElse("???") -> caseOrAlert)
       }
-  }
 
   def auditRenderer: AuditSteps => Traversal[JsObject, JsObject] =
     (_: AuditSteps)

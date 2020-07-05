@@ -202,8 +202,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
     this
       .outTo[UserRole]
       .project(
-        _.apply(By(__[Vertex].outTo[RoleOrganisation].value[String]("name")))
-          .and(By(__[Vertex].outTo[RoleProfile].value[String]("name")))
+        _.by(_.outTo[RoleOrganisation].value[String]("name"))
+          .by(_.outTo[RoleProfile].value[String]("name"))
       )
       .fold
 
@@ -217,7 +217,7 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
           .outTo[UserRole]
           .order(List(By(Key[Long]("_createdAt"), Order.asc)))
           .outTo[RoleOrganisation]
-          .value[String](Key("name"))
+          .value[String]("name")
           .headOption()
       )
       .getOrElse(Organisation.administration.name)
@@ -245,19 +245,17 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
         }
     )
 
+  def profile(organisation: String) =
+    new ProfileSteps(
+      this.outTo[UserRole].filter(_.outTo[RoleOrganisation].has("name", organisation)).outTo[RoleProfile].raw
+    )
+
   def richUser(organisation: String): Traversal[RichUser, RichUser] =
     this
       .project(
-        _.apply(By[Vertex]())
-          .and(
-            By(
-              __[Vertex].coalesce(
-                _.outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold(),
-                _.constant(List.empty[Vertex].asJava)
-              )
-            )
-          )
-          .and(By(__[Vertex].outTo[UserAttachment].fold()))
+        _.by
+          .by(_.profile(organisation).fold)
+          .by(_.avatar.fold)
       )
       .collect {
         case (user, profiles, attachment) if profiles.size() == 1 =>
@@ -274,17 +272,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   ): Traversal[(RichUser, A), (RichUser, A)] =
     this
       .project(
-        _.apply(By[Vertex]())
-          .and(
-            By(
-              __[Vertex].coalesce(
-                _.outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold(),
-                _.constant(List.empty[Vertex].asJava)
-              )
-            )
-          )
-          .and(By(__[Vertex].outTo[UserAttachment].fold()))
-          .and(By(entityRenderer(newInstance(__[Vertex])).raw))
+        _.by
+          .by(_.profile(organisation).fold)
+          .by(_.avatar.fold)
+          .by(entityRenderer(_))
       )
       .collect {
         case (user, profiles, attachment, renderedEntity) if profiles.size() == 1 =>
@@ -295,6 +286,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
           val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
           RichUser(user.as[User], avatar, "", Set.empty, organisation) -> renderedEntity
       }
+
+  def config(configName: String) = new ConfigSteps(
+    this.outTo[UserConfig].has("name", configName).raw
+  )
 
   def role: RoleSteps = new RoleSteps(raw.outTo[UserRole])
 

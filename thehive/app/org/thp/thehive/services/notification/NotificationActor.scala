@@ -5,7 +5,7 @@ import akka.util.Timeout
 import gremlin.scala.{__, By, Graph, Key, P, Vertex}
 import javax.inject.{Inject, Named}
 import org.thp.scalligraph.BadConfigurationError
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EventSrv, RichElement, RichVertexGremlinScala}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models.{Audit, Organisation, User, UserConfig}
@@ -80,7 +80,8 @@ class NotificationActor @Inject() (
     userSrv: UserSrv,
     notificationSrv: NotificationSrv,
     cache: SyncCacheApi,
-    @Named("with-thehive-schema") implicit val db: Database
+    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val schema: Schema
 ) extends Actor {
   import context.dispatcher
   lazy val logger: Logger = Logger(getClass)
@@ -164,10 +165,8 @@ class NotificationActor @Inject() (
                       userSrv
                         .getByIds(userIds: _*)
                         .project(
-                          _.and(By[Vertex]())
-                            .apply(
-                              By(__[Vertex].outTo[UserConfig].has(Key[String]("name"), P.eq[String]("notification")).value[String]("value").fold)
-                            )
+                          _.by
+                            .by(_.config("notification").value.fold)
                         )
                         .toIterator
                         .foreach {

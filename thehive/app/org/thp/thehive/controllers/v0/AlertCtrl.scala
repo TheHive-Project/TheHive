@@ -1,8 +1,9 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Base64
+import java.lang.{Long => JLong}
+import java.util.{Base64, List => JList, Map => JMap}
 
-import gremlin.scala.{__, By, Graph, Key, StepLabel, Vertex}
+import gremlin.scala.{By, Graph, Key, StepLabel, Vertex}
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
@@ -127,12 +128,12 @@ class AlertCtrl @Inject() (
             .map {
               case (cid, cidIoc) =>
                 val iocStats = cidIoc.groupBy(_._2).mapValues(_.size)
-                val (caseVertex, observableCount, resolutionStatus) = caseSrv
+                val (caseVertex: Vertex, observableCount: JMap[Boolean, JLong], resolutionStatus: JList[String]) = caseSrv
                   .getByIds(cid.toString)
                   .project(
-                    _(By[Vertex]())
-                      .and(By(new CaseSteps(__[Vertex]).observables(authContext).groupCount(By(Key[Boolean]("ioc"))).raw))
-                      .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
+                    _.by
+                      .by(_.observables.groupCount(By(Key[Boolean]("ioc"))))
+                      .by(_.resolutionStatus.value.fold)
                   )
                   .head()
                 val case0 = caseVertex

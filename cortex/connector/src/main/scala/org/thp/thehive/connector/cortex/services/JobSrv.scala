@@ -324,32 +324,14 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
     this
       .as(thisJob)
       .project(
-        _.apply(By[Vertex]())
-          .and(
-            By(
-              newInstance(__[Vertex])
-                .reportObservables
-                .project(
-                  _.apply(By(new ObservableSteps(__[Vertex]).richObservable.raw))
-                    .and(
-                      By(
-                        new ObservableSteps(__[Vertex])
-                          .similar
-                          .filter(
-                            _.`case`
-                              .observables
-                              .outTo[ObservableJob]
-                              .where(P.eq(thisJob.name))
-                          )
-                          ._id
-                          .fold
-                          .raw
-                      )
-                    )
-                )
-                .fold
-                .raw
-            )
+        _.by
+          .by(
+            _.reportObservables
+              .project(
+                _.by(_.richObservable)
+                  .by(_.similar.filter(_.`case`.observables.outTo[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
+              )
+              .fold
           )
       )
       .map {
@@ -360,5 +342,4 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
           RichJob(job.as[Job], observables)
       }
   }
-
 }
