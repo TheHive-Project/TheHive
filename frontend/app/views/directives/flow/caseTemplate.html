@@ -1,0 +1,22 @@
+<div class="flow-organisation" ng-switch="base.operation">
+    <div class="flow-item-title wrap">
+        <i class="fa fa-file-text"></i>
+        {{base.details.name}}
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-when="Creation">
+        Case template {{base.details.name}} added
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-when="Delete">
+        Case template {{base.details.name}} removed
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-default>
+        <span ng-repeat="(k, v) in base.details" ng-switch="k">
+            <span ng-switch-default>
+                {{k}}: <em>{{v}}</em>
+            </span>
+        </span>
+    </div>
+</div>
