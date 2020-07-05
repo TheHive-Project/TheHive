@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
@@ -14,8 +14,13 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Success
 
 @Singleton
-class AuditCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database, properties: Properties, auditSrv: AuditSrv)
-    extends QueryableCtrl {
+class AuditCtrl @Inject() (
+    entrypoint: Entrypoint,
+    @Named("with-thehive-schema") db: Database,
+    properties: Properties,
+    auditSrv: AuditSrv,
+    implicit val schema: Schema
+) extends QueryableCtrl {
 
   val entityName: String = "audit"
 
