@@ -93,18 +93,18 @@
                     </td>
                     <td>{{task.startDate | showDate}}</td>
                     <td ng-if="canEdit">
-                        <span ng-show="task.owner">
-                            <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
+                        <span ng-show="task.assignee">
+                            <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee"/>
                         </span>
-                        <span ng-show="!task.owner">
+                        <span ng-show="!task.assignee">
                             <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
                         </span>
                     </td>
                     <td ng-if="!canEdit">
-                        <span ng-show="task.owner">
-                            <user-info value="task.owner" field="name"></user-info>
+                        <span ng-show="task.assignee">
+                            <user-info value="task.assignee" field="name"></user-info>
                         </span>
-                        <span ng-show="!task.owner">
+                        <span ng-show="!task.assignee">
                             <em class="text-warning">Not Assigned</em>
                         </span>
                     </td>
@@ -212,18 +212,18 @@
                             </td>
                             <td>{{task.startDate | shortDate}}</td>
                             <td ng-if="canEdit">
-                                <span ng-show="task.owner">
-                                    <updatable-user on-update="updateField('owner', newValue, task)" value="task.owner"/>
+                                <span ng-show="task.assignee">
+                                    <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee"/>
                                 </span>
-                                <span ng-show="!task.owner">
+                                <span ng-show="!task.assignee">
                                     <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
                                 </span>
                             </td>
                             <td ng-if="!canEdit">
-                                <span ng-show="task.owner">
-                                    <user-info value="task.owner" field="name"></user-info>
+                                <span ng-show="task.assignee">
+                                    <user-info value="task.assignee" field="name"></user-info>
                                 </span>
-                                <span ng-show="!task.owner">
+                                <span ng-show="!task.assignee">
                                     <em class="text-warning">Not Assigned</em>
                                 </span>
                             </td>
