@@ -13,7 +13,6 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.GuiceAkkaExtension
-import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.cache.SyncCacheApi
 
 import scala.collection.JavaConverters._

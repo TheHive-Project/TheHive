@@ -26,6 +26,5 @@ class ClusterSetup @Inject() (
     val cluster = Cluster(system)
     cluster.join(cluster.system.provider.getDefaultAddress)
     GuiceAkkaExtension(system).set(injector)
-
   }
 }

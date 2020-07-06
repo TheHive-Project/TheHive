@@ -71,6 +71,7 @@ trait TestAppBuilder {
       .addConfiguration("play.mailer.mock = yes")
       .addConfiguration("play.mailer.debug = yes")
       .addConfiguration(s"storage.localfs.location = ${System.getProperty("user.dir")}/target/storage")
+      .bindEagerly[ClusterSetup]
 
   def testApp[A](body: AppBuilder => A): A = {
     val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
@@ -91,7 +92,8 @@ trait TestAppBuilder {
           .bind[Database, janus.JanusDatabase]
           .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-schema")
 
-        app[DatabaseBuilder].build()(app.apply[Database], app[UserSrv].getSystemAuthContext)
+        app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
+        app[Database].close()
       }
       FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
     }
