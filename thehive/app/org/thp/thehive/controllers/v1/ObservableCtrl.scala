@@ -129,7 +129,7 @@ class ObservableCtrl @Inject() (
             .getByIds(obsId)
             .can(Permissions.manageObservable)
             .getOrFail("Observable")
-          _ <- observableSrv.cascadeRemove(observable)
+          _ <- observableSrv.remove(observable)
         } yield Results.NoContent
       }
 }

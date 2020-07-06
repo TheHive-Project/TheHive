@@ -52,7 +52,7 @@ class MispCtrl @Inject() (
           .has("type", "misp")
           .visible
           .toIterator
-          .toTry(alertSrv.cascadeRemove(_))
+          .toTry(alertSrv.remove(_))
           .map(_ => Results.NoContent)
       }
 }

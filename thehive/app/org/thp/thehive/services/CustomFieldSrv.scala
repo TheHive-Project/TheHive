@@ -22,7 +22,7 @@ import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
 @Singleton
-class CustomFieldSrv @Inject() (auditSrv: AuditSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
+class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
     implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[CustomField, CustomFieldSteps] {
 
@@ -41,7 +41,9 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, @Named("integrity-check-acto
 
   def delete(c: CustomField with Entity, force: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     get(c).remove() // TODO use force
-    auditSrv.customField.delete(c)
+    organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
+      auditSrv.customField.delete(c, organisation)
+    }
   }
 
   def useCount(c: CustomField with Entity)(implicit graph: Graph): Map[String, Int] =

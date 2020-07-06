@@ -15,15 +15,18 @@ import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
 import org.thp.thehive.controllers.v0.Conversion._
+import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
 
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Try}
+
 @Singleton
 class AnalyzerTemplateSrv @Inject() (
     implicit @Named("with-thehive-cortex-schema") db: Database,
-    auditSrv: CortexAuditSrv
+    auditSrv: CortexAuditSrv,
+    organisationSrv: OrganisationSrv
 ) extends VertexSrv[AnalyzerTemplate, AnalyzerTemplateSteps] {
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AnalyzerTemplateSteps = new AnalyzerTemplateSteps(raw)
@@ -60,10 +63,11 @@ class AnalyzerTemplateSrv @Inject() (
           .flatMap(auditSrv.analyzerTemplate.update(_, updatedFields))
     }
 
-  def remove(analyzerTemplate: AnalyzerTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(analyzerTemplate).remove()
-    auditSrv.analyzerTemplate.delete(analyzerTemplate)
-  }
+  def remove(analyzerTemplate: AnalyzerTemplate with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
+      get(analyzerTemplate).remove()
+      auditSrv.analyzerTemplate.delete(analyzerTemplate, organisation)
+    }
 
   /**
     * Creates or updates if found templates contained in a zip file

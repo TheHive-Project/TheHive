@@ -1,6 +1,5 @@
 package org.thp.thehive.services
 
-import java.lang.{Long => JLong}
 import java.util.{Set => JSet}
 
 import gremlin.scala.{KeyValue => _, _}
@@ -27,11 +26,13 @@ class ObservableSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
     caseSrvProvider: Provider[CaseSrv],
-    auditSrv: AuditSrv
+    auditSrv: AuditSrv,
+    alertSrvProvider: Provider[AlertSrv]
 )(
     implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Observable, ObservableSteps] {
   lazy val caseSrv: CaseSrv    = caseSrvProvider.get
+  lazy val alertSrv: AlertSrv  = alertSrvProvider.get
   val observableKeyValueSrv    = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
   val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
@@ -158,17 +159,15 @@ class ObservableSrv @Inject() (
       // TODO copy or link key value ?
     } yield richObservable.copy(observable = createdObservable)
 
-  def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(observable).data.filter(_.useCount.filter(_.is(P.eq[JLong](0L)))).remove()
-    get(observable).attachments.remove()
-    get(observable).keyValues.remove()
-    val maybeAlert = get(observable).alert.headOption()
-    get(observable).remove()
-    maybeAlert match {
-      case None         => auditSrv.observable.delete(observable)
-      case ctx: Some[_] => auditSrv.observableInAlert.delete(observable, ctx)
+  def remove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(observable).alert.headOption() match {
+      case None =>
+        for {
+          share <- get(observable).share(authContext.organisation).getOrFail("Observable")
+          _     <- auditSrv.observable.delete(observable, share)
+        } yield get(observable).remove()
+      case Some(alert) => alertSrv.removeObservable(alert, observable)
     }
-  }
 
   override def update(
       steps: ObservableSteps,

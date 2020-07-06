@@ -41,10 +41,11 @@ class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, or
       _       <- auditSrv.page.update(p, Json.obj("title" -> p.title))
     } yield p
 
-  def delete(page: Page with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(page).remove()
-    auditSrv.page.delete(page)
-  }
+  def delete(page: Page with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
+      get(page).remove()
+      auditSrv.page.delete(page, organisation)
+    }
 }
 
 @EntitySteps[Page]

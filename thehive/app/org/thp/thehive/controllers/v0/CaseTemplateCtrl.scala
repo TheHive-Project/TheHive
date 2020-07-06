@@ -84,9 +84,10 @@ class CaseTemplateCtrl @Inject() (
     entrypoint("delete case template")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          template <- caseTemplateSrv.get(caseTemplateNameOrId).can(Permissions.manageCaseTemplate).getOrFail()
+          organisation <- organisationSrv.getOrFail(request.organisation)
+          template     <- caseTemplateSrv.get(caseTemplateNameOrId).can(Permissions.manageCaseTemplate).getOrFail()
           _ = caseTemplateSrv.get(template).remove()
-          _ <- auditSrv.caseTemplate.delete(template)
+          _ <- auditSrv.caseTemplate.delete(template, organisation)
         } yield Results.Ok
       }
 }

@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import gremlin.scala._
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -17,11 +17,15 @@ import play.api.libs.json.JsObject
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ProfileSrv @Inject() (auditSrv: AuditSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
+class ProfileSrv @Inject() (
+    auditSrv: AuditSrv,
+    organisationSrvProvider: Provider[OrganisationSrv],
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+)(
     implicit @Named("with-thehive-schema") val db: Database
 ) extends VertexSrv[Profile, ProfileSteps] {
-
-  lazy val orgAdmin: Profile with Entity = db.roTransaction(graph => getOrFail(Profile.orgAdmin.name)(graph)).get
+  lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
+  lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(Profile.orgAdmin.name)(graph)).get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("Profile")
@@ -47,10 +51,11 @@ class ProfileSrv @Inject() (auditSrv: AuditSrv, @Named("integrity-check-actor") 
       Failure(BadRequestError(s"Profile ${profile.name} cannot be removed"))
     else if (get(profile).filter(_.or(_.roles, _.shares)).exists())
       Failure(BadRequestError(s"Profile ${profile.name} is used"))
-    else {
-      get(profile).remove()
-      auditSrv.profile.delete(profile)
-    }
+    else
+      organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
+        get(profile).remove()
+        auditSrv.profile.delete(profile, organisation)
+      }
 
   override def update(
       steps: ProfileSteps,

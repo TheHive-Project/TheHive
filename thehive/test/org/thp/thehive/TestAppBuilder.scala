@@ -3,6 +3,8 @@ package org.thp.thehive
 import java.io.File
 import java.nio.file.{Files, Paths}
 
+import akka.actor.ActorSystem
+import com.google.inject.Injector
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.commons.io.FileUtils
 import org.thp.scalligraph.auth._
@@ -29,6 +31,8 @@ import org.thp.thehive.services.{
   TagIntegrityCheckOps,
   UserIntegrityCheckOps
 }
+
+import scala.util.Try
 
 object TestAppBuilderLock
 
@@ -71,7 +75,7 @@ trait TestAppBuilder {
       .addConfiguration("play.mailer.mock = yes")
       .addConfiguration("play.mailer.debug = yes")
       .addConfiguration(s"storage.localfs.location = ${System.getProperty("user.dir")}/target/storage")
-      .bindEagerly[ClusterSetup]
+      .bindEagerly[AkkaGuiceExtensionSetup]
 
   def testApp[A](body: AppBuilder => A): A = {
     val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
@@ -113,7 +117,7 @@ trait TestAppBuilder {
 
     try body(app)
     finally {
-      app[Database].close()
+      Try(app[Database].close())
       FileUtils.deleteDirectory(storageDirectory)
     }
   }
@@ -122,4 +126,9 @@ trait TestAppBuilder {
 @Singleton
 class BasicDatabaseProvider @Inject() (database: Database) extends Provider[Database] {
   override def get(): Database = database
+}
+
+@Singleton
+class AkkaGuiceExtensionSetup @Inject() (system: ActorSystem, injector: Injector) {
+  GuiceAkkaExtension(system).set(injector)
 }

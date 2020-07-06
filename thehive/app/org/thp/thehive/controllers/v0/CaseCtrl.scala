@@ -174,7 +174,7 @@ class CaseCtrl @Inject() (
             .get(caseIdOrNumber)
             .can(Permissions.manageCase)
             .getOrFail()
-          _ <- caseSrv.cascadeRemove(c)
+          _ <- caseSrv.remove(c)
         } yield Results.NoContent
       }
 

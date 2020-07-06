@@ -127,6 +127,17 @@ class AlertSrv @Inject() (
     } yield ()
   }
 
+  def removeObservable(alert: Alert with Entity, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    observableSrv
+      .get(observable)
+      .inToE[AlertObservable]
+      .filter(_.outV().hasId(alert._id))
+      .getOrFail("Observable")
+      .flatMap { alertObservable =>
+        alertObservableSrv.get(alertObservable).remove()
+        auditSrv.observableInAlert.delete(observable, Some(alert))
+      }
+
   def addObservable(alert: Alert with Entity, richObservable: RichObservable)(
       implicit graph: Graph,
       authContext: AuthContext
@@ -275,11 +286,12 @@ class AlertSrv @Inject() (
       }
       .map(_ => ())
 
-  def cascadeRemove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def remove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- get(alert).observables.toIterator.toTry(observableSrv.cascadeRemove(_))
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      _            <- get(alert).observables.toIterator.toTry(observableSrv.remove(_))
       _ = get(alert).remove()
-      _ <- auditSrv.alert.delete(alert)
+      _ <- auditSrv.alert.delete(alert, organisation)
     } yield ()
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)

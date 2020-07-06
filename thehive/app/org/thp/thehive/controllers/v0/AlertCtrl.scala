@@ -212,7 +212,7 @@ class AlertCtrl @Inject() (
             .get(alertId)
             .can(Permissions.manageAlert)
             .getOrFail()
-          _ <- alertSrv.cascadeRemove(alert)
+          _ <- alertSrv.remove(alert)
         } yield Results.NoContent
       }
 
@@ -228,7 +228,7 @@ class AlertCtrl @Inject() (
                 .get(alertId)
                 .can(Permissions.manageAlert)
                 .getOrFail()
-              _ <- alertSrv.cascadeRemove(alert)
+              _ <- alertSrv.remove(alert)
             } yield ()
           }
           .map(_ => Results.NoContent)

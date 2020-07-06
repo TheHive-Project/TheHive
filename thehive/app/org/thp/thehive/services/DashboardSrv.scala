@@ -68,10 +68,11 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
     Success(()) // TODO add audit
   }
 
-  def remove(dashboard: Dashboard with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(dashboard).remove()
-    auditSrv.dashboard.delete(dashboard)
-  }
+  def remove(dashboard: Dashboard with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
+      get(dashboard).remove()
+      auditSrv.dashboard.delete(dashboard, organisation)
+    }
 }
 
 @EntitySteps[Dashboard]

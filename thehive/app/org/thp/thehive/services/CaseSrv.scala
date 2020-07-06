@@ -169,14 +169,14 @@ class CaseSrv @Inject() (
       } yield ()
   }
 
-  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- get(`case`).tasks.toIterator.toTry(taskSrv.cascadeRemove(_))
-      _ <- get(`case`).observables.toIterator.toTry(observableSrv.cascadeRemove(_))
-      _ = get(`case`).share.remove()
-      _ = get(`case`).remove()
-      _ <- auditSrv.`case`.delete(`case`)
-    } yield ()
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      _            <- auditSrv.`case`.delete(`case`, organisation)
+    } yield {
+      get(`case`).share.remove()
+      get(`case`).remove()
+    }
 
   override def get(idOrNumber: String)(implicit graph: Graph): CaseSteps =
     Success(idOrNumber)
@@ -441,7 +441,10 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   def audits(implicit authContext: AuthContext): AuditSteps = audits(authContext.organisation)
 
   def audits(organisationName: String): AuditSteps = new AuditSteps(
-    this.union(_.visible(organisationName), _.observables(organisationName), _.tasks(organisationName)).inTo[AuditContext].raw
+    this
+      .union(_.visible(organisationName), _.observables(organisationName), _.tasks(organisationName), _.share(organisationName))
+      .inTo[AuditContext]
+      .raw
   )
 
   // Warning: this method doesn't generate audit log

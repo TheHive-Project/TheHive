@@ -319,7 +319,7 @@ class MispImportSrv @Inject() (
                 .toIterator
                 .toTry { obs =>
                   logger.info(s"Remove $obs")
-                  observableSrv.cascadeRemove(obs)
+                  observableSrv.remove(obs)
                 }
             }
             .map(_ => ())

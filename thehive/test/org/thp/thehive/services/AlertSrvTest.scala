@@ -205,11 +205,11 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           alert <- app[AlertSrv].getOrFail("testType;testSource;ref4")
-          _     <- app[AlertSrv].cascadeRemove(alert)
+          _     <- app[AlertSrv].remove(alert)
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
-        app[ObservableSrv].initSteps.filterOnType("domain").filterOnData("perdu.com").exists() must beFalse
+//        app[ObservableSrv].initSteps.filterOnType("domain").filterOnData("perdu.com").exists() must beFalse
         app[AlertSrv].initSteps.get("testType;testSource;ref4").exists() must beFalse
       }
     }

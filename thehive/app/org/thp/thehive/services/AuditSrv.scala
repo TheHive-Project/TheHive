@@ -184,8 +184,8 @@ class AuditSrv @Inject() (
       if (details == JsObject.empty) Success(())
       else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.delete, entity, None), None, None)
+    def delete(entity: E with Entity, context: Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.delete, entity, None), Some(context), None)
   }
 
   class UserAudit extends SelfContextObjectAudit[User] {
@@ -334,8 +334,7 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
     new CaseSteps(
       raw
         .outTo[AuditContext]
-        .in()
-        .hasLabel("Share")
+        .coalesce(_.in().hasLabel("Share"), _.hasLabel("Share"))
         .outTo[ShareCase]
     )
 

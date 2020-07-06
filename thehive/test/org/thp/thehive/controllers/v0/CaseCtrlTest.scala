@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
-import org.thp.thehive.services.{CaseSrv, TaskSrv}
+import org.thp.thehive.services.CaseSrv
 import play.api.libs.json._
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -361,7 +361,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       app[Database].roTransaction { implicit graph =>
         app[CaseSrv].get("#1").headOption() must beNone
-        tasks.flatMap(task => app[TaskSrv].get(task).headOption()) must beEmpty
+//        tasks.flatMap(task => app[TaskSrv].get(task).headOption()) must beEmpty
       }
     }
   }

@@ -305,7 +305,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         )
         .get
 
-      app[Database].tryTransaction(implicit graph => app[CaseSrv].cascadeRemove(c1.`case`)) must beSuccessfulTry
+      app[Database].tryTransaction(implicit graph => app[CaseSrv].remove(c1.`case`)) must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
         app[CaseSrv].get(c1._id).exists() must beFalse
       }

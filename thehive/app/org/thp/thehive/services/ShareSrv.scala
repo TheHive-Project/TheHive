@@ -19,9 +19,10 @@ class ShareSrv @Inject() (
     auditSrv: AuditSrv,
     caseSrvProvider: Provider[CaseSrv],
     taskSrv: TaskSrv,
-    observableSrv: ObservableSrv
+    observableSrvProvider: Provider[ObservableSrv]
 ) extends VertexSrv[Share, ShareSteps] {
-  lazy val caseSrv: CaseSrv = caseSrvProvider.get
+  lazy val caseSrv: CaseSrv             = caseSrvProvider.get
+  lazy val observableSrv: ObservableSrv = observableSrvProvider.get
 
   val organisationShareSrv = new EdgeSrv[OrganisationShare, Organisation, Share]
   val shareProfileSrv      = new EdgeSrv[ShareProfile, Share, Profile]
@@ -45,7 +46,7 @@ class ShareSrv @Inject() (
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Share with Entity] =
-    get(`case`, organisation).headOption() match {
+    get(`case`, organisation.name).headOption() match {
       case Some(_) => Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}"))
       case None =>
         for {
@@ -57,8 +58,14 @@ class ShareSrv @Inject() (
         } yield createdShare
     }
 
-  def get(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph): ShareSteps =
-    caseSrv.get(`case`).share(organisation.name)
+  def get(`case`: Case with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+    caseSrv.get(`case`).share(organisationName)
+
+  def get(observable: Observable with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+    observableSrv.get(observable).share(organisationName)
+
+  def get(task: Task with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+    taskSrv.get(task).share(organisationName)
 
   def update(
       share: Share with Entity,
@@ -114,10 +121,10 @@ class ShareSrv @Inject() (
       organisation: Organisation with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      shareObservable <- taskSrv
+      shareObservable <- observableSrv
         .get(observable)
         .inToE[ShareObservable]
-        .filter(st => new ShareSteps(st.outV().raw).byOrganisationName(organisation.name))
+        .filter(_.outV().inTo[OrganisationShare].hasId(organisation._id))
         .getOrFail("Share")
       case0 <- observableSrv.get(observable).`case`.getOrFail("Case")
       _     <- auditSrv.share.unshareObservable(observable, case0, organisation)
@@ -146,7 +153,7 @@ class ShareSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation).getOrFail("Case")
+      share <- get(`case`, organisation.name).getOrFail("Case")
       _     <- shareTaskSrv.create(ShareTask(), share, richTask.task)
       _     <- auditSrv.task.create(richTask.task, richTask.toJson)
     } yield ()
@@ -160,7 +167,7 @@ class ShareSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation).getOrFail("Case")
+      share <- get(`case`, organisation.name).getOrFail("Case")
       _     <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
       _     <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
     } yield ()
