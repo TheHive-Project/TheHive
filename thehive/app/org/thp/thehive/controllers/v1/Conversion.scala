@@ -7,7 +7,7 @@ import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, JsValue}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 object Conversion {
 
@@ -314,6 +314,17 @@ object Conversion {
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.data, _.data.map(_.data))
       .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
+      .withFieldComputed(
+        _.reports,
+        a =>
+          JsObject(a.reportTags.groupBy(_.origin).map {
+            case (origin, tags) =>
+              origin -> Json.obj(
+                "taxonomies" -> tags
+                  .map(t => Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value))
+              )
+          })
+      )
       .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
@@ -329,6 +340,17 @@ object Conversion {
           .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
           .withFieldComputed(_.data, _.data.map(_.data))
           .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
+          .withFieldComputed(
+            _.reports,
+            a =>
+              JsObject(a.reportTags.groupBy(_.origin).map {
+                case (origin, tags) =>
+                  origin -> Json.obj(
+                    "taxonomies" -> tags
+                      .map(t => Json.obj("level" -> t.level.toString, "namespace" -> t.namespace, "predicate" -> t.predicate, "value" -> t.value))
+                  )
+              })
+          )
           .withFieldConst(_.extraData, extraData)
           .transform
     }

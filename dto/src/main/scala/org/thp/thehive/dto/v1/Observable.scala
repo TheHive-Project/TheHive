@@ -46,6 +46,7 @@ case class OutputObservable(
     tags: Set[String],
     ioc: Boolean,
     sighted: Boolean,
+    reports: JsObject,
     message: Option[String],
     extraData: JsObject
 )
