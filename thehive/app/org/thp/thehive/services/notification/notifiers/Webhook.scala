@@ -114,11 +114,11 @@ class Webhook(
 
   // This method change the format of audit details when it contains custom field.
   // The custom field type is added to match TheHive 3 webhook format.
-  def fixCustomFieldDetails(objectType: String, details: String)(implicit graph: Graph): JsValue =
+  def fixCustomFieldDetails(objectType: String, details: String)(implicit graph: Graph): JsValue = {
+    val detailsJson = Json.parse(details)
     objectType match {
       case "Case" | "Alert" | "CaseTemplate" =>
-        val j = Json.parse(details)
-        j.asOpt[JsObject].fold(j) { o =>
+        detailsJson.asOpt[JsObject].fold(detailsJson) { o =>
           JsObject(o.fields.map {
             case keyValue @ (key, value) if key.startsWith("customField.") =>
               val fieldName = key.drop(12)
@@ -128,7 +128,9 @@ class Webhook(
             case keyValue => keyValue
           })
         }
+      case _ => detailsJson
     }
+  }
 
   def buildMessage(version: Int, audit: Audit with Entity)(implicit graph: Graph): Try[JsObject] =
     version match {
