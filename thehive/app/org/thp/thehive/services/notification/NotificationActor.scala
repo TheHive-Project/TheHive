@@ -2,13 +2,13 @@ package org.thp.thehive.services.notification
 
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
-import gremlin.scala.{__, By, Graph, Key, P, Vertex}
+import gremlin.scala.Graph
 import javax.inject.{Inject, Named}
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.{Database, Entity, Schema}
-import org.thp.scalligraph.services.{EventSrv, RichElement, RichVertexGremlinScala}
+import org.thp.scalligraph.services.{EventSrv, RichElement}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.models.{Audit, Organisation, User, UserConfig}
+import org.thp.thehive.models.{Audit, Organisation, User}
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import org.thp.thehive.services.notification.triggers.{Trigger, TriggerProvider}

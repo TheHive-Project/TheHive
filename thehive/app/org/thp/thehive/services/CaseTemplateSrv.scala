@@ -278,7 +278,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
 
   override def resolve(entities: List[CaseTemplate with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
-      tail.foreach(copyEdge(_, head, _.label() != "CaseTemplateOrganisation"))
+      tail.foreach(copyEdge(_, head, e => e.label() == "CaseCaseTemplate" || e.label() == "AlertCaseTemplate"))
       tail.foreach(service.get(_).remove())
       Success(())
     case _ => Success(())

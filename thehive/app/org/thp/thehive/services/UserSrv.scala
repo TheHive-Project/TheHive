@@ -20,7 +20,6 @@ import org.thp.thehive.models._
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 @Singleton

@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
+import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext

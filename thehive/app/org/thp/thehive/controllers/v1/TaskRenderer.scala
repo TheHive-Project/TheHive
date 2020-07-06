@@ -18,7 +18,7 @@ trait TaskRenderer {
   def caseParent(taskSteps: TaskSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
     taskSteps.`case`.richCase.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(_.toJson))
 
-  def caseParentId(taskSteps: TaskSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+  def caseParentId(taskSteps: TaskSteps): Traversal[JsValue, JsValue] =
     taskSteps.`case`.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(c => JsString(c.id().toString)))
 
   def caseTemplateParent(taskSteps: TaskSteps): Traversal[JsValue, JsValue] =

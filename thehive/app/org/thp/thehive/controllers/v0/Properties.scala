@@ -2,19 +2,18 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import gremlin.scala.{__, By, Key, P, Vertex}
+import gremlin.scala.{__, By, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AttributeCheckingError, AuthorizationError, BadRequestError, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.{AlertCase, CaseStatus, Permissions, TaskStatus}
+import org.thp.thehive.models.{CaseStatus, Permissions, TaskStatus}
 import org.thp.thehive.services.{
   AlertSrv,
   AlertSteps,

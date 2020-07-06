@@ -2,10 +2,9 @@ package org.thp.thehive.controllers.v0
 
 import java.lang.{Long => JLong}
 
-import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
+import gremlin.scala.{By, Graph, Key}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.Traversal
 import org.thp.thehive.models._
