@@ -1,7 +1,12 @@
 
 <div class="col-md-12 mb-s clearfix">
     <div class="pull-left">
-        <h4>Observable List ({{artifacts.total || 0}} of {{artifactStats.count}})</h4>
+        <h4>
+            Observable List ({{artifacts.total || 0}} of {{artifactStats.count}})
+            <small class="ml-xxs" ng-if="selection.artifacts.length > 0 ">
+                ({{selection.artifacts.length}} selected)
+            </small>
+        </h4>
     </div>
     <filters-preview filters="filtering.context.filters"
         on-clear-item="removeFilter(field)"
@@ -16,12 +21,21 @@
 <div class="col-md-12" ng-show="artifacts.total > 0">
     <psearch ng-if="!switchTEList" control="artifacts"></psearch>
 
+    <!-- <a href ng-click="checked = !checked">Toggle drawer</a>
+
+    <div id="container1"></div>
+    <pageslide ps-open="checked" ps-container='container1' ps-size="{{'50%'}}" ps-body-class="true">
+        <div>
+            TODO
+        </div>
+    </pageslide> -->
+
     <table class="table table-striped table-hover case-list">
         <thead>
             <tr>
                 <th style="width: 10px;" class="p-0"></th>
                 <th style="width: 20px">
-                    <input type="checkbox" ng-change="selectAll()" ng-model="selection.all" ng-disabled="switchTEList"></input>
+                    <input type="checkbox" ng-change="selectAll()" ng-model="menu.selectAll" ng-disabled="switchTEList"></input>
                 </th>
                 <th style="width: 15px"></th>
                 <th style="width: 15px"></th>
@@ -57,7 +71,8 @@
             <tr ng-repeat="artifact in artifacts.values">
                 <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="filterByTlp(artifact.tlp)"></td>
                 <td>
-                    <input type="checkbox" ng-change="selectArtifact(artifact)" ng-model="selection.list[artifact.id]">
+                    <!-- <input type="checkbox" ng-change="selectArtifact(artifact)" ng-model="selection.list[artifact.id]"> -->
+                    <input type="checkbox" ng-model="artifact.selected" ng-change="selectArtifact(artifact)" >
                 </td>
                 <td>
                     <span ng-click="addFilterValue('ioc', artifact.ioc)" ng-if="artifact.ioc" class="clickable fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
@@ -66,7 +81,7 @@
                     <span ng-click="addFilterValue('sighted', artifact.sighted)" ng-if="artifact.sighted" class="clickable fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                 </td>
                 <td>
-					          <span
+                              <span
                       uib-tooltip="{{artifact.stats.seen}} related artifact(s)"
                       tooltip-placement="bottom"
                       ng-if="artifact.stats.seen > 0"
@@ -118,5 +133,6 @@
             </tr>
         </tbody>
     </table>
+
     <psearch ng-if="!switchTEList" control="artifacts"></psearch>
 </div>

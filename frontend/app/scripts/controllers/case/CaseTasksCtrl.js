@@ -41,31 +41,6 @@
         };
 
         $scope.load = function() {
-            // $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
-            //     scope: $scope,
-            //     baseFilter: {
-            //         _and: [{
-            //             _parent: {
-            //                 _type: 'case',
-            //                 _query: {
-            //                     '_id': $scope.caseId
-            //                 }
-            //             }
-            //         }, {
-            //             _not: {
-            //                 'status': 'Cancel'
-            //             }
-            //         }]
-            //     },
-            //     filter: $scope.filtering.buildQuery(),
-            //     loadAll: true,
-            //     sort: $scope.filtering.context.sort,
-            //     pageSize: $scope.filtering.context.pageSize,
-            //     onUpdate: function() {
-            //         $scope.buildTaskGroups($scope.tasks.values);
-            //     }
-            // });
-
             $scope.tasks = new PaginatedQuerySrv({
                 root: $scope.caseId,
                 objectType: 'case_task',
@@ -77,7 +52,7 @@
                 filter: $scope.filtering.buildQuery(),
                 baseFilter: {
                     _not: {
-                        _field: 'status', 
+                        _field: 'status',
                         _value: 'Cancel'
                     }
                 },

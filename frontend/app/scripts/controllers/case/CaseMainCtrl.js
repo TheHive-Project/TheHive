@@ -139,7 +139,7 @@
                 CaseTabsSrv.removeTab('task-' + task.id);
             });
             $scope.$on('observables:observable-removed', function(event, observable) {
-                CaseTabsSrv.removeTab('observable-' + observable.id);
+                CaseTabsSrv.removeTab('observable-' + observable._id);
             });
 
             $scope.openTab = function(tabName) {

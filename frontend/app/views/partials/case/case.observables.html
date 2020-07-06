@@ -3,28 +3,21 @@
         <div class="btn-toolbar" role="toolbar">
             <div class="btn-group" if-permission="manageObservable" allowed="{{userPermissions}}" uib-dropdown is-open="status.isopen">
                 <button class="btn btn-sm btn-default dropdown-toggle" uib-dropdown-toggle ng-disabled="selection.artifacts.length == 0" type="button">
-                    {{actions[selection.Action]}}
+                    <ng-pluralize count="selection.artifacts.length" when="{'0': 'No observable selected', 'one': '{} selected observable', 'other': '{} selected observables'}"></ng-pluralize>
                     <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
-                        <a ng-click="selection.isCollapsed=true;selection.Action = 'changeSightedFlog'">Change sighted flag</a>
+                        <a ng-click="bulkEdit()">Edit</a>
                     </li>
-                    <li>
-                        <a ng-click="selection.isCollapsed=true;selection.Action = 'changeIOCFlog'">Change IOC flag</a>
-                    </li>
-                    <li>
-                        <a ng-click="selection.isCollapsed=true;selection.Action ='changeTlp'">Change TLP</a>
-                    </li>
-                    <li>
-                        <a ng-click="selection.isCollapsed=true;selection.Action ='addTags';evalTtags();">Add tag</a>
-                    </li>
+
                     <li ng-if="analysisEnabled" if-permission="manageAnalyse" allowed="{{userPermissions}}">
                         <a ng-click="selection.Action ='runAnalyzers'; activeAnalyzers();">Run analyzers</a>
                     </li>
+
                     <li class="divider"></li>
                     <li>
-                        <a href ng-click="selection.isCollapsed=true;selection.Action = 'remove'">
+                        <a href ng-click="removeObservables()">
                             <span class="text-danger">Delete</span>
                         </a>
                     </li>
@@ -43,13 +36,6 @@
                     <i class="fa fa-download"></i>
                     Export
                 </button>
-            </div>
-
-            <div class="btn-group">
-                <h5 ng-if="selection.artifacts.length > 0 ">
-                    <em>{{selection.artifacts.length}}
-                        observable(s) selected</em>
-                </h5>
             </div>
 
             <div class="btn-group pull-right" role="group">
@@ -73,21 +59,10 @@
 
 <br>
 
-<!-- <pre>{{uiSrv.context | json}}</pre> -->
-
 <div class="filter-panel" ng-include="'views/partials/observables/list/mini-stats.html'" ng-if="filtering.context.showStats"></div>
 <br>
 
 <div class="filter-panel" ng-include="'views/partials/observables/list/filters.html'" ng-show="filtering.context.showFilters"></div>
-
-<!-- collapse for Tags + TLP + Delete -->
-<div class="row" uib-collapse="!selection.isCollapsed">
-    <div ng-include="'views/partials/observables/list/artifacts-list-sighted.html'" ng-if="selection.Action === 'changeSightedFlog'"></div>
-    <div ng-include="'views/partials/observables/list/artifacts-list-ioc.html'" ng-if="selection.Action === 'changeIOCFlog'"></div>
-    <div ng-include="'views/partials/observables/list/artifacts-list-tlp.html'" ng-if="selection.Action === 'changeTlp'"></div>
-    <div ng-include="'views/partials/observables/list/artifacts-list-delete.html'" ng-if="selection.Action === 'remove'"></div>
-    <div ng-include="'views/partials/observables/list/artifacts-list-tags.html'" ng-if="selection.Action === 'addTags'"></div>
-</div>
 
 <div class="row">
     <div class="selection-options" ng-if="selection.Action === 'runAnalyzers'">
