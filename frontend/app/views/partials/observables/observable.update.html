@@ -48,7 +48,7 @@
                 <tags-input name="addTagsInput" ng-model="$dialog.params.addTags" class="ti-input-sm"
                     placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2"
                     on-tag-added="$dialog.toggleAddTags()">
-                    <auto-complete min-length="1" debounceDelay="400" source="$dialog.getTags($query)"></auto-complete>
+                    <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
                 </tags-input>
             </div>
         </div>
@@ -60,7 +60,7 @@
                 <tags-input name="removeTagsInput" ng-model="$dialog.params.removeTags" class="ti-input-sm"
                     placeholder="Remove tags" replace-spaces-with-dashes="false" min-length="2"
                     on-tag-added="$dialog.toggleRemoveTags()">
-                    <auto-complete min-length="1" debounceDelay="400" source="$dialog.getTags($query)"></auto-complete>
+                    <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
                 </tags-input>
             </div>
         </div>
