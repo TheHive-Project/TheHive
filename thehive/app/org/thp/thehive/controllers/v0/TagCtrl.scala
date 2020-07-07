@@ -4,11 +4,11 @@ import java.nio.file.Files
 
 import javax.inject.{Inject, Named}
 import org.thp.scalligraph.RichSeq
-import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
+import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser, Renderer}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.steps.{PagedResult, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
 import org.thp.thehive.services.{TagSrv, TagSteps}
@@ -37,10 +37,11 @@ class TagCtrl @Inject() (
     FieldsParser[IdOrName],
     (param, graph, _) => tagSrv.get(param.idOrName)(graph)
   )
-
+  implicit val stringRenderer: Renderer.Aux[String, String] = Renderer.json[String, String](identity)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[TagSteps, TagSteps]("fromCase", (tagSteps, _) => tagSteps.fromCase),
-    Query.output[String, TagSteps](_.displayName)
+    Query[TagSteps, Traversal[String, String]]("text", (tagSteps, _) => tagSteps.displayName),
+    Query.output[String, Traversal[String, String]]
   )
 
   def importTaxonomy: Action[AnyContent] =
