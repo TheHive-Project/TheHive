@@ -2,6 +2,18 @@
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
 
+            <div class="btn-group" uib-dropdown if-permission="manageCase">
+                <button type="button" class="btn btn-sm btn-default" uib-dropdown-toggle ng-disabled="$vm.selection.length === 0">
+                    <ng-pluralize count="$vm.selection.length" when="{'0': 'No case selected', 'one': '{} selected case', 'other': '{} selected cases'}"></ng-pluralize>
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" uib-dropdown-menu>
+                    <li>
+                        <a href ng-click="$vm.bulkEdit()">Edit</a>
+                    </li>
+                </ul>
+            </div>
+
             <div class="btn-group" uib-dropdown>
                 <button class="btn btn-primary btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
                     <i class="fa fa-filter"></i>

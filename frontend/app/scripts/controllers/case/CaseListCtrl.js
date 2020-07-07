@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, FilteringSrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $q, $state, $window, $uibModal, FilteringSrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -12,6 +12,11 @@
         this.caseResponders = null;
 
         this.lastQuery = null;
+
+        self.selection = [];
+        self.menu = {
+            selectAll: false
+        };
 
         this.$onInit = function() {
             self.filtering = new FilteringSrv('case', 'case.list', {
@@ -67,8 +72,48 @@
                 operations: [
                     {'_name': 'listCase'}
                 ],
-                extraData: ["observableStats", "taskStats", "isOwner", "shareCount"]
+                extraData: ["observableStats", "taskStats", "isOwner", "shareCount"],
+                onUpdate: function() {
+                    self.resetSelection();
+                }
             });
+        };
+
+        self.resetSelection = function() {
+            if (self.menu.selectAll) {
+                self.selectAll();
+            } else {
+                self.selection = [];
+                self.menu.selectAll = false;
+                // self.updateMenu();
+            }
+        };
+
+        self.select = function(caze) {
+            if (caze.selected) {
+                self.selection.push(caze);
+            } else {
+                self.selection = _.reject(self.selection, function(item) {
+                    return item._id === caze._id;
+                });
+            }
+            // self.updateMenu();
+        };
+
+        self.selectAll = function() {
+            var selected = self.menu.selectAll;
+            _.each(self.list.values, function(item) {
+                item.selected = selected;
+            });
+
+            if (selected) {
+                self.selection = self.list.values;
+            } else {
+                self.selection = [];
+            }
+
+            //self.updateMenu();
+
         };
 
         this.toggleStats = function () {
@@ -149,6 +194,31 @@
             this.list.sort = sort;
             this.list.update();
             this.filtering.setSort(sort);
+        };
+
+        this.bulkEdit = function() {
+            var modal = $uibModal.open({
+                animation: 'true',
+                templateUrl: 'views/partials/case/case.update.html',
+                controller: 'CaseUpdateCtrl',
+                controllerAs: '$dialog',
+                size: 'lg',
+                resolve: {
+                    selection: function() {
+                        return self.selection;
+                    }
+                }
+            });
+
+            modal.result.then(function(operations) {
+                console.log(operations);
+
+                $q.all(_.map(operations, function(operation) {
+                    return CaseSrv.bulkUpdate(operation.ids, operation.patch);
+                })).then(function(/*responses*/) {
+                    NotificationSrv.log('Selected cases have been updated successfully', 'success');
+                });
+            });
         };
 
         this.getCaseResponders = function(caseId, force) {

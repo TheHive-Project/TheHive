@@ -60,11 +60,11 @@ class Router @Inject() (
     case GET(p"/case")                  => queryExecutor.`case`.search
     case POST(p"/case")                 => caseCtrl.create // Audit ok
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
+    case PATCH(p"/case/_bulk")          => caseCtrl.bulkUpdate // Not used by the frontend
     case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId) // Audit ok
     case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds) // Not implemented in backend and not used by frontend
     case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId) // Not used by frontend
-    case POST(p"/case/_search")         => queryExecutor.`case`.search
-    case PATCH(p"api/case/_bulk")       => caseCtrl.bulkUpdate // Not used by the frontend
+    case POST(p"/case/_search")         => queryExecutor.`case`.search    
     case POST(p"/case/_stats")          => queryExecutor.`case`.stats
     case DELETE(p"/case/$caseId/force") => caseCtrl.realDelete(caseId) // Audit ok
     case GET(p"/case/$caseId/links")    => caseCtrl.linkedCases(caseId)

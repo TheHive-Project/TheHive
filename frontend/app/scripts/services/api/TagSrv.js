@@ -23,8 +23,8 @@
 
                 // Get the list
                 QuerySrv.call('v0', operations)
-                    .then(function(data) {
-                        defer.resolve(_.map(data, function(tag) {
+                    .then(function(data) {                        
+                        defer.resolve(_.map(_.unique(data), function(tag) {
                             return {text: tag};
                         }));
                     });

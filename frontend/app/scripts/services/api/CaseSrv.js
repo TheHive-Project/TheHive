@@ -48,6 +48,10 @@
             this.merge = resource.merge;
             this.query = resource.query;
 
+            this.bulkUpdate = function(ids, update) {
+                return $http.patch('./api/case/_bulk', _.extend({ids: ids}, update));
+            };
+
             this.getShares = function(id) {
                 return $http.get('./api/case/' + id + '/shares');
             };
