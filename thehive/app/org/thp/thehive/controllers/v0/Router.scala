@@ -166,8 +166,8 @@ class Router @Inject() (
     case PATCH(p"/dashboard/$dashboardId")  => dashboardCtrl.update(dashboardId) // Audit ok
     case DELETE(p"/dashboard/$dashboardId") => dashboardCtrl.delete(dashboardId) // Audit ok
 
-    case GET(p"/audit")                                                 => auditCtrl.flow(None, None)
-    case GET(p"/flow" ? q_o"rootId=$rootId" & q_o"count=${int(count)}") => auditCtrl.flow(rootId, count)
+    case GET(p"/audit")                      => auditCtrl.flow(None)
+    case GET(p"/flow" ? q_o"rootId=$rootId") => auditCtrl.flow(rootId)
 //    GET      /audit                               controllers.AuditCtrl.find
 //    POST     /audit/_search                       controllers.AuditCtrl.find
 //    POST     /audit/_stats                        controllers.AuditCtrl.stats

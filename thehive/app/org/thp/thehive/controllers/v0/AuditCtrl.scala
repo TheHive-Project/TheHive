@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
@@ -9,8 +7,6 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.{ParamQuery, Query}
-import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
-import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
@@ -21,7 +17,7 @@ import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.DurationInt
 
 @Singleton
 class AuditCtrl @Inject() (
@@ -29,7 +25,6 @@ class AuditCtrl @Inject() (
     properties: Properties,
     auditSrv: AuditSrv,
     @Named("flow-actor") flowActor: ActorRef,
-    appConfig: ApplicationConfig,
     val caseSrv: CaseSrv,
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
@@ -39,10 +34,7 @@ class AuditCtrl @Inject() (
 ) extends QueryableCtrl
     with AuditRenderer {
 
-  val maxFlowAgeConfig: ConfigItem[Duration, Duration] = appConfig.item[Duration]("flow.maxAge", "Max age of items shown in flow")
-  def maxFlowAge: Duration                             = maxFlowAgeConfig.get
-  def flowFromDate                                     = new Date(System.currentTimeMillis() - maxFlowAge.toMillis)
-  implicit val timeout: Timeout                        = Timeout(5.minutes)
+  implicit val timeout: Timeout = Timeout(5.minutes)
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, AuditSteps](
     "getAudit",
@@ -64,7 +56,7 @@ class AuditCtrl @Inject() (
     )
   override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
 
-  def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
+  def flow(caseId: Option[String]): Action[AnyContent] =
     entryPoint("audit flow")
       .asyncAuth { implicit request =>
         (flowActor ? FlowId(request.organisation, caseId.filterNot(_ == "any"))).map {
@@ -91,28 +83,5 @@ class AuditCtrl @Inject() (
             }
             Results.Ok(JsArray(audits))
         }
-//        val auditTraversal: AuditSteps = auditSrv.initSteps.has("mainAction", true)
-//        val audits = caseId
-//          .filterNot(_ == "any")
-//          .fold(auditTraversal)(cid => auditTraversal.forCase(cid))
-//          .has("_createdAt", P.gt(flowFromDate))
-//          .visible
-//          .order(List(By(Key[Date]("_createdAt"), Order.desc)))
-//          .range(0, count.getOrElse(10).toLong)
-//          .richAuditWithCustomRenderer(auditRenderer)
-//          .toIterator
-//
-//          .map {
-//            case (audit, obj) =>
-//              audit
-//                .toJson
-//                .as[JsObject]
-//                .deepMerge(
-//                  Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> audit.context._id), "summary" -> jsonSummary(auditSrv, audit.requestId))
-//                )
-//          }
-//          .toSeq
-
-//        Success(Results.Ok(JsArray(audits)))
       }
 }
