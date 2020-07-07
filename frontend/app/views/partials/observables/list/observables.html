@@ -21,15 +21,6 @@
 <div class="col-md-12" ng-show="artifacts.total > 0">
     <psearch ng-if="!switchTEList" control="artifacts"></psearch>
 
-    <!-- <a href ng-click="checked = !checked">Toggle drawer</a>
-
-    <div id="container1"></div>
-    <pageslide ps-open="checked" ps-container='container1' ps-size="{{'50%'}}" ps-body-class="true">
-        <div>
-            TODO
-        </div>
-    </pageslide> -->
-
     <table class="table table-striped table-hover case-list">
         <thead>
             <tr>
@@ -71,7 +62,6 @@
             <tr ng-repeat="artifact in artifacts.values">
                 <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="filterByTlp(artifact.tlp)"></td>
                 <td>
-                    <!-- <input type="checkbox" ng-change="selectArtifact(artifact)" ng-model="selection.list[artifact.id]"> -->
                     <input type="checkbox" ng-model="artifact.selected" ng-change="selectArtifact(artifact)" >
                 </td>
                 <td>
@@ -112,12 +102,12 @@
                 </td>
                 <td ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
                     <span class="ml-xs" uib-dropdown>
-                        <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact.id, true)" uib-dropdown-toggle>
+                        <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact._id, true)" uib-dropdown-toggle>
                             <i class="text-primary fa fa-cog"></i>
                         </a>
                         <ul class="dropdown-menu align-right" uib-dropdown-menu>
                           <li ng-if="obsResponders && obsResponders.length === 0">
-                            <a href ng-click="getObsResponders(artifact.id, true)">
+                            <a href ng-click="getObsResponders(artifact._id, true)">
                               <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
                             </a>
                           </li>

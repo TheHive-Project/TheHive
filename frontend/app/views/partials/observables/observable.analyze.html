@@ -1,0 +1,37 @@
+<form class="form-horizontal" name="observableForm" ng-submit="$dialog.run(observableForm);" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">Analyzer observable(s)</h3>
+    </div>
+
+    <div class="modal-body">
+        <p class="mb-xs">
+            Select the analyzers you want to run on the selected observables.
+        </p>
+
+        <div class="form-group" ng-repeat="dataType in $dialog.dataTypes track by $index">
+            <label class="col-md-3 control-label">{{dataType}} analyzers</label>
+            <div class="col-md-9">
+                <p class="form-control-static" ng-if="$dialog.analyzerMap[dataType].length === 0">
+                    <em class="text-muted">No Analyzer Available</em>
+                </p>
+
+                <p class="form-control-static" ng-if="$dialog.analyzerMap[dataType].length > 0">
+                    <a href ng-click="$dialog.selectAll(dataType, true)">Select all</a> / <a href ng-click="$dialog.selectAll(dataType, false)">Deselect all</a>
+                </p>
+
+                <div class="checkbox" ng-repeat="analyzer in $dialog.analyzerMap[dataType]">
+                  <label>
+                    <input class="mr-xxs" type="checkbox" ng-model="analyzer.selected"/> {{analyzer.name}}
+                  </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="$dialog.cancel()" type="button">Cancel</button>
+        <button class="btn btn-primary pull-right" ng-disabled="observableForm.$invalid" type="submit">Run selected analyzers</button>
+    </div>
+</form>

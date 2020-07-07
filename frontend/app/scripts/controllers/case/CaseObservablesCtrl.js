@@ -7,22 +7,11 @@
 
             $scope.analysisEnabled = VersionSrv.hasCortex();
             $scope.caseId = $stateParams.caseId;
-            $scope.showText = false;
             $scope.obsResponders = null;
 
             $scope.selection = {
                 artifacts: []
             };
-            // $scope.actions = {
-            //     main: 'Action',
-            //     export: 'Export',
-            //     changeSightedFlog: 'Change sighted flag',
-            //     changeIOCFlog: 'Change IOC flag',
-            //     changeTlp: 'Change TLP',
-            //     addTags: 'Add tags',
-            //     runAnalyzers: 'Run analyzers',
-            //     remove: 'Delete'
-            // };
 
             $scope.menu = {
                 selectAll: false
@@ -102,7 +91,7 @@
                 } else {
                     $scope.selection.artifacts = [];
                     $scope.menu.selectAll = false;
-                    $scope.updateMenu();
+
                 }
             };
 
@@ -185,11 +174,7 @@
             $scope.initSelection = function (selection) {
                 selection.all = false;
                 selection.list = {};
-                //selection.artifacts = [];
                 selection.Action = 'main';
-                // angular.forEach($scope.artifacts.allValues, function (artifact) {
-                //     selection.list[artifact._id] = false;
-                // });
             };
 
             $scope.initAnalyzersList = function () {
@@ -210,54 +195,8 @@
                 }
             };
 
-            //
-            // update selection of artifacts each time artifacts is updated
-            // $scope.updateSelection = function () {
-            //     if ($scope.selection.all) {
-            //         $scope.selection.list = {};
-            //
-            //         $scope.selection.artifacts = $scope.artifacts.allValues;
-            //         angular.forEach($scope.artifacts.allValues, function (element) {
-            //             $scope.selection.list[element._id] = true;
-            //         });
-            //     } else {
-            //         var lid = _.pluck($scope.artifacts.allValues, '_id');
-            //
-            //         $scope.selection.artifacts.length = 0;
-            //         angular.forEach($scope.selection.list, function (value, key) {
-            //             var index = lid.indexOf(key);
-            //             if (index >= 0) {
-            //                 if (value) {
-            //                     $scope.selection.artifacts.push($scope.artifacts.allValues[index]);
-            //                 }
-            //             } else {
-            //                 delete $scope.selection.list[key];
-            //             }
-            //         });
-            //
-            //     }
-            // };
-
-            // Update the menu items
-            $scope.updateMenu = function() {
-
-            };
-
             // select all artifacts : add all artifacts in selection or delete selection
             $scope.selectAll = function () {
-                // if ($scope.selection.all) {
-                //     $scope.selection.artifacts = $scope.artifacts.allValues.slice();
-                //     angular.forEach($scope.artifacts.allValues, function (element) {
-                //         $scope.selection.list[element._id] = true;
-                //         $scope.incDataType(element.dataType);
-                //     });
-                // } else {
-                //     $scope.initSelection($scope.selection);
-                //     $scope.initAnalyzersList();
-                // }
-                // $scope.activeAnalyzers();
-                //
-
                 var selected = $scope.menu.selectAll;
                 _.each($scope.artifacts.values, function(item) {
                     item.selected = selected;
@@ -268,26 +207,14 @@
                 } else {
                     $scope.selection.artifacts = [];
 
-                    // $scope.initSelection($scope.selection);
                     $scope.initAnalyzersList();
                 }
 
-                $scope.activeAnalyzers();
 
-                $scope.updateMenu();
             };
 
             // select or unselect an artifact
             $scope.selectArtifact = function (artifact) {
-                // if ($scope.selection.list[artifact._id]) { // if artifact is  selected
-                //     $scope.addArtifactToSelection(artifact);
-                //     $scope.incDataType(artifact.dataType);
-                // } else { // if artifact is not selected
-                //     $scope.dropArtifactFromSelection(artifact);
-                //     $scope.decDataType(artifact.dataType);
-                // }
-                // $scope.activeAnalyzers();
-                //
                 if (artifact.selected) {
                     $scope.selection.artifacts.push(artifact);
                 } else {
@@ -296,49 +223,8 @@
                     });
                 }
 
-                $scope.updateMenu();
+
             };
-
-            // // add artifact to selection
-            // $scope.addArtifactToSelection = function (artifact) {
-            //     $scope.selection.artifacts.push(artifact);
-            //     $scope.updateAllSelected();
-            // };
-
-            // $scope.dropArtifactFromSelection = function (artifact) {
-            //     angular.forEach($scope.selection.artifacts, function (element) {
-            //         if (element._id === artifact._id) {
-            //             $scope.selection.artifacts.splice($scope.selection.artifacts.indexOf(element), 1);
-            //         }
-            //     });
-            //     $scope.updateAllSelected();
-            // };
-
-            // control if all artifacts are selected
-            // $scope.controlAllSelected = function () {
-            //     var allSelected = true;
-            //     if ($scope.artifacts.allValues.length === $scope.selection.artifacts.length) {
-            //
-            //         angular.forEach($scope.selection.list, function (value) {
-            //             if (!(value)) {
-            //                 allSelected = false;
-            //             }
-            //         });
-            //     } else {
-            //         allSelected = false;
-            //     }
-            //
-            //     return allSelected;
-            // };
-
-            // update scope.selection.all
-            // $scope.updateAllSelected = function () {
-            //     if ($scope.controlAllSelected()) {
-            //         $scope.selection.all = true;
-            //     } else {
-            //         $scope.selection.all = false;
-            //     }
-            // };
 
             // actions on artifacts
             $scope.addArtifact = function () {
@@ -381,6 +267,46 @@
                 });
             };
 
+            $scope.bulkAnalyze = function() {
+                var modal = $uibModal.open({
+                    animation: 'true',
+                    templateUrl: 'views/partials/observables/observable.analyze.html',
+                    controller: 'ObservableAnalyzeCtrl',
+                    controllerAs: '$dialog',
+                    size: 'lg',
+                    resolve: {
+                        selection: function() {
+                            return $scope.selection.artifacts;
+                        },
+                        analyzers: function() {
+                            return $scope.analyzersList.analyzers;
+                        }
+                    }
+                });
+
+                modal.result.then(function(operations) {
+                    var analyzerNames = _.uniq(_.pluck(operations, 'analyzerName'));
+
+                    CortexSrv.getServers(analyzerNames)
+                        .then(function(serverId) {
+                            return $q.all(
+                                _.map(operations, function(item) {
+                                    return CortexSrv.createJob({
+                                        cortexId: serverId,
+                                        artifactId: item.observableId,
+                                        analyzerId: item.analyzerName
+                                    });
+                                })
+                            );
+                        })
+                        .then(function() {
+                            NotificationSrv.log('Analyzers have been successfully started for the selected observables', 'success');
+                        }, function() {
+
+                        });
+                });
+            };
+
             $scope.showExport = function() {
                 $scope.showExportPanel = true;
             };
@@ -411,96 +337,6 @@
                 });
 
                 $scope.initSelection($scope.selection);
-            };
-
-            $scope.checkDataTypeList = function (analyzer, datatype) {
-                var dt = analyzer.dataTypeList.toString().split(',');
-                angular.forEach(dt, function (element) {
-                    element = element.split(' ').join('');
-                });
-                return (dt.indexOf(datatype) !== -1);
-            };
-
-
-
-
-            //
-            // Analyzers
-            //
-
-            // Update analyzersList.active list
-
-            // increment datatypes from selection of artifacts
-            // used to know is an analyzer can be selected by user or not
-            $scope.incDataType = function (datatype) {
-                if ($scope.analyzersList.datatypes[datatype]) {
-                    $scope.analyzersList.datatypes[datatype]++;
-                } else {
-                    $scope.analyzersList.datatypes[datatype] = 1;
-                }
-            };
-
-            $scope.decDataType = function (datatype) {
-                $scope.analyzersList.datatypes[datatype]--;
-            };
-
-
-            $scope.activeAnalyzers = function () {
-                angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                    $scope.analyzersList.active[analyzer.name] = false;
-                });
-
-                $scope.analyzersList.countDataTypes = 0;
-                $scope.analyzersList.countActiveAnalyzers = {
-                    total: 0
-                };
-                $scope.analyzersList.activeDataTypes = [];
-
-                angular.forEach($scope.analyzersList.datatypes, function (value, key) {
-                    if (value > 0) {
-                        // verifier les analyzer sur cette key et mettre a true
-                        $scope.analyzersList.countDataTypes++;
-                        $scope.analyzersList.countActiveAnalyzers[key] = 0;
-
-                        angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                            if ($scope.checkDataTypeList(analyzer, key)) {
-                                $scope.analyzersList.active[analyzer.name] = true;
-                                $scope.analyzersList.countActiveAnalyzers.total++;
-                                $scope.analyzersList.countActiveAnalyzers[key]++;
-
-                                if ($scope.analyzersList.activeDataTypes.indexOf(key) === -1) {
-                                    $scope.analyzersList.activeDataTypes.push(key);
-                                }
-                            }
-                        });
-                    }
-                });
-            };
-
-            $scope.selectAllAnalyzers = function(selected) {
-                $scope.analyzersList.selected = _.mapObject($scope.analyzersList.selected, function(/*val, key*/) {
-                    return selected;
-                });
-            };
-
-
-            // run an Analyzer on an artifact
-            $scope.runAnalyzer = function (analyzerId, artifact) {
-                var artifactName = artifact.data || artifact.attachment.name;
-
-                return CortexSrv.getServers([analyzerId])
-                    .then(function (serverId) {
-                        return CortexSrv.createJob({
-                            cortexId: serverId,
-                            artifactId: artifact._id,
-                            analyzerId: analyzerId
-                        });
-                    })
-                    .then(function () {}, function (response) {
-                        if (response && response.status) {
-                            NotificationSrv.log('Unable to run analyzer ' + analyzerId + ' for observable: ' + artifactName, 'error');
-                        }
-                    });
             };
 
             // run selected analyzers on selected artifacts
@@ -543,33 +379,6 @@
                 $scope.initSelection($scope.selection);
             };
 
-            $scope.runAllOnObservable = function(artifact) {
-                var artifactId = artifact._id;
-                var artifactName = artifact.data || artifact.attachment.name;
-
-                var analyzerIds = [];
-                AnalyzerSrv.forDataType(artifact.dataType)
-                    .then(function(analyzers) {
-                        analyzerIds = _.pluck(analyzers, 'name');
-                        return CortexSrv.getServers(analyzerIds);
-                    })
-                    .then(function (serverId) {
-                        return $q.all(_.map(analyzerIds, function (analyzerId) {
-                            return CortexSrv.createJob({
-                                cortexId: serverId,
-                                artifactId: artifactId,
-                                analyzerId: analyzerId
-                            });
-                        }));
-                    })
-                    .then(function () {
-                        NotificationSrv.log('Analyzers has been successfully started for observable: ' + artifactName, 'success');
-                    });
-            };
-
-            //
-            // Open an artifact
-            //
             $scope.openArtifact = function (artifact) {
                 $state.go('app.case.observables-item', {
                     itemId: artifact._id
@@ -579,7 +388,7 @@
             $scope.showReport = function(observable, analyzerId) {
                 CortexSrv.getJobs($scope.caseId, observable._id, analyzerId, 1)
                     .then(function(response) {
-                        return CortexSrv.getJob(response.data[0]._id);
+                        return CortexSrv.getJob(response.data[0].id);
                     })
                     .then(function(response){
                         var job = response.data;
@@ -628,7 +437,7 @@
             };
 
             $scope.runResponder = function(responderId, responderName, artifact) {
-                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, 'id'))
+                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, '_id'))
                   .then(function(response) {
                       var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
