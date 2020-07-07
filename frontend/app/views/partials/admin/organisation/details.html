@@ -79,6 +79,17 @@
                             <org-case-template-list fields="$vm.fields" templates="$vm.templates"></org-case-template-list>
                         </div>
                     </uib-tab>
+                    <uib-tab index="2" if-permission="manageConfig">
+                        <uib-tab-heading>
+                            <span>
+                                <i class="mr-xxs fa fa-cogs"></i>
+                                UI Configuration
+                            </span>
+                        </uib-tab-heading>
+                        <div if-permission="manageConfig">
+                            <org-config-list ui-config="$vm.uiConfig"></org-config-list>
+                        </div>
+                    </uib-tab>
                     <!-- <uib-tab index="1" if-permission="manageOrganisation">
                         <uib-tab-heading>
                             <span>

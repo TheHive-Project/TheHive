@@ -2,9 +2,10 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('OrgDetailsCtrl',
-        function($scope, $q, $uibModal, OrganisationSrv, NotificationSrv, UserSrv, organisation, users, templates, fields, appConfig) {
+        function($scope, $q, $uibModal, OrganisationSrv, NotificationSrv, UserSrv, organisation, users, templates, fields, appConfig, uiConfig) {
             var self = this;
 
+            this.uiConfig = uiConfig;
             this.org = organisation;
             this.users = users;
             this.templates = templates;

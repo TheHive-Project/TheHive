@@ -252,6 +252,9 @@ angular.module('thehive', [
                     },
                     appConfig: function(VersionSrv) {
                         return VersionSrv.get();
+                    },
+                    uiConfig: function($q, UiSettingsSrv) {
+                        return UiSettingsSrv.all(true);
                     }
                 },
                 guard: {

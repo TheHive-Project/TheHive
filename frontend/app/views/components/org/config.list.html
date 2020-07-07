@@ -1,0 +1,20 @@
+<div class="row">
+    <div class="col-md-12">
+        <form name="settingsForm" class="mt-xs form-horizontal" ng-submit="$ctrl.save(settingsForm)" novalidate>
+            <div class="form-group">
+                <label class="col-md-3 control-label">Hide <em>Empty Case</em> button</label>
+                <div class="col-md-9">
+                    <div class="checkbox">
+                        <label>
+                          <input name="ui.hideEmptyCaseButton" type="checkbox" ng-model="$ctrl.configs['ui.hideEmptyCaseButton']"> Check this to disallow creating empty cases
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-s">
+                <button class="btn btn-primary pull-right" ng-disabled="settingsForm.$invalid" type="submit">Save</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -27,7 +27,7 @@
             self.similarCasesStats = [];
             self.customFieldsCache = CustomFieldsSrv;
 
-            self.hideEmptyCaseButton = UiSettingsSrv.hideEmptyCaseButton();
+            self.hideEmptyCaseButton = UiSettingsSrv.uiHideEmptyCaseButton();
 
             var getTemplateCustomFields = function(customFields) {
                 var result = [];
