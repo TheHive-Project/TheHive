@@ -9,7 +9,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.thehive.models.{CaseTag, Tag}
+import org.thp.thehive.models.{CaseTag, ObservableTag, Tag}
 
 import scala.util.{Success, Try}
 
@@ -83,6 +83,8 @@ class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
   def displayName: Traversal[String, String] = this.map(_.toString)
 
   def fromCase: TagSteps = this.filter(_.inTo[CaseTag])
+
+  def fromObservable: TagSteps = this.filter(_.inTo[ObservableTag])
 }
 
 class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {

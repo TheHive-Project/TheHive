@@ -40,6 +40,7 @@ class TagCtrl @Inject() (
   implicit val stringRenderer: Renderer.Aux[String, String] = Renderer.json[String, String](identity)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[TagSteps, TagSteps]("fromCase", (tagSteps, _) => tagSteps.fromCase),
+    Query[TagSteps, TagSteps]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
     Query[TagSteps, Traversal[String, String]]("text", (tagSteps, _) => tagSteps.displayName),
     Query.output[String, Traversal[String, String]]
   )
