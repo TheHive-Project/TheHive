@@ -162,10 +162,16 @@ class ObservableSrv @Inject() (
   def remove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(observable).alert.headOption() match {
       case None =>
-        for {
-          share <- get(observable).share(authContext.organisation).getOrFail("Observable")
-          _     <- auditSrv.observable.delete(observable, share)
-        } yield get(observable).remove()
+        get(observable)
+          .shares
+          .toIterator
+          .toTry { share =>
+            auditSrv
+              .observable
+              .delete(observable, share)
+              .map(_ => get(observable).remove())
+          }
+          .map(_ => ())
       case Some(alert) => alertSrv.removeObservable(alert, observable)
     }
 

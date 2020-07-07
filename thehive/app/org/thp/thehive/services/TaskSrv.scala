@@ -42,11 +42,25 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)
     auditSrv.task.update(task, Json.obj("assignee" -> JsNull))
   }
 
-  def cascadeRemove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      share <- get(task).share(authContext.organisation).getOrFail("Task")
-      _     <- auditSrv.task.delete(task, share)
-    } yield get(task).remove()
+  def remove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(task).caseTemplate.headOption() match {
+      case None =>
+        get(task)
+          .shares
+          .toIterator
+          .toTry { share =>
+            auditSrv
+              .task
+              .delete(task, share)
+              .map(_ => get(task).remove())
+          }
+          .map(_ => ())
+      case Some(caseTemplate) =>
+        auditSrv
+          .caseTemplate
+          .update(caseTemplate, JsObject.empty)
+          .map(_ => get(task).remove())
+    }
 
   override def update(
       steps: TaskSteps,
