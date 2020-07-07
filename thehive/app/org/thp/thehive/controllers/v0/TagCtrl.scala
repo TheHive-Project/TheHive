@@ -38,6 +38,11 @@ class TagCtrl @Inject() (
     (param, graph, _) => tagSrv.get(param.idOrName)(graph)
   )
 
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[TagSteps, TagSteps]("fromCase", (tagSteps, _) => tagSteps.fromCase),
+    Query.output[String, TagSteps](_.displayName)
+  )
+
   def importTaxonomy: Action[AnyContent] =
     entrypoint("import taxonomy")
       .extract("file", FieldsParser.file.optional.on("file"))

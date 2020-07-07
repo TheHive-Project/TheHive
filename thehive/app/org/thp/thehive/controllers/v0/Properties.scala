@@ -372,6 +372,7 @@ class Properties @Inject() (
     .property("predicate", UniMapping.string)(_.field.readonly)
     .property("value", UniMapping.string.optional)(_.field.readonly)
     .property("description", UniMapping.string.optional)(_.field.readonly)
+    .property("text", UniMapping.string)(_.select(_.displayName).readonly)
     .build
 
   lazy val task: List[PublicProperty[_, _]] =
