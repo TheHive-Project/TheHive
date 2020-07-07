@@ -7,7 +7,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.{AuthorizationError, NotFoundError}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{OrganisationConfigContext, UserConfigContext}
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{JsNull, JsValue, Json, Writes}
 import play.api.mvc.{Action, AnyContent, Results}
 import play.api.{ConfigLoader, Logger}
 
@@ -97,12 +97,21 @@ class ConfigCtrl @Inject() (
               "value"        -> config.getJson(request)
             )
           )
+        }.recover {
+          case _ =>
+            Results.Ok(
+              Json.obj(
+                "path"         -> path,
+                "defaultValue" -> JsNull,
+                "value"        -> JsNull
+              )
+            )
         }
       }
 
   def organisationGet(path: String): Action[AnyContent] =
     entrypoint("get organisation configuration item")
-      .authPermitted(Permissions.manageConfig) { implicit request =>
+      .auth { implicit request =>
         Try {
           val config = appConfig.context(organisationConfigContext).item[JsValue](path, "")
           Results.Ok(
@@ -112,13 +121,22 @@ class ConfigCtrl @Inject() (
               "value"        -> config.getJson(request)
             )
           )
+        }.recover {
+          case _ =>
+            Results.Ok(
+              Json.obj(
+                "path"         -> path,
+                "defaultValue" -> JsNull,
+                "value"        -> JsNull
+              )
+            )
         }
       }
 
   def organisationSet(path: String): Action[AnyContent] =
     entrypoint("set organisation configuration item")
       .extract("value", FieldsParser.json.on("value"))
-      .auth { implicit request =>
+      .authPermitted(Permissions.manageConfig) { implicit request =>
         val config = appConfig.context(organisationConfigContext).item[JsValue](path, "")
         logger.info(s"organisation config value set: $path ${request.body("value")}")
         config.setJson(request, request.body("value")).map { _ =>
