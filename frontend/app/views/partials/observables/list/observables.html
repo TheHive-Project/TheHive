@@ -62,7 +62,7 @@
             <tr ng-repeat="artifact in artifacts.values">
                 <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="filterByTlp(artifact.tlp)"></td>
                 <td>
-                    <input type="checkbox" ng-model="artifact.selected" ng-change="selectArtifact(artifact)" >
+                    <input type="checkbox" ng-model="artifact.selected" ng-change="selectArtifact(artifact)" if-permission="manageObservable" allowed="{{artifact.extraData.permissions.join(',')}}">
                 </td>
                 <td>
                     <span ng-click="addFilterValue('ioc', artifact.ioc)" ng-if="artifact.ioc" class="clickable fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>

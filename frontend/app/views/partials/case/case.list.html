@@ -38,10 +38,10 @@
                         <table class="table table-striped case-list">
                             <thead>
                                 <tr>
+                                    <th style="width: 10px;" class="p-0"></th>
                                     <th width="20px" if-permission="manageCase">
                                         <input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()">
                                     </th>
-                                    <th style="width: 10px;" class="p-0"></th>
                                     <th>Title</th>
                                     <th style="width: 70px;"></th>
                                     <th style="width: 80px;text-align:center;">Severity</th>
@@ -49,16 +49,17 @@
                                     <th style="width: 100px;">Observables</th>
                                     <th style="width: 60px;">Assignee</th>
                                     <th style="width: 120px;">Date</th>
-                                    <th style="width: 40px;" if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
+                                    <th style="width: 40px;" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
                                 </tr>
                             </thead>
 
                             <tbody>
                                 <tr ng-class="{true:'tr-warning'}[currentCase.flag]" ng-repeat="currentCase in $vm.list.values">
-                                    <td if-permission="manageCase">
-                                        <input type="checkbox" ng-model="currentCase.selected" ng-change="$vm.select(currentCase)">
-                                    </td>
                                     <td class="p-0 bg-tlp-{{currentCase.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', currentCase.tlp)"></td>
+                                    <td>
+                                        <input if-permission="manageCase" allowed="{{currentCase.extraData.permissions.join(',')}}"
+                                            type="checkbox" ng-model="currentCase.selected" ng-change="$vm.select(currentCase)">
+                                    </td>
                                     <td>
                                         <div class="case-title wrap">
                                             <span class="mr-xxs text-primary" ng-if="!!!currentCase.extraData.isOwner"><i class="fa fa-share-square"
@@ -126,9 +127,9 @@
                                             <case-duration start="currentCase.startDate" end="currentCase.endDate" icon="fa-clock-o"></case-duration>
                                         </div>
                                     </td>
-                                    <td if-permission="manageTask" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">
+                                    <td>
 
-                                        <span class="ml-xs" uib-dropdown>
+                                        <span class="ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{currentCase.extraData.permissions.join(',')}}">
                                             <a href class="text-primary noline nowrap" ng-click="$vm.getCaseResponders(currentCase._id, true)" uib-dropdown-toggle>
                                                 <i class="text-primary fa fa-cog"></i>
                                                 <!-- Responders

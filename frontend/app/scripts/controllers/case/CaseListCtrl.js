@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, $uibModal, FilteringSrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $q, $state, $window, $uibModal, FilteringSrv, SecuritySrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -72,7 +72,7 @@
                 operations: [
                     {'_name': 'listCase'}
                 ],
-                extraData: ["observableStats", "taskStats", "isOwner", "shareCount"],
+                extraData: ["observableStats", "taskStats", "isOwner", "shareCount", "permissions"],
                 onUpdate: function() {
                     self.resetSelection();
                 }
@@ -102,12 +102,17 @@
 
         self.selectAll = function() {
             var selected = self.menu.selectAll;
+
             _.each(self.list.values, function(item) {
-                item.selected = selected;
+                if(SecuritySrv.checkPermissions(['manageCase'], item.extraData.permissions)) {
+                    item.selected = selected;
+                }
             });
 
             if (selected) {
-                self.selection = self.list.values;
+                self.selection = _.filter(self.list.values, function(item) {
+                    return !!item.selected;
+                });
             } else {
                 self.selection = [];
             }

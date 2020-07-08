@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $filter, $uibModal, ModalUtilsSrv, FilteringSrv, StreamSrv, CaseTabsSrv, PaginatedQuerySrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, VersionSrv) {
+        function ($scope, $q, $state, $stateParams, $filter, $uibModal, SecuritySrv, ModalUtilsSrv, FilteringSrv, StreamSrv, CaseTabsSrv, PaginatedQuerySrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, VersionSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -33,7 +33,6 @@
                     .then(function() {
                         $scope.load();
 
-                        $scope.initSelection($scope.selection);
                         $scope.initAnalyzersList();
 
                         // Add a listener to refresh observables list on job finish
@@ -74,9 +73,9 @@
                     sort: $scope.filtering.context.sort,
                     pageSize: $scope.filtering.context.pageSize,
                     filter: $scope.filtering.buildQuery(),
-                    extraData: ['seen'],
+                    extraData: ['seen', 'permissions'],
                     operations: [
-                        {'_name': 'getCase', "idOrName": $scope.caseId},
+                        {'_name': 'getCase', 'idOrName': $scope.caseId},
                         {'_name': 'observables'}
                     ],
                     onUpdate: function() {
@@ -171,26 +170,11 @@
             //
             // init lists
             //
-            $scope.initSelection = function (selection) {
-                selection.all = false;
-                selection.list = {};
-                selection.Action = 'main';
-            };
-
             $scope.initAnalyzersList = function () {
                 if($scope.analysisEnabled) {
                     AnalyzerSrv.query()
                         .then(function (analyzers) {
                             $scope.analyzersList.analyzers = analyzers;
-                            $scope.analyzersList.active = {};
-                            $scope.analyzersList.datatypes = {};
-                            angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                                $scope.analyzersList.active[analyzer.name] = false;
-                            });
-                            $scope.analyzersList.selected = {};
-                            angular.forEach($scope.analyzersList.analyzers, function (analyzer) {
-                                $scope.analyzersList.selected[analyzer.name] = false;
-                            });
                         });
                 }
             };
@@ -198,19 +182,20 @@
             // select all artifacts : add all artifacts in selection or delete selection
             $scope.selectAll = function () {
                 var selected = $scope.menu.selectAll;
+
                 _.each($scope.artifacts.values, function(item) {
-                    item.selected = selected;
+                    if(SecuritySrv.checkPermissions(['manageObservable'], item.extraData.permissions)) {
+                        item.selected = selected;
+                    }
                 });
 
                 if (selected) {
-                    $scope.selection.artifacts = $scope.artifacts.values;
+                    $scope.selection.artifacts = _.filter($scope.artifacts.values, function(item) {
+                        return !!item.selected;
+                    });
                 } else {
                     $scope.selection.artifacts = [];
-
-                    $scope.initAnalyzersList();
                 }
-
-
             };
 
             // select or unselect an artifact
@@ -222,8 +207,6 @@
                         return item._id === artifact._id;
                     });
                 }
-
-
             };
 
             // actions on artifacts
@@ -313,7 +296,6 @@
 
             $scope.hideExport = function() {
                 $scope.showExportPanel = false;
-                $scope.initSelection($scope.selection);
             };
 
             $scope.removeObservables = function () {
@@ -335,8 +317,6 @@
                 }).catch(function(/*err*/) {
                     //NotificationSrv.error('Observable deletion', response.data, response.status);
                 });
-
-                $scope.initSelection($scope.selection);
             };
 
             // run selected analyzers on selected artifacts
@@ -374,9 +354,6 @@
                     }, function() {
 
                     });
-
-                $scope.initAnalyzersList();
-                $scope.initSelection($scope.selection);
             };
 
             $scope.openArtifact = function (artifact) {
