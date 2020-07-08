@@ -46,11 +46,11 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
   override def get(idOrName: String)(implicit graph: Graph): TagSteps =
     getByIds(idOrName)
 
-  def get(tag: Tag)(implicit graph: Graph): TagSteps = initSteps.get(tag)
+  def getTag(tag: Tag)(implicit graph: Graph): TagSteps = initSteps.getTag(tag)
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     val tag = parseString(tagName)
-    get(tag).getOrFail("Tag").recoverWith {
+    getTag(tag).getOrFail("Tag").recoverWith {
       case _ if autoCreate => create(tag)
     }
   }
@@ -69,7 +69,7 @@ class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
   override def newInstance(newRaw: GremlinScala[Vertex]): TagSteps = new TagSteps(newRaw)
   override def newInstance(): TagSteps                             = new TagSteps(raw.clone())
 
-  def get(tag: Tag): TagSteps = getByName(tag.namespace, tag.predicate, tag.value)
+  def getTag(tag: Tag): TagSteps = getByName(tag.namespace, tag.predicate, tag.value)
 
   def getByName(namespace: String, predicate: String, value: Option[String]): TagSteps = {
     val step = newInstance(
@@ -89,11 +89,14 @@ class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
 
 class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
 
-  override def resolve(entities: List[Tag with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head))
-      tail.foreach(service.get(_).remove())
-      Success(())
-    case _ => Success(())
+  override def resolve(entities: List[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
+    firstCreatedEntity(entities).foreach {
+      case (head, tail) =>
+        tail.foreach(copyEdge(_, head))
+        val tailIds = tail.map(_._id)
+        logger.debug(s"Remove duplicated vertex: ${tailIds.mkString(",")}")
+        service.getByIds(tailIds: _*).remove()
+    }
+    Success(())
   }
 }

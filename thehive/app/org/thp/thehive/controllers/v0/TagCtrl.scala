@@ -57,7 +57,7 @@ class TagCtrl @Inject() (
           content.fold(Seq.empty[Tag])(parseTaxonomy)
 
         tags
-          .filterNot(tagSrv.initSteps.get(_).exists())
+          .filterNot(tagSrv.initSteps.getTag(_).exists())
           .toTry(tagSrv.create)
           .map(ts => Results.Ok(JsNumber(ts.size)))
       }
