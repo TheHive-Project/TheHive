@@ -17,7 +17,8 @@ import play.api.test.PlaySpecification
 import scala.util.Success
 
 class CaseSrvTest extends PlaySpecification with TestAppBuilder {
-  implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
+  implicit val authContext: AuthContext =
+    DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Profile.analyst.permissions).authContext
   "case service" should {
 
     "list all cases" in testApp { app =>
