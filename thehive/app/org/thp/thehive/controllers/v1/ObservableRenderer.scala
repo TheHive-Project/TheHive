@@ -39,6 +39,9 @@ trait ObservableRenderer {
       _.`case`.richCaseWithoutPerms.map(c => Json.obj("case" -> c.toJson))
     )
 
+  def permissions(observableSteps: ObservableSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+    observableSteps.userPermissions.map(permissions => Json.toJson(permissions))
+
   def observableStatsRenderer(extraData: Set[String])(
       implicit authContext: AuthContext,
       db: Database,
@@ -52,10 +55,11 @@ trait ObservableRenderer {
       val dataName = extraData.toSeq
       dataName
         .foldLeft[ObservableSteps => GremlinScala[JMap[String, JsValue]]](_.raw.project(dataName.head, dataName.tail: _*)) {
-          case (f, "seen")   => f.andThen(addData(seenStats))
-          case (f, "shares") => f.andThen(addData(sharesStats))
-          case (f, "links")  => f.andThen(addData(observableLinks))
-          case (f, _)        => f.andThen(_.by(__.constant(JsNull).traversal))
+          case (f, "seen")        => f.andThen(addData(seenStats))
+          case (f, "shares")      => f.andThen(addData(sharesStats))
+          case (f, "links")       => f.andThen(addData(observableLinks))
+          case (f, "permissions") => f.andThen(addData(permissions))
+          case (f, _)             => f.andThen(_.by(__.constant(JsNull).traversal))
         }
         .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))
     }

@@ -355,15 +355,15 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   def assignee: UserSteps = new UserSteps(raw.outTo[CaseUser])
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
-    this.filter(
-      _.inTo[ShareCase]
-        .filter(_.outTo[ShareProfile].has("permissions", permission))
-        .inTo[OrganisationShare]
-        .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has("permissions", permission))
-        .inTo[UserRole]
-        .has("login", authContext.userId)
-    )
+    if (authContext.permissions.contains(permission))
+      this.filter(
+        _.inTo[ShareCase]
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
+          .inTo[OrganisationShare]
+          .has("name", authContext.organisation)
+      )
+    else
+      this.limit(0)
 
   override def newInstance(newRaw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(newRaw)
 
@@ -427,14 +427,8 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
   def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Set[Permission]] =
     this
       .share(authContext.organisation)
-      .project(
-        _.by(_.profile.permissions.fold)
-          .by(_.organisation.userPermissions(authContext.userId).fold)
-      )
-      .map {
-        case (sharePermissions: JList[String], userPermissions: JList[String]) =>
-          Permission(sharePermissions.asScala.toSet & userPermissions.asScala.toSet)
-      }
+      .profile
+      .map(profile => profile.permissions & authContext.permissions)
 
   def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
 

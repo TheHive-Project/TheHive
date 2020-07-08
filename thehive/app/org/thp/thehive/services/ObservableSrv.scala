@@ -214,15 +214,21 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-s
     this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has("login", authContext.userId))
 
   def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
-    this.filter(
-      _.inTo[ShareObservable]
-        .filter(_.outTo[ShareProfile].has("permissions", permission))
-        .inTo[OrganisationShare]
-        .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has("permissions", permission))
-        .inTo[UserRole]
-        .has("login", authContext.userId)
-    )
+    if (authContext.permissions.contains(permission))
+      this.filter(
+        _.inTo[ShareObservable]
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
+          .inTo[OrganisationShare]
+          .has("name", authContext.organisation)
+      )
+    else
+      this.limit(0)
+
+  def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Set[Permission]] =
+    this
+      .share(authContext.organisation)
+      .profile
+      .map(profile => profile.permissions & authContext.permissions)
 
   def organisations = new OrganisationSteps(raw.inTo[ShareObservable].inTo[OrganisationShare])
 

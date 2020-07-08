@@ -61,6 +61,9 @@ trait CaseRenderer {
   def shareCountStats(caseSteps: CaseSteps): Traversal[JsValue, JsValue] =
     caseSteps.organisations.count.map(c => JsNumber.apply(c - 1))
 
+  def permissions(caseSteps: CaseSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+    caseSteps.userPermissions.map(permissions => Json.toJson(permissions))
+
   def caseStatsRenderer(extraData: Set[String])(
       implicit authContext: AuthContext,
       db: Database,
@@ -79,6 +82,7 @@ trait CaseRenderer {
           case (f, "alerts")          => f.andThen(addData(alertStats))
           case (f, "isOwner")         => f.andThen(addData(isOwnerStats))
           case (f, "shareCount")      => f.andThen(addData(shareCountStats))
+          case (f, "permissions")     => f.andThen(addData(permissions))
           case (f, _)                 => f.andThen(_.by(__.constant(JsNull).traversal))
         }
         .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))
