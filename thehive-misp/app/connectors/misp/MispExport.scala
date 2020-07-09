@@ -32,7 +32,7 @@ class MispExport @Inject()(
 
   lazy val dateFormat             = new SimpleDateFormat("yy-MM-dd")
   private[misp] lazy val alertSrv = alertSrvProvider.get
-  lazy val logger: Logger = Logger(getClass)
+  lazy val logger: Logger         = Logger(getClass)
 
   def relatedMispEvent(mispName: String, caseId: String): Future[(Option[String], Option[String])] = {
     import org.elastic4play.services.QueryDSL._
@@ -74,7 +74,7 @@ class MispExport @Inject()(
     val mispEvent = Json.obj(
       "Event" → Json.obj(
         "distribution"    → 0,
-        "threat_level_id" → (4 - severity),
+        "threat_level_id" → math.min(4, math.max(1, 4 - severity)),
         "analysis"        → 0,
         "info"            → title,
         "date"            → dateFormat.format(date),
