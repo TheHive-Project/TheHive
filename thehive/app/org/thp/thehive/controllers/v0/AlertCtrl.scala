@@ -144,7 +144,7 @@ class AlertCtrl @Inject() (
                   .into[OutputSimilarCase]
                   .withFieldConst(_.artifactCount, observableCount.getOrDefault(false, 0L).toInt)
                   .withFieldConst(_.iocCount, observableCount.getOrDefault(true, 0L).toInt)
-                  .withFieldConst(_.similarArtifactCount, iocStats.getOrElse(false, 0))
+                  .withFieldConst(_.similarArtifactCount, iocStats.values.sum)
                   .withFieldConst(_.similarIOCCount, iocStats.getOrElse(true, 0))
                   .withFieldConst(_.resolutionStatus, atMostOneOf[String](resolutionStatus))
                   .withFieldComputed(_.status, _.status.toString)
