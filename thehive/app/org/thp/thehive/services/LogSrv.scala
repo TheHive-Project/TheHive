@@ -96,18 +96,16 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
   )
 
   def can(permission: Permission)(implicit authContext: AuthContext): LogSteps =
-    newInstance(
-      raw.filter(
-        _.in("TaskLog")
-          .in("ShareTask")
-          .filter(_.out("ShareProfile").has(Key("permissions") of permission))
-          .in("OrganisationShare")
-          .in("RoleOrganisation")
-          .filter(_.out("RoleProfile").has(Key("permissions") of permission))
-          .in("UserRole")
-          .has(Key("login") of authContext.userId)
+    if (authContext.permissions.contains(permission))
+      this.filter(
+        _.inTo[TaskLog]
+          .inTo[ShareTask]
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
+          .inTo[OrganisationShare]
+          .has("name", authContext.organisation)
       )
-    )
+    else
+      this.limit(0)
 
   override def newInstance(newRaw: GremlinScala[Vertex]): LogSteps = new LogSteps(newRaw)
   override def newInstance(): LogSteps                             = new LogSteps(raw.clone())

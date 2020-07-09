@@ -329,14 +329,12 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
     )
 
   def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps =
-    this.filter(
-      _.outTo[AlertOrganisation]
-        .has("name", authContext.organisation)
-        .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has("permissions", permission))
-        .inTo[UserRole]
-        .has("login", authContext.userId)
-    )
+    if (authContext.permissions.contains(permission))
+      this.filter(
+        _.outTo[AlertOrganisation]
+          .has("name", authContext.organisation)
+      )
+    else this.limit(0)
 
   def imported: Traversal[Boolean, Boolean] = this.outToE[AlertCase].count.map(_ > 0)
 
@@ -350,16 +348,11 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
     val caseIdLabel           = StepLabel[JList[AnyRef]]()
     val caseTemplateNameLabel = StepLabel[JList[String]]()
     val observableCountLabel  = StepLabel[JLong]()
-    Traversal(
+    val result = Traversal(
       raw
         .`match`(
           _.as(alertLabel).out("AlertOrganisation").has(Key("name") of authContext.organisation).as(organisationLabel),
           _.as(alertLabel).out("AlertTag").fold().as(tagLabel),
-          _.as(organisationLabel)
-            .inTo[RoleOrganisation]
-            .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-            .inTo[UserRole]
-            .has(Key("login") of authContext.userId),
           _.as(alertLabel).outToE[AlertCustomField].inV().path.fold.as(customFieldLabel),
           _.as(alertLabel).outTo[AlertCase].id().fold.as(caseIdLabel),
           _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel),
@@ -397,6 +390,10 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
           ) -> organisation
         }
     )
+    if (authContext.permissions.contains(permission))
+      result
+    else
+      result.limit(0)
   }
 
   def customFields(name: String): CustomFieldValueSteps =

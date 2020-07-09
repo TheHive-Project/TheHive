@@ -475,9 +475,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
             .in("ShareCase")
             .filter(
               _.inTo[OrganisationShare]
-                .inTo[RoleOrganisation]
-                .inTo[UserRole]
-                .has(Key("login") of authContext.userId)
+                .has(Key("name") of authContext.organisation)
             )
             .out("ShareObservable")
             .as(observableLabel.name),
@@ -487,9 +485,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
             .in("ShareObservable")
             .filter(
               _.inTo[OrganisationShare]
-                .inTo[RoleOrganisation]
-                .inTo[UserRole]
-                .has(Key("login") of authContext.userId)
+                .has(Key("name") of authContext.organisation)
             )
             .out("ShareCase")
             .where(JP.neq(originCaseLabel.name))

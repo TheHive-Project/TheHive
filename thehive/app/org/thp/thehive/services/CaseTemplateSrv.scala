@@ -191,20 +191,19 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive
   override def newInstance(newRaw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(newRaw)
 
   def visible(implicit authContext: AuthContext): CaseTemplateSteps =
-    newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
+    this.filter(_.outTo[CaseTemplateOrganisation].has("name", authContext.organisation))
 
   override def newInstance(): CaseTemplateSteps = new CaseTemplateSteps(raw.clone())
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseTemplateSteps =
-    newInstance(
-      raw.filter(
+    if (authContext.permissions.contains(permission))
+      this.filter(
         _.outTo[CaseTemplateOrganisation]
           .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
+          .has("name", authContext.organisation)
       )
-    )
+    else
+      this.limit(0)
 
   def richCaseTemplate: Traversal[RichCaseTemplate, RichCaseTemplate] =
     Traversal(

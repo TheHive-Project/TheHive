@@ -211,7 +211,7 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-s
     this.filter(_.outTo[ObservableAttachment].has("hashes", hash))
 
   def visible(implicit authContext: AuthContext): ObservableSteps =
-    this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has("login", authContext.userId))
+    this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].has("name", authContext.organisation))
 
   def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
     if (authContext.permissions.contains(permission))

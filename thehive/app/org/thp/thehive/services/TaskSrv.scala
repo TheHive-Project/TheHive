@@ -131,17 +131,15 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
 
   def can(permission: Permission)(implicit authContext: AuthContext): TaskSteps =
-    newInstance(
-      raw.filter(
+    if (authContext.permissions.contains(permission))
+      this.filter(
         _.inTo[ShareTask]
-          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
           .inTo[OrganisationShare]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
+          .has("name", authContext.organisation)
       )
-    )
+    else
+      this.limit(0)
 
   def `case`: CaseSteps = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase].dedup)
 

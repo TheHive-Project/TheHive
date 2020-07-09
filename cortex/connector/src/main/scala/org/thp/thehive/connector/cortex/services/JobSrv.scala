@@ -274,16 +274,13 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
     * @param authContext the auth context to check login against
     * @return
     */
-  def visible(implicit authContext: AuthContext): JobSteps = newInstance(
-    raw.filter(
+  def visible(implicit authContext: AuthContext): JobSteps =
+    this.filter(
       _.inTo[ObservableJob]
         .inTo[ShareObservable]
         .inTo[OrganisationShare]
-        .inTo[RoleOrganisation]
-        .inTo[UserRole]
-        .has(Key("login") of authContext.userId)
+        .has("name", authContext.organisation)
     )
-  )
 
   /**
     * Checks if a job is accessible if the user and
@@ -293,18 +290,15 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
     * @return
     */
   def can(permission: Permission)(implicit authContext: AuthContext): JobSteps =
-    newInstance(
-      raw.filter(
+    if (authContext.permissions.contains(permission))
+      this.filter(
         _.inTo[ObservableJob]
           .inTo[ShareObservable]
-          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
           .inTo[OrganisationShare]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
+          .has("name", authContext.organisation)
       )
-    )
+    else this.limit(0)
 
   override def newInstance(newRaw: GremlinScala[Vertex]): JobSteps = new JobSteps(newRaw)
   override def newInstance(): JobSteps                             = new JobSteps(raw.clone())
