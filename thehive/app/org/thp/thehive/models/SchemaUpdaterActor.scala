@@ -7,6 +7,7 @@ import akka.util.Timeout
 import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.Database
+import org.thp.thehive.ClusterSetup
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
@@ -18,7 +19,8 @@ import scala.util.{Failure, Try}
 class DatabaseProvider @Inject() (
     database: Database,
     theHiveSchema: TheHiveSchemaDefinition,
-    actorSystem: ActorSystem
+    actorSystem: ActorSystem,
+    clusterSetup: ClusterSetup
 ) extends Provider[Database] {
   import SchemaUpdaterActor._
   lazy val schemaUpdaterActor: ActorRef = {

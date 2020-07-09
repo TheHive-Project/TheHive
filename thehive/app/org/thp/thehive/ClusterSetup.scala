@@ -14,12 +14,8 @@ import scala.concurrent.Future
 class ClusterSetup @Inject() (
     configuration: Configuration,
     system: ActorSystem,
-    applicationLifeCycle: ApplicationLifecycle,
-    db: Database,
     injector: Injector
 ) {
-  applicationLifeCycle
-    .addStopHook(() => Future.successful(db.close()))
   if (configuration.get[Seq[String]]("akka.cluster.seed-nodes").isEmpty) {
     val logger: Logger = Logger(getClass)
     logger.info("Initialising cluster")
