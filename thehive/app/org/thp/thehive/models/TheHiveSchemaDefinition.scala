@@ -5,6 +5,7 @@ import java.lang.reflect.Modifier
 import gremlin.scala.{Graph, Key}
 import javax.inject.{Inject, Singleton}
 import org.janusgraph.core.schema.ConsistencyModifier
+import org.janusgraph.graphdb.types.TypeDefinitionCategory
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
@@ -22,6 +23,8 @@ import scala.util.{Success, Try}
 @Singleton
 class TheHiveSchemaDefinition @Inject() (injector: Injector) extends Schema with UpdatableSchema {
 
+  // Make sure TypeDefinitionCategory has been initialised before ModifierType to prevent ExceptionInInitializerError
+  TypeDefinitionCategory.BACKING_INDEX
   lazy val logger: Logger = Logger(getClass)
   val name: String        = "thehive"
   val operations: Operations = Operations(name)

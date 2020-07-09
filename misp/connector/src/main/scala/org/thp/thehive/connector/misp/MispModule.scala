@@ -32,6 +32,5 @@ class MispModule(environment: Environment, configuration: Configuration) extends
     bind[ActorRef]
       .annotatedWithName("misp-actor")
       .toProvider[MispActorProvider]
-      .asEagerSingleton()
   }
 }
