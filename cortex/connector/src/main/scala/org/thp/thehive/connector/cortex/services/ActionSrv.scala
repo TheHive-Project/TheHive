@@ -63,10 +63,13 @@ class ActionSrv @Inject() (
             .find(_.name == cortexId)
             .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
         case None if cortexClients.nonEmpty =>
-          Future.firstCompletedOf {
-            cortexClients
-              .map(client => client.getResponder(workerId).map(_ => client))
-          }
+          Future
+            .traverse(cortexClients) { client =>
+              client.getResponder(workerId).map(_ => Some(client)).recover { case _ => None }
+            }
+            .flatMap(
+              _.flatten.headOption.fold[Future[CortexClient]](Future.failed(NotFoundError(s"Responder $workerId not found")))(Future.successful)
+            )
 
         case None => Future.failed(NotFoundError(s"Responder $workerId not found"))
       }
