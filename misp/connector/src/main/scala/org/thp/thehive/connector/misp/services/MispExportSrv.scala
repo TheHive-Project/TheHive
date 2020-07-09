@@ -96,7 +96,7 @@ class MispExportSrv @Inject() (
     client.createEvent(
       info = `case`.title,
       date = `case`.startDate,
-      threatLevel = 4 - `case`.severity,
+      threatLevel = math.min(4, math.max(1, 4 - `case`.severity)),
       published = false,
       analysis = 0,
       distribution = 0,
