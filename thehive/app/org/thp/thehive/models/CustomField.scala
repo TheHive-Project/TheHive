@@ -213,6 +213,7 @@ case class RichCustomField(customField: CustomField with Entity, customFieldValu
   def description: String        = customField.description
   def typeName: String           = customField.`type`.toString
   def value: Option[Any]         = `type`.getValue(customFieldValue)
+  def jsValue: JsValue           = `type`.getJsonValue(customFieldValue)
   def order: Option[Int]         = customFieldValue.order
   def `type`: CustomFieldType[_] = CustomFieldType.map(customField.`type`)
   def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.writes.asInstanceOf[Writes[Any]].writes)

@@ -4,7 +4,7 @@ import java.util.Date
 
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.{JsNull, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestCase(
@@ -120,8 +120,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         summary = None,
         user = Some("certuser@thehive.local"),
         customFields = Set(
-          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
-          OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))
+          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", JsNull),
+          OutputCustomFieldValue("string1", "string custom field", "string", JsString("string1 custom field"))
         )
       )
 

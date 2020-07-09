@@ -137,7 +137,7 @@ object Conversion {
 
   implicit val richCustomFieldOutput: Renderer.Aux[RichCustomField, OutputCustomFieldValue] = Renderer.json[RichCustomField, OutputCustomFieldValue](
     _.into[OutputCustomFieldValue]
-      .withFieldComputed(_.value, _.value.map(_.toString))
+      .withFieldComputed(_.value, _.jsValue)
       .withFieldComputed(_.tpe, _.typeName)
       .transform
   )
