@@ -199,7 +199,6 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive
     if (authContext.permissions.contains(permission))
       this.filter(
         _.outTo[CaseTemplateOrganisation]
-          .inTo[RoleOrganisation]
           .has("name", authContext.organisation)
       )
     else
