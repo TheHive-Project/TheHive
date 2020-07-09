@@ -142,7 +142,7 @@ class AlertCtrl @Inject() (
                 val similarCase = case0
                   .asInstanceOf[Case]
                   .into[OutputSimilarCase]
-                  .withFieldConst(_.artifactCount, observableCount.asScala.values.map(_.toLong).sum)
+                  .withFieldConst(_.artifactCount, observableCount.asScala.values.map(_.toInt).sum)
                   .withFieldConst(_.iocCount, observableCount.getOrDefault(true, 0L).toInt)
                   .withFieldConst(_.similarArtifactCount, iocStats.values.sum)
                   .withFieldConst(_.similarIOCCount, iocStats.getOrElse(true, 0))
