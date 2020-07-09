@@ -111,7 +111,7 @@
             var post = {
               responderId: responderId,
               objectType: type,
-              objectId: object.id
+              objectId: object._id
             };
 
             return ModalUtilsSrv.confirm('Run responder ' + responderName, 'Are you sure you want to run responser ' + responderName + '?', {
