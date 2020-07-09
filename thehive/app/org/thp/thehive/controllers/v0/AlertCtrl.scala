@@ -112,6 +112,7 @@ class AlertCtrl @Inject() (
         .similar
         .as(observableLabel)
         .`case`
+        .visible
         .as(caseLabel)
         .raw
         .select(observableLabel.name, caseLabel.name)
