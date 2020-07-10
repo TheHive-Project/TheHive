@@ -58,7 +58,7 @@ object InputCustomFieldValue {
   }
 }
 
-case class OutputCustomFieldValue(name: String, description: String, tpe: String, value: JsValue)
+case class OutputCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
 
 object OutputCustomFieldValue {
   implicit val format: OFormat[OutputCustomFieldValue] = Json.format[OutputCustomFieldValue]

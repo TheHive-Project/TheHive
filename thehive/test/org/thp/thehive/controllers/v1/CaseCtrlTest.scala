@@ -120,8 +120,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         summary = None,
         user = Some("certuser@thehive.local"),
         customFields = Set(
-          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", JsNull),
-          OutputCustomFieldValue("string1", "string custom field", "string", JsString("string1 custom field"))
+          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", JsNull, 0),
+          OutputCustomFieldValue("string1", "string custom field", "string", JsString("string1 custom field"), 0)
         )
       )
 
