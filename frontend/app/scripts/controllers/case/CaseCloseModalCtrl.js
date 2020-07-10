@@ -6,6 +6,7 @@
             $scope.tasksValid = false;
             $scope.tasks = [];
             $scope.formData = {};
+            $scope.customFieldsSrv = CustomFieldsSrv;
 
             SearchSrv(function(data) {
                 $scope.initialize();
@@ -30,37 +31,17 @@
                 }]
             }, 'case_task', 'all');
 
-            var getTemplateCustomFields = function(customFields) {
-                var result = [];
-
-                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
-                    return {
-                        name: name,
-                        order: definition.order
-                    };
-                }), 'order'), 'name');
-
-                return result;
-            };
-
             $scope.initialize = function() {
-                CustomFieldsSrv.all().then(function(fields) {
-                    $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
-                    $scope.allCustomFields = fields;
-
-                    $scope.mandatoryFields = _.without(_.map($scope.orderedFields, function(cf) {
-                        var fieldDef = fields[cf];
+                CustomFieldsSrv.all().then(function() {
+                    $scope.mandatoryFields = _.sortBy(_.filter($scope.caze.customFields, function(cf) {
+                        var fieldDef = $scope.customFieldsSrv.getCache(cf.name);
 
                         if(!fieldDef) {
                             return;
                         }
 
-                        var fieldValue = $scope.caze.customFields[cf][cf.type];
-
-                        if((fieldValue === undefined || fieldValue === null) && fieldDef.mandatory === true) {
-                            return cf;
-                        }
-                    }), undefined);
+                        return ((cf.value === undefined || cf.value === null) && fieldDef.mandatory === true);
+                    }), 'order');
 
                 });
 
@@ -83,6 +64,20 @@
                 $scope.tasksValid = true;
             };
 
+            $scope.getCustomFieldsForUpdate = function() {
+                var customFields = {};
+
+                _.each($scope.caze.customFields, function(cf) {
+                    customFields[cf.name] = {
+                        order: cf.order
+                    };
+
+                    customFields[cf.name][cf.type] = cf.type === 'date' ? moment(cf.value).valueOf() : cf.value;
+                });
+
+                return customFields;
+            };
+
             $scope.closeCase = function() {
                 var data = $scope.formData;
 
@@ -90,16 +85,7 @@
                     data.impactStatus = 'NotApplicable';
                 }
 
-                data.customFields = $scope.caze.customFields;
-
-                _.each($scope.mandatoryFields, function(cf) {
-                    var field = data.customFields[cf];
-                    var fieldDef = $scope.allCustomFields[cf];
-
-                    if(fieldDef.type === 'date') {
-                        field[fieldDef.type] = field[fieldDef.type] ? moment(field[fieldDef.type]).valueOf() : field[fieldDef.type];
-                    }
-                });
+                data.customFields = $scope.getCustomFieldsForUpdate();
 
                 var promise = $scope.updateField(data);
 
