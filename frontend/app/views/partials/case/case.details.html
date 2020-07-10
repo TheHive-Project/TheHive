@@ -51,10 +51,10 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Assignee</dt>
             <dd ng-if="canEdit">
-                <updatable-user on-update="updateField('owner', newValue)" value="caze.owner"/>
+                <updatable-user on-update="updateField('owner', newValue)" value="caze.assignee"/>
             </dd>
             <dd ng-if="!canEdit">
-                <user-info value="caze.owner" field="name"></user-info>
+                <user-info value="caze.assignee" field="name"></user-info>
             </dd>
         </dl>
 

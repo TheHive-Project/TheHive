@@ -18,7 +18,7 @@
                 '_and': [{
                     '_parent': {
                         "_query": {
-                            "_id": $scope.caze.id
+                            "_id": $scope.caze._id
                         },
                         "_type": "case"
                     }

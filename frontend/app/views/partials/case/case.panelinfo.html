@@ -2,14 +2,14 @@
     <div class="box-header with-border">
         <h3 class="box-title text-primary">
             <!-- <severity value="caze.severity"></severity> -->
-            <span class="mr-xxs" ng-if="!!!caze.stats.isOwner" uib-tooltip="Shared from another organisation" tooltip-placement="right">
+            <span class="mr-xxs" ng-if="!!!caze.extraData.isOwner" uib-tooltip="Shared from another organisation" tooltip-placement="right">
                 <i class="fa fa-share-square"></i>
             </span>
-            <span class="mr-xxs" ng-if="!!caze.stats.isOwner" uib-tooltip="Created by my organisation" tooltip-placement="right">
+            <span class="mr-xxs" ng-if="!!caze.extraData.isOwner" uib-tooltip="Created by my organisation" tooltip-placement="right">
                 <i class="fa fa-building-o"></i>
             </span>
             <span class="wrap">Case #
-                {{caze.caseId}}
+                {{caze.number}}
                 -
                 {{caze.title}}</span>
         </h3>
@@ -25,12 +25,12 @@
     <div class="box-body">
         <span uib-tooltip="Creation by">
             <i class="glyphicon glyphicon-user"></i>
-            <user-info value="caze.createdBy" field="name"></user-info>
+            <user-info value="caze._createdBy" field="name"></user-info>
         </span>
 
         <span class="ml-xxs" uib-tooltip="Created at">
             <i class="fa fa-calendar"></i>
-            <span class="mr-xxxs">{{caze.createdAt | shortDate}}</span>
+            <span class="mr-xxxs">{{caze._createdAt | shortDate}}</span>
         </span>
 
         <span class="text-success" uib-tooltip="Closed at" ng-show="isCaseClosed()">
@@ -45,7 +45,7 @@
         <span class="ml-xxs text-danger" ng-show="links.length > 0" uib-tooltip="Related to">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
-                <a class="text-danger" href ui-sref="app.case.links({caseId:caze.id})">
+                <a class="text-danger" href ui-sref="app.case.links({caseId:caze._id})">
                   <ng-pluralize count="links.length" when="{'one': '1 case', 'other': '{} cases'}"></ng-pluralize>
                 </a>
             </strong>
@@ -54,7 +54,7 @@
         <span class="ml-xxs text-danger" ng-show="alerts.count > 0"uib-tooltip="Related to">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
-                <a class="text-danger" href ui-sref="app.case.alerts({caseId:caze.id})">
+                <a class="text-danger" href ui-sref="app.case.alerts({caseId:caze._id})">
                   <ng-pluralize count="alerts.count" when="{'one': '1 alert', 'other': '{} alerts'}"></ng-pluralize>
                 </a>
             </strong>
@@ -101,12 +101,12 @@
                 </a>
             </span>
 
-            <span class="ml-xxs pull-right">
+            <!-- <span class="ml-xxs pull-right">
                 <a href ng-click="mergeCase()" class="text-primary noline" uib-tooltip="Merge case">
                     <i class="text-primary fa fa-compress"></i>
                     Merge
                 </a>
-            </span>
+            </span> -->
 
             <span class="ml-xxs pull-right" ng-if="!caze.flag || caze.flag == undefined">
                 <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">
@@ -138,9 +138,9 @@
 
         <div class="pull-right">
             <span class="ml-xxs pull-right">
-                <a href ui-sref="app.case.sharing({caseId: caze.id})" class="noline">
+                <a href ui-sref="app.case.sharing({caseId: caze._id})" class="noline">
                     <i class="fa fa-users"></i>
-                    Sharing ({{caze.stats.shareCount || 0}})
+                    Sharing ({{caze.extraData.shareCount || 0}})
                 </a>
             </span>
         </div>

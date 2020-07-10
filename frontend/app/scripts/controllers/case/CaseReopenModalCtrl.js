@@ -12,8 +12,8 @@
                 $scope.updateField('status', 'Open')
                     .then(function(caze) {
                         $scope.caze = caze;
-                        
-                        NotificationSrv.log('The case #' + caze.caseId + ' has been reopened', 'success');
+
+                        NotificationSrv.log('The case #' + caze.number + ' has been reopened', 'success');
                     });
                 $uibModalInstance.close();
             };

@@ -1,18 +1,20 @@
 <div class="case-custom-fields">
+    <pre>{{dialog.event.customFields | orderBy:'order' | json}}</pre>
 
-    <div ng-if="!dialog.orderedFields || dialog.orderedFields.length === 0">
+    <div ng-if="dialog.event.customFields.length === 0">
         <em>No aditional information have been specified</em>
     </div>
 
     <div class="row">
-        <div ng-repeat="k in dialog.orderedFields track by $index" ng-init="fieldDef = dialog.customFieldsCache.getCache(k);">
+        <div ng-repeat="customField in (dialog.event.customFields | orderBy:'order') track by $index" ng-init="fieldDef = dialog.customFieldsCache.getCache(customField.name);">
             <div class="clearfix" ng-if="$index % 2 == 0"></div>
             <div class="col-xs-6">
                 <custom-field-input
+                    index="$index"
                     editable="dialog.canEdit"
                     field="fieldDef"
                     on-update="dialog.updateField(fieldName, value)"
-                    value="dialog.eventCustomField[fieldDef.reference][fieldDef.type]"></custom-field-input>
+                    value="customField.value"></custom-field-input>
             </div>
         </div>
     </div>

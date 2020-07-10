@@ -27,7 +27,6 @@
             self.similarCasesStats = [];
 
             self.customFieldsCache = CustomFieldsSrv;
-            self.eventCustomField = {};
 
             self.counts = {
                 observables: 0,
@@ -48,20 +47,6 @@
                 return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
             };
 
-            self.updateCustomFieldsList = function() {
-                CustomFieldsSrv.all().then(function(/*fields*/) {
-                    self.orderedFields = _.pluck(_.sortBy(self.event.customFields, 'name'), 'name');
-
-                    var cf = {};
-                    _.each(self.event.customFields, function(f) {
-                        cf[f.name] = {};
-                        cf[f.name][f.tpe] = f.value;
-                    });
-
-                    self.eventCustomField = cf;
-                });
-            };
-
             self.load = function() {
                 AlertingSrv.get(eventId).then(function(data) {
                     self.event = data;
@@ -71,8 +56,6 @@
                     self.dataTypes = _.countBy(self.event.artifacts, function(attr) {
                         return attr.dataType;
                     });
-
-                    self.updateCustomFieldsList();
 
                 }, function(response) {
                   self.loading = false;

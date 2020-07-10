@@ -6,9 +6,9 @@
 
         $scope.confirm = function() {
             $scope.loading = true;
-            CaseSrv.forceRemove({ caseId: $scope.caze.id })
+            CaseSrv.forceRemove({ caseId: $scope.caze._id })
                 .$promise.then(function(response) {
-                    $uibModalInstance.close(response);                    
+                    $uibModalInstance.close(response);
                 })
                 .catch(function(err) {
                     $uibModalInstance.dismiss(err);

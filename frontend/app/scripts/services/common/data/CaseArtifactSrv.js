@@ -24,9 +24,9 @@
                 return $http.get('./api/case/artifact/'+observableId+'/similar', {
                         params: options
                     })
-                    .then(function(response) {
+                    .then(function(response) {                        
                         return _.filter(response.data, function(item) {
-                            return item.case;
+                            return item.stats && item.stats.case;
                         });
                     });
             };

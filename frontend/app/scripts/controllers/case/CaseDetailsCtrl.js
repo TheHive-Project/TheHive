@@ -70,6 +70,7 @@
         }
 
         $scope.openAttachment = function(attachment) {
+            // TODO fix me attachment.case_task is not defined
             $state.go('app.case.tasks-item', {
                 caseId: $scope.caze.id,
                 itemId: attachment.case_task.id
@@ -82,18 +83,6 @@
     });
 
     angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, CustomFieldsSrv) {
-        var getTemplateCustomFields = function(customFields) {
-            var result = [];
-
-            result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
-                return {
-                    name: name,
-                    order: definition.order
-                };
-            }), 'order'), 'name');
-
-            return result;
-        };
 
         $scope.getCustomFieldName = function(fieldDef) {
             return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
@@ -113,23 +102,17 @@
             });
 
             modalInstance.result.then(function() {
-                var temp = $scope.caze.customFields || {};
-
                 var customFieldValue = {};
                 customFieldValue[customField.type] = null;
-                customFieldValue.order = _.keys(temp).length + 1;
+                customFieldValue.order = _.max(_.pluck($scope.caze.customFields, 'order')) + 1;
 
                 $scope.updateField('customFields.' + customField.reference, customFieldValue);
-                $scope.updateCustomFieldsList();
-
-                $scope.caze.customFields[customField.reference] = customFieldValue;
             });
         };
 
         $scope.updateCustomFieldsList = function() {
             CustomFieldsSrv.all().then(function(fields) {
-                $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
-                $scope.allCustomFields = _.omit(fields, _.keys($scope.caze.customFields));
+                $scope.allCustomFields = _.omit(fields, _.pluck($scope.caze.customFields, 'name'));
                 $scope.customFieldsAvailable = _.keys($scope.allCustomFields).length > 0;
             });
         };
@@ -141,6 +124,10 @@
         $scope.updateCustomFieldsList();
 
         $scope.$on('case:refresh-custom-fields', function() {
+            $scope.updateCustomFieldsList();
+        });
+
+        $scope.$watch('caze.customFields', function() {
             $scope.updateCustomFieldsList();
         });
     });

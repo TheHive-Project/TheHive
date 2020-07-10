@@ -338,18 +338,13 @@ angular.module('thehive', [
                     caze: function($q, $rootScope, $stateParams, CaseSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
-                        CaseSrv.get({
-                            'caseId': $stateParams.caseId,
-                            'nstats': true
-                        }, function(data) {
-
-                            deferred.resolve(data);
-
-                        }, function(response) {
-                            deferred.reject(response);
-
-                            NotificationSrv.error('CaseMainCtrl', response.data, response.status);
-                        });
+                        CaseSrv.getById($stateParams.caseId, true)
+                            .then(function(data) {
+                                deferred.resolve(data);
+                            }).catch(function(response) {
+                                deferred.reject(response);
+                                NotificationSrv.error('CaseMainCtrl', response.data, response.status);
+                            });
 
                         return deferred.promise;
                     }

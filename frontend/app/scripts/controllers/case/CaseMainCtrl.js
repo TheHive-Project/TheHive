@@ -25,13 +25,13 @@
             $scope.oldestLink = null;
 
             $scope.caze = caze;
-            $scope.userPermissions = (caze.permissions || []).join(',');
-            $rootScope.title = 'Case #' + caze.caseId + ': ' + caze.title;
+            $scope.userPermissions = (caze.extraData.permissions || []).join(',');
+            $rootScope.title = 'Case #' + caze.number + ': ' + caze.title;
 
-            $scope.canEdit = caze.permissions.indexOf('manageCase') !== -1;
+            $scope.canEdit = caze.extraData.permissions.indexOf('manageCase') !== -1;
 
             $scope.initExports = function() {
-                $scope.existingExports = _.filter($scope.caze.stats.alerts || [], function(item) {
+                $scope.existingExports = _.filter($scope.caze.extraData.alerts || [], function(item) {
                     return item.type === 'misp';
                 }).length;
             };
@@ -68,19 +68,16 @@
                 rootId: $scope.caseId,
                 objectType: 'case',
                 callback: function(updates) {
-                  CaseSrv.get({
-                      'caseId': $stateParams.caseId,
-                      'nstats': true
-                  }, function(data) {
-                      $scope.caze = data;
+                    CaseSrv.getById($stateParams.caseId, true)
+                        .then(function(data) {
+                            $scope.caze = data;
 
-                      if(updates.length === 1 && updates[0] && updates[0].base.details.customFields){
-                          $scope.$broadcast('case:refresh-custom-fields');
-                      }
-
-                  }, function(response) {
-                      NotificationSrv.error('CaseMainCtrl', response.data, response.status);
-                  });
+                            if(updates.length === 1 && updates[0] && updates[0].base.details.customFields){
+                                $scope.$broadcast('case:refresh-custom-fields');
+                            }
+                        }).catch(function(response) {
+                            NotificationSrv.error('CaseMainCtrl', response.data, response.status);
+                        });
                 }
             });
 
@@ -136,7 +133,7 @@
             });
 
             $scope.$on('tasks:task-removed', function(event, task) {
-                CaseTabsSrv.removeTab('task-' + task.id);
+                CaseTabsSrv.removeTab('task-' + task._id);
             });
             $scope.$on('observables:observable-removed', function(event, observable) {
                 CaseTabsSrv.removeTab('observable-' + observable._id);
@@ -179,8 +176,8 @@
 
                 CaseSrv.update({
                     caseId: caseId
-                }, data, function(response) {
-                    UtilsSrv.shallowClearAndCopy(response, $scope.caze);
+                }, data, function(/*response*/) {
+                    //UtilsSrv.shallowClearAndCopy(response, $scope.caze);
                     defer.resolve($scope.caze);
                 }, function(response) {
                     NotificationSrv.error('caseDetails', response.data, response.status);
@@ -221,7 +218,6 @@
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.reopen.html',
                     controller: 'CaseReopenModalCtrl',
-                    size: ''
                 });
             };
 
@@ -236,10 +232,10 @@
                             return $scope.caze;
                         },
                         title: function() {
-                            return 'Merge Case #' + $scope.caze.caseId;
+                            return 'Merge Case #' + $scope.caze.number;
                         },
                         prompt: function() {
-                            return '#' + $scope.caze.caseId + ': ' + $scope.caze.title;
+                            return '#' + $scope.caze.number + ': ' + $scope.caze.title;
                         }
                     }
                 });
@@ -288,12 +284,13 @@
                 });
 
                 modalInstance.result.then(function() {
-                    return CaseSrv.get({
-                        'caseId': $scope.caseId,
-                        'nstats': true
-                    }).$promise;
+                    return CaseSrv.getById($scope.caseId, true);
+                    // return CaseSrv.get({
+                    //     'caseId': $scope.caseId,
+                    //     'nstats': true
+                    // }).$promise;
                 }).then(function(data) {
-                    $scope.caze = data.toJSON();
+                    $scope.caze = data;
                     $scope.initExports();
                 });
             };

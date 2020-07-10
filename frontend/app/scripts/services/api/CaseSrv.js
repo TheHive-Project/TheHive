@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('CaseSrv', function($http, $resource) {
+        .service('CaseSrv', function($q, $http, $resource, QuerySrv) {
 
             var resource = $resource('./api/case/:caseId', {}, {
                 update: {
@@ -47,6 +47,34 @@
             this.update = resource.update;
             this.merge = resource.merge;
             this.query = resource.query;
+
+            this.getById = function(id, withStats) {
+                var defer = $q.defer();
+
+                QuerySrv.call('v1', [{
+                    '_name': 'getCase',
+                    'idOrName': id
+                }], {
+                    page: {
+                        from: 0,
+                        to: 1,
+                        extraData: withStats ? [
+                            "observableStats",
+                            "taskStats",
+                            "alerts",
+                            "isOwner",
+                            "shareCount",
+                            "permissions"
+                        ] : []
+                    }
+                }).then(function(response) {
+                    defer.resolve(response[0]);
+                }).catch(function(err){
+                    defer.reject(err);
+                });
+
+                return defer.promise;
+            };
 
             this.bulkUpdate = function(ids, update) {
                 return $http.patch('./api/case/_bulk', _.extend({ids: ids}, update));

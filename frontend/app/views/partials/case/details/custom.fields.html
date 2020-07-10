@@ -13,17 +13,20 @@
         </span>
     </h4>
 
-    <div ng-if="!orderedFields || orderedFields.length === 0">
+    <div ng-if="caze.customFields.length === 0">
         <em>No additional information have been specified</em>
     </div>
 
     <div class="row">
-        <div ng-repeat="k in orderedFields track by $index">
+        <div ng-repeat="customField in (caze.customFields | orderBy:'order') track by $index">
             <div class="clearfix" ng-if="$index % 3 == 0"></div>
             <div class="col-xs-4">
                 <custom-field-input
-                    field="customFieldsCache[k]" on-update="updateField(fieldName, value)" editable="canEdit"
-                    value="caze.customFields[customFieldsCache[k].reference][customFieldsCache[k].type]"></custom-field-input>
+                    index="$index"
+                    editable="canEdit"
+                    field="customFieldsCache[customField.name]"
+                    on-update="updateField(fieldName, value)"
+                    value="customField.value"></custom-field-input>
             </div>
         </div>
     </div>
