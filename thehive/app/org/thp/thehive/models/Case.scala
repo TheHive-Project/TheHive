@@ -161,3 +161,5 @@ object RichCase {
     RichCase(`case`, tags, impactStatus, resolutionStatus, user, customFields, userPermissions)
   }
 }
+
+case class SimilarStats(observable: (Int, Int), ioc: (Int, Int))

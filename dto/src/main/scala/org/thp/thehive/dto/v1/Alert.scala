@@ -3,7 +3,7 @@ package org.thp.thehive.dto.v1
 import java.util.Date
 
 import org.thp.scalligraph.controllers.WithParser
-import play.api.libs.json.{Json, OFormat, OWrites, Reads}
+import play.api.libs.json._
 
 case class InputAlert(
     `type`: String,
@@ -49,7 +49,8 @@ case class OutputAlert(
     customFields: Set[OutputCustomFieldValue] = Set.empty,
     caseTemplate: Option[String] = None,
     observableCount: Long,
-    caseId: Option[String]
+    caseId: Option[String],
+    extraData: JsObject
 )
 
 object OutputAlert {
@@ -78,6 +79,7 @@ object OutputAlert {
       caseTemplate    <- (json \ "caseTemplate").validateOpt[String]
       observableCount <- (json \ "observableCount").validate[Long]
       caseId          <- (json \ "caseId").validateOpt[String]
+      extraData       <- (json \ "extraData").validate[JsObject]
     } yield OutputAlert(
       _id,
       _type,
@@ -101,7 +103,8 @@ object OutputAlert {
       customFields,
       caseTemplate,
       observableCount,
-      caseId
+      caseId,
+      extraData
     )
   }
   implicit val writes: OWrites[OutputAlert] = OWrites[OutputAlert] { outputAlert =>
@@ -128,7 +131,8 @@ object OutputAlert {
       "customFields"    -> outputAlert.customFields,
       "caseTemplate"    -> outputAlert.caseTemplate,
       "observableCount" -> outputAlert.observableCount,
-      "caseId"          -> outputAlert.caseId
+      "caseId"          -> outputAlert.caseId,
+      "extraData"       -> outputAlert.extraData
     )
   }
 

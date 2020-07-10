@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import java.lang.{Long => JLong}
-import java.util.{Date, List => JList}
+import java.util.{Date, Collection => JCollection, List => JList, Map => JMap}
 
 import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
@@ -337,6 +337,31 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
     else this.limit(0)
 
   def imported: Traversal[Boolean, Boolean] = this.outToE[AlertCase].count.map(_ > 0)
+
+  def similarCases(implicit authContext: AuthContext): Traversal[(RichCase, SimilarStats), (RichCase, SimilarStats)] =
+    observables
+      .similar
+      .visible
+      .groupBy(new ObservableSteps(__[Vertex]).`case`.raw)
+      .unfold[JMap.Entry[Vertex, JCollection[Vertex]]] // Map[Case, Seq[Observable]]
+      .project(
+        _.by(c =>
+          new CaseSteps(c.selectKeys.raw)
+            .project(
+              _.by(_.richCaseWithoutPerms)
+                .by(_.observables.groupCount(By(Key[Boolean]("ioc"))))
+            )
+        ).by(_.selectValues.unfold[Vertex].groupCount(By(Key[Boolean]("ioc"))))
+      )
+      .map {
+        case ((richCase, obsStats), similarStats) =>
+          val obsStatsMap     = obsStats.asScala.mapValues(_.toInt)
+          val similarStatsMap = similarStats.asScala.mapValues(_.toInt)
+          richCase -> SimilarStats(
+            similarStatsMap.values.sum         -> obsStatsMap.values.sum,
+            similarStatsMap.getOrElse(true, 0) -> obsStatsMap.getOrElse(true, 0)
+          )
+      }
 
   def alertUserOrganisation(
       permission: Permission

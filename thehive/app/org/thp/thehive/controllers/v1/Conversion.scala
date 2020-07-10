@@ -21,8 +21,21 @@ object Conversion {
       .withFieldConst(_._type, "Alert")
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
+
+  implicit val alertWithStatsOutput: Renderer[(RichAlert, JsObject)] =
+    Renderer.json[(RichAlert, JsObject), OutputAlert] { alertWithExtraData =>
+      alertWithExtraData
+        ._1
+        .into[OutputAlert]
+        .withFieldConst(_._type, "Alert")
+        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldConst(_.extraData, alertWithExtraData._2)
+        .transform
+    }
 
   implicit val auditOutput: Renderer.Aux[RichAudit, OutputAudit] = Renderer.json[RichAudit, OutputAudit](
     _.into[OutputAudit]

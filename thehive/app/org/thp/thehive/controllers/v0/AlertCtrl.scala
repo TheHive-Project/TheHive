@@ -1,19 +1,17 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Long => JLong}
-import java.util.{Base64, List => JList, Map => JMap}
+import java.util.Base64
 
-import gremlin.scala.{By, Graph, Key, StepLabel, Vertex}
+import gremlin.scala.Graph
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{PagedResult, Traversal}
-import org.thp.scalligraph.{AuthorizationError, InvalidFormatAttributeError, RichJMap, RichSeq}
+import org.thp.scalligraph.{AuthorizationError, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.models._
@@ -99,64 +97,29 @@ class AlertCtrl @Inject() (
         } yield Results.Created((richAlert -> richObservables).toJson)
       }
 
-  def alertSimilarityRenderer(
-      implicit authContext: AuthContext,
-      @Named("with-thehive-schema") db: Database,
-      graph: Graph
-  ): AlertSteps => Traversal[JsArray, JsArray] = { alertSteps =>
-    val observableLabel = StepLabel[Vertex]()
-    val caseLabel       = StepLabel[Vertex]()
-    Traversal(
-      alertSteps
-        .observables
-        .similar
-        .as(observableLabel)
-        .`case`
-        .visible
-        .as(caseLabel)
-        .raw
-        .select(observableLabel.name, caseLabel.name)
-        .fold
-        .map { resultMapList =>
-          val similarCases = resultMapList
-            .asScala
-            .map { m =>
-              val cid = m.getValue(caseLabel).id()
-              val ioc = m.getValue(observableLabel).value[Boolean]("ioc")
-              cid -> ioc
-            }
-            .groupBy(_._1)
-            .map {
-              case (cid, cidIoc) =>
-                val iocStats = cidIoc.groupBy(_._2).mapValues(_.size)
-                val (caseVertex: Vertex, observableCount: JMap[Boolean, JLong], resolutionStatus: JList[String]) = caseSrv
-                  .getByIds(cid.toString)
-                  .project(
-                    _.by
-                      .by(_.observables.groupCount(By(Key[Boolean]("ioc"))))
-                      .by(_.resolutionStatus.value.fold)
-                  )
-                  .head()
-                val case0 = caseVertex
-                  .as[Case]
-                val similarCase = case0
-                  .asInstanceOf[Case]
-                  .into[OutputSimilarCase]
-                  .withFieldConst(_.artifactCount, observableCount.asScala.values.map(_.toInt).sum)
-                  .withFieldConst(_.iocCount, observableCount.getOrDefault(true, 0L).toInt)
-                  .withFieldConst(_.similarArtifactCount, iocStats.values.sum)
-                  .withFieldConst(_.similarIOCCount, iocStats.getOrElse(true, 0))
-                  .withFieldConst(_.resolutionStatus, atMostOneOf[String](resolutionStatus))
-                  .withFieldComputed(_.status, _.status.toString)
-                  .withFieldConst(_.id, case0._id)
-                  .withFieldConst(_._id, case0._id)
-                  .withFieldRenamed(_.number, _.caseId)
-                  .transform
-                Json.toJson(similarCase)
-            }
-          JsArray(similarCases.toSeq)
+  def alertSimilarityRenderer(implicit authContext: AuthContext): AlertSteps => Traversal[JsArray, JsArray] = { alertSteps =>
+    alertSteps
+      .similarCases
+      .fold
+      .map { similarCases =>
+        JsArray {
+          similarCases.asScala.map {
+            case (richCase, similarStats) =>
+              val similarCase = richCase
+                .into[OutputSimilarCase]
+                .withFieldConst(_.artifactCount, similarStats.observable._2)
+                .withFieldConst(_.iocCount, similarStats.ioc._2)
+                .withFieldConst(_.similarArtifactCount, similarStats.observable._1)
+                .withFieldConst(_.similarIocCount, similarStats.ioc._1)
+                .withFieldRenamed(_._id, _.id)
+                .withFieldRenamed(_.number, _.caseId)
+                .withFieldComputed(_.status, _.status.toString)
+                .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+                .transform
+              Json.toJson(similarCase)
+          }
         }
-    )
+      }
   }
 
   def get(alertId: String): Action[AnyContent] =
@@ -170,7 +133,7 @@ class AlertCtrl @Inject() (
             .visible
         if (similarity.contains(true))
           alert
-            .richAlertWithCustomRenderer(alertSimilarityRenderer(request, db, graph))
+            .richAlertWithCustomRenderer(alertSimilarityRenderer(request))
             .getOrFail()
             .map {
               case (richAlert, similarCases) =>

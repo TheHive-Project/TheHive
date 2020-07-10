@@ -38,7 +38,7 @@ case class OutputSimilarCase(
     tags: Set[String] = Set.empty,
     tlp: Int,
     status: String,
-    similarIOCCount: Int,
+    similarIocCount: Int,
     iocCount: Int,
     similarArtifactCount: Int,
     artifactCount: Int
