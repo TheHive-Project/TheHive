@@ -8,17 +8,17 @@
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
-                        <a ng-click="bulkEdit()">Edit</a>
+                        <a ng-click="bulkEdit()"><i class="fa fa-edit"></i> Edit</a>
                     </li>
 
                     <li ng-if="analysisEnabled" if-permission="manageAnalyse" allowed="{{userPermissions}}">
-                        <a ng-click="bulkAnalyze();">Run analyzers</a>
+                        <a ng-click="bulkAnalyze();"><i class="glyphicon glyphicon-fire"></i> Run analyzers</a>
                     </li>
 
                     <li class="divider"></li>
                     <li>
                         <a href ng-click="removeObservables()">
-                            <span class="text-danger">Delete</span>
+                            <i class="fa fa-trash"></i> Delete
                         </a>
                     </li>
                 </ul>

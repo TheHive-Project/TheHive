@@ -5,6 +5,7 @@
             var self = this;
             var eventId = event._id;
 
+            self.eventId = event._id;
             self.readonly = readonly;
             self.templates = _.pluck(templates, 'name');
             self.CaseResolutionStatus = CaseResolutionStatus;
@@ -19,52 +20,28 @@
                 filter: '',
                 data: []
             };
-            self.filteredArtifacts = [];
 
             self.similarityFilters = {};
             self.similaritySorts = ['-startDate', '-similarArtifactCount', '-similarIocCount', '-iocCount'];
             self.currentSimilarFilter = '';
             self.similarCasesStats = [];
+
             self.customFieldsCache = CustomFieldsSrv;
+            self.eventCustomField = {};
+
+            self.counts = {
+                observables: 0,
+                similarCases: 0
+            };
 
             self.hideEmptyCaseButton = UiSettingsSrv.uiHideEmptyCaseButton();
 
-            var getTemplateCustomFields = function(customFields) {
-                var result = [];
-
-                result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
-                    return {
-                        name: name,
-                        order: definition.order
-                    };
-                }), 'order'), 'name');
-
-                return result;
+            self.updateObservableCount = function(count) {
+                self.counts.observables = count;
             };
 
-            this.filterArtifacts = function(value) {
-                self.pagination.currentPage = 1;
-                this.pagination.filter= value;
-                this.loadPage();
-            };
-
-            self.loadPage = function() {
-                var end = self.pagination.currentPage * self.pagination.pageSize;
-                var start = end - self.pagination.pageSize;
-
-                self.filteredArtifacts = (self.pagination.filter === '' ? self.event.artifacts : _.filter(self.event.artifacts, function(item) {
-                    return item.dataType === self.pagination.filter;
-                })) || [];
-
-                var data = [];
-                angular.forEach(self.filteredArtifacts.slice(start, end), function(d) {
-                    data.push(d);
-                });
-
-                self.pagination.data = data;
-
-                // load custom fields
-                self.updateCustomFieldsList();
+            self.updateSimilarCasesCount = function(count) {
+                self.counts.similarCases = count;
             };
 
             self.getCustomFieldName = function(fieldDef) {
@@ -72,16 +49,22 @@
             };
 
             self.updateCustomFieldsList = function() {
-                CustomFieldsSrv.all().then(function(fields) {
-                    self.orderedFields = getTemplateCustomFields(self.event.customFields);
-                    self.allCustomFields = _.omit(fields, _.keys(self.event.customFields));
-                    self.customFieldsAvailable = _.keys(self.allCustomFields).length > 0;
+                CustomFieldsSrv.all().then(function(/*fields*/) {
+                    self.orderedFields = _.pluck(_.sortBy(self.event.customFields, 'name'), 'name');
+
+                    var cf = {};
+                    _.each(self.event.customFields, function(f) {
+                        cf[f.name] = {};
+                        cf[f.name][f.tpe] = f.value;
+                    });
+
+                    self.eventCustomField = cf;
                 });
             };
 
             self.load = function() {
-                AlertingSrv.get(eventId).then(function(response) {
-                    self.event = response.data;
+                AlertingSrv.get(eventId).then(function(data) {
+                    self.event = data;
                     self.loading = false;
                     self.initSimilarCasesFilter(self.event.similarCases);
 
@@ -89,7 +72,8 @@
                         return attr.dataType;
                     });
 
-                    self.loadPage();
+                    self.updateCustomFieldsList();
+
                 }, function(response) {
                   self.loading = false;
                   NotificationSrv.error('AlertEventCtrl', response.data, response.status);
@@ -277,6 +261,8 @@
                 clipboard.copyText(id);
             };
 
-            self.load();
+            this.$onInit = function() {
+                self.load();
+            };
         });
 })();

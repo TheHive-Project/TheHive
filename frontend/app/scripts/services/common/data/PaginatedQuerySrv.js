@@ -73,6 +73,10 @@
                 Function to compute the range of the page
                 */
                 this.getPage = function() {
+                    if (this.loadAll) {
+                        return;
+                    }
+
                     var to = this.currentPage * this.pageSize;
                     var from = to - this.pageSize;
                     //range = start + '-' + end;
@@ -97,6 +101,10 @@
                     var predicates = _.filter([this.baseFilter, this.filter], function(item) {
                         return !_.isEmpty(item);
                     });
+
+                    if(predicates.length === 0) {
+                        return [];
+                    }
 
                     return predicates.length === 1 ? predicates[0] : {'_and': predicates};
                 };
@@ -126,6 +134,9 @@
                     }).then(function(data) {
                         if (self.loadAll) {
                             self.allValues = data;
+
+                            self.total = data.length;
+
                             self.changePage();
                         } else {
                             self.values = data;
@@ -137,7 +148,7 @@
 
                     // get the total if not cached
                     var hash = $filter('md5')(JSON.stringify(this.filter));
-                    if(this.filterHash !== hash) {
+                    if(!!!this.loadAll && this.filterHash !== hash) {
                         this.filterHash = hash;
 
                         // Compute the total again
