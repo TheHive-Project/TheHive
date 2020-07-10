@@ -24,8 +24,20 @@ trait AlertRenderer {
         "iocCount"               -> similarStats.ioc._2
       )
   }
-  def similarCasesStats(alertSteps: AlertSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    alertSteps.similarCases.fold.map(sc => JsArray(sc.asScala.map(Json.toJson(_))))
+  def similarCasesStats(alertSteps: AlertSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] = {
+    implicit val similarCaseOrdering: Ordering[(RichCase, SimilarStats)] = (x: (RichCase, SimilarStats), y: (RichCase, SimilarStats)) =>
+      //negative if x < y
+      if (x._1._createdAt after y._1._createdAt) -1
+      else if (x._1._createdAt before y._1._createdAt) 1
+      else if (x._2.observable._1 > y._2.observable._1) -1
+      else if (x._2.observable._1 < y._2.observable._1) 1
+      else if (x._2.ioc._1 > y._2.ioc._1) -1
+      else if (x._2.ioc._1 < y._2.ioc._1) 1
+      else if (x._2.ioc._2 > y._2.ioc._2) -1
+      else if (x._2.ioc._2 < y._2.ioc._2) 1
+      else 0
+    alertSteps.similarCases.fold.map(sc => JsArray(sc.asScala.sorted.map(Json.toJson(_))))
+  }
 
   def alertStatsRenderer(extraData: Set[String])(
       implicit authContext: AuthContext,
