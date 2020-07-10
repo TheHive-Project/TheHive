@@ -240,7 +240,7 @@
                 var promise = serverId ? $q.resolve(serverId) : CortexSrv.getServers([analyzerName]);
 
                 promise.then(function (serverId) {
-                        return $scope._runAnalyzer(serverId, analyzerName, $scope.artifact.id);
+                        return $scope._runAnalyzer(serverId, analyzerName, $scope.artifact._id);
                     })
                     .then(function () {
                         NotificationSrv.log('Analyzer ' + analyzerName + ' has been successfully started for observable: ' + artifactName, 'success');
@@ -252,7 +252,7 @@
             };
 
             $scope.runAll = function () {
-                var artifactId = $scope.artifact.id;
+                var artifactId = $scope.artifact._id;
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
                 var analyzerIds = _.pluck(_.filter($scope.analyzers, function (a) {
                     return a.active === true;
@@ -285,7 +285,7 @@
             };
 
             $scope.runResponder = function(responderId, responderName, artifact) {
-                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, 'id'))
+                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, '_id'))
                   .then(function(response) {
                       var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');

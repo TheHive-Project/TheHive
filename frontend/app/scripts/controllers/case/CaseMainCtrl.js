@@ -335,7 +335,7 @@
             };
 
             $scope.runResponder = function(responderId, responderName) {
-                CortexSrv.runResponder(responderId, responderName, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
+                CortexSrv.runResponder(responderId, responderName, 'case', _.pick($scope.caze, '_id', 'tlp', 'pap'))
                   .then(function(response) {
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
                   })
