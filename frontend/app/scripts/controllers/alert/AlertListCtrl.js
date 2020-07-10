@@ -203,7 +203,7 @@
             };
 
             this.runResponder = function(responderId, responderName, event) {
-                CortexSrv.runResponder(responderId, responderName, 'alert', _.pick(event, 'id', 'tlp'))
+                CortexSrv.runResponder(responderId, responderName, 'alert', _.pick(event, '_id', 'tlp'))
                   .then(function(response) {
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on alert', event.title].join(' '), 'success');
                   })

@@ -242,7 +242,7 @@
         };
 
         this.runResponder = function(responderId, responderName, caze) {
-            CortexSrv.runResponder(responderId, responderName, 'case', _.pick(caze, 'id', 'tlp', 'pap'))
+            CortexSrv.runResponder(responderId, responderName, 'case', _.pick(caze, '_id', 'tlp', 'pap'))
                 .then(function(response) {
                     NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
                 })

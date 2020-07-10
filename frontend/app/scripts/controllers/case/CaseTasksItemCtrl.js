@@ -237,7 +237,7 @@
             };
 
             $scope.runResponder = function(responderId, responderName) {
-                CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick($scope.task, 'id'))
+                CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick($scope.task, '_id'))
                   .then(function(response) {
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', $scope.task.title].join(' '), 'success');
                   })
