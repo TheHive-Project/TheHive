@@ -58,7 +58,7 @@
                     version: 'v1',
                     scope: $scope,
                     sort: self.filtering.context.sort,
-                    loadAll: true,
+                    loadAll: false,
                     pageSize: self.filtering.context.pageSize,
                     filter: self.filtering.buildQuery(),
                     baseFilter: self.defaultFilter,
