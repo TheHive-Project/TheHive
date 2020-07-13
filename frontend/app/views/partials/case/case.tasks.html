@@ -5,6 +5,12 @@
 <!-- Filters preview  -->
 <div class="row mt-s">
     <div class="col-md-12 clearfix">
+        <div class="pull-left">
+            <h4>
+                Tasks List ({{tasks.values.length || 0}} of {{tasks.total}})
+            </h4>
+        </div>
+
         <filters-preview filters="filtering.context.filters"
             on-clear-item="removeFilter(field)"
             on-clear-all="clearFilters()"></filters-preview>
@@ -17,9 +23,9 @@
     </div>
 </div>
 
-<div class="row mv-l" ng-if="canEdit" ng-show="state.isNewTask">
+<div class="row mb-xxs" ng-if="canEdit" ng-show="state.isNewTask">
     <div class="col-md-12">
-        <form name="form" ng-submit="addTask(); state.isNewTask = false;">
+        <form name="form" ng-submit="addTask(); state.isNewTask = false;" class="filter-panel">
             <div class="row">
                 <div class="col-sm-3">
                   <div class="form-group">
@@ -46,7 +52,7 @@
     </div>
 </div>
 
-<div class="row" ng-show="!state.showGrouped && tasks.total !== 0">
+<div class="row" ng-if="!state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
         <table class="table table-hover valigned tasks-table">
             <thead>
@@ -146,7 +152,7 @@
     </div>
 </div>
 
-<div class="row" ng-show="state.showGrouped && tasks.total !== 0">
+<div class="row" ng-if="state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
         <div class="panel panel-default" ng-repeat="group in groupedTasks">
             <div class="panel-heading">

@@ -162,7 +162,7 @@
             };
 
             self.import = function(event) {
-                $uibModal.open({
+                var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/alert/event.dialog.html',
                     controller: 'AlertEventCtrl',
                     controllerAs: 'dialog',
@@ -173,6 +173,12 @@
                             return CaseTemplateSrv.list();
                         },
                         readonly: false
+                    }
+                });
+
+                modalInstance.result.catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('AlertListCtrl', err.data, err.status);
                     }
                 });
             };

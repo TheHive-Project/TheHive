@@ -40,11 +40,11 @@
 
                 <span class="mh-xxs text-primary">|</span>
 
-                <a href class="text-primary noline" ng-click="getTaskResponders()" uib-dropdown-toggle>
+                <a href class="text-primary noline" ng-click="getTaskResponders(true)">
                     <i class="text-primary fa fa-cog"></i>
                     Responders
-                    <i class="text-primary fa fa-angle-down"></i>
                 </a>
+                <!--
                 <ul class="dropdown-menu dropdown-menu-right" uib-dropdown-menu>
                   <li ng-if="taskResponders && taskResponders.length === 0">
                     <a href ng-click="getTaskResponders(true)">
@@ -57,7 +57,7 @@
                       <br>
                       <small>{{responder.description}}</small></a>
                   </li>
-                </ul>
+                </ul> -->
             </span>
 
         </div>
@@ -235,7 +235,7 @@
                  shares="shares"
                  read-only="true"
                  on-delete="removeShare(share)"
-                 permissions="userPermissions"                 
+                 permissions="userPermissions"
                  ></sharing-list>
          </div>
     </div>

@@ -66,12 +66,17 @@
             <span class="ml-xxs pull-right" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
                 <span class="mr-xxs text-primary">|</span>
 
-                <a href class="text-primary noline" ng-click="getCaseResponders(true)" uib-dropdown-toggle>
+                <a href class="text-primary noline" ng-click="getCaseResponders(true)">
+                    <i class="text-info fa fa-cog"></i>
+                    Responders
+                </a>
+
+                <!-- <a href class="text-primary noline" ng-click="getCaseResponders(true)" uib-dropdown-toggle>
                     <i class="text-primary fa fa-cog"></i>
                     Responders
                     <i class="text-primary fa fa-angle-down"></i>
-                </a>
-                <ul class="dropdown-menu" uib-dropdown-menu>
+                </a> -->
+                <!-- <ul class="dropdown-menu" uib-dropdown-menu>
                   <li ng-if="caseResponders && caseResponders.length === 0">
                     <a href ng-click="getCaseResponders(true)">
                       <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
@@ -83,7 +88,7 @@
                       <br>
                       <small>{{responder.description}}</small></a>
                   </li>
-                </ul>
+                </ul> -->
             </span>
 
             <span class="ml-xxs pull-right" ng-if="appConfig.connectors.misp.enabled">

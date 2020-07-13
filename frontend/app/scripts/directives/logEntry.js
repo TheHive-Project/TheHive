@@ -8,28 +8,45 @@
                     $scope.showActions = false;
                     $scope.actions = null;
                     $scope.logResponders = null;
-                    $scope.getLogResponders = function(logId) {
+                    $scope.getLogResponders = function(taskLog, force) {
+                        if(!force && $scope.logResponders !== null) {
+                           return;
+                        }
+
                         $scope.logResponders = null;
-                        CortexSrv.getResponders('case_task_log', logId)
+                        CortexSrv.getResponders('case_task_log', taskLog._id)
                             .then(function(responders) {
                                 $scope.logResponders = responders;
+                                return CortexSrv.promntForResponder(responders);
                             })
-                            .catch(function(response) {
-                                NotificationSrv.error('logEntry', response.data, response.status);
+                            .then(function(response) {
+                                if(response && _.isString(response)) {
+                                    NotificationSrv.log(response, 'warning');
+                                } else {
+                                    return CortexSrv.runResponder(response.id, response.name, 'case_task_log', _.pick(taskLog, '_id'));
+                                }
+                            })
+                            .then(function(response){
+                                NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task log'].join(' '), 'success');
+                            })
+                            .catch(function(err) {
+                                if(err && !_.isString(err)) {
+                                    NotificationSrv.error('logEntry', err.data, err.status);
+                                }
                             });
                     };
 
-                    $scope.runResponder = function(responderId, responderName, log) {
-                        CortexSrv.runResponder(responderId, responderName, 'case_task_log', _.pick(log, '_id'))
-                          .then(function(response) {
-                              NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task log'].join(' '), 'success');
-                          })
-                          .catch(function(response) {
-                              if(response && !_.isString(response)) {
-                                  NotificationSrv.error('logEntry', response.data, response.status);
-                              }
-                          });
-                    };
+                    // $scope.runResponder = function(responderId, responderName, log) {
+                    //     CortexSrv.runResponder(responderId, responderName, 'case_task_log', _.pick(log, '_id'))
+                    //       .then(function(response) {
+                    //           NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task log'].join(' '), 'success');
+                    //       })
+                    //       .catch(function(response) {
+                    //           if(response && !_.isString(response)) {
+                    //               NotificationSrv.error('logEntry', response.data, response.status);
+                    //           }
+                    //       });
+                    // };
 
                     $scope.getActions = function(logId) {
                         $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
