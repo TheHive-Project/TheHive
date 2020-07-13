@@ -36,18 +36,6 @@
                             });
                     };
 
-                    // $scope.runResponder = function(responderId, responderName, log) {
-                    //     CortexSrv.runResponder(responderId, responderName, 'case_task_log', _.pick(log, '_id'))
-                    //       .then(function(response) {
-                    //           NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task log'].join(' '), 'success');
-                    //       })
-                    //       .catch(function(response) {
-                    //           if(response && !_.isString(response)) {
-                    //               NotificationSrv.error('logEntry', response.data, response.status);
-                    //           }
-                    //       });
-                    // };
-
                     $scope.getActions = function(logId) {
                         $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
                             scope: $scope,
