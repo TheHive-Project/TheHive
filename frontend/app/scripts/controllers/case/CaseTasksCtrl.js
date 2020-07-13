@@ -230,31 +230,44 @@
             return defer.promise;
         };
 
-        $scope.getTaskResponders = function(taskId, force) {
+        $scope.getTaskResponders = function(task, force) {
             if(!force && $scope.taskResponders !== null) {
                return;
             }
 
             $scope.taskResponders = null;
-            CortexSrv.getResponders('case_task', taskId)
+            CortexSrv.getResponders('case_task', task._id)
               .then(function(responders) {
                   $scope.taskResponders = responders;
+                  return CortexSrv.promntForResponder(responders);
               })
-              .catch(function(response) {
-                  NotificationSrv.error('taskList', response.data, response.status);
-              });
-        };
-
-        $scope.runResponder = function(responderId, responderName, task) {
-            CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick(task, '_id'))
               .then(function(response) {
+                  if(response && _.isString(response)) {
+                      NotificationSrv.log(response, 'warning');
+                  } else {
+                      return CortexSrv.runResponder(response.id, response.name, 'case_task', _.pick(task, '_id'));
+                  }
+              })
+              .then(function(response){
                   NotificationSrv.success(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '));
               })
-              .catch(function(response) {
-                  if(response && !_.isString(response)) {
-                      NotificationSrv.error('taskList', response.data, response.status);
+              .catch(function(err) {
+                  if(err && !_.isString(err)) {
+                      NotificationSrv.error('taskList', err.data, err.status);
                   }
               });
         };
+
+        // $scope.runResponder = function(responderId, responderName, task) {
+        //     CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick(task, '_id'))
+        //       .then(function(response) {
+        //           NotificationSrv.success(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '));
+        //       })
+        //       .catch(function(response) {
+        //           if(response && !_.isString(response)) {
+        //               NotificationSrv.error('taskList', response.data, response.status);
+        //           }
+        //       });
+        // };
     }
 }());

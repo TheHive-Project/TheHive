@@ -187,29 +187,30 @@
                 }
             };
 
-            this.getResponders = function(eventId, force) {
+            this.getResponders = function(event, force) {
                 if(!force && this.responders !== null) {
                    return;
                 }
 
                 this.responders = null;
-                CortexSrv.getResponders('alert', eventId)
+                CortexSrv.getResponders('alert', event._id)
                   .then(function(responders) {
                       self.responders = responders;
+                      return CortexSrv.promntForResponder(responders);
                   })
-                  .catch(function(err) {
-                      NotificationSrv.error('AlertList', err.data, err.status);
-                  });
-            };
-
-            this.runResponder = function(responderId, responderName, event) {
-                CortexSrv.runResponder(responderId, responderName, 'alert', _.pick(event, '_id', 'tlp'))
                   .then(function(response) {
+                      if(response && _.isString(response)) {
+                          NotificationSrv.log(response, 'warning');
+                      } else {
+                          return CortexSrv.runResponder(response.id, response.name, 'alert', _.pick(event, '_id', 'tlp'));
+                      }
+                  })
+                  .then(function(response){
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on alert', event.title].join(' '), 'success');
                   })
-                  .catch(function(response) {
-                      if(response && !_.isString(response)) {
-                          NotificationSrv.error('CaseList', response.data, response.status);
+                  .catch(function(err) {
+                      if(err && !_.isString(err)) {
+                          NotificationSrv.error('AlertList', err.data, err.status);
                       }
                   });
             };

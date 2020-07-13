@@ -164,24 +164,10 @@
                                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as unread" ng-if="$vm.canMarkAsUnread(event)">
                                                 <i class="text-info text-20 fa fa-envelope-open-o"></i>
                                             </a>
-                                            <span class="btn btn-xs btn-icon btn-clear" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction">
-                                                <a href class="text-primary noline nowrap" ng-click="$vm.getResponders(event._id, true)" uib-dropdown-toggle>
-                                                    <i class="text-info text-20 fa fa-cog"></i>
-                                                </a>
-                                                <ul class="dropdown-menu align-right" uib-dropdown-menu>
-                                                  <li ng-if="$vm.responders && $vm.responders.length === 0">
-                                                    <a href ng-click="$vm.getResponders(event._id, true)">
-                                                      <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
-                                                    </a>
-                                                  </li>
-                                                  <li ng-repeat="responder in $vm.responders">
-                                                    <a href ng-click="$vm.runResponder(responder.id, responder.name, event)">
-                                                      <strong>{{responder.name}}</strong>
-                                                      <br>
-                                                      <small>{{responder.description}}</small></a>
-                                                  </li>
-                                                </ul>
-                                            </span>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.getResponders(event, true)" uib-tooltip="Run responders"
+                                                ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction">
+                                                <i class="text-info text-20 fa fa-cog"></i>
+                                            </a>
                                         </div>
 
                                         <div class="pull-right">

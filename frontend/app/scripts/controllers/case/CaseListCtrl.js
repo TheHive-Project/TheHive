@@ -226,32 +226,32 @@
             });
         };
 
-        this.getCaseResponders = function(caseId, force) {
+        this.getCaseResponders = function(caze, force) {
             if (!force && this.caseResponders !== null) {
                 return;
             }
 
-            this.caseResponders = null;
-            CortexSrv.getResponders('case', caseId)
-                .then(function(responders) {
+            self.caseResponders = null;
+            CortexSrv.getResponders('case', caze._id)
+                .then(function(responders){
                     self.caseResponders = responders;
+                    return CortexSrv.promntForResponder(responders);
                 })
-                .catch(function(err) {
-                    NotificationSrv.error('CaseList', err.data, err.status);
-                });
-        };
-
-        this.runResponder = function(responderId, responderName, caze) {
-            CortexSrv.runResponder(responderId, responderName, 'case', _.pick(caze, '_id', 'tlp', 'pap'))
                 .then(function(response) {
+                    if(response && _.isString(response)) {
+                        NotificationSrv.log(response, 'warning');
+                    } else {
+                        return CortexSrv.runResponder(response.id, response.name, 'case', _.pick(caze, '_id', 'tlp', 'pap'));
+                    }
+                })
+                .then(function(response){
                     NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
                 })
-                .catch(function(response) {
-                    if (response && !_.isString(response)) {
-                        NotificationSrv.error('CaseList', response.data, response.status);
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('CaseList', err.data, err.status);
                     }
                 });
         };
-
     }
 })();

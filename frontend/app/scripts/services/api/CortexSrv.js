@@ -96,6 +96,27 @@
             return modalInstance.result;
         };
 
+        this.promntForResponder = function(responders) {
+            if(!responders || responders.length ===0) {
+                return $q.resolve('No responders available');
+            }
+
+            var modalInstance = $uibModal.open({
+                animation: 'true',
+                templateUrl: 'views/partials/misc/responder.selector.html',
+                controller: 'ResponderSelectorCtrl',
+                controllerAs: '$dialog',
+                size: 'lg',
+                resolve: {
+                    responders: function() {
+                        return responders;
+                    }
+                }
+            });
+
+            return modalInstance.result;
+        };
+
         this.getResponders = function(type, id) {
             //return $http.get(baseUrl + '/responder')
             return $http.get(baseUrl + '/responder/' + type + '/' + id)

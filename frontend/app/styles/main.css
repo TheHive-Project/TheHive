@@ -290,6 +290,10 @@ pre.clearpre {
     background-color: #777;
 }
 
+.btn-clear:active {
+    box-shadow: none;
+}
+
 dl.dl-horizontal>dt.pull-left {
     text-align: left !important;
 }
