@@ -39,7 +39,9 @@
                     flavor: 'danger',
                     isHtml: true
                 })
-                    .then(ObservableTypeSrv.remove(type._id))
+                    .then(function() {
+                        return ObservableTypeSrv.remove(type._id);
+                    })
                     .then(function(/*response*/) {
                         NotificationSrv.log('Observable type removed successfully', 'success');
                         self.load();
