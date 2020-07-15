@@ -318,14 +318,14 @@ class AuditSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema
       .project(
         _.by
           .by(_.`case`.fold)
-          .by(_.context)
+          .by(_.context.fold)
           .by(_.`object`.fold)
           .by(entityRenderer)
       )
-      .map {
-        case (audit, context, visibilityContext, obj, renderedObject) =>
-          val ctx = if (context.isEmpty) visibilityContext else context.get(0)
-          RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
+      .collect {
+        case (audit, context, visibilityContext, obj, renderedObject) if !context.isEmpty || !visibilityContext.isEmpty =>
+          val ctx = if (context.isEmpty) visibilityContext.get(0) else context.get(0)
+          RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.get(0).asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
       }
 
   def forCase(caseId: String): AuditSteps = this.filter(_.`case`.hasId(caseId))
