@@ -10,8 +10,8 @@ import play.api.routing.sird._
 class Router @Inject() (mispCtrl: MispCtrl) extends SimpleRouter {
 
   override val routes: Routes = {
-    case GET(p"/_syncAlerts")  => mispCtrl.sync
-    case GET(p"/_cleanAlerts") => mispCtrl.cleanMispAlerts
+    case GET(p"/_syncAlerts") => mispCtrl.sync
+//    case GET(p"/_cleanAlerts") => mispCtrl.cleanMispAlerts
 //    case GET(p"/_syncAllAlerts")            => syncAllAlerts
 //    case GET(p"/_syncArtifacts")            => syncArtifacts
     case POST(p"/export/$caseId/$mispName") => mispCtrl.exportCase(mispName, caseId)

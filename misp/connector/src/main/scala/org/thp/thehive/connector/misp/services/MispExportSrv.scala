@@ -8,7 +8,7 @@ import org.thp.misp.dto.{Attribute, Tag => MispTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{BadRequestError, NotFoundError}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
 import play.api.Logger
@@ -131,10 +131,16 @@ class MispExportSrv @Inject() (
       _            <- alertSrv.alertCaseSrv.create(AlertCase(), createdAlert.alert, `case`)
     } yield createdAlert
 
+  def canExport(client: TheHiveMispClient)(implicit authContext: AuthContext): Boolean =
+    client.canExport && db.roTransaction { implicit graph =>
+      client.organisationFilter(organisationSrv.current).exists()
+    }
+
   def export(mispId: String, `case`: Case with Entity)(implicit authContext: AuthContext, ec: ExecutionContext): Future[String] = {
     logger.info(s"Exporting case ${`case`.number} to MISP $mispId")
     for {
       client  <- getMispClient(mispId)
+      _       <- if (canExport(client)) Future.successful(()) else Future.failed(AuthorizationError(s"You cannot export case to MISP $mispId"))
       orgName <- Future.fromTry(client.currentOrganisationName)
       maybeAlert = db.roTransaction(implicit graph => getAlert(`case`, orgName))
       _          = logger.debug(maybeAlert.fold("Related MISP event doesn't exist")(a => s"Related MISP event found : ${a.sourceRef}"))
