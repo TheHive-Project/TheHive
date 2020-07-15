@@ -64,7 +64,7 @@ class Router @Inject() (
     case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId) // Audit ok
     case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds) // Not implemented in backend and not used by frontend
     case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId) // Not used by frontend
-    case POST(p"/case/_search")         => queryExecutor.`case`.search    
+    case POST(p"/case/_search")         => queryExecutor.`case`.search
     case POST(p"/case/_stats")          => queryExecutor.`case`.stats
     case DELETE(p"/case/$caseId/force") => caseCtrl.realDelete(caseId) // Audit ok
     case GET(p"/case/$caseId/links")    => caseCtrl.linkedCases(caseId)
@@ -168,9 +168,9 @@ class Router @Inject() (
 
     case GET(p"/audit")                      => auditCtrl.flow(None)
     case GET(p"/flow" ? q_o"rootId=$rootId") => auditCtrl.flow(rootId)
-//    GET      /audit                               controllers.AuditCtrl.find
-//    POST     /audit/_search                       controllers.AuditCtrl.find
-//    POST     /audit/_stats                        controllers.AuditCtrl.stats
+    case GET(p"/audit")                      => queryExecutor.audit.search
+    case POST(p"/audit/_search")             => queryExecutor.audit.search
+    case POST(p"/audit/_stats")              => queryExecutor.audit.stats
 
     case POST(p"/stream")          => streamCtrl.create
     case GET(p"/stream/status")    => streamCtrl.status
