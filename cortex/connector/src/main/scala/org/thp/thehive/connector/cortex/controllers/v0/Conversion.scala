@@ -43,6 +43,7 @@ object Conversion {
           }
       )
       .withFieldConst(_.id, job._id)
+      .withFieldConst(_._type, "case_artifact_job")
       .transform
   )
 

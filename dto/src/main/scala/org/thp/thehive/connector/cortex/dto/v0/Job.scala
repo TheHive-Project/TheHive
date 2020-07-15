@@ -5,6 +5,7 @@ import java.util.Date
 import play.api.libs.json.{JsObject, Json, OFormat}
 
 case class OutputJob(
+    _type: String,
     analyzerId: String,
     analyzerName: String,
     analyzerDefinition: String,
