@@ -57,7 +57,7 @@ class CaseSrv @Inject() (
       user: Option[User with Entity],
       organisation: Organisation with Entity,
       tags: Set[Tag with Entity],
-      customFields: Map[String, Option[Any]],
+      customFields: Seq[(String, Option[Any], Option[Int])],
       caseTemplate: Option[RichCaseTemplate],
       additionalTasks: Seq[(Task, Option[User with Entity])]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
@@ -73,8 +73,8 @@ class CaseSrv @Inject() (
       _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
       caseTemplateCustomFields = caseTemplate
         .fold[Seq[RichCustomField]](Nil)(_.customFields)
-        .map(cf => cf.name -> cf.value)
-      cfs <- (caseTemplateCustomFields.toMap ++ customFields).toTry { case (name, value) => createCustomField(createdCase, name, value) }
+        .map(cf => (cf.name, cf.value, cf.order))
+      cfs <- (caseTemplateCustomFields ++ customFields).toTry { case (name, value, order) => createCustomField(createdCase, name, value, order) }
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
@@ -190,7 +190,7 @@ class CaseSrv @Inject() (
 
   def updateCustomField(
       `case`: Case with Entity,
-      customFieldValues: Seq[(CustomField, Any)]
+      customFieldValues: Seq[(CustomField, Any, Option[Int])]
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val customFieldNames = customFieldValues.map(_._1.name)
     get(`case`)
@@ -200,11 +200,11 @@ class CaseSrv @Inject() (
       .filterNot(rcf => customFieldNames.contains(rcf.name))
       .foreach(rcf => get(`case`).customFields(rcf.name).remove())
     customFieldValues
-      .toTry { case (cf, v) => setOrCreateCustomField(`case`, cf.name, Some(v)) }
+      .toTry { case (cf, v, o) => setOrCreateCustomField(`case`, cf.name, Some(v), o) }
       .map(_ => ())
   }
 
-  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any])(
+  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
@@ -212,17 +212,18 @@ class CaseSrv @Inject() (
     if (cfv.newInstance().exists())
       cfv.setValue(value)
     else
-      createCustomField(`case`, customFieldName, value).map(_ => ())
+      createCustomField(`case`, customFieldName, value, order).map(_ => ())
   }
 
   def createCustomField(
       `case`: Case with Entity,
       customFieldName: String,
-      customFieldValue: Option[Any]
+      customFieldValue: Option[Any],
+      order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
       cf   <- customFieldSrv.getOrFail(customFieldName)
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue)
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue).map(_.order_=(order))
       ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
     } yield RichCustomField(cf, ccfe)
 

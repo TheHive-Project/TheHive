@@ -231,7 +231,7 @@ class AlertSrv @Inject() (
         .caseTemplate
         .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail())
         .flip
-      customField = alert.customFields.map(f => f.name -> f.value).toMap
+      customField = alert.customFields.map(f => (f.name, f.value, f.order))
       case0 = Case(
         number = 0,
         title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,

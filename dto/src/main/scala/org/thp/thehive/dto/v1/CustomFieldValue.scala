@@ -20,7 +20,7 @@ object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]
 }
 
-case class InputCustomFieldValue(name: String, value: Option[Any])
+case class InputCustomFieldValue(name: String, value: Option[Any], order: Option[Int])
 
 object InputCustomFieldValue {
 
@@ -29,11 +29,11 @@ object InputCustomFieldValue {
       fields
         .toSeq
         .validatedBy {
-          case (name, FString(value))   => Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FNumber(value))   => Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FBoolean(value))  => Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(name, Some(value)))
-          case (name, FNull)            => Good(InputCustomFieldValue(name, None))
+          case (name, FString(value))   => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FNumber(value))   => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FBoolean(value))  => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FNull)            => Good(InputCustomFieldValue(name, None, None))
           case (name, other) =>
             Bad(
               One(
@@ -46,13 +46,13 @@ object InputCustomFieldValue {
   }
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {
-      case InputCustomFieldValue(name, Some(s: String))  => name -> JsString(s)
-      case InputCustomFieldValue(name, Some(l: Long))    => name -> JsNumber(l)
-      case InputCustomFieldValue(name, Some(d: Double))  => name -> JsNumber(d)
-      case InputCustomFieldValue(name, Some(b: Boolean)) => name -> JsBoolean(b)
-      case InputCustomFieldValue(name, Some(d: Date))    => name -> JsNumber(d.getTime)
-      case InputCustomFieldValue(name, None)             => name -> JsNull
-      case InputCustomFieldValue(name, other)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
+      case InputCustomFieldValue(name, Some(s: String), _)  => name -> JsString(s)
+      case InputCustomFieldValue(name, Some(l: Long), _)    => name -> JsNumber(l)
+      case InputCustomFieldValue(name, Some(d: Double), _)  => name -> JsNumber(d)
+      case InputCustomFieldValue(name, Some(b: Boolean), _) => name -> JsBoolean(b)
+      case InputCustomFieldValue(name, Some(d: Date), _)    => name -> JsNumber(d.getTime)
+      case InputCustomFieldValue(name, None, _)             => name -> JsNull
+      case InputCustomFieldValue(name, other, _)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
     }
     JsObject(fields)
   }

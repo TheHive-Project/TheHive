@@ -71,7 +71,7 @@ class ActionOperationSrv @Inject() (
       case AddCustomFields(name, _, value) =>
         for {
           c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddCustomFields without case")))(Success(_))
-          _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))
+          _ <- caseSrv.setOrCreateCustomField(c, name, Some(value), None)
         } yield updateOperation(operation)
 
       case CloseTask() =>

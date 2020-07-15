@@ -68,7 +68,7 @@ class CaseCtrl @Inject() (
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
-        val customFields                     = inputCase.customFields.map(c => c.name -> c.value).toMap
+        val customFields                     = inputCase.customFields.map(c => (c.name, c.value, c.order))
         for {
           organisation <- userSrv
             .current

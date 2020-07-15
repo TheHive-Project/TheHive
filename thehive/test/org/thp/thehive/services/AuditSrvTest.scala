@@ -25,7 +25,7 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
               None,
               orgAdmin,
               Set.empty,
-              Map.empty,
+              Seq.empty,
               None,
               Nil
             )

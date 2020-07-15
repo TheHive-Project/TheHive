@@ -66,7 +66,7 @@ class CaseCtrl @Inject() (
         val inputTasks: Seq[InputTask]       = request.body("tasks")
         for {
           caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
-          customFields = inputCase.customFieldValue.map(cf => cf.name -> cf.value).toMap
+          customFields = inputCase.customFieldValue.map(cf => (cf.name, cf.value, cf.order))
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail("Organisation")
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)

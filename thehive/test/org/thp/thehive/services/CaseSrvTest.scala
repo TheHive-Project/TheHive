@@ -169,7 +169,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     "add custom field with wrong type" in testApp { app =>
       app[Database].transaction { implicit graph =>
         app[CaseSrv].getOrFail("#3") must beSuccessfulTry.which { `case`: Case with Entity =>
-          app[CaseSrv].setOrCreateCustomField(`case`, "boolean1", Some("plop")) must beFailedTry
+          app[CaseSrv].setOrCreateCustomField(`case`, "boolean1", Some("plop"), None) must beFailedTry
         }
       }
     }
@@ -177,7 +177,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     "add custom field" in testApp { app =>
       app[Database].transaction { implicit graph =>
         app[CaseSrv].getOrFail("#3") must beSuccessfulTry.which { `case`: Case with Entity =>
-          app[CaseSrv].setOrCreateCustomField(`case`, "boolean1", Some(true)) must beSuccessfulTry
+          app[CaseSrv].setOrCreateCustomField(`case`, "boolean1", Some(true), None) must beSuccessfulTry
           app[CaseSrv].getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == true)
         }
       }
@@ -186,7 +186,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     "update custom field" in testApp { app =>
       app[Database].transaction { implicit graph =>
         app[CaseSrv].getOrFail("#3") must beSuccessfulTry.which { `case`: Case with Entity =>
-          app[CaseSrv].setOrCreateCustomField(`case`, "boolean1", Some(false)) must beSuccessfulTry
+          app[CaseSrv].setOrCreateCustomField(`case`, "boolean1", Some(false), None) must beSuccessfulTry
           app[CaseSrv].getCustomField(`case`, "boolean1").flatMap(_.value) must beSome.which(_ == false)
         }
       }
@@ -242,7 +242,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             None,
             app[OrganisationSrv].getOrFail("cert").get,
             app[TagSrv].initSteps.toList.toSet,
-            Map.empty,
+            Seq.empty,
             None,
             Nil
           )
@@ -299,7 +299,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             None,
             app[OrganisationSrv].getOrFail("cert").get,
             Set[Tag with Entity](),
-            Map.empty,
+            Seq.empty,
             None,
             Nil
           )
@@ -321,7 +321,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
               None,
               app[OrganisationSrv].getOrFail("cert").get,
               app[TagSrv].initSteps.toList.toSet,
-              Map.empty,
+              Seq.empty,
               None,
               Nil
             )
@@ -344,7 +344,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
               None,
               app[OrganisationSrv].getOrFail("cert").get,
               app[TagSrv].initSteps.toList.toSet,
-              Map.empty,
+              Seq.empty,
               None,
               Nil
             )
@@ -367,7 +367,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Some(app[UserSrv].get("certuser@thehive.local").getOrFail().get),
             app[OrganisationSrv].getOrFail("cert").get,
             app[TagSrv].initSteps.toList.toSet,
-            Map.empty,
+            Seq.empty,
             None,
             Nil
           )

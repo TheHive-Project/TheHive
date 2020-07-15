@@ -32,7 +32,7 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
         None,
         app[OrganisationSrv].getOrFail("admin").get,
         Set.empty,
-        Map.empty,
+        Seq.empty,
         None,
         Nil
       )(graph, authContext)

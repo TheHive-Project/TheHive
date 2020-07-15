@@ -196,12 +196,12 @@ class Properties @Inject() (
           for {
 //            v <- UniMapping.jsonNative.toGraphOpt(value).fold[Try[Any]](???)(Success.apply)
             c <- caseSrv.getOrFail(vertex)(graph)
-            _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+            _ <- caseSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {
             c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
-            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(cf => (cf, v, None)) }
             _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
           } yield Json.obj("customFields" -> values)
         case _ => Failure(BadRequestError("Invalid custom fields format"))
