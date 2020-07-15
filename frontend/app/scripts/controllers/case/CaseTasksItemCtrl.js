@@ -7,7 +7,7 @@
 
             // Initialize controller
             $scope.task = task;
-            $scope.tabName = 'task-' + task.id;
+            $scope.tabName = 'task-' + task._id;
             $scope.taskResponders = null;
 
             $scope.loading = false;
@@ -125,7 +125,7 @@
                 var field = {};
                 field[fieldName] = newValue;
                 return CaseTaskSrv.update({
-                    taskId: $scope.task.id
+                    taskId: $scope.task._id
                 }, field, function () {}, function (response) {
                     NotificationSrv.error('taskDetails', response.data, response.status);
                 });
@@ -147,14 +147,15 @@
             };
 
             $scope.startTask = function() {
-                var taskId = $scope.task.id;
+                var taskId = $scope.task._id;
 
                 CaseTaskSrv.update({
                     'taskId': taskId
                 }, {
                     'status': 'InProgress'
-                }, function(data) {
-                    $scope.task = data;
+                }, function(/*data*/) {
+                    // $scope.task = data;
+                    $scope.reloadTask();
                 }, function(response) {
                     NotificationSrv.error('taskDetails', response.data, response.status);
                 });
@@ -179,7 +180,7 @@
                 }
 
                 TaskLogSrv.save({
-                    'taskId': $scope.task.id
+                    'taskId': $scope.task._id
                 }, $scope.newLog, function () {
                     if($scope.task.status === 'Waiting') {
                         // Reload the task
@@ -227,7 +228,7 @@
                 }
 
                 $scope.taskResponders = null;
-                CortexSrv.getResponders('case_task', $scope.task.id)
+                CortexSrv.getResponders('case_task', $scope.task._id)
                   .then(function(responders) {
                       $scope.taskResponders = responders;
                       return CortexSrv.promntForResponder(responders);
@@ -247,16 +248,16 @@
                           NotificationSrv.error('taskDetails', err.data, err.status);
                       }
                   });
-            };        
+            };
 
             $scope.reloadTask = function() {
-                CaseTaskSrv.get({
-                    'taskId': $scope.task.id
-                }, function(data) {
-                    $scope.task = data;
-                }, function(response) {
-                    NotificationSrv.error('taskDetails', response.data, response.status);
-                });
+                CaseTaskSrv.getById($scope.task._id)
+                    .then(function(data) {
+                        $scope.task = data;
+                    })
+                    .catch(function(response) {
+                        NotificationSrv.error('taskDetails', response.data, response.status);
+                    });
             };
 
             $scope.loadShares = function () {
@@ -277,7 +278,7 @@
 
                 modalInstance.result
                     .then(function() {
-                        return CaseTaskSrv.removeShare($scope.task.id, share);
+                        return CaseTaskSrv.removeShare($scope.task._id, share);
                     })
                     .then(function(/*response*/) {
                         $scope.loadShares();
@@ -338,7 +339,7 @@
                     closable: true,
                     state: 'app.case.tasks-item',
                     params: {
-                        itemId: task.id
+                        itemId: task._id
                     }
                 });
 
