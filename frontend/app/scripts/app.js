@@ -417,8 +417,7 @@ angular.module('thehive', [
                     }
                 },
                 guard: {
-                    isSuperAdmin: false,
-                    permissions: ['manageShare']
+                    isSuperAdmin: false
                 }
             })
             .state('app.case.alerts', {
@@ -446,14 +445,14 @@ angular.module('thehive', [
                     task: function($q, $stateParams, CaseTaskSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
-                        CaseTaskSrv.get({
-                            'taskId': $stateParams.itemId
-                        }, function(data) {
-                            deferred.resolve(data);
-                        }, function(response) {
-                            deferred.reject(response);
-                            NotificationSrv.error('taskDetails', response.data, response.status);
-                        });
+                        CaseTaskSrv.getById($stateParams.itemId)
+                            .then(function(data) {
+                                deferred.resolve(data);
+                            })
+                            .catch(function(response) {
+                                deferred.reject(response);
+                                NotificationSrv.error('taskDetails', response.data, response.status);
+                            });
 
                         return deferred.promise;
                     }
