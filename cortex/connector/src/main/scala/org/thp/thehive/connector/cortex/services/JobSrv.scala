@@ -18,7 +18,7 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
@@ -334,6 +334,32 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
             case (obs, l) => obs -> Json.obj("observableId" -> l.asScala.headOption.map(_.toString))
           }
           RichJob(job.as[Job], observables)
+      }
+  }
+  def richJobWithCustomRenderer[A](
+      entityRenderer: JobSteps => TraversalLike[_, A]
+  )(implicit authContext: AuthContext): Traversal[(RichJob, A), (RichJob, A)] = {
+    val thisJob = StepLabel()
+    this
+      .as(thisJob)
+      .project(
+        _.by
+          .by(
+            _.reportObservables
+              .project(
+                _.by(_.richObservable)
+                  .by(_.similar.filter(_.`case`.observables.outTo[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
+              )
+              .fold
+          )
+          .by(entityRenderer)
+      )
+      .map {
+        case (job, observablesWithLink, renderedEntity) =>
+          val observables = observablesWithLink.asScala.map {
+            case (obs, l) => obs -> Json.obj("observableId" -> l.asScala.headOption.map(_.toString))
+          }
+          RichJob(job.as[Job], observables) -> renderedEntity
       }
   }
 }

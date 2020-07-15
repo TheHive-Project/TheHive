@@ -6,8 +6,9 @@ import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.connector.cortex.dto.v0._
 import org.thp.thehive.connector.cortex.models._
-import play.api.libs.json.{JsArray, JsFalse, Json}
-
+import org.thp.thehive.dto.v0.OutputObservable
+import org.thp.thehive.models.{RichCase, RichObservable}
+import play.api.libs.json.{JsArray, JsFalse, JsObject, Json}
 object Conversion {
   import org.thp.thehive.controllers.v0.Conversion._
 
@@ -42,10 +43,43 @@ object Conversion {
             case r                                  => r + ("success" -> JsFalse)
           }
       )
-      .withFieldConst(_.id, job._id)
+      .withFieldRenamed(_._id, _.id)
       .withFieldConst(_._type, "case_artifact_job")
+      .withFieldConst(_.case_artifact, None)
       .transform
   )
+
+  implicit val jobWithParentOutput: Renderer.Aux[(RichJob, Option[(RichObservable, RichCase)]), OutputJob] =
+    Renderer.json[(RichJob, Option[(RichObservable, RichCase)]), OutputJob] { jobWithParent =>
+      jobWithParent
+        ._1
+        .into[OutputJob]
+        .withFieldComputed(_.analyzerId, _.workerId)
+        .withFieldComputed(_.analyzerName, _.workerName)
+        .withFieldComputed(_.analyzerDefinition, _.workerDefinition)
+        .withFieldComputed(_.status, _.status.toString)
+        .withFieldComputed(_.endDate, _.endDate)
+        .withFieldComputed(_.cortexId, _.cortexId)
+        .withFieldComputed(_.cortexJobId, _.cortexJobId)
+        .withFieldComputed(
+          _.report,
+          j =>
+            j.report.map {
+              case r if j.status == JobStatus.Success => Json.obj("success" -> true, "full" -> r, "artifacts" -> j.observables.map(_.toJson))
+              case r                                  => r + ("success" -> JsFalse)
+            }
+        )
+        .withFieldRenamed(_._id, _.id)
+        .withFieldConst(_._type, "case_artifact_job")
+        .withFieldConst(
+          _.case_artifact,
+          jobWithParent._2.fold[Option[OutputObservable]](None) {
+            case (richObservable, richCase) =>
+              Some(observableWithExtraOutput.toValue((richObservable, JsObject.empty, Some(richCase))))
+          }
+        )
+        .transform
+    }
 
   implicit val analyzerTemplateOutput: Renderer.Aux[AnalyzerTemplate with Entity, OutputAnalyzerTemplate] =
     Renderer.json[AnalyzerTemplate with Entity, OutputAnalyzerTemplate](at =>
