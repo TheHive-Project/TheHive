@@ -320,6 +320,7 @@ class Properties @Inject() (
       .property("message", UniMapping.string)(_.field.updatable)
       .property("deleted", UniMapping.boolean)(_.field.updatable)
       .property("startDate", UniMapping.date)(_.rename("date").readonly)
+      .property("status", UniMapping.string)(_.select(_.constant("Ok")).readonly)
       .property("attachment", IdMapping)(_.select(_.attachments._id).readonly)
       .build
 
