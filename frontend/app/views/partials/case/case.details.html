@@ -133,7 +133,7 @@
         <tbody>
             <tr ng-repeat="attachment in attachments.values" style="cursor: pointer;" tooltip-placement="bottom" tooltip-popup-delay="500" uib-tooltip="{{attachment.message}}">
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.name}}</td>
-                <td ng-click="openAttachment(attachment)">{{attachment.startDate | shortDate}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.date | shortDate}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.contentType}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.size}}</td>
                 <td style="text-align:center">

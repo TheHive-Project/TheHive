@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, CaseTabsSrv, UserSrv, TagSrv, PSearchSrv) {
+    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, PaginatedQuerySrv, CaseTabsSrv, UserSrv, TagSrv, PSearchSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -11,35 +11,21 @@
             'isCollapsed': true
         };
 
-        $scope.attachments = PSearchSrv($scope.caseId, 'case_task_log', {
-            scope: $scope,
+        $scope.attachments = new PaginatedQuerySrv({
+            skipStream: true,
+            version: 'v1',
+            loadAll: false,
             filter: {
-                '_and': [
-                    {
-                        '_not': {
-                            'status': 'Deleted'
-                        }
-                    }, {
-                        '_contains': 'attachment.id'
-                    }, {
-                        '_parent': {
-                            '_type': 'case_task',
-                            '_query': {
-                                '_parent': {
-                                    '_type': 'case',
-                                    '_query': {
-                                        '_id': $scope.caseId
-                                    }
-                                }
-                            }
-                        }
-                    }
-                ]
+                '_contains': 'attachment'
             },
+            extraData: ['taskId'],
             pageSize: 100,
-            nparent: 1
+            operations: [
+                { '_name': 'getCase', 'idOrName': $scope.caseId },
+                { '_name': 'tasks' },
+                { '_name': 'logs' },
+            ]
         });
-
 
         var connectors = $scope.appConfig.connectors;
         if(connectors.cortex && connectors.cortex.enabled) {
@@ -70,10 +56,9 @@
         }
 
         $scope.openAttachment = function(attachment) {
-            // TODO fix me attachment.case_task is not defined
             $state.go('app.case.tasks-item', {
-                caseId: $scope.caze.id,
-                itemId: attachment.case_task.id
+                caseId: $scope.caze._id,
+                itemId: attachment.extraData.taskId
             });
         };
 
