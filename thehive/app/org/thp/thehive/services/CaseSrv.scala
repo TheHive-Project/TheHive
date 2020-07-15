@@ -165,7 +165,6 @@ class CaseSrv @Inject() (
       for {
         organisation <- organisationSrv.getOrFail(authContext.organisation)
         _            <- shareSrv.shareObservable(richObservable, `case`, organisation)
-        _            <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
       } yield ()
   }
 
