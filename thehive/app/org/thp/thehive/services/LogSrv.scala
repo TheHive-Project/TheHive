@@ -9,7 +9,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, Json}
@@ -111,18 +111,33 @@ class LogSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema")
   override def newInstance(): LogSteps                             = new LogSteps(raw.clone())
 
   def richLog: Traversal[RichLog, RichLog] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[LogAttachment].fold))
-        )
-        .map {
-          case (log, attachments) =>
-            RichLog(
-              log.as[Log],
-              attachments.asScala.map(_.as[Attachment])
-            )
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.attachments.fold)
+      )
+      .map {
+        case (log, attachments) =>
+          RichLog(
+            log.as[Log],
+            attachments.asScala.map(_.as[Attachment])
+          )
+      }
+
+  def richLogWithCustomRenderer[A](
+      entityRenderer: LogSteps => TraversalLike[_, A]
+  )(implicit authContext: AuthContext): Traversal[(RichLog, A), (RichLog, A)] =
+    this
+      .project(
+        _.by
+          .by(_.attachments.fold)
+          .by(entityRenderer)
+      )
+      .map {
+        case (log, attachments, renderedEntity) =>
+          RichLog(
+            log.as[Log],
+            attachments.asScala.map(_.as[Attachment])
+          ) -> renderedEntity
+      }
 }

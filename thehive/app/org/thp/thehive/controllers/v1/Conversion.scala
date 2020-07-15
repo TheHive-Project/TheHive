@@ -373,16 +373,34 @@ object Conversion {
     richLog
       .into[OutputLog]
       .withFieldConst(_._type, "Log")
-      .withFieldComputed(_._id, _._id)
-      .withFieldComputed(_._updatedAt, _._updatedAt)
-      .withFieldComputed(_._updatedBy, _._updatedBy)
-      .withFieldComputed(_._createdAt, _._createdAt)
-      .withFieldComputed(_._createdBy, _._createdBy)
-      .withFieldComputed(_.message, _.message)
-      .withFieldComputed(_.startDate, _._createdAt)
-      .withFieldComputed(_.owner, _._createdBy)
-      .withFieldComputed(_.status, l => if (l.deleted) "Deleted" else "Ok")
+      .withFieldRenamed(_._createdAt, _.date)
       .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
+      .withFieldRenamed(_._createdBy, _.owner)
+      .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
+
+  implicit val logWithStatsOutput: Renderer[(RichLog, JsObject)] =
+    Renderer.json[(RichLog, JsObject), OutputLog] { logWithExtraData =>
+      logWithExtraData
+        ._1
+        .into[OutputLog]
+        .withFieldConst(_._type, "Log")
+        .withFieldRenamed(_._createdAt, _.date)
+        .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
+        .withFieldRenamed(_._createdBy, _.owner)
+        .withFieldConst(_.extraData, logWithExtraData._2)
+        .transform
+    }
+
+  implicit class InputLogOps(inputLog: InputLog) {
+
+    def toLog: Log =
+      inputLog
+        .into[Log]
+        .withFieldConst(_.date, new Date)
+        .withFieldConst(_.deleted, false)
+        .transform
+  }
+
 }

@@ -16,6 +16,7 @@ import org.thp.thehive.services.{
   CaseSteps,
   CaseTemplateSrv,
   CaseTemplateSteps,
+  LogSteps,
   ObservableSrv,
   ObservableSteps,
   OrganisationSteps,
@@ -219,6 +220,14 @@ class Properties @Inject() (
             }
             .map(_ => Json.obj("assignee" -> value))
       })
+      .build
+
+  lazy val log: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[LogSteps]
+      .property("message", UniMapping.string)(_.field.updatable)
+      .property("deleted", UniMapping.boolean)(_.field.updatable)
+      .property("date", UniMapping.date)(_.field.readonly)
+      .property("attachment", IdMapping)(_.select(_.attachments._id).readonly)
       .build
 
   lazy val user: List[PublicProperty[_, _]] =
