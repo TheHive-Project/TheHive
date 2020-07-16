@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, ModalUtilsSrv, FilteringSrv, CaseTabsSrv, PaginatedQuerySrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, AuthenticationSrv, ModalUtilsSrv, FilteringSrv, CaseTabsSrv, PaginatedQuerySrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -96,6 +96,31 @@
         $scope.addFilterValue = function (field, value) {
             $scope.filtering.addFilterValue(field, value);
             $scope.search();
+        };
+
+        $scope.filterBy = function(field, value) {
+            $scope.filtering.clearFilters()
+                .then(function() {
+                    $scope.addFilterValue(field, value);
+                });
+        };
+
+        $scope.filterMyTasks = function() {
+            $scope.filtering.clearFilters()
+                .then(function() {
+                    var currentUser = AuthenticationSrv.currentUser;
+                    $scope.filtering.addFilter({
+                        field: 'assignee',
+                        type: 'user',
+                        value: {
+                            list: [{
+                                text: currentUser.login,
+                                label: currentUser.name
+                            }]
+                        }
+                    });
+                    $scope.search();
+                });
         };
 
         $scope.toggleGroupedView = function() {
