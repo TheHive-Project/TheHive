@@ -19,7 +19,7 @@ import play.api.libs.json.{JsObject, Json, OWrites}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.runtime.{universe, universe => ru}
+import scala.reflect.runtime.{universe => ru}
 
 @Singleton
 class ActionCtrl @Inject() (
@@ -69,12 +69,12 @@ class ActionCtrl @Inject() (
 
   val actionsQuery: Query = new Query {
     override val name: String = "actions"
-    override def checkFrom(t: universe.Type): Boolean =
+    override def checkFrom(t: ru.Type): Boolean =
       SubType(t, ru.typeOf[CaseSteps]) || SubType(t, ru.typeOf[ObservableSteps]) ||
         SubType(t, ru.typeOf[TaskSteps]) ||
         SubType(t, ru.typeOf[LogSteps]) ||
         SubType(t, ru.typeOf[AlertSteps])
-    override def toType(t: universe.Type): universe.Type = ru.typeOf[ActionSteps]
+    override def toType(t: ru.Type): ru.Type = ru.typeOf[ActionSteps]
     override def apply(param: Unit, from: Any, authContext: AuthContext): Any = {
       val fromSteps = from.asInstanceOf[VertexSteps[_]]
       new ActionSteps(from.asInstanceOf[VertexSteps[_]].inTo[ActionContext].raw)(db, fromSteps.graph, schema)
