@@ -31,7 +31,7 @@ trait TaskRenderer {
     taskSteps.organisations.count.map(c => JsNumber(c - 1))
 
   def isOwner(taskSteps: TaskSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    taskSteps.origin.name.map(orgName => JsBoolean(orgName == authContext.organisation))
+    taskSteps.origin.has("name", authContext.organisation).fold.map(l => JsBoolean(!l.isEmpty))
 
   def taskStatsRenderer(extraData: Set[String])(
       implicit authContext: AuthContext,

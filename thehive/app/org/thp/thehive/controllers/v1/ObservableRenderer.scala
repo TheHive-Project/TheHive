@@ -39,7 +39,7 @@ trait ObservableRenderer {
   def isOwner(
       observableSteps: ObservableSteps
   )(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    observableSteps.origin.name.map(orgName => JsBoolean(orgName == authContext.organisation))
+    observableSteps.origin.has("name", authContext.organisation).fold.map(l => JsBoolean(!l.isEmpty))
 
   def observableLinks(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
     observableSteps.coalesce(

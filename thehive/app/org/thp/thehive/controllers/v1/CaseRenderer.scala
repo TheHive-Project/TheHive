@@ -56,7 +56,7 @@ trait CaseRenderer {
   def isOwnerStats(
       caseSteps: CaseSteps
   )(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    caseSteps.origin.name.map(org => JsBoolean(org == authContext.organisation))
+    caseSteps.origin.has("name", authContext.organisation).fold.map(l => JsBoolean(!l.isEmpty))
 
   def shareCountStats(caseSteps: CaseSteps): Traversal[JsValue, JsValue] =
     caseSteps.organisations.count.map(c => JsNumber(c - 1))
