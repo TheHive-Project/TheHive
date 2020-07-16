@@ -3,7 +3,8 @@
         Basic Information
 
         <div class="task-actions pull-right" if-permission="manageTask" allowed="{{userPermissions}}">
-            <span if-permission="manageShare" allowed="{{userPermissions}}">
+            <!-- <span if-permission="manageShare" allowed="{{userPermissions}}"> -->
+            <span>
                 <a href ng-click="scrollTo('#task-sharings')">
                     <span class="mr-xxs action-button">
                         <i class="fa fa-users"></i> Sharing
@@ -220,9 +221,10 @@
         <psearch control="logs"></psearch>
     </div>
 
-    <div class="col-md-12" id="task-sharings" if-permission="manageShare" allowed="{{userPermissions}}">
+    <!-- <div class="col-md-12" id="task-sharings" if-permission="manageShare" allowed="{{userPermissions}}"> -->
+    <div class="col-md-12" id="task-sharings">
          <h4 class="vpad10 text-primary">Task sharing</h4>
-         <div class="btn-toolbar" role="toolbar">
+         <div class="btn-toolbar" role="toolbar" if-permission="manageShare" allowed="{{userPermissions}}">
              <div class="btn-group">
                  <button class="btn btn-sm btn-primary" ng-click="addTaskShare()">
                      <i class="fa fa-plus"></i>
