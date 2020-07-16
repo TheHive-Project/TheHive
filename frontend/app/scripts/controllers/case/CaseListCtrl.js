@@ -157,7 +157,7 @@
                 .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
-                        field: 'owner',
+                        field: 'assignee',
                         type: 'user',
                         value: {
                             list: [{
@@ -175,7 +175,7 @@
                 .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
-                        field: 'owner',
+                        field: 'assignee',
                         type: 'user',
                         value: {
                             list: [{
