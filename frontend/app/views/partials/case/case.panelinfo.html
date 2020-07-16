@@ -91,7 +91,7 @@
                 </ul> -->
             </span>
 
-            <span class="ml-xxs pull-right" ng-if="appConfig.connectors.misp.enabled">
+            <span class="ml-xxs pull-right" ng-if="appConfig.connectors.misp.enabled" if-permission="manageShare" allowed="{{userPermissions}}">
                 <span class="mr-xxs text-primary">|</span>
                 <a href ng-click="exportToMisp()" class="text-primary noline" uib-tooltip="Export case">
                     <i class="text-primary fa fa-share"></i>
