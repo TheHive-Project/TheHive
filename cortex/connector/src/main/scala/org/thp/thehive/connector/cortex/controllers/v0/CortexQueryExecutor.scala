@@ -18,25 +18,23 @@ import scala.reflect.runtime.{universe => ru}
 
 @Singleton
 class CortexQueryExecutor @Inject() (
-    jobCtrl: JobCtrl,
     queryCtrlBuilder: QueryCtrlBuilder,
     @Named("with-thehive-cortex-schema") implicit val db: Database,
+    jobCtrl: JobCtrl,
     reportCtrl: AnalyzerTemplateCtrl,
-    actionCtrl: ActionCtrl
+    actionCtrl: ActionCtrl,
+    analyzerTemplateCtrl: AnalyzerTemplateCtrl
 ) extends QueryExecutor {
-  override lazy val publicProperties: List[PublicProperty[_, _]] =
-    jobCtrl.publicProperties ++ reportCtrl.publicProperties ++ actionCtrl.publicProperties
+  lazy val controllers: List[QueryableCtrl] = actionCtrl :: reportCtrl :: jobCtrl :: analyzerTemplateCtrl :: Nil
+
+  override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
+
   override lazy val queries: Seq[ParamQuery[_]] =
-    actionCtrl.initialQuery ::
-      actionCtrl.pageQuery ::
-      actionCtrl.outputQuery ::
-      jobCtrl.initialQuery ::
-      jobCtrl.pageQuery ::
-      jobCtrl.outputQuery ::
-      reportCtrl.initialQuery ::
-      reportCtrl.pageQuery ::
-      reportCtrl.outputQuery ::
-      Nil
+    controllers.map(_.initialQuery) :::
+      controllers.map(_.getQuery) :::
+      controllers.map(_.pageQuery) :::
+      controllers.map(_.outputQuery) :::
+      controllers.flatMap(_.extraQueries)
 
   val childTypes: PartialFunction[(ru.Type, String), ru.Type] = {
     case (tpe, "case_artifact_job") if SubType(tpe, ru.typeOf[ObservableSteps]) => ru.typeOf[ObservableSteps]
@@ -56,10 +54,12 @@ class CortexQueryExecutor @Inject() (
     }
   }
 
-  override val version: (Int, Int) = 0 -> 0
-  val job: QueryCtrl               = queryCtrlBuilder.apply(jobCtrl, this)
-  val report: QueryCtrl            = queryCtrlBuilder.apply(reportCtrl, this)
-  val action: QueryCtrl            = queryCtrlBuilder.apply(actionCtrl, this)
+  override val version: (Int, Int) = 0 -> 1
+
+  val job: QueryCtrl              = queryCtrlBuilder(jobCtrl, this)
+  val report: QueryCtrl           = queryCtrlBuilder(analyzerTemplateCtrl, this)
+  val action: QueryCtrl           = queryCtrlBuilder(actionCtrl, this)
+  val analyzerTemplate: QueryCtrl = queryCtrlBuilder(analyzerTemplateCtrl, this)
 }
 
 class CortexParentIdInputFilter(parentId: String) extends InputFilter {
