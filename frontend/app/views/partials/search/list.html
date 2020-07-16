@@ -23,7 +23,7 @@
             No filters defined. <a href ng-click="addFilter()">Add a filter</a>
         </div> -->
         <form ng-submit="search()">
-            <div class="row">
+            <!-- <div class="row">
                 <div class="col-sm-12 col-md-12 col-lg-8">
                     <div class="input-group">
                         <span class="input-group-btn">
@@ -35,6 +35,11 @@
                     </div>
 
                     <hr class="filter-separator" ng-if="config[config.entity].filters.length > 0">
+                </div>
+            </div> -->
+            <div class="row">
+                <div class="col-sm-12 col-md-12col-lg-8">
+                    <p>Please specify your search criterias, by adding your search filters </p>
                 </div>
             </div>
             <div class="row mb-xxxs" ng-repeat="filter in config[config.entity].filters track by $index">
@@ -56,13 +61,14 @@
             </div>
             <div class="mv-xs row">
                 <div class="col-sm-12 col-md-12 col-lg-8">
-                    <a href class="btn btn-link btn-clear" ng-click="addFilter()" ng-show="config.entity !== 'all'">
-                        <i class="fa fa-plus"></i> Add a filter
+                    <!-- <a href class="btn btn-link btn-clear" ng-click="addFilter()" ng-show="config.entity !== 'all'"> -->
+                    <a href class="btn btn-default" ng-click="addFilter()" ng-show="config.entity !== 'all'">
+                        <i class="fa fa-plus"></i> Add filter
                     </a>
-                    <a href class="btn btn-danger" ng-click="clearFilters()">
-                        <i class="fa fa-times"></i> Clear
+                    <a href class="btn btn-danger" ng-click="clearFilters()" ng-show="config[config.entity].filters.length > 0">
+                        <i class="fa fa-times"></i> Clear filters
                     </a>
-                    <button href class="btn btn-primary pull-right" type="submit">
+                    <button href class="btn btn-primary pull-right" type="submit" ng-show="config[config.entity].filters.length > 0">
                         <i class="fa fa-search"></i> Search
                     </button>
                 </div>
