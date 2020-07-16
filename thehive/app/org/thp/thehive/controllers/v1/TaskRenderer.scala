@@ -28,7 +28,7 @@ trait TaskRenderer {
     taskSteps.caseTemplate.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(ct => JsString(ct.id().toString)))
 
   def shareCount(taskSteps: TaskSteps): Traversal[JsValue, JsValue] =
-    taskSteps.organisations.count.map(count => JsNumber.apply(count.longValue()))
+    taskSteps.organisations.count.map(c => JsNumber(c - 1))
 
   def isOwner(taskSteps: TaskSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
     taskSteps.origin.name.map(orgName => JsBoolean(orgName == authContext.organisation))

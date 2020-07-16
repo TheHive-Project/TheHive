@@ -34,7 +34,7 @@ trait ObservableRenderer {
     observableSteps.shares.organisation.name.fold.map(orgs => Json.toJson(orgs.asScala))
 
   def shareCount(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
-    observableSteps.organisations.count.map(count => JsNumber.apply(count.longValue()))
+    observableSteps.organisations.count.map(c => JsNumber(c - 1))
 
   def isOwner(
       observableSteps: ObservableSteps
