@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -15,8 +15,8 @@
                 message: ''
             };
             $scope.sortOptions = {
-                '+startDate': 'Oldest first',
-                '-startDate': 'Newest first'
+                '+date': 'Oldest first',
+                '-date': 'Newest first'
             };
             $scope.state = {
                 editing: false,
@@ -24,7 +24,7 @@
                 dropdownOpen: false,
                 attachmentCollapsed: true,
                 logMissing: '',
-                sort: '-startDate'
+                sort: '-date'
             };
 
             $scope.markdownEditorOptions = {
@@ -35,51 +35,24 @@
 
             $scope.initScope = function () {
 
-                $scope.logs = PSearchSrv(caseId, 'case_task_log', {
+                $scope.logs = new PaginatedQuerySrv({
+                    root: caseId,
+                    objectType: 'case_task_log',
+                    version: 'v1',
                     scope: $scope,
-                    filter: {
-                        _and: [{
-                            _parent: {
-                                _type: 'case_task',
-                                _query: {
-                                    _id: taskId
-                                }
-                            }
-                        }, {
-                            _not: {
-                                'status': 'Deleted'
-                            }
-                        }]
-                    },
-                    'sort': $scope.state.sort,
-                    'pageSize': 10,
-                    onUpdate: function() {
-                        var ids = _.pluck($scope.logs.values, 'id');
-
-                        StatSrv.getPromise({
-                            objectType: 'connector/cortex/action',
-                            field: 'objectId',
-                            limit: 1000,
-                            skipTotal: true,
-                            query: {
-                              _and: [{
-                                  _field: 'objectType',
-                                  _value: 'case_task_log'
-                              },
-                              {
-                                  _in: {
-                                      _field: 'objectId',
-                                      _values: ids
-                                  }
-                              }]
-                            }
-                        }).then(function(response) {
-                            var counts = response.data;
-                            _.each($scope.logs.values, function(log) {
-                                log.nbActions = counts[log.id] ? counts[log.id].count : 0;
-                            });
-                        });
-                    }
+                    sort: $scope.state.sort,
+                    loadAll: false,
+                    pageSize: 10,
+                    operations: [
+                        {
+                            '_name': 'getTask',
+                            'idOrName': taskId
+                        },
+                        {
+                            '_name': 'logs'
+                        }
+                    ],
+                    extraData: ['actionCount']
                 });
 
                 var connectors = $scope.appConfig.connectors;

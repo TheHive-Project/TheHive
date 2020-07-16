@@ -77,7 +77,7 @@
 
                     scope.confirmDropLog = function() {
                         TaskLogSrv.delete({
-                            logId: scope.log.id
+                            logId: scope.log._id
                         }).$promise.then(function() {
                             scope.deleteModal.dismiss();
                         });
@@ -89,7 +89,7 @@
 
                     scope.updateLog = function() {
                         return TaskLogSrv.update({
-                            logId: scope.log.id
+                            logId: scope.log._id
                         }, {message: scope.log.message}, function() {}, function(response) {
                             NotificationSrv.error('CaseTaskLog', response.data, response.status);
                         });

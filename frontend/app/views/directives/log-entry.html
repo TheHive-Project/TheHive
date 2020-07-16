@@ -65,10 +65,10 @@
         </div>
     </div>
 
-    <div class="row" ng-if="log.nbActions > 0">
+    <div class="row" ng-if="log.extraData.actionCount > 0">
         <div class="col-md-12">
-           <a href ng-show="showActions" ng-click="showActions=false">Hide Responder Jobs ({{log.nbActions}})</a>
-           <a href ng-show="!showActions" ng-click="showActions=true; getActions(log.id)">Show Responder Jobs ({{log.nbActions}})</a>
+           <a href ng-show="showActions" ng-click="showActions=false">Hide Responder Jobs ({{log.extraData.actionCount}})</a>
+           <a href ng-show="!showActions" ng-click="showActions=true; getActions(log._id)">Show Responder Jobs ({{log.extraData.actionCount}})</a>
         </div>
         <div class="col-md-12" ng-show="showActions && actions">
           <responder-actions header="" actions="actions"></responder-actions>
