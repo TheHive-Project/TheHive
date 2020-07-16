@@ -159,7 +159,7 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def organisations(permission: Permission) =
     new OrganisationSteps(raw.inTo[ShareTask].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
 
-  def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
+  def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareTask].has(Key("owner") of true).inTo[OrganisationShare])
 
   def assignableUsers(implicit authContext: AuthContext): UserSteps =
     organisations(Permissions.manageTask)
