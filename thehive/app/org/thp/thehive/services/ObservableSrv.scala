@@ -232,6 +232,8 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-s
 
   def organisations = new OrganisationSteps(raw.inTo[ShareObservable].inTo[OrganisationShare])
 
+  def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
+
   override def newInstance(): ObservableSteps = new ObservableSteps(raw.clone())
 
   def richObservable: Traversal[RichObservable, RichObservable] =

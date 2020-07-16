@@ -9,7 +9,7 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.Traversal
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.services.TaskSteps
-import play.api.libs.json.{JsNull, JsObject, JsString, JsValue}
+import play.api.libs.json._
 
 import scala.collection.JavaConverters._
 
@@ -26,6 +26,12 @@ trait TaskRenderer {
 
   def caseTemplateParentId(taskSteps: TaskSteps): Traversal[JsValue, JsValue] =
     taskSteps.caseTemplate.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(ct => JsString(ct.id().toString)))
+
+  def shareCount(taskSteps: TaskSteps): Traversal[JsValue, JsValue] =
+    taskSteps.organisations.count.map(count => JsNumber.apply(count.longValue()))
+
+  def isOwner(taskSteps: TaskSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+    taskSteps.origin.name.map(orgName => JsBoolean(orgName == authContext.organisation))
 
   def taskStatsRenderer(extraData: Set[String])(
       implicit authContext: AuthContext,
@@ -44,6 +50,8 @@ trait TaskRenderer {
           case (f, "caseId")         => f.andThen(addData(caseParentId))
           case (f, "caseTemplate")   => f.andThen(addData(caseTemplateParent))
           case (f, "caseTemplateId") => f.andThen(addData(caseTemplateParentId))
+          case (f, "isOwner")        => f.andThen(addData(isOwner))
+          case (f, "shareCount")     => f.andThen(addData(shareCount))
           case (f, _)                => f.andThen(_.by(__.constant(JsNull).traversal))
         }
         .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))

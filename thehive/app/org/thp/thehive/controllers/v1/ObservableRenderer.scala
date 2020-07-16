@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 
 trait ObservableRenderer {
 
-  def seenStats(observableSteps: ObservableSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+  def seen(observableSteps: ObservableSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
     observableSteps
       .similar
       .visible
@@ -30,8 +30,16 @@ trait ObservableRenderer {
         )
       }
 
-  def sharesStats(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
+  def shares(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
     observableSteps.shares.organisation.name.fold.map(orgs => Json.toJson(orgs.asScala))
+
+  def shareCount(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
+    observableSteps.organisations.count.map(count => JsNumber.apply(count.longValue()))
+
+  def isOwner(
+      observableSteps: ObservableSteps
+  )(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
+    observableSteps.origin.name.map(orgName => JsBoolean(orgName == authContext.organisation))
 
   def observableLinks(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
     observableSteps.coalesce(
@@ -55,8 +63,10 @@ trait ObservableRenderer {
       val dataName = extraData.toSeq
       dataName
         .foldLeft[ObservableSteps => GremlinScala[JMap[String, JsValue]]](_.raw.project(dataName.head, dataName.tail: _*)) {
-          case (f, "seen")        => f.andThen(addData(seenStats))
-          case (f, "shares")      => f.andThen(addData(sharesStats))
+          case (f, "seen")        => f.andThen(addData(seen))
+          case (f, "shares")      => f.andThen(addData(shares))
+          case (f, "isOwner")     => f.andThen(addData(isOwner))
+          case (f, "shareCount")  => f.andThen(addData(shareCount))
           case (f, "links")       => f.andThen(addData(observableLinks))
           case (f, "permissions") => f.andThen(addData(permissions))
           case (f, _)             => f.andThen(_.by(__.constant(JsNull).traversal))
