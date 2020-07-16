@@ -100,12 +100,12 @@
 
     <div class="col-md-6">
         <dl class="dl-horizontal">
-            <dt class="pull-left">Date</dt>
+            <dt class="pull-left">Start date</dt>
             <dd ng-if="canEdit && task.status !== 'Waiting'">
                 <updatable-date on-update="updateField('startDate', newValue)" value="task.startDate"/>
             </dd>
             <dd ng-if="!canEdit && task.status !== 'Waiting'">
-                {{task.startDate | showDate}}
+                <span ng-bind="task.startDate | shortDate"></span>
             </dd>
             <dd ng-if="task.status === 'Waiting'">
                 <em class="text-warning">Not started yet</em>
@@ -115,7 +115,7 @@
         <dl class="dl-horizontal" ng-show="task.status == 'Completed'">
             <dt class="pull-left">Close date</dt>
             <dd>
-                <span ng-bind="task.endDate | showDate"></span>
+                <span ng-bind="task.endDate | shortDate"></span>
             </dd>
         </dl>
 

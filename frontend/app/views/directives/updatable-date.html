@@ -1,5 +1,5 @@
 <span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
-    <span ng-if="value!==null && value !==''" style="vertical-align:top" class="updatable-value" >{{value | shortDate}}</span>
+    <span ng-if="value!==null && value !==''" style="vertical-align:top" class="updatable-value">{{value | shortDate}}</span>
     <span ng-if="value===null || value ===''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value text-warning"><em>Not Specified</em></span>
     <small ng-show="active">
         <a style="cursor: pointer;" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">

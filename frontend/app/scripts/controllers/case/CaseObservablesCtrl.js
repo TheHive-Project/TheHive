@@ -73,7 +73,7 @@
                     sort: $scope.filtering.context.sort,
                     pageSize: $scope.filtering.context.pageSize,
                     filter: $scope.filtering.buildQuery(),
-                    extraData: ['seen', 'permissions'],
+                    extraData: ['seen', 'permissions', 'isOwner', 'shareCount'],
                     operations: [
                         {'_name': 'getCase', 'idOrName': $scope.caseId},
                         {'_name': 'observables'}

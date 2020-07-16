@@ -34,7 +34,7 @@
                 .then(function() {
                     $scope.load();
 
-                    $scope.$watchCollection('artifacts.pageSize', function (newValue) {
+                    $scope.$watchCollection('tasks.pageSize', function (newValue) {
                         $scope.filtering.setPageSize(newValue);
                     });
                 });
@@ -47,7 +47,7 @@
                 version: 'v1',
                 scope: $scope,
                 sort: $scope.filtering.context.sort,
-                loadAll: true,
+                loadAll: false,
                 pageSize: $scope.filtering.context.pageSize,
                 filter: $scope.filtering.buildQuery(),
                 baseFilter: {
@@ -56,11 +56,11 @@
                         _value: 'Cancel'
                     }
                 },
-                //withStats: true,
                 operations: [
                     {'_name': 'getCase', "idOrName": $scope.caseId},
                     {'_name': 'tasks'}
                 ],
+                extraData: ['isOwner', 'shareCount'],
                 onUpdate: function() {
                     $scope.buildTaskGroups($scope.tasks.values);
                 }

@@ -54,6 +54,9 @@
 
 <div class="row" ng-if="!state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
+
+        <psearch control="tasks"></psearch>
+
         <table class="table table-hover valigned tasks-table">
             <thead>
                 <tr>
@@ -61,6 +64,7 @@
                     <th style="width: 40px"></th>
                     <th style="width: 250px">Group</th>
                     <th>Task</th>
+                    <th style="width: 70px;"></th>
                     <th style="width: 150px">Date</th>
                     <th style="width: 150px">Assignee</th>
                     <th style="width: 250px" class="text-right" if-permission="manageTask" allowed="{{userPermissions}}">Actions</th>
@@ -89,6 +93,11 @@
                     </td>
                     <td>
                       <div>
+                          <!-- FIXME -->
+                          <span class="mr-xxs text-primary clickable" ng-if="!!!task.extraData.isOwner"><i class="fa fa-share-square"
+                              uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
+                          <span class="mr-xxs text-primary clickable" ng-if="!!task.extraData.isOwner"><i class="fa fa-building-o"
+                              uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span>
                           <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})">{{task.title}}</a>
                       </div>
                       <div ng-show="task.status === 'Completed'" class="text-success">
@@ -98,7 +107,19 @@
                           Started <em am-time-ago="task.startDate"></em>
                       </div>
                     </td>
-                    <td>{{task.startDate | showDate}}</td>
+                    <td align="center">
+                        <a href ng-if="task.extraData.shareCount > 0" ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
+                                uib-tooltip="{{ {
+                                    true: 'Current organisation has shared this Task with ' + task.extraData.shareCount + ' organisation(s)',
+                                    false: 'This Task has been shared by its owner with ' + task.extraData.shareCount + ' organisation(s)'
+                                }[task.extraData.isOwner] }}"
+                                tooltip-placement="left-middle">
+
+                            <i class="fa fa-users"></i>
+                            ({{task.extraData.shareCount || 0}})
+                        </a>
+                    </td>
+                    <td>{{task.startDate | shortDate}}</td>
                     <td ng-if="canEdit">
                         <span ng-show="task.assignee">
                             <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee"/>
@@ -149,11 +170,16 @@
                 </tr>
             </tbody>
         </table>
+
+        <psearch control="tasks"></psearch>
     </div>
 </div>
 
 <div class="row" ng-if="state.showGrouped && tasks.total !== 0">
     <div class="col-md-12">
+
+        <psearch control="tasks"></psearch>
+
         <div class="panel panel-default" ng-repeat="group in groupedTasks">
             <div class="panel-heading">
                 <strong>{{group.group || 'Not Specified'}}</strong> <small>({{group.tasks.length}} task(s))</small>
@@ -166,6 +192,7 @@
                             <th style="width: 40px"></th>
                             <th style="width: 250px">Group</th>
                             <th>Task</th>
+                            <th style="width: 70px;"></th>
                             <th style="width: 150px">Date</th>
                             <th style="width: 150px">Assignee</th>
                             <th style="width: 250px" class="text-right" if-permission="manageTask" allowed="{{userPermissions}}">Actions</th>
@@ -202,6 +229,18 @@
                               <div ng-show="task.status === 'InProgress'" class="text-warning">
                                   Started <em am-time-ago="task.startDate"></em>
                               </div>
+                            </td>
+                            <td align="center">
+                                <a href ng-if="task.extraData.shareCount > 0" ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
+                                        uib-tooltip="{{ {
+                                            true: 'Current organisation has shared this Task with ' + task.extraData.shareCount + ' organisation(s)',
+                                            false: 'This Task has been shared by its owner with ' + task.extraData.shareCount + ' organisation(s)'
+                                        }[task.extraData.isOwner] }}"
+                                        tooltip-placement="left-middle">
+
+                                    <i class="fa fa-users"></i>
+                                    ({{task.extraData.shareCount || 0}})
+                                </a>
                             </td>
                             <td>{{task.startDate | shortDate}}</td>
                             <td ng-if="canEdit">
@@ -255,6 +294,8 @@
                 </table>
             </div>
         </div>
+
+        <psearch control="tasks"></psearch>
 
     </div>
 </div>
