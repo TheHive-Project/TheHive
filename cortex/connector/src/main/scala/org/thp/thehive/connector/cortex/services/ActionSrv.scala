@@ -156,7 +156,15 @@ class ActionSrv @Inject() (
       } yield {
         relatedCase(updated._id)
           .orElse(get(updated._id).context.headOption()) // FIXME an action context is it an audit context ?
-          .foreach(relatedEntity => auditSrv.action.update(updated, relatedEntity, Json.obj("status" -> updated.status.toString)))
+          .foreach(relatedEntity =>
+            auditSrv
+              .action
+              .update(
+                updated,
+                relatedEntity,
+                Json.obj("status" -> updated.status.toString, "objectId" -> relatedEntity._id, "objectType" -> relatedEntity._model.label)
+              )
+          )
 
         updated
       }
