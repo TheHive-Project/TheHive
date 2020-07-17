@@ -20,7 +20,7 @@
                 },
                 logout: function(success, failure) {
                     $http
-                        .get('./api/logout')
+                        .post('./api/v1/logout')
                         .then(function(data, status, headers, config) {
                             self.currentUser = null;
 
