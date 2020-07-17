@@ -157,7 +157,7 @@ then
     then
       echo "play.modules.enabled += org.thp.thehive.connector.cortex.CortexModule" >> ${CONFIG_FILE}
       echo "cortex.servers = [" >> ${CONFIG_FILE}
-      I=1
+      I=0
       for C in ${CORTEX_URLS[@]}
       do
         echo "Add Cortex cortex${I}: ${C}"
