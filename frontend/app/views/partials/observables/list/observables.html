@@ -85,10 +85,10 @@
                 <td class="wrap">
                     <!-- FIXME -->
                     <div class="wrap clickable" ng-click="openArtifact(artifact)">
-                        <span class="mr-xxs text-primary clickable" ng-if="!!!artifact.extraData.isOwner"><i class="fa fa-share-square"
+                        <!-- <span class="mr-xxs text-primary clickable" ng-if="!!!artifact.extraData.isOwner"><i class="fa fa-share-square"
                             uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
                         <span class="mr-xxs text-primary clickable" ng-if="!!artifact.extraData.isOwner"><i class="fa fa-building-o"
-                            uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span>
+                            uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span> -->
                         <span class="wrap clickable" uib-tooltip="{{artifact.message}}" tooltip-placement="top-left">
                             {{(artifact.data | fang) || (artifact.attachment.name | fang)}}
                         </span>
@@ -108,10 +108,6 @@
                 </td>
                 <td align="center">
                     <a href ng-if="artifact.extraData.shareCount > 0" ui-sref="app.case.observables-item({itemId: artifact._id})" class="noline"
-                            uib-tooltip="{{ {
-                                true: 'Current organisation has shared this Observable with ' + artifact.extraData.shareCount + ' organisation(s)',
-                                false: 'This Observable has been shared by its owner with ' + artifact.extraData.shareCount + ' organisation(s)'
-                            }[artifact.extraData.isOwner] }}"
                             tooltip-placement="left-middle">
 
                         <i class="fa fa-users"></i>

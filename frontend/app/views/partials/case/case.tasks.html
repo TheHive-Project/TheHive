@@ -94,10 +94,10 @@
                     <td>
                       <div>
                           <!-- FIXME -->
-                          <span class="mr-xxs text-primary clickable" ng-if="!!!task.extraData.isOwner"><i class="fa fa-share-square"
+                          <!-- <span class="mr-xxs text-primary clickable" ng-if="!!!task.extraData.isOwner"><i class="fa fa-share-square"
                               uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
                           <span class="mr-xxs text-primary clickable" ng-if="!!task.extraData.isOwner"><i class="fa fa-building-o"
-                              uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span>
+                              uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span> -->
                           <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})">{{task.title}}</a>
                       </div>
                       <div ng-show="task.status === 'Completed'" class="text-success">
@@ -109,11 +109,7 @@
                     </td>
                     <td align="center">
                         <a href ng-if="task.extraData.shareCount > 0" ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
-                                uib-tooltip="{{ {
-                                    true: 'Current organisation has shared this Task with ' + task.extraData.shareCount + ' organisation(s)',
-                                    false: 'This Task has been shared by its owner with ' + task.extraData.shareCount + ' organisation(s)'
-                                }[task.extraData.isOwner] }}"
-                                tooltip-placement="left-middle">
+                            tooltip-placement="left-middle">
 
                             <i class="fa fa-users"></i>
                             ({{task.extraData.shareCount || 0}})
@@ -232,12 +228,7 @@
                             </td>
                             <td align="center">
                                 <a href ng-if="task.extraData.shareCount > 0" ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
-                                        uib-tooltip="{{ {
-                                            true: 'Current organisation has shared this Task with ' + task.extraData.shareCount + ' organisation(s)',
-                                            false: 'This Task has been shared by its owner with ' + task.extraData.shareCount + ' organisation(s)'
-                                        }[task.extraData.isOwner] }}"
                                         tooltip-placement="left-middle">
-
                                     <i class="fa fa-users"></i>
                                     ({{task.extraData.shareCount || 0}})
                                 </a>

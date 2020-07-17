@@ -61,7 +61,8 @@
                     {'_name': 'getCase', "idOrName": $scope.caseId},
                     {'_name': 'tasks'}
                 ],
-                extraData: ['isOwner', 'shareCount'],
+                extraData: ['shareCount'],
+                //extraData: ['isOwner', 'shareCount'],
                 onUpdate: function() {
                     $scope.buildTaskGroups($scope.tasks.values);
                 }
