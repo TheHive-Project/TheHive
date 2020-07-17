@@ -20,7 +20,7 @@ import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Case, Task}
-import org.thp.thehive.services.{AlertSteps, CaseSteps, LogSteps, ObservableSteps, TaskSteps}
+import org.thp.thehive.services.{AlertSteps, CaseSteps, LogSrv, LogSteps, ObservableSteps, TaskSteps}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -31,6 +31,7 @@ class ActionSrv @Inject() (
     actionOperationSrv: ActionOperationSrv,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
+    logSrv: LogSrv,
     connector: Connector,
     implicit val schema: Schema,
     @Named("with-thehive-cortex-schema") implicit val db: Database,
@@ -93,7 +94,11 @@ class ActionSrv @Inject() (
         db.tryTransaction { implicit graph =>
           for {
             richAction <- create(action, entity)
-            _          <- auditSrv.action.create(richAction.action, entity, richAction.toJson)
+            auditContext = entity._model.label match {
+              case "Log" => logSrv.get(entity).task.headOption().getOrElse(entity)
+              case _     => entity
+            }
+            _ <- auditSrv.action.create(richAction.action, auditContext, richAction.toJson)
           } yield richAction
         }
       }
@@ -144,6 +149,11 @@ class ActionSrv @Inject() (
               )
               .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
           }
+        val auditContext = action.context._model.label match {
+          case "Log" => logSrv.get(action.context).task.headOption().getOrElse(action.context)
+          case _     => action.context
+        }
+
         getByIds(actionId)
           .updateOne(
             "status"     -> cortexJob.status.toJobStatus,
@@ -156,8 +166,13 @@ class ActionSrv @Inject() (
               .action
               .update(
                 updated,
-                action.context,
-                Json.obj("status" -> updated.status.toString, "objectId" -> action.context._id, "objectType" -> action.context._model.label)
+                auditContext,
+                Json.obj(
+                  "status"        -> updated.status.toString,
+                  "objectId"      -> action.context._id,
+                  "objectType"    -> action.context._model.label,
+                  "responderName" -> action.workerName
+                )
               )
             updated
           }
