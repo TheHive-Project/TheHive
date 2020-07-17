@@ -26,7 +26,7 @@
                 this.sort = options.sort;
                 this.onUpdate = options.onUpdate;
                 this.skipStream = options.skipStream;
-                this.streamObjectType = options.skipStream || options.objectType;
+                this.streamObjectType = options.streamObjectType || options.objectType;
                 this.guard = options.guard || undefined;
                 this.withStats = options.withStats || undefined;
                 this.extraData = options.extraData || undefined;

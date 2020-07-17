@@ -1,10 +1,10 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('logEntry', function($uibModal, HtmlSanitizer, TaskLogSrv, UserSrv, NotificationSrv) {
+        .directive('logEntry', function($uibModal, HtmlSanitizer, PaginatedQuerySrv, TaskLogSrv, UserSrv, NotificationSrv) {
             return {
                 templateUrl: 'views/directives/log-entry.html',
-                controller: function($scope, CortexSrv, PSearchSrv) {
+                controller: function($scope, CortexSrv, PaginatedQuerySrv) {
                     $scope.showActions = false;
                     $scope.actions = null;
                     $scope.logResponders = null;
@@ -37,31 +37,24 @@
                     };
 
                     $scope.getActions = function(logId) {
-                        $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                        $scope.actions = new PaginatedQuerySrv({
+                            name: 'task-log-actions',
+                            version: 'v1',
                             scope: $scope,
                             streamObjectType: 'action',
-                            filter: {
-                                _and: [
-                                    {
-                                        _not: {
-                                            status: 'Deleted'
-                                        }
-                                    }, {
-                                        objectType: 'case_task_log'
-                                    }, {
-                                        objectId: logId
-                                    }
-                                ]
-                            },
+                            loadAll: true,
                             sort: ['-startDate'],
                             pageSize: 100,
+                            operations: [
+                                { '_name': 'getLog', 'idOrName': logId },
+                                { '_name': 'actions' }
+                            ],
                             guard: function(updates) {
                                 return _.find(updates, function(item) {
-                                    return (item.base.object.objectType === 'case_task_log') && (item.base.object.objectId === logId);
+                                    return (item.base.details.objectType === 'Log') && (item.base.details.objectId === logId);
                                 }) !== undefined;
                             }
                         });
-
                     };
                 },
                 link: function(scope) {

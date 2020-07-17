@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, PaginatedQuerySrv, CaseTabsSrv, UserSrv, TagSrv, PSearchSrv) {
+    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, PaginatedQuerySrv, CaseTabsSrv, UserSrv, TagSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -12,6 +12,7 @@
         };
 
         $scope.attachments = new PaginatedQuerySrv({
+            name: 'case-attachments',
             skipStream: true,
             version: 'v1',
             loadAll: false,
@@ -29,27 +30,21 @@
 
         var connectors = $scope.appConfig.connectors;
         if(connectors.cortex && connectors.cortex.enabled) {
-            $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+            $scope.actions = new PaginatedQuerySrv({
+                name: 'case-actions',
+                version: 'v1',
                 scope: $scope,
                 streamObjectType: 'action',
-                filter: {
-                    _and: [
-                        {
-                            _not: {
-                                status: 'Deleted'
-                            }
-                        }, {
-                            objectType: 'case'
-                        }, {
-                            objectId: $scope.caseId
-                        }
-                    ]
-                },
+                loadAll: true,
                 sort: ['-startDate'],
                 pageSize: 100,
+                operations: [
+                    { '_name': 'getCase', 'idOrName': $scope.caseId },
+                    { '_name': 'actions' }
+                ],
                 guard: function(updates) {
                     return _.find(updates, function(item) {
-                        return (item.base.object.objectType === 'case') && (item.base.object.objectId === $scope.caseId);
+                        return (item.base.details.objectType === 'Case') && (item.base.details.objectId === $scope.caseId);
                     }) !== undefined;
                 }
             });

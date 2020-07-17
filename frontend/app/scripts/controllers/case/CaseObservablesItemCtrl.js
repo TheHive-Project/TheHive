@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, $uibModal, CaseSrv, ModalSrv, SecuritySrv, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, $uibModal, PaginatedQuerySrv, CaseSrv, ModalSrv, SecuritySrv, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -68,30 +68,25 @@
 
                 var connectors = $scope.appConfig.connectors;
                 if(connectors.cortex && connectors.cortex.enabled) {
-                    $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
-                          scope: $scope,
-                          streamObjectType: 'action',
-                          filter: {
-                              _and: [
-                                  {
-                                      _not: {
-                                          status: 'Deleted'
-                                      }
-                                  }, {
-                                      objectType: 'case_artifact'
-                                  }, {
-                                      objectId: artifact.id
-                                  }
-                              ]
-                          },
-                          sort: ['-startDate'],
-                          pageSize: 100,
-                          guard: function(updates) {
-                              return _.find(updates, function(item) {
-                                  return (item.base.object.objectType === 'case_artifact') && (item.base.object.objectId === artifact.id);
-                              }) !== undefined;
-                          }
-                      });
+                    $scope.actions = new PaginatedQuerySrv({
+                        name: 'case-observable-actions',
+                        version: 'v1',
+                        scope: $scope,
+                        streamObjectType: 'action',
+                        loadAll: true,
+                        sort: ['-startDate'],
+                        pageSize: 100,
+                        operations: [
+                            { '_name': 'getObservable', 'idOrName': artifact.id },
+                            { '_name': 'actions' }
+                        ],
+                        guard: function(updates) {
+                            console.log('Guard function of observable actions', updates);
+                            return _.find(updates, function(item) {
+                                return (item.base.details.objectType === 'Observable') && (item.base.details.objectId === artifact.id);
+                            }) !== undefined;
+                        }
+                    });
                 }
             };
 

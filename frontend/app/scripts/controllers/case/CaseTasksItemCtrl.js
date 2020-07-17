@@ -58,27 +58,21 @@
 
                 var connectors = $scope.appConfig.connectors;
                 if(connectors.cortex && connectors.cortex.enabled) {
-                    $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                    $scope.actions = new PaginatedQuerySrv({
+                        name: 'case-task-actions',
+                        version: 'v1',
                         scope: $scope,
                         streamObjectType: 'action',
-                        filter: {
-                            _and: [
-                                {
-                                    _not: {
-                                        status: 'Deleted'
-                                    }
-                                }, {
-                                    objectType: 'case_task'
-                                }, {
-                                    objectId: taskId
-                                }
-                            ]
-                        },
+                        loadAll: true,
                         sort: ['-startDate'],
                         pageSize: 100,
+                        operations: [
+                            { '_name': 'getTask', 'idOrName': taskId },
+                            { '_name': 'actions' }
+                        ],
                         guard: function(updates) {
                             return _.find(updates, function(item) {
-                                return (item.base.object.objectType === 'case_task') && (item.base.object.objectId === taskId);
+                                return (item.base.details.objectType === 'Task') && (item.base.details.objectId === taskId);
                             }) !== undefined;
                         }
                     });
