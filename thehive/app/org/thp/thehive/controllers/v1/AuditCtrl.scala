@@ -41,7 +41,7 @@ class AuditCtrl @Inject() (
     )
   override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
 
-  def flow(): Action[AnyContent] =
+  def flow: Action[AnyContent] =
     entrypoint("audit flow")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val audits = auditSrv

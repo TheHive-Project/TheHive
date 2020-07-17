@@ -24,7 +24,9 @@ class Router @Inject() (
     case GET(p"/status") => statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
-    case POST(p"/login")                 => authenticationCtrl.login()
+    case GET(p"/logout")                 => authenticationCtrl.logout
+    case POST(p"/logout")                => authenticationCtrl.logout
+    case POST(p"/login")                 => authenticationCtrl.login
     case POST(p"/auth/totp/set")         => authenticationCtrl.totpSetSecret
     case POST(p"/auth/totp/unset")       => authenticationCtrl.totpUnsetSecret(None)
     case POST(p"/auth/totp/unset/$user") => authenticationCtrl.totpUnsetSecret(Some(user))
@@ -89,7 +91,7 @@ class Router @Inject() (
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
-    case GET(p"/audit") => auditCtrl.flow()
+    case GET(p"/audit") => auditCtrl.flow
 //      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
 //    GET      /audit                               controllers.AuditCtrl.find()
 //    POST     /audit/_search                       controllers.AuditCtrl.find()

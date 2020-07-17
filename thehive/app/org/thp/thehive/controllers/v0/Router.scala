@@ -39,10 +39,11 @@ class Router @Inject() (
 
     case POST(p"/_stats") => statsCtrl.stats
 
-    case GET(p"/status") => statusCtrl.get
-    case GET(p"/health") => statusCtrl.health
-    case GET(p"/logout") => authenticationCtrl.logout
-    case POST(p"/login") => authenticationCtrl.login
+    case GET(p"/status")  => statusCtrl.get
+    case GET(p"/health")  => statusCtrl.health
+    case GET(p"/logout")  => authenticationCtrl.logout
+    case POST(p"/logout") => authenticationCtrl.logout
+    case POST(p"/login")  => authenticationCtrl.login
 //    case POST(p"/ssoLogin") => authenticationCtrl.ssoLogin
 
     case DELETE(p"/case/shares")                               => shareCtrl.removeShares()

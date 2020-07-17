@@ -48,6 +48,10 @@ class AuthenticationCtrl @Inject() (
         } yield authSrv.setSessionUser(authContext)(Results.Ok(user.toJson))
       }
 
+  def logout: Action[AnyContent] = entrypoint("logout") { _ =>
+    Success(Results.Ok.withNewSession)
+  }
+
   def withTotpAuthSrv[A](body: TOTPAuthSrv => Try[A]): Try[A] =
     authSrv match {
       case totpAuthSrv: TOTPAuthSrv if totpAuthSrv.enabled => body(totpAuthSrv)
