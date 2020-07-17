@@ -42,6 +42,7 @@
 
         $scope.load = function() {
             $scope.tasks = new PaginatedQuerySrv({
+                name: 'case-tasks',
                 root: $scope.caseId,
                 objectType: 'case_task',
                 version: 'v1',

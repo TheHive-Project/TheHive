@@ -66,6 +66,7 @@
 
             $scope.load = function() {
                 $scope.artifacts = new PaginatedQuerySrv({
+                    name: 'observables',
                     root: $scope.caseId,
                     objectType: 'case_artifact',
                     version: 'v1',

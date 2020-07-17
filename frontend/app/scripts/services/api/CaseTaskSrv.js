@@ -20,6 +20,7 @@
                     '_name': 'getTask',
                     'idOrName': id
                 }], {
+                    name: 'get-task-' + id,
                     page: {
                         from: 0,
                         to: 1

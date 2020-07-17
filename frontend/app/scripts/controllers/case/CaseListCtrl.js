@@ -61,6 +61,7 @@
         this.load = function() {
 
             this.list = new PaginatedQuerySrv({
+                name: 'cases',
                 root: undefined,
                 objectType: 'case',
                 version: 'v1',

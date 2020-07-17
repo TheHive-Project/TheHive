@@ -36,6 +36,7 @@
             $scope.initScope = function () {
 
                 $scope.logs = new PaginatedQuerySrv({
+                    name: 'case-task-logs',
                     root: caseId,
                     objectType: 'case_task_log',
                     version: 'v1',

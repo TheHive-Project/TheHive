@@ -36,6 +36,7 @@
 
                 this.load = function() {
                     this.list = new PaginatedQuerySrv({
+                        name: 'alert-similar-cases',
                         skipStream: true,
                         version: 'v1',
                         loadAll: true,

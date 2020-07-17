@@ -55,6 +55,7 @@
                     '_name': 'getCase',
                     'idOrName': id
                 }], {
+                    name:'get-case-' + id,
                     page: {
                         from: 0,
                         to: 1,

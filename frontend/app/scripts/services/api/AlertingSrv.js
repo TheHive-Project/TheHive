@@ -8,16 +8,8 @@
             var factory = {
 
                 list: function(config, callback) {
-                    // return PSearchSrv(undefined, 'alert', {
-                    //     scope: config.scope,
-                    //     sort: config.sort || '-date',
-                    //     loadAll: config.loadAll || false,
-                    //     pageSize: config.pageSize || 10,
-                    //     filter: config.filter || '',
-                    //     onUpdate: callback || angular.noop
-                    // });
-
                     return new PaginatedQuerySrv({
+                        name: 'alerts',
                         root: undefined,
                         objectType: 'alert',
                         version: 'v1',
@@ -38,15 +30,11 @@
                             '_name': 'getAlert',
                             'idOrName': alertId
                         }
-                    ]).then(function(response) {
+                    ], {
+                        name: 'get-alert-' + alertId
+                    }).then(function(response) {
                         return response[0];
                     });
-
-                    // return $http.get(baseUrl + '/' + alertId, {
-                    //     params: {
-                    //         similarity: 1
-                    //     }
-                    // });
                 },
 
                 create: function(alertId, data) {

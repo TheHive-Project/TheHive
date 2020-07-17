@@ -34,6 +34,7 @@
 
                 this.load = function() {
                     this.list = new PaginatedQuerySrv({
+                        name: 'alert-observables',
                         skipStream: true,
                         version: 'v1',
                         sort: self.filtering.context.sort,

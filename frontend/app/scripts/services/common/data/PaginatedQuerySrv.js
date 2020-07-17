@@ -30,6 +30,7 @@
                 this.guard = options.guard || undefined;
                 this.withStats = options.withStats || undefined;
                 this.extraData = options.extraData || undefined;
+                this.name = options.name || undefined;
 
                 this.operations = options.operations;
 
@@ -130,7 +131,8 @@
                         sort: self.getSort(),
                         page: self.getPage(),
                         config: {},
-                        withParent: false
+                        withParent: false,
+                        name: self.name
                     }).then(function(data) {
                         if (self.loadAll) {
                             self.allValues = data;
@@ -154,6 +156,7 @@
                         // Compute the total again
                         QuerySrv.count('v1', this.operations, {
                             filter: filters,
+                            name: self.name,
                             config: {}
                         }).then(function(total) {
                             self.total = total;

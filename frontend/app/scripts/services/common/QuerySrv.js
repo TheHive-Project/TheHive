@@ -38,6 +38,7 @@
              */
             this.call = function(version, selectorOperation, options) {
                 var operations = [].concat(selectorOperation);
+                var config = {};
 
                 // Apply filter is defined
                 if (options && options.filter && !_.isEmpty(options.filter)) {
@@ -60,7 +61,13 @@
                     );
                 }
 
-                return self.query(version, operations)
+                if(options && options.name) {
+                    config.params = {
+                        name: options.name
+                    };
+                }
+
+                return self.query(version, operations, config)
                     .then(function(response) {
                         return $q.resolve(response.data);
                     });
@@ -77,6 +84,7 @@
              */
             this.count = function(version, selectorOperation, options) {
                 var operations = [].concat(selectorOperation);
+                var config = {};
 
                 // Apply filter is defined
                 if (options && options.filter && !_.isEmpty(options.filter)) {
@@ -85,10 +93,16 @@
                     );
                 }
 
+                if(options && options.name) {
+                    config.params = {
+                        name: options.name + '.count'
+                    };
+                }
+
                 // Add filters
                 operations.push({'_name': 'count'});
 
-                return self.query(version, operations)
+                return self.query(version, operations, config)
                     .then(function(response) {
                         return $q.resolve(response.data);
                     });
