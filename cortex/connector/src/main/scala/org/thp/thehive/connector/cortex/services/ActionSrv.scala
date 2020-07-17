@@ -130,43 +130,37 @@ class ActionSrv @Inject() (
     */
   def finished(actionId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Action with Entity] =
     db.tryTransaction { implicit graph =>
-      val operations = cortexJob
-        .report
-        .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.as[ActionOperation]))
-        .map { operation =>
-          (for {
-            action <- getByIds(actionId).richAction.getOrFail()
-            updatedOperation <- actionOperationSrv.execute(
-              action.context,
-              operation,
-              relatedCase(actionId),
-              relatedTask(actionId)
-            )
-          } yield updatedOperation)
-            .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
-        }
-
-      for {
-        updated <- getByIds(actionId).updateOne(
-          "status"     -> cortexJob.status.toJobStatus,
-          "report"     -> cortexJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
-          "endDate"    -> Some(new Date()),
-          "operations" -> operations.map(Json.toJsObject(_))
-        )
-      } yield {
-        relatedCase(updated._id)
-          .orElse(get(updated._id).context.headOption()) // FIXME an action context is it an audit context ?
-          .foreach(relatedEntity =>
+      getByIds(actionId).richAction.getOrFail().flatMap { action =>
+        val operations = cortexJob
+          .report
+          .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.as[ActionOperation]))
+          .map { operation =>
+            actionOperationSrv
+              .execute(
+                action.context,
+                operation,
+                relatedCase(actionId),
+                relatedTask(actionId)
+              )
+              .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
+          }
+        getByIds(actionId)
+          .updateOne(
+            "status"     -> cortexJob.status.toJobStatus,
+            "report"     -> cortexJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
+            "endDate"    -> Some(new Date()),
+            "operations" -> operations.map(Json.toJsObject(_))
+          )
+          .map { updated =>
             auditSrv
               .action
               .update(
                 updated,
-                relatedEntity,
-                Json.obj("status" -> updated.status.toString, "objectId" -> relatedEntity._id, "objectType" -> relatedEntity._model.label)
+                action.context,
+                Json.obj("status" -> updated.status.toString, "objectId" -> action.context._id, "objectType" -> action.context._model.label)
               )
-          )
-
-        updated
+            updated
+          }
       }
     }
 
