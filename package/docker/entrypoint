@@ -18,7 +18,7 @@ CORTEX_PROTO=${TH_CORTEX_PROTO:-http}
 CORTEX_PORT=${TH_CORTEX_PORT:-9001}
 test "${TH_NO_CONFIG}" == 1
 CONFIG=$?
-USER_CONFIG_FILE=${TH_CONFIG_FILE:-/etc/thehive/application.conf}
+CONFIG_FILE=${TH_CONFIG_FILE:-/etc/thehive/application.conf}
 CORTEX_KEYS=${TH_CORTEX_KEYS}
 
 function usage {
@@ -51,7 +51,7 @@ STOP=0
 while test $# -gt 0 -o "${STOP}" = 1
 do
   case "$1" in
-    "--config-file")       USER_CONFIG_FILE=$1 ;;
+    "--config-file")       shift;CONFIG_FILE=$1 ;;
     "--no-config")         CONFIG=0 ;;
     "--no-config-secret")  CONFIG_SECRET=0 ;;
     "--secret")            shift; SECRET=$1 ;;
@@ -175,9 +175,7 @@ then
     fi
   fi
 
-  echo "include file(\"${USER_CONFIG_FILE}\")" >> ${CONFIG_FILE}
-else
-  CONFIG_FILE=${USER_CONFIG_FILE}
+  echo "include file(\"${CONFIG_FILE}\")" >> ${CONFIG_FILE}
 fi
 
 bin/thehive \
