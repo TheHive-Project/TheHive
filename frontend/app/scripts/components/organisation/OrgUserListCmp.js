@@ -11,8 +11,7 @@
                 self.currentUser = AuthenticationSrv.currentUser;
 
                 self.$onInit = function() {
-                    // TODO FIX ME
-                    self.canSetPass = true;
+                    self.canSetPass = this.setPasswordEnabled;
                 };
 
                 self.reload = function() {
@@ -203,6 +202,7 @@
             bindings: {
                 users: '<',
                 mfaEnabled: '<',
+                setPasswordEnabled: '<',
                 onReload: '&',
                 onEdit: '&'
             }

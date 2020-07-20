@@ -39,8 +39,8 @@
                             <thead>
                                 <tr>
                                     <th style="width: 10px;" class="p-0"></th>
-                                    <th width="20px" if-permission="manageCase">
-                                        <input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()">
+                                    <th width="20px">
+                                        <input if-permission="manageCase" type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()">
                                     </th>
                                     <th>Title</th>
                                     <th style="width: 70px;"></th>

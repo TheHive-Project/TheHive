@@ -53,19 +53,37 @@
                             <div class="row mb-xs">
                                 <div class="col-md-12">
                                     <div class="btn-toolbar" role="toolbar">
-                                        <!-- <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addUser()">
-                                            <i class="fa fa-link"></i>
-                                            Add existing user
-                                        </button> -->
-
                                         <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.showUserDialog()">
                                             <i class="fa fa-plus"></i>
                                             Create new user
                                         </button>
+
+                                        <div class="btn-group pull-right" role="group">
+                                            <page-sizer collection="$vm.users" sizes="[10, 15, 30, 100]"></page-sizer>
+                                        </div>
+
+                                        <div class="btn-group pull-right" role="group">
+                                            <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[$vm.filtering.context.showFilters]" type="button" ng-click="$vm.toggleFilters()">
+                                                <i class="fa fa-search"></i> Filters
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="mt-s filter-panel" ng-include="'views/partials/admin/organisation/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+                                    <div class="row mt-s">
+                                        <div class="col-md-12 clearfix">
+
+                                            <filters-preview filters="$vm.filtering.context.filters"
+                                                on-clear-item="$vm.removeFilter(field)"
+                                                on-clear-all="$vm.clearFilters()"></filters-preview>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()" on-edit="$vm.showUserDialog(user)" mfa-enabled="$vm.canChangeMfa"></org-user-list>
+                            <org-user-list users="$vm.users" on-reload="$vm.loadUsers()" on-edit="$vm.showUserDialog(user)" set-password-enabled="$vm.canSetPass" mfa-enabled="$vm.canChangeMfa"></org-user-list>
                         </div>
                     </uib-tab>
                     <uib-tab index="1" if-permission="manageCaseTemplate">

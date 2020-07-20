@@ -1,0 +1,38 @@
+<div class="row">
+    <div class="col-md-12 active-filters">
+        <h4>Filters</h4>
+        <form ng-submit="$vm.search()">
+            <div class="row mb-xxxs" ng-repeat="filter in $vm.filtering.context.filters track by $index">
+                <div class="col-sm-4 col-md-4 col-lg-2">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" ng-click="$vm.removeFilter($index)">
+                                <i class="fa fa-times text-danger"></i>
+                            </button>
+                        </span>
+                        <select class="form-control" ng-model="filter.field"
+                            ng-options="item.name as item.name for (key, item) in $vm.filtering.attributes"
+                            ng-change="$vm.filtering.setFilterField(filter, config.entity)"></select>
+                    </div>
+                </div>
+                <div class="col-sm-8 col-md-8 col-lg-6">
+                    <filter-editor metadata="$vm.filtering.metadata" filter="filter" entity="$vm.filtering.entity"></filter-editor>
+                </div>
+            </div>
+            <div class="mv-xs row">
+                <div class="col-sm-12 col-md-12 col-lg-8">
+                    <a href class="btn btn-sm  btn-link btn-clear" ng-click="$vm.filtering.addFilter()">
+                        <i class="fa fa-plus"></i> Add a filter
+                    </a>
+                    <a href class="btn btn-sm btn-danger" ng-click="$vm.clearFilters()" ng-if="$vm.filtering.context.filters.length > 0">
+                        <i class="fa fa-times"></i> Clear
+                    </a>
+                    <button href class="btn btn-sm btn-primary pull-right" type="submit" ng-if="$vm.filtering.context.filters.length > 0">
+                        <i class="fa fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>

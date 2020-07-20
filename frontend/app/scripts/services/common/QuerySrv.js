@@ -67,6 +67,10 @@
                     };
                 }
 
+                if(options && options.config) {
+                    config = _.extend({}, config, options.config);
+                }
+
                 return self.query(version, operations, config)
                     .then(function(response) {
                         return $q.resolve(response.data);
@@ -97,6 +101,10 @@
                     config.params = {
                         name: options.name + '.count'
                     };
+                }
+
+                if(options && options.config) {
+                    config = _.extend({}, config, options.config);
                 }
 
                 // Add filters

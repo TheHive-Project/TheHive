@@ -31,6 +31,7 @@
                 this.withStats = options.withStats || undefined;
                 this.extraData = options.extraData || undefined;
                 this.name = options.name || undefined;
+                this.config = options.config || {};
 
                 this.operations = options.operations;
 
@@ -130,7 +131,7 @@
                         filter: filters,
                         sort: self.getSort(),
                         page: self.getPage(),
-                        config: {},
+                        config: self.config,
                         withParent: false,
                         name: self.name
                     }).then(function(data) {
@@ -157,7 +158,7 @@
                         QuerySrv.count('v1', this.operations, {
                             filter: filters,
                             name: self.name,
-                            config: {}
+                            config: self.config,
                         }).then(function(total) {
                             self.total = total;
                         });
