@@ -37,7 +37,7 @@ class LocalUserSrv @Inject() (
               userSteps
                 .getAuthContext(requestId, Organisation.administration.name)
                 .headOption()
-                .map(_.changeOrganisation(org))
+                .map(authContext => authContext.changeOrganisation(org, authContext.permissions))
             }
           }
           .fold[Try[AuthContext]](Failure(AuthenticationError("Authentication failure")))(Success.apply)
