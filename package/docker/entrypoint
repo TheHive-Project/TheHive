@@ -1,5 +1,4 @@
 #!/bin/bash
-
 CQL_HOSTNAMES=${TH_CQL_HOSTNAMES:-cassandra}
 BDB_DIRECTORY=${TH_BDB_DIRECTORY:-/data/db}
 HDFS_URL=${TH_HDFS_URL}
@@ -16,12 +15,11 @@ test "${TH_NO_CONFIG_CORTEX}" == 1
 CONFIG_CORTEX=$?
 CORTEX_HOSTNAMES=${TH_CORTEX_HOSTNAMES:-cortex}
 CORTEX_PROTO=${TH_CORTEX_PROTO:-http}
-CORTEX_PORT=${TH_CORTEX_PORT:9001}
+CORTEX_PORT=${TH_CORTEX_PORT:-9001}
 test "${TH_NO_CONFIG}" == 1
 CONFIG=$?
-USER_CONFIG_FILE=${TH_CONFIG_FILE:-/etc/thehive/application.conf}
+CONFIG_FILE=${TH_CONFIG_FILE:-/etc/thehive/application.conf}
 CORTEX_KEYS=${TH_CORTEX_KEYS}
-
 function usage {
   cat <<- _EOF_
     Available options:
@@ -32,6 +30,8 @@ function usage {
     --show-secret                               | show the generated secret
     --no-config-db                              | do not configure database automatically
     --cql-hostnames <host>,<host>,...           | resolve these hostnames to find cassandra instances
+    --cql-username <username>                   | username of cassandra database
+    --cql-password <password>                   | password of cassandra database
     --bdb-directory <path>                      | location of local database, if cassandra is not used (default: /data/db)
     --no-config-storage                         | do not configure storage automatically
     --hdfs-url <url>                            | url of hdfs name node
@@ -50,13 +50,15 @@ STOP=0
 while test $# -gt 0 -o "${STOP}" = 1
 do
   case "$1" in
-    "--config-file")       USER_CONFIG_FILE=$1 ;;
+    "--config-file")       shift;CONFIG_FILE=$1 ;;
     "--no-config")         CONFIG=0 ;;
     "--no-config-secret")  CONFIG_SECRET=0 ;;
     "--secret")            shift; SECRET=$1 ;;
     "--show-secret")       SHOW_SECRET=1 ;;
     "--no-config-db")      CONFIG_DB=0 ;;
     "--cql-hostnames")     shift; CQL_HOSTNAMES=$1 ;;
+    "--cql-username")      shift; CQL_USERNAME=$1 ;;
+    "--cql-password")      shift; CQL_PASSWORD=$1 ;;
     "--bdb-directory")     shift; BDB_DIRECTORY=$1 ;;
     "--no-config-storage") CONFIG_STORAGE=0 ;;
     "--hdfs-url")          shift; HDFS_URL=$1 ;;
@@ -74,6 +76,8 @@ done
 
 if test "${CONFIG}" = 1
 then
+  echo "Waiting until Cassandra DB is up"
+  sleep 30   # Sleep until cassandra Db is up 
   CONFIG_FILE=$(mktemp).conf
   if test "${CONFIG_SECRET}" = 1
   then
@@ -104,6 +108,11 @@ then
     else
       echo "Using cassanra address = ${CQL[@]}"
       echo "storage.backend = cql"            >> ${CONFIG_FILE}
+      if [[ -n $CQL_USERNAME && -n $CQL_PASSWORD ]];then
+           echo "storage.username = \"${CQL_USERNAME}\"" >> ${CONFIG_FILE}
+           echo "storage.password = \"${CQL_PASSWORD}\"" >> ${CONFIG_FILE}
+           printf "Using ${CQL_USERNAME} as cassandra username and ${CQL_PASSWORD} as its password\n"
+      fi
       echo "storage.cql.cluster-name = thp"   >> ${CONFIG_FILE}
       echo "storage.cql.keyspace = thehive"   >> ${CONFIG_FILE}
       echo "storage.hostname = ["             >> ${CONFIG_FILE}
@@ -141,14 +150,13 @@ then
     IFS=',' read -r -a CK <<< "${CORTEX_KEYS}"
     for C in "${CH[@]}"
     do
-      A=$(getent ahostsv4 "${C}" | head -1)
-      test -n "${A}" && CORTEX_URLS+=("${CORTEX_PROTO}://${A}:${CORTEX_PORT}")
+      test -n "${C}" && CORTEX_URLS+=("${CORTEX_PROTO}://${C}:${CORTEX_PORT}")
     done
     if test ${#CORTEX_URLS[@]} -gt 0
     then
       echo "play.modules.enabled += org.thp.thehive.connector.cortex.CortexModule" >> ${CONFIG_FILE}
       echo "cortex.servers = [" >> ${CONFIG_FILE}
-      I=1
+      I=0
       for C in ${CORTEX_URLS[@]}
       do
         echo "Add Cortex cortex${I}: ${C}"
@@ -166,9 +174,7 @@ then
     fi
   fi
 
-  echo "include file(\"${USER_CONFIG_FILE}\")" >> ${CONFIG_FILE}
-else
-  CONFIG_FILE=${USER_CONFIG_FILE}
+  echo "include file(\"secret.conf\")" >> ${CONFIG_FILE}
 fi
 
 bin/thehive \
