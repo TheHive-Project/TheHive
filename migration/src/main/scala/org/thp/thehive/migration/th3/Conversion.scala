@@ -242,7 +242,7 @@ trait Conversion {
       if (start == len) "empty.name" else value.substring(start, len)
     }
     (login.replaceAll("[^\\w@-]+", ".").replaceFirst("\\W*$", "").split('@') match {
-      case Array(l)         => validSegment(l) + '@' + mainOrganisation
+      case Array(l)         => validSegment(l)
       case Array(l, d @ _*) => validSegment(l) + '@' + validSegment(d.mkString("."))
     }).toLowerCase
   }
