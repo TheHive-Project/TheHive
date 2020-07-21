@@ -64,7 +64,7 @@ class DataIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Dat
   override def resolve(entities: List[Data with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
       tail.foreach(copyEdge(_, head))
-      tail.foreach(service.get(_).remove())
+      service.getByIds(tail.map(_._id): _*).remove()
       Success(())
     case _ => Success(())
   }

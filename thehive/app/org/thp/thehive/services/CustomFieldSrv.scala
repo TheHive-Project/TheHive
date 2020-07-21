@@ -190,7 +190,7 @@ class CustomFieldIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val 
   override def resolve(entities: List[CustomField with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
       tail.foreach(copyEdge(_, head))
-      tail.foreach(service.get(_).remove())
+      service.getByIds(tail.map(_._id): _*).remove()
       Success(())
     case _ => Success(())
   }
