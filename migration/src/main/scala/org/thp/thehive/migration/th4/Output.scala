@@ -129,7 +129,12 @@ class Output @Inject() (
     @Named("with-thehive-schema") db: Database,
     cache: SyncCacheApi
 ) extends migration.Output {
-  lazy val logger: Logger                                                   = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
+  val defaultUserDomain: String = userSrv
+    .defaultUserDomain
+    .getOrElse(
+      throw BadConfigurationError("Default user domain is empty in configuration. Please add `auth.defaultUserDomain` in your configuration file.")
+    )
   lazy val observableSrv: ObservableSrv                                     = observableSrvProvider.get
   private var profiles: Map[String, Profile with Entity]                    = Map.empty
   private var organisations: Map[String, Organisation with Entity]          = Map.empty
@@ -260,8 +265,8 @@ class Output @Inject() (
   def getAuthContext(userId: String): AuthContext =
     if (userId.startsWith("init@"))
       LocalUserSrv.getSystemAuthContext
-    else
-      AuthContextImpl(userId, userId, "admin", "mig-request", Permissions.all)
+    else if (userId.contains('@')) AuthContextImpl(userId, userId, "admin", "mig-request", Permissions.all)
+    else AuthContextImpl(s"$userId@$defaultUserDomain", s"$userId@$defaultUserDomain", "admin", "mig-request", Permissions.all)
 
   def authTransaction[A](userId: String)(body: Graph => AuthContext => Try[A]): Try[A] = db.tryTransaction { implicit graph =>
     body(graph)(getAuthContext(userId))
@@ -286,12 +291,21 @@ class Output @Inject() (
       }
   }
 
-  override def userExists(inputUser: InputUser): Boolean = users.contains(inputUser.user.login)
+  override def userExists(inputUser: InputUser): Boolean = {
+    val validLogin =
+      if (inputUser.user.login.contains('@')) inputUser.user.login.toLowerCase
+      else s"${inputUser.user.login}@$defaultUserDomain".toLowerCase
+    users.contains(validLogin)
+  }
 
-  private def getUser(login: String): Try[User with Entity] =
+  private def getUser(login: String): Try[User with Entity] = {
+    val validLogin =
+      if (login.contains('@')) login.toLowerCase
+      else s"$login@$defaultUserDomain".toLowerCase
     users
-      .get(login)
+      .get(validLogin)
       .fold[Try[User with Entity]](Failure(NotFoundError(s"User $login not found")))(Success.apply)
+  }
 
   override def createUser(inputUser: InputUser): Try[IdMapping] = authTransaction(inputUser.metaData.createdBy) {
     implicit graph => implicit authContext =>
