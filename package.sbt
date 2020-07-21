@@ -3,12 +3,14 @@ import Common.remapPath
 // Install service files
 mappings in Universal ~= {
   _.flatMap {
-    case (_, "conf/application.conf")                => Nil
+    case (_, "conf/application.conf")           => Nil
     case (file, "conf/application.sample.conf") => Seq(file -> "conf/application.conf")
-    case (_, "conf/logback.xml")                     => Nil
-    case other                                       => Seq(other)
+    case (_, "conf/logback.xml")                => Nil
+    case (_, "conf/logback-migration.xml")      => Nil
+    case other                                  => Seq(other)
   } ++ Seq(
-    file("package/logback.xml") -> "conf/logback.xml"
+    file("package/logback.xml")           -> "conf/logback.xml",
+    file("package/logback-migration.xml") -> "conf/logback-migration.xml"
   )
 }
 
@@ -38,8 +40,9 @@ linuxPackageMappings ++= Seq(
     file("package/thehive.service") -> "/usr/lib/systemd/system/thehive.service"
   ).withPerms("644"),
   packageMapping(
-    file("conf/application.sample.conf") -> "/etc/thehive/application.conf",
-    file("package/logback.xml")          -> "/etc/thehive/logback.xml"
+    file("conf/application.sample.conf")  -> "/etc/thehive/application.conf",
+    file("package/logback.xml")           -> "/etc/thehive/logback.xml",
+    file("package/logback-migration.xml") -> "/etc/thehive/logback-migration.xml"
   ).withPerms("644").withConfig()
 )
 daemonUser := "thehive"

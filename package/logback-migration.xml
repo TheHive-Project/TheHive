@@ -21,7 +21,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%coloredLevel %logger{15} [%X{request}|%X{tx}] %message%n%xException{10}
+            <pattern>%coloredLevel %message%n%xException{10}
             </pattern>
         </encoder>
     </appender>
@@ -36,7 +36,7 @@
 
     <logger name="org.thp" level="INFO"/>
 
-    <root level="INFO">
+    <root level="OFF">
         <appender-ref ref="ASYNCFILE"/>
         <appender-ref ref="ASYNCSTDOUT"/>
     </root>

@@ -14,6 +14,9 @@ import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext}
 
 object Migrate extends App with MigrationOps {
+  Option(System.getProperty("logger.file")).getOrElse {
+    System.setProperty("logger.file", "/etc/thehive/logback-migration.xml")
+  }
   def getVersion: String = Option(getClass.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
   def addConfig(config: Config, settings: (String, Any)*): Config =
     ConfigFactory.parseMap(Map(settings: _*).asJava).withFallback(config)
