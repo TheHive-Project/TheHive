@@ -28,6 +28,11 @@
             ]
         });
 
+        $scope.assignableUsersQuery = [
+            {_name: 'getCase', idOrName: $scope.caseId},
+            {_name: 'assignableUsers'}
+        ];
+
         var connectors = $scope.appConfig.connectors;
         if(connectors.cortex && connectors.cortex.enabled) {
             $scope.actions = new PaginatedQuerySrv({

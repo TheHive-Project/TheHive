@@ -217,8 +217,6 @@
             });
 
             modal.result.then(function(operations) {
-                console.log(operations);
-
                 $q.all(_.map(operations, function(operation) {
                     return CaseSrv.bulkUpdate(operation.ids, operation.patch);
                 })).then(function(/*responses*/) {

@@ -81,7 +81,6 @@
                             { '_name': 'actions' }
                         ],
                         guard: function(updates) {
-                            console.log('Guard function of observable actions', updates);
                             return _.find(updates, function(item) {
                                 return (item.base.details.objectType === 'Observable') && (item.base.details.objectId === artifact.id);
                             }) !== undefined;

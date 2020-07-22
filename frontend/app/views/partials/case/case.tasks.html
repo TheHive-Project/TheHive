@@ -118,10 +118,10 @@
                     <td>{{task.startDate | shortDate}}</td>
                     <td ng-if="canEdit">
                         <span ng-show="task.assignee">
-                            <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee"/>
+                            <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee" query="getAssignableUsers" query-params="[task._id]"/>
                         </span>
                         <span ng-show="!task.assignee">
-                            <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
+                            <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"  query="getAssignableUsers" query-params="[task._id]"/>
                         </span>
                     </td>
                     <td ng-if="!canEdit">
@@ -236,10 +236,10 @@
                             <td>{{task.startDate | shortDate}}</td>
                             <td ng-if="canEdit">
                                 <span ng-show="task.assignee">
-                                    <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee"/>
+                                    <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee" query="getAssignableUsers" query-params="[task._id]"/>
                                 </span>
                                 <span ng-show="!task.assignee">
-                                    <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"/>
+                                    <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned" query="getAssignableUsers" query-params="[task._id]"/>
                                 </span>
                             </td>
                             <td ng-if="!canEdit">

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('updatableUser', function(UserSrv, UtilsSrv, AuthenticationSrv, NotificationSrv) {
+        .directive('updatableUser', function(UserSrv, QuerySrv, UtilsSrv, AuthenticationSrv, NotificationSrv) {
             return {
                 restrict: 'E',
                 link: function(scope, element, attrs, ctrl, transclude) {
@@ -17,31 +17,39 @@
                     scope.$watch('updatable.updating', function(value) {
 
                         if(value === true && !cached) {
-                            // TODO nadouani use {"_field": "locked": "_value": false}
-                            UserSrv.list(AuthenticationSrv.currentUser.organisation, {
+                            var assignableUsers = [];
+
+                            if(_.isFunction(scope.query)) {
+                                assignableUsers = scope.query.apply(this, scope.queryParams);
+                            } else {
+                                assignableUsers = scope.query;
+                            }
+
+                            QuerySrv.call('v1', assignableUsers, {
                                 filter: {
-                                    _is: {
-                                        _field: 'locked',
-                                        _value: false
-                                    }
+                                    _field: 'locked',
+                                    _value: false
                                 },
                                 sort: ['+name']
                             })
-                                .then(function(users) {
-                                    scope.userList = users;
-                                })
-                                .catch(function(err) {
-                                    NotificationSrv.error('Fetching users', err.data, err.status);
-                                });
+                            .then(function(users) {
+                                scope.userList = users;
+                            })
+                            .catch(function(err) {
+                                NotificationSrv.error('Fetching users', err.data, err.status);
+                            });
+
                             cached = true;
                         }
                     });
                 },
                 templateUrl: 'views/directives/updatable-user.html',
                 scope: {
-                    'value': '=?',
-                    'onUpdate': '&',
-                    'active': '=?'
+                    value: '=?',
+                    query: '=',
+                    queryParams: '=',
+                    onUpdate: '&',
+                    active: '=?'
                 }
             };
         });

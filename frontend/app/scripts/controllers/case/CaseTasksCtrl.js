@@ -40,6 +40,13 @@
                 });
         };
 
+        $scope.getAssignableUsers = function(taskId) {
+            return [
+                {_name: 'getTask', idOrName: taskId},
+                {_name: 'assignableUsers'}
+            ];
+        };
+
         $scope.load = function() {
             $scope.tasks = new PaginatedQuerySrv({
                 name: 'case-tasks',

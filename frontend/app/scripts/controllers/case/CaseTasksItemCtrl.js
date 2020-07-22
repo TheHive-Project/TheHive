@@ -10,6 +10,11 @@
             $scope.tabName = 'task-' + task._id;
             $scope.taskResponders = null;
 
+            $scope.assignableUsersQuery = [
+                {_name: 'getTask', idOrName: task._id},
+                {_name: 'assignableUsers'}
+            ];
+
             $scope.loading = false;
             $scope.newLog = {
                 message: ''
