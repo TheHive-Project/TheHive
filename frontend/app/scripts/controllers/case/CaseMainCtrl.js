@@ -81,6 +81,7 @@
                 }
             });
 
+            // Stats for case tasks counter
             StreamQuerySrv('v1', [
                 {_name: 'getCase', idOrName: caseId},
                 {_name: 'tasks'},
@@ -105,6 +106,7 @@
                 }
             });
 
+            // Stats for case observables counter
             StreamQuerySrv('v1', [
                 {_name: 'getCase', idOrName: caseId},
                 {_name: 'observables'},
@@ -123,14 +125,33 @@
                 }
             });
 
-            $scope.alerts = StreamStatSrv({
+            // Stats for case observables counter
+            StreamQuerySrv('v1', [
+                {_name: 'getCase', idOrName: caseId},
+                {_name: 'alerts'},
+                {_name: 'count'}
+            ], {
                 scope: $scope,
                 rootId: caseId,
-                query: { 'case': caseId },
-                result: {},
                 objectType: 'alert',
-                field: 'type'
+                query: {
+                    params: {
+                        name: 'alert-stats-' + caseId
+                    }
+                },
+                onUpdate: function(updates) {
+                    $scope.alertCount = updates;
+                }
             });
+
+            // $scope.alerts = StreamStatSrv({
+            //     scope: $scope,
+            //     rootId: caseId,
+            //     query: { 'case': caseId },
+            //     result: {},
+            //     objectType: 'alert',
+            //     field: 'type'
+            // });
 
             $scope.$on('tasks:task-removed', function(event, task) {
                 CaseTabsSrv.removeTab('task-' + task._id);

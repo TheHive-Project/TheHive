@@ -51,11 +51,11 @@
             </strong>
         </span>
 
-        <span class="ml-xxs text-danger" ng-show="alerts.count > 0"uib-tooltip="Related to">
+        <span class="ml-xxs text-danger" ng-show="alertCount > 0"uib-tooltip="Related to">
             <i class="glyphicon glyphicon-link"></i>
             <strong>
                 <a class="text-danger" href ui-sref="app.case.alerts({caseId:caze._id})">
-                  <ng-pluralize count="alerts.count" when="{'one': '1 alert', 'other': '{} alerts'}"></ng-pluralize>
+                  <ng-pluralize count="alertCount" when="{'one': '1 alert', 'other': '{} alerts'}"></ng-pluralize>
                 </a>
             </strong>
         </span>
