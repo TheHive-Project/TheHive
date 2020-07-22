@@ -272,12 +272,12 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
       .project(
         _.by
           .by(_.avatar.fold)
-          .by(_.role.project(_.by(_.profile).by(_.organisation.name)).fold)
+          .by(_.role.project(_.by(_.profile).by(_.organisation.visible.name.fold)).fold)
       )
       .map {
         case (user, attachment, profileOrganisations) =>
-          val po = profileOrganisations.asScala.map {
-            case (profile, organisationName) => profile.as[Profile] -> organisationName
+          val po = profileOrganisations.asScala.collect {
+            case (profile, organisationName) if !organisationName.isEmpty => profile.as[Profile] -> organisationName.get(0)
           }
           po.find(_._2 == authContext.organisation)
             .orElse(po.headOption)
