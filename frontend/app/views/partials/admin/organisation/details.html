@@ -50,7 +50,7 @@
                             </span>
                         </uib-tab-heading>
                         <div if-permission="manageUser">
-                            <div class="row mb-xs">
+                            <div class="row">
                                 <div class="col-md-12">
                                     <div class="btn-toolbar" role="toolbar">
                                         <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.showUserDialog()">
@@ -88,8 +88,14 @@
                                 <div class="col-md-12">
                                     <div class="mt-s filter-panel" ng-include="'views/partials/admin/organisation/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
 
+
                                     <div class="row mt-s">
                                         <div class="col-md-12 clearfix">
+                                            <div class="pull-left">
+                                                <h4>
+                                                    User List ({{$vm.users.values.length || 0}} of {{$vm.users.total}})
+                                                </h4>
+                                            </div>
 
                                             <filters-preview filters="$vm.filtering.context.filters"
                                                 on-clear-item="$vm.removeFilter(field)"
