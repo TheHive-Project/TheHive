@@ -15,12 +15,12 @@
 
                             <span ng-switch-when="tasks">
                                 <i class="glyphicon glyphicon-tasks"></i>&nbsp;&nbsp;{{tab.label}}&nbsp;&nbsp;
-                                <span class="badge">{{tasks.count}}</span>
+                                <span class="badge">{{tasksCount}}</span>
                             </span>
 
                             <span ng-switch-when="observables">
                                 <i class="glyphicon glyphicon-pushpin"></i>&nbsp;&nbsp; Observables&nbsp;&nbsp;
-                                <span class="badge badge-primary">{{artifactStats.count}}</span>
+                                <span class="badge badge-primary">{{observableCount}}</span>
                             </span>
 
                             <span ng-switch-default>

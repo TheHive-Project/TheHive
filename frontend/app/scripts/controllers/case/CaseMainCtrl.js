@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, UserSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, UserSrv, MispSrv, StreamSrv, StreamQuerySrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
             $scope.caseResponders = null;
@@ -81,46 +81,46 @@
                 }
             });
 
-            $scope.tasks = StreamStatSrv({
+            StreamQuerySrv('v1', [
+                {_name: 'getCase', idOrName: caseId},
+                {_name: 'tasks'},
+                {_name: 'filter',
+                    _not: {
+                        '_field': 'status',
+                        '_value': 'Cancel'
+                    }
+                },
+                {_name: 'count'}
+            ], {
                 scope: $scope,
                 rootId: caseId,
-                query: {
-                    '_and': [{
-                        '_parent': {
-                            "_type": "case",
-                            "_query": {
-                                "_id": caseId
-                            }
-                        }
-                    }, {
-                        '_not': {
-                            'status': 'Cancel'
-                        }
-                    }]
-                },
-                result: {},
                 objectType: 'case_task',
-                field: 'status'
+                query: {
+                    params: {
+                        name: 'task-stats-' + caseId
+                    }
+                },
+                onUpdate: function(updates) {
+                    $scope.tasksCount = updates;
+                }
             });
 
-            $scope.artifactStats = StreamStatSrv({
+            StreamQuerySrv('v1', [
+                {_name: 'getCase', idOrName: caseId},
+                {_name: 'observables'},
+                {_name: 'count'}
+            ], {
                 scope: $scope,
                 rootId: caseId,
-                query: {
-                    '_and': [{
-                        '_parent': {
-                            "_type": "case",
-                            "_query": {
-                                "_id": caseId
-                            }
-                        }
-                    }, {
-                        'status': 'Ok'
-                    }]
-                },
-                result: {},
                 objectType: 'case_artifact',
-                field: 'status'
+                query: {
+                    params: {
+                        name: 'observable-stats-' + caseId
+                    }
+                },
+                onUpdate: function(updates) {
+                    $scope.observableCount = updates;
+                }
             });
 
             $scope.alerts = StreamStatSrv({
