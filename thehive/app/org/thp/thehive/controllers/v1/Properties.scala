@@ -236,9 +236,6 @@ class Properties @Inject() (
       .property("name", UniMapping.string)(_.field.readonly)
       .property("locked", UniMapping.boolean)(_.field.readonly)
       .property("avatar", UniMapping.string.optional)(_.select(_.avatar.attachmentId.map(id => s"/api/datastore/$id")).readonly)
-      .property("mfa", UniMapping.boolean)(_.select(_.totpSecret.fold.map(!_.isEmpty)).readonly)
-      .property("hasKey", UniMapping.boolean)(_.select(_.apikey.fold.map(!_.isEmpty)).readonly)
-      .property("hasPassword", UniMapping.boolean)(_.select(_.password.fold.map(!_.isEmpty)).readonly)
       .build
 
   lazy val observable: List[PublicProperty[_, _]] =
