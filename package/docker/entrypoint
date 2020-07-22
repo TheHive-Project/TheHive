@@ -20,6 +20,10 @@ test "${TH_NO_CONFIG}" == 1
 CONFIG=$?
 CONFIG_FILE=${TH_CONFIG_FILE:-/etc/thehive/application.conf}
 CORTEX_KEYS=${TH_CORTEX_KEYS}
+CONFIG_MISP=0
+MISP_HOSTNAMES="misp"
+MISP_PROTO="http"
+MISP_PORT="80"
 function usage {
   cat <<- _EOF_
     Available options:
@@ -41,6 +45,17 @@ function usage {
     --cortex-port <port>                        | define port to connect to Cortex (default: 9001)
     --cortex-hostname <host>,<host>,...         | resolve this hostname to find Cortex instances
     --cortex-keys <key>,<key>,...               | define Cortex key
+    --config-misp                               | Enable adding MISP configuration
+    --misp-hostnames <host>,<host>, ...         | Resolve this hostname to find MISP instances (default: misp)
+    --misp-proto <proto>                        | Define protocol to connect to MISP (default: http)
+    --misp-port <port>                          | Define port to connect to MISP ( default: 80)
+    --misp-keys <key>,<key>, ...                | Define MISP key
+    --misp-template <template-name>             | Name of the case template in TheHive that shall be used to import MISP events as cases by default (Optional)
+    --misp-tags <tag>,<tag>, ...                | Optional tags to add to each observable  imported  from  an  event (Optional)
+    --misp-max-age <number> days                | Maximum age of the last publish date of event to be imported in TheHive (Optional)
+    --misp-exc-orgs <org>,<org>, ...            | List of MISP organisation from which event will not be imported (Optional)
+    --misp-exc-tags <tag>,<tag>, ...            | Don't import MISP events which have one of these tags (Optional)
+    --misp-wh-tags <tag>,<tag>, ...             | Import only MISP events which have one of these tags (Optional)
 _EOF_
   exit 1
 }
@@ -68,6 +83,17 @@ do
     "--cortex-port")       shift; CORTEX_PORT=$1 ;;
     "--cortex-hostnames")  shift; CORTEX_HOSTNAMES=$1 ;;
     "--cortex-keys")       shift; CORTEX_KEYS=$1 ;;
+    "--config-misp")       CONFIG_MISP=1 ;;
+    "--misp-hostnames")    shift; MISP_HOSTNAMES=$1 ;;
+    "--misp-proto")        shift; MISP_PROTO=$1 ;;
+    "--misp-port")         shift; MISP_PORT=$1 ;;
+    "--misp-keys")         shift; MISP_KEYS=$1 ;;
+    "--misp-template")     shift; MISP_TEMPLATE=$1 ;;
+    "--misp-tags")         shift; MISP_TAGS=$1 ;;
+    "--misp-max-age")      shift; MISP_AGE=$1 ;; 
+    "--misp-exc-orgs")     shift; MISP_EXC_ORG=$1 ;;
+    "--misp-exc-tags")     shift; MISP_EXC_TAGS=$1 ;;
+    "--misp-wh-tags")      shift; MISP_WH_TAGS=$1 ;;
     "--")                  STOP=1;;
     *)                     usage
   esac
@@ -173,6 +199,78 @@ then
       echo "]"  >> ${CONFIG_FILE}
     fi
   fi
+
+if [[ $CONFIG_MISP -eq 1 ]];then
+  declare -a MISP_URLS
+  IFS=',' read -r -a MH <<< "${MISP_HOSTNAMES}"
+  IFS=',' read -r -a MK <<< "${MISP_KEYS}"
+  for M in "${MH[@]}";do
+    test -n "${M}" && MISP_URLS+=("${MISP_PROTO}://${M}:${MISP_PORT}")
+  done
+  if [[ ${#MISP_URLS[@]} -gt 0 ]];then
+  echo "play.modules.enabled += org.thp.thehive.connector.misp.MispModule" >> ${CONFIG_FILE}
+  echo "misp.interval = 1 hour" >> ${CONFIG_FILE}
+  echo "misp.servers = [">> ${CONFIG_FILE}
+  i=0
+  for M in ${MISP_URLS[@]};do
+    echo "Add MISP n${i} : ${M}"
+    echo "{" >> ${CONFIG_FILE}
+    echo "name = \"MISP${i}\"" >> ${CONFIG_FILE}
+    echo "url = \"${M}\"" >> ${CONFIG_FILE}
+    echo "auth {" >> ${CONFIG_FILE}
+    echo "type = key" >> ${CONFIG_FILE}
+    echo "key = \"${MK[$i]}\"" >> ${CONFIG_FILE}
+    echo "}" >> ${CONFIG_FILE}
+    echo "wsConfig {}" >> ${CONFIG_FILE}
+
+# Optional Config #
+  # MISP Template #
+  if [[ -n $MISP_TEMPLATE ]];then
+    echo "caseTemplate = \"${MISP_TEMPLATE}\"" >> ${CONFIG_FILE}
+  fi
+  # MISP Tags #
+  IFS=',' read -r -a MT <<< ${MISP_TAGS}
+  if [[ ${#MT[@]} -gt 0 ]];then
+    for tag in ${MT[@]};do
+	tags="${tags}\"${tag}\","
+    done
+	echo "tags = [${tags:0:$((${#tags}-1))}]" >> ${CONFIG_FILE}
+  fi
+
+  # MISP Max-Age #
+  if [[ -n $MISP_AGE ]];then
+    echo "max-age = ${MISP_AGE}" >> ${CONFIG_FILE}
+  fi
+
+  # MISP Exclusion #
+  IFS=',' read -r -a MEO <<< ${MISP_EXC_ORG}
+  if [[ ${#MEO[@]} -gt 0 ]];then
+    for org in ${MEO[@]};do
+      orgs="${orgs}\"${org}\","
+    done
+    echo "exclusion.organisation = [${orgs:0:$((${#orgs}-1))}]" >> ${CONFIG_FILE}
+  fi
+  IFS=',' read -r -a MET <<< ${MISP_EXC_TAGS}  
+  if [[ ${#MET[@]} -gt 0 ]];then
+    for tag in ${MET[@]};do
+      etags="${etags}\"${tag}\","
+    done
+    echo "exclusion.tags = [${etags:0:$((${#etags}-1))}]" >> ${CONFIG_FILE}
+  fi
+  # MISP Whitelist #
+  IFS=',' read -r -a MWT <<< ${MISP_WH_TAGS}
+  if [[ ${#MWT[@]} -gt 0 ]];then
+    for tag in ${MWT[@]};do
+      wtags="${wtags}\"${tag}\","
+    done
+    echo "whitelist.tags = [${wtags:0:$((${#wtags}-1))}]" >> ${CONFIG_FILE}
+  fi
+  echo "}" >> ${CONFIG_FILE}
+  i=$((${i}+1))
+  done
+  echo "]" >> ${CONFIG_FILE}
+  fi
+fi
 
   echo "include file(\"secret.conf\")" >> ${CONFIG_FILE}
 fi
