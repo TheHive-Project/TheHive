@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, $uibModal, FilteringSrv, SecuritySrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $q, $state, $window, $uibModal, StreamQuerySrv, FilteringSrv, SecuritySrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -48,13 +48,31 @@
                     });
                 });
 
-            this.caseStats = StreamStatSrv({
+
+            StreamQuerySrv('v1', [
+                {
+                    "_name": "listCase"
+                },
+                {
+                    "_name": "aggregation",
+                    "_agg": "field",
+                    "_field": "status",
+                    "_select": [
+                        {"_agg": "count"}
+                    ]
+                }
+            ], {
                 scope: $scope,
                 rootId: 'any',
-                query: {},
-                result: {},
                 objectType: 'case',
-                field: 'status'
+                query: {
+                    params: {
+                        name: "case-status-stats"
+                    }
+                },
+                onUpdate: function(updates) {
+                    self.caseStats = updates;
+                }
             });
         };
 
