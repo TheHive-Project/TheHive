@@ -312,7 +312,7 @@ class Output @Inject() (
       if (login.contains('@')) login.toLowerCase
       else s"$login@$defaultUserDomain".toLowerCase
     users
-      .get(validLogin)
+      .get(if (validLogin.startsWith("init@")) User.system.login else validLogin)
       .fold[Try[User with Entity]](Failure(NotFoundError(s"User $login not found")))(Success.apply)
   }
 
