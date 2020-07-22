@@ -14,8 +14,22 @@
             <thead>
                 <tr>
                     <th style="width: 80px">Status</th>
-                    <th>Login</th>
-                    <th style="width: 150px">Full Name</th>
+                    <th>
+                        <a href class="text-default" ng-click="$ctrl.sortByField('login')">
+                            Login
+                            <i ng-show="$ctrl.sort.indexOf('+login') === -1 && $ctrl.sort.indexOf('-login') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+login') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$ctrl.sort.indexOf('-login') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th style="width: 150px">
+                        <a href class="text-default" ng-click="$ctrl.sortByField('name')">
+                            Full Name
+                            <i ng-show="$ctrl.sort.indexOf('+name') === -1 && $ctrl.sort.indexOf('-name') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+name') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$ctrl.sort.indexOf('-name') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
                     <th style="width: 140px">Profile</th>
                     <th>Password</th>
                     <th>API Key</th>

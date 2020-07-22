@@ -14,6 +14,10 @@
                     self.canSetPass = this.setPasswordEnabled;
                 };
 
+                self.sortByField = function(field) {
+                    this.onSort({field: field});
+                };
+
                 self.reload = function() {
                     self.onReload();
                 };
@@ -201,10 +205,12 @@
             templateUrl: 'views/components/org/user.list.html',
             bindings: {
                 users: '<',
+                sort: '<',
                 mfaEnabled: '<',
                 setPasswordEnabled: '<',
                 onReload: '&',
-                onEdit: '&'
+                onEdit: '&',
+                onSort: '&'
             }
         });
 })();

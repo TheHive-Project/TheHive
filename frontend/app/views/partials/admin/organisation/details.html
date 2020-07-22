@@ -57,6 +57,21 @@
                                             <i class="fa fa-plus"></i>
                                             Create new user
                                         </button>
+                                        <div class="btn-group" uib-dropdown>
+                                            <button class="btn btn-sm btn-primary dropdown-toggle" uib-dropdown-toggle type="button">
+                                                <i class="fa fa-filter"></i>
+                                                Quick Filters
+                                                <span class="caret"></span>
+                                            </button>
+                                            <ul class="dropdown-menu" uib-dropdown-menu>
+                                                <li>
+                                                    <a class="clickable" ng-click="$vm.filterBy('locked', false)"><i class="fa fa-unlock-alt"></i> Active users</a>
+                                                </li>
+                                                <li>
+                                                    <a class="clickable" ng-click="$vm.filterBy('locked', true)"><i class="fa fa-lock"></i> Locked users</a>
+                                                </li>
+                                            </ul>
+                                        </div>
 
                                         <div class="btn-group pull-right" role="group">
                                             <page-sizer collection="$vm.users" sizes="[10, 15, 30, 100]"></page-sizer>
@@ -83,7 +98,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <org-user-list users="$vm.users" on-reload="$vm.loadUsers()" on-edit="$vm.showUserDialog(user)" set-password-enabled="$vm.canSetPass" mfa-enabled="$vm.canChangeMfa"></org-user-list>
+                            <org-user-list users="$vm.users"
+                                on-reload="$vm.loadUsers()"
+                                on-edit="$vm.showUserDialog(user)"
+                                on-sort="$vm.sortByField(field)"
+                                sort="$vm.filtering.context.sort"
+                                set-password-enabled="$vm.canSetPass"
+                                mfa-enabled="$vm.canChangeMfa"></org-user-list>
                         </div>
                     </uib-tab>
                     <uib-tab index="1" if-permission="manageCaseTemplate">

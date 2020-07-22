@@ -25,6 +25,7 @@
                 this.filter = options.filter;
                 this.sort = options.sort;
                 this.onUpdate = options.onUpdate;
+                this.onFailure = options.onFailure;
                 this.skipStream = options.skipStream;
                 this.streamObjectType = options.streamObjectType || options.objectType;
                 this.guard = options.guard || undefined;
@@ -147,6 +148,10 @@
                                 self.onUpdate(updates);
                             }
                         }
+                    }).catch(function(err) {
+                        if(self.onFailure) {
+                            self.onFailure(err);
+                        }
                     });
 
                     // get the total if not cached
@@ -169,7 +174,6 @@
                 // Call the initial load
                 this.update();
             };
-
 
         });
 

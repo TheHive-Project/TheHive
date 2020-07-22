@@ -22,7 +22,7 @@
                         showFilters: true,
                         showStats: false,
                         pageSize: 15,
-                        //sort: ['-flag', '-startDate']
+                        sort: ['+login']
                     },
                     defaultFilter: []
                 });
@@ -58,6 +58,12 @@
                     config: {
                         headers: {
                             'X-Organisation': self.org.name
+                        }
+                    },
+                    onFailure: function(err) {
+                        if(err && err.status === 400) {
+                            self.filtering.resetContext();
+                            self.loadUsers();
                         }
                     }
                 });
@@ -101,6 +107,29 @@
             this.addFilterValue = function (field, value) {
                 this.filtering.addFilterValue(field, value);
                 this.search();
+            };
+
+            this.filterBy = function(field, value) {
+                self.filtering.clearFilters()
+                    .then(function(){
+                        self.addFilterValue(field, value);
+                    });
+            };
+
+            this.sortByField = function(field) {
+                var context = this.filtering.context;
+                var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
+                var sort = null;
+
+                if(currentSort && currentSort.substr(1) !== field) {
+                    sort = ['+' + field];
+                } else {
+                    sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                }
+
+                self.users.sort = sort;
+                self.users.update();
+                self.filtering.setSort(sort);
             };
 
         });
