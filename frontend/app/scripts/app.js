@@ -588,7 +588,7 @@ angular.module('thehive', [
         'use strict';
 
         localStorageServiceProvider
-            .setPrefix('th')
+            .setPrefix('th4')
             .setStorageType('localStorage')
             .setNotify(false, false);
     })
