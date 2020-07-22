@@ -9,12 +9,12 @@ import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.{AuthorizationError, ErrorHandler}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
-import org.thp.thehive.connector.cortex.models.RichJob
+import org.thp.thehive.connector.cortex.models.{ObservableJob, RichJob}
 import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models.{Permissions, RichCase, RichObservable}
-import org.thp.thehive.services.ObservableSrv
+import org.thp.thehive.services.{ObservableSrv, ObservableSteps}
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -51,6 +51,13 @@ class JobCtrl @Inject() (
       }
     )
   override val outputQuery: Query = Query.outputWithContext[RichJob, JobSteps]((jobSteps, authContext) => jobSteps.richJob(authContext))
+
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[ObservableSteps, JobSteps](
+      "jobs",
+      (observableSteps, _) => new JobSteps(observableSteps.outTo[ObservableJob].raw)(db, observableSteps.graph)
+    )
+  )
 
   def get(jobId: String): Action[AnyContent] =
     entrypoint("get job")
