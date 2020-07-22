@@ -1,5 +1,7 @@
 package org.thp.thehive.migration.th4
 
+import java.util.Date
+
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.google.inject.Guice
@@ -262,6 +264,12 @@ class Output @Inject() (
     def logFailure(message: String): Unit = t.failed.foreach(error => logger.warn(s"$message: $error"))
   }
 
+  def updateMetaData(entity: Entity, metaData: MetaData)(implicit graph: Graph): Unit = {
+    val e1 = graph.V(entity._id).property(Key[Date]("_createdAt"), metaData.createdAt)
+    val e2 = metaData.updatedAt.fold(e1)(e1.property(Key[Date]("_updatedAt"), _))
+    metaData.updatedAt.foreach(e2.property(Key[Date]("_updatedAt"), _))
+  }
+
   def getAuthContext(userId: String): AuthContext =
     if (userId.startsWith("init@"))
       LocalUserSrv.getSystemAuthContext
@@ -286,6 +294,7 @@ class Output @Inject() (
     implicit graph => implicit authContext =>
       logger.debug(s"Create organisation ${inputOrganisation.organisation.name}")
       organisationSrv.create(inputOrganisation.organisation).map { o =>
+        updateMetaData(o, inputOrganisation.metaData)
         organisations += (o.name -> o)
         IdMapping(inputOrganisation.metaData.id, o._id)
       }
@@ -311,6 +320,7 @@ class Output @Inject() (
     implicit graph => implicit authContext =>
       logger.debug(s"Create user ${inputUser.user.login}")
       userSrv.checkUser(inputUser.user).flatMap(userSrv.createEntity).map { createdUser =>
+        updateMetaData(createdUser, inputUser.metaData)
         inputUser
           .avatar
           .foreach { inputAttachment =>
@@ -343,6 +353,7 @@ class Output @Inject() (
     implicit graph => implicit authContext =>
       logger.debug(s"Create custom field ${inputCustomField.customField.name}")
       customFieldSrv.create(inputCustomField.customField).map { cf =>
+        updateMetaData(cf, inputCustomField.metaData)
         customFields += (cf.name -> cf)
         IdMapping(inputCustomField.customField.name, cf._id)
       }
@@ -365,6 +376,7 @@ class Output @Inject() (
     authTransaction(inputObservableType.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create observable types ${inputObservableType.observableType.name}")
       observableTypeSrv.create(inputObservableType.observableType).map { ot =>
+        updateMetaData(ot, inputObservableType.metaData)
         observableTypes += (ot.name -> ot)
         IdMapping(inputObservableType.observableType.name, ot._id)
       }
@@ -386,6 +398,7 @@ class Output @Inject() (
     implicit graph => implicit authContext =>
       logger.debug(s"Create profile ${inputProfile.profile.name}")
       profileSrv.create(inputProfile.profile).map { profile =>
+        updateMetaData(profile, inputProfile.metaData)
         profiles += (profile.name -> profile)
         IdMapping(inputProfile.profile.name, profile._id)
       }
@@ -407,6 +420,7 @@ class Output @Inject() (
     implicit graph => implicit authContext =>
       logger.debug(s"Create impact status ${inputImpactStatus.impactStatus.value}")
       impactStatusSrv.create(inputImpactStatus.impactStatus).map { status =>
+        updateMetaData(status, inputImpactStatus.metaData)
         impactStatuses += (status.value -> status)
         IdMapping(inputImpactStatus.impactStatus.value, status._id)
       }
@@ -431,6 +445,7 @@ class Output @Inject() (
       resolutionStatusSrv
         .create(inputResolutionStatus.resolutionStatus)
         .map { status =>
+          updateMetaData(status, inputResolutionStatus.metaData)
           resolutionStatuses += (status.value -> status)
           IdMapping(inputResolutionStatus.resolutionStatus.value, status._id)
         }
@@ -447,6 +462,7 @@ class Output @Inject() (
         organisation     <- getOrganisation(inputCaseTemplate.organisation)
         tags             <- inputCaseTemplate.tags.toTry(getTag)
         richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.caseTemplate, organisation, tags, Nil, Nil)
+        _ = updateMetaData(richCaseTemplate.caseTemplate, inputCaseTemplate.metaData)
         _ = inputCaseTemplate.customFields.foreach {
           case (name, value, order) =>
             (for {
@@ -466,7 +482,8 @@ class Output @Inject() (
         caseTemplate <- caseTemplateSrv.getOrFail(caseTemplateId)
         taskOwner = inputTask.owner.flatMap(getUser(_).toOption)
         richTask <- taskSrv.create(inputTask.task, taskOwner)
-        _        <- caseTemplateSrv.addTask(caseTemplate, richTask.task)
+        _ = updateMetaData(richTask.task, inputTask.metaData)
+        _ <- caseTemplateSrv.addTask(caseTemplate, richTask.task)
       } yield IdMapping(inputTask.metaData.id, richTask._id)
   }
 
@@ -478,6 +495,7 @@ class Output @Inject() (
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create case #${inputCase.`case`.number}")
       caseSrv.createEntity(inputCase.`case`).map { createdCase =>
+        updateMetaData(createdCase, inputCase.metaData)
         inputCase
           .user
           .foreach { userLogin =>
@@ -546,7 +564,8 @@ class Output @Inject() (
       val owner = inputTask.owner.flatMap(getUser(_).toOption)
       for {
         richTask <- taskSrv.create(inputTask.task, owner)
-        case0    <- getCase(caseId)
+        _ = updateMetaData(richTask.task, inputTask.metaData)
+        case0 <- getCase(caseId)
         _ <- inputTask.organisations.toTry { organisation =>
           getOrganisation(organisation).flatMap(shareSrv.shareTask(richTask, case0, _))
         }
@@ -559,6 +578,7 @@ class Output @Inject() (
         task <- taskSrv.getOrFail(taskId)
         _ = logger.debug(s"Create log in task ${task.title}")
         log <- logSrv.create(inputLog.log, task)
+        _ = updateMetaData(log, inputLog.metaData)
         _ <- inputLog.attachments.toTry { inputAttachment =>
           attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap { attachment =>
             logSrv.addAttachment(log, attachment)
@@ -587,6 +607,7 @@ class Output @Inject() (
               }
             }
           )
+        _ = updateMetaData(richObservable.observable, inputObservable.metaData)
         case0 <- getCase(caseId)
         orgs  <- inputObservable.organisations.toTry(getOrganisation)
         _     <- orgs.toTry(o => shareSrv.shareObservable(richObservable, case0, o))
@@ -599,6 +620,7 @@ class Output @Inject() (
       for {
         observable <- observableSrv.getOrFail(observableId)
         job        <- jobSrv.create(inputJob.job, observable)
+        _ = updateMetaData(job.job, inputJob.metaData)
       } yield IdMapping(inputJob.metaData.id, job._id)
     }
 
@@ -623,6 +645,7 @@ class Output @Inject() (
               }
             }
           )
+        _ = updateMetaData(richObservable.observable, inputObservable.metaData)
         _ <- jobSrv.addObservable(job, richObservable.observable)
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
@@ -647,6 +670,7 @@ class Output @Inject() (
           )
         tags = inputAlert.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
         alert <- alertSrv.create(inputAlert.alert, organisation, tags, inputAlert.customFields, caseTemplate)
+        _ = updateMetaData(alert.alert, inputAlert.metaData)
         _ = inputAlert.caseId.flatMap(getCase(_).toOption).foreach(alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, _))
       } yield IdMapping(inputAlert.metaData.id, alert._id)
   }
@@ -671,6 +695,7 @@ class Output @Inject() (
               }
             }
           )
+        _ = updateMetaData(richObservable.observable, inputObservable.metaData)
         alert <- alertSrv.getOrFail(alertId)
         _     <- alertSrv.alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
@@ -694,6 +719,7 @@ class Output @Inject() (
       for {
         entity <- getEntity(inputAction.objectType, objectId)
         action <- actionSrv.create(inputAction.action, entity)
+        _ = updateMetaData(action.action, inputAction.metaData)
       } yield IdMapping(inputAction.metaData.id, action._id)
   }
 
@@ -716,9 +742,10 @@ class Output @Inject() (
         context      <- ctxType.map(getEntity(_, contextId)).flip
         user         <- getUser(authContext.userId)
         createdAudit <- auditSrv.createEntity(inputAudit.audit)
-        _            <- auditSrv.auditUserSrv.create(AuditUser(), createdAudit, user)
-        _            <- obj.map(auditSrv.auditedSrv.create(Audited(), createdAudit, _)).flip
-        _            <- context.map(auditSrv.auditContextSrv.create(AuditContext(), createdAudit, _)).flip
+        _ = updateMetaData(createdAudit, inputAudit.metaData)
+        _ <- auditSrv.auditUserSrv.create(AuditUser(), createdAudit, user)
+        _ <- obj.map(auditSrv.auditedSrv.create(Audited(), createdAudit, _)).flip
+        _ <- context.map(auditSrv.auditContextSrv.create(AuditContext(), createdAudit, _)).flip
       } yield ()
   }
 }
