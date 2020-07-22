@@ -3,6 +3,7 @@ package org.thp.thehive.services
 import java.util.regex.Pattern
 import java.util.{List => JList}
 
+import scala.collection.JavaConverters._
 import akka.actor.ActorRef
 import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
@@ -14,7 +15,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntitySteps, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntitySteps, InternalError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.Configuration
@@ -264,6 +265,27 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema"
         case (user, _, attachment) =>
           val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
           RichUser(user.as[User], avatar, "", Set.empty, organisation)
+      }
+
+  def richUser(implicit authContext: AuthContext): Traversal[RichUser, RichUser] =
+    this
+      .project(
+        _.by
+          .by(_.avatar.fold)
+          .by(_.role.project(_.by(_.profile).by(_.organisation.name)).fold)
+      )
+      .map {
+        case (user, attachment, profileOrganisations) =>
+          val po = profileOrganisations.asScala.map {
+            case (profile, organisationName) => profile.as[Profile] -> organisationName
+          }
+          po.find(_._2 == authContext.organisation)
+            .orElse(po.headOption)
+            .fold(throw InternalError(s"")) {
+              case (profile, organisationName) =>
+                val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
+                RichUser(user.as[User], avatar, profile.name, profile.permissions, organisationName)
+            }
       }
 
   def richUserWithCustomRenderer[A](organisation: String, entityRenderer: UserSteps => TraversalLike[_, A])(

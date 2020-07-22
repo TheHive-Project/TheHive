@@ -51,10 +51,10 @@ class UserCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],
-    (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, range.extraData.contains("total"))
+    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, range.extraData.contains("total"))
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext.organisation))
+    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext))
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[UserSteps]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
