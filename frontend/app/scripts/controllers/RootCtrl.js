@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamStatSrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, AlertingSrv, StreamSrv, StreamQuerySrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if(currentUser === 520) {
@@ -54,36 +54,40 @@ angular.module('theHiveControllers').controller('RootCtrl',
             $scope.templates = templates;
         });
 
-        $scope.myCurrentTasks = StreamStatSrv({
+        StreamQuerySrv('v1', [
+            {_name: 'currentUser'},
+            {_name: 'tasks'},
+            {_name: 'filter', _ne: {_field: 'status', _value: 'Completed'}},
+            {_name: 'count'}
+        ], {
             scope: $scope,
             rootId: 'any',
-            query: {
-                '_and': [
-                    {
-                        '_in': {
-                            '_field': 'status',
-                            '_values': ['Waiting', 'InProgress']
-                        }
-                    },
-                    {
-                        'owner': $scope.currentUser.login
-                    }
-                ]
-            },
-            result: {},
             objectType: 'case_task',
-            field: 'status'
+            query: {
+                params: {
+                    name: 'my-tasks.stats'
+                }
+            },
+            onUpdate: function(updates) {
+                $scope.myCurrentTasksCount = updates;
+            }
         });
 
-        $scope.waitingTasks = StreamStatSrv({
+        StreamQuerySrv('v1', [
+            {_name: 'waitingTask'},
+            {_name: 'count'}
+        ], {
             scope: $scope,
             rootId: 'any',
-            query: {
-                'status': 'Waiting'
-            },
-            result: {},
             objectType: 'case_task',
-            field: 'status'
+            query: {
+                params: {
+                    name: 'waiting-tasks.stats'
+                }
+            },
+            onUpdate: function(updates) {
+                $scope.waitingTasksCount = updates;
+            }
         });
 
         // Get Alert counts

@@ -63,7 +63,8 @@
                     filter: self.filtering.buildQuery(),
                     baseFilter: self.defaultFilter,
                     operations: self.queryOperations,
-                    extraData: ['case']
+                    extraData: ['case'],
+                    name: $stateParams.viewId
                 });
             };
 
