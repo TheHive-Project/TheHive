@@ -52,7 +52,8 @@ class CaseCtrl @Inject() (
     Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
     Query[CaseSteps, ObservableSteps]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
     Query[CaseSteps, UserSteps]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
-    Query[CaseSteps, OrganisationSteps]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext))
+    Query[CaseSteps, OrganisationSteps]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
+    Query[CaseSteps, AlertSteps]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(authContext))
   )
 
   def create: Action[AnyContent] =
