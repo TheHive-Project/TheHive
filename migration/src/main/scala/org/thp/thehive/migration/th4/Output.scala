@@ -267,7 +267,8 @@ class Output @Inject() (
   def updateMetaData(entity: Entity, metaData: MetaData)(implicit graph: Graph): Unit = {
     val e1 = graph.V(entity._id).property(Key[Date]("_createdAt"), metaData.createdAt)
     val e2 = metaData.updatedAt.fold(e1)(e1.property(Key[Date]("_updatedAt"), _))
-    metaData.updatedAt.foreach(e2.property(Key[Date]("_updatedAt"), _))
+    metaData.updatedAt.fold(e2)(e2.property(Key[Date]("_updatedAt"), _)).iterate()
+    ()
   }
 
   def getAuthContext(userId: String): AuthContext =
