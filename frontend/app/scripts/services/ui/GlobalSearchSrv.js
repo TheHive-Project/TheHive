@@ -58,7 +58,9 @@
             if(fieldDef.name === 'tags' || fieldDef.type === 'user' || fieldDef.values.length > 0) {
                 return {
                     operator: 'any',
-                    list: [{text: value.id, label:value.name}]
+                    list: [{
+                        text: (fieldDef.type === 'number' || fieldDef.type === 'integer') ? Number.parseInt(value.id) : value.id, label:value.name
+                    }]
                 };
             } else {
                 switch(fieldDef.type) {
