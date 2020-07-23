@@ -95,7 +95,7 @@ class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Databa
           .map(inputFilter => filterQuery.toQuery(inputFilter))
           .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
         groupAggs <- aggregationParser.sequence(field.get("stats"))
-      } yield groupAggs.map(a => filteredQuery andThen new AggregationQuery(publicProperties).toQuery(a))
+      } yield groupAggs.map(a => filteredQuery andThen new AggregationQuery(db, publicProperties, queryExecutor.filterQuery).toQuery(a))
   }
 
   val searchParser: FieldsParser[Query] = FieldsParser[Query]("search") {
