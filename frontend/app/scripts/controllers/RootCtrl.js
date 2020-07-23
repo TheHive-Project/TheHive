@@ -68,8 +68,8 @@ angular.module('theHiveControllers').controller('RootCtrl',
                     name: 'my-tasks.stats'
                 }
             },
-            onUpdate: function(updates) {
-                $scope.myCurrentTasksCount = updates;
+            onUpdate: function(data) {
+                $scope.myCurrentTasksCount = data;
             }
         });
 
@@ -85,13 +85,28 @@ angular.module('theHiveControllers').controller('RootCtrl',
                     name: 'waiting-tasks.stats'
                 }
             },
-            onUpdate: function(updates) {
-                $scope.waitingTasksCount = updates;
+            onUpdate: function(data) {
+                $scope.waitingTasksCount = data;
             }
         });
 
-        // Get Alert counts
-        $scope.alertEvents = AlertingSrv.stats($scope);
+        StreamQuerySrv('v1', [
+            {_name: 'listAlert'},
+            {_name: 'filter', _field: 'read', _value: false},
+            {_name: 'count'}
+        ], {
+            scope: $scope,
+            rootId: 'any',
+            objectType: 'alert',
+            query: {
+                params: {
+                    name: 'unread-alert-count'
+                }
+            },
+            onUpdate: function(data) {
+                $scope.unreadAlertCount = data;
+            }
+        });
 
         $scope.$on('templates:refresh', function(){
             CaseTemplateSrv.list().then(function(templates) {
@@ -104,9 +119,13 @@ angular.module('theHiveControllers').controller('RootCtrl',
             $scope.initCustomFieldsCache();
         });
 
-        $scope.$on('alert:event-imported', function() {
-            $scope.alertEvents = AlertingSrv.stats($scope);
-        });
+
+        // Get Alert counts
+        //$scope.alertEvents = AlertingSrv.stats($scope);
+
+        // $scope.$on('alert:event-imported', function() {
+        //     $scope.alertEvents = AlertingSrv.stats($scope);
+        // });
 
         // FIXME
         // $scope.$on('misp:status-updated', function(event, enabled) {

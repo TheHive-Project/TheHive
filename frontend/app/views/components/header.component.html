@@ -27,18 +27,18 @@
                 </li>
                 <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
-                        <span class="badge alert-danger">{{myCurrentTasksCount}}</span>
+                        <span class="badge alert-danger">{{myCurrentTasksCount || 0}}</span>
                     </a>
                 </li>
                 <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'waitingtasks'})">Waiting tasks
-                        <span class="badge alert-danger">{{waitingTasksCount}}</span>
+                        <span class="badge alert-danger">{{waitingTasksCount || 0}}</span>
                     </a>
                 </li>
                 <li ui-sref-active="active">
                     <a href ui-sref="app.alert-list">
                         Alerts
-                        <span class="badge alert-danger">{{(alertEvents.New.count || 0)  + (alertEvents.Updated.count || 0)}}</span>
+                        <span class="badge alert-danger">{{unreadAlertCount || 0}}</span>
                     </a>
                 </li>
                 <li class="hdivider hidden-xs"></li>

@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, CaseTemplateSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
+        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, StreamQuerySrv, CaseTemplateSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
 
             self.urls = VersionSrv.mispUrls();
@@ -44,6 +44,23 @@
                             self.filtering.setPageSize(newValue);
                         });
                     });
+
+                StreamQuerySrv('v1', [
+                    {_name: 'listAlert'},
+                    {_name: 'count'}
+                ], {
+                    scope: $scope,
+                    rootId: 'any',
+                    objectType: 'alert',
+                    query: {
+                        params: {
+                            name: 'alert-count'
+                        }
+                    },
+                    onUpdate: function(data) {
+                        self.alertListCount = data;
+                    }
+                });
             };
 
             self.load = function() {
