@@ -5,69 +5,97 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservablesStatsCtrl',
-        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv) {
+        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamQuerySrv) {
             var self = this;
 
             this.byType = {};
             this.byIoc = {};
             this.byTags = {};
 
-            var defaultQuery = {
-                '_and': [{
-                    '_parent': {
-                        '_type': 'case',
-                        '_query': {
-                            '_id': $stateParams.caseId
-                        }
-                    }
-                }, {
-                    'status': 'Ok'
-                }]
-            };
-
             self.$onInit = function() {
+                var caseId = $stateParams.caseId;
 
                 // Get stats by tags
-                StreamStatSrv({
+                StreamQuerySrv('v1', [
+                    { _name: 'getCase', idOrName: caseId },
+                    { _name: 'observables' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'tags',
+                       _select: [
+                           { _agg: 'count' }
+                       ],
+                       _order: [ '-count' ],
+                       _size: 10
+                   }
+                ], {
                     scope: $scope,
-                    rootId: $stateParams.caseId,
-                    query: defaultQuery,
+                    rootId: caseId,
                     objectType: 'case_artifact',
-                    field: 'tags',
-                    sort: ['_count'],
-                    limit: 10,
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'observables-by-tags-stats-' + caseId
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byTags = StatSrv.prepareResult(data);
                     }
                 });
 
+
                 // Get stats by type
-                StreamStatSrv({
+                StreamQuerySrv('v1', [
+                    { _name: 'getCase', idOrName: caseId },
+                    { _name: 'observables' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'dataType',
+                       _select: [
+                           { _agg: 'count' }
+                       ]
+                   }
+                ], {
                     scope: $scope,
-                    rootId: $stateParams.caseId,
-                    query: defaultQuery,
+                    rootId: caseId,
                     objectType: 'case_artifact',
-                    field: 'dataType',
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'observables-by-type-stats-' + caseId
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byType = StatSrv.prepareResult(data);
                     }
                 });
 
                 // Get stats by ioc
-                StreamStatSrv({
+                StreamQuerySrv('v1', [
+                    { _name: 'getCase', idOrName: caseId },
+                    { _name: 'observables' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'ioc',
+                       _select: [
+                           { _agg: 'count' }
+                       ]
+                   }
+                ], {
                     scope: $scope,
-                    rootId: $stateParams.caseId,
-                    query: defaultQuery,
+                    rootId: caseId,
                     objectType: 'case_artifact',
-                    field: 'ioc',
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'observables-by-ioc-stats-' + caseId
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byIoc = StatSrv.prepareResult(data);
                     }
                 });
-            };            
+            };
         }
     );
 })();

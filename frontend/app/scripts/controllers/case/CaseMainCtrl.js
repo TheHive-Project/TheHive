@@ -144,15 +144,6 @@
                 }
             });
 
-            // $scope.alerts = StreamStatSrv({
-            //     scope: $scope,
-            //     rootId: caseId,
-            //     query: { 'case': caseId },
-            //     result: {},
-            //     objectType: 'alert',
-            //     field: 'type'
-            // });
-
             $scope.$on('tasks:task-removed', function(event, task) {
                 CaseTabsSrv.removeTab('task-' + task._id);
             });

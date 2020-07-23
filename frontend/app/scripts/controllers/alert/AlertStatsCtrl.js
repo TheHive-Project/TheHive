@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('AlertStatsCtrl',
-        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv, FilteringSrv) {
+        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamQuerySrv, FilteringSrv) {
             var self = this;
 
             this.filtering = FilteringSrv;
@@ -17,44 +17,80 @@
             self.$onInit = function() {
 
                 // Get stats by tags
-                StreamStatSrv({
+                StreamQuerySrv('v1', [
+                    { _name: 'listAlert' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'tags',
+                       _select: [
+                           { _agg: 'count' }
+                       ],
+                       _order: [ '-count' ],
+                       _size: 5
+                   }
+                ], {
                     scope: $scope,
                     rootId: 'any',
-                    query: {},
                     objectType: 'alert',
-                    field: 'tags',
-                    sort: ['-count'],
-                    limit: 5,
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'alert-by-tags-stats'
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byTags = StatSrv.prepareResult(data);
                     }
                 });
 
-                // Get stats by type
-                StreamStatSrv({
+                // Get stats by read status
+                StreamQuerySrv('v1', [
+                    { _name: 'listAlert' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'read',
+                       _select: [
+                           { _agg: 'count' }
+                       ]
+                   }
+                ], {
                     scope: $scope,
                     rootId: 'any',
-                    query: {},
                     objectType: 'alert',
-                    field: 'status',
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'alert-by-read-status-stats'
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byStatus = StatSrv.prepareResult(data);
                     }
                 });
 
                 // Get stats by ioc
-                StreamStatSrv({
+                StreamQuerySrv('v1', [
+                    { _name: 'listAlert' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'type',
+                       _select: [
+                           { _agg: 'count' }
+                       ],
+                       _order: [ '-count' ],
+                       _size: 5
+                   }
+                ], {
                     scope: $scope,
                     rootId: 'any',
-                    query: {},
                     objectType: 'alert',
-                    field: 'type',
-                    sort: ['-count'],
-                    limit: 5,
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'alert-by-type-stats'
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byType = StatSrv.prepareResult(data);
                     }
                 });

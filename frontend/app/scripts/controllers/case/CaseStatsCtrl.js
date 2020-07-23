@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('CaseStatsCtrl',
-        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamStatSrv) {
+        function($rootScope, $scope, $stateParams, $timeout, StatSrv, StreamQuerySrv) {
             var self = this;
 
             this.byResolution = {};
@@ -13,65 +13,83 @@
             this.byTags = {};
 
             self.$onInit = function() {
-
                 // Get stats by tags
-                StreamStatSrv({
+                StreamQuerySrv('v1', [
+                    { _name: 'listCase' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'tags',
+                       _select: [
+                           { _agg: 'count' }
+                       ],
+                       _order: [ '-count' ],
+                       _size: 5
+                   }
+                ], {
                     scope: $scope,
                     rootId: 'any',
-                    query: {},
                     objectType: 'case',
-                    field: 'tags',
-                    sort: ['-count'],
-                    limit: 5,
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'case-by-tags-stats'
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byTags = StatSrv.prepareResult(data);
                     }
                 });
 
-                // Get stats by type
-                StreamStatSrv({
+                // Get stats by status
+                StreamQuerySrv('v1', [
+                    { _name: 'listCase' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'status',
+                       _select: [
+                           { _agg: 'count' }
+                       ]
+                   }
+                ], {
                     scope: $scope,
                     rootId: 'any',
-                    query: {},
                     objectType: 'case',
-                    field: 'status',
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'case-by-status-stats'
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byStatus = StatSrv.prepareResult(data);
                     }
                 });
 
-                // Get stats by ioc
-                StreamStatSrv({
+                // Get stats by resolution status
+                StreamQuerySrv('v1', [
+                    { _name: 'listCase' },
+                    {
+                       _name: 'aggregation',
+                       _agg: 'field',
+                       _field: 'resolutionStatus',
+                       _select: [
+                           { _agg: 'count' }
+                       ]
+                   }
+                ], {
                     scope: $scope,
                     rootId: 'any',
-                    query: {},
                     objectType: 'case',
-                    field: 'resolutionStatus',
-                    result: {},
-                    success: function(data){
+                    query: {
+                        params: {
+                            name: 'case-by-resolution-status-stats'
+                        }
+                    },
+                    onUpdate: function(data) {
                         self.byResolution = StatSrv.prepareResult(data);
                     }
                 });
             };
-
-            // this.prepareResult = function(rawStats) {
-            //     var total = rawStats.count;
-            //
-            //     var keys = _.without(_.keys(rawStats), 'count');
-            //     var columns = keys.map(function(key) {
-            //         return {
-            //             key: key,
-            //             count: rawStats[key].count
-            //         };
-            //     });
-            //
-            //     return {
-            //         total: total,
-            //         details: _.sortBy(columns, 'count').reverse()
-            //     };
-            // };
         }
     );
 })();

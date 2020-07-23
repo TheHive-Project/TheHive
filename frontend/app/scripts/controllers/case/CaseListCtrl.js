@@ -49,16 +49,17 @@
                 });
 
 
+            // Case stats to build quick filter menu
             StreamQuerySrv('v1', [
                 {
-                    "_name": "listCase"
+                    _name: 'listCase'
                 },
                 {
-                    "_name": "aggregation",
-                    "_agg": "field",
-                    "_field": "status",
-                    "_select": [
-                        {"_agg": "count"}
+                    _name: 'aggregation',
+                    _agg: 'field',
+                    _field: 'status',
+                    _select: [
+                        {_agg: 'count'}
                     ]
                 }
             ], {
@@ -67,13 +68,32 @@
                 objectType: 'case',
                 query: {
                     params: {
-                        name: "case-status-stats"
+                        name: 'case-status-stats'
                     }
                 },
                 onUpdate: function(updates) {
                     self.caseStats = updates;
                 }
             });
+
+            // Case total
+            StreamQuerySrv('v1', [
+                {_name: 'listCase'},
+                {_name: 'count'}
+            ], {
+                scope: $scope,
+                rootId: 'any',
+                objectType: 'case',
+                query: {
+                    params: {
+                        name: 'case-count-stats'
+                    }
+                },
+                onUpdate: function(updates) {
+                    self.caseCount = updates;
+                }
+            });
+
         };
 
         this.load = function() {
@@ -91,7 +111,7 @@
                 operations: [
                     {'_name': 'listCase'}
                 ],
-                extraData: ["observableStats", "taskStats", "isOwner", "shareCount", "permissions"],
+                extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount', 'permissions'],
                 onUpdate: function() {
                     self.resetSelection();
                 }
