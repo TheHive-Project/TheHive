@@ -90,7 +90,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       }
 
       tags must beSuccessfulTry.which(t =>
-        t.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\"", "tag7"))
+        t.map(_.toString) must contain(exactly("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\"", "tag7"))
       )
     }
 

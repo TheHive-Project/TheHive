@@ -63,7 +63,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.managePage
           )
         )
-        richCase.tags.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"t1\"", "testNamespace.testPredicate=\"t3\""))
+        richCase.tags.map(_.toString) must contain(exactly("testNamespace:testPredicate=\"t1\"", "testNamespace:testPredicate=\"t3\""))
       }
     }
 
@@ -104,7 +104,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.managePage
           )
         )
-        richCase.tags.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"t2\"", "testNamespace.testPredicate=\"t1\""))
+        richCase.tags.map(_.toString) must contain(exactly("testNamespace:testPredicate=\"t2\"", "testNamespace:testPredicate=\"t1\""))
         richCase._createdBy must_=== "system@thehive.local"
       }
     }
@@ -119,7 +119,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         richCase.startDate must_=== new Date(1531667370000L)
         richCase.endDate must beNone
         //        richCase.tags must contain( // TODO
-        //          exactly(Tag.fromString("testNamespace.testPredicate=\"t1\""), Tag.fromString("testNamespace.testPredicate=\"t2\""))
+        //          exactly(Tag.fromString("testNamespace:testPredicate=\"t1\""), Tag.fromString("testNamespace:testPredicate=\"t2\""))
         //        )
         richCase.flag must_=== false
         richCase.tlp must_=== 2
@@ -226,10 +226,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           c3 <- app[CaseSrv].get("#3").getOrFail()
-          _  <- app[CaseSrv].updateTagNames(c3, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="yolo""""))
+          _  <- app[CaseSrv].updateTagNames(c3, Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="yolo""""))
         } yield app[CaseSrv].get(c3).tags.toList.map(_.toString)
       } must beASuccessfulTry.which { tags =>
-        tags must contain(exactly("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="yolo""""))
+        tags must contain(exactly("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="yolo""""))
       }
     }
 
@@ -254,7 +254,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       val currentLen = c.tags.length
 
       app[Database].tryTransaction(implicit graph =>
-        app[CaseSrv].addTags(c.`case`, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""))
+        app[CaseSrv].addTags(c.`case`, Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne""""))
       ) must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>

@@ -150,7 +150,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
           description = "description of alert #1",
           severity = 2,
           date = new Date(1555359572000L),
-          tags = Set("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\""),
+          tags = Set("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\""),
           tlp = 2,
           pap = 2,
           read = false,

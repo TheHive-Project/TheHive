@@ -27,7 +27,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
             summary = Some("summary case template test 1")
           ),
           organisation = app[OrganisationSrv].getOrFail("cert").get,
-          tagNames = Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne""""),
+          tagNames = Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne""""),
           tasks = Seq(
             (
               Task("task case template case template test 1", "group1", None, TaskStatus.Waiting, flag = false, None, None, 0, None),
@@ -66,14 +66,14 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
           caseTemplate <- app[CaseTemplateSrv].getOrFail("spam")
           _ <- app[CaseTemplateSrv].updateTagNames(
             caseTemplate,
-            Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2"""", """newNspc.newPred="newOne3"""")
+            Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne2"""", """newNspc.newPred="newOne3"""")
           )
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
         app[CaseTemplateSrv].get("spam").tags.toList.map(_.toString)
       } must containTheSameElementsAs(
-        Seq("testNamespace.testPredicate=\"t2\"", "testNamespace.testPredicate=\"newOne2\"", "newNspc.newPred=\"newOne3\"")
+        Seq("testNamespace:testPredicate=\"t2\"", "testNamespace:testPredicate=\"newOne2\"", "newNspc:newPred=\"newOne3\"")
       )
     }
 
@@ -81,17 +81,17 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           caseTemplate <- app[CaseTemplateSrv].getOrFail("spam")
-          _            <- app[CaseTemplateSrv].addTags(caseTemplate, Set("""testNamespace.testPredicate="t2"""", """testNamespace.testPredicate="newOne2""""))
+          _            <- app[CaseTemplateSrv].addTags(caseTemplate, Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne2""""))
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
         app[CaseTemplateSrv].get("spam").tags.toList.map(_.toString)
       } must containTheSameElementsAs(
         Seq(
-          "testNamespace.testPredicate=\"t2\"",
-          "testNamespace.testPredicate=\"newOne2\"",
-          "testNamespace.testPredicate=\"spam\"",
-          "testNamespace.testPredicate=\"src:mail\""
+          "testNamespace:testPredicate=\"t2\"",
+          "testNamespace:testPredicate=\"newOne2\"",
+          "testNamespace:testPredicate=\"spam\"",
+          "testNamespace:testPredicate=\"src:mail\""
         )
       )
     }
