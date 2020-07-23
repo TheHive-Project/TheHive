@@ -52,7 +52,7 @@ function usage {
     --misp-keys <key>,<key>, ...                | Define MISP key
     --misp-template <template-name>             | Name of the case template in TheHive that shall be used to import MISP events as cases by default (Optional)
     --misp-tags <tag>,<tag>, ...                | Optional tags to add to each observable  imported  from  an  event (Optional)
-    --misp-max-age <number> days                | Maximum age of the last publish date of event to be imported in TheHive (Optional)
+    --misp-max-age <number>                     | Maximum age of the last publish date of event to be imported in TheHive in days (Optional)
     --misp-exc-orgs <org>,<org>, ...            | List of MISP organisation from which event will not be imported (Optional)
     --misp-exc-tags <tag>,<tag>, ...            | Don't import MISP events which have one of these tags (Optional)
     --misp-wh-tags <tag>,<tag>, ...             | Import only MISP events which have one of these tags (Optional)
@@ -239,7 +239,7 @@ if [[ $CONFIG_MISP -eq 1 ]];then
 
   # MISP Max-Age #
   if [[ -n $MISP_AGE ]];then
-    echo "max-age = ${MISP_AGE}" >> ${CONFIG_FILE}
+    echo "max-age = ${MISP_AGE} days" >> ${CONFIG_FILE}
   fi
 
   # MISP Exclusion #
