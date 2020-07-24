@@ -1,15 +1,14 @@
 package org.thp.thehive.services.notification.triggers
 
-import scala.util.{Success, Try}
-
-import play.api.Configuration
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models.{Audit, Organisation, User}
 import org.thp.thehive.services.TaskSrv
+import play.api.Configuration
+
+import scala.util.{Success, Try}
 
 @Singleton
 class TaskAssignedProvider @Inject() (taskSrv: TaskSrv) extends TriggerProvider {
@@ -33,5 +32,5 @@ class TaskAssigned(taskSrv: TaskSrv) extends Trigger {
   }
 
   def taskAssignee(taskId: String, login: String)(implicit graph: Graph): Option[User with Entity] =
-    taskSrv.getByIds(taskId).user.has("login", login).headOption()
+    taskSrv.getByIds(taskId).assignee.has("login", login).headOption()
 }

@@ -1,15 +1,12 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList}
+import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.{JsObject, Json}
-
+import akka.actor.ActorRef
 import gremlin.scala.{__, By, Element, Graph, GremlinScala, Key, P, Vertex}
-import javax.inject.Inject
-import org.apache.tinkerpop.gremlin.process.traversal.Path
+import javax.inject.{Inject, Named}
+import org.apache.tinkerpop.gremlin.process.traversal.{Path, Scope}
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -19,14 +16,19 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 class CaseTemplateSrv @Inject() (
     customFieldSrv: CustomFieldSrv,
     organisationSrv: OrganisationSrv,
     tagSrv: TagSrv,
     taskSrv: TaskSrv,
-    auditSrv: AuditSrv
-)(implicit db: Database)
+    auditSrv: AuditSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+)(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[CaseTemplate, CaseTemplateSteps] {
 
   val caseTemplateTagSrv          = new EdgeSrv[CaseTemplateTag, CaseTemplate, Tag]
@@ -40,10 +42,26 @@ class CaseTemplateSrv @Inject() (
     if (db.isValidId(idOrName)) super.getByIds(idOrName)
     else initSteps.getByName(idOrName)
 
+  override def createEntity(e: CaseTemplate)(implicit graph: Graph, authContext: AuthContext): Try[CaseTemplate with Entity] = {
+    integrityCheckActor ! IntegrityCheckActor.EntityAdded("CaseTemplate")
+    super.createEntity(e)
+  }
+
   def create(
       caseTemplate: CaseTemplate,
       organisation: Organisation with Entity,
       tagNames: Set[String],
+      tasks: Seq[(Task, Option[User with Entity])],
+      customFields: Seq[(String, Option[Any])]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichCaseTemplate] = tagNames.toTry(tagSrv.getOrCreate).flatMap(tags => create(caseTemplate, organisation, tags, tasks, customFields))
+
+  def create(
+      caseTemplate: CaseTemplate,
+      organisation: Organisation with Entity,
+      tags: Seq[Tag with Entity],
       tasks: Seq[(Task, Option[User with Entity])],
       customFields: Seq[(String, Option[Any])]
   )(
@@ -58,7 +76,6 @@ class CaseTemplateSrv @Inject() (
         _                   <- caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
         createdTasks        <- tasks.toTry { case (task, owner) => taskSrv.create(task, owner) }
         _                   <- createdTasks.toTry(rt => addTask(createdCaseTemplate, rt.task))
-        tags                <- tagNames.toTry(tagSrv.getOrCreate)
         _                   <- tags.toTry(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
         cfs                 <- customFields.zipWithIndex.toTry { case ((name, value), order) => createCustomField(createdCaseTemplate, name, value, Some(order + 1)) }
         richCaseTemplate = RichCaseTemplate(createdCaseTemplate, organisation.name, tags, createdTasks, cfs)
@@ -162,7 +179,8 @@ class CaseTemplateSrv @Inject() (
 }
 
 @EntitySteps[CaseTemplate]
-class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[CaseTemplate](raw) {
+class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[CaseTemplate](raw) {
 
   def get(idOrName: String): CaseTemplateSteps =
     if (db.isValidId(idOrName)) this.getByIds(idOrName)
@@ -173,20 +191,18 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
   override def newInstance(newRaw: GremlinScala[Vertex]): CaseTemplateSteps = new CaseTemplateSteps(newRaw)
 
   def visible(implicit authContext: AuthContext): CaseTemplateSteps =
-    newInstance(raw.filter(_.outTo[CaseTemplateOrganisation].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId)))
+    this.filter(_.outTo[CaseTemplateOrganisation].has("name", authContext.organisation))
 
   override def newInstance(): CaseTemplateSteps = new CaseTemplateSteps(raw.clone())
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseTemplateSteps =
-    newInstance(
-      raw.filter(
+    if (authContext.permissions.contains(permission))
+      this.filter(
         _.outTo[CaseTemplateOrganisation]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
+          .has("name", authContext.organisation)
       )
-    )
+    else
+      this.limit(0)
 
   def richCaseTemplate: Traversal[RichCaseTemplate, RichCaseTemplate] =
     Traversal(
@@ -232,4 +248,37 @@ class CaseTemplateSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph:
 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseTemplateCustomField])
+}
+
+class CaseTemplateIntegrityCheckOps @Inject() (
+    @Named("with-thehive-schema") val db: Database,
+    val service: CaseTemplateSrv,
+    organisationSrv: OrganisationSrv
+) extends IntegrityCheckOps[CaseTemplate] {
+  override def duplicateEntities: List[List[CaseTemplate with Entity]] =
+    db.roTransaction { implicit graph =>
+      organisationSrv
+        .initSteps
+        .raw
+        .traversal
+        .flatMap(
+          __.in("CaseTemplateOrganisation")
+            .group(By(Key[String]("name")), By(T.id))
+            .unfold[JMap.Entry[String, JCollection[Any]]]()
+            .selectValues
+            .where(_.count(Scope.local).is(P.gt(1)))
+            .traversal
+        )
+        .asScala
+        .map(ids => service.getByIds(ids.asScala.map(_.toString).toSeq: _*).toList)
+        .toList
+    }
+
+  override def resolve(entities: List[CaseTemplate with Entity])(implicit graph: Graph): Try[Unit] = entities match {
+    case head :: tail =>
+      tail.foreach(copyEdge(_, head, e => e.label() == "CaseCaseTemplate" || e.label() == "AlertCaseTemplate"))
+      service.getByIds(tail.map(_._id): _*).remove()
+      Success(())
+    case _ => Success(())
+  }
 }

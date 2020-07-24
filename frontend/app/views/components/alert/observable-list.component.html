@@ -1,0 +1,68 @@
+ <div class="alert-observable-list">
+    <div class="row">
+
+        <div class="col-md-12" ng-show="$cmp.list.total === 0">
+            <div class="empty-message">No records</div>
+        </div>
+
+        <div class="col-md-12" ng-show="$cmp.list.total > 0">
+            <div class="btn-toolbar" role="toolbar">
+                <div class="btn-group">
+                    <filters-preview filters="$cmp.filtering.context.filters"
+                        on-clear-item="$cmp.removeFilter(field)"
+                        on-clear-all="$cmp.clearFilters()"></filters-preview>
+                </div>
+                <div class="btn-group pull-right" role="group">
+                    <page-sizer collection="$cmp.list" sizes="[10, 15, 30, 100]"></page-sizer>
+                </div>
+            </div>
+
+            <psearch control="$cmp.list"></psearch>
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th style="width: 10px;" class="p-0"></th>
+                        <th style="width:40px;"></th>
+                        <th style="width:100px;">Type</th>
+                        <th>Data</th>
+                        <th style="width: 120px">Date Added</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="observable in $cmp.list.values" class="clickable">
+                        <td class="p-0 bg-tlp-{{observable.tlp}} clickable" ng-click="$cmp.filterBy('tlp', observable.tlp)"></td>
+                        <td class="nowrap">
+                            <span ng-if="observable.ioc" class="mr-xxs fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                            <span ng-if="observable.sighted" class="mr-xxs fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                            <span ng-if="observable.extraData.seen.seen > 0" class="mr-xxs glyphicon glyphicon-eye-open" ng-class="{'text-danger': observable.extraData.seen.ioc}" uib-tooltip="Seen on {{observable.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                        </td>
+                        <td>
+                            <a href ng-click="$cmp.filterBy('dataType', observable.dataType)">{{observable.dataType}}</a>
+                        </td>
+                        <td class="wrap">
+                          <div class="wrap" ng-if="observable.dataType !== 'file'" uib-tooltip="{{observable.message}}" tooltip-placement="top-left">
+                              {{observable.data | fang | ellipsis:250}}
+                          </div>
+                          <div class="wrap" ng-if="observable.dataType === 'file' && observable.attachment" uib-tooltip="{{observable.message}}" tooltip-placement="top-left">
+                              {{observable.attachment.name}} ({{observable.attachment.size}} bytes)
+                          </div>
+                          <div class="wrap" ng-if="observable.dataType === 'file' && observable.remoteAttachment" uib-tooltip="{{observable.message}}" tooltip-placement="top-left">
+                              {{observable.remoteAttachment.filename}}
+                          </div>
+                          <div class="case-tags flexwrap mt-xxs" ng-if="observable.tags.length > 0">
+                              <strong><i class="fa fa-tags mr-xxxs"></i></strong>
+                              <span ng-repeat="tag in observable.tags track by $index" class="label label-primary mb-xxxs mr-xxxs" ng-click="$cmp.addFilterValue('tags', tag)">{{tag}}</span>
+                          </div>
+                        </td>
+                        <td>
+                            <a href ng-click="$cmp.filterBy('_createdAt', observable._createdAt)">{{observable._createdAt | shortDate}}</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <psearch control="$cmp.list"></psearch>
+        </div>
+    </div>
+</div>

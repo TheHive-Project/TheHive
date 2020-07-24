@@ -1,11 +1,10 @@
 package org.thp.thehive.services
 
+import org.thp.scalligraph.models.Database
+import org.thp.thehive.TestAppBuilder
 import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
-
-import org.thp.scalligraph.models.Database
-import org.thp.thehive.TestAppBuilder
 
 class LocalPasswordAuthSrvTest extends PlaySpecification with TestAppBuilder {
   "localPasswordAuth service" should {

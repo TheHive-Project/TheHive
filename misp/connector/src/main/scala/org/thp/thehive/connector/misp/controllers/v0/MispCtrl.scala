@@ -7,6 +7,7 @@ import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv}
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, CaseSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -19,25 +20,26 @@ class MispCtrl @Inject() (
     mispExportSrv: MispExportSrv,
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     @Named("misp-actor") mispActor: ActorRef,
     implicit val ec: ExecutionContext
 ) {
 
   def sync: Action[AnyContent] =
     entrypoint("sync MISP events")
-      .auth { _ =>
+      .authPermitted(Permissions.manageOrganisation) { _ =>
         mispActor ! MispActor.Synchro
         Success(Results.NoContent)
       }
 
   def exportCase(mispId: String, caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("export case into MISP")
-      .asyncAuth { implicit authContext => // TODO check permission
+      .asyncAuth { implicit authContext =>
         for {
           c <- Future.fromTry(db.roTransaction { implicit graph =>
             caseSrv
               .get(caseIdOrNumber)
+              .can(Permissions.manageShare)
               .getOrFail("Case")
           })
           _ <- mispExportSrv.export(mispId, c)
@@ -52,7 +54,7 @@ class MispCtrl @Inject() (
           .has("type", "misp")
           .visible
           .toIterator
-          .toTry(alertSrv.cascadeRemove(_))
+          .toTry(alertSrv.remove(_))
           .map(_ => Results.NoContent)
       }
 }

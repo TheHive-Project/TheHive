@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -16,7 +16,8 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Failure
 
 @Singleton
-class ProfileCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Properties, profileSrv: ProfileSrv) extends QueryableCtrl {
+class ProfileCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database, properties: Properties, profileSrv: ProfileSrv)
+    extends QueryableCtrl {
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ProfileSteps](
     "getProfile",

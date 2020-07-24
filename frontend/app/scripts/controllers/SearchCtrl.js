@@ -4,7 +4,7 @@
         .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
             $scope.metadata = metadata;
             $scope.toolbar = [
-                {name: 'all', label: 'All', icon: 'glyphicon glyphicon-search'},
+                // {name: 'all', label: 'All', icon: 'glyphicon glyphicon-search'},
                 {name: 'case', label: 'Cases', icon: 'glyphicon glyphicon-folder-open'},
                 {name: 'case_task', label: 'Tasks', icon: 'glyphicon glyphicon-tasks'},
                 {name: 'case_task_log', label: 'Tasks Logs', icon: 'glyphicon glyphicon-comment'},
@@ -23,12 +23,6 @@
             };
 
             $scope.buildBaseFilter = function(entityName) {
-                // var statusCriterion = {
-                //     _not: {
-                //         'status': 'Deleted'
-                //     }
-                // };
-
                 var typeCriterion = {
                   _not: {
                       '_in': {

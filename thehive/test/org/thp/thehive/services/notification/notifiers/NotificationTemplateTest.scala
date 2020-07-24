@@ -2,15 +2,14 @@ package org.thp.thehive.services.notification.notifiers
 
 import java.util.{HashMap => JHashMap}
 
-import scala.collection.JavaConverters._
-
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.services.{AuditSrv, CaseSrv, UserSrv}
+import play.api.test.PlaySpecification
+
+import scala.collection.JavaConverters._
 
 class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local").authContext
@@ -25,11 +24,11 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
           |The {{audit.objectType}} {{audit.objectId}} has been {{audit.action}}d by {{audit._createdBy}}
           |
           |{{#with object~}}
-          |  {{#if (eq _type "Case")}}
-          |    {{~title}}
-          |  {{else}}
-          |    {{~_type}} is not a case
-          |  {{/if}}
+          |{{#if (eq _type "Case")}}
+          |{{~title}}
+          |{{else}}
+          |{{~_type}} is not a case
+          |{{/if}}
           |{{~/with}}
           |
           |Audit ({{audit.requestId}}): {{audit.action}} {{audit.objectType}} {{audit.objectId}} by {{audit._createdBy}}
@@ -50,7 +49,7 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
                                |The Case 2231 has been created by admin@thehive.local
                                |
                                |case title
-                               |  
+                               |
                                |
                                |Audit (testRequest): create Case 2231 by admin@thehive.local
                                |Context 2231""".stripMargin)
@@ -64,11 +63,11 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
           |The {{audit.objectType}} {{audit.objectId}} has been {{audit.action}}d by {{audit._createdBy}}
           |
           |{{#with object~}}
-          |  {{#if (eq _type "Case")}}
-          |    {{~title}}
-          |  {{else}}
-          |    {{~_type}} is not a case
-          |  {{/if}}
+          |{{#if (eq _type "Case")}}
+          |{{~title}}
+          |{{else}}
+          |{{~_type}} is not a case
+          |{{/if}}
           |{{~/with}}
           |
           |Audit ({{audit.requestId}}): {{audit.action}} {{audit.objectType}} {{audit.objectId}} by {{audit._createdBy}}
@@ -91,7 +90,7 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
                             |The Case \d+ has been updated by certuser@thehive.local
                             |
                             |case#1
-                            |  
+                            |
                             |
                             |Audit \(testRequest\): update Case \d+ by certuser@thehive.local
                             |Context \d+""".stripMargin)

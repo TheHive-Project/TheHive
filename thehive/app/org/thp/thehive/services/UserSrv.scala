@@ -1,10 +1,12 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList}
 import java.util.regex.Pattern
+import java.util.{List => JList}
 
+import scala.collection.JavaConverters._
+import akka.actor.ActorRef
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.controllers.FFile
@@ -13,41 +15,33 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{BadRequestError, EntitySteps, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntitySteps, InternalError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-object UserSrv {
-  val initPassword: String = "secret"
-
-  val init: User = User(
-    login = "admin@thehive.local",
-    name = "Default admin user",
-    apikey = None,
-    locked = false,
-    password = Some(LocalPasswordAuthSrv.hashPassword(UserSrv.initPassword)),
-    totpSecret = None
-  )
-
-  val system: User =
-    User(login = "system@thehive.local", name = "TheHive system user", apikey = None, locked = false, password = None, totpSecret = None)
-}
-
 @Singleton
-class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSrv: AuditSrv, attachmentSrv: AttachmentSrv, implicit val db: Database)
-    extends VertexSrv[User, UserSteps] {
-
-  override val initialValues: Seq[User] = Seq(UserSrv.init, UserSrv.system)
+class UserSrv @Inject() (
+    configuration: Configuration,
+    roleSrv: RoleSrv,
+    auditSrv: AuditSrv,
+    attachmentSrv: AttachmentSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    @Named("with-thehive-schema") implicit val db: Database
+) extends VertexSrv[User, UserSteps] {
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
 
   val userAttachmentSrv                                                           = new EdgeSrv[UserAttachment, User, Attachment]
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
+
+  override def createEntity(e: User)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] = {
+    integrityCheckActor ! IntegrityCheckActor.EntityAdded("User")
+    super.createEntity(e)
+  }
 
   def checkUser(user: User): Try[User] = {
     val login =
@@ -58,6 +52,7 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
     else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
   }
 
+  // TODO return Try[Unit]
   def addUserToOrganisation(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
       authContext: AuthContext
@@ -90,7 +85,7 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
   def canSetPassword(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Boolean = {
     val userOrganisations     = get(user).organisations.name.toList.toSet
     val operatorOrganisations = current.organisations(Permissions.manageUser).name.toList
-    operatorOrganisations.contains(OrganisationSrv.administration.name) || (userOrganisations -- operatorOrganisations).isEmpty
+    operatorOrganisations.contains(Organisation.administration.name) || (userOrganisations -- operatorOrganisations).isEmpty
   }
 
   def delete(user: User with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -103,10 +98,21 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
     auditSrv.user.delete(user, organisation)
   }
 
+  override def exists(e: User)(implicit graph: Graph): Boolean = initSteps.getByName(e.login).exists()
+
   def lock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
+    if (user.login == authContext.userId)
+      Failure(AuthorizationError("You cannot lock yourself"))
+    else
+      for {
+        updatedUser <- get(user).updateOne("locked" -> true)
+        _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
+      } yield updatedUser
+
+  def unlock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
     for {
-      updatedUser <- get(user).updateOne("locked" -> true)
-      _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
+      updatedUser <- get(user).updateOne("locked" -> false)
+      _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> false))
     } yield updatedUser
 
   def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
@@ -154,7 +160,7 @@ class UserSrv @Inject() (configuration: Configuration, roleSrv: RoleSrv, auditSr
 }
 
 @EntitySteps[User]
-class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[User](raw) {
+class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[User](raw) {
   def current(authContext: AuthContext): UserSteps = get(authContext.userId)
 
   def get(idOrName: String): UserSteps =
@@ -187,8 +193,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     )
 
   def organisations(requiredPermission: String): OrganisationSteps = {
-    val isInAdminOrganisation = newInstance().organisations0(requiredPermission).get(OrganisationSrv.administration.name).exists()
-    if (isInAdminOrganisation) new OrganisationSteps(db.labelFilter(Model.vertex[Organisation])(graph.V))
+    val isInAdminOrganisation = newInstance().organisations0(requiredPermission).get(Organisation.administration.name).exists()
+    if (isInAdminOrganisation) new OrganisationSteps(db.labelFilter(db.getVertexModel[Organisation])(graph.V))
     else organisations0(requiredPermission)
   }
 
@@ -196,8 +202,8 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
     this
       .outTo[UserRole]
       .project(
-        _.apply(By(__[Vertex].outTo[RoleOrganisation].value[String]("name")))
-          .and(By(__[Vertex].outTo[RoleProfile].value[String]("name")))
+        _.by(_.outTo[RoleOrganisation].value[String]("name"))
+          .by(_.outTo[RoleProfile].value[String]("name"))
       )
       .fold
 
@@ -211,10 +217,10 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           .outTo[UserRole]
           .order(List(By(Key[Long]("_createdAt"), Order.asc)))
           .outTo[RoleOrganisation]
-          .value[String](Key("name"))
+          .value[String]("name")
           .headOption()
       )
-      .getOrElse(OrganisationSrv.administration.name)
+      .getOrElse(Organisation.administration.name)
     getAuthContext(requestId, organisationName)
   }
 
@@ -232,26 +238,24 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
         .map {
           case (userId, userName, profile) =>
             val scope =
-              if (organisationName == OrganisationSrv.administration.name) "admin"
+              if (organisationName == Organisation.administration.name) "admin"
               else "organisation"
             val permissions = Permissions.forScope(scope) & profile.as[Profile].permissions
             AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }
     )
 
+  def profile(organisation: String) =
+    new ProfileSteps(
+      this.outTo[UserRole].filter(_.outTo[RoleOrganisation].has("name", organisation)).outTo[RoleProfile].raw
+    )
+
   def richUser(organisation: String): Traversal[RichUser, RichUser] =
     this
       .project(
-        _.apply(By[Vertex]())
-          .and(
-            By(
-              __[Vertex].coalesce(
-                _.outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold(),
-                _.constant(List.empty[Vertex].asJava)
-              )
-            )
-          )
-          .and(By(__[Vertex].outTo[UserAttachment].fold()))
+        _.by
+          .by(_.profile(organisation).fold)
+          .by(_.avatar.fold)
       )
       .collect {
         case (user, profiles, attachment) if profiles.size() == 1 =>
@@ -263,22 +267,36 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           RichUser(user.as[User], avatar, "", Set.empty, organisation)
       }
 
+  def richUser(implicit authContext: AuthContext): Traversal[RichUser, RichUser] =
+    this
+      .project(
+        _.by
+          .by(_.avatar.fold)
+          .by(_.role.project(_.by(_.profile).by(_.organisation.visible.name.fold)).fold)
+      )
+      .map {
+        case (user, attachment, profileOrganisations) =>
+          val po = profileOrganisations.asScala.collect {
+            case (profile, organisationName) if !organisationName.isEmpty => profile.as[Profile] -> organisationName.get(0)
+          }
+          po.find(_._2 == authContext.organisation)
+            .orElse(po.headOption)
+            .fold(throw InternalError(s"")) {
+              case (profile, organisationName) =>
+                val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
+                RichUser(user.as[User], avatar, profile.name, profile.permissions, organisationName)
+            }
+      }
+
   def richUserWithCustomRenderer[A](organisation: String, entityRenderer: UserSteps => TraversalLike[_, A])(
       implicit authContext: AuthContext
   ): Traversal[(RichUser, A), (RichUser, A)] =
     this
       .project(
-        _.apply(By[Vertex]())
-          .and(
-            By(
-              __[Vertex].coalesce(
-                _.outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisation)).outTo[RoleProfile].fold(),
-                _.constant(List.empty[Vertex].asJava)
-              )
-            )
-          )
-          .and(By(__[Vertex].outTo[UserAttachment].fold()))
-          .and(By(entityRenderer(newInstance(__[Vertex])).raw))
+        _.by
+          .by(_.profile(organisation).fold)
+          .by(_.avatar.fold)
+          .by(entityRenderer(_))
       )
       .collect {
         case (user, profiles, attachment, renderedEntity) if profiles.size() == 1 =>
@@ -290,11 +308,73 @@ class UserSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
           RichUser(user.as[User], avatar, "", Set.empty, organisation) -> renderedEntity
       }
 
+  def config(configName: String) = new ConfigSteps(
+    this.outTo[UserConfig].has("name", configName).raw
+  )
+
   def role: RoleSteps = new RoleSteps(raw.outTo[UserRole])
 
   def avatar: AttachmentSteps = new AttachmentSteps(raw.outTo[UserAttachment])
 
-  def systemUser: UserSteps = this.has("login", UserSrv.system.login)
+  def systemUser: UserSteps = this.has("login", User.system.login)
 
   def dashboards: DashboardSteps = new DashboardSteps(raw.inTo[DashboardUser])
+
+  def tasks: TaskSteps = new TaskSteps(raw.inTo[TaskUser])
+
+  def cases: CaseSteps = new CaseSteps(raw.inTo[CaseUser])
+}
+
+@Singleton
+class UserIntegrityCheckOps @Inject() (
+    @Named("with-thehive-schema") val db: Database,
+    val service: UserSrv,
+    profileSrv: ProfileSrv,
+    organisationSrv: OrganisationSrv,
+    roleSrv: RoleSrv
+) extends IntegrityCheckOps[User] {
+
+  override def initialCheck()(implicit graph: Graph, authContext: AuthContext): Unit = {
+    super.initialCheck()
+    val adminUserIsCreated = service
+      .get(User.init.login)
+      .role
+      .filter(_.profile.getByName(Profile.admin.name))
+      .organisation
+      .getByName(Organisation.administration.name)
+      .exists()
+    if (!adminUserIsCreated)
+      for {
+        adminUser         <- service.getOrFail(User.init.login)
+        adminProfile      <- profileSrv.getOrFail(Profile.admin.name)
+        adminOrganisation <- organisationSrv.getOrFail(Organisation.administration.name)
+        _                 <- roleSrv.create(adminUser, adminOrganisation, adminProfile)
+      } yield ()
+    ()
+  }
+
+  override def check(): Unit = {
+    super.check()
+    db.tryTransaction { implicit graph =>
+      duplicateInEdges[TaskUser](service.initSteps.raw).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
+      duplicateInEdges[CaseUser](service.initSteps.raw).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
+      duplicateLinks[Vertex, Vertex](
+        service.initSteps.raw,
+        (_.out("UserRole"), _.in("UserRole")),
+        (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
+      ).flatMap(firstCreatedElement(_)).foreach(e => removeVertices(e._2))
+      Success(())
+    }
+    ()
+  }
+
+  override def resolve(entities: List[User with Entity])(implicit graph: Graph): Try[Unit] = {
+    firstCreatedEntity(entities).foreach {
+      case (firstUser, otherUsers) =>
+        otherUsers.foreach(copyEdge(_, firstUser))
+        otherUsers.foreach(service.get(_).remove())
+    }
+    Success(())
+  }
+
 }

@@ -4,7 +4,8 @@
         <h4 class="vpad10 text-primary">
             Metadata
             <div class="task-actions pull-right">
-                <span if-permission="manageShare" allowed="{{userPermissions}}">
+                <!-- <span if-permission="manageShare" allowed="{{userPermissions}}"> -->
+                <span>
                     <a href ng-click="scrollTo('#observable-sharings')">
                         <span class="mr-xxs action-button">
                             <i class="fa fa-users"></i> Sharing
@@ -12,25 +13,11 @@
                     </a>
                 </span>
 
-                <span class="ml-xxs action-button" if-permission="manageAction" allowed="{{userPermissions}}" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
-                    <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact.id, true)" uib-dropdown-toggle>
+                <span class="ml-xxs action-button" if-permission="manageAction" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">
+                    <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact, true)">
                         <i class="text-primary fa fa-cog"></i>
                         Responders
-                        <i class="text-primary fa fa-angle-down"></i>
                     </a>
-                    <ul class="dropdown-menu align-right" uib-dropdown-menu>
-                      <li ng-if="obsResponders && obsResponders.length === 0">
-                        <a href ng-click="getObsResponders(artifact.id, true)">
-                          <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
-                        </a>
-                      </li>
-                      <li ng-repeat="responder in obsResponders">
-                        <a href ng-click="runResponder(responder.id, responder.name, artifact)">
-                          <strong>{{responder.name}}</strong>
-                          <br>
-                          <small>{{responder.description}}</small></a>
-                      </li>
-                    </ul>
                 </span>
             </div>
         </h4>
@@ -144,7 +131,7 @@
                         </td>
                         <td>
                           <!-- [{{a.dataType}}]: {{a.data || a.attachment.name}}<br> -->
-                          #{{a.case.caseId}} - {{a.case.title}}
+                          #{{a.stats.case.caseId}} - {{a.stats.case.title}}
                         </td>
                         <td>{{a.startDate | shortDate}}</td>
                     </tr>

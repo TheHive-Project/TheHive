@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -17,7 +17,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class CaseTemplateCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
@@ -84,9 +84,10 @@ class CaseTemplateCtrl @Inject() (
     entrypoint("delete case template")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          template <- caseTemplateSrv.get(caseTemplateNameOrId).can(Permissions.manageCaseTemplate).getOrFail()
+          organisation <- organisationSrv.getOrFail(request.organisation)
+          template     <- caseTemplateSrv.get(caseTemplateNameOrId).can(Permissions.manageCaseTemplate).getOrFail()
           _ = caseTemplateSrv.get(template).remove()
-          _ <- auditSrv.caseTemplate.delete(template)
+          _ <- auditSrv.caseTemplate.delete(template, organisation)
         } yield Results.Ok
       }
 }

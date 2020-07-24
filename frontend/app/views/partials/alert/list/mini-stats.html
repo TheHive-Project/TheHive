@@ -8,9 +8,9 @@
             <div class="panel-body">
                 <table class="table table-condensed">
                     <tr ng-repeat="item in statsCtrl.byStatus.details">
-                        <td class="active">{{item.key}}</td>
+                        <td class="active">{{item.key === 'true' ? 'Read' : 'Unread'}}</td>
                         <td>
-                            <a href ng-click="$vm.addFilterValue('status', item.key)">{{item.count}}</a>
+                            <a href ng-click="$vm.addFilterValue('read', item.key === 'true')">{{item.count}}</a>
                         </td>
                     </tr>
                 </table>

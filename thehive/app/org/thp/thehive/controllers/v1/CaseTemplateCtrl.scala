@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -17,7 +17,7 @@ import scala.util.Success
 @Singleton
 class CaseTemplateCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv
@@ -35,7 +35,7 @@ class CaseTemplateCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
     "page",
     FieldsParser[OutputParam],
-    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
+    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richCaseTemplate)
   )
   override val outputQuery: Query               = Query.output[RichCaseTemplate, CaseTemplateSteps](_.richCaseTemplate)
   override val extraQueries: Seq[ParamQuery[_]] = Seq()

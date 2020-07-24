@@ -1,14 +1,10 @@
 package org.thp.thehive.services
 
-import java.util.{Date, List => JList}
-
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.{JsObject, Json}
+import java.lang.{Long => JLong}
+import java.util.{Date, Collection => JCollection, List => JList, Map => JMap}
 
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
@@ -19,6 +15,10 @@ import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.{JsObject, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Try}
 
 @Singleton
 class AlertSrv @Inject() (
@@ -30,7 +30,7 @@ class AlertSrv @Inject() (
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv
 )(
-    implicit db: Database
+    implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Alert, AlertSteps] {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
@@ -54,6 +54,18 @@ class AlertSrv @Inject() (
   )(
       implicit graph: Graph,
       authContext: AuthContext
+  ): Try[RichAlert] =
+    tagNames.toTry(tagSrv.getOrCreate).flatMap(create(alert, organisation, _, customFields, caseTemplate))
+
+  def create(
+      alert: Alert,
+      organisation: Organisation with Entity,
+      tags: Seq[Tag with Entity],
+      customFields: Map[String, Option[Any]],
+      caseTemplate: Option[CaseTemplate with Entity]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
   ): Try[RichAlert] = {
     val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).getCount
     if (alertAlreadyExist > 0)
@@ -63,10 +75,9 @@ class AlertSrv @Inject() (
         createdAlert <- createEntity(alert)
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
-        tags         <- tagNames.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
         cfs          <- customFields.toTry { case (name, value) => createCustomField(createdAlert, name, value) }
-        richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name))
+        richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name), 0)
         _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
       } yield richAlert
   }
@@ -115,6 +126,17 @@ class AlertSrv @Inject() (
       _           <- auditSrv.alert.update(alert, Json.obj("tags" -> (currentTags ++ tags)))
     } yield ()
   }
+
+  def removeObservable(alert: Alert with Entity, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    observableSrv
+      .get(observable)
+      .inToE[AlertObservable]
+      .filter(_.outV().hasId(alert._id))
+      .getOrFail("Observable")
+      .flatMap { alertObservable =>
+        alertObservableSrv.get(alertObservable).remove()
+        auditSrv.observableInAlert.delete(observable, Some(alert))
+      }
 
   def addObservable(alert: Alert with Entity, richObservable: RichObservable)(
       implicit graph: Graph,
@@ -209,7 +231,7 @@ class AlertSrv @Inject() (
         .caseTemplate
         .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail())
         .flip
-      customField = alert.customFields.map(f => f.name -> f.value).toMap
+      customField = alert.customFields.map(f => (f.name, f.value, f.order))
       case0 = Case(
         number = 0,
         title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
@@ -264,18 +286,19 @@ class AlertSrv @Inject() (
       }
       .map(_ => ())
 
-  def cascadeRemove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def remove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- get(alert).observables.toIterator.toTry(observableSrv.cascadeRemove(_))
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      _            <- get(alert).observables.toIterator.toTry(observableSrv.remove(_))
       _ = get(alert).remove()
-      _ <- auditSrv.alert.delete(alert)
+      _ <- auditSrv.alert.delete(alert, organisation)
     } yield ()
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AlertSteps = new AlertSteps(raw)
 }
 
 @EntitySteps[Alert]
-class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Alert](raw) {
+class AlertSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Alert](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex] = raw): AlertSteps = new AlertSteps(newRaw)
 
   def get(idOrSource: String): AlertSteps = idOrSource.split(';') match {
@@ -306,14 +329,39 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     )
 
   def can(permission: Permission)(implicit authContext: AuthContext): AlertSteps =
-    this.filter(
-      _.outTo[AlertOrganisation]
-        .has("name", authContext.organisation)
-        .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has("permissions", permission))
-        .inTo[UserRole]
-        .has("login", authContext.userId)
-    )
+    if (authContext.permissions.contains(permission))
+      this.filter(
+        _.outTo[AlertOrganisation]
+          .has("name", authContext.organisation)
+      )
+    else this.limit(0)
+
+  def imported: Traversal[Boolean, Boolean] = this.outToE[AlertCase].count.map(_ > 0)
+
+  def similarCases(implicit authContext: AuthContext): Traversal[(RichCase, SimilarStats), (RichCase, SimilarStats)] =
+    observables
+      .similar
+      .visible
+      .groupBy(new ObservableSteps(__[Vertex]).`case`.raw)
+      .unfold[JMap.Entry[Vertex, JCollection[Vertex]]] // Map[Case, Seq[Observable]]
+      .project(
+        _.by(c =>
+          new CaseSteps(c.selectKeys.raw)
+            .project(
+              _.by(_.richCaseWithoutPerms)
+                .by(_.observables.groupCount(By(Key[Boolean]("ioc"))))
+            )
+        ).by(_.selectValues.unfold[Vertex].groupCount(By(Key[Boolean]("ioc"))))
+      )
+      .map {
+        case ((richCase, obsStats), similarStats) =>
+          val obsStatsMap     = obsStats.asScala.mapValues(_.toInt)
+          val similarStatsMap = similarStats.asScala.mapValues(_.toInt)
+          richCase -> SimilarStats(
+            similarStatsMap.values.sum         -> obsStatsMap.values.sum,
+            similarStatsMap.getOrElse(true, 0) -> obsStatsMap.getOrElse(true, 0)
+          )
+      }
 
   def alertUserOrganisation(
       permission: Permission
@@ -324,21 +372,26 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
     val customFieldLabel      = StepLabel[JList[Path]]()
     val caseIdLabel           = StepLabel[JList[AnyRef]]()
     val caseTemplateNameLabel = StepLabel[JList[String]]()
-    Traversal(
+    val observableCountLabel  = StepLabel[JLong]()
+    val result = Traversal(
       raw
         .`match`(
           _.as(alertLabel).out("AlertOrganisation").has(Key("name") of authContext.organisation).as(organisationLabel),
           _.as(alertLabel).out("AlertTag").fold().as(tagLabel),
-          _.as(organisationLabel)
-            .inTo[RoleOrganisation]
-            .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-            .inTo[UserRole]
-            .has(Key("login") of authContext.userId),
           _.as(alertLabel).outToE[AlertCustomField].inV().path.fold.as(customFieldLabel),
           _.as(alertLabel).outTo[AlertCase].id().fold.as(caseIdLabel),
-          _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel)
+          _.as(alertLabel).outTo[AlertCaseTemplate].values[String]("name").fold.as(caseTemplateNameLabel),
+          _.as(alertLabel).outToE[AlertObservable].count().as(observableCountLabel)
         )
-        .select(alertLabel.name, organisationLabel.name, tagLabel.name, customFieldLabel.name, caseIdLabel.name, caseTemplateNameLabel.name)
+        .select(
+          alertLabel.name,
+          organisationLabel.name,
+          tagLabel.name,
+          customFieldLabel.name,
+          caseIdLabel.name,
+          caseTemplateNameLabel.name,
+          observableCountLabel.name
+        )
         .map { resultMap =>
           val organisation = resultMap.getValue(organisationLabel).as[Organisation]
           val tags         = resultMap.getValue(tagLabel).asScala.map(_.as[Tag])
@@ -357,10 +410,15 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             tags,
             customFieldValues,
             atMostOneOf(resultMap.getValue(caseIdLabel)).map(_.toString),
-            atMostOneOf(resultMap.getValue(caseTemplateNameLabel))
+            atMostOneOf(resultMap.getValue(caseTemplateNameLabel)),
+            resultMap.getValue(observableCountLabel)
           ) -> organisation
         }
     )
+    if (authContext.permissions.contains(permission))
+      result
+    else
+      result.limit(0)
   }
 
   def customFields(name: String): CustomFieldValueSteps =
@@ -383,10 +441,11 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
             .and(By(__[Vertex].outTo[AlertCase].id().fold))
             .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
+            .and(By(__[Vertex].outToE[AlertObservable].count()))
             .and(By(entityRenderer(newInstance(__[Vertex])).raw))
         )
         .map {
-          case (alert, organisation, tags, customFields, caseId, caseTemplate, renderedEntity) =>
+          case (alert, organisation, tags, customFields, caseId, caseTemplate, observableCount, renderedEntity) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -400,7 +459,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
               tags.asScala.map(_.as[Tag]),
               customFieldValues,
               atMostOneOf[AnyRef](caseId).map(_.toString),
-              atMostOneOf[String](caseTemplate)
+              atMostOneOf[String](caseTemplate),
+              observableCount
             ) -> renderedEntity
         }
     )
@@ -415,9 +475,10 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
             .and(By(__[Vertex].outToE[AlertCustomField].inV().path.fold))
             .and(By(__[Vertex].outTo[AlertCase].id().fold))
             .and(By(__[Vertex].outTo[AlertCaseTemplate].values[String]("name").fold))
+            .and(By(__[Vertex].outToE[AlertObservable].count()))
         )
         .map {
-          case (alert, organisation, tags, customFields, caseId, caseTemplate) =>
+          case (alert, organisation, tags, customFields, caseId, caseTemplate, observableCount) =>
             val customFieldValues = (customFields: JList[Path])
               .asScala
               .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
@@ -431,7 +492,8 @@ class AlertSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph)
               tags.asScala.map(_.as[Tag]),
               customFieldValues,
               atMostOneOf[AnyRef](caseId).map(_.toString),
-              atMostOneOf[String](caseTemplate)
+              atMostOneOf[String](caseTemplate),
+              observableCount
             )
         }
     )

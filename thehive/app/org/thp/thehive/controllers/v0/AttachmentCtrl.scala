@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import java.nio.file.Files
 
 import akka.stream.scaladsl.FileIO
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
@@ -20,7 +20,12 @@ import play.api.mvc._
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class AttachmentCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationConfig, attachmentSrv: AttachmentSrv, db: Database) {
+class AttachmentCtrl @Inject() (
+    entrypoint: Entrypoint,
+    appConfig: ApplicationConfig,
+    attachmentSrv: AttachmentSrv,
+    @Named("with-thehive-schema") db: Database
+) {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 
   val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")

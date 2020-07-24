@@ -1,12 +1,7 @@
 package org.thp.thehive.services
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.{JsValue, Reads}
-
 import gremlin.scala.{Graph, GremlinScala, Key, P, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -16,13 +11,17 @@ import org.thp.scalligraph.steps.{Traversal, VertexSteps}
 import org.thp.thehive.models._
 import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
+import play.api.libs.json.{JsValue, Reads}
 import shapeless.HNil
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class ConfigSrv @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
-)(implicit val db: Database)
+)(@Named("with-thehive-schema") implicit val db: Database)
     extends VertexSrv[Config, ConfigSteps] {
   val organisationConfigSrv = new EdgeSrv[OrganisationConfig, Organisation, Config]
   val userConfigSrv         = new EdgeSrv[UserConfig, User, Config]
@@ -76,7 +75,7 @@ class ConfigSrv @Inject() (
 }
 
 @EntitySteps[Config]
-class ConfigSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Config](raw) {
+class ConfigSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Config](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): ConfigSteps = new ConfigSteps(newRaw)
   override def newInstance(): ConfigSteps                             = new ConfigSteps(raw.clone())
 

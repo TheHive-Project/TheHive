@@ -1,27 +1,28 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Try}
-
 import gremlin.scala._
-import javax.inject.{Inject, Provider, Singleton}
-import org.thp.scalligraph.{CreateError, EntitySteps}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.{CreateError, EntitySteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 
+import scala.util.{Failure, Try}
+
 @Singleton
 class ShareSrv @Inject() (
-    implicit val db: Database,
+    @Named("with-thehive-schema") implicit val db: Database,
     auditSrv: AuditSrv,
     caseSrvProvider: Provider[CaseSrv],
     taskSrv: TaskSrv,
-    observableSrv: ObservableSrv
+    observableSrvProvider: Provider[ObservableSrv]
 ) extends VertexSrv[Share, ShareSteps] {
-  lazy val caseSrv: CaseSrv = caseSrvProvider.get
+  lazy val caseSrv: CaseSrv             = caseSrvProvider.get
+  lazy val observableSrv: ObservableSrv = observableSrvProvider.get
 
   val organisationShareSrv = new EdgeSrv[OrganisationShare, Organisation, Share]
   val shareProfileSrv      = new EdgeSrv[ShareProfile, Share, Profile]
@@ -45,7 +46,7 @@ class ShareSrv @Inject() (
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Share with Entity] =
-    get(`case`, organisation).headOption() match {
+    get(`case`, organisation.name).headOption() match {
       case Some(_) => Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}"))
       case None =>
         for {
@@ -57,8 +58,14 @@ class ShareSrv @Inject() (
         } yield createdShare
     }
 
-  def get(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph): ShareSteps =
-    caseSrv.get(`case`).share(organisation.name)
+  def get(`case`: Case with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+    caseSrv.get(`case`).share(organisationName)
+
+  def get(observable: Observable with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+    observableSrv.get(observable).share(organisationName)
+
+  def get(task: Task with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+    taskSrv.get(task).share(organisationName)
 
   def update(
       share: Share with Entity,
@@ -114,10 +121,10 @@ class ShareSrv @Inject() (
       organisation: Organisation with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      shareObservable <- taskSrv
+      shareObservable <- observableSrv
         .get(observable)
         .inToE[ShareObservable]
-        .filter(st => new ShareSteps(st.outV().raw).byOrganisationName(organisation.name))
+        .filter(_.outV().inTo[OrganisationShare].hasId(organisation._id))
         .getOrFail("Share")
       case0 <- observableSrv.get(observable).`case`.getOrFail("Case")
       _     <- auditSrv.share.unshareObservable(observable, case0, organisation)
@@ -146,7 +153,7 @@ class ShareSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation).getOrFail("Case")
+      share <- get(`case`, organisation.name).getOrFail("Case")
       _     <- shareTaskSrv.create(ShareTask(), share, richTask.task)
       _     <- auditSrv.task.create(richTask.task, richTask.toJson)
     } yield ()
@@ -160,7 +167,7 @@ class ShareSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation).getOrFail("Case")
+      share <- get(`case`, organisation.name).getOrFail("Case")
       _     <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
       _     <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
     } yield ()
@@ -289,7 +296,7 @@ class ShareSrv @Inject() (
 }
 
 @EntitySteps[Share]
-class ShareSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Share](raw) {
+class ShareSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Share](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(newRaw)
   override def newInstance(): ShareSteps                             = new ShareSteps(raw.clone())
 

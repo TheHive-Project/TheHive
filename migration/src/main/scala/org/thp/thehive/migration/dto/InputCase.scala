@@ -9,5 +9,7 @@ case class InputCase(
     tags: Set[String],
     customFields: Map[String, Option[Any]],
     caseTemplate: Option[String],
+    resolutionStatus: Option[String],
+    impactStatus: Option[String],
     metaData: MetaData
 )

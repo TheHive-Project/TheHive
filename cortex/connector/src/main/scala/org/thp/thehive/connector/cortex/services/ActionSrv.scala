@@ -2,11 +2,6 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.libs.json.{JsObject, Json, OWrites}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import gremlin.scala._
@@ -25,16 +20,21 @@ import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Case, Task}
-import org.thp.thehive.services.{AlertSteps, CaseSteps, LogSteps, ObservableSteps, TaskSteps}
+import org.thp.thehive.services.{AlertSteps, CaseSteps, LogSrv, LogSteps, ObservableSteps, TaskSteps}
+import play.api.libs.json.{JsObject, Json, OWrites}
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ActionSrv @Inject() (
     @Named("cortex-actor") cortexActor: ActorRef,
     actionOperationSrv: ActionOperationSrv,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
+    logSrv: LogSrv,
     connector: Connector,
     implicit val schema: Schema,
-    implicit val db: Database,
+    @Named("with-thehive-cortex-schema") implicit val db: Database,
     implicit val ec: ExecutionContext,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[Action, ActionSteps] {
@@ -64,10 +64,13 @@ class ActionSrv @Inject() (
             .find(_.name == cortexId)
             .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
         case None if cortexClients.nonEmpty =>
-          Future.firstCompletedOf {
-            cortexClients
-              .map(client => client.getResponder(workerId).map(_ => client))
-          }
+          Future
+            .traverse(cortexClients) { client =>
+              client.getResponder(workerId).map(_ => Some(client)).recover { case _ => None }
+            }
+            .flatMap(
+              _.flatten.headOption.fold[Future[CortexClient]](Future.failed(NotFoundError(s"Responder $workerId not found")))(Future.successful)
+            )
 
         case None => Future.failed(NotFoundError(s"Responder $workerId not found"))
       }
@@ -91,7 +94,11 @@ class ActionSrv @Inject() (
         db.tryTransaction { implicit graph =>
           for {
             richAction <- create(action, entity)
-            _          <- auditSrv.action.create(richAction.action, entity, richAction.toJson)
+            auditContext = entity._model.label match {
+              case "Log" => logSrv.get(entity).task.headOption().getOrElse(entity)
+              case _     => entity
+            }
+            _ <- auditSrv.action.create(richAction.action, auditContext, richAction.toJson)
           } yield richAction
         }
       }
@@ -128,35 +135,47 @@ class ActionSrv @Inject() (
     */
   def finished(actionId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Action with Entity] =
     db.tryTransaction { implicit graph =>
-      val operations = cortexJob
-        .report
-        .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.as[ActionOperation]))
-        .map { operation =>
-          (for {
-            action <- getByIds(actionId).richAction.getOrFail()
-            updatedOperation <- actionOperationSrv.execute(
-              action.context,
-              operation,
-              relatedCase(actionId),
-              relatedTask(actionId)
-            )
-          } yield updatedOperation)
-            .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
+      getByIds(actionId).richAction.getOrFail().flatMap { action =>
+        val operations = cortexJob
+          .report
+          .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.as[ActionOperation]))
+          .map { operation =>
+            actionOperationSrv
+              .execute(
+                action.context,
+                operation,
+                relatedCase(actionId),
+                relatedTask(actionId)
+              )
+              .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
+          }
+        val auditContext = action.context._model.label match {
+          case "Log" => logSrv.get(action.context).task.headOption().getOrElse(action.context)
+          case _     => action.context
         }
 
-      for {
-        updated <- getByIds(actionId).updateOne(
-          "status"     -> cortexJob.status.toJobStatus,
-          "report"     -> cortexJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
-          "endDate"    -> Some(new Date()),
-          "operations" -> operations.map(Json.toJsObject(_))
-        )
-      } yield {
-        relatedCase(updated._id)
-          .orElse(get(updated._id).context.headOption()) // FIXME an action context is it an audit context ?
-          .foreach(relatedEntity => auditSrv.action.update(updated, relatedEntity, Json.obj("status" -> updated.status.toString)))
-
-        updated
+        getByIds(actionId)
+          .updateOne(
+            "status"     -> cortexJob.status.toJobStatus,
+            "report"     -> cortexJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
+            "endDate"    -> Some(new Date()),
+            "operations" -> operations.map(Json.toJsObject(_))
+          )
+          .map { updated =>
+            auditSrv
+              .action
+              .update(
+                updated,
+                auditContext,
+                Json.obj(
+                  "status"        -> updated.status.toString,
+                  "objectId"      -> action.context._id,
+                  "objectType"    -> action.context._model.label,
+                  "responderName" -> action.workerName
+                )
+              )
+            updated
+          }
       }
     }
 
@@ -183,7 +202,8 @@ class ActionSrv @Inject() (
 }
 
 @EntitySteps[Action]
-class ActionSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph, schema: Schema) extends VertexSteps[Action](raw) {
+class ActionSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph, schema: Schema)
+    extends VertexSteps[Action](raw) {
 
   /**
     * Provides a RichAction model with additional Entity context

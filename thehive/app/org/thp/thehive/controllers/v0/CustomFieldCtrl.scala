@@ -1,11 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.Success
-
-import play.api.libs.json.{JsNumber, JsObject}
-import play.api.mvc.{Action, AnyContent, Results}
-
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PropertyUpdater
@@ -14,9 +9,18 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.CustomFieldSrv
+import play.api.libs.json.{JsNumber, JsObject}
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.Success
 
 @Singleton
-class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Properties, customFieldSrv: CustomFieldSrv) extends AuditRenderer {
+class CustomFieldCtrl @Inject() (
+    entrypoint: Entrypoint,
+    @Named("with-thehive-schema") db: Database,
+    properties: Properties,
+    customFieldSrv: CustomFieldSrv
+) extends AuditRenderer {
 
   def create: Action[AnyContent] =
     entrypoint("create custom field")

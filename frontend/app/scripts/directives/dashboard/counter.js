@@ -70,7 +70,21 @@
                         return;
                     }
 
-                    var filters = (scope.options.filters || []).concat(item.serie.filters || []);
+                    var timeFrameFilter = [];
+                    if(scope.filter) {
+                        timeFrameFilter.push({
+                            field: scope.filter._between._field,
+                            type: 'date',
+                            value: {
+                                from: moment(scope.filter._between._from),
+                                to: moment(scope.filter._between._to)
+                            }
+                        });
+                    }
+
+                    var filters = (scope.options.filters || [])
+                        .concat(item.serie.filters || [])
+                        .concat(timeFrameFilter || []);
 
                     $q.resolve(GlobalSearchSrv.saveSection(scope.options.entity, {
                         search: filters.length === 0 ? '*' : null,

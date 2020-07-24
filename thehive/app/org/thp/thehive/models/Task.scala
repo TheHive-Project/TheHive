@@ -2,10 +2,9 @@ package org.thp.thehive.models
 
 import java.util.Date
 
-import play.api.libs.json.{Format, Json}
-
 import org.thp.scalligraph._
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
+import play.api.libs.json.{Format, Json}
 
 object TaskStatus extends Enumeration {
   val Waiting, InProgress, Completed, Cancel = Value
@@ -20,6 +19,7 @@ case class TaskUser()
 case class TaskLog()
 
 @VertexEntity
+@DefineIndex(IndexType.basic, "status")
 case class Task(
     title: String,
     group: String,
@@ -34,7 +34,7 @@ case class Task(
 
 case class RichTask(
     task: Task with Entity,
-    owner: Option[User with Entity]
+    assignee: Option[User with Entity]
 ) {
   def _id: String                 = task._id
   def _createdBy: String          = task._createdBy

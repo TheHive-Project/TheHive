@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.RichOptionTry
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
@@ -17,7 +17,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class TaskCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,

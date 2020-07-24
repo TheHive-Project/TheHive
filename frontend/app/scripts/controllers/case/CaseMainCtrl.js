@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseMainCtrl',
-        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, UserSrv, MispSrv, StreamSrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, caze) {
+        function($scope, $rootScope, $state, $stateParams, $q, $uibModal, CaseTabsSrv, CaseSrv, UserSrv, MispSrv, StreamSrv, StreamQuerySrv, StreamStatSrv, NotificationSrv, UtilsSrv, CaseResolutionStatus, CaseImpactStatus, CortexSrv, caze) {
             $scope.CaseResolutionStatus = CaseResolutionStatus;
             $scope.CaseImpactStatus = CaseImpactStatus;
             $scope.caseResponders = null;
@@ -25,13 +25,13 @@
             $scope.oldestLink = null;
 
             $scope.caze = caze;
-            $scope.userPermissions = (caze.permissions || []).join(',');
-            $rootScope.title = 'Case #' + caze.caseId + ': ' + caze.title;
+            $scope.userPermissions = (caze.extraData.permissions || []).join(',');
+            $rootScope.title = 'Case #' + caze.number + ': ' + caze.title;
 
-            $scope.canEdit = caze.permissions.indexOf('manageCase') !== -1;
+            $scope.canEdit = caze.extraData.permissions.indexOf('manageCase') !== -1;
 
             $scope.initExports = function() {
-                $scope.existingExports = _.filter($scope.caze.stats.alerts || [], function(item) {
+                $scope.existingExports = _.filter($scope.caze.extraData.alerts || [], function(item) {
                     return item.type === 'misp';
                 }).length;
             };
@@ -68,78 +68,87 @@
                 rootId: $scope.caseId,
                 objectType: 'case',
                 callback: function(updates) {
-                  CaseSrv.get({
-                      'caseId': $stateParams.caseId,
-                      'nstats': true
-                  }, function(data) {
-                      $scope.caze = data;
+                    CaseSrv.getById($stateParams.caseId, true)
+                        .then(function(data) {
+                            $scope.caze = data;
 
-                      if(updates.length === 1 && updates[0] && updates[0].base.details.customFields){
-                          $scope.$broadcast('case:refresh-custom-fields');
-                      }
-
-                  }, function(response) {
-                      NotificationSrv.error('CaseMainCtrl', response.data, response.status);
-                  });
+                            if(updates.length === 1 && updates[0] && updates[0].base.details.customFields){
+                                $scope.$broadcast('case:refresh-custom-fields');
+                            }
+                        }).catch(function(response) {
+                            NotificationSrv.error('CaseMainCtrl', response.data, response.status);
+                        });
                 }
             });
 
-            $scope.tasks = StreamStatSrv({
+            // Stats for case tasks counter
+            StreamQuerySrv('v1', [
+                {_name: 'getCase', idOrName: caseId},
+                {_name: 'tasks'},
+                {_name: 'filter',
+                    _not: {
+                        '_field': 'status',
+                        '_value': 'Cancel'
+                    }
+                },
+                {_name: 'count'}
+            ], {
                 scope: $scope,
                 rootId: caseId,
-                query: {
-                    '_and': [{
-                        '_parent': {
-                            "_type": "case",
-                            "_query": {
-                                "_id": caseId
-                            }
-                        }
-                    }, {
-                        '_not': {
-                            'status': 'Cancel'
-                        }
-                    }]
-                },
-                result: {},
                 objectType: 'case_task',
-                field: 'status'
-            });
-
-            $scope.artifactStats = StreamStatSrv({
-                scope: $scope,
-                rootId: caseId,
                 query: {
-                    '_and': [{
-                        '_parent': {
-                            "_type": "case",
-                            "_query": {
-                                "_id": caseId
-                            }
-                        }
-                    }, {
-                        'status': 'Ok'
-                    }]
+                    params: {
+                        name: 'task-stats-' + caseId
+                    }
                 },
-                result: {},
-                objectType: 'case_artifact',
-                field: 'status'
+                onUpdate: function(updates) {
+                    $scope.tasksCount = updates;
+                }
             });
 
-            $scope.alerts = StreamStatSrv({
+            // Stats for case observables counter
+            StreamQuerySrv('v1', [
+                {_name: 'getCase', idOrName: caseId},
+                {_name: 'observables'},
+                {_name: 'count'}
+            ], {
                 scope: $scope,
                 rootId: caseId,
-                query: { 'case': caseId },
-                result: {},
+                objectType: 'case_artifact',
+                query: {
+                    params: {
+                        name: 'observable-stats-' + caseId
+                    }
+                },
+                onUpdate: function(updates) {
+                    $scope.observableCount = updates;
+                }
+            });
+
+            // Stats for case observables counter
+            StreamQuerySrv('v1', [
+                {_name: 'getCase', idOrName: caseId},
+                {_name: 'alerts'},
+                {_name: 'count'}
+            ], {
+                scope: $scope,
+                rootId: caseId,
                 objectType: 'alert',
-                field: 'type'
+                query: {
+                    params: {
+                        name: 'alert-stats-' + caseId
+                    }
+                },
+                onUpdate: function(updates) {
+                    $scope.alertCount = updates;
+                }
             });
 
             $scope.$on('tasks:task-removed', function(event, task) {
-                CaseTabsSrv.removeTab('task-' + task.id);
+                CaseTabsSrv.removeTab('task-' + task._id);
             });
             $scope.$on('observables:observable-removed', function(event, observable) {
-                CaseTabsSrv.removeTab('observable-' + observable.id);
+                CaseTabsSrv.removeTab('observable-' + observable._id);
             });
 
             $scope.openTab = function(tabName) {
@@ -179,8 +188,8 @@
 
                 CaseSrv.update({
                     caseId: caseId
-                }, data, function(response) {
-                    UtilsSrv.shallowClearAndCopy(response, $scope.caze);
+                }, data, function(/*response*/) {
+                    //UtilsSrv.shallowClearAndCopy(response, $scope.caze);
                     defer.resolve($scope.caze);
                 }, function(response) {
                     NotificationSrv.error('caseDetails', response.data, response.status);
@@ -221,7 +230,6 @@
                     scope: $scope,
                     templateUrl: 'views/partials/case/case.reopen.html',
                     controller: 'CaseReopenModalCtrl',
-                    size: ''
                 });
             };
 
@@ -236,10 +244,10 @@
                             return $scope.caze;
                         },
                         title: function() {
-                            return 'Merge Case #' + $scope.caze.caseId;
+                            return 'Merge Case #' + $scope.caze.number;
                         },
                         prompt: function() {
-                            return '#' + $scope.caze.caseId + ': ' + $scope.caze.title;
+                            return '#' + $scope.caze.number + ': ' + $scope.caze.title;
                         }
                     }
                 });
@@ -288,12 +296,13 @@
                 });
 
                 modalInstance.result.then(function() {
-                    return CaseSrv.get({
-                        'caseId': $scope.caseId,
-                        'nstats': true
-                    }).$promise;
+                    return CaseSrv.getById($scope.caseId, true);
+                    // return CaseSrv.get({
+                    //     'caseId': $scope.caseId,
+                    //     'nstats': true
+                    // }).$promise;
                 }).then(function(data) {
-                    $scope.caze = data.toJSON();
+                    $scope.caze = data;
                     $scope.initExports();
                 });
             };
@@ -326,24 +335,25 @@
 
                 $scope.caseResponders = null;
                 CortexSrv.getResponders('case', $scope.caseId)
-                  .then(function(responders) {
-                      $scope.caseResponders = responders;
-                  })
-                  .catch(function(response) {
-                      NotificationSrv.error('caseDetails', response.data, response.status);
-                  });
-            };
-
-            $scope.runResponder = function(responderId, responderName) {
-                CortexSrv.runResponder(responderId, responderName, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
-                  .then(function(response) {
-                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
-                  })
-                  .catch(function(response) {
-                      if(response && !_.isString(response)) {
-                          NotificationSrv.error('caseDetails', response.data, response.status);
-                      }
-                  });
+                    .then(function(responders){
+                        $scope.caseResponders = responders;
+                        return CortexSrv.promntForResponder(responders);
+                    })
+                    .then(function(response) {
+                        if(response && _.isString(response)) {
+                            NotificationSrv.log(response, 'warning');
+                        } else {
+                            return CortexSrv.runResponder(response.id, response.name, 'case', _.pick($scope.caze, '_id', 'tlp', 'pap'));
+                        }
+                    })
+                    .then(function(response){
+                        NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('caseDetails', err.data, err.status);
+                        }
+                    });
             };
 
             /**

@@ -1,9 +1,8 @@
 package org.thp.thehive
 
-import play.core.server.{AkkaHttpServer, ServerProvider}
-
 import akka.http.scaladsl.model.HttpMethod
 import akka.http.scaladsl.settings.ParserSettings
+import play.core.server.{AkkaHttpServer, ServerProvider}
 
 /** A custom Akka HTTP server with advanced configuration. */
 class CustomAkkaHttpServer(context: AkkaHttpServer.Context) extends AkkaHttpServer(context) {

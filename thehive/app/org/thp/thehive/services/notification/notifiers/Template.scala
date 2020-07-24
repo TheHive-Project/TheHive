@@ -2,13 +2,13 @@ package org.thp.thehive.services.notification.notifiers
 
 import java.util.{HashMap => JHashMap}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
 import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.helper.ConditionalHelpers
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, User}
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 trait Template {
   val handlebars: Handlebars = new Handlebars().registerHelpers(classOf[ConditionalHelpers])

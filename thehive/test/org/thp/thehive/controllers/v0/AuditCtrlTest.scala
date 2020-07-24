@@ -17,7 +17,7 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
     def getFlow(caseId: String) = {
       val request = FakeRequest("GET", "/api/v0/flow")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[AuditCtrl].flow(Some(caseId), None)(request)
+      val result = app[AuditCtrl].flow(Some(caseId))(request)
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       contentAsJson(result).as[List[JsObject]]
     }
@@ -32,7 +32,7 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
         None,
         app[OrganisationSrv].getOrFail("admin").get,
         Set.empty,
-        Map.empty,
+        Seq.empty,
         None,
         Nil
       )(graph, authContext)

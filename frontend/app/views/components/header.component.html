@@ -7,7 +7,8 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" ui-sref="app.index()">
+
+            <a class="navbar-brand" ui-sref="{{currentUser.homeState}}">
                 <img alt="TheHive" src="images/logo.white.svg">
             </a>
         </div>
@@ -26,18 +27,18 @@
                 </li>
                 <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
-                        <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
+                        <span class="badge alert-danger">{{myCurrentTasksCount || 0}}</span>
                     </a>
                 </li>
                 <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'waitingtasks'})">Waiting tasks
-                        <span class="badge alert-danger">{{waitingTasks.count}}</span>
+                        <span class="badge alert-danger">{{waitingTasksCount || 0}}</span>
                     </a>
                 </li>
                 <li ui-sref-active="active">
                     <a href ui-sref="app.alert-list">
                         Alerts
-                        <span class="badge alert-danger">{{(alertEvents.New.count || 0)  + (alertEvents.Updated.count || 0)}}</span>
+                        <span class="badge alert-danger">{{unreadAlertCount || 0}}</span>
                     </a>
                 </li>
                 <li class="hdivider hidden-xs"></li>
@@ -78,7 +79,7 @@
                         <b class="caret"></b>
                     </a>
                     <ul class="dropdown-menu" uib-dropdown-menu>
-                        <li>
+                        <li if-permission="manageOrganisation">
                             <a ui-sref="app.administration.organisations">
                                 <i class="fa fa-building-o"></i>
                                 <span class="hpad5">Organisations</span>

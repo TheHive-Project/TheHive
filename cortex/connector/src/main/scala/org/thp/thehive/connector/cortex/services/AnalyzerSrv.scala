@@ -1,14 +1,13 @@
 package org.thp.thehive.connector.cortex.services
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-
 import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
+import play.api.Logger
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 @Singleton
 class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper, implicit val ec: ExecutionContext) {

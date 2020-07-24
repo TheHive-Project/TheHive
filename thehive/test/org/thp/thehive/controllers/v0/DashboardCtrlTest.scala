@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputDashboard
 import org.thp.thehive.services.DashboardSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
-import org.thp.scalligraph.steps.StepsOps._
 
 class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
   "dashboard controller" should {

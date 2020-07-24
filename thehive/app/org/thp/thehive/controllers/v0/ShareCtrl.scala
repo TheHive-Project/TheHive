@@ -1,11 +1,7 @@
 package org.thp.thehive.controllers.v0
 
-import scala.util.{Failure, Success, Try}
-
-import play.api.mvc.{Action, AnyContent, Results}
-
 import gremlin.scala.Graph
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -15,11 +11,14 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ShareCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     shareSrv: ShareSrv,
     organisationSrv: OrganisationSrv,
     caseSrv: CaseSrv,

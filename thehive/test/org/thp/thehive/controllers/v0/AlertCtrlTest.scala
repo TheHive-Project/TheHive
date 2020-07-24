@@ -2,16 +2,15 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import play.api.libs.json.{JsNull, JsObject, JsString, Json}
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.RichObservable
-import org.thp.thehive.services.{CaseSrv, ObservableSrv}
+import org.thp.thehive.services.CaseSrv
+import play.api.libs.json.{JsNull, JsObject, JsString, Json}
+import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestAlert(
     `type`: String,
@@ -143,7 +142,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       description = "description of alert #1",
       severity = 2,
       date = new Date(1555359572000L),
-      tags = Set("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\""),
+      tags = Set("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\""),
       tlp = 2,
       pap = 2,
       status = "New",
@@ -252,10 +251,10 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       pap = 2,
       status = "Open",
       tags = Set(
-        "testNamespace.testPredicate=\"alert\"",
-        "testNamespace.testPredicate=\"test\"",
-        "testNamespace.testPredicate=\"spam\"",
-        "testNamespace.testPredicate=\"src:mail\""
+        "testNamespace:testPredicate=\"alert\"",
+        "testNamespace:testPredicate=\"test\"",
+        "testNamespace:testPredicate=\"spam\"",
+        "testNamespace:testPredicate=\"src:mail\""
       ),
       summary = None,
       owner = Some("certuser@thehive.local"),

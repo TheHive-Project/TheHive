@@ -39,10 +39,11 @@ class Router @Inject() (
 
     case POST(p"/_stats") => statsCtrl.stats
 
-    case GET(p"/status") => statusCtrl.get
-    case GET(p"/health") => statusCtrl.health
-    case GET(p"/logout") => authenticationCtrl.logout
-    case POST(p"/login") => authenticationCtrl.login
+    case GET(p"/status")  => statusCtrl.get
+    case GET(p"/health")  => statusCtrl.health
+    case GET(p"/logout")  => authenticationCtrl.logout
+    case POST(p"/logout") => authenticationCtrl.logout
+    case POST(p"/login")  => authenticationCtrl.login
 //    case POST(p"/ssoLogin") => authenticationCtrl.ssoLogin
 
     case DELETE(p"/case/shares")                               => shareCtrl.removeShares()
@@ -60,11 +61,11 @@ class Router @Inject() (
     case GET(p"/case")                  => queryExecutor.`case`.search
     case POST(p"/case")                 => caseCtrl.create // Audit ok
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
+    case PATCH(p"/case/_bulk")          => caseCtrl.bulkUpdate // Not used by the frontend
     case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId) // Audit ok
     case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds) // Not implemented in backend and not used by frontend
     case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId) // Not used by frontend
     case POST(p"/case/_search")         => queryExecutor.`case`.search
-    case PATCH(p"api/case/_bulk")       => caseCtrl.bulkUpdate // Not used by the frontend
     case POST(p"/case/_stats")          => queryExecutor.`case`.stats
     case DELETE(p"/case/$caseId/force") => caseCtrl.realDelete(caseId) // Audit ok
     case GET(p"/case/$caseId/links")    => caseCtrl.linkedCases(caseId)
@@ -166,11 +167,11 @@ class Router @Inject() (
     case PATCH(p"/dashboard/$dashboardId")  => dashboardCtrl.update(dashboardId) // Audit ok
     case DELETE(p"/dashboard/$dashboardId") => dashboardCtrl.delete(dashboardId) // Audit ok
 
-    case GET(p"/audit")                                                 => auditCtrl.flow(None, None)
-    case GET(p"/flow" ? q_o"rootId=$rootId" & q_o"count=${int(count)}") => auditCtrl.flow(rootId, count)
-//    GET      /audit                               controllers.AuditCtrl.find
-//    POST     /audit/_search                       controllers.AuditCtrl.find
-//    POST     /audit/_stats                        controllers.AuditCtrl.stats
+    case GET(p"/audit")                      => auditCtrl.flow(None)
+    case GET(p"/flow" ? q_o"rootId=$rootId") => auditCtrl.flow(rootId)
+    case GET(p"/audit")                      => queryExecutor.audit.search
+    case POST(p"/audit/_search")             => queryExecutor.audit.search
+    case POST(p"/audit/_stats")              => queryExecutor.audit.stats
 
     case POST(p"/stream")          => streamCtrl.create
     case GET(p"/stream/status")    => streamCtrl.status
@@ -217,20 +218,3 @@ class Router @Inject() (
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
   }
 }
-/*
-
-POST     /maintenance/migrate                 org.elastic4play.controllers.MigrationCtrl.migrate
-#POST          /maintenance/rehash                         controllers.MaintenanceCtrl.reHash
-
-GET      /list                                org.elastic4play.dBListCtrl.list
-DELETE   /list/:itemId                        org.elastic4play.dBListCtrl.deleteItem(itemId)
-PATCH    /list/:itemId                        org.elastic4play.dBListCtrl.updateItem(itemId)
-POST     /list/:listName                      org.elastic4play.dBListCtrl.addItem(listName)
-GET      /list/:listName                      org.elastic4play.dBListCtrl.listItems(listName)
-POST     /list/:listName/_exists              org.elastic4play.dBListCtrl.itemExists(listName)
-
-->       /connector                           connectors.ConnectorRouter
-
-GET      / *file                                   controllers.AssetCtrl.get(file)
-
- */

@@ -5,6 +5,7 @@ import java.util.Date
 import org.thp.scalligraph.auth.{Permission, User => ScalligraphUser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.thehive.services.LocalPasswordAuthSrv
 
 @EdgeEntity[User, Role]
 case class UserRole()
@@ -20,6 +21,24 @@ case class User(login: String, name: String, apikey: Option[String], locked: Boo
   override def getUserName: String = name
 
   override def toString: String = s"User($login,$name,$locked)"
+}
+
+object User {
+  val initPassword: String = "secret"
+
+  val init: User = User(
+    login = "admin@thehive.local",
+    name = "Default admin user",
+    apikey = None,
+    locked = false,
+    password = Some(LocalPasswordAuthSrv.hashPassword(initPassword)),
+    totpSecret = None
+  )
+
+  val system: User =
+    User(login = "system@thehive.local", name = "TheHive system user", apikey = None, locked = false, password = None, totpSecret = None)
+
+  val initialValues: Seq[User] = Seq(init, system)
 }
 
 //    avatar: Array[Byte],

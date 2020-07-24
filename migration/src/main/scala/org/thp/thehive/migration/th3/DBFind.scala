@@ -1,13 +1,5 @@
 package org.thp.thehive.migration.th3
 
-import scala.collection.mutable
-import scala.concurrent.duration.{DurationLong, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json._
-import play.api.{Configuration, Logger}
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic, OutHandler}
@@ -17,6 +9,13 @@ import com.sksamuel.elastic4s.http.search.{SearchHit, SearchResponse}
 import com.sksamuel.elastic4s.searches.SearchRequest
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{InternalError, SearchError}
+import play.api.libs.json._
+import play.api.{Configuration, Logger}
+
+import scala.collection.mutable
+import scala.concurrent.duration.{DurationLong, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Service class responsible for entity search

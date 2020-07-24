@@ -1,62 +1,60 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .directive('logEntry', function($uibModal, HtmlSanitizer, TaskLogSrv, UserSrv, NotificationSrv) {
+        .directive('logEntry', function($uibModal, HtmlSanitizer, PaginatedQuerySrv, TaskLogSrv, UserSrv, NotificationSrv) {
             return {
                 templateUrl: 'views/directives/log-entry.html',
-                controller: function($scope, CortexSrv, PSearchSrv) {
+                controller: function($scope, CortexSrv, PaginatedQuerySrv) {
                     $scope.showActions = false;
                     $scope.actions = null;
                     $scope.logResponders = null;
-                    $scope.getLogResponders = function(logId) {
+                    $scope.getLogResponders = function(taskLog, force) {
+                        if(!force && $scope.logResponders !== null) {
+                           return;
+                        }
+
                         $scope.logResponders = null;
-                        CortexSrv.getResponders('case_task_log', logId)
+                        CortexSrv.getResponders('case_task_log', taskLog._id)
                             .then(function(responders) {
                                 $scope.logResponders = responders;
+                                return CortexSrv.promntForResponder(responders);
                             })
-                            .catch(function(response) {
-                                NotificationSrv.error('logEntry', response.data, response.status);
+                            .then(function(response) {
+                                if(response && _.isString(response)) {
+                                    NotificationSrv.log(response, 'warning');
+                                } else {
+                                    return CortexSrv.runResponder(response.id, response.name, 'case_task_log', _.pick(taskLog, '_id'));
+                                }
+                            })
+                            .then(function(response){
+                                NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task log'].join(' '), 'success');
+                            })
+                            .catch(function(err) {
+                                if(err && !_.isString(err)) {
+                                    NotificationSrv.error('logEntry', err.data, err.status);
+                                }
                             });
                     };
 
-                    $scope.runResponder = function(responderId, responderName, log) {
-                        CortexSrv.runResponder(responderId, responderName, 'case_task_log', _.pick(log, 'id'))
-                          .then(function(response) {
-                              NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task log'].join(' '), 'success');
-                          })
-                          .catch(function(response) {
-                              if(response && !_.isString(response)) {
-                                  NotificationSrv.error('logEntry', response.data, response.status);
-                              }
-                          });
-                    };
-
                     $scope.getActions = function(logId) {
-                        $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                        $scope.actions = new PaginatedQuerySrv({
+                            name: 'task-log-actions',
+                            version: 'v1',
                             scope: $scope,
                             streamObjectType: 'action',
-                            filter: {
-                                _and: [
-                                    {
-                                        _not: {
-                                            status: 'Deleted'
-                                        }
-                                    }, {
-                                        objectType: 'case_task_log'
-                                    }, {
-                                        objectId: logId
-                                    }
-                                ]
-                            },
+                            loadAll: true,
                             sort: ['-startDate'],
                             pageSize: 100,
+                            operations: [
+                                { '_name': 'getLog', 'idOrName': logId },
+                                { '_name': 'actions' }
+                            ],
                             guard: function(updates) {
                                 return _.find(updates, function(item) {
-                                    return (item.base.object.objectType === 'case_task_log') && (item.base.object.objectId === logId);
+                                    return (item.base.details.objectType === 'Log') && (item.base.details.objectId === logId);
                                 }) !== undefined;
                             }
                         });
-
                     };
                 },
                 link: function(scope) {
@@ -72,7 +70,7 @@
 
                     scope.confirmDropLog = function() {
                         TaskLogSrv.delete({
-                            logId: scope.log.id
+                            logId: scope.log._id
                         }).$promise.then(function() {
                             scope.deleteModal.dismiss();
                         });
@@ -84,7 +82,7 @@
 
                     scope.updateLog = function() {
                         return TaskLogSrv.update({
-                            logId: scope.log.id
+                            logId: scope.log._id
                         }, {message: scope.log.message}, function() {}, function(response) {
                             NotificationSrv.error('CaseTaskLog', response.data, response.status);
                         });

@@ -2,15 +2,14 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import play.api.libs.json.JsString
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json.JsString
+import play.api.test.PlaySpecification
 
 class AlertSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
@@ -91,7 +90,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       }
 
       tags must beSuccessfulTry.which(t =>
-        t.map(_.toString) must contain(exactly("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\"", "tag7"))
+        t.map(_.toString) must contain(exactly("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\"", "tag7"))
       )
     }
 
@@ -206,11 +205,11 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           alert <- app[AlertSrv].getOrFail("testType;testSource;ref4")
-          _     <- app[AlertSrv].cascadeRemove(alert)
+          _     <- app[AlertSrv].remove(alert)
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
-        app[ObservableSrv].initSteps.filterOnType("domain").filterOnData("perdu.com").exists() must beFalse
+//        app[ObservableSrv].initSteps.filterOnType("domain").filterOnData("perdu.com").exists() must beFalse
         app[AlertSrv].initSteps.get("testType;testSource;ref4").exists() must beFalse
       }
     }

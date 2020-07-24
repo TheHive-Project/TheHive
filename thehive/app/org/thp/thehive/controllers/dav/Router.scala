@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.dav
 
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.AttachmentSrv
@@ -18,7 +18,8 @@ import scala.util.matching.Regex
 import scala.xml.{Node, NodeSeq}
 
 @Singleton
-class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv) extends SimpleRouter {
+class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-schema") db: Database, attachmentSrv: AttachmentSrv)
+    extends SimpleRouter {
   lazy val logger: Logger = Logger(getClass)
 
   object PROPFIND {
@@ -37,11 +38,11 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, db: Database, attachme
   }
 
   def debug(): Action[AnyContent] = entrypoint("DAV options") { request =>
-    println(s"request ${request.method} ${request.path}")
+    logger.debug(s"request ${request.method} ${request.path}")
     request.headers.headers.foreach {
-      case (k, v) => println(s"$k: $v")
+      case (k, v) => logger.debug(s"$k: $v")
     }
-    println(request.body)
+    logger.debug(request.body.toString)
     Success(Results.Ok(""))
   }
 

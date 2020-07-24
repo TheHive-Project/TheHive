@@ -1,26 +1,24 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.InputObservable
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
-
-import scala.util.Success
+import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.dto.v1.InputObservable
 
 @Singleton
 class ObservableCtrl @Inject() (
     entryPoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
@@ -42,14 +40,10 @@ class ObservableCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
     "page",
     FieldsParser[OutputParam], {
-      case (OutputParam(from, to, withStats), observableSteps, authContext) =>
-        observableSteps
-          .richPage(from, to, withTotal = true) {
-            case o if withStats =>
-              o.richObservableWithCustomRenderer(observableStatsRenderer(authContext, db, observableSteps.graph))
-            case o =>
-              o.richObservable.map(_ -> JsObject.empty)
-          }
+      case (OutputParam(from, to, extraData), observableSteps, authContext) =>
+        observableSteps.richPage(from, to, extraData.contains("total")) {
+          _.richObservableWithCustomRenderer(observableStatsRenderer(extraData - "total")(authContext, db, observableSteps.graph))
+        }
     }
   )
   override val outputQuery: Query = Query.output[RichObservable, ObservableSteps](_.richObservable)
@@ -112,18 +106,6 @@ class ObservableCtrl @Inject() (
           .map(_ => Results.NoContent)
       }
 
-  def findSimilar(obsId: String): Action[AnyContent] =
-    entryPoint("find similar")
-      .authRoTransaction(db) { _ => implicit graph =>
-        val observables = observableSrv
-          .getByIds(obsId)
-          .similar
-          .richObservableWithCustomRenderer(observableLinkRenderer)
-          .toList
-
-        Success(Results.Ok(observables.toJson))
-      }
-
   def bulkUpdate: Action[AnyContent] =
     entryPoint("bulk update")
       .extract("input", FieldsParser.update("observable", publicProperties))
@@ -147,7 +129,7 @@ class ObservableCtrl @Inject() (
             .getByIds(obsId)
             .can(Permissions.manageObservable)
             .getOrFail("Observable")
-          _ <- observableSrv.cascadeRemove(observable)
+          _ <- observableSrv.remove(observable)
         } yield Results.NoContent
       }
 }

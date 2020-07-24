@@ -2,12 +2,12 @@
     <div class="col-md-12">
         <div class="box">
             <div class="box-header with-border">
-                <h3 class="box-title">List of alerts ({{$vm.list.total || 0}} of {{alertEvents.count}})</h3>
+                <h3 class="box-title">List of alerts ({{$vm.list.total || 0}} of {{$vm.alertListCount}})</h3>
             </div>
             <div class="box-body">
                 <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
 
-                <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-show="$vm.filtering.context.showStats"></div>
+                <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-if="$vm.filtering.context.showStats"></div>
 
                 <div class="mt-s filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
 
@@ -51,13 +51,11 @@
                                         <i ng-show="$vm.filtering.context.sort.indexOf('-type') !== -1" class="fa fa-caret-down"></i>
                                       </a>
                                     </th>
-                                    <th width="80px">
-                                      <a href class="text-default" ng-click="$vm.sortByField('status')">
-                                        Status
-                                        <i ng-show="$vm.filtering.context.sort.indexOf('+status') === -1 && $vm.filtering.context.sort.indexOf('-status') === -1" class="fa fa-sort"></i>
-                                        <i ng-show="$vm.filtering.context.sort.indexOf('+status') !== -1" class="fa fa-caret-up"></i>
-                                        <i ng-show="$vm.filtering.context.sort.indexOf('-status') !== -1" class="fa fa-caret-down"></i>
-                                      </a>
+                                    <th width="80px" class="text-center">
+                                        Imported
+                                    </th>
+                                    <th width="80px" class="text-center">
+                                        Read
                                     </th>
                                     <th>
                                       Title
@@ -79,7 +77,7 @@
                                       </a>
                                     </th>
                                     <th width="80px">
-                                      Attributes
+                                      Observables
                                     </th>
                                     <th style="width: 160px">
                                       <a href class="text-default" ng-click="$vm.sortByField('date')">
@@ -88,6 +86,14 @@
                                         <i ng-show="$vm.filtering.context.sort.indexOf('+date') !== -1" class="fa fa-caret-up"></i>
                                         <i ng-show="$vm.filtering.context.sort.indexOf('-date') !== -1" class="fa fa-caret-down"></i>
                                       </a>
+                                    </th>
+                                    <th style="width: 50px">
+                                        <a href class="text-default" ng-click="$vm.sortByField('_createdBy')">
+                                          By
+                                          <i ng-show="$vm.filtering.context.sort.indexOf('+_createdBy') === -1 && $vm.filtering.context.sort.indexOf('-_createdBy') === -1" class="fa fa-sort"></i>
+                                          <i ng-show="$vm.filtering.context.sort.indexOf('+_createdBy') !== -1" class="fa fa-caret-up"></i>
+                                          <i ng-show="$vm.filtering.context.sort.indexOf('-_createdBy') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
                                     </th>
                                     <th style="width: 160px"></th>
                                 </tr>
@@ -101,8 +107,9 @@
                                     <td class="wrap">
                                         <strong>
                                             <span>{{::event.sourceRef}}</span>
-                                            <span ng-if="event.type === 'misp'" class="pl-xxs">
-                                                <a ng-href="{{$vm.urls[event.source]}}/events/{{event.sourceRef}}" target="_blank">
+
+                                            <span ng-if="event.externalLink" class="pl-xxs">
+                                                <a ng-href="{{event.externalLink}}" target="_blank" uib-tooltip="Open alert's external link">
                                                     <i class="fa fa-external-link"></i>
                                                 </a>
                                             </span>
@@ -112,14 +119,17 @@
                                     <td>
                                         <span><a href ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a></span>
                                     </td>
-                                    <td>
-                                        <span class="clickable label label-default" ng-class="{'label-danger': event.status==='New', 'label-warning': event.status === 'Updated'}" ng-click="$vm.addFilterValue('status', event.status)">{{::event.status}}</span>
+                                    <td align="center">
+                                        <span class="clickable label label-default" ng-class="{'label-danger': !event.caseId}" ng-click="$vm.addFilterValue('imported', !!event.caseId)">{{event.caseId ? 'Imported' : 'New'}}</span>
+                                    </td>
+                                    <td align="center">
+                                        <span class="clickable label label-default" ng-click="$vm.addFilterValue('read', !!event.read)">{{event.read ? 'Read' : 'Unread'}}</span>
                                     </td>
                                     <td class="wrap">
                                         <div class="case-title">
                                             <span>
-                                                <span ng-if="!event.case">{{::event.title}}</span>
-                                                <span ng-if="event.case" ui-sref="app.case.details({caseId: event.case})">
+                                                <span ng-if="!event.caseId">{{::event.title}}</span>
+                                                <span ng-if="event.caseId" ui-sref="app.case.details({caseId: event.caseId})">
                                                     <a href>{{::event.title}}</a>
                                                 </span>
                                             </span>
@@ -129,10 +139,6 @@
                                             <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
                                             <span ng-repeat="tag in event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}</span>
                                         </div>
-                                        <!-- <div class="flexwrap" ng-if="event.type === 'misp'">
-                                            <span class="mr-xxxs text-muted"><i class="fa fa-link"></i></span>
-                                            <a ng-href="{{$vm.urls[event.source]}}/events/{{event.sourceRef}}" target="_blank">Open in MISP</a>
-                                        </div> -->
                                     </td>
                                     <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
                                     <td class="text-center">
@@ -140,9 +146,12 @@
                                             <severity active="false" value="event.severity"></severity>
                                         </div>
                                     </td>
-                                    <td class="text-center">{{::event.artifacts.length || 0}}</td>
+                                    <td class="text-center">{{::event.observableCount || 0}}</td>
                                     <td>
                                         <a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | shortDate}}</a>
+                                    </td>
+                                    <td>
+                                        <user user-id="event._createdBy" icon-only="true"></user>
                                     </td>
                                     <td class="clearfix">
                                         <div class="pull-right" if-permission="manageAlert">
@@ -155,31 +164,17 @@
                                             <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as unread" ng-if="$vm.canMarkAsUnread(event)">
                                                 <i class="text-info text-20 fa fa-envelope-open-o"></i>
                                             </a>
-                                            <span class="btn btn-xs btn-icon btn-clear" uib-dropdown ng-if="$vm.appConfig.connectors.cortex.enabled" if-permission="manageAction">
-                                                <a href class="text-primary noline nowrap" ng-click="$vm.getResponders(event.id, true)" uib-dropdown-toggle>
-                                                    <i class="text-info text-20 fa fa-cog"></i>
-                                                </a>
-                                                <ul class="dropdown-menu align-right" uib-dropdown-menu>
-                                                  <li ng-if="$vm.responders && $vm.responders.length === 0">
-                                                    <a href ng-click="$vm.getResponders(event.id, true)">
-                                                      <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
-                                                    </a>
-                                                  </li>
-                                                  <li ng-repeat="responder in $vm.responders">
-                                                    <a href ng-click="$vm.runResponder(responder.id, responder.name, event)">
-                                                      <strong>{{responder.name}}</strong>
-                                                      <br>
-                                                      <small>{{responder.description}}</small></a>
-                                                  </li>
-                                                </ul>
-                                            </span>
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.getResponders(event, true)" uib-tooltip="Run responders"
+                                                ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction">
+                                                <i class="text-info text-20 fa fa-cog"></i>
+                                            </a>
                                         </div>
 
                                         <div class="pull-right">
-                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.import(event)" uib-tooltip="Preview and Import" ng-if="!event.case">
+                                            <a class="btn btn-xs btn-icon btn-clear" href ng-click="$vm.import(event)" uib-tooltip="Preview and Import" ng-if="!event.caseId">
                                                 <i class="text-info text-20 fa fa-file-text-o"></i>
                                             </a>
-                                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.case})" uib-tooltip="View case" ng-if="event.case">
+                                            <a class="btn btn-xs btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.caseId})" uib-tooltip="View case" ng-if="event.caseId">
                                                 <i class="text-info text-20 fa fa-search"></i>
                                             </a>
                                         </div>

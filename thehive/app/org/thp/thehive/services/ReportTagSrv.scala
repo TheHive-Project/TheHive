@@ -1,21 +1,20 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
 import gremlin.scala.{Graph, GremlinScala, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.services.RichVertexGremlinScala
+import org.thp.scalligraph.services.{EdgeSrv, RichVertexGremlinScala, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
-
 import org.thp.thehive.models.{Observable, ObservableReportTag, ReportTag}
 
+import scala.util.Try
+
 @Singleton
-class ReportTagSrv @Inject() (observableSrv: ObservableSrv)(implicit db: Database) extends VertexSrv[ReportTag, ReportTagSteps] {
+class ReportTagSrv @Inject() (observableSrv: ObservableSrv)(implicit @Named("with-thehive-schema") db: Database)
+    extends VertexSrv[ReportTag, ReportTagSteps] {
   val observableReportTagSrv = new EdgeSrv[ObservableReportTag, Observable, ReportTag]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ReportTagSteps = new ReportTagSteps(raw)
@@ -33,7 +32,8 @@ class ReportTagSrv @Inject() (observableSrv: ObservableSrv)(implicit db: Databas
   }
 }
 
-class ReportTagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[ReportTag](raw) {
+class ReportTagSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[ReportTag](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): VertexSteps[ReportTag] = new ReportTagSteps(raw)
 
   def observable: ObservableSteps = new ObservableSteps(raw.inTo[ObservableReportTag])

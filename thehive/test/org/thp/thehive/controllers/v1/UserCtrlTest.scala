@@ -1,15 +1,13 @@
 package org.thp.thehive.controllers.v1
 
-import scala.util.{Success, Try}
-
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import org.thp.scalligraph.auth._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
-import org.thp.thehive.services.{OrganisationSrv, ProfileSrv}
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
+
+import scala.util.{Success, Try}
 
 case class TestUser(login: String, name: String, profile: String, permissions: Set[String], organisation: String)
 
@@ -38,7 +36,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
         name = "Default admin user",
         profile = "admin",
         permissions = Permissions.adminPermissions.map(_.toString),
-        organisation = OrganisationSrv.administration.name
+        organisation = Organisation.administration.name
       )
 
       TestUser(resultCase) must_=== expected
@@ -53,7 +51,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
               name = "create user test",
               password = Some("azerty"),
               profile = "read-only",
-              organisation = Some(OrganisationSrv.administration.name),
+              organisation = Some(Organisation.administration.name),
               avatar = None
             )
           )
@@ -67,7 +65,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
         name = "create user test",
         profile = "read-only",
         permissions = Set.empty,
-        organisation = OrganisationSrv.administration.name
+        organisation = Organisation.administration.name
       )
 
       TestUser(resultCase) must_=== expected
@@ -100,7 +98,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
       val expected = TestUser(
         login = "certadmin@thehive.local",
         name = "certadmin",
-        profile = ProfileSrv.orgAdmin.name,
+        profile = Profile.orgAdmin.name,
         permissions = Set(
           Permissions.manageShare,
           Permissions.manageAnalyse,

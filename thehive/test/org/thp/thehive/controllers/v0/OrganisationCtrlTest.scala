@@ -1,13 +1,12 @@
 package org.thp.thehive.controllers.v0
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.services.OrganisationSrv
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
 
 class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
   "organisation controller" should {
@@ -19,15 +18,15 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
       contentAsJson(result).as[OutputOrganisation].name must_=== "orga1"
 
-      val requestBulkLink = FakeRequest("PUT", s"/api/organisation/admin/links")
+      val requestBulkLink = FakeRequest("PUT", s"/api/organisation/cert/links")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"organisations":["orga1"]}"""))
-      val resultBulkLink = app[OrganisationCtrl].bulkLink("admin")(requestBulkLink)
+      val resultBulkLink = app[OrganisationCtrl].bulkLink("cert")(requestBulkLink)
       status(resultBulkLink) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(resultBulkLink)}")
 
-      val requestLinks = FakeRequest("GET", s"/api/organisation/admin/links")
+      val requestLinks = FakeRequest("GET", s"/api/organisation/cert/links")
         .withHeaders("user" -> "admin@thehive.local")
-      val resultLinks = app[OrganisationCtrl].listLinks("admin")(requestLinks)
+      val resultLinks = app[OrganisationCtrl].listLinks("cert")(requestLinks)
       status(resultLinks) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(resultLinks)}")
       contentAsJson(resultLinks).as[List[OutputOrganisation]].map(_.name) must contain("orga1")
     }
@@ -77,15 +76,15 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 204
     }
 
-    "link organisations to admin organisation" in testApp { app =>
-      val request = FakeRequest("PUT", s"/api/organisation/admin/link/cert")
+    "link organisations to soc organisation" in testApp { app =>
+      val request = FakeRequest("PUT", s"/api/organisation/soc/link/cert")
         .withHeaders("user" -> "admin@thehive.local")
-      val result = app[OrganisationCtrl].link("admin", "cert")(request)
+      val result = app[OrganisationCtrl].link("soc", "cert")(request)
       status(result) shouldEqual 201
 
-      val requestLinks = FakeRequest("GET", s"/api/organisation/admin/links")
+      val requestLinks = FakeRequest("GET", s"/api/organisation/soc/links")
         .withHeaders("user" -> "admin@thehive.local")
-      val resultLinks = app[OrganisationCtrl].listLinks("admin")(requestLinks)
+      val resultLinks = app[OrganisationCtrl].listLinks("soc")(requestLinks)
       status(resultLinks) shouldEqual 200
       contentAsJson(resultLinks).as[List[OutputOrganisation]] must not(beEmpty)
     }

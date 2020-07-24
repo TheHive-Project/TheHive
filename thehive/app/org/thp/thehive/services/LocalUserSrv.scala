@@ -1,12 +1,12 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, User => ScalligraphUser, UserSrv => ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.utils.Instance
 import org.thp.scalligraph.{AuthenticationError, CreateError, NotFoundError}
-import org.thp.thehive.models.{Permissions, User}
+import org.thp.thehive.models.{Organisation, Permissions, Profile, User}
 import play.api.Configuration
 import play.api.libs.json.JsObject
 import play.api.mvc.RequestHeader
@@ -14,8 +14,13 @@ import play.api.mvc.RequestHeader
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class LocalUserSrv @Inject() (db: Database, userSrv: UserSrv, organisationSrv: OrganisationSrv, profileSrv: ProfileSrv, configuration: Configuration)
-    extends ScalligraphUserSrv {
+class LocalUserSrv @Inject() (
+    @Named("with-thehive-schema") db: Database,
+    userSrv: UserSrv,
+    organisationSrv: OrganisationSrv,
+    profileSrv: ProfileSrv,
+    configuration: Configuration
+) extends ScalligraphUserSrv {
 
   override def getAuthContext(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =
     db.roTransaction { implicit graph =>
@@ -30,9 +35,9 @@ class LocalUserSrv @Inject() (db: Database, userSrv: UserSrv, organisationSrv: O
           .orElse {
             organisationName.flatMap { org =>
               userSteps
-                .getAuthContext(requestId, OrganisationSrv.administration.name)
+                .getAuthContext(requestId, Organisation.administration.name)
                 .headOption()
-                .map(_.changeOrganisation(org))
+                .map(authContext => authContext.changeOrganisation(org, authContext.permissions))
             }
           }
           .fold[Try[AuthContext]](Failure(AuthenticationError("Authentication failure")))(Success.apply)
@@ -55,7 +60,7 @@ class LocalUserSrv @Inject() (db: Database, userSrv: UserSrv, organisationSrv: O
           profileStr <- readData(userInfo, profileFieldName, defaultProfile)
           profile    <- profileSrv.getOrFail(profileStr)
           orgaStr    <- readData(userInfo, organisationFieldName, defaultOrg)
-          if orgaStr != OrganisationSrv.administration.name || profile.name == ProfileSrv.admin.name
+          if orgaStr != Organisation.administration.name || profile.name == Profile.admin.name
           organisation <- organisationSrv.getOrFail(orgaStr)
           richUser <- userSrv.addOrCreateUser(
             User(userId, userId, None, locked = false, None, None),
@@ -68,11 +73,15 @@ class LocalUserSrv @Inject() (db: Database, userSrv: UserSrv, organisationSrv: O
     } else Failure(CreateError(s"Autocreate on single sign on is $autocreate"))
   }
 
-  override def getSystemAuthContext: AuthContext =
+  override def getSystemAuthContext: AuthContext = LocalUserSrv.getSystemAuthContext
+}
+
+object LocalUserSrv {
+  def getSystemAuthContext: AuthContext =
     AuthContextImpl(
-      UserSrv.system.login,
-      UserSrv.system.name,
-      OrganisationSrv.administration.name,
+      User.system.login,
+      User.system.name,
+      Organisation.administration.name,
       Instance.getInternalId,
       Permissions.all
     )

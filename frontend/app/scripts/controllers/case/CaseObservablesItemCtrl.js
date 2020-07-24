@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesItemCtrl',
-        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, $uibModal, CaseSrv, ModalSrv, SecuritySrv, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
+        function ($scope, $state, $stateParams, $q, $filter, $timeout, $document, $uibModal, PaginatedQuerySrv, CaseSrv, ModalSrv, SecuritySrv, CaseTabsSrv, CaseArtifactSrv, CortexSrv, PSearchSrv, AnalyzerSrv, NotificationSrv, VersionSrv, TagSrv, appConfig, artifact) {
             var observableId = $stateParams.itemId,
                 observableName = 'observable-' + observableId;
 
@@ -68,30 +68,24 @@
 
                 var connectors = $scope.appConfig.connectors;
                 if(connectors.cortex && connectors.cortex.enabled) {
-                    $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
-                          scope: $scope,
-                          streamObjectType: 'action',
-                          filter: {
-                              _and: [
-                                  {
-                                      _not: {
-                                          status: 'Deleted'
-                                      }
-                                  }, {
-                                      objectType: 'case_artifact'
-                                  }, {
-                                      objectId: artifact.id
-                                  }
-                              ]
-                          },
-                          sort: ['-startDate'],
-                          pageSize: 100,
-                          guard: function(updates) {
-                              return _.find(updates, function(item) {
-                                  return (item.base.object.objectType === 'case_artifact') && (item.base.object.objectId === artifact.id);
-                              }) !== undefined;
-                          }
-                      });
+                    $scope.actions = new PaginatedQuerySrv({
+                        name: 'case-observable-actions',
+                        version: 'v1',
+                        scope: $scope,
+                        streamObjectType: 'action',
+                        loadAll: true,
+                        sort: ['-startDate'],
+                        pageSize: 100,
+                        operations: [
+                            { '_name': 'getObservable', 'idOrName': artifact.id },
+                            { '_name': 'actions' }
+                        ],
+                        guard: function(updates) {
+                            return _.find(updates, function(item) {
+                                return (item.base.details.objectType === 'Observable') && (item.base.details.objectId === artifact.id);
+                            }) !== undefined;
+                        }
+                    });
                 }
             };
 
@@ -240,7 +234,7 @@
                 var promise = serverId ? $q.resolve(serverId) : CortexSrv.getServers([analyzerName]);
 
                 promise.then(function (serverId) {
-                        return $scope._runAnalyzer(serverId, analyzerName, $scope.artifact.id);
+                        return $scope._runAnalyzer(serverId, analyzerName, $scope.artifact._id);
                     })
                     .then(function () {
                         NotificationSrv.log('Analyzer ' + analyzerName + ' has been successfully started for observable: ' + artifactName, 'success');
@@ -252,7 +246,7 @@
             };
 
             $scope.runAll = function () {
-                var artifactId = $scope.artifact.id;
+                var artifactId = $scope.artifact._id;
                 var artifactName = $scope.artifact.data || $scope.artifact.attachment.name;
                 var analyzerIds = _.pluck(_.filter($scope.analyzers, function (a) {
                     return a.active === true;
@@ -269,30 +263,31 @@
                     });
             };
 
-            $scope.getObsResponders = function(observableId, force) {
+            $scope.getObsResponders = function(observable, force) {
                 if(!force && $scope.obsResponders !== null) {
                    return;
                 }
 
                 $scope.obsResponders = null;
-                CortexSrv.getResponders('case_artifact', observableId)
+                CortexSrv.getResponders('case_artifact', observable._id)
                   .then(function(responders) {
                       $scope.obsResponders = responders;
+                      return CortexSrv.promntForResponder(responders);
                   })
-                  .catch(function(err) {
-                      NotificationSrv.error('observablesList', err.data, err.status);
-                  });
-            };
-
-            $scope.runResponder = function(responderId, responderName, artifact) {
-                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, 'id'))
                   .then(function(response) {
-                      var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
+                      if(response && _.isString(response)) {
+                          NotificationSrv.log(response, 'warning');
+                      } else {
+                          return CortexSrv.runResponder(response.id, response.name, 'case_artifact', _.pick(observable, '_id'));
+                      }
+                  })
+                  .then(function(response){
+                      var data = '['+$filter('fang')(observable.data || observable.attachment.name)+']';
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
                   })
-                  .catch(function(response) {
-                      if(response && !_.isString(response)) {
-                          NotificationSrv.error('observablesList', response.data, response.status);
+                  .catch(function(err) {
+                      if(err && !_.isString(err)) {
+                          NotificationSrv.error('Observable Details', err.data, err.status);
                       }
                   });
             };

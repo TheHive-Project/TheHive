@@ -2,11 +2,6 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.{Date, UUID}
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
-
-import play.api.test.PlaySpecification
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
@@ -17,8 +12,14 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
+import play.api.test.PlaySpecification
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with TestAppBuilder {
+  sequential
+
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
   override def appConfigure: AppBuilder =
@@ -46,7 +47,6 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
         .searchEvents(None)
         .runWith(Sink.seq)(app[Materializer])
       val e = await(events)
-//        println(e)
       Seq(1, 2, 3) must contain(2)
       e must contain(
         Event(
@@ -55,7 +55,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
           info = "test1 -> 1.2",
           threatLevel = Some(1),
           analysis = Some(1),
-          date = new Date(1566511200000L),
+          date = Event.simpleDateFormat.parse("2019-08-23"),
           publishDate = new Date(1566913355000L),
           org = "ORGNAME",
           orgc = "ORGNAME",
@@ -69,7 +69,6 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
   }
 
   "MISP service " should {
-    // FIXME sometimes it fails ?!
     "import events" in testApp { app =>
       await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
 
@@ -82,9 +81,9 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
           sourceRef = "1",
           externalLink = Some("https://misp.test/events/1"),
           title = "#1 test1 -> 1.2",
-          description = "Imported from MISP Event #1, created at Fri Aug 23 00:00:00 CEST 2019",
+          description = s"Imported from MISP Event #1, created at ${Event.simpleDateFormat.parse("2019-08-23")}",
           severity = 3,
-          date = new Date(1566511200000L),
+          date = Event.simpleDateFormat.parse("2019-08-23"),
           lastSyncDate = new Date(1566913355000L),
           tlp = 2,
           pap = 2,
@@ -106,7 +105,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
         .map(o => (o.`type`.name, o.data.map(_.data), o.tlp, o.message, o.tags.map(_.toString).toSet))
 //        println(observables.mkString("\n"))
       observables must contain(
-        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp.category=\"Artifacts dropped\"", "misp.type=\"filename\""))
+        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
       )
     }
   }

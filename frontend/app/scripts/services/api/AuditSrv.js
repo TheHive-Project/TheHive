@@ -15,7 +15,7 @@
                     }
                 }).then(function(response) {
                     var data = response.data;
-                    
+
                     angular.forEach(data, function(d) {
                         ret.push(d);
                     });
@@ -41,6 +41,8 @@
                                     }
                                     messageAdded += 1;
                                 } else if(alreadyInFlow && message.base.objectType === 'case_artifact_job') {
+                                    ret[messageAdded] = message;
+                                } else if(alreadyInFlow && message.base.objectType === 'action') {
                                     ret[messageAdded] = message;
                                 }
 

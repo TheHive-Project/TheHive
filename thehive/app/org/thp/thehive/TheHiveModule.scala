@@ -1,21 +1,35 @@
 package org.thp.thehive
 
-import akka.actor.{ActorRef, PoisonPill}
-import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
+import akka.actor.ActorRef
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.services.{HadoopStorageSrv, S3StorageSrv}
+import org.thp.scalligraph.services.{GenIntegrityCheckOps, HadoopStorageSrv, S3StorageSrv}
+import org.thp.thehive.models.{DatabaseProvider, TheHiveSchemaDefinition}
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{CaseDedupActor, CaseDedupActorProvider, DataDedupActor, DataDedupActorProvider, TOTPAuthSrvProvider}
+import org.thp.thehive.services.{
+  CaseIntegrityCheckOps,
+  CaseTemplateIntegrityCheckOps,
+  CustomFieldIntegrityCheckOps,
+  DataIntegrityCheckOps,
+  FlowActorProvider,
+  ImpactStatusIntegrityCheckOps,
+  IntegrityCheckActorProvider,
+  ObservableTypeIntegrityCheckOps,
+  OrganisationIntegrityCheckOps,
+  ProfileIntegrityCheckOps,
+  ResolutionStatusIntegrityCheckOps,
+  TOTPAuthSrvProvider,
+  TagIntegrityCheckOps,
+  UserIntegrityCheckOps
+}
 import play.api.libs.concurrent.AkkaGuiceSupport
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
 import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.models.{SchemaUpdater, TheHiveSchema}
 import org.thp.thehive.services.notification.NotificationActor
 import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
 //import org.thp.scalligraph.neo4j.Neo4jDatabase
@@ -63,9 +77,10 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     notifierBindings.addBinding.to[WebhookProvider]
 
     configuration.get[String]("db.provider") match {
-      case "janusgraph" => bind(classOf[Database]).to(classOf[JanusDatabase])
+      case "janusgraph" => bind[Database].to[JanusDatabase]
       case other        => sys.error(s"Authentication provider [$other] is not recognized")
     }
+    bind[Database].annotatedWithName("with-thehive-schema").toProvider[DatabaseProvider]
 
     configuration.get[String]("storage.provider") match {
       case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
@@ -82,42 +97,27 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV1]
     ScalaMultibinder.newSetBinder[Connector](binder)
     val schemaBindings = ScalaMultibinder.newSetBinder[Schema](binder)
-    schemaBindings.addBinding.to[TheHiveSchema]
+    schemaBindings.addBinding.to[TheHiveSchemaDefinition]
 
     bindActor[ConfigActor]("config-actor")
     bindActor[NotificationActor]("notification-actor")
 
-    bindActor[DataDedupActor](
-      "data-dedup-actor-singleton",
-      props =>
-        ClusterSingletonManager
-          .props(
-            singletonProps = props,
-            terminationMessage = PoisonPill,
-            settings = ClusterSingletonManagerSettings(configuration.get[Configuration]("akka.cluster.singleton").underlying)
-          )
-    )
-    bind[ActorRef]
-      .annotatedWithName("data-dedup-actor")
-      .toProvider[DataDedupActorProvider]
-      .asEagerSingleton()
+    val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[GenIntegrityCheckOps](binder)
+    integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[OrganisationIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[TagIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[UserIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[ImpactStatusIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[ResolutionStatusIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[ObservableTypeIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[CustomFieldIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[CaseTemplateIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[DataIntegrityCheckOps]
+    integrityCheckOpsBindings.addBinding.to[CaseIntegrityCheckOps]
+    bind[ActorRef].annotatedWithName("integrity-check-actor").toProvider[IntegrityCheckActorProvider]
 
-    bindActor[CaseDedupActor](
-      "case-dedup-actor-singleton",
-      props =>
-        ClusterSingletonManager
-          .props(
-            singletonProps = props,
-            terminationMessage = PoisonPill,
-            settings = ClusterSingletonManagerSettings(configuration.get[Configuration]("akka.cluster.singleton").underlying)
-          )
-    )
-    bind[ActorRef]
-      .annotatedWithName("case-dedup-actor")
-      .toProvider[CaseDedupActorProvider]
-      .asEagerSingleton()
+    bind[ActorRef].annotatedWithName("flow-actor").toProvider[FlowActorProvider]
 
-    bind[SchemaUpdater].asEagerSingleton()
     bind[ClusterSetup].asEagerSingleton()
     ()
   }

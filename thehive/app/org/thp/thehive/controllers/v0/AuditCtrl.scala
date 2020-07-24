@@ -1,34 +1,40 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
-import gremlin.scala.{By, Key}
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.Order
+import akka.actor.ActorRef
+import akka.pattern.ask
+import akka.util.Timeout
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.{ParamQuery, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.RichAudit
+import org.thp.thehive.services.FlowActor.{AuditIds, FlowId}
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 
 @Singleton
 class AuditCtrl @Inject() (
     entryPoint: Entrypoint,
     properties: Properties,
     auditSrv: AuditSrv,
+    @Named("flow-actor") flowActor: ActorRef,
     val caseSrv: CaseSrv,
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
-    implicit val db: Database
+    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val schema: Schema,
+    implicit val ec: ExecutionContext
 ) extends QueryableCtrl
     with AuditRenderer {
+
+  implicit val timeout: Timeout = Timeout(5.minutes)
 
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, AuditSteps](
     "getAudit",
@@ -50,29 +56,32 @@ class AuditCtrl @Inject() (
     )
   override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
 
-  def flow(caseId: Option[String], count: Option[Int]): Action[AnyContent] =
+  def flow(caseId: Option[String]): Action[AnyContent] =
     entryPoint("audit flow")
-      .authRoTransaction(db) { implicit request => implicit graph =>
-        val auditTraversal: AuditSteps = auditSrv.initSteps.has("mainAction", true)
-        val audits = caseId
-          .filterNot(_ == "any")
-          .fold(auditTraversal)(cid => auditTraversal.forCase(cid))
-          .visible
-          .order(List(By(Key[Date]("_createdAt"), Order.desc)))
-          .range(0, count.getOrElse(10).toLong)
-          .richAuditWithCustomRenderer(auditRenderer)
-          .toIterator
-          .map {
-            case (audit, obj) =>
-              audit
-                .toJson
-                .as[JsObject]
-                .deepMerge(
-                  Json.obj("base" -> Json.obj("object" -> obj, "rootId" -> audit.context._id), "summary" -> jsonSummary(auditSrv, audit.requestId))
-                )
-          }
-          .toSeq
-
-        Success(Results.Ok(JsArray(audits)))
+      .asyncAuth { implicit request =>
+        (flowActor ? FlowId(request.organisation, caseId.filterNot(_ == "any"))).map {
+          case AuditIds(auditIds) if auditIds.isEmpty => Results.Ok(JsArray.empty)
+          case AuditIds(auditIds) =>
+            val audits = db.roTransaction { implicit graph =>
+              auditSrv
+                .getByIds(auditIds: _*)
+                .richAuditWithCustomRenderer(auditRenderer)
+                .toIterator
+                .map {
+                  case (audit, obj) =>
+                    audit
+                      .toJson
+                      .as[JsObject]
+                      .deepMerge(
+                        Json.obj(
+                          "base"    -> Json.obj("object" -> obj, "rootId" -> audit.context._id),
+                          "summary" -> jsonSummary(auditSrv, audit.requestId)
+                        )
+                      )
+                }
+                .toBuffer
+            }
+            Results.Ok(JsArray(audits))
+        }
       }
 }

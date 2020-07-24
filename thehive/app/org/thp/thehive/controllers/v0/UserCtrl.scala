@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -22,7 +22,7 @@ import scala.util.{Failure, Success}
 @Singleton
 class UserCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
@@ -47,10 +47,10 @@ class UserCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],
-    (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
+    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext.organisation))
+    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext))
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
@@ -64,7 +64,7 @@ class UserCtrl @Inject() (
           .orElse(
             userSrv
               .get(request.userId)
-              .richUser(OrganisationSrv.administration.name)
+              .richUser(Organisation.administration.name)
               .getOrFail("User")
           )
           .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation))
@@ -80,10 +80,10 @@ class UserCtrl @Inject() (
             for {
               _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
               organisation <- organisationSrv.getOrFail(organisationName)
-              profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail(ProfileSrv.admin.name)
-              else if (inputUser.roles.contains("write")) profileSrv.getOrFail(ProfileSrv.analyst.name)
-              else if (inputUser.roles.contains("read")) profileSrv.getOrFail(ProfileSrv.readonly.name)
-              else profileSrv.getOrFail(ProfileSrv.readonly.name)
+              profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail(Profile.admin.name)
+              else if (inputUser.roles.contains("write")) profileSrv.getOrFail(Profile.analyst.name)
+              else if (inputUser.roles.contains("read")) profileSrv.getOrFail(Profile.readonly.name)
+              else profileSrv.getOrFail(Profile.readonly.name)
               user <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
             } yield user -> userSrv.canSetPassword(user.user)
           }

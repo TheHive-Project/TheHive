@@ -1,8 +1,8 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
 import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
@@ -14,7 +14,13 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Success
 
 @Singleton
-class AuditCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Properties, auditSrv: AuditSrv) extends QueryableCtrl {
+class AuditCtrl @Inject() (
+    entrypoint: Entrypoint,
+    @Named("with-thehive-schema") db: Database,
+    properties: Properties,
+    auditSrv: AuditSrv,
+    implicit val schema: Schema
+) extends QueryableCtrl {
 
   val entityName: String = "audit"
 
@@ -31,11 +37,11 @@ class AuditCtrl @Inject() (entrypoint: Entrypoint, db: Database, properties: Pro
     Query.withParam[OutputParam, AuditSteps, PagedResult[RichAudit]](
       "page",
       FieldsParser[OutputParam],
-      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
+      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richAudit)
     )
   override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
 
-  def flow(): Action[AnyContent] =
+  def flow: Action[AnyContent] =
     entrypoint("audit flow")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val audits = auditSrv

@@ -28,7 +28,7 @@ class AuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
-)(implicit db: Database, schema: Schema)
+)(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Audit, AuditSteps] { auditSrv =>
   lazy val userSrv: UserSrv                               = userSrvProvider.get
   val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
@@ -184,8 +184,8 @@ class AuditSrv @Inject() (
       if (details == JsObject.empty) Success(())
       else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.delete, entity, None), None, None)
+    def delete(entity: E with Entity, context: Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.delete, entity, None), Some(context), None)
   }
 
   class UserAudit extends SelfContextObjectAudit[User] {
@@ -273,107 +273,85 @@ class AuditSrv @Inject() (
 }
 
 @EntitySteps[Audit]
-class AuditSteps(raw: GremlinScala[Vertex])(implicit db: Database, schema: Schema, graph: Graph) extends VertexSteps[Audit](raw) {
+class AuditSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Audit](raw) {
 
-  def organisation: OrganisationSteps =
-    new OrganisationSteps(getOrganisation(raw))
-
-  private def getOrganisation(r: GremlinScala[Vertex]): GremlinScala[Vertex] =
-    r.outTo[AuditContext]
-      .choose[Label, Vertex](
-        on = _.label(),
-        BranchCase("Case", new CaseSteps(_).organisations.raw),
-        BranchCase("Task", new TaskSteps(_).`case`.organisations.raw),
-        BranchCase("CaseTemplate", new CaseTemplateSteps(_).organisation.raw),
-        BranchCase("Alert", new AlertSteps(_).organisation.raw),
-        BranchCase("User", new UserSteps(_).organisations.raw),
-        BranchCase("Dashboard", new DashboardSteps(_).organisation.raw)
-        //          BranchOtherwise(_)
-      )
-
-  def auditContextObjectOrganisation: Traversal[
+  def auditContextObjectOrganisation(implicit schema: Schema): Traversal[
     (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]),
     (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity])
   ] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[AuditContext].fold()))
-            .and(By(__[Vertex].outTo[Audited].fold()))
-            .and(By(getOrganisation(__[Vertex]).fold()))
-        )
-        .map {
-          case (audit, context, obj, organisation) =>
-            (
-              audit.as[Audit],
-              context.asScala.headOption.map(_.asEntity),
-              obj.asScala.headOption.map(_.asEntity),
-              organisation.asScala.headOption.map(_.as[Organisation])
-            )
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.context.fold)
+          .by(_.`object`.fold)
+          .by(_.organisation.fold)
+      )
+      .map {
+        case (audit, context, obj, organisation) =>
+          (
+            audit.as[Audit],
+            context.asScala.headOption.map(_.asEntity),
+            obj.asScala.headOption.map(_.asEntity),
+            organisation.asScala.headOption.map(_.as[Organisation])
+          )
+      }
 
-  def richAudit: Traversal[RichAudit, RichAudit] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[AuditContext].in().hasLabel("Share").outTo[ShareCase].fold()))
-            .and(By(__[Vertex].outTo[AuditContext]))
-            .and(By(__[Vertex].outTo[Audited].fold()))
-        )
-        .map {
-          case (audit, context, visibilityContext, obj) =>
-            val ctx = if (context.isEmpty) visibilityContext else context.get(0)
-            RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity))
-        }
-    )
+  def richAudit(implicit schema: Schema): Traversal[RichAudit, RichAudit] =
+    this
+      .project(
+        _.by
+          .by(_.`case`.fold)
+          .by(_.context)
+          .by(_.`object`.fold)
+      )
+      .map {
+        case (audit, context, visibilityContext, obj) =>
+          val ctx = if (context.isEmpty) visibilityContext else context.get(0)
+          RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity))
+
+      }
 
   def richAuditWithCustomRenderer[A](
       entityRenderer: AuditSteps => TraversalLike[_, A]
-  ): Traversal[(RichAudit, A), (RichAudit, A)] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[AuditContext].in().hasLabel("Share").outTo[ShareCase].fold()))
-            .and(By(__[Vertex].outTo[AuditContext]))
-            .and(By(__[Vertex].outTo[Audited].fold()))
-            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
-        )
-        .map {
-          case (audit, context, visibilityContext, obj, renderedObject) =>
-            val ctx = if (context.isEmpty) visibilityContext else context.get(0)
-            RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
-        }
-    )
-
-  def forCase(caseId: String): AuditSteps =
-    newInstance(
-      raw.filter(
-        _.outTo[AuditContext]
-          .in()
-          .hasLabel("Share")
-          .outTo[ShareCase]
-          .hasId(caseId)
+  )(implicit schema: Schema): Traversal[(RichAudit, A), (RichAudit, A)] =
+    this
+      .project(
+        _.by
+          .by(_.`case`.fold)
+          .by(_.context.fold)
+          .by(_.`object`.fold)
+          .by(entityRenderer)
       )
+      .collect {
+        case (audit, context, visibilityContext, obj, renderedObject) if !context.isEmpty || !visibilityContext.isEmpty =>
+          val ctx = if (context.isEmpty) visibilityContext.get(0) else context.get(0)
+          RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.get(0).asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
+      }
+
+  def forCase(caseId: String): AuditSteps = this.filter(_.`case`.hasId(caseId))
+
+  def `case`: CaseSteps =
+    new CaseSteps(
+      raw
+        .outTo[AuditContext]
+        .coalesce(_.in().hasLabel("Share"), _.hasLabel("Share"))
+        .outTo[ShareCase]
     )
 
+  def organisation: OrganisationSteps = new OrganisationSteps(
+    raw
+      .outTo[AuditContext]
+      .coalesce(
+        _.hasLabel("Organisation"),
+        _.in().hasLabel("Share").inTo[OrganisationShare],
+        _.both().hasLabel("Organisation")
+      )
+  )
   override def newInstance(newRaw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(newRaw)
 
-  def visible(implicit authContext: AuthContext): AuditSteps = newInstance(
-    raw.filter(
-      _.outTo[AuditContext]                          // TODO use choose step
-        .coalesce(                                   // find organisation
-          _.inTo[ShareCase].inTo[OrganisationShare], // case
-          _.inTo[ShareTask].inTo[OrganisationShare], // task
-          _.inTo[ShareObservable].inTo[OrganisationShare],
-          _.outTo[AlertOrganisation]
-        )
-        .has(Key("name") of authContext.organisation)
-    )
-  )
+  def visible(implicit authContext: AuthContext): AuditSteps = visible(authContext.organisation)
+
+  def visible(organisationName: String): AuditSteps = this.filter(_.organisation.has("name", organisationName))
 
   override def newInstance(): AuditSteps = new AuditSteps(raw.clone())
 

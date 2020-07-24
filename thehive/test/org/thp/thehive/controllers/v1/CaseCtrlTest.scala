@@ -4,7 +4,7 @@ import java.util.Date
 
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.{JsNull, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestCase(
@@ -38,7 +38,7 @@ object TestCase {
       outputCase.pap,
       outputCase.status,
       outputCase.summary,
-      outputCase.user,
+      outputCase.assignee,
       outputCase.customFields
     )
 }
@@ -112,7 +112,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         severity = 1,
         startDate = now,
         endDate = None,
-        tags = Set("tag1", "tag2", "testNamespace.testPredicate=\"spam\"", "testNamespace.testPredicate=\"src:mail\""),
+        tags = Set("tag1", "tag2", "testNamespace:testPredicate=\"spam\"", "testNamespace:testPredicate=\"src:mail\""),
         flag = false,
         tlp = 1,
         pap = 3,
@@ -120,8 +120,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         summary = None,
         user = Some("certuser@thehive.local"),
         customFields = Set(
-          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", None),
-          OutputCustomFieldValue("string1", "string custom field", "string", Some("string1 custom field"))
+          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", JsNull, 0),
+          OutputCustomFieldValue("string1", "string custom field", "string", JsString("string1 custom field"), 0)
         )
       )
 
@@ -139,7 +139,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         severity = 2,
         startDate = new Date(1531667370000L),
         endDate = None,
-        tags = Set("testNamespace.testPredicate=\"t1\"", "testNamespace.testPredicate=\"t3\""),
+        tags = Set("testNamespace:testPredicate=\"t1\"", "testNamespace:testPredicate=\"t3\""),
         flag = false,
         tlp = 2,
         pap = 2,

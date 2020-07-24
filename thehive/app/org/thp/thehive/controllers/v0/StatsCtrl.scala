@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.AttributeCheckingError
 import org.thp.scalligraph.controllers.{Entrypoint, Field, FieldsParser}
@@ -13,7 +13,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 class StatsCtrl @Inject() (
     entrypoint: Entrypoint,
     queryExecutor: TheHiveQueryExecutor,
-    db: Database
+    @Named("with-thehive-schema") db: Database
 ) {
   lazy val logger: Logger = Logger(getClass)
 

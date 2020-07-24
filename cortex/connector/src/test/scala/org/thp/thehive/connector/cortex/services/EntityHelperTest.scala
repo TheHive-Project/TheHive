@@ -1,13 +1,12 @@
 package org.thp.thehive.connector.cortex.services
 
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{AlertSrv, ObservableSrv, TaskSrv}
+import play.api.test.PlaySpecification
 
 class EntityHelperTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =

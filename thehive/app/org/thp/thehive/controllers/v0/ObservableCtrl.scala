@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
@@ -20,7 +20,7 @@ import scala.util.Success
 @Singleton
 class ObservableCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
@@ -151,7 +151,7 @@ class ObservableCtrl @Inject() (
             .getByIds(obsId)
             .can(Permissions.manageObservable)
             .getOrFail("Observable")
-          _ <- observableSrv.cascadeRemove(observable)
+          _ <- observableSrv.remove(observable)
         } yield Results.NoContent
       }
 }

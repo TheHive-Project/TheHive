@@ -2,49 +2,62 @@
   <a class="btn btn-primary pull-right" href ng-click="$ctrl.openModal('create', {})"><i class="fa fa-plus"></i> Add user</a>
 </p> -->
 
-<div class="row" ng-if="$ctrl.users.length === 0">
+<div class="row" ng-if="$ctrl.users.total === 0">
     <div class="col-md-12">
         <div class="empty-message">No users defined.</div>
     </div>
 </div>
 
-<div class="row" ng-if="$ctrl.users.length > 0">
+<div class="row" ng-if="$ctrl.users.total > 0">
     <div class="col-md-12">
+        <psearch control="$ctrl.users"></psearch>
+
         <table class="table table-striped case-list valigned">
             <thead>
                 <tr>
-                    <th style="width: 120px">Status</th>
-                    <th>User details</th>
-                    <th></th>
+                    <th style="width: 80px">Status</th>
+                    <th>
+                        <a href class="text-default" ng-click="$ctrl.sortByField('login')">
+                            Login
+                            <i ng-show="$ctrl.sort.indexOf('+login') === -1 && $ctrl.sort.indexOf('-login') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+login') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$ctrl.sort.indexOf('-login') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th style="width: 150px">
+                        <a href class="text-default" ng-click="$ctrl.sortByField('name')">
+                            Full Name
+                            <i ng-show="$ctrl.sort.indexOf('+name') === -1 && $ctrl.sort.indexOf('-name') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+name') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$ctrl.sort.indexOf('-name') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th style="width: 140px">Profile</th>
                     <th>Password</th>
                     <th>API Key</th>
                     <th class="text-center" style="width: 100px" ng-if="$ctrl.mfaEnabled">MFA</th>
-                    <th style="width: 180px"></th>
+                    <th class="text-center" style="width: 120px">
+                        <a href class="text-default" ng-click="$ctrl.sortByField('_updatedAt')">
+                            Updated At
+                            <i ng-show="$ctrl.sort.indexOf('+_updatedAt') === -1 && $ctrl.sort.indexOf('-_updatedAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+_updatedAt') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$ctrl.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th style="width: 100px"></th>
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="user in $ctrl.users track by user._id">
+                <tr ng-repeat="user in $ctrl.users.values track by user._id">
                     <td>
                         <span class="label label-default label-lg" ng-class="{false: 'label-success', true: 'label-danger'}[user.locked]">{{user.locked === false ? 'Active' : 'Locked'}}</span>
                     </td>
+                    <td>{{user.login}}</td>
+                    <td>{{user.name}}</td>
                     <td>
-                        <h4 class="media-heading">
-                            <small class="mr-xxs">
-                                <strong>Login:</strong> {{user.login}}</small>
-                        </h4>
-                        <h4 class="media-heading">
-                            <small class="mr-xxs">
-                                <strong>Full name:</strong> {{user.name}}</small>
-                        </h4>
-                    </td>
-                    <td>
-                        <h4 class="media-heading"
-                            popover-trigger="'mouseenter'"
-                            uib-popover-template="'permissionsPopoverTemplate.html'"
-                            popover-title="Permissions">
-                            <small class="mr-xxs">
-                                <strong>Profile:</strong> {{user.profile}}</small>
-                        </h4>
+                        <span popover-trigger="'mouseenter'" uib-popover-template="'permissionsPopoverTemplate.html'" popover-title="Permissions">
+                            {{user.profile}}
+                        </span>
                     </td>
                     <td>
                         <span>
@@ -92,22 +105,29 @@
                             <button type="button" class="btn btn-danger btn-sm" ng-click="$ctrl.resetMfa(user)">Reset</button>
                         </span>
                     </td>
+                    <td>{{user._updatedAt | shortDate}}</td>
                     <td>
-                        <span class="clickable mr-xxxs text-primary" ng-click="$ctrl.editUser(user)">
-                            <i class="fa fa-edit"></i>Edit</span>
+                        <span class="clickable mr-xxs text-primary" ng-click="$ctrl.editUser(user)" uib-tooltip="Edit User">
+                            <i class="text-20 fa fa-edit"></i>
+                        </span>
 
-                        <span class="clickable mr-xxxs text-danger" ng-if="!user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, true)">
-                            <i class="fa fa-ban"></i>Lock</span>
+                        <span class="clickable mr-xxs text-primary" ng-if="!user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, true)" uib-tooltip="Lock User">
+                            <i class="text-20 fa fa-lock"></i>
+                        </span>
 
-                        <span class="clickable mr-xxxs text-success" ng-if="user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, false)">
-                            <i class="fa fa-refresh"></i>Unlock</span>
+                        <span class="clickable mr-xxs text-primary" ng-if="user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, false)" uib-tooltip="Unlock User">
+                            <i class="text-20 fa fa-unlock-alt"></i>
+                        </span>
 
-                        <span class="clickable mr-xxxs text-danger" ng-if="user._id !== $ctrl.currentUser._id" ng-click="$ctrl.removeUser(user)">
-                            <i class="fa fa-trash"></i>Remove</span>
+                        <span class="clickable mr-xxs text-danger" ng-if="user._id !== $ctrl.currentUser._id" ng-click="$ctrl.removeUser(user)" uib-tooltip="Delete User">
+                            <i class="text-20 fa fa-trash"></i>
+                        </span>
                     </td>
                 </tr>
             </tbody>
         </table>
+
+        <psearch control="$ctrl.users"></psearch>
     </div>
 </div>
 <script type="text/ng-template" id="permissionsPopoverTemplate.html">

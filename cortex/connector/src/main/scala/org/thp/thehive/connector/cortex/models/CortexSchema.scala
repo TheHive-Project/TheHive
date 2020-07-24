@@ -1,22 +1,21 @@
 package org.thp.thehive.connector.cortex.models
 
-import scala.collection.JavaConverters._
-import scala.reflect.runtime.{universe => ru}
-
-import play.api.Logger
-
 import javax.inject.{Inject, Singleton}
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
-import org.thp.scalligraph.models.{HasModel, Model, Schema}
+import org.thp.scalligraph.models._
+import play.api.Logger
+
+import scala.collection.JavaConverters._
+import scala.reflect.runtime.{universe => ru}
 
 @Singleton
-class CortexSchema @Inject() () extends Schema {
+class CortexSchemaDefinition @Inject() () extends Schema with UpdatableSchema {
 
-  lazy val logger: Logger = Logger(getClass)
-  val rm: ru.Mirror       = ru.runtimeMirror(getClass.getClassLoader)
-  logger.info("Search models in org.thp.thehive.connector.cortex.models")
+  lazy val logger: Logger    = Logger(getClass)
+  val name: String           = "thehive-cortex"
+  val operations: Operations = Operations(name)
 
   lazy val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
@@ -27,6 +26,7 @@ class CortexSchema @Inject() () extends Schema {
   )
 
   override lazy val modelList: Seq[Model] = {
+    val rm: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
     reflectionClasses
       .getSubTypesOf(classOf[HasModel[_]])
       .asScala

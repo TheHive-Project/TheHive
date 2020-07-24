@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import java.util.Date
 
 import gremlin.scala._
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -17,8 +17,9 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, logSrv: LogSrv)(implicit db: Database)
-    extends VertexSrv[Task, TaskSteps] {
+class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)(
+    implicit @Named("with-thehive-schema") db: Database
+) extends VertexSrv[Task, TaskSteps] {
 
   lazy val caseSrv: CaseSrv = caseSrvProvider.get
   val caseTemplateTaskSrv   = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
@@ -41,12 +42,25 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
     auditSrv.task.update(task, Json.obj("assignee" -> JsNull))
   }
 
-  def cascadeRemove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      _ <- get(task).logs.toIterator.toTry(logSrv.cascadeRemove(_))
-      _ = get(task).remove()
-      _ <- auditSrv.task.delete(task)
-    } yield ()
+  def remove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(task).caseTemplate.headOption() match {
+      case None =>
+        get(task)
+          .shares
+          .toIterator
+          .toTry { share =>
+            auditSrv
+              .task
+              .delete(task, share)
+              .map(_ => get(task).remove())
+          }
+          .map(_ => ())
+      case Some(caseTemplate) =>
+        auditSrv
+          .caseTemplate
+          .update(caseTemplate, JsObject.empty)
+          .map(_ => get(task).remove())
+    }
 
   override def update(
       steps: TaskSteps,
@@ -83,7 +97,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
 
       case TaskStatus.InProgress =>
         for {
-          _       <- get(t).user.headOption().fold(assign(t, o))(_ => Success(()))
+          _       <- get(t).assignee.headOption().fold(assign(t, o))(_ => Success(()))
           updated <- t.startDate.fold(get(t).updateOne("status" -> s, "startDate" -> Some(new Date())))(_ => setStatus())
         } yield updated
 
@@ -117,27 +131,35 @@ class TaskSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def active: TaskSteps = newInstance(raw.filterNot(_.has(Key("status") of "Cancel")))
 
   def can(permission: Permission)(implicit authContext: AuthContext): TaskSteps =
-    newInstance(
-      raw.filter(
+    if (authContext.permissions.contains(permission))
+      this.filter(
         _.inTo[ShareTask]
-          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
           .inTo[OrganisationShare]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
+          .has("name", authContext.organisation)
       )
-    )
+    else
+      this.limit(0)
 
-  def `case` = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase]) // TODO add distinct ? task/case can have several shares
+  def `case`: CaseSteps = new CaseSteps(raw.inTo[ShareTask].outTo[ShareCase].dedup)
 
-  def logs = new LogSteps(raw.outTo[TaskLog])
+  def caseTemplate = new CaseTemplateSteps(raw.inTo[CaseTemplateTask])
 
-  def user = new UserSteps(raw.outTo[TaskUser])
+  def caseTasks: TaskSteps = this.filter(_.inToE[ShareTask])
+
+  def caseTemplateTasks: TaskSteps = this.filter(_.inToE[CaseTemplateTask])
+
+  def logs: LogSteps = new LogSteps(raw.outTo[TaskLog])
+
+  def assignee: UserSteps = new UserSteps(raw.outTo[TaskUser])
+
+  def unassigned: TaskSteps = this.not(_.outToE[TaskUser])
 
   def organisations = new OrganisationSteps(raw.inTo[ShareTask].inTo[OrganisationShare])
   def organisations(permission: Permission) =
     new OrganisationSteps(raw.inTo[ShareTask].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
+
+  def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareTask].has(Key("owner") of true).inTo[OrganisationShare])
 
   def assignableUsers(implicit authContext: AuthContext): UserSteps =
     organisations(Permissions.manageTask)

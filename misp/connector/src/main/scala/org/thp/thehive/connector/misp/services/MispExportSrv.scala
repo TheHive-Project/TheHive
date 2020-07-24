@@ -2,20 +2,19 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.Date
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
-import play.api.Logger
-
 import gremlin.scala.Graph
-import javax.inject.{Inject, Singleton}
-import org.thp.misp.dto.{Attribute, Tag}
+import javax.inject.{Inject, Named, Singleton}
+import org.thp.misp.dto.{Attribute, Tag => MispTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{BadRequestError, NotFoundError}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
+import play.api.Logger
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class MispExportSrv @Inject() (
@@ -24,7 +23,7 @@ class MispExportSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
-    db: Database
+    @Named("with-thehive-schema") db: Database
 ) {
 
   lazy val logger: Logger = Logger(getClass)
@@ -48,7 +47,7 @@ class MispExportSrv @Inject() (
             value = observable.data.fold(observable.attachment.get.name)(_.data),
             firstSeen = None,
             lastSeen = None,
-            tags = observable.tags.map(t => Tag(None, t.toString, Some(t.colour), None))
+            tags = observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None))
           )
       }
       .orElse {
@@ -97,7 +96,7 @@ class MispExportSrv @Inject() (
     client.createEvent(
       info = `case`.title,
       date = `case`.startDate,
-      threatLevel = 4 - `case`.severity,
+      threatLevel = math.min(4, math.max(1, 4 - `case`.severity)),
       published = false,
       analysis = 0,
       distribution = 0,
@@ -128,14 +127,20 @@ class MispExportSrv @Inject() (
         )
       }
       org          <- organisationSrv.getOrFail(authContext.organisation)
-      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Set.empty, Map.empty, None)
+      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Map.empty[String, Option[Any]], None)
       _            <- alertSrv.alertCaseSrv.create(AlertCase(), createdAlert.alert, `case`)
     } yield createdAlert
+
+  def canExport(client: TheHiveMispClient)(implicit authContext: AuthContext): Boolean =
+    client.canExport && db.roTransaction { implicit graph =>
+      client.organisationFilter(organisationSrv.current).exists()
+    }
 
   def export(mispId: String, `case`: Case with Entity)(implicit authContext: AuthContext, ec: ExecutionContext): Future[String] = {
     logger.info(s"Exporting case ${`case`.number} to MISP $mispId")
     for {
       client  <- getMispClient(mispId)
+      _       <- if (canExport(client)) Future.successful(()) else Future.failed(AuthorizationError(s"You cannot export case to MISP $mispId"))
       orgName <- Future.fromTry(client.currentOrganisationName)
       maybeAlert = db.roTransaction(implicit graph => getAlert(`case`, orgName))
       _          = logger.debug(maybeAlert.fold("Related MISP event doesn't exist")(a => s"Related MISP event found : ${a.sourceRef}"))

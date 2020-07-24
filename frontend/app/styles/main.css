@@ -131,12 +131,33 @@ pre.clearpre {
     width: 50%;
 }
 
+/** Login page **/
 .login-form {
     width: 600px;
     margin: auto;
     margin-top: 40px;
     background-color: #eee;
 }
+
+.or-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #afafaf;
+}
+.or-separator::before,
+.or-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #cfcfcf;
+}
+.or-separator::before {
+    margin-right: .25em;
+}
+.or-separator::after {
+    margin-left: .25em;
+}
+/***************************/
 
 .flexwrap {
     display: flex;
@@ -267,6 +288,10 @@ pre.clearpre {
 
 .btn-canceled, .progress-bar-default {
     background-color: #777;
+}
+
+.btn-clear:active {
+    box-shadow: none;
 }
 
 dl.dl-horizontal>dt.pull-left {

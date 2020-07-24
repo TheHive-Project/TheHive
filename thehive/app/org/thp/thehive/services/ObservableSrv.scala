@@ -1,15 +1,9 @@
 package org.thp.thehive.services
 
-import java.lang.{Long => JLong}
 import java.util.{Set => JSet}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-import play.api.libs.json.JsObject
-
 import gremlin.scala.{KeyValue => _, _}
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
@@ -20,6 +14,10 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
+
+import scala.collection.JavaConverters._
+import scala.util.Try
 
 @Singleton
 class ObservableSrv @Inject() (
@@ -28,16 +26,17 @@ class ObservableSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
     caseSrvProvider: Provider[CaseSrv],
-    auditSrv: AuditSrv
+    auditSrv: AuditSrv,
+    alertSrvProvider: Provider[AlertSrv]
 )(
-    implicit db: Database
+    implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Observable, ObservableSteps] {
   lazy val caseSrv: CaseSrv    = caseSrvProvider.get
+  lazy val alertSrv: AlertSrv  = alertSrvProvider.get
   val observableKeyValueSrv    = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
   val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
   val observableAttachmentSrv  = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val alertObservableSrv       = new EdgeSrv[AlertObservable, Alert, Observable]
   val observableTagSrv         = new EdgeSrv[ObservableTag, Observable, Tag]
 
   override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ObservableSteps = new ObservableSteps(raw)
@@ -60,11 +59,23 @@ class ObservableSrv @Inject() (
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] =
+    tagNames.toTry(tagSrv.getOrCreate).flatMap(tags => create(observable, `type`, attachment, tags, extensions))
+
+  def create(
+      observable: Observable,
+      `type`: ObservableType with Entity,
+      attachment: Attachment with Entity,
+      tags: Seq[Tag with Entity],
+      extensions: Seq[KeyValue]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
     for {
       createdObservable <- createEntity(observable)
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
       _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
-      tags              <- addTags(createdObservable, tagNames)
+      _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       ext               <- addExtensions(createdObservable, extensions)
     } yield RichObservable(createdObservable, `type`, None, Some(attachment), tags, None, ext, Nil)
 
@@ -73,11 +84,26 @@ class ObservableSrv @Inject() (
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
+      tags           <- tagNames.toTry(tagSrv.getOrCreate)
+      data           <- dataSrv.create(Data(dataValue))
+      richObservable <- create(observable, `type`, data, tags, extensions)
+    } yield richObservable
+
+  def create(
+      observable: Observable,
+      `type`: ObservableType with Entity,
+      data: Data with Entity,
+      tags: Seq[Tag with Entity],
+      extensions: Seq[KeyValue]
+  )(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
+    for {
       createdObservable <- createEntity(observable)
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
-      data              <- dataSrv.create(Data(dataValue))
       _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
-      tags              <- addTags(createdObservable, tagNames)
+      _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       ext               <- addExtensions(createdObservable, extensions)
     } yield RichObservable(createdObservable, `type`, Some(data), None, tags, None, ext, Nil)
 
@@ -133,17 +159,21 @@ class ObservableSrv @Inject() (
       // TODO copy or link key value ?
     } yield richObservable.copy(observable = createdObservable)
 
-  def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(observable).data.filter(_.useCount.filter(_.is(P.eq[JLong](0L)))).remove()
-    get(observable).attachments.remove()
-    get(observable).keyValues.remove()
-    val maybeAlert = get(observable).alert.headOption()
-    get(observable).remove()
-    maybeAlert match {
-      case None         => auditSrv.observable.delete(observable)
-      case ctx: Some[_] => auditSrv.observableInAlert.delete(observable, ctx)
+  def remove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(observable).alert.headOption() match {
+      case None =>
+        get(observable)
+          .shares
+          .toIterator
+          .toTry { share =>
+            auditSrv
+              .observable
+              .delete(observable, share)
+              .map(_ => get(observable).remove())
+          }
+          .map(_ => ())
+      case Some(alert) => alertSrv.removeObservable(alert, observable)
     }
-  }
 
   override def update(
       steps: ObservableSteps,
@@ -159,7 +189,8 @@ class ObservableSrv @Inject() (
 }
 
 @EntitySteps[Observable]
-class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Observable](raw) {
+class ObservableSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[Observable](raw) {
 
   def filterOnType(`type`: String): ObservableSteps =
     this.filter(_.outTo[ObservableObservableType].has("name", `type`))
@@ -180,20 +211,28 @@ class ObservableSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: G
     this.filter(_.outTo[ObservableAttachment].has("hashes", hash))
 
   def visible(implicit authContext: AuthContext): ObservableSteps =
-    this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has("login", authContext.userId))
+    this.filter(_.inTo[ShareObservable].inTo[OrganisationShare].has("name", authContext.organisation))
 
   def can(permission: Permission)(implicit authContext: AuthContext): ObservableSteps =
-    this.filter(
-      _.inTo[ShareObservable]
-        .filter(_.outTo[ShareProfile].has("permissions", permission))
-        .inTo[OrganisationShare]
-        .inTo[RoleOrganisation]
-        .filter(_.outTo[RoleProfile].has("permissions", permission))
-        .inTo[UserRole]
-        .has("login", authContext.userId)
-    )
+    if (authContext.permissions.contains(permission))
+      this.filter(
+        _.inTo[ShareObservable]
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
+          .inTo[OrganisationShare]
+          .has("name", authContext.organisation)
+      )
+    else
+      this.limit(0)
+
+  def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Set[Permission]] =
+    this
+      .share(authContext.organisation)
+      .profile
+      .map(profile => profile.permissions & authContext.permissions)
 
   def organisations = new OrganisationSteps(raw.inTo[ShareObservable].inTo[OrganisationShare])
+
+  def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareObservable].has(Key("owner") of true).inTo[OrganisationShare])
 
   override def newInstance(): ObservableSteps = new ObservableSteps(raw.clone())
 

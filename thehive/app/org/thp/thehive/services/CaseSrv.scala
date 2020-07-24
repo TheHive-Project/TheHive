@@ -2,11 +2,10 @@ package org.thp.thehive.services
 
 import java.util.{List => JList, Set => JSet}
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.actor.ActorRef
 import gremlin.scala._
-import javax.inject.{Inject, Named, Provider, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, Path, P => JP}
+import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P => JP}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
@@ -14,13 +13,12 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{CreateError, EntitySteps, InternalError, RichJMap, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{CreateError, EntitySteps, RichJMap, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -36,8 +34,8 @@ class CaseSrv @Inject() (
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     impactStatusSrv: ImpactStatusSrv,
-    @Named("case-dedup-actor") caseDedupActor: ActorRef
-)(implicit db: Database)
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+)(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Case, CaseSteps] {
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
@@ -50,7 +48,7 @@ class CaseSrv @Inject() (
 
   override def createEntity(e: Case)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     super.createEntity(e).map { `case` =>
-      caseDedupActor ! DedupActor.EntityAdded
+      integrityCheckActor ! IntegrityCheckActor.EntityAdded("Case")
       `case`
     }
 
@@ -59,7 +57,7 @@ class CaseSrv @Inject() (
       user: Option[User with Entity],
       organisation: Organisation with Entity,
       tags: Set[Tag with Entity],
-      customFields: Map[String, Option[Any]],
+      customFields: Seq[(String, Option[Any], Option[Int])],
       caseTemplate: Option[RichCaseTemplate],
       additionalTasks: Seq[(Task, Option[User with Entity])]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
@@ -69,14 +67,14 @@ class CaseSrv @Inject() (
       _           <- caseUserSrv.create(CaseUser(), createdCase, assignee)
       _           <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
       _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
-      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.owner)).toTry {
+      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.assignee)).toTry {
         case (task, owner) => taskSrv.create(task, owner)
       }
       _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
       caseTemplateCustomFields = caseTemplate
         .fold[Seq[RichCustomField]](Nil)(_.customFields)
-        .map(cf => cf.name -> cf.value)
-      cfs <- (caseTemplateCustomFields.toMap ++ customFields).toTry { case (name, value) => createCustomField(createdCase, name, value) }
+        .map(cf => (cf.name, cf.value, cf.order))
+      cfs <- (caseTemplateCustomFields ++ customFields).toTry { case (name, value, order) => createCustomField(createdCase, name, value, order) }
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
@@ -85,6 +83,8 @@ class CaseSrv @Inject() (
     } yield richCase
 
   def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
+
+  override def exists(e: Case)(implicit graph: Graph): Boolean = initSteps.getByNumber(e.number).exists()
 
   override def update(
       steps: CaseSteps,
@@ -165,18 +165,17 @@ class CaseSrv @Inject() (
       for {
         organisation <- organisationSrv.getOrFail(authContext.organisation)
         _            <- shareSrv.shareObservable(richObservable, `case`, organisation)
-        _            <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
       } yield ()
   }
 
-  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- get(`case`).tasks.toIterator.toTry(taskSrv.cascadeRemove(_))
-      _ <- get(`case`).observables.toIterator.toTry(observableSrv.cascadeRemove(_))
-      _ = get(`case`).share.remove()
-      _ = get(`case`).remove()
-      _ <- auditSrv.`case`.delete(`case`)
-    } yield ()
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      _            <- auditSrv.`case`.delete(`case`, organisation)
+    } yield {
+      get(`case`).share.remove()
+      get(`case`).remove()
+    }
 
   override def get(idOrNumber: String)(implicit graph: Graph): CaseSteps =
     Success(idOrNumber)
@@ -190,7 +189,7 @@ class CaseSrv @Inject() (
 
   def updateCustomField(
       `case`: Case with Entity,
-      customFieldValues: Seq[(CustomField, Any)]
+      customFieldValues: Seq[(CustomField, Any, Option[Int])]
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val customFieldNames = customFieldValues.map(_._1.name)
     get(`case`)
@@ -200,11 +199,11 @@ class CaseSrv @Inject() (
       .filterNot(rcf => customFieldNames.contains(rcf.name))
       .foreach(rcf => get(`case`).customFields(rcf.name).remove())
     customFieldValues
-      .toTry { case (cf, v) => setOrCreateCustomField(`case`, cf.name, Some(v)) }
+      .toTry { case (cf, v, o) => setOrCreateCustomField(`case`, cf.name, Some(v), o) }
       .map(_ => ())
   }
 
-  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any])(
+  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
@@ -212,17 +211,18 @@ class CaseSrv @Inject() (
     if (cfv.newInstance().exists())
       cfv.setValue(value)
     else
-      createCustomField(`case`, customFieldName, value).map(_ => ())
+      createCustomField(`case`, customFieldName, value, order).map(_ => ())
   }
 
   def createCustomField(
       `case`: Case with Entity,
       customFieldName: String,
-      customFieldValue: Option[Any]
+      customFieldValue: Option[Any],
+      order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
       cf   <- customFieldSrv.getOrFail(customFieldName)
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue)
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue).map(_.order_=(order))
       ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
     } yield RichCustomField(cf, ccfe)
 
@@ -335,7 +335,7 @@ class CaseSrv @Inject() (
 }
 
 @EntitySteps[Case]
-class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Case](raw) {
+class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Case](raw) {
   def resolutionStatus: ResolutionStatusSteps = new ResolutionStatusSteps(raw.outTo[CaseResolutionStatus])
 
   def get(id: String): CaseSteps =
@@ -347,24 +347,23 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
 
   def getByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
 
-  def visible(implicit authContext: AuthContext): CaseSteps = newInstance(
-    raw.filter(_.inTo[ShareCase].inTo[OrganisationShare].inTo[RoleOrganisation].inTo[UserRole].has(Key("login") of authContext.userId))
-  )
+  def visible(implicit authContext: AuthContext): CaseSteps = visible(authContext.organisation)
 
-  def assignee = new UserSteps(raw.outTo[CaseUser])
+  def visible(organisationName: String): CaseSteps =
+    this.filter(_.inTo[ShareCase].inTo[OrganisationShare].has("name", organisationName))
+
+  def assignee: UserSteps = new UserSteps(raw.outTo[CaseUser])
 
   def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
-    newInstance(
-      raw.filter(
+    if (authContext.permissions.contains(permission))
+      this.filter(
         _.inTo[ShareCase]
-          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
           .inTo[OrganisationShare]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
+          .has("name", authContext.organisation)
       )
-    )
+    else
+      this.limit(0)
 
   override def newInstance(newRaw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(newRaw)
 
@@ -376,49 +375,29 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def richCaseWithCustomRenderer[A](
       entityRenderer: CaseSteps => TraversalLike[_, A]
   )(implicit authContext: AuthContext): Traversal[(RichCase, A), (RichCase, A)] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[CaseTag].fold))
-            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-            .and(By(entityRenderer(newInstance(__[Vertex])).raw))
-            .and(By(newInstance(__[Vertex]).share(authContext.organisation).profile.permissions.fold.raw))
-            .and(
-              By(
-                newInstance(__[Vertex])
-                  .organisations
-                  .has("name", authContext.organisation)
-                  .userProfile(authContext.userId)
-                  .permissions
-                  .fold
-                  .raw
-              )
-            )
-        )
-        .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, sharePermissions, userPermissions) =>
-            val customFieldValues = (customFields: JList[Path])
-              .asScala
-              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-              .map {
-                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             => throw InternalError("Not possible")
-              }
-            RichCase(
-              caze.as[Case],
-              tags.asScala.map(_.as[Tag]),
-              atMostOneOf[String](impactStatus),
-              atMostOneOf[String](resolutionStatus),
-              atMostOneOf[String](user),
-              customFieldValues,
-              (sharePermissions.asScala.toSet & userPermissions.asScala.toSet).map(Permission.apply)
-            ) -> renderedEntity
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.tags.fold)
+          .by(_.impactStatus.value.fold)
+          .by(_.resolutionStatus.value.fold)
+          .by(_.assignee.login.fold)
+          .by(_.richCustomFields.fold)
+          .by(entityRenderer)
+          .by(_.userPermissions)
+      )
+      .map {
+        case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, userPermissions) =>
+          RichCase(
+            caze.as[Case],
+            tags.asScala.map(_.as[Tag]),
+            atMostOneOf[String](impactStatus),
+            atMostOneOf[String](resolutionStatus),
+            atMostOneOf[String](user),
+            customFields.asScala,
+            userPermissions
+          ) -> renderedEntity
+      }
 
   def customFields(name: String): CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseCustomField].filter(_.inV().has(Key("name") of name)))
@@ -426,13 +405,16 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def customFields: CustomFieldValueSteps =
     new CustomFieldValueSteps(raw.outToE[CaseCustomField])
 
+  def richCustomFields: Traversal[RichCustomField, RichCustomField] =
+    this.outToE[CaseCustomField].project(_.by.by(_.inV())).map {
+      case (cfv, cf) => RichCustomField(cf.as[CustomField], cfv.as[CaseCustomField])
+    }
+
   def share(implicit authContext: AuthContext): ShareSteps = share(authContext.organisation)
 
-  def share(organistionName: String): ShareSteps =
+  def share(organisationName: String): ShareSteps =
     new ShareSteps(
-      raw
-        .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of organistionName))
+      this.inTo[ShareCase].filter(_.inTo[OrganisationShare].has("name", organisationName)).raw
     )
 
   def shares: ShareSteps = new ShareSteps(raw.inTo[ShareCase])
@@ -442,7 +424,22 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def organisations(permission: Permission) =
     new OrganisationSteps(raw.inTo[ShareCase].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
 
+  def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Set[Permission]] =
+    this
+      .share(authContext.organisation)
+      .profile
+      .map(profile => profile.permissions & authContext.permissions)
+
   def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
+
+  def audits(implicit authContext: AuthContext): AuditSteps = audits(authContext.organisation)
+
+  def audits(organisationName: String): AuditSteps = new AuditSteps(
+    this
+      .union(_.visible(organisationName), _.observables(organisationName), _.tasks(organisationName), _.share(organisationName))
+      .inTo[AuditContext]
+      .raw
+  )
 
   // Warning: this method doesn't generate audit log
   def unassign(): Unit = {
@@ -478,9 +475,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .in("ShareCase")
             .filter(
               _.inTo[OrganisationShare]
-                .inTo[RoleOrganisation]
-                .inTo[UserRole]
-                .has(Key("login") of authContext.userId)
+                .has(Key("name") of authContext.organisation)
             )
             .out("ShareObservable")
             .as(observableLabel.name),
@@ -490,9 +485,7 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
             .in("ShareObservable")
             .filter(
               _.inTo[OrganisationShare]
-                .inTo[RoleOrganisation]
-                .inTo[UserRole]
-                .has(Key("login") of authContext.userId)
+                .has(Key("name") of authContext.organisation)
             )
             .out("ShareCase")
             .where(JP.neq(originCaseLabel.name))
@@ -509,102 +502,67 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   }
 
   def richCase(implicit authContext: AuthContext): Traversal[RichCase, RichCase] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[CaseTag].fold))
-            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-            .and(By(newInstance(__[Vertex]).share(authContext.organisation).profile.permissions.fold.raw))
-            .and(
-              By(
-                newInstance(__[Vertex])
-                  .organisations
-                  .has("name", authContext.organisation)
-                  .userProfile(authContext.userId)
-                  .permissions
-                  .fold
-                  .raw
-              )
-            )
-        )
-        .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, sharePermissions, userPermissions) =>
-            val customFieldValues = (customFields: JList[Path])
-              .asScala
-              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-              .map {
-                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             => throw InternalError("Not possible")
-              }
-            RichCase(
-              caze.as[Case],
-              tags.asScala.map(_.as[Tag]),
-              atMostOneOf[String](impactStatus),
-              atMostOneOf[String](resolutionStatus),
-              atMostOneOf[String](user),
-              customFieldValues,
-              (sharePermissions.asScala.toSet & userPermissions.asScala.toSet).map(Permission.apply)
-            )
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.tags.fold)
+          .by(_.impactStatus.value.fold)
+          .by(_.resolutionStatus.value.fold)
+          .by(_.assignee.login.fold)
+          .by(_.richCustomFields.fold)
+          .by(_.userPermissions)
+      )
+      .map {
+        case (caze, tags, impactStatus, resolutionStatus, user, customFields, userPermissions) =>
+          RichCase(
+            caze.as[Case],
+            tags.asScala.map(_.as[Tag]),
+            atMostOneOf[String](impactStatus),
+            atMostOneOf[String](resolutionStatus),
+            atMostOneOf[String](user),
+            customFields.asScala,
+            userPermissions
+          )
+      }
 
   def user: UserSteps = new UserSteps(raw.outTo[CaseUser])
 
   def richCaseWithoutPerms: Traversal[RichCase, RichCase] =
-    Traversal(
-      raw
-        .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[CaseTag].fold))
-            .and(By(__[Vertex].outTo[CaseImpactStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseResolutionStatus].values[String]("value").fold))
-            .and(By(__[Vertex].outTo[CaseUser].values[String]("login").fold))
-            .and(By(__[Vertex].outToE[CaseCustomField].inV().path.fold))
-        )
-        .map {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
-            val customFieldValues = (customFields: JList[Path])
-              .asScala
-              .map(_.asScala.takeRight(2).toList.asInstanceOf[List[Element]])
-              .map {
-                case List(ccf, cf) => RichCustomField(cf.as[CustomField], ccf.as[CaseCustomField])
-                case _             => throw InternalError("Not possible")
-              }
-            RichCase(
-              caze.as[Case],
-              tags.asScala.map(_.as[Tag]),
-              atMostOneOf[String](impactStatus),
-              atMostOneOf[String](resolutionStatus),
-              atMostOneOf[String](user),
-              customFieldValues,
-              Set.empty
-            )
-        }
-    )
+    this
+      .project(
+        _.by
+          .by(_.tags.fold)
+          .by(_.impactStatus.value.fold)
+          .by(_.resolutionStatus.value.fold)
+          .by(_.assignee.login.fold)
+          .by(_.richCustomFields.fold)
+      )
+      .map {
+        case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
+          RichCase(
+            caze.as[Case],
+            tags.asScala.map(_.as[Tag]),
+            atMostOneOf[String](impactStatus),
+            atMostOneOf[String](resolutionStatus),
+            atMostOneOf[String](user),
+            customFields.asScala,
+            Set.empty
+          )
+      }
 
   def tags: TagSteps = new TagSteps(raw.outTo[CaseTag])
 
   def impactStatus: ImpactStatusSteps = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
 
-  def tasks(implicit authContext: AuthContext): TaskSteps =
-    new TaskSteps(
-      raw
-        .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
-        .outTo[ShareTask]
-    )
+  def tasks(implicit authContext: AuthContext): TaskSteps = tasks(authContext.organisation)
 
-  def observables(implicit authContext: AuthContext): ObservableSteps =
-    new ObservableSteps(
-      raw
-        .inTo[ShareCase]
-        .filter(_.inTo[OrganisationShare].has(Key("name") of authContext.organisation))
-        .outTo[ShareObservable]
-    )
+  def tasks(organisationName: String): TaskSteps =
+    share(organisationName).tasks
+
+  def observables(implicit authContext: AuthContext): ObservableSteps = observables(authContext.organisation)
+
+  def observables(organisationName: String): ObservableSteps =
+    share(organisationName).observables
 
   def assignableUsers(implicit authContext: AuthContext): UserSteps =
     organisations(Permissions.manageCase)
@@ -615,32 +573,25 @@ class CaseSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) 
   def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])
 }
 
-class CaseDedupActor @Inject() (val db: Database, val service: CaseSrv) extends DedupActor[Case] {
-  override val min: FiniteDuration = 5.seconds
-  override val max: FiniteDuration = 10.seconds
-
+class CaseIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {
+  def removeDuplicates(): Unit =
+    duplicateEntities
+      .foreach { entities =>
+        db.tryTransaction { implicit graph =>
+          resolve(entities)
+        }
+      }
   override def resolve(entities: List[Case with Entity])(implicit graph: Graph): Try[Unit] = {
     val nextNumber = service.nextCaseNumber
-    entities
-      .sorted(createdFirst)
-      .tail
-      .flatMap(service.get(_).raw.headOption())
-      .zipWithIndex
-      .foreach {
-        case (vertex, index) =>
-          db.setSingleProperty(vertex, "number", nextNumber + index, UniMapping.int)
-      }
+    firstCreatedEntity(entities).foreach(
+      _._2
+        .flatMap(service.get(_).raw.headOption())
+        .zipWithIndex
+        .foreach {
+          case (vertex, index) =>
+            db.setSingleProperty(vertex, "number", nextNumber + index, UniMapping.int)
+        }
+    )
     Success(())
   }
-}
-
-class CaseDedupActorProvider @Inject() (system: ActorSystem, @Named("case-dedup-actor-singleton") CaseDedupActorSingleton: ActorRef)
-    extends Provider[ActorRef] {
-  override def get(): ActorRef =
-    system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = CaseDedupActorSingleton.path.toStringWithoutAddress,
-        settings = ClusterSingletonProxySettings(system)
-      )
-    )
 }

@@ -2,9 +2,8 @@ package org.thp.thehive.services.notification
 
 import java.io.NotSerializableException
 
-import play.api.libs.json.Json
-
 import akka.serialization.Serializer
+import play.api.libs.json.Json
 
 class NotificationSerializer extends Serializer {
   override def identifier: Int = 226591536

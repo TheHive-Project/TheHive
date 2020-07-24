@@ -1,14 +1,15 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.models.{Database, Entity, Schema}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query, SubType}
 import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.steps.{PagedResult, VertexSteps}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.dto.v0.InputAction
-import org.thp.thehive.connector.cortex.models.RichAction
+import org.thp.thehive.connector.cortex.models.{ActionContext, RichAction}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, EntityHelper}
 import org.thp.thehive.controllers.v0.Conversion.{toObjectType, _}
 import org.thp.thehive.controllers.v0.{AuditRenderer, IdOrName, OutputParam, QueryableCtrl}
@@ -18,11 +19,12 @@ import play.api.libs.json.{JsObject, Json, OWrites}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.{universe => ru}
 
 @Singleton
 class ActionCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     actionSrv: ActionSrv,
     entityHelper: EntityHelper,
@@ -31,6 +33,7 @@ class ActionCtrl @Inject() (
     observableSrv: ObservableSrv,
     logSrv: LogSrv,
     alertSrv: AlertSrv,
+    schema: Schema,
     implicit val executionContext: ExecutionContext
 ) extends QueryableCtrl
     with AuditRenderer {
@@ -63,6 +66,22 @@ class ActionCtrl @Inject() (
     (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
   override val outputQuery: Query = Query.output[RichAction, ActionSteps](_.richAction)
+
+  val actionsQuery: Query = new Query {
+    override val name: String = "actions"
+    override def checkFrom(t: ru.Type): Boolean =
+      SubType(t, ru.typeOf[CaseSteps]) || SubType(t, ru.typeOf[ObservableSteps]) ||
+        SubType(t, ru.typeOf[TaskSteps]) ||
+        SubType(t, ru.typeOf[LogSteps]) ||
+        SubType(t, ru.typeOf[AlertSteps])
+    override def toType(t: ru.Type): ru.Type = ru.typeOf[ActionSteps]
+    override def apply(param: Unit, from: Any, authContext: AuthContext): Any = {
+      val fromSteps = from.asInstanceOf[VertexSteps[_]]
+      new ActionSteps(from.asInstanceOf[VertexSteps[_]].inTo[ActionContext].raw)(db, fromSteps.graph, schema)
+    }
+  }
+
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(actionsQuery)
 
   def create: Action[AnyContent] =
     entrypoint("create action")

@@ -1,19 +1,22 @@
 package org.thp.thehive.services
 
-import scala.util.Try
-
+import akka.actor.ActorRef
 import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.services.VertexSrv
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.thehive.models.Tag
+import org.thp.thehive.models.{CaseTag, ObservableTag, Tag}
+
+import scala.util.{Success, Try}
 
 @Singleton
-class TagSrv @Inject() (appConfig: ApplicationConfig)(implicit db: Database) extends VertexSrv[Tag, TagSteps] {
+class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
+    implicit @Named("with-thehive-schema") db: Database
+) extends VertexSrv[Tag, TagSteps] {
 
   val autoCreateConfig: ConfigItem[Boolean, Boolean] =
     appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
@@ -43,23 +46,30 @@ class TagSrv @Inject() (appConfig: ApplicationConfig)(implicit db: Database) ext
   override def get(idOrName: String)(implicit graph: Graph): TagSteps =
     getByIds(idOrName)
 
-  def get(tag: Tag)(implicit graph: Graph): TagSteps = initSteps.get(tag)
+  def getTag(tag: Tag)(implicit graph: Graph): TagSteps = initSteps.getTag(tag)
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     val tag = parseString(tagName)
-    get(tag).getOrFail("Tag").recoverWith {
+    getTag(tag).getOrFail("Tag").recoverWith {
       case _ if autoCreate => create(tag)
     }
   }
 
+  override def createEntity(e: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
+    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Tag")
+    super.createEntity(e)
+  }
+
   def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = createEntity(tag)
+
+  override def exists(e: Tag)(implicit graph: Graph): Boolean = initSteps.getByName(e.namespace, e.predicate, e.value).exists()
 }
 
 class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Tag](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): TagSteps = new TagSteps(newRaw)
   override def newInstance(): TagSteps                             = new TagSteps(raw.clone())
 
-  def get(tag: Tag): TagSteps = getByName(tag.namespace, tag.predicate, tag.value)
+  def getTag(tag: Tag): TagSteps = getByName(tag.namespace, tag.predicate, tag.value)
 
   def getByName(namespace: String, predicate: String, value: Option[String]): TagSteps = {
     val step = newInstance(
@@ -71,4 +81,22 @@ class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
   }
 
   def displayName: Traversal[String, String] = this.map(_.toString)
+
+  def fromCase: TagSteps = this.filter(_.inTo[CaseTag])
+
+  def fromObservable: TagSteps = this.filter(_.inTo[ObservableTag])
+}
+
+class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
+
+  override def resolve(entities: List[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
+    firstCreatedEntity(entities).foreach {
+      case (head, tail) =>
+        tail.foreach(copyEdge(_, head))
+        val tailIds = tail.map(_._id)
+        logger.debug(s"Remove duplicated vertex: ${tailIds.mkString(",")}")
+        service.getByIds(tailIds: _*).remove()
+    }
+    Success(())
+  }
 }

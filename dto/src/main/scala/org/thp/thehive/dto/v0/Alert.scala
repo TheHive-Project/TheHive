@@ -2,9 +2,8 @@ package org.thp.thehive.dto.v0
 
 import java.util.Date
 
-import play.api.libs.json._
-
 import org.thp.scalligraph.controllers.WithParser
+import play.api.libs.json._
 
 case class InputAlert(
     `type`: String,
@@ -39,7 +38,7 @@ case class OutputSimilarCase(
     tags: Set[String] = Set.empty,
     tlp: Int,
     status: String,
-    similarIOCCount: Int,
+    similarIocCount: Int,
     iocCount: Int,
     similarArtifactCount: Int,
     artifactCount: Int

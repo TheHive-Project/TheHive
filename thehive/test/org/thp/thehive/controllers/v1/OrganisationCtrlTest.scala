@@ -1,13 +1,13 @@
 package org.thp.thehive.controllers.v1
 
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, PlaySpecification}
-
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
+import org.thp.thehive.models.Organisation
 import org.thp.thehive.services.OrganisationSrv
-import org.thp.scalligraph.steps.StepsOps._
+import play.api.libs.json.Json
+import play.api.test.{FakeRequest, PlaySpecification}
 
 class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
   "organisation controller" should {
@@ -46,8 +46,8 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "refuse to get a invisible organisation" in testApp { app =>
-      val request = FakeRequest("GET", s"/api/v1/organisation/${OrganisationSrv.administration.name}").withHeaders("user" -> "certuser@thehive.local")
-      val result  = app[OrganisationCtrl].get(OrganisationSrv.administration.name)(request)
+      val request = FakeRequest("GET", s"/api/v1/organisation/${Organisation.administration.name}").withHeaders("user" -> "certuser@thehive.local")
+      val result  = app[OrganisationCtrl].get(Organisation.administration.name)(request)
       status(result) must_=== 404
     }
 

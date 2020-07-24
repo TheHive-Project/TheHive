@@ -1,53 +1,36 @@
 package org.thp.thehive.services
 
-import scala.util.{Failure, Try}
-
-import play.api.libs.json.JsObject
-
+import akka.actor.ActorRef
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.{BadRequestError, EntitySteps}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.{BadRequestError, EntitySteps}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import play.api.libs.json.JsObject
 
-object ProfileSrv {
-  lazy val admin: Profile = Profile("admin", Permissions.adminPermissions)
-
-  lazy val analyst: Profile = Profile(
-    "analyst",
-    Set(
-      Permissions.manageCase,
-      Permissions.manageObservable,
-      Permissions.manageAlert,
-      Permissions.manageTask,
-      Permissions.manageAction,
-      Permissions.manageShare,
-      Permissions.manageAnalyse,
-      Permissions.managePage
-    )
-  )
-  lazy val readonly: Profile = Profile("read-only", Set.empty)
-  lazy val orgAdmin: Profile = Profile("org-admin", Permissions.forScope("organisation"))
-
-  def isEditable(profile: Profile): Boolean = profile.name != admin.name && profile.name != orgAdmin.name
-}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ProfileSrv @Inject() (auditSrv: AuditSrv)(implicit val db: Database) extends VertexSrv[Profile, ProfileSteps] {
+class ProfileSrv @Inject() (
+    auditSrv: AuditSrv,
+    organisationSrvProvider: Provider[OrganisationSrv],
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+)(
+    implicit @Named("with-thehive-schema") val db: Database
+) extends VertexSrv[Profile, ProfileSteps] {
+  lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
+  lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(Profile.orgAdmin.name)(graph)).get
 
-  lazy val orgAdmin: Profile with Entity = db.roTransaction(graph => getOrFail(ProfileSrv.orgAdmin.name)(graph)).get
-  override val initialValues: Seq[Profile] = Seq(
-    ProfileSrv.admin,
-    ProfileSrv.orgAdmin,
-    ProfileSrv.analyst,
-    ProfileSrv.readonly
-  )
+  override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
+    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Profile")
+    super.createEntity(e)
+  }
 
   def create(profile: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] =
     for {
@@ -61,27 +44,30 @@ class ProfileSrv @Inject() (auditSrv: AuditSrv)(implicit val db: Database) exten
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else initSteps.getByName(idOrName)
 
+  override def exists(e: Profile)(implicit graph: Graph): Boolean = initSteps.getByName(e.name).exists()
+
   def remove(profile: Profile with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    if (!ProfileSrv.isEditable(profile))
+    if (!profile.isEditable)
       Failure(BadRequestError(s"Profile ${profile.name} cannot be removed"))
     else if (get(profile).filter(_.or(_.roles, _.shares)).exists())
       Failure(BadRequestError(s"Profile ${profile.name} is used"))
-    else {
-      get(profile).remove()
-      auditSrv.profile.delete(profile)
-    }
+    else
+      organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
+        get(profile).remove()
+        auditSrv.profile.delete(profile, organisation)
+      }
 
   override def update(
       steps: ProfileSteps,
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(ProfileSteps, JsObject)] =
-    if (steps.newInstance().toIterator.exists(!ProfileSrv.isEditable(_)))
+    if (steps.newInstance().toIterator.exists(!_.isEditable))
       Failure(BadRequestError(s"Profile is not editable"))
     else super.update(steps, propertyUpdaters)
 }
 
 @EntitySteps[Profile]
-class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Profile](raw) {
+class ProfileSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Profile](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): ProfileSteps = new ProfileSteps(newRaw)
   override def newInstance(): ProfileSteps                             = new ProfileSteps(raw.clone())
 
@@ -97,4 +83,15 @@ class ProfileSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Grap
 
   def contains(permission: Permission): ProfileSteps =
     this.has("permissions", permission)
+}
+
+class ProfileIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ProfileSrv)
+    extends IntegrityCheckOps[Profile] {
+  override def resolve(entities: List[Profile with Entity])(implicit graph: Graph): Try[Unit] = entities match {
+    case head :: tail =>
+      tail.foreach(copyEdge(_, head))
+      service.getByIds(tail.map(_._id): _*).remove()
+      Success(())
+    case _ => Success(())
+  }
 }

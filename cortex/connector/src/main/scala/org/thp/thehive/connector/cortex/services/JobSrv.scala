@@ -3,12 +3,6 @@ package org.thp.thehive.connector.cortex.services
 import java.nio.file.Files
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json.Json
-
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
@@ -24,7 +18,7 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
 import org.thp.scalligraph.{EntitySteps, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
@@ -33,6 +27,11 @@ import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, ReportTagSrv}
+import play.api.libs.json.Json
+
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class JobSrv @Inject() (
@@ -44,7 +43,7 @@ class JobSrv @Inject() (
     reportTagSrv: ReportTagSrv,
     serviceHelper: ServiceHelper,
     auditSrv: CortexAuditSrv,
-    implicit val db: Database,
+    @Named("with-thehive-schema") implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) extends VertexSrv[Job, JobSteps] {
@@ -267,7 +266,7 @@ class JobSrv @Inject() (
 }
 
 @EntitySteps[Job]
-class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Job](raw) {
+class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Job](raw) {
 
   /**
     * Checks if a Job is visible from a certain UserRole end
@@ -275,16 +274,13 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     * @param authContext the auth context to check login against
     * @return
     */
-  def visible(implicit authContext: AuthContext): JobSteps = newInstance(
-    raw.filter(
+  def visible(implicit authContext: AuthContext): JobSteps =
+    this.filter(
       _.inTo[ObservableJob]
         .inTo[ShareObservable]
         .inTo[OrganisationShare]
-        .inTo[RoleOrganisation]
-        .inTo[UserRole]
-        .has(Key("login") of authContext.userId)
+        .has("name", authContext.organisation)
     )
-  )
 
   /**
     * Checks if a job is accessible if the user and
@@ -294,18 +290,15 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     * @return
     */
   def can(permission: Permission)(implicit authContext: AuthContext): JobSteps =
-    newInstance(
-      raw.filter(
+    if (authContext.permissions.contains(permission))
+      this.filter(
         _.inTo[ObservableJob]
           .inTo[ShareObservable]
-          .filter(_.outTo[ShareProfile].has(Key("permissions") of permission))
+          .filter(_.outTo[ShareProfile].has("permissions", permission))
           .inTo[OrganisationShare]
-          .inTo[RoleOrganisation]
-          .filter(_.outTo[RoleProfile].has(Key("permissions") of permission))
-          .inTo[UserRole]
-          .has(Key("login") of authContext.userId)
+          .has("name", authContext.organisation)
       )
-    )
+    else this.limit(0)
 
   override def newInstance(newRaw: GremlinScala[Vertex]): JobSteps = new JobSteps(newRaw)
   override def newInstance(): JobSteps                             = new JobSteps(raw.clone())
@@ -325,32 +318,14 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
     this
       .as(thisJob)
       .project(
-        _.apply(By[Vertex]())
-          .and(
-            By(
-              newInstance(__[Vertex])
-                .reportObservables
-                .project(
-                  _.apply(By(new ObservableSteps(__[Vertex]).richObservable.raw))
-                    .and(
-                      By(
-                        new ObservableSteps(__[Vertex])
-                          .similar
-                          .filter(
-                            _.`case`
-                              .observables
-                              .outTo[ObservableJob]
-                              .where(P.eq(thisJob.name))
-                          )
-                          ._id
-                          .fold
-                          .raw
-                      )
-                    )
-                )
-                .fold
-                .raw
-            )
+        _.by
+          .by(
+            _.reportObservables
+              .project(
+                _.by(_.richObservable)
+                  .by(_.similar.filter(_.`case`.observables.outTo[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
+              )
+              .fold
           )
       )
       .map {
@@ -361,5 +336,30 @@ class JobSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) e
           RichJob(job.as[Job], observables)
       }
   }
-
+  def richJobWithCustomRenderer[A](
+      entityRenderer: JobSteps => TraversalLike[_, A]
+  )(implicit authContext: AuthContext): Traversal[(RichJob, A), (RichJob, A)] = {
+    val thisJob = StepLabel()
+    this
+      .as(thisJob)
+      .project(
+        _.by
+          .by(
+            _.reportObservables
+              .project(
+                _.by(_.richObservable)
+                  .by(_.similar.filter(_.`case`.observables.outTo[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
+              )
+              .fold
+          )
+          .by(entityRenderer)
+      )
+      .map {
+        case (job, observablesWithLink, renderedEntity) =>
+          val observables = observablesWithLink.asScala.map {
+            case (obs, l) => obs -> Json.obj("observableId" -> l.asScala.headOption.map(_.toString))
+          }
+          RichJob(job.as[Job], observables) -> renderedEntity
+      }
+  }
 }

@@ -1,11 +1,10 @@
 package org.thp.thehive.services
 
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.test.PlaySpecification
 
 class OrganisationSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local").authContext

@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv, ModalUtilsSrv) {
+    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, QuerySrv, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv, ModalUtilsSrv) {
         var self = this;
         var baseUrl = './api/connector/cortex';
 
@@ -24,32 +24,45 @@
         };
 
         this.getJobs = function(caseId, observableId, analyzerId, limit) {
-            return $http.post(baseUrl + '/job/_search', {
-                sort: ['-startDate'],
-                range: '0-' + (
-                limit || 10),
-                query: {
-                    _and: [
+
+            return QuerySrv.query('v1', [
+                {
+                    '_name': 'getObservable',
+                    'idOrName': observableId
+                },
+                {
+                    '_name': 'jobs'
+                },
+                {
+                    '_name': 'filter',
+                    '_or': [
                         {
-                            _parent: {
-                                _type: 'case_artifact',
-                                _query: {
-                                    _id: observableId
-                                }
+                            'analyzerId': analyzerId
+                        },
+                        {
+                            '_like': {
+                                '_field': 'analyzerDefinition',
+                                '_value': analyzerId
                             }
-                        }, {
-                            _or: [
-                                {
-                                    analyzerId: analyzerId
-                                }, {
-                                    _like: {
-                                        _field: 'analyzerDefinition',
-                                        _value: analyzerId
-                                    }
-                                }
-                            ]
                         }
                     ]
+                },
+                {
+                    '_name': 'sort',
+                    '_fields': [
+                        {
+                            'startDate': 'desc'
+                        }
+                    ]
+                },
+                {
+                    '_name': 'page',
+                    'from': 0,
+                    'to': limit || 10
+                }
+            ], {
+                params: {
+                    name: 'observable-jobs-' + observableId
                 }
             });
         };
@@ -96,6 +109,27 @@
             return modalInstance.result;
         };
 
+        this.promntForResponder = function(responders) {
+            if(!responders || responders.length ===0) {
+                return $q.resolve('No responders available');
+            }
+
+            var modalInstance = $uibModal.open({
+                animation: 'true',
+                templateUrl: 'views/partials/misc/responder.selector.html',
+                controller: 'ResponderSelectorCtrl',
+                controllerAs: '$dialog',
+                size: 'lg',
+                resolve: {
+                    responders: function() {
+                        return responders;
+                    }
+                }
+            });
+
+            return modalInstance.result;
+        };
+
         this.getResponders = function(type, id) {
             //return $http.get(baseUrl + '/responder')
             return $http.get(baseUrl + '/responder/' + type + '/' + id)
@@ -111,7 +145,7 @@
             var post = {
               responderId: responderId,
               objectType: type,
-              objectId: object.id
+              objectId: object._id
             };
 
             return ModalUtilsSrv.confirm('Run responder ' + responderName, 'Are you sure you want to run responser ' + responderName + '?', {

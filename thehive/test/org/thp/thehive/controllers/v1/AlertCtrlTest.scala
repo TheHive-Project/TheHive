@@ -8,7 +8,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertSrv
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestAlert(
@@ -75,7 +75,11 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         pap = 2,
         read = false,
         follow = true,
-        customFields = Set.empty
+        customFields = Set.empty,
+        caseTemplate = None,
+        observableCount = 0L,
+        caseId = None,
+        extraData = JsObject.empty
       )
 
       createdAlert must_=== expected
@@ -120,7 +124,10 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         read = false,
         follow = true,
         customFields = Set.empty,
-        caseTemplate = Some("spam")
+        caseTemplate = Some("spam"),
+        observableCount = 0L,
+        caseId = None,
+        extraData = JsObject.empty
       )
 
       createdAlert must_=== expected
@@ -143,7 +150,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
           description = "description of alert #1",
           severity = 2,
           date = new Date(1555359572000L),
-          tags = Set("testNamespace.testPredicate=\"alert\"", "testNamespace.testPredicate=\"test\""),
+          tags = Set("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\""),
           tlp = 2,
           pap = 2,
           read = false,

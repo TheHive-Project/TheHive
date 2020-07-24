@@ -6,14 +6,15 @@
                 var self = this;
 
                 this.entity = entity;
+                this.state = undefined;
                 this.sectionName = sectionName;
                 this.config = config;
                 this.defaults = config.defaults || {};
                 this.defaultFilter = config.defaultFilter || {};
 
                 this.initContext = function(state) {
-
-                    return DashboardSrv.getMetadata()
+                    self.state = state;
+                    return DashboardSrv.getMetadata(this.config.version || 'v0')
                         .then(function(response) {
                             self.metadata = response;
                             self.attributes = angular.copy(response[self.entity].attributes);
@@ -114,6 +115,19 @@
 
                 this.storeContext = function() {
                     localStorageService.set(self.sectionName, self.context);
+                };
+
+                this.resetContext = function() {
+                    self.context = {
+                        state: self.state,
+                        showFilters: self.defaults.showFilters || false,
+                        showStats: self.defaults.showStats || false,
+                        pageSize: self.defaults.pageSize || 15,
+                        sort: self.defaults.sort || [],
+                        filters: self.defaultFilter || []
+                    };
+
+                    self.storeContext();
                 };
 
                 this.addFilterValue = function (field, value) {

@@ -2,11 +2,10 @@ package org.thp.thehive.connector.cortex.models
 
 import java.util.Date
 
-import play.api.libs.json.JsObject
-
 import gremlin.scala.{Edge, Graph, Vertex}
 import org.thp.scalligraph.VertexEntity
 import org.thp.scalligraph.models._
+import play.api.libs.json.JsObject
 
 @VertexEntity
 case class Action(
@@ -67,6 +66,7 @@ object ActionContext extends HasEdgeModel[ActionContext, Action, Product] {
       override def _createdAt: Date           = entity._createdAt
       override def _updatedAt: Option[Date]   = entity._updatedAt
     }
-    override def create(e: ActionContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
+    override def create(e: ActionContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge =
+      from.addEdge(label, to)
   }
 }

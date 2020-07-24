@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import gremlin.scala.Graph
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.scalactic.Accumulation._
 import org.scalactic.Good
@@ -36,7 +36,7 @@ trait QueryableCtrl {
       .build
 }
 
-class QueryCtrl(entrypoint: Entrypoint, db: Database, ctrl: QueryableCtrl, queryExecutor: QueryExecutor) {
+class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database, ctrl: QueryableCtrl, queryExecutor: QueryExecutor) {
   lazy val logger: Logger = Logger(getClass)
 
   val publicProperties: List[PublicProperty[_, _]] = queryExecutor.publicProperties
@@ -95,7 +95,7 @@ class QueryCtrl(entrypoint: Entrypoint, db: Database, ctrl: QueryableCtrl, query
           .map(inputFilter => filterQuery.toQuery(inputFilter))
           .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
         groupAggs <- aggregationParser.sequence(field.get("stats"))
-      } yield groupAggs.map(a => filteredQuery andThen new AggregationQuery(publicProperties).toQuery(a))
+      } yield groupAggs.map(a => filteredQuery andThen new AggregationQuery(db, publicProperties, queryExecutor.filterQuery).toQuery(a))
   }
 
   val searchParser: FieldsParser[Query] = FieldsParser[Query]("search") {
@@ -140,7 +140,7 @@ class QueryCtrl(entrypoint: Entrypoint, db: Database, ctrl: QueryableCtrl, query
 }
 
 @Singleton
-class QueryCtrlBuilder @Inject() (entrypoint: Entrypoint, db: Database) {
+class QueryCtrlBuilder @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database) {
 
   def apply(ctrl: QueryableCtrl, queryExecutor: QueryExecutor): QueryCtrl =
     new QueryCtrl(entrypoint, db, ctrl, queryExecutor)

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, CaseTabsSrv, UserSrv, TagSrv, PSearchSrv) {
+    angular.module('theHiveControllers').controller('CaseDetailsCtrl', function($scope, $state, $uibModal, PaginatedQuerySrv, CaseTabsSrv, UserSrv, TagSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -11,59 +11,45 @@
             'isCollapsed': true
         };
 
-        $scope.attachments = PSearchSrv($scope.caseId, 'case_task_log', {
-            scope: $scope,
+        $scope.attachments = new PaginatedQuerySrv({
+            name: 'case-attachments',
+            skipStream: true,
+            version: 'v1',
+            loadAll: false,
             filter: {
-                '_and': [
-                    {
-                        '_not': {
-                            'status': 'Deleted'
-                        }
-                    }, {
-                        '_contains': 'attachment.id'
-                    }, {
-                        '_parent': {
-                            '_type': 'case_task',
-                            '_query': {
-                                '_parent': {
-                                    '_type': 'case',
-                                    '_query': {
-                                        '_id': $scope.caseId
-                                    }
-                                }
-                            }
-                        }
-                    }
-                ]
+                '_contains': 'attachment'
             },
+            extraData: ['taskId'],
             pageSize: 100,
-            nparent: 1
+            operations: [
+                { '_name': 'getCase', 'idOrName': $scope.caseId },
+                { '_name': 'tasks' },
+                { '_name': 'logs' },
+            ]
         });
 
+        $scope.assignableUsersQuery = [
+            {_name: 'getCase', idOrName: $scope.caseId},
+            {_name: 'assignableUsers'}
+        ];
 
         var connectors = $scope.appConfig.connectors;
         if(connectors.cortex && connectors.cortex.enabled) {
-            $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+            $scope.actions = new PaginatedQuerySrv({
+                name: 'case-actions',
+                version: 'v1',
                 scope: $scope,
                 streamObjectType: 'action',
-                filter: {
-                    _and: [
-                        {
-                            _not: {
-                                status: 'Deleted'
-                            }
-                        }, {
-                            objectType: 'case'
-                        }, {
-                            objectId: $scope.caseId
-                        }
-                    ]
-                },
+                loadAll: true,
                 sort: ['-startDate'],
                 pageSize: 100,
+                operations: [
+                    { '_name': 'getCase', 'idOrName': $scope.caseId },
+                    { '_name': 'actions' }
+                ],
                 guard: function(updates) {
                     return _.find(updates, function(item) {
-                        return (item.base.object.objectType === 'case') && (item.base.object.objectId === $scope.caseId);
+                        return (item.base.details.objectType === 'Case') && (item.base.details.objectId === $scope.caseId);
                     }) !== undefined;
                 }
             });
@@ -71,8 +57,8 @@
 
         $scope.openAttachment = function(attachment) {
             $state.go('app.case.tasks-item', {
-                caseId: $scope.caze.id,
-                itemId: attachment.case_task.id
+                caseId: $scope.caze._id,
+                itemId: attachment.extraData.taskId
             });
         };
 
@@ -82,18 +68,6 @@
     });
 
     angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, CustomFieldsSrv) {
-        var getTemplateCustomFields = function(customFields) {
-            var result = [];
-
-            result = _.pluck(_.sortBy(_.map(customFields, function(definition, name){
-                return {
-                    name: name,
-                    order: definition.order
-                };
-            }), 'order'), 'name');
-
-            return result;
-        };
 
         $scope.getCustomFieldName = function(fieldDef) {
             return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
@@ -113,23 +87,17 @@
             });
 
             modalInstance.result.then(function() {
-                var temp = $scope.caze.customFields || {};
-
                 var customFieldValue = {};
                 customFieldValue[customField.type] = null;
-                customFieldValue.order = _.keys(temp).length + 1;
+                customFieldValue.order = _.max(_.pluck($scope.caze.customFields, 'order')) + 1;
 
                 $scope.updateField('customFields.' + customField.reference, customFieldValue);
-                $scope.updateCustomFieldsList();
-
-                $scope.caze.customFields[customField.reference] = customFieldValue;
             });
         };
 
         $scope.updateCustomFieldsList = function() {
             CustomFieldsSrv.all().then(function(fields) {
-                $scope.orderedFields = getTemplateCustomFields($scope.caze.customFields);
-                $scope.allCustomFields = _.omit(fields, _.keys($scope.caze.customFields));
+                $scope.allCustomFields = _.omit(fields, _.pluck($scope.caze.customFields, 'name'));
                 $scope.customFieldsAvailable = _.keys($scope.allCustomFields).length > 0;
             });
         };
@@ -141,6 +109,10 @@
         $scope.updateCustomFieldsList();
 
         $scope.$on('case:refresh-custom-fields', function() {
+            $scope.updateCustomFieldsList();
+        });
+
+        $scope.$watch('caze.customFields', function() {
             $scope.updateCustomFieldsList();
         });
     });

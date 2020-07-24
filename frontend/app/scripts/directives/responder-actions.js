@@ -10,11 +10,19 @@
             },
             templateUrl: 'views/directives/responder-actions.html',
             controller: function($scope, $uibModal) {
-                _.each($scope.actions.values, function(action) {
-                    if (action.status === 'Failure') {
-                        action.errorMessage = (JSON.parse(action.report) || {}).errorMessage;
+
+                $scope.$watch('actions', function(list) {
+                    if(!list) {
+                        return;
                     }
+
+                    _.each(list.values, function(action) {
+                        if (action.status === 'Failure') {
+                            action.errorMessage = (JSON.parse(action.report) || {}).errorMessage;
+                        }
+                    });
                 });
+
 
                 $scope.showResponderJob = function(action) {
                     $uibModal.open({

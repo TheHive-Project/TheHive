@@ -1,11 +1,12 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').factory('UiSettingsSrv', function(ListSrv, $q) {
+    angular.module('theHiveServices').factory('UiSettingsSrv', function($http, $q) {
 
         var settings = null;
+        var baseUrl = './api/config/organisation/';
 
         var keys = [
-            'hideEmptyCaseButton'
+            'ui.hideEmptyCaseButton'
         ];
 
         var factory = {
@@ -18,43 +19,30 @@
                 return settings[name];
             },
 
-            create: function(name, value) {
-                return ListSrv.save({listId: 'ui_settings'}, {
-                    value: {
-                        name: name,
-                        value: value
-                    }
-                }).$promise;
-            },
-
-            update: function(id, name, value) {
-                return ListSrv.update({itemId: id}, {
-                    value: {
-                        name: name,
-                        value: value
-                    }
-                }).$promise;
+            save: function(name, value) {
+                return $http.put(baseUrl + name, {value: value});
             },
 
             all: function(force) {
                 var deferred = $q.defer();
 
                 if(settings === null || force) {
-                    ListSrv.query({listId: 'ui_settings'}, {}, function(response) {
-                        var json = response.toJSON();
 
-                        settings = {};
+                    settings = {};
 
-                        _.each(_.keys(json), function(key) {
-                            var setting = json[key];
+                    $q.all(_.map(keys, function(key) {
+                        return $http.get(baseUrl + key);
+                    })).then(function(responses) {
+                        _.each(responses, function(response) {
+                            var data = response.data;
 
-                            settings[setting.name] = setting;
-                            settings[setting.name].id = key;
+                            settings[data.path] = data;
+                            settings[data.path].id = data.path;
                         });
 
                         deferred.resolve(settings);
-                    }, function(response) {
-                        deferred.reject(response);
+                    }).catch(function(responses) {
+                        deferred.reject(responses);
                     });
                 } else {
                     deferred.resolve(settings);
@@ -65,7 +53,8 @@
         };
 
         keys.forEach(function(key) {
-            factory[key] = function() {
+            var camelcased = s.camelize(key.replace(/\./gi, '_'));
+            factory[camelcased] = function() {
                 return (settings[key] || {}).value;
             };
         });

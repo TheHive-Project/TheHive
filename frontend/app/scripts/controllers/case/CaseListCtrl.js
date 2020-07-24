@@ -3,7 +3,7 @@
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, FilteringSrv, StreamStatSrv, PSearchSrv, EntitySrv, TagSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $q, $state, $window, $uibModal, StreamQuerySrv, FilteringSrv, SecuritySrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -13,8 +13,14 @@
 
         this.lastQuery = null;
 
+        self.selection = [];
+        self.menu = {
+            selectAll: false
+        };
+
         this.$onInit = function() {
             self.filtering = new FilteringSrv('case', 'case.list', {
+                version: 'v1',
                 defaults: {
                     showFilters: true,
                     showStats: false,
@@ -42,25 +48,116 @@
                     });
                 });
 
-            this.caseStats = StreamStatSrv({
+
+            // Case stats to build quick filter menu
+            StreamQuerySrv('v1', [
+                {
+                    _name: 'listCase'
+                },
+                {
+                    _name: 'aggregation',
+                    _agg: 'field',
+                    _field: 'status',
+                    _select: [
+                        {_agg: 'count'}
+                    ]
+                }
+            ], {
                 scope: $scope,
                 rootId: 'any',
-                query: {},
-                result: {},
                 objectType: 'case',
-                field: 'status'
+                query: {
+                    params: {
+                        name: 'case-status-stats'
+                    }
+                },
+                onUpdate: function(updates) {
+                    self.caseStats = updates;
+                }
             });
+
+            // Case total
+            StreamQuerySrv('v1', [
+                {_name: 'listCase'},
+                {_name: 'count'}
+            ], {
+                scope: $scope,
+                rootId: 'any',
+                objectType: 'case',
+                query: {
+                    params: {
+                        name: 'case-count-stats'
+                    }
+                },
+                onUpdate: function(updates) {
+                    self.caseCount = updates;
+                }
+            });
+
         };
 
         this.load = function() {
-            this.list = PSearchSrv(undefined, 'case', {
+
+            this.list = new PaginatedQuerySrv({
+                name: 'cases',
+                root: undefined,
+                objectType: 'case',
+                version: 'v1',
                 scope: $scope,
-                filter: this.filtering.buildQuery(),
-                loadAll: false,
                 sort: self.filtering.context.sort,
+                loadAll: false,
                 pageSize: self.filtering.context.pageSize,
-                nstats: true
+                filter: this.filtering.buildQuery(),
+                operations: [
+                    {'_name': 'listCase'}
+                ],
+                extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount', 'permissions'],
+                onUpdate: function() {
+                    self.resetSelection();
+                }
             });
+        };
+
+        self.resetSelection = function() {
+            if (self.menu.selectAll) {
+                self.selectAll();
+            } else {
+                self.selection = [];
+                self.menu.selectAll = false;
+                // self.updateMenu();
+            }
+        };
+
+        self.select = function(caze) {
+            if (caze.selected) {
+                self.selection.push(caze);
+            } else {
+                self.selection = _.reject(self.selection, function(item) {
+                    return item._id === caze._id;
+                });
+            }
+            // self.updateMenu();
+        };
+
+        self.selectAll = function() {
+            var selected = self.menu.selectAll;
+
+            _.each(self.list.values, function(item) {
+                if(SecuritySrv.checkPermissions(['manageCase'], item.extraData.permissions)) {
+                    item.selected = selected;
+                }
+            });
+
+            if (selected) {
+                self.selection = _.filter(self.list.values, function(item) {
+                    return !!item.selected;
+                });
+            } else {
+                self.selection = [];
+            }
+
+            //self.updateMenu();
+
         };
 
         this.toggleStats = function () {
@@ -99,7 +196,7 @@
                 .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
-                        field: 'owner',
+                        field: 'assignee',
                         type: 'user',
                         value: {
                             list: [{
@@ -117,7 +214,7 @@
                 .then(function() {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
-                        field: 'owner',
+                        field: 'assignee',
                         type: 'user',
                         value: {
                             list: [{
@@ -143,32 +240,55 @@
             this.filtering.setSort(sort);
         };
 
-        this.getCaseResponders = function(caseId, force) {
+        this.bulkEdit = function() {
+            var modal = $uibModal.open({
+                animation: 'true',
+                templateUrl: 'views/partials/case/case.update.html',
+                controller: 'CaseUpdateCtrl',
+                controllerAs: '$dialog',
+                size: 'lg',
+                resolve: {
+                    selection: function() {
+                        return self.selection;
+                    }
+                }
+            });
+
+            modal.result.then(function(operations) {
+                $q.all(_.map(operations, function(operation) {
+                    return CaseSrv.bulkUpdate(operation.ids, operation.patch);
+                })).then(function(/*responses*/) {
+                    NotificationSrv.log('Selected cases have been updated successfully', 'success');
+                });
+            });
+        };
+
+        this.getCaseResponders = function(caze, force) {
             if (!force && this.caseResponders !== null) {
                 return;
             }
 
-            this.caseResponders = null;
-            CortexSrv.getResponders('case', caseId)
-                .then(function(responders) {
+            self.caseResponders = null;
+            CortexSrv.getResponders('case', caze._id)
+                .then(function(responders){
                     self.caseResponders = responders;
+                    return CortexSrv.promntForResponder(responders);
                 })
-                .catch(function(err) {
-                    NotificationSrv.error('CaseList', err.data, err.status);
-                });
-        };
-
-        this.runResponder = function(responderId, responderName, caze) {
-            CortexSrv.runResponder(responderId, responderName, 'case', _.pick(caze, 'id', 'tlp', 'pap'))
                 .then(function(response) {
+                    if(response && _.isString(response)) {
+                        NotificationSrv.log(response, 'warning');
+                    } else {
+                        return CortexSrv.runResponder(response.id, response.name, 'case', _.pick(caze, '_id', 'tlp', 'pap'));
+                    }
+                })
+                .then(function(response){
                     NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
                 })
-                .catch(function(response) {
-                    if (response && !_.isString(response)) {
-                        NotificationSrv.error('CaseList', response.data, response.status);
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('CaseList', err.data, err.status);
                     }
                 });
         };
-
     }
 })();

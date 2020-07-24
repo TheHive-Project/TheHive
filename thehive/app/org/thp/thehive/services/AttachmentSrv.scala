@@ -3,17 +3,12 @@ package org.thp.thehive.services
 import java.io.InputStream
 import java.nio.file.Files
 
-import scala.concurrent.Future
-import scala.util.Try
-
-import play.api.Configuration
-
 import akka.NotUsed
-import akka.stream.{IOResult, Materializer}
 import akka.stream.scaladsl.{Source, StreamConverters}
+import akka.stream.{IOResult, Materializer}
 import akka.util.ByteString
 import gremlin.scala.{Graph, GremlinScala, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntitySteps
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
@@ -23,10 +18,16 @@ import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.VertexSteps
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
+import play.api.Configuration
+
+import scala.concurrent.Future
+import scala.util.Try
 
 @Singleton
-class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit db: Database, mat: Materializer)
-    extends VertexSrv[Attachment, AttachmentSteps] {
+class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(
+    implicit @Named("with-thehive-schema") db: Database,
+    mat: Materializer
+) extends VertexSrv[Attachment, AttachmentSteps] {
 
   val hashers: Hasher = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
 
@@ -80,7 +81,8 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
 }
 
 @EntitySteps[Attachment]
-class AttachmentSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Attachment](raw) {
+class AttachmentSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[Attachment](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): AttachmentSteps = new AttachmentSteps(newRaw)
   override def newInstance(): AttachmentSteps                             = new AttachmentSteps(raw.clone())
 

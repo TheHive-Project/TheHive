@@ -1,10 +1,9 @@
 package org.thp.thehive.controllers.v1
 
+import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
-
-import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject() (
@@ -17,18 +16,20 @@ class Router @Inject() (
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,
     statusCtrl: StatusCtrl,
-    authenticationCtrl: AuthenticationCtrl
+    authenticationCtrl: AuthenticationCtrl,
+    describeCtrl: DescribeCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
     case GET(p"/status") => statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
-    case POST(p"/login")                 => authenticationCtrl.login()
+    case GET(p"/logout")                 => authenticationCtrl.logout
+    case POST(p"/logout")                => authenticationCtrl.logout
+    case POST(p"/login")                 => authenticationCtrl.login
     case POST(p"/auth/totp/set")         => authenticationCtrl.totpSetSecret
     case POST(p"/auth/totp/unset")       => authenticationCtrl.totpUnsetSecret(None)
     case POST(p"/auth/totp/unset/$user") => authenticationCtrl.totpUnsetSecret(Some(user))
-//    POST     /ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
     case POST(p"/case")                 => caseCtrl.create
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
@@ -90,71 +91,14 @@ class Router @Inject() (
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
-    case GET(p"/audit") => auditCtrl.flow()
+    case GET(p"/audit") => auditCtrl.flow
 //      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
 //    GET      /audit                               controllers.AuditCtrl.find()
 //    POST     /audit/_search                       controllers.AuditCtrl.find()
 //    POST     /audit/_stats                        controllers.AuditCtrl.stats()
 
+    case GET(p"/describe/_all")       => describeCtrl.describeAll
+    case GET(p"/describe/$modelName") => describeCtrl.describe(modelName)
+
   }
 }
-/*
-
-POST     /case/artifact/_search               controllers.ArtifactCtrl.find()
-POST     /case/:caseId/artifact/_search       controllers.ArtifactCtrl.findInCase(caseId)
-POST     /case/artifact/_stats                controllers.ArtifactCtrl.stats()
-POST     /case/:caseId/artifact               controllers.ArtifactCtrl.create(caseId)
-GET      /case/artifact/:artifactId           controllers.ArtifactCtrl.get(artifactId)
-DELETE   /case/artifact/:artifactId           controllers.ArtifactCtrl.delete(artifactId)
-PATCH    /case/artifact/_bulk                 controllers.ArtifactCtrl.bulkUpdate()
-PATCH    /case/artifact/:artifactId           controllers.ArtifactCtrl.update(artifactId)
-GET      /case/artifact/:artifactId/similar   controllers.ArtifactCtrl.findSimilar(artifactId)
-
-
-GET      /case/task/:taskId/log               controllers.LogCtrl.findInTask(taskId)
-POST     /case/task/:taskId/log/_search       controllers.LogCtrl.findInTask(taskId)
-POST     /case/task/log/_search               controllers.LogCtrl.find()
-POST     /case/task/log/_stats                controllers.LogCtrl.stats()
-POST     /case/task/:taskId/log               controllers.LogCtrl.create(taskId)
-PATCH    /case/task/log/:logId                controllers.LogCtrl.update(logId)
-DELETE   /case/task/log/:logId                controllers.LogCtrl.delete(logId)
-GET      /case/task/log/:logId                controllers.LogCtrl.get(logId)
-
-
-
-GET      /datastore/:hash                     controllers.AttachmentCtrl.download(hash, name: Option[String])
-GET      /datastorezip/:hash                  controllers.AttachmentCtrl.downloadZip(hash, name: Option[String])
-
-POST     /maintenance/migrate                 org.elastic4play.controllers.MigrationCtrl.migrate
-#POST          /maintenance/rehash                         controllers.MaintenanceCtrl.reHash
-
-GET      /list                                org.elastic4play.controllers.DBListCtrl.list()
-DELETE   /list/:itemId                        org.elastic4play.controllers.DBListCtrl.deleteItem(itemId)
-PATCH    /list/:itemId                        org.elastic4play.controllers.DBListCtrl.updateItem(itemId)
-POST     /list/:listName                      org.elastic4play.controllers.DBListCtrl.addItem(listName)
-GET      /list/:listName                      org.elastic4play.controllers.DBListCtrl.listItems(listName)
-POST     /list/:listName/_exists              org.elastic4play.controllers.DBListCtrl.itemExists(listName)
-
-
-
-
-POST     /stream                              controllers.StreamCtrl.create()
-GET      /stream/status                       controllers.StreamCtrl.status
-GET      /stream/:streamId                    controllers.StreamCtrl.get(streamId)
-
-GET      /describe/_all                       controllers.DescribeCtrl.describeAll
-GET      /describe/:modelName                 controllers.DescribeCtrl.describe(modelName)
-
-GET      /dashboard                           controllers.DashboardCtrl.find()
-POST     /dashboard/_search                   controllers.DashboardCtrl.find()
-POST     /dashboard/_stats                    controllers.DashboardCtrl.stats()
-POST     /dashboard                           controllers.DashboardCtrl.create()
-GET      /dashboard/:dashboardId              controllers.DashboardCtrl.get(dashboardId)
-PATCH    /dashboard/:dashboardId              controllers.DashboardCtrl.update(dashboardId)
-DELETE   /dashboard/:dashboardId              controllers.DashboardCtrl.delete(dashboardId)
-
-->       /connector                           connectors.ConnectorRouter
-
-GET      / *file                                   controllers.AssetCtrl.get(file)
-
- */

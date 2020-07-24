@@ -3,7 +3,8 @@
         Basic Information
 
         <div class="task-actions pull-right" if-permission="manageTask" allowed="{{userPermissions}}">
-            <span if-permission="manageShare" allowed="{{userPermissions}}">
+            <!-- <span if-permission="manageShare" allowed="{{userPermissions}}"> -->
+            <span>
                 <a href ng-click="scrollTo('#task-sharings')">
                     <span class="mr-xxs action-button">
                         <i class="fa fa-users"></i> Sharing
@@ -40,11 +41,11 @@
 
                 <span class="mh-xxs text-primary">|</span>
 
-                <a href class="text-primary noline" ng-click="getTaskResponders()" uib-dropdown-toggle>
+                <a href class="text-primary noline" ng-click="getTaskResponders(true)">
                     <i class="text-primary fa fa-cog"></i>
                     Responders
-                    <i class="text-primary fa fa-angle-down"></i>
                 </a>
+                <!--
                 <ul class="dropdown-menu dropdown-menu-right" uib-dropdown-menu>
                   <li ng-if="taskResponders && taskResponders.length === 0">
                     <a href ng-click="getTaskResponders(true)">
@@ -57,7 +58,7 @@
                       <br>
                       <small>{{responder.description}}</small></a>
                   </li>
-                </ul>
+                </ul> -->
             </span>
 
         </div>
@@ -89,22 +90,22 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Assignee</dt>
             <dd ng-if="canEdit">
-                <updatable-user on-update="updateField('owner', newValue)" value="task.owner"/>
+                <updatable-user on-update="updateField('owner', newValue)" value="task.assignee" query="assignableUsersQuery"/>
             </dd>
             <dd ng-if="!canEdit">
-                <user-info value="task.owner" field="name"></user-info>
+                <user-info value="task.assignee" field="name"></user-info>
             </dd>
         </dl>
     </div>
 
     <div class="col-md-6">
         <dl class="dl-horizontal">
-            <dt class="pull-left">Date</dt>
+            <dt class="pull-left">Start date</dt>
             <dd ng-if="canEdit && task.status !== 'Waiting'">
                 <updatable-date on-update="updateField('startDate', newValue)" value="task.startDate"/>
             </dd>
             <dd ng-if="!canEdit && task.status !== 'Waiting'">
-                {{task.startDate | showDate}}
+                <span ng-bind="task.startDate | shortDate"></span>
             </dd>
             <dd ng-if="task.status === 'Waiting'">
                 <em class="text-warning">Not started yet</em>
@@ -114,7 +115,7 @@
         <dl class="dl-horizontal" ng-show="task.status == 'Completed'">
             <dt class="pull-left">Close date</dt>
             <dd>
-                <span ng-bind="task.endDate | showDate"></span>
+                <span ng-bind="task.endDate | shortDate"></span>
             </dd>
         </dl>
 
@@ -220,9 +221,10 @@
         <psearch control="logs"></psearch>
     </div>
 
-    <div class="col-md-12" id="task-sharings" if-permission="manageShare" allowed="{{userPermissions}}">
+    <!-- <div class="col-md-12" id="task-sharings" if-permission="manageShare" allowed="{{userPermissions}}"> -->
+    <div class="col-md-12" id="task-sharings">
          <h4 class="vpad10 text-primary">Task sharing</h4>
-         <div class="btn-toolbar" role="toolbar">
+         <div class="btn-toolbar" role="toolbar" if-permission="manageShare" allowed="{{userPermissions}}">
              <div class="btn-group">
                  <button class="btn btn-sm btn-primary" ng-click="addTaskShare()">
                      <i class="fa fa-plus"></i>
@@ -235,7 +237,7 @@
                  shares="shares"
                  read-only="true"
                  on-delete="removeShare(share)"
-                 permissions="userPermissions"                 
+                 permissions="userPermissions"
                  ></sharing-list>
          </div>
     </div>

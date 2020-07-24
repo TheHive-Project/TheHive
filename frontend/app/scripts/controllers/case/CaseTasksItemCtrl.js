@@ -1,22 +1,27 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
             // Initialize controller
             $scope.task = task;
-            $scope.tabName = 'task-' + task.id;
+            $scope.tabName = 'task-' + task._id;
             $scope.taskResponders = null;
+
+            $scope.assignableUsersQuery = [
+                {_name: 'getTask', idOrName: task._id},
+                {_name: 'assignableUsers'}
+            ];
 
             $scope.loading = false;
             $scope.newLog = {
                 message: ''
             };
             $scope.sortOptions = {
-                '+startDate': 'Oldest first',
-                '-startDate': 'Newest first'
+                '+date': 'Oldest first',
+                '-date': 'Newest first'
             };
             $scope.state = {
                 editing: false,
@@ -24,7 +29,7 @@
                 dropdownOpen: false,
                 attachmentCollapsed: true,
                 logMissing: '',
-                sort: '-startDate'
+                sort: '-date'
             };
 
             $scope.markdownEditorOptions = {
@@ -35,76 +40,44 @@
 
             $scope.initScope = function () {
 
-                $scope.logs = PSearchSrv(caseId, 'case_task_log', {
+                $scope.logs = new PaginatedQuerySrv({
+                    name: 'case-task-logs',
+                    root: caseId,
+                    objectType: 'case_task_log',
+                    version: 'v1',
                     scope: $scope,
-                    filter: {
-                        _and: [{
-                            _parent: {
-                                _type: 'case_task',
-                                _query: {
-                                    _id: taskId
-                                }
-                            }
-                        }, {
-                            _not: {
-                                'status': 'Deleted'
-                            }
-                        }]
-                    },
-                    'sort': $scope.state.sort,
-                    'pageSize': 10,
-                    onUpdate: function() {
-                        var ids = _.pluck($scope.logs.values, 'id');
-
-                        StatSrv.getPromise({
-                            objectType: 'connector/cortex/action',
-                            field: 'objectId',
-                            limit: 1000,
-                            skipTotal: true,
-                            query: {
-                              _and: [{
-                                  _field: 'objectType',
-                                  _value: 'case_task_log'
-                              },
-                              {
-                                  _in: {
-                                      _field: 'objectId',
-                                      _values: ids
-                                  }
-                              }]
-                            }
-                        }).then(function(response) {
-                            var counts = response.data;
-                            _.each($scope.logs.values, function(log) {
-                                log.nbActions = counts[log.id] ? counts[log.id].count : 0;
-                            });
-                        });
-                    }
+                    sort: $scope.state.sort,
+                    loadAll: false,
+                    pageSize: 10,
+                    operations: [
+                        {
+                            '_name': 'getTask',
+                            'idOrName': taskId
+                        },
+                        {
+                            '_name': 'logs'
+                        }
+                    ],
+                    extraData: ['actionCount']
                 });
 
                 var connectors = $scope.appConfig.connectors;
                 if(connectors.cortex && connectors.cortex.enabled) {
-                    $scope.actions = PSearchSrv(null, 'connector/cortex/action', {
+                    $scope.actions = new PaginatedQuerySrv({
+                        name: 'case-task-actions',
+                        version: 'v1',
                         scope: $scope,
                         streamObjectType: 'action',
-                        filter: {
-                            _and: [
-                                {
-                                    _not: {
-                                        status: 'Deleted'
-                                    }
-                                }, {
-                                    objectType: 'case_task'
-                                }, {
-                                    objectId: taskId
-                                }
-                            ]
-                        },
+                        loadAll: true,
                         sort: ['-startDate'],
                         pageSize: 100,
+                        operations: [
+                            { '_name': 'getTask', 'idOrName': taskId },
+                            { '_name': 'actions' }
+                        ],
                         guard: function(updates) {
                             return _.find(updates, function(item) {
-                                return (item.base.object.objectType === 'case_task') && (item.base.object.objectId === taskId);
+                                return (item.base.details.objectType === 'Task') && (item.base.details.objectId === taskId);
                             }) !== undefined;
                         }
                     });
@@ -125,7 +98,7 @@
                 var field = {};
                 field[fieldName] = newValue;
                 return CaseTaskSrv.update({
-                    taskId: $scope.task.id
+                    taskId: $scope.task._id
                 }, field, function () {}, function (response) {
                     NotificationSrv.error('taskDetails', response.data, response.status);
                 });
@@ -147,14 +120,15 @@
             };
 
             $scope.startTask = function() {
-                var taskId = $scope.task.id;
+                var taskId = $scope.task._id;
 
                 CaseTaskSrv.update({
                     'taskId': taskId
                 }, {
                     'status': 'InProgress'
-                }, function(data) {
-                    $scope.task = data;
+                }, function(/*data*/) {
+                    // $scope.task = data;
+                    $scope.reloadTask();
                 }, function(response) {
                     NotificationSrv.error('taskDetails', response.data, response.status);
                 });
@@ -179,7 +153,7 @@
                 }
 
                 TaskLogSrv.save({
-                    'taskId': $scope.task.id
+                    'taskId': $scope.task._id
                 }, $scope.newLog, function () {
                     if($scope.task.status === 'Waiting') {
                         // Reload the task
@@ -227,35 +201,36 @@
                 }
 
                 $scope.taskResponders = null;
-                CortexSrv.getResponders('case_task', $scope.task.id)
+                CortexSrv.getResponders('case_task', $scope.task._id)
                   .then(function(responders) {
                       $scope.taskResponders = responders;
+                      return CortexSrv.promntForResponder(responders);
                   })
-                  .catch(function(err) {
-                      NotificationSrv.error('taskDetails', err.data, err.status);
-                  });
-            };
-
-            $scope.runResponder = function(responderId, responderName) {
-                CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick($scope.task, 'id'))
                   .then(function(response) {
+                      if(response && _.isString(response)) {
+                          NotificationSrv.log(response, 'warning');
+                      } else {
+                          return CortexSrv.runResponder(response.id, response.name, 'case_task', _.pick($scope.task, '_id'));
+                      }
+                  })
+                  .then(function(response){
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', $scope.task.title].join(' '), 'success');
                   })
-                  .catch(function(response) {
-                      if(response && !_.isString(response)) {
-                          NotificationSrv.error('taskDetails', response.data, response.status);
+                  .catch(function(err) {
+                      if(err && !_.isString(err)) {
+                          NotificationSrv.error('taskDetails', err.data, err.status);
                       }
                   });
             };
 
             $scope.reloadTask = function() {
-                CaseTaskSrv.get({
-                    'taskId': $scope.task.id
-                }, function(data) {
-                    $scope.task = data;
-                }, function(response) {
-                    NotificationSrv.error('taskDetails', response.data, response.status);
-                });
+                CaseTaskSrv.getById($scope.task._id)
+                    .then(function(data) {
+                        $scope.task = data;
+                    })
+                    .catch(function(response) {
+                        NotificationSrv.error('taskDetails', response.data, response.status);
+                    });
             };
 
             $scope.loadShares = function () {
@@ -276,7 +251,7 @@
 
                 modalInstance.result
                     .then(function() {
-                        return CaseTaskSrv.removeShare($scope.task.id, share);
+                        return CaseTaskSrv.removeShare($scope.task._id, share);
                     })
                     .then(function(/*response*/) {
                         $scope.loadShares();
@@ -337,7 +312,7 @@
                     closable: true,
                     state: 'app.case.tasks-item',
                     params: {
-                        itemId: task.id
+                        itemId: task._id
                     }
                 });
 

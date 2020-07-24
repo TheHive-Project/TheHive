@@ -1,14 +1,13 @@
 package org.thp.thehive.migration.th3
 
-import scala.collection.IterableLike
-import scala.collection.generic.CanBuildFrom
-
-import play.api.libs.json._
-
 import com.sksamuel.elastic4s.http.ElasticDsl.fieldSort
 import com.sksamuel.elastic4s.http.search.SearchHit
 import com.sksamuel.elastic4s.searches.sort.Sort
 import com.sksamuel.elastic4s.searches.sort.SortOrder.{ASC, DESC}
+import play.api.libs.json._
+
+import scala.collection.IterableLike
+import scala.collection.generic.CanBuildFrom
 
 object DBUtils {
 
@@ -36,8 +35,7 @@ object DBUtils {
       }
     // then remove duplicates
     // Same as : val fieldSortDefs = byFieldList.groupBy(_._1).map(_._2.head).values.toSeq
-    distinctBy(byFieldList)(_._1)
-      .map(_._2) :+ fieldSort("_id").order(DESC)
+    distinctBy(byFieldList)(_._1).map(_._2)
   }
 
   /**

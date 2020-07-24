@@ -3,10 +3,10 @@ package org.thp.thehive.controllers.dav
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import scala.xml.{Elem, Node}
-
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.Attachment
+
+import scala.xml.{Elem, Node}
 
 trait Resource {
   def url: String

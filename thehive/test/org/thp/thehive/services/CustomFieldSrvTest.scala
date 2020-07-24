@@ -1,12 +1,11 @@
 package org.thp.thehive.services
 
-import play.api.libs.json._
-import play.api.test.PlaySpecification
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import play.api.libs.json._
+import play.api.test.PlaySpecification
 
 class CustomFieldSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext

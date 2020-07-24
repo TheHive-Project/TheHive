@@ -5,7 +5,7 @@ import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.client.{ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.BadConfigurationError
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.steps.{BranchCase, BranchOtherwise, Traversal, VertexSteps}
@@ -44,6 +44,7 @@ class WebhookProvider @Inject() (
     appConfig: ApplicationConfig,
     auditSrv: AuditSrv,
     customFieldSrv: CustomFieldSrv,
+    schema: Schema,
     ec: ExecutionContext,
     mat: Materializer
 ) extends NotifierProvider {
@@ -60,11 +61,17 @@ class WebhookProvider @Inject() (
         .find(_.name == name)
         .fold[Try[WebhookNotification]](Failure(BadConfigurationError(s"Webhook configuration `$name` not found`")))(Success.apply)
 
-    } yield new Webhook(config, auditSrv, customFieldSrv, mat, ec)
+    } yield new Webhook(config, auditSrv, customFieldSrv, mat, schema, ec)
 }
 
-class Webhook(config: WebhookNotification, auditSrv: AuditSrv, customFieldSrv: CustomFieldSrv, mat: Materializer, implicit val ec: ExecutionContext)
-    extends Notifier {
+class Webhook(
+    config: WebhookNotification,
+    auditSrv: AuditSrv,
+    customFieldSrv: CustomFieldSrv,
+    mat: Materializer,
+    implicit val schema: Schema,
+    implicit val ec: ExecutionContext
+) extends Notifier {
   override val name: String = "webhook"
 
   lazy val logger: Logger = Logger(getClass)
@@ -107,11 +114,11 @@ class Webhook(config: WebhookNotification, auditSrv: AuditSrv, customFieldSrv: C
 
   // This method change the format of audit details when it contains custom field.
   // The custom field type is added to match TheHive 3 webhook format.
-  def fixCustomFieldDetails(objectType: String, details: String)(implicit graph: Graph): JsValue =
+  def fixCustomFieldDetails(objectType: String, details: String)(implicit graph: Graph): JsValue = {
+    val detailsJson = Json.parse(details)
     objectType match {
       case "Case" | "Alert" | "CaseTemplate" =>
-        val j = Json.parse(details)
-        j.asOpt[JsObject].fold(j) { o =>
+        detailsJson.asOpt[JsObject].fold(detailsJson) { o =>
           JsObject(o.fields.map {
             case keyValue @ (key, value) if key.startsWith("customField.") =>
               val fieldName = key.drop(12)
@@ -121,7 +128,9 @@ class Webhook(config: WebhookNotification, auditSrv: AuditSrv, customFieldSrv: C
             case keyValue => keyValue
           })
         }
+      case _ => detailsJson
     }
+  }
 
   def buildMessage(version: Int, audit: Audit with Entity)(implicit graph: Graph): Try[JsObject] =
     version match {

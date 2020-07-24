@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -20,7 +20,7 @@ import scala.util.Success
 @Singleton
 class CaseCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
@@ -68,7 +68,7 @@ class CaseCtrl @Inject() (
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
-        val customFields                     = inputCase.customFields.map(c => c.name -> c.value).toMap
+        val customFields                     = inputCase.customFields.map(c => (c.name, c.value, c.order))
         for {
           organisation <- userSrv
             .current
@@ -162,7 +162,7 @@ class CaseCtrl @Inject() (
         caseSrv
           .get(caseIdOrNumber)
           .can(Permissions.manageCase)
-          .update("status" -> "deleted")
+          .update("status" -> CaseStatus.Deleted)
           .map(_ => Results.NoContent)
       }
 
@@ -174,7 +174,7 @@ class CaseCtrl @Inject() (
             .get(caseIdOrNumber)
             .can(Permissions.manageCase)
             .getOrFail()
-          _ <- caseSrv.cascadeRemove(c)
+          _ <- caseSrv.remove(c)
         } yield Results.NoContent
       }
 

@@ -3,24 +3,24 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
 
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
-
-import play.api.Logger
-import play.api.cache.SyncCacheApi
-import play.api.libs.json._
-import play.api.mvc.{Action, AnyContent, Results}
-
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PublicProperty
+import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.services.CustomFieldSrv
-import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
+import play.api.Logger
+import play.api.cache.SyncCacheApi
+import play.api.inject.Injector
+import play.api.libs.json._
+import play.api.mvc.{Action, AnyContent, Results}
+
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class DescribeCtrl @Inject() (
@@ -34,9 +34,20 @@ class DescribeCtrl @Inject() (
     logCtrl: LogCtrl,
     auditCtrl: AuditCtrl,
     customFieldSrv: CustomFieldSrv,
-    db: Database,
+    injector: Injector,
+    @Named("with-thehive-schema") db: Database,
     applicationConfig: ApplicationConfig
 ) {
+
+  case class PropertyDescription(name: String, `type`: String, values: Seq[JsValue] = Nil, labels: Seq[String] = Nil)
+  case class EntityDescription(label: String, path: String, attributes: Seq[PropertyDescription]) {
+    def toJson: JsObject =
+      Json.obj(
+        "label"      -> label,
+        "path"       -> path,
+        "attributes" -> attributes
+      )
+  }
 
   lazy val logger: Logger = Logger(getClass)
 
@@ -44,25 +55,34 @@ class DescribeCtrl @Inject() (
     applicationConfig.item[Duration]("describe.cache.expire", "Custom fields refresh in describe")
   def cacheExpire: Duration = cacheExpireConfig.get
 
-  // action
-  val entityControllers: Map[String, QueryableCtrl] = Map(
-    "case"          -> caseCtrl,
-    "case_task"     -> taskCtrl,
-    "alert"         -> alertCtrl,
-    "case_artifact" -> observableCtrl,
-    "user"          -> userCtrl,
-    "case_task_log" -> logCtrl,
-    "audit"         -> auditCtrl
-  )
+  def describeCortexEntity(
+      name: String,
+      path: String,
+      className: String,
+      packageName: String = "org.thp.thehive.connector.cortex.controllers.v0"
+  ): Option[EntityDescription] =
+    Try(
+      EntityDescription(
+        name,
+        path,
+        injector
+          .instanceOf(getClass.getClassLoader.loadClass(s"$packageName.$className"))
+          .asInstanceOf[QueryableCtrl]
+          .publicProperties
+          .flatMap(propertyToJson(name, _))
+      )
+    ).toOption
 
-  def describe(label: String, ctrl: QueryableCtrl): JsObject =
-    Json.obj(
-      "label"      -> label,
-      "path"       -> ("/" + label.replaceAllLiterally("_", "/")),
-      "attributes" -> ctrl.publicProperties.flatMap(propertyToJson(label, _))
-    )
-
-  case class PropertyDescription(name: String, `type`: String, values: Seq[JsValue] = Nil, labels: Seq[String] = Nil)
+  val entityDescriptions: Seq[EntityDescription] = Seq(
+    EntityDescription("case", "/case", caseCtrl.publicProperties.flatMap(propertyToJson("case", _))),
+    EntityDescription("case_task", "/case/task", taskCtrl.publicProperties.flatMap(propertyToJson("case_task", _))),
+    EntityDescription("alert", "/alert", alertCtrl.publicProperties.flatMap(propertyToJson("alert", _))),
+    EntityDescription("case_artifact", "/case/artifact", observableCtrl.publicProperties.flatMap(propertyToJson("case_artifact", _))),
+    EntityDescription("user", "user", userCtrl.publicProperties.flatMap(propertyToJson("user", _))),
+    EntityDescription("case_task_log", "/case/task/log", logCtrl.publicProperties.flatMap(propertyToJson("case_task_log", _))),
+    EntityDescription("audit", "audit", auditCtrl.publicProperties.flatMap(propertyToJson("audit", _)))
+  ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
+    describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
 
   implicit val propertyDescriptionWrites: Writes[PropertyDescription] =
     Json.writes[PropertyDescription].transform((_: JsObject) + ("description" -> JsString("")))
@@ -112,7 +132,17 @@ class DescribeCtrl @Inject() (
     case (_, "createdBy")    => Some(Seq(PropertyDescription("createdBy", "user")))
     case (_, "updatedBy")    => Some(Seq(PropertyDescription("updatedBy", "user")))
     case (_, "customFields") => Some(customFields)
-    case _                   => None
+    case ("case_artifact_job" | "action", "status") =>
+      Some(
+        Seq(
+          PropertyDescription(
+            "status",
+            "enumeration",
+            Seq(JsString("InProgress"), JsString("Success"), JsString("Failure"), JsString("Waiting"), JsString("Deleted"))
+          )
+        )
+      )
+    case _ => None
   }
 
   def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
@@ -132,17 +162,18 @@ class DescribeCtrl @Inject() (
   def describe(modelName: String): Action[AnyContent] =
     entrypoint("describe model")
       .auth { _ =>
-        entityControllers.get(modelName) match {
-          case Some(ctrl) => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.$modelName", cacheExpire)(describe(modelName, ctrl))))
-          case None       => Failure(NotFoundError(s"Model $modelName not found"))
-        }
+        entityDescriptions
+          .collectFirst {
+            case desc if desc.label == modelName => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.v0.$modelName", cacheExpire)(desc.toJson)))
+          }
+          .getOrElse(Failure(NotFoundError(s"Model $modelName not found")))
       }
 
   def describeAll: Action[AnyContent] =
     entrypoint("describe all models")
       .auth { _ =>
-        val descriptors = entityControllers.map {
-          case (modelName, ctrl) => modelName -> cacheApi.getOrElseUpdate(s"describe.$modelName", cacheExpire)(describe(modelName, ctrl))
+        val descriptors = entityDescriptions.map { desc =>
+          desc.label -> cacheApi.getOrElseUpdate(s"describe.v0.${desc.label}", cacheExpire)(desc.toJson)
         }
         Success(Results.Ok(JsObject(descriptors)))
       }

@@ -6,13 +6,12 @@
             <user user-id="log.owner" icon-size="xs"></user>
         </div>
         <div class="col-md-6">
-            <span class="pull-right ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{permissions}}">
-                <a href class="text-primary noline nowrap" ng-click="getLogResponders(log.id, true)" uib-dropdown-toggle>
+            <span class="pull-right ml-xs" ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{permissions}}">
+                <a href class="text-primary noline nowrap" ng-click="getLogResponders(log, true)">
                     <i class="fa fa-cog"></i>
                     Responders
-                    <i class="fa fa-angle-down"></i>
                 </a>
-                <ul class="dropdown-menu align-right" uib-dropdown-menu>
+                <!-- <ul class="dropdown-menu align-right" uib-dropdown-menu>
                   <li ng-if="logResponders && logResponders.length === 0">
                     <a href ng-click="getLogResponders(task.id, true)">
                       <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
@@ -24,7 +23,7 @@
                       <br>
                       <small>{{responder.description}}</small></a>
                   </li>
-                </ul>
+                </ul> -->
             </span>
             <span class="pull-right" if-permission="manageTask" allowed="{{permissions}}">
                 <a href ng-click="dropLog()" uib-tooltip="Delete log" class="text-danger">
@@ -66,10 +65,10 @@
         </div>
     </div>
 
-    <div class="row" ng-if="log.nbActions > 0">
+    <div class="row" ng-if="log.extraData.actionCount > 0">
         <div class="col-md-12">
-           <a href ng-show="showActions" ng-click="showActions=false">Hide Responder Jobs ({{log.nbActions}})</a>
-           <a href ng-show="!showActions" ng-click="showActions=true; getActions(log.id)">Show Responder Jobs ({{log.nbActions}})</a>
+           <a href ng-show="showActions" ng-click="showActions=false">Hide Responder Jobs ({{log.extraData.actionCount}})</a>
+           <a href ng-show="!showActions" ng-click="showActions=true; getActions(log._id)">Show Responder Jobs ({{log.extraData.actionCount}})</a>
         </div>
         <div class="col-md-12" ng-show="showActions && actions">
           <responder-actions header="" actions="actions"></responder-actions>

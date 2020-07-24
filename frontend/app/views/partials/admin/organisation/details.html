@@ -50,22 +50,67 @@
                             </span>
                         </uib-tab-heading>
                         <div if-permission="manageUser">
-                            <div class="row mb-xs">
+                            <div class="row">
                                 <div class="col-md-12">
                                     <div class="btn-toolbar" role="toolbar">
-                                        <!-- <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addUser()">
-                                            <i class="fa fa-link"></i>
-                                            Add existing user
-                                        </button> -->
-
                                         <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.showUserDialog()">
                                             <i class="fa fa-plus"></i>
                                             Create new user
                                         </button>
+                                        <div class="btn-group" uib-dropdown>
+                                            <button class="btn btn-sm btn-primary dropdown-toggle" uib-dropdown-toggle type="button">
+                                                <i class="fa fa-filter"></i>
+                                                Quick Filters
+                                                <span class="caret"></span>
+                                            </button>
+                                            <ul class="dropdown-menu" uib-dropdown-menu>
+                                                <li>
+                                                    <a class="clickable" ng-click="$vm.filterBy('locked', false)"><i class="fa fa-unlock-alt"></i> Active users</a>
+                                                </li>
+                                                <li>
+                                                    <a class="clickable" ng-click="$vm.filterBy('locked', true)"><i class="fa fa-lock"></i> Locked users</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="btn-group pull-right" role="group">
+                                            <page-sizer collection="$vm.users" sizes="[10, 15, 30, 100]"></page-sizer>
+                                        </div>
+
+                                        <div class="btn-group pull-right" role="group">
+                                            <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[$vm.filtering.context.showFilters]" type="button" ng-click="$vm.toggleFilters()">
+                                                <i class="fa fa-search"></i> Filters
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="mt-s filter-panel" ng-include="'views/partials/admin/organisation/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+
+                                    <div class="row mt-s">
+                                        <div class="col-md-12 clearfix">
+                                            <div class="pull-left">
+                                                <h4>
+                                                    User List ({{$vm.users.values.length || 0}} of {{$vm.users.total}})
+                                                </h4>
+                                            </div>
+
+                                            <filters-preview filters="$vm.filtering.context.filters"
+                                                on-clear-item="$vm.removeFilter(field)"
+                                                on-clear-all="$vm.clearFilters()"></filters-preview>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <org-user-list users="$vm.users" on-reload="$vm.reloadUsers()" on-edit="$vm.showUserDialog(user)" mfa-enabled="$vm.canChangeMfa"></org-user-list>
+                            <org-user-list users="$vm.users"
+                                on-reload="$vm.loadUsers()"
+                                on-edit="$vm.showUserDialog(user)"
+                                on-sort="$vm.sortByField(field)"
+                                sort="$vm.filtering.context.sort"
+                                set-password-enabled="$vm.canSetPass"
+                                mfa-enabled="$vm.canChangeMfa"></org-user-list>
                         </div>
                     </uib-tab>
                     <uib-tab index="1" if-permission="manageCaseTemplate">
@@ -77,6 +122,17 @@
                         </uib-tab-heading>
                         <div if-permission="manageCaseTemplate">
                             <org-case-template-list fields="$vm.fields" templates="$vm.templates"></org-case-template-list>
+                        </div>
+                    </uib-tab>
+                    <uib-tab index="2" if-permission="manageConfig">
+                        <uib-tab-heading>
+                            <span>
+                                <i class="mr-xxs fa fa-cogs"></i>
+                                UI Configuration
+                            </span>
+                        </uib-tab-heading>
+                        <div if-permission="manageConfig">
+                            <org-config-list ui-config="$vm.uiConfig"></org-config-list>
                         </div>
                     </uib-tab>
                     <!-- <uib-tab index="1" if-permission="manageOrganisation">

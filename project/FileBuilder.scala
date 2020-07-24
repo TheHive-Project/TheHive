@@ -1,7 +1,7 @@
-import scala.sys.process.{Process, ProcessLogger}
-
 import sbt.Keys.TaskStreams
 import sbt._
+
+import scala.sys.process.{Process, ProcessLogger}
 
 object FileBuilder {
 

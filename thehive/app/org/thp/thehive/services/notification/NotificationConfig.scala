@@ -1,10 +1,9 @@
 package org.thp.thehive.services.notification
 
+import org.thp.scalligraph.services.config.ApplicationConfig.configurationFormat
 import play.api.Configuration
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads, Writes}
-
-import org.thp.scalligraph.services.config.ApplicationConfig.configurationFormat
 
 case class NotificationConfig(delegate: Boolean, triggerConfig: Configuration, notifierConfig: Configuration, roleRestriction: Set[String])
 

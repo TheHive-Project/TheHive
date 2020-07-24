@@ -16,7 +16,7 @@
             this.existingExports = {};
             this.loading = false;
 
-            _.each(_.filter(this.caze.stats.alerts || [], function(item) {
+            _.each(_.filter(this.caze.extraData.alerts || [], function(item) {
                 return item.type === 'misp';
             }), function(item) {
                 self.existingExports[item.source] = true;
@@ -33,12 +33,12 @@
                 });
 
                 return result;
-            }
+            };
 
             this.copyToClipboard = function() {
                 clipboard.copyText(_.pluck(self.failures, 'data').join('\n'));
                 $uibModalInstance.dismiss();
-            }
+            };
 
             this.cancel = function() {
                 $uibModalInstance.dismiss();
@@ -52,7 +52,7 @@
                 self.loading = true;
                 self.failures = [];
 
-                MispSrv.export(self.caze.id, server.name)
+                MispSrv.export(self.caze._id, server.name)
                 .then(function(response){
                     var success = 0,
                         failure = 0;

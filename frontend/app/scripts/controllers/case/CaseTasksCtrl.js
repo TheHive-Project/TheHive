@@ -1,10 +1,9 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('CaseTaskDeleteCtrl', CaseTaskDeleteCtrl)
         .controller('CaseTasksCtrl', CaseTasksCtrl);
 
-    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, FilteringSrv, CaseTabsSrv, PSearchSrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
+    function CaseTasksCtrl($scope, $state, $stateParams, $q, $uibModal, AuthenticationSrv, ModalUtilsSrv, FilteringSrv, CaseTabsSrv, PaginatedQuerySrv, CaseTaskSrv, UserSrv, NotificationSrv, CortexSrv, AppLayoutSrv) {
 
         CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -21,6 +20,7 @@
 
         this.$onInit = function() {
             $scope.filtering = new FilteringSrv('case_task', 'task.list', {
+                version: 'v1',
                 defaults: {
                     showFilters: true,
                     showStats: false,
@@ -34,33 +34,42 @@
                 .then(function() {
                     $scope.load();
 
-                    $scope.$watchCollection('artifacts.pageSize', function (newValue) {
+                    $scope.$watchCollection('tasks.pageSize', function (newValue) {
                         $scope.filtering.setPageSize(newValue);
                     });
                 });
         };
 
+        $scope.getAssignableUsers = function(taskId) {
+            return [
+                {_name: 'getTask', idOrName: taskId},
+                {_name: 'assignableUsers'}
+            ];
+        };
+
         $scope.load = function() {
-            $scope.tasks = PSearchSrv($scope.caseId, 'case_task', {
+            $scope.tasks = new PaginatedQuerySrv({
+                name: 'case-tasks',
+                root: $scope.caseId,
+                objectType: 'case_task',
+                version: 'v1',
                 scope: $scope,
-                baseFilter: {
-                    _and: [{
-                        _parent: {
-                            _type: 'case',
-                            _query: {
-                                '_id': $scope.caseId
-                            }
-                        }
-                    }, {
-                        _not: {
-                            'status': 'Cancel'
-                        }
-                    }]
-                },
-                filter: $scope.filtering.buildQuery(),
-                loadAll: true,
                 sort: $scope.filtering.context.sort,
+                loadAll: false,
                 pageSize: $scope.filtering.context.pageSize,
+                filter: $scope.filtering.buildQuery(),
+                baseFilter: {
+                    _not: {
+                        _field: 'status',
+                        _value: 'Cancel'
+                    }
+                },
+                operations: [
+                    {'_name': 'getCase', "idOrName": $scope.caseId},
+                    {'_name': 'tasks'}
+                ],
+                extraData: ['shareCount'],
+                //extraData: ['isOwner', 'shareCount'],
                 onUpdate: function() {
                     $scope.buildTaskGroups($scope.tasks.values);
                 }
@@ -96,6 +105,31 @@
         $scope.addFilterValue = function (field, value) {
             $scope.filtering.addFilterValue(field, value);
             $scope.search();
+        };
+
+        $scope.filterBy = function(field, value) {
+            $scope.filtering.clearFilters()
+                .then(function() {
+                    $scope.addFilterValue(field, value);
+                });
+        };
+
+        $scope.filterMyTasks = function() {
+            $scope.filtering.clearFilters()
+                .then(function() {
+                    var currentUser = AuthenticationSrv.currentUser;
+                    $scope.filtering.addFilter({
+                        field: 'assignee',
+                        type: 'user',
+                        value: {
+                            list: [{
+                                text: currentUser.login,
+                                label: currentUser.name
+                            }]
+                        }
+                    });
+                    $scope.search();
+                });
         };
 
         $scope.toggleGroupedView = function() {
@@ -142,7 +176,7 @@
             var field = {};
             field[fieldName] = newValue;
             return CaseTaskSrv.update({
-                taskId: task.id
+                taskId: task._id
             }, field, function () {}, function (response) {
                 NotificationSrv.error('taskList', response.data, response.status);
             });
@@ -164,21 +198,12 @@
 
         $scope.removeTask = function(task) {
 
-            var modalInstance = $uibModal.open({
-                animation: true,
-                templateUrl: 'views/partials/case/case.task.delete.html',
-                controller: 'CaseTaskDeleteCtrl',
-                controllerAs: 'vm',
-                resolve: {
-                    title: function() {
-                        return task.title;
-                    }
-                }
-            });
-
-            modalInstance.result.then(function() {
+            ModalUtilsSrv.confirm('Delete task', 'Are you sure you want to delete the selected task?', {
+                okText: 'Yes, remove it',
+                flavor: 'danger'
+            }).then(function() {
                 CaseTaskSrv.update({
-                    'taskId': task.id
+                    'taskId': task._id
                 }, {
                     status: 'Cancel'
                 }, function() {
@@ -188,12 +213,11 @@
                     NotificationSrv.error('taskList', response.data, response.status);
                 });
             });
-
         };
 
         // open task tab with its details
         $scope.startTask = function(task) {
-            var taskId = task.id;
+            var taskId = task._id;
 
             if (task.status === 'Waiting') {
                 $scope.updateTaskStatus(taskId, 'InProgress')
@@ -207,16 +231,16 @@
 
         $scope.openTask = function(task) {
             if (task.status === 'Completed') {
-                $scope.updateTaskStatus(task.id, 'InProgress')
+                $scope.updateTaskStatus(task._id, 'InProgress')
                     .then(function(/*response*/) {
-                        $scope.showTask(task.id);
+                        $scope.showTask(task._id);
                     });
             }
         };
 
         $scope.closeTask = function(task) {
             if (task.status === 'InProgress') {
-                $scope.updateTaskStatus(task.id, 'Completed')
+                $scope.updateTaskStatus(task._id, 'Completed')
                     .then(function() {
                         NotificationSrv.success('Task has been successfully closed');
                     });
@@ -240,43 +264,44 @@
             return defer.promise;
         };
 
-        $scope.getTaskResponders = function(taskId, force) {
+        $scope.getTaskResponders = function(task, force) {
             if(!force && $scope.taskResponders !== null) {
                return;
             }
 
             $scope.taskResponders = null;
-            CortexSrv.getResponders('case_task', taskId)
+            CortexSrv.getResponders('case_task', task._id)
               .then(function(responders) {
                   $scope.taskResponders = responders;
+                  return CortexSrv.promntForResponder(responders);
               })
-              .catch(function(response) {
-                  NotificationSrv.error('taskList', response.data, response.status);
-              });
-        };
-
-        $scope.runResponder = function(responderId, responderName, task) {
-            CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick(task, 'id'))
               .then(function(response) {
+                  if(response && _.isString(response)) {
+                      NotificationSrv.log(response, 'warning');
+                  } else {
+                      return CortexSrv.runResponder(response.id, response.name, 'case_task', _.pick(task, '_id'));
+                  }
+              })
+              .then(function(response){
                   NotificationSrv.success(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '));
               })
-              .catch(function(response) {
-                  if(response && !_.isString(response)) {
-                      NotificationSrv.error('taskList', response.data, response.status);
+              .catch(function(err) {
+                  if(err && !_.isString(err)) {
+                      NotificationSrv.error('taskList', err.data, err.status);
                   }
               });
         };
-    }
 
-    function CaseTaskDeleteCtrl($uibModalInstance, title) {
-        this.title = title;
-
-        this.ok = function() {
-            $uibModalInstance.close();
-        };
-
-        this.cancel = function() {
-            $uibModalInstance.dismiss();
-        };
+        // $scope.runResponder = function(responderId, responderName, task) {
+        //     CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick(task, '_id'))
+        //       .then(function(response) {
+        //           NotificationSrv.success(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '));
+        //       })
+        //       .catch(function(response) {
+        //           if(response && !_.isString(response)) {
+        //               NotificationSrv.error('taskList', response.data, response.status);
+        //           }
+        //       });
+        // };
     }
 }());

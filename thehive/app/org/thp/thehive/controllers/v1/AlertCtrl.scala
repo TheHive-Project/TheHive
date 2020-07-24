@@ -1,27 +1,29 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
+import org.thp.scalligraph.steps.{PagedResult, Traversal}
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputAlert
 import org.thp.thehive.models.{Permissions, RichAlert}
 import org.thp.thehive.services._
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class AlertCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with AlertRenderer {
 
   override val entityName: String                           = "alert"
   override val publicProperties: List[PublicProperty[_, _]] = properties.alert ::: metaProperties[AlertSteps]
@@ -32,17 +34,23 @@ class AlertCtrl @Inject() (
     FieldsParser[IdOrName],
     (param, graph, authContext) => alertSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, AlertSteps, PagedResult[RichAlert]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, AlertSteps, PagedResult[(RichAlert, JsObject)]](
     "page",
     FieldsParser[OutputParam],
-    (range, alertSteps, _) =>
+    (range, alertSteps, authContext) =>
       alertSteps
-        .richPage(range.from, range.to, withTotal = true)(_.richAlert)
+        .richPage(range.from, range.to, range.extraData.contains("total"))(
+          _.richAlertWithCustomRenderer(alertStatsRenderer(range.extraData)(authContext, db, alertSteps.graph))(authContext)
+        )
   )
   override val outputQuery: Query = Query.output[RichAlert, AlertSteps](_.richAlert)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[AlertSteps, ObservableSteps]("observables", (alertSteps, _) => alertSteps.observables),
-    Query[AlertSteps, CaseSteps]("case", (alertSteps, _) => alertSteps.`case`)
+    Query[AlertSteps, CaseSteps]("case", (alertSteps, _) => alertSteps.`case`),
+    Query[AlertSteps, Traversal[JsValue, JsValue]](
+      "similarCases",
+      (alertSteps, authContext) => alertSteps.similarCases(authContext).map(Json.toJson(_))
+    )
   )
 
   def create: Action[AnyContent] =

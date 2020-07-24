@@ -14,28 +14,28 @@
                         </li>
                         -->
                     <li ng-show="$vm.menu.follow">
-                        <a href ng-click="$vm.bulkFollow(true)">Track new updates</a>
+                        <a href ng-click="$vm.bulkFollow(true)"><i class="fa fa-eye"></i> Track new updates</a>
                     </li>
                     <li ng-show="$vm.menu.unfollow">
-                        <a href ng-click="$vm.bulkFollow(false)">Ignore new updates</a>
+                        <a href ng-click="$vm.bulkFollow(false)"><i class="fa fa-eye-slash"></i> Ignore new updates</a>
                     </li>
                     <li ng-show="$vm.menu.markAsRead">
-                        <a href ng-click="$vm.bulkMarkAsRead(true)">Mark as read</a>
+                        <a href ng-click="$vm.bulkMarkAsRead(true)"><i class="fa fa-envelope-open-o"></i> Mark as read</a>
                     </li>
                     <li ng-show="$vm.menu.markAsUnread">
-                        <a href ng-click="$vm.bulkMarkAsRead(false)">Mark as unread</a>
+                        <a href ng-click="$vm.bulkMarkAsRead(false)"><i class="fa fa-envelope"></i> Mark as unread</a>
                     </li>
                     <li ng-show="$vm.menu.delete">
-                        <a href ng-click="$vm.bulkDelete()">
-                            <span class="text-danger">Delete</span>
+                        <a href ng-click="$vm.bulkDelete()" class="text-danger">
+                            <i class="fa fa-trash-o"></i> Delete
                         </a>
                     </li>
                     <li class="divider" ng-show="$vm.menu.createNewCase"></li>
                     <li ng-show="$vm.menu.createNewCase">
-                        <a href ng-click="$vm.createNewCase()">New case from selection</a>
+                        <a href ng-click="$vm.createNewCase()"><i class="fa fa-file-o"></i> New case from selection</a>
                     </li>
                     <li ng-show="$vm.menu.mergeInCase">
-                        <a href ng-click="$vm.mergeInCase()">Merge selection into case</a>
+                        <a href ng-click="$vm.mergeInCase()"><i class="fa fa-compress"></i> Merge selection into case</a>
                     </li>
                 </ul>
             </div>
@@ -48,15 +48,20 @@
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
-                        <a ng-click="$vm.filterByNewAndUpdated()">New & Updated events ({{(alertEvents.Updated.count || 0) + (alertEvents.New.count || 0)}})</a>
+                        <a class="clickable" ng-click="$vm.filterBy('read', true)"><i class="fa fa-envelope-open-o"></i> Read events</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.filterByStatus('New')">New events ({{alertEvents.New.count || 0}})</a>
+                        <a class="clickable" ng-click="$vm.filterBy('read', false)"><i class="fa fa-envelope"></i> Unread events</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.filterByStatus('Updated')">Updated events({{alertEvents.Updated.count || 0}})</a>
+                        <a class="clickable" ng-click="$vm.filterByStatus(true)"><i class="fa fa-download"></i> Imported events</a>
                     </li>
-
+                    <li>
+                        <a class="clickable" ng-click="$vm.filterBy('follow', true)"><i class="fa fa-eye"></i> Followed events</a>
+                    </li>
+                    <li>
+                        <a class="clickable" ng-click="$vm.filterBy('follow', false)"><i class="fa fa-eye-slash"></i> Ignored events</a>
+                    </li>
                 </ul>
             </div>
 

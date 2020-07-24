@@ -1,12 +1,11 @@
 package org.thp.thehive.migration.th3
 
+import com.sksamuel.elastic4s.http.ElasticDsl._
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
-
+import org.thp.scalligraph.NotFoundError
 import play.api.libs.json.JsObject
 
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import org.thp.scalligraph.NotFoundError
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class DBGet @Inject() (db: DBConfiguration, implicit val ec: ExecutionContext) {

@@ -9,6 +9,11 @@ import org.thp.scalligraph.{EdgeEntity, VertexEntity}
 @DefineIndex(IndexType.unique, "name")
 case class Organisation(name: String, description: String)
 
+object Organisation {
+  val administration: Organisation     = Organisation("admin", "organisation for administration")
+  val initialValues: Seq[Organisation] = Seq(administration)
+}
+
 @EdgeEntity[Organisation, Share]
 case class OrganisationShare()
 

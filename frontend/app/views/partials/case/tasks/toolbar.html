@@ -8,8 +8,36 @@
                     Add Task
                 </button>
             </div>
+
+            <div class="btn-group" uib-dropdown>
+                <button class="btn btn-primary btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
+                    <i class="fa fa-filter"></i>
+                    Quick Filters
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" uib-dropdown-menu>
+                    <li>
+                        <a ng-click="filterMyTasks()"><i class="fa fa-user"></i> My tasks</a>
+                    </li>
+                    <li class="divider"></li>
+                    <li>
+                        <a ng-click="filterBy('status', 'InProgress')"><i class="glyphicon glyphicon-play"></i> In progress tasks</a>
+                    </li>
+                    <li>
+                        <a ng-click="filterBy('status', 'Waiting')"><i class="fa fa-hourglass-o"></i> Waiting tasks</a>
+                    </li>
+                    <li>
+                        <a ng-click="filterBy('status', 'Completed')"><i class="fa fa-check"></i> Completed tasks</a>
+                    </li>
+                    <li class="divider"></li>
+                    <li>
+                        <a ng-click="filterBy('flag', true)"><i class="fa fa-folder-open"></i> Flagged tasks</a>
+                    </li>
+                </ul>
+            </div>
+
             <div class="btn-group">
-                <button class="btn btn-sm btn-primary" ng-click="toggleGroupedView()">
+                <button class="btn btn-sm btn-default" ng-click="toggleGroupedView()">
                     <i class="glyphicon glyphicon-th-list"></i>
                     Show {{state.showGrouped ? 'as a List' : 'Groups'}}
                 </button>

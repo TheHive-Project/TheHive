@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import java.util.Base64
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -25,7 +25,7 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class UserCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     userSrv: UserSrv,
     authSrv: AuthSrv,
@@ -51,11 +51,16 @@ class UserCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
     "page",
     FieldsParser[OutputParam],
-    (range, userSteps, authContext) => userSteps.richUser(authContext.organisation).page(range.from, range.to, withTotal = true)
+    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, range.extraData.contains("total"))
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext.organisation))
+    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext))
 
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[UserSteps]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
+    Query[UserSteps, TaskSteps]("tasks", (userSteps, authContext) => userSteps.tasks.visible(authContext)),
+    Query[UserSteps, CaseSteps]("cases", (userSteps, authContext) => userSteps.cases.visible(authContext))
+  )
   def current: Action[AnyContent] =
     entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>
@@ -63,7 +68,12 @@ class UserCtrl @Inject() (
           .current
           .richUserWithCustomRenderer(request.organisation, _.organisationWithRole.map(_.asScala.toSeq))
           .getOrFail("User")
-          .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation))
+          .map(user =>
+            Results
+              .Ok(user.toJson)
+              .withHeaders("X-Organisation" -> request.organisation)
+              .withHeaders("X-Permissions" -> user._1.permissions.mkString(","))
+          )
       }
 
   def create: Action[AnyContent] =
@@ -159,7 +169,7 @@ class UserCtrl @Inject() (
                 for {
                   updateName <- maybeName.map(name => userSrv.get(user).update("name" -> name).map(_ => Json.obj("name" -> name))).flip
                   updateLocked <- maybeLocked
-                    .map(locked => requireAdmin(userSrv.get(user).update("locked" -> locked).map(_ => Json.obj("locked" -> locked))))
+                    .map(locked => requireAdmin(if (locked) userSrv.lock(user) else userSrv.unlock(user)).map(_ => Json.obj("locked" -> locked)))
                     .flip
                   updateProfile <- maybeProfile.map { profileName =>
                     requireAdmin {

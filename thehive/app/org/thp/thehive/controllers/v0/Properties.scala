@@ -1,23 +1,19 @@
 package org.thp.thehive.controllers.v0
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import java.util.Date
 
-import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
-
-import gremlin.scala.{__, By, Key, P, Vertex}
+import gremlin.scala.{__, By, Key, P}
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.UniMapping
 import org.thp.scalligraph.query.{NoValue, PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.services._
 import org.thp.scalligraph.steps.IdMapping
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, InvalidFormatAttributeError, RichSeq}
+import org.thp.scalligraph.{AttributeCheckingError, AuthorizationError, BadRequestError, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
-import org.thp.thehive.models.{AlertCase, CaseStatus, Permissions, TaskStatus}
+import org.thp.thehive.models.{CaseStatus, Permissions, TaskStatus}
 import org.thp.thehive.services.{
   AlertSrv,
   AlertSteps,
@@ -43,6 +39,10 @@ import org.thp.thehive.services.{
   UserSrv,
   UserSteps
 }
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class Properties @Inject() (
@@ -84,8 +84,8 @@ class Properties @Inject() (
       .property("status", UniMapping.string)(
         _.select(
           _.project(
-            _.apply(By(Key[Boolean]("read")))
-              .and(By(__[Vertex].outToE[AlertCase].limit(1).count()))
+            _.by(Key[Boolean]("read"))
+              .by(_.`case`.limit(1).count)
           ).map {
             case (false, caseCount) if caseCount == 0L => "New"
             case (false, _)                            => "Updated"
@@ -196,12 +196,12 @@ class Properties @Inject() (
           for {
 //            v <- UniMapping.jsonNative.toGraphOpt(value).fold[Try[Any]](???)(Success.apply)
             c <- caseSrv.getOrFail(vertex)(graph)
-            _ <- caseSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+            _ <- caseSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {
             c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
-            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(cf => (cf, v, None)) }
             _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
           } yield Json.obj("customFields" -> values)
         case _ => Failure(BadRequestError("Invalid custom fields format"))
@@ -210,8 +210,8 @@ class Properties @Inject() (
         _.select(
           _.coalesce(
             _.has("endDate")
-              .sack((_: Long, endDate: Long) => endDate, By(Key[Long]("endDate")))
-              .sack((_: Long) - (_: Long), By(Key[Long]("startDate")))
+              .sack((_: Long, endDate: Long) => endDate, By(__.value(Key[Date]("endDate")).map(_.getTime)))
+              .sack((_: Long) - (_: Long), By(__.value(Key[Date]("startDate")).map(_.getTime)))
               .sack((_: Long) / (_: Long), By(__.constant(3600000L)))
               .sack[Long](),
             _.constant(0L)
@@ -320,7 +320,7 @@ class Properties @Inject() (
       .property("message", UniMapping.string)(_.field.updatable)
       .property("deleted", UniMapping.boolean)(_.field.updatable)
       .property("startDate", UniMapping.date)(_.rename("date").readonly)
-      .property("status", UniMapping.string)(_.field.readonly)
+      .property("status", UniMapping.string)(_.select(_.constant("Ok")).readonly)
       .property("attachment", IdMapping)(_.select(_.attachments._id).readonly)
       .build
 
@@ -343,7 +343,10 @@ class Properties @Inject() (
       .property("tlp", UniMapping.int)(_.field.updatable)
       .property("dataType", UniMapping.string)(_.select(_.observableType.name).readonly)
       .property("data", UniMapping.string.optional)(_.select(_.data.data).readonly)
-      // TODO add attachment ?
+      .property("attachment.name", UniMapping.string.optional)(_.select(_.attachments.name).readonly)
+      .property("attachment.size", UniMapping.long.optional)(_.select(_.attachments.size).readonly)
+      .property("attachment.contentType", UniMapping.string.optional)(_.select(_.attachments.contentType).readonly)
+      .property("attachment.hashes", UniMapping.string)(_.select(_.attachments.hashes.map(_.toString)).readonly)
       .build
 
   lazy val organisation: List[PublicProperty[_, _]] =
@@ -369,6 +372,7 @@ class Properties @Inject() (
     .property("predicate", UniMapping.string)(_.field.readonly)
     .property("value", UniMapping.string.optional)(_.field.readonly)
     .property("description", UniMapping.string.optional)(_.field.readonly)
+    .property("text", UniMapping.string)(_.select(_.displayName).readonly)
     .build
 
   lazy val task: List[PublicProperty[_, _]] =
@@ -391,7 +395,7 @@ class Properties @Inject() (
       .property("dueDate", UniMapping.date.optional)(_.field.updatable)
       .property("group", UniMapping.string)(_.field.updatable)
       .property("owner", UniMapping.string.optional)(
-        _.select(_.user.login)
+        _.select(_.assignee.login)
           .custom { (_, login: Option[String], vertex, _, graph, authContext) =>
             for {
               task <- taskSrv.get(vertex)(graph).getOrFail("Task")
@@ -432,19 +436,19 @@ class Properties @Inject() (
       })
       .property("status", UniMapping.string)(
         _.select(_.choose(predicate = _.locked.is(P.eq(true)), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
-          .custom { (_, value, vertex, db, graph, authContext) =>
+          .custom { (_, value, vertex, _, graph, authContext) =>
             userSrv
               .current(graph, authContext)
               .organisations(Permissions.manageUser)
               .users
               .get(vertex)
-              .existsOrFail()
+              .orFail(AuthorizationError("Operation not permitted"))
               .flatMap {
-                case _ if value == "Ok" =>
-                  db.setProperty(vertex, "locked", false, UniMapping.boolean)
+                case user if value == "Ok" =>
+                  userSrv.unlock(user)(graph, authContext)
                   Success(Json.obj("status" -> value))
-                case _ if value == "Locked" =>
-                  db.setProperty(vertex, "locked", true, UniMapping.boolean)
+                case user if value == "Locked" =>
+                  userSrv.lock(user)(graph, authContext)
                   Success(Json.obj("status" -> value))
                 case _ => Failure(InvalidFormatAttributeError("status", "UserStatus", Set("Ok", "Locked"), FString(value)))
               }

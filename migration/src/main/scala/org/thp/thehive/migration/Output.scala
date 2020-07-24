@@ -1,26 +1,12 @@
 package org.thp.thehive.migration
 
+import org.thp.thehive.migration.dto._
+
 import scala.util.Try
-import org.thp.thehive.migration.dto.{
-  InputAction,
-  InputAlert,
-  InputAudit,
-  InputCase,
-  InputCaseTemplate,
-  InputCustomField,
-  InputImpactStatus,
-  InputJob,
-  InputLog,
-  InputObservable,
-  InputObservableType,
-  InputOrganisation,
-  InputProfile,
-  InputResolutionStatus,
-  InputTask,
-  InputUser
-}
 
 trait Output {
+  def startMigration(): Try[Unit]
+  def endMigration(): Try[Unit]
   def profileExists(inputProfile: InputProfile): Boolean
   def createProfile(inputProfile: InputProfile): Try[IdMapping]
   def organisationExists(inputOrganisation: InputOrganisation): Boolean

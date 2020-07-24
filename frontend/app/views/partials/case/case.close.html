@@ -1,6 +1,6 @@
 <form class="form-horizontal" name="caseCloseForm" ng-submit="closeCase(caseCloseForm.$valid);" novalidate>
     <div class="modal-header bg-primary">
-        <h3 class="modal-title">Close Case #{{caze.caseId}}</h3>
+        <h3 class="modal-title">Close Case #{{caze.number}}</h3>
     </div>
     <div class="modal-body">
         <div ng-show="!tasksValid">
@@ -47,7 +47,7 @@
         <div ng-show="tasksValid === true">
             <div align="center" class="alert alert-danger">
                 <i class="glyphicon glyphicon-exclamation-sign"></i>
-                You are about to close Case #{{caze.caseId}}. Are you sure you want to continue ?
+                You are about to close Case #{{caze.number}}. Are you sure you want to continue ?
             </div>
 
             <div class="row">
@@ -121,25 +121,27 @@
                 </div>
             </div>
             <!-- Custom Fields -->
-            <div class="form-group" ng-repeat="k in mandatoryFields" ng-init="fieldDef = allCustomFields[k];" ng-class="{ 'has-error' : caseCloseForm['customFields.' + k].$invalid && !caseCloseForm['customFields.' + k].$pristine }">
-                <label class="col-sm-3 control-label" uib-tooltip="{{allCustomFields[k].description}}">{{fieldDef.name}}
+            <div class="form-group" ng-repeat="cf in mandatoryFields" ng-init="fieldDef = customFieldsSrv.getCache(cf.name);"
+                ng-class="{ 'has-error' : caseCloseForm['customFields.' + cf.name].$invalid && !caseCloseForm['customFields.' + cf.name].$pristine }">
+                <label class="col-sm-3 control-label" uib-tooltip="{{fieldDef.description}}">{{fieldDef.name}}
                     <i class="fa fa-asterisk text-danger"></i>
                 </label>
 
-                <div class="col-sm-3" ng-if="allCustomFields[k].options.length > 0">
-                    <select class="form-control" name="{{'customFields.' + k}}" ng-model="caze.customFields[k][fieldDef.type]" ng-options="v for v in allCustomFields[k].options" required>
+                <div class="col-sm-3" ng-if="fieldDef.options.length > 0">
+                    <select class="form-control" name="{{'customFields.' + cf.name}}" ng-model="cf.value" ng-options="v for v in fieldDef.options" required>
                         <option value=""></option>
                     </select>
-                    <p class="help-block" ng-show="caseCloseForm['customFields.' + k].$invalid && !caseCloseForm['customFields.' + k].$pristine">This field is required.</p>
+                    <p class="help-block" ng-show="caseCloseForm['customFields.' + cf.name].$invalid && !caseCloseForm['customFields.' + cf.name].$pristine">This field is required.</p>
                 </div>
-                <div class="col-sm-3" ng-if="allCustomFields[k].options.length === 0" ng-switch="allCustomFields[k].type">
-                    <input ng-switch-when="string" name="{{'customFields.' + k}}" type="text" class="form-control" ng-model="caze.customFields[k][fieldDef.type]" required>
-                    <input ng-switch-when="number" name="{{'customFields.' + k}}" type="number" class="form-control" ng-model="caze.customFields[k][fieldDef.type]" required>
-                    <select ng-switch-when="boolean" name="{{'customFields.' + k}}" class="form-control" ng-model="caze.customFields[k][fieldDef.type]" ng-options="v for v in [true, false]" required>
+                <div class="col-sm-3" ng-if="fieldDef.options.length === 0" ng-switch="cf.type">
+                    <input ng-switch-when="string" name="{{'customFields.' + cf.name}}" type="text" class="form-control" ng-model="cf.value" required>
+                    <input ng-switch-when="integer" name="{{'customFields.' + cf.name}}" type="number" step="1" class="form-control" ng-model="cf.value" required>
+                    <input ng-switch-when="float" name="{{'customFields.' + cf.name}}" type="number" step=".01" class="form-control" ng-model="cf.value" required>
+                    <select ng-switch-when="boolean" name="{{'customFields.' + cf.name}}" class="form-control" ng-model="cf.value" ng-options="v for v in [true, false]" required>
                         <option value=""></option>
                     </select>
-                    <dt-picker ng-switch-when="date" name="{{'customFields.' + k}}" date="caze.customFields[k][fieldDef.type]" required="true"></dt-picker>
-                    <p class="help-block" ng-show="caseCloseForm['customFields.' + k].$invalid && !caseCloseForm['customFields.' + k].$pristine">This field is required.</p>
+                    <dt-picker ng-switch-when="date" name="{{'customFields.' + cf.name}}" date="cf.value" required="true"></dt-picker>
+                    <p class="help-block" ng-show="caseCloseForm['customFields.' + cf.name].$invalid && !caseCloseForm['customFields.' + cf.name].$pristine">This field is required.</p>
                 </div>
 
             </div>

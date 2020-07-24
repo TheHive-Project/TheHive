@@ -3,17 +3,11 @@ package org.thp.thehive.connector.misp.services
 import java.nio.file.Files
 import java.util.Date
 
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
-import play.api.Logger
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import gremlin.scala.{__, By, Key, P, Vertex}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
@@ -23,6 +17,11 @@ import org.thp.scalligraph.services.RichVertexGremlinScala
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import play.api.Logger
+
+import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class MispImportSrv @Inject() (
@@ -33,7 +32,7 @@ class MispImportSrv @Inject() (
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
@@ -320,7 +319,7 @@ class MispImportSrv @Inject() (
                 .toIterator
                 .toTry { obs =>
                   logger.info(s"Remove $obs")
-                  observableSrv.cascadeRemove(obs)
+                  observableSrv.remove(obs)
                 }
             }
             .map(_ => ())
@@ -351,7 +350,7 @@ class MispImportSrv @Inject() (
           case None => // if the related alert doesn't exist, create it
             logger.debug(s"Event ${client.name}#${event.id} has no related alert for organisation ${organisation.name}")
             alertSrv
-              .create(alert, organisation, event.tags.map(_.name).toSet, Map.empty, caseTemplate)
+              .create(alert, organisation, event.tags.map(_.name).toSet, Map.empty[String, Option[Any]], caseTemplate)
               .map(_.alert)
           case Some(richAlert) =>
             logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")

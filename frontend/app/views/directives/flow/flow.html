@@ -1,5 +1,5 @@
 <div class="flow">
-  	<div class="flow-item" ng-repeat="value in values" ng-switch="value.base.objectType">
+  	<div class="flow-item" ng-repeat="value in $flow.values" ng-switch="value.base.objectType">
         <flow-item target="targetWindow" type="user" data="value" ng-switch-when="user"></flow-item>
         <flow-item target="targetWindow" type="case" data="value" ng-switch-when="case"></flow-item>
         <flow-item target="targetWindow" type="task" data="value" ng-switch-when="case_task"></flow-item>
@@ -8,5 +8,7 @@
         <flow-item target="targetWindow" type="observable-job" data="value" ng-switch-when="case_artifact_job"></flow-item>
         <flow-item target="targetWindow" type="alert" data="value" ng-switch-when="alert"></flow-item>
         <flow-item target="targetWindow" type="action" data="value" ng-switch-when="action"></flow-item>
+        <flow-item target="targetWindow" type="caseTemplate" data="value" ng-switch-when="casetemplate"></flow-item>
+        <flow-item target="targetWindow" type="organisation" data="value" ng-switch-when="organisation"></flow-item>
 	</div>
 </div>

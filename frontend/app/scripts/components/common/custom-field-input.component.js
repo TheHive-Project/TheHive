@@ -14,6 +14,7 @@
             controllerAs: '$ctrl',
             templateUrl: 'views/components/common/custom-field-input.component.html',
             bindings: {
+                index: '<',
                 field: '<',
                 value: '=',
                 onUpdate: '&',

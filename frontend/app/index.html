@@ -123,17 +123,21 @@
     <script src="bower_components/smalot-bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
     <script src="bower_components/cryptojslib/components/core-min.js"></script>
     <script src="bower_components/cryptojslib/components/sha256-min.js"></script>
+    <script src="bower_components/cryptojslib/components/md5-min.js"></script>
     <!-- endbuild -->
 
     <!-- build:js({.tmp,app}) scripts/scripts.js -->
     <!-- injector:js -->
     <script src="scripts/app.js"></script>
+    <script src="scripts/components/alert/AlertObservableListCmp.js"></script>
+    <script src="scripts/components/alert/AlertSimilarCaseListCmp.js"></script>
     <script src="scripts/components/app-container.component.js"></script>
     <script src="scripts/components/common/custom-field-input.component.js"></script>
     <script src="scripts/components/control-sidebar.component.js"></script>
     <script src="scripts/components/header.component.js"></script>
     <script src="scripts/components/main-sidebar.component.js"></script>
     <script src="scripts/components/organisation/OrgCaseTemplateListCmp.js"></script>
+    <script src="scripts/components/organisation/OrgConfigListCmp.js"></script>
     <script src="scripts/components/organisation/OrgSwitchCtrl.js"></script>
     <script src="scripts/components/organisation/OrgUserListCmp.js"></script>
     <script src="scripts/components/search/filters-preview.component.js"></script>
@@ -178,8 +182,11 @@
     <script src="scripts/controllers/case/CaseTasksCtrl.js"></script>
     <script src="scripts/controllers/case/CaseTasksItemCtrl.js"></script>
     <script src="scripts/controllers/case/CaseTemplatesDialogCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseUpdateCtrl.js"></script>
+    <script src="scripts/controllers/case/ObservableAnalyzeCtrl.js"></script>
     <script src="scripts/controllers/case/ObservableCreationCtrl.js"></script>
     <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
+    <script src="scripts/controllers/case/ObservableUpdateCtrl.js"></script>
     <script src="scripts/controllers/case/share/CaseShareModalCtrl.js"></script>
     <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
     <script src="scripts/controllers/cortex/ResponderActionDialogCtrl.js"></script>
@@ -188,6 +195,7 @@
     <script src="scripts/controllers/LiveCtrl.js"></script>
     <script src="scripts/controllers/MainPageCtrl.js"></script>
     <script src="scripts/controllers/MigrationCtrl.js"></script>
+    <script src="scripts/controllers/misc/ResponderSelectorCtrl.js"></script>
     <script src="scripts/controllers/misc/ServerInstanceDialogCtrl.js"></script>
     <script src="scripts/controllers/RootCtrl.js"></script>
     <script src="scripts/controllers/SearchCtrl.js"></script>
@@ -248,6 +256,7 @@
     <script src="scripts/filters/flattern-object.js"></script>
     <script src="scripts/filters/getField.js"></script>
     <script src="scripts/filters/hash-type.js"></script>
+    <script src="scripts/filters/md5.js"></script>
     <script src="scripts/filters/offset.js"></script>
     <script src="scripts/filters/order-object-by.js"></script>
     <script src="scripts/filters/percent.js"></script>
@@ -281,9 +290,11 @@
     <script src="scripts/services/common/Constants.js"></script>
     <script src="scripts/services/common/data/CaseArtifactSrv.js"></script>
     <script src="scripts/services/common/data/FileResource.js"></script>
+    <script src="scripts/services/common/data/PaginatedQuerySrv.js"></script>
     <script src="scripts/services/common/data/PSearchSrv.js"></script>
     <script src="scripts/services/common/data/SearchSrv.js"></script>
     <script src="scripts/services/common/data/StatSrv.js"></script>
+    <script src="scripts/services/common/data/StreamQuerySrv.js"></script>
     <script src="scripts/services/common/data/StreamSrv.js"></script>
     <script src="scripts/services/common/data/StreamStatSrv.js"></script>
     <script src="scripts/services/common/HtmlSanitizeSrv.js"></script>

@@ -1,6 +1,6 @@
 <div class="modal-header bg-primary">
     <h3 class="modal-title">
-      Alert Preview <span class="label label-default" ng-class="{'label-danger': dialog.event.status==='New', 'label-warning': dialog.event.status === 'Updated'}">{{dialog.event.status}}</span>
+      Alert Preview <span class="label label-default" ng-class="{'label-danger': !!!dialog.event.read}">{{dialog.event.read ? 'Ignored' : 'New'}}</span>
     </h3>
 </div>
 <div class="modal-body">
@@ -20,7 +20,7 @@
                 <div class="mt-xxs">
                     <span>
                         <strong><i class="fa fa-copy"></i> ID: </strong>
-                        <span><a href ng-click="dialog.copyId(dialog.event.id)">{{dialog.event.id}}</a></span>
+                        <span><a href ng-click="dialog.copyId(dialog.event._id)">{{dialog.event._id}}</a></span>
                     </span>
                     <span class="ml-xxs">
                         <strong><i class="fa fa-calendar"></i> Date: </strong>
@@ -58,81 +58,36 @@
                     <h4 class="vpad10 text-primary">
                         Additional fields
                     </h4>
-                    <div ng-include="'views/partials/alert/custom.fields.html'">
+                    <div ng-include="'views/partials/alert/custom.fields.html'"></div>
+                </div>
+            </div>
 
+
+            <uib-tabset active="active" class="mt-xs nav-tabs-custom">
+                <uib-tab index="0">
+                    <uib-tab-heading>
+                        <span>
+                            <i class="mr-xxs glyphicon glyphicon-pushpin"></i>
+                            Observables <span class="ml-xxs badge">{{dialog.counts.observables}}</span>
+                        </span>
+                    </uib-tab-heading>
+                    <div>
+                        <alert-observable-list alert-id="dialog.eventId" on-list-load="dialog.updateObservableCount(count)"></alert-observable-list>
                     </div>
-                </div>
-            </div>
+                </uib-tab>
+                <uib-tab index="1">
+                    <uib-tab-heading>
+                        <span>
+                            <i class="mr-xxs glyphicon glyphicon-link"></i>
+                            Similar cases <span class="ml-xxs badge">{{dialog.counts.similarCases}}</span>
+                        </span>
+                    </uib-tab-heading>
+                    <div>
+                        <alert-similar-case-list alert-id="dialog.event._id" on-list-load="dialog.updateSimilarCasesCount(count)"></alert-similar-case-list>
+                    </div>
+                </uib-tab>
+            </uib-tabset>
 
-            <div class="alert-artifacts" ng-if="dialog.event.artifacts.length > 0">
-                <h4 class="vpad10 text-primary">
-                    Observables ({{dialog.event.artifacts.length || 0}})
-                </h4>
-                <div class="mb-xs flexwrap" ng-if="dialog.dataTypes">
-                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
-                        ng-click="dialog.filterArtifacts('');"
-                        ng-class="{'label-primary': dialog.pagination.filter===''}">All ({{dialog.event.artifacts.length || 0}})</span>
-
-                    <span class="label label-lg label-default mb-xxxs mr-xxs clickable"
-                        ng-repeat="(type, count) in dialog.dataTypes"
-                        ng-click="dialog.filterArtifacts(type)"
-                        ng-class="{'label-primary': dialog.pagination.filter===type}">{{type}} ({{count}})</span>
-                </div>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th style="width:40px;"></th>
-                            <th style="width:100px;">Type</th>
-                            <th>Data</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr ng-repeat="attribute in dialog.pagination.data" class="clickable">
-                            <td class="nowrap">
-                                <span ng-if="attribute.ioc" class="mr-xxs fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
-                                <span ng-if="attribute.sighted" class="mr-xxs fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
-                                <span ng-if="attribute.seen > 0" class="mr-xxs glyphicon glyphicon-eye-open" uib-tooltip="Seen on {{attribute.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
-                            </td>
-                            <td>{{attribute.dataType}}</td>
-                            <td class="wrap">
-                              <div class="wrap" ng-if="attribute.dataType !== 'file'" uib-tooltip="{{attribute.message}}" tooltip-placement="top-left">
-                                  {{attribute.data | fang | ellipsis:250}}
-                              </div>
-                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.attachment" uib-tooltip="{{attribute.message}}" tooltip-placement="top-left">
-                                  {{attribute.attachment.name}} ({{attribute.attachment.size}} bytes)
-                              </div>
-                              <div class="wrap" ng-if="attribute.dataType === 'file' && attribute.remoteAttachment" uib-tooltip="{{attribute.message}}" tooltip-placement="top-left">
-                                  {{attribute.remoteAttachment.filename}}
-                              </div>
-                              <div class="case-tags flexwrap mt-xxs" ng-if="attribute.tags.length > 0">
-                                  <strong><i class="fa fa-tags mr-xxxs"></i></strong>
-                                  <span ng-repeat="tag in attribute.tags track by $index" class="label label-primary mb-xxxs mr-xxxs">{{tag}}</span>
-                              </div>
-                            </td>
-
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="text-center" ng-show="dialog.filteredArtifacts.length > dialog.pagination.pageSize">
-                    <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
-                        total-items="dialog.filteredArtifacts.length"
-                        items-per-page="dialog.pagination.pageSize"
-                        ng-change="dialog.loadPage()"
-                        ng-model="dialog.pagination.currentPage"></ul>
-                </div>
-            </div>
-
-            <div class="alert-similarity" ng-if="dialog.event.similarCases.length > 0">
-                <div class="mt-xs">
-                    <h4 class="vpad10 text-primary">
-                        Similar cases ({{dialog.event.similarCases.length}})
-                    </h4>
-                    <!-- <div>
-                        <pre>{{dialog.event.similarCases | json}}</pre>
-                    </div> -->
-                    <div ng-include="'views/partials/alert/event.similarity.html'"></div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -175,7 +130,7 @@
                     <option value="" ng-if="dialog.templates.length === 0 || !!!dialog.hideEmptyCaseButton">Empty case</option>
                 </select>
                 <span class="input-group-btn">
-                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading || (!dialog.event.caseTemplate && !!dialog.hideEmptyCaseButton && dialog.templates.length > 0)">Yes, Import</button>
+                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading || (!dialog.event.caseTemplate && !!dialog.hideEmptyCaseButton && dialog.templates.length > 0)"><i class="fa fa-download"></i> Yes, Import</button>
                 </span>
             </div>
 

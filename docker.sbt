@@ -18,9 +18,10 @@ dockerExposedPorts := Seq(9000)
 daemonUser in Docker := "thehive"
 daemonGroup in Docker := "thehive"
 mappings in Docker ++= Seq(
-  file("package/docker/entrypoint") -> "/opt/thehive/entrypoint",
-  file("package/logback.xml")       -> "/etc/thehive/logback.xml",
-  file("package/empty")             -> "/var/log/thehive/application.log"
+  file("package/docker/entrypoint")     -> "/opt/thehive/entrypoint",
+  file("package/logback.xml")           -> "/etc/thehive/logback.xml",
+  file("package/logback-migration.xml") -> "/etc/thehive/logback-migration.xml",
+  file("package/empty")                 -> "/var/log/thehive/application.log"
 )
 mappings in Docker ~= (_.filterNot {
   case (_, filepath) => filepath == "/opt/thehive/conf/application.conf"

@@ -1,0 +1,89 @@
+<div class="similar-case-list">
+    <div class="row">
+
+        <div class="col-md-12" ng-show="$cmp.list.total === 0">
+            <div class="empty-message">No records</div>
+        </div>
+
+        <div class="col-md-12" ng-show="$cmp.list.total > 0">
+            <div class="btn-toolbar" role="toolbar">
+                <div class="btn-group pull-right" role="group">
+                    <page-sizer collection="$cmp.list" sizes="[10, 15, 30, 100]"></page-sizer>
+                </div>
+            </div>
+
+            <psearch control="$cmp.list"></psearch>
+
+            <div class="case-item">
+                <div class="case-details text-bold">Title</div>
+                <div class="case-date text-bold">Date</div>
+                <div class="case-similarity text-bold">Observables</div>
+                <div class="case-similarity text-bold">IOCs</div>
+                <div class="case-similarity-merge text-bold">Action</div>
+            </div>
+
+
+            <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.values | filter:$cmp.similarityFilters)">
+                <div class="case-item" >
+                    <!-- case severity -->
+                    <div class="case-tlp bg-tlp-{{item.case.tlp}}"></div>
+
+                    <!-- case title and main details -->
+                    <div class="case-details">
+                        <div class="case-title">
+                            <a ui-sref="app.case.details({caseId: item.case._id})" target="_blank">#{{item.case.caseId}} - {{item.case.title}}</a>
+                        </div>
+                        <div class="case-tags flexwrap mt-xxs">
+                            <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                            <strong class="text-muted mr-xxxs" ng-if="!item.case.tags || item.case.tags.length === 0">None</strong>
+                            <span ng-repeat="tag in item.case.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                        </div>
+                        <div class="text-success" ng-show="item.case.status !== 'Open'">
+                            <small>
+                                (Closed at {{item.case.endDate | showDate}} as <strong>{{$cmp.CaseResolutionStatus[item.case.resolutionStatus]}}</strong>)
+                            </small>
+                        </div>
+                        <div class="text-danger" ng-if="item.case.mergeFrom">
+                            <small>
+                                Merged from <a href ui-sref="app.case.details({caseId: item.case.mergeFrom[0]})"> Case #{{item.case.stats.mergeFrom[0].caseId}}</a> and
+                                <a href ui-sref="app.case.details({caseId: item.case.mergeFrom[1]})"> Case #{{utem.stats.mergeFrom[1].caseId}}</a>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="case-severity">
+                        <div class="clickable">
+                            <severity active="false" value="item.case.severity"></severity>
+                        </div>
+                    </div>
+
+                    <div class="case-date">
+                        <span uib-tooltip="{{item.case.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case.startDate | shortDate}}</span>
+                    </div>
+
+                    <div class="case-similarity">
+                        <div>
+                            <strong>{{(item.similarObservableCount / item.observableCount) | percentage:0}}</strong> ({{item.similarObservableCount}} / {{item.observableCount}})
+                            <uib-progressbar class="progress progress-sm" max="item.observableCount" value="item.similarObservableCount" type="primary"></uib-progressbar>
+                        </div>
+                    </div>
+                    <div class="case-similarity">
+                        <div ng-if="item.iocCount > 0">
+                            <strong>{{(item.similarIocCount / item.iocCount) | percentage:0}}</strong> ({{item.similarIocCount}} / {{item.iocCount}})
+                            <uib-progressbar class="progress progress-sm" max="item.iocCount" value="item.similarIocCount" type="danger"></uib-progressbar>
+                        </div>
+                        <div ng-if="item.iocCount === 0">
+                            <em>N/A</em>
+                        </div>
+                    </div>
+
+                    <div class="case-similarity-merge text-center">
+                        <button class="btn btn-sm btn-primary" ng-click="$cmp.mergeIntoCase(item.case._id)">Merge in this case</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>

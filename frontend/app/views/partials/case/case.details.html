@@ -51,10 +51,10 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Assignee</dt>
             <dd ng-if="canEdit">
-                <updatable-user on-update="updateField('owner', newValue)" value="caze.owner"/>
+                <updatable-user on-update="updateField('owner', newValue)" value="caze.assignee" query="assignableUsersQuery"/>
             </dd>
             <dd ng-if="!canEdit">
-                <user-info value="caze.owner" field="name"></user-info>
+                <user-info value="caze.assignee" field="name"></user-info>
             </dd>
         </dl>
 
@@ -68,7 +68,7 @@
             </dd>
         </dl>
 
-        <dl class="dl-horizontal clear">
+        <dl class="dl-horizontal">
             <dt class="pull-left">Tags</dt>
             <dd ng-if="canEdit">
                 <updatable-tags on-update="updateField('tags', getTags(newValue))" value="caze.tags" source="getCaseTags"></updatable-tags>
@@ -133,7 +133,7 @@
         <tbody>
             <tr ng-repeat="attachment in attachments.values" style="cursor: pointer;" tooltip-placement="bottom" tooltip-popup-delay="500" uib-tooltip="{{attachment.message}}">
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.name}}</td>
-                <td ng-click="openAttachment(attachment)">{{attachment.startDate | shortDate}}</td>
+                <td ng-click="openAttachment(attachment)">{{attachment.date | shortDate}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.contentType}}</td>
                 <td ng-click="openAttachment(attachment)">{{attachment.attachment.size}}</td>
                 <td style="text-align:center">

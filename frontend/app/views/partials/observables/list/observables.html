@@ -1,7 +1,12 @@
 
 <div class="col-md-12 mb-s clearfix">
     <div class="pull-left">
-        <h4>Observable List ({{artifacts.total || 0}} of {{artifactStats.count}})</h4>
+        <h4>
+            Observable List ({{artifacts.total || 0}} of {{observableCount}})
+            <small class="ml-xxs" ng-if="selection.artifacts.length > 0 ">
+                ({{selection.artifacts.length}} selected)
+            </small>
+        </h4>
     </div>
     <filters-preview filters="filtering.context.filters"
         on-clear-item="removeFilter(field)"
@@ -21,7 +26,7 @@
             <tr>
                 <th style="width: 10px;" class="p-0"></th>
                 <th style="width: 20px">
-                    <input type="checkbox" ng-change="selectAll()" ng-model="selection.all" ng-disabled="switchTEList"></input>
+                    <input type="checkbox" ng-change="selectAll()" ng-model="menu.selectAll" ng-disabled="switchTEList"></input>
                 </th>
                 <th style="width: 15px"></th>
                 <th style="width: 15px"></th>
@@ -42,6 +47,7 @@
                     <i ng-show="artifacts.sort === '-data'" class="fa fa-caret-down"></i>
                   </a>
                 </th>
+                <th style="width: 70px;"></th>
                 <th style="width: 120px">
                   <a href class="text-default" ng-click="sortByField('startDate')">
                     Date Added
@@ -57,7 +63,7 @@
             <tr ng-repeat="artifact in artifacts.values">
                 <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="filterByTlp(artifact.tlp)"></td>
                 <td>
-                    <input type="checkbox" ng-change="selectArtifact(artifact)" ng-model="selection.list[artifact.id]">
+                    <input type="checkbox" ng-model="artifact.selected" ng-change="selectArtifact(artifact)" if-permission="manageObservable" allowed="{{artifact.extraData.permissions.join(',')}}">
                 </td>
                 <td>
                     <span ng-click="addFilterValue('ioc', artifact.ioc)" ng-if="artifact.ioc" class="clickable fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
@@ -66,19 +72,27 @@
                     <span ng-click="addFilterValue('sighted', artifact.sighted)" ng-if="artifact.sighted" class="clickable fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                 </td>
                 <td>
-					          <span
-                      uib-tooltip="{{artifact.stats.seen}} related artifact(s)"
+                    <span
+                      uib-tooltip="{{artifact.extraData.seen.seen}} related artifact(s)"
                       tooltip-placement="bottom"
-                      ng-if="artifact.stats.seen > 0"
+                      ng-if="artifact.extraData.seen.seen > 0"
                       class="glyphicon glyphicon-eye-open"
-                      ng-class="{'text-danger': artifact.stats.ioc}"></span>
+                      ng-class="{'text-danger': artifact.extraData.seen.ioc}"></span>
                 </td>
                 <td>
                     <a href ng-click="addFilterValue('dataType', artifact.dataType)"><span ng-bind="artifact.dataType"></span></a>
                 </td>
                 <td class="wrap">
-                    <div class="wrap clickable" ng-click="openArtifact(artifact)" uib-tooltip="{{artifact.message}}" tooltip-placement="top-left">
-                         {{(artifact.data | fang) || (artifact.attachment.name | fang)}}
+                    <!-- FIXME -->
+                    <div class="wrap clickable" ng-click="openArtifact(artifact)">
+                        <!-- <span class="mr-xxs text-primary clickable" ng-if="!!!artifact.extraData.isOwner"><i class="fa fa-share-square"
+                            uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
+                        <span class="mr-xxs text-primary clickable" ng-if="!!artifact.extraData.isOwner"><i class="fa fa-building-o"
+                            uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span> -->
+                        <span class="wrap clickable" uib-tooltip="{{artifact.message}}" tooltip-placement="top-left">
+                            {{(artifact.data | fang) || (artifact.attachment.name | fang)}}
+                        </span>
+
                     </div>
                     <div class="case-tags flexwrap mt-xxs">
                         <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
@@ -92,31 +106,27 @@
 
                     <mini-report-list observable="artifact" reports="artifact.reports" on-item-clicked="showReport(observable, analyzerId)"></mini-report-list>
                 </td>
+                <td align="center">
+                    <a href ng-if="artifact.extraData.shareCount > 0" ui-sref="app.case.observables-item({itemId: artifact._id})" class="noline"
+                            tooltip-placement="left-middle">
+
+                        <i class="fa fa-users"></i>
+                        ({{artifact.extraData.shareCount || 0}})
+                    </a>
+                </td>
                 <td>
                     <a href ng-click="addFilterValue('startDate', artifact.startDate)"><span uib-tooltip="{{artifact.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{artifact.startDate | shortDate}}</span></a>
                 </td>
-                <td ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
-                    <span class="ml-xs" uib-dropdown>
-                        <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact.id, true)" uib-dropdown-toggle>
+                <td align="center" ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
+                    <span>
+                        <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact, true)" uib-dropdown-toggle>
                             <i class="text-primary fa fa-cog"></i>
                         </a>
-                        <ul class="dropdown-menu align-right" uib-dropdown-menu>
-                          <li ng-if="obsResponders && obsResponders.length === 0">
-                            <a href ng-click="getObsResponders(artifact.id, true)">
-                              <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
-                            </a>
-                          </li>
-                          <li ng-repeat="responder in obsResponders">
-                            <a href ng-click="runResponder(responder.id, responder.name, artifact)">
-                              <strong>{{responder.name}}</strong>
-                              <br>
-                              <small>{{responder.description}}</small></a>
-                          </li>
-                        </ul>
                     </span>
                 </td>
             </tr>
         </tbody>
     </table>
+
     <psearch ng-if="!switchTEList" control="artifacts"></psearch>
 </div>

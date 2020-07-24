@@ -2,15 +2,16 @@ package org.thp.thehive.services
 
 import java.util.{Map => JMap}
 
+import akka.actor.ActorRef
 import gremlin.scala._
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.services.{RichElement, VertexSrv}
+import org.thp.scalligraph.services.{IntegrityCheckOps, RichElement, VertexSrv}
 import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{EdgeSteps, SelectMap, Traversal, ValueMap, VertexSteps}
+import org.thp.scalligraph.steps._
 import org.thp.scalligraph.{EntitySteps, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -18,10 +19,17 @@ import play.api.libs.json.{JsNull, JsObject, JsValue}
 import shapeless.HNil
 
 import scala.collection.JavaConverters._
-import scala.util.Try
+import scala.util.{Success, Try}
 
 @Singleton
-class CustomFieldSrv @Inject() (implicit db: Database, auditSrv: AuditSrv) extends VertexSrv[CustomField, CustomFieldSteps] {
+class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
+    implicit @Named("with-thehive-schema") db: Database
+) extends VertexSrv[CustomField, CustomFieldSteps] {
+
+  override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
+    integrityCheckActor ! IntegrityCheckActor.EntityAdded("CustomField")
+    super.createEntity(e)
+  }
 
   def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] =
     for {
@@ -29,9 +37,13 @@ class CustomFieldSrv @Inject() (implicit db: Database, auditSrv: AuditSrv) exten
       _       <- auditSrv.customField.create(created, created.toJson)
     } yield created
 
+  override def exists(e: CustomField)(implicit graph: Graph): Boolean = initSteps.getByName(e.name).exists()
+
   def delete(c: CustomField with Entity, force: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     get(c).remove() // TODO use force
-    auditSrv.customField.delete(c)
+    organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
+      auditSrv.customField.delete(c, organisation)
+    }
   }
 
   def useCount(c: CustomField with Entity)(implicit graph: Graph): Map[String, Int] =
@@ -61,7 +73,8 @@ class CustomFieldSrv @Inject() (implicit db: Database, auditSrv: AuditSrv) exten
 }
 
 @EntitySteps[CustomField]
-class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[CustomField](raw) {
+class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
+    extends VertexSteps[CustomField](raw) {
   override def newInstance(newRaw: GremlinScala[Vertex]): CustomFieldSteps = new CustomFieldSteps(newRaw)
   override def newInstance(): CustomFieldSteps                             = new CustomFieldSteps(raw.clone())
 
@@ -73,7 +86,7 @@ class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: 
 
 }
 
-class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, graph: Graph)
+class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
     extends EdgeSteps[CustomFieldValue[_], Product, CustomField](raw) {
   override def newInstance(): CustomFieldValueSteps = new CustomFieldValueSteps(raw.clone())
 
@@ -170,4 +183,15 @@ class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit db: Database, grap
   }
 
 //  def remove()     = raw.drop().i
+}
+
+class CustomFieldIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CustomFieldSrv)
+    extends IntegrityCheckOps[CustomField] {
+  override def resolve(entities: List[CustomField with Entity])(implicit graph: Graph): Try[Unit] = entities match {
+    case head :: tail =>
+      tail.foreach(copyEdge(_, head))
+      service.getByIds(tail.map(_._id): _*).remove()
+      Success(())
+    case _ => Success(())
+  }
 }

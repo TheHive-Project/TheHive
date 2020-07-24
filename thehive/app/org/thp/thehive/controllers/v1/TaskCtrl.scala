@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
@@ -8,8 +8,9 @@ import org.thp.scalligraph.steps.PagedResult
 import org.thp.scalligraph.steps.StepsOps._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
-import org.thp.thehive.models.{Permissions, RichTask}
+import org.thp.thehive.models.{Permissions, RichTask, TaskStatus}
 import org.thp.thehive.services.{CaseSrv, CaseSteps, LogSteps, OrganisationSrv, OrganisationSteps, ShareSrv, TaskSrv, TaskSteps, UserSteps}
+import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -17,22 +18,26 @@ import scala.util.Success
 @Singleton
 class TaskCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
     shareSrv: ShareSrv
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with TaskRenderer {
 
   override val entityName: String                           = "task"
   override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
   override val initialQuery: Query =
     Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[RichTask]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[(RichTask, JsObject)]](
     "page",
     FieldsParser[OutputParam],
-    (range, taskSteps, _) => taskSteps.richPage(range.from, range.to, withTotal = true)(_.richTask)
+    (range, taskSteps, authContext) =>
+      taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
+        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext, db, taskSteps.graph))
+      )
   )
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
     "getTask",
@@ -41,6 +46,10 @@ class TaskCtrl @Inject() (
   )
   override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[TaskSteps](
+      "waitingTask",
+      (graph, authContext) => taskSrv.initSteps(graph).has("status", TaskStatus.Waiting).visible(authContext)
+    ),
     Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query[TaskSteps, LogSteps]("logs", (taskSteps, _) => taskSteps.logs),
     Query[TaskSteps, CaseSteps]("case", (taskSteps, _) => taskSteps.`case`),
@@ -50,10 +59,12 @@ class TaskCtrl @Inject() (
   def create: Action[AnyContent] =
     entrypoint("create task")
       .extract("task", FieldsParser[InputTask])
+      .extract("caseId", FieldsParser[String])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
+        val caseId: String       = request.body("caseId")
         for {
-          case0        <- caseSrv.getOrFail(inputTask.caseId)
+          case0        <- caseSrv.getOrFail(caseId)
           createdTask  <- taskSrv.create(inputTask.toTask, None)
           organisation <- organisationSrv.getOrFail(request.organisation)
           _            <- shareSrv.shareTask(createdTask, case0, organisation)

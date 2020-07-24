@@ -1,13 +1,12 @@
 package org.thp.thehive.services.notification.triggers
 
-import scala.util.{Success, Try}
-
-import play.api.Configuration
-
 import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}
+import play.api.Configuration
+
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseCreatedProvider @Inject() extends TriggerProvider {

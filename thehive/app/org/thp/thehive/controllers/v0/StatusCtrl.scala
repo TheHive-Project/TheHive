@@ -1,20 +1,19 @@
 package org.thp.thehive.controllers.v0
 
-import scala.collection.immutable
-import scala.util.Success
-
-import play.api.libs.json.{JsObject, JsString, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, Results}
-
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
-import org.thp.thehive.models.HealthStatus
+import org.thp.thehive.models.{HealthStatus, User}
 import org.thp.thehive.services.{Connector, UserSrv}
+import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.mvc.{AbstractController, Action, AnyContent, Results}
+
+import scala.collection.immutable
+import scala.util.Success
 
 @Singleton
 class StatusCtrl @Inject() (
@@ -23,7 +22,7 @@ class StatusCtrl @Inject() (
     authSrv: AuthSrv,
     userSrv: UserSrv,
     connectors: immutable.Set[Connector],
-    db: Database
+    @Named("with-thehive-schema") db: Database
 ) {
 
   val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
@@ -60,7 +59,7 @@ class StatusCtrl @Inject() (
   def health: Action[AnyContent] =
     entrypoint("health") { _ =>
       val dbStatus = db
-        .roTransaction(graph => userSrv.getOrFail(UserSrv.system.login)(graph))
+        .roTransaction(graph => userSrv.getOrFail(User.system.login)(graph))
         .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
       val connectorStatus = connectors.map(c => c.health)
       val distinctStatus  = connectorStatus + dbStatus

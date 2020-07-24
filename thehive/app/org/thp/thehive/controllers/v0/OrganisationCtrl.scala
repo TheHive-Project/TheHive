@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 @Singleton
 class OrganisationCtrl @Inject() (
     entrypoint: Entrypoint,
-    db: Database,
+    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
@@ -51,7 +51,7 @@ class OrganisationCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
-          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(OrganisationSrv.administration.name).existsOrFail()
+          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(Organisation.administration.name).existsOrFail()
           org <- organisationSrv.create(inputOrganisation.toOrganisation)
 
         } yield Results.Created(org.toJson)
@@ -128,7 +128,7 @@ class OrganisationCtrl @Inject() (
   def listLinks(organisationId: String): Action[AnyContent] =
     entrypoint("list organisation links")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val isInDefaultOrganisation = userSrv.current.organisations.get(OrganisationSrv.administration.name).exists()
+        val isInDefaultOrganisation = userSrv.current.organisations.get(Organisation.administration.name).exists()
         val organisation =
           if (isInDefaultOrganisation)
             organisationSrv.get(organisationId)

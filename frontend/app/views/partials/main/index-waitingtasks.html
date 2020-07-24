@@ -16,13 +16,13 @@
 		<tr class="task-row"
 			ng-repeat="value in $vm.list.values">
 			<td class="text-center">
-				<severity active="false" value="value.case.severity"></severity>
+				<severity active="false" value="value.extraData.case.severity"></severity>
 			</td>
 			<td>{{value.group}}</td>
 			<td>
 				<div>{{value.title}}</div>
 				<div>
-					<small><entity-link value="value.case"></entity-link></small>
+					<small><entity-link value="value.extraData.case"></entity-link></small>
 				</div>
 			</td>
 			<td>
