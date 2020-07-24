@@ -1,5 +1,63 @@
 # Change Log
 
+## [4.0.0](https://github.com/TheHive-Project/TheHive/milestone/59) (2020-07-24)
+
+**Implemented enhancements:**
+
+- No longer possible to force usage of a case template (ui setting is missing) [\#1239](https://github.com/TheHive-Project/TheHive/issues/1239)
+- Make user management list paginable and sortable with default sort of username [\#1332](https://github.com/TheHive-Project/TheHive/issues/1332)
+- Cursor is set wrong on new-Case -> severity [\#1373](https://github.com/TheHive-Project/TheHive/issues/1373)
+- [Enhancement] Prevent link with "admin" organisation [\#1395](https://github.com/TheHive-Project/TheHive/issues/1395)
+- [Enhancement] An user should not be able to lock himself [\#1396](https://github.com/TheHive-Project/TheHive/issues/1396)
+- Performance - Don't load stats if not displayed [\#1401](https://github.com/TheHive-Project/TheHive/issues/1401)
+- [RBAC] Add routes guard configuration to secure routes [\#1403](https://github.com/TheHive-Project/TheHive/issues/1403)
+- [Enhancement] Add checks for database integrity [\#1404](https://github.com/TheHive-Project/TheHive/issues/1404)
+- Use Query APIs in list pages [\#1410](https://github.com/TheHive-Project/TheHive/issues/1410)
+- Improve autocomplete queries for tags [\#1411](https://github.com/TheHive-Project/TheHive/issues/1411)
+- [Enhancement] Add ability to add tasks in case creation API [\#1414](https://github.com/TheHive-Project/TheHive/issues/1414)
+- Improve user details caching [\#1418](https://github.com/TheHive-Project/TheHive/issues/1418)
+- Add bulk edit in cases list [\#1423](https://github.com/TheHive-Project/TheHive/issues/1423)
+- Use a responder selector window instead of dynamic dropdown menues [\#1431](https://github.com/TheHive-Project/TheHive/issues/1431)
+- Show sharing summary in task and observable lists [\#1437](https://github.com/TheHive-Project/TheHive/issues/1437)
+- Add some quick filters in tasks list [\#1438](https://github.com/TheHive-Project/TheHive/issues/1438)
+- Use assignable users API to populate assignee options [\#1444](https://github.com/TheHive-Project/TheHive/issues/1444)
+- Migrate the stats widgets on listing pages [\#1446](https://github.com/TheHive-Project/TheHive/issues/1446)
+
+**Closed issues:**
+
+- Default Dashboards are missing [\#1240](https://github.com/TheHive-Project/TheHive/issues/1240)
+
+**Fixed bugs:**
+
+- [Bug] Migration issues from ES to Cassandra [\#1340](https://github.com/TheHive-Project/TheHive/issues/1340)
+- [Bug] Deleting and observable doesn't refresh the list [\#1355](https://github.com/TheHive-Project/TheHive/issues/1355)
+- [Bug] Limiting admin rights breaks front end [\#1368](https://github.com/TheHive-Project/TheHive/issues/1368)
+- [Bug] Imported Dashboards from TH3 doesn't work [\#1371](https://github.com/TheHive-Project/TheHive/issues/1371)
+- [Bug] Top 5 tags in Case -> Stats aren't correctly ordered [\#1372](https://github.com/TheHive-Project/TheHive/issues/1372)
+- [Bug] Migration of usernames from ES to Cassandra [\#1374](https://github.com/TheHive-Project/TheHive/issues/1374)
+- [Bug] Switching User Organisation failes using header variable authentication [\#1375](https://github.com/TheHive-Project/TheHive/issues/1375)
+- [Bug] Tags gets wrong renamed [\#1376](https://github.com/TheHive-Project/TheHive/issues/1376)
+- [Bug] MISP integration alert link generated incorrectly [\#1378](https://github.com/TheHive-Project/TheHive/issues/1378)
+- [Bug] CustomFields does not appear sorted in the case template [\#1383](https://github.com/TheHive-Project/TheHive/issues/1383)
+- [Bug] Users in Admin-Org are not allowed to switch to any other org [\#1385](https://github.com/TheHive-Project/TheHive/issues/1385)
+- [Bug] Custom Observable Types can be created multiple-times with the same name [\#1387](https://github.com/TheHive-Project/TheHive/issues/1387)
+- [Bug] Issues during Migration - Some Observables are missing [\#1388](https://github.com/TheHive-Project/TheHive/issues/1388)
+- [Bug] Proxy configuration is not correctly parsed [\#1392](https://github.com/TheHive-Project/TheHive/issues/1392)
+- [Bug] Handle 401 on route failure [\#1402](https://github.com/TheHive-Project/TheHive/issues/1402)
+- [Bug] Delete case api fails [\#1405](https://github.com/TheHive-Project/TheHive/issues/1405)
+- Fix the filter preview deletion button [\#1412](https://github.com/TheHive-Project/TheHive/issues/1412)
+- Fix OAuth redirect handling from Javascript [\#1420](https://github.com/TheHive-Project/TheHive/issues/1420)
+- [Bug] Error when exporting a case with severity Critical in MISP [\#1424](https://github.com/TheHive-Project/TheHive/issues/1424)
+- [Bug] Cases owned by non-linked organisations visible to all organisations, potential data leakage [\#1427](https://github.com/TheHive-Project/TheHive/issues/1427)
+- [Bug] TheHive doesn't start correctly [\#1429](https://github.com/TheHive-Project/TheHive/issues/1429)
+- [Bug] Permission is not correctly checked for MISP export [\#1432](https://github.com/TheHive-Project/TheHive/issues/1432)
+- Observable type deletion doesn't wait for the confirmation [\#1433](https://github.com/TheHive-Project/TheHive/issues/1433)
+- Fix rendering of jobs in search section [\#1434](https://github.com/TheHive-Project/TheHive/issues/1434)
+- Remove obsolete options in Search page [\#1436](https://github.com/TheHive-Project/TheHive/issues/1436)
+- [Bug] Click on dashboards to access filtered data [\#1445](https://github.com/TheHive-Project/TheHive/issues/1445)
+- [Bug] Pivoting from dashboard to search page is loosing the date filter [\#1448](https://github.com/TheHive-Project/TheHive/issues/1448)
+- [Bug] Series' filters in dashboard widgets are taken into account [\#1449](https://github.com/TheHive-Project/TheHive/issues/1449)
+
 ## [4.0.0-RC3](https://github.com/TheHive-Project/TheHive/milestone/58) (2020-05-27)
 
 **Implemented enhancements:**
@@ -26,7 +84,6 @@
 - [Bug] Read-only has options to edit task-logs [\#1334](https://github.com/TheHive-Project/TheHive/issues/1334)
 - [Bug] Adding a custom-field on an open case requires a reload, otherwise field is not visible [\#1336](https://github.com/TheHive-Project/TheHive/issues/1336)
 - [Bug] severity change when create new case don't work [\#1338](https://github.com/TheHive-Project/TheHive/issues/1338)
-- [Bug] Migration issues from ES to Cassandra [\#1340](https://github.com/TheHive-Project/TheHive/issues/1340)
 - [Bug] The filter operator "_child" is missing [\#1344](https://github.com/TheHive-Project/TheHive/issues/1344)
 - [Bug] Webhook compatibility issues on custom-fields [\#1345](https://github.com/TheHive-Project/TheHive/issues/1345)
 - [Bug] Object sent to responder doesn't contain parent [\#1348](https://github.com/TheHive-Project/TheHive/issues/1348)
