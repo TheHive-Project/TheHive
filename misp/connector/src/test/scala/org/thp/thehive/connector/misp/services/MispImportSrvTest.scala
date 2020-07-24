@@ -105,7 +105,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
         .map(o => (o.`type`.name, o.data.map(_.data), o.tlp, o.message, o.tags.map(_.toString).toSet))
 //        println(observables.mkString("\n"))
       observables must contain(
-        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp.category=\"Artifacts dropped\"", "misp.type=\"filename\""))
+        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
       )
     }
   }
