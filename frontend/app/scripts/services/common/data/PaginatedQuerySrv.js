@@ -44,7 +44,7 @@
                         objectType: self.streamObjectType,
                         callback: function(updates) {
                             if(!self.guard || self.guard(updates)) {
-                                self.update(updates);
+                                self.update(updates, true);
                             }
                         }
                     };
@@ -124,7 +124,7 @@
                 /*
                 Function to change the page
                 */
-                this.update = function(updates) {
+                this.update = function(updates, forceCount) {
                     var filters = self.getFilter();
 
                     // Get the list
@@ -156,7 +156,7 @@
 
                     // get the total if not cached
                     var hash = $filter('md5')(JSON.stringify(this.filter));
-                    if(!!!this.loadAll && this.filterHash !== hash) {
+                    if(forceCount || (!!!this.loadAll && this.filterHash !== hash)) {
                         this.filterHash = hash;
 
                         // Compute the total again
