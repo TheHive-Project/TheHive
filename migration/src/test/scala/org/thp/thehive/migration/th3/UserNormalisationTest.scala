@@ -11,19 +11,19 @@ class UserNormalisationTest extends PlaySpecification with Conversion {
 
   "User migration" should {
     "convert simple name" in {
-      normaliseLogin("myLogin") must beEqualTo("mylogin@thehive.local")
+      normaliseLogin("myLogin") must beEqualTo("mylogin")
     }
     "convert simple name with dash" in {
-      normaliseLogin("my-Login") must beEqualTo("my-login@thehive.local")
+      normaliseLogin("my-Login") must beEqualTo("my-login")
     }
     "convert email address" in {
       normaliseLogin("Firstname.Lastname@Example.com") must beEqualTo("firstname.lastname@example.com")
     }
     "convert login with special characters" in {
-      normaliseLogin("login`with\"special^chars%") must beEqualTo("login.with.special.chars@thehive.local")
+      normaliseLogin("login`with\"special^chars%") must beEqualTo("login.with.special.chars")
     }
     "convert login with only special characters" in {
-      normaliseLogin("^'\"éç") must beEqualTo("empty.name@thehive.local")
+      normaliseLogin("^'\"éç") must beEqualTo("empty.name")
     }
     "convert login with several @" in {
       normaliseLogin("first@second@third") must beEqualTo("first@second.third")
@@ -32,10 +32,10 @@ class UserNormalisationTest extends PlaySpecification with Conversion {
       normaliseLogin(".first.@.domain.") must beEqualTo("first@domain")
     }
     "convert empty domain" in {
-      normaliseLogin("first@") must beEqualTo("first@thehive.local")
+      normaliseLogin("first@") must beEqualTo("first")
     }
     "convert email with invalid domain" in {
-      normaliseLogin("first@```") must beEqualTo("first@thehive.local")
+      normaliseLogin("first@```") must beEqualTo("first")
     }
     "convert email with dash" in {
       normaliseLogin("-first-name-@-domain-name-") must beEqualTo("first-name@domain-name")
