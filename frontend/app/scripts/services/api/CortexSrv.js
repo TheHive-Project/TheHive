@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv, ModalUtilsSrv) {
+    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, QuerySrv, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv, ModalUtilsSrv) {
         var self = this;
         var baseUrl = './api/connector/cortex';
 
@@ -24,32 +24,45 @@
         };
 
         this.getJobs = function(caseId, observableId, analyzerId, limit) {
-            return $http.post(baseUrl + '/job/_search', {
-                sort: ['-startDate'],
-                range: '0-' + (
-                limit || 10),
-                query: {
-                    _and: [
+
+            return QuerySrv.query('v1', [
+                {
+                    '_name': 'getObservable',
+                    'idOrName': observableId
+                },
+                {
+                    '_name': 'jobs'
+                },
+                {
+                    '_name': 'filter',
+                    '_or': [
                         {
-                            _parent: {
-                                _type: 'case_artifact',
-                                _query: {
-                                    _id: observableId
-                                }
+                            'analyzerId': analyzerId
+                        },
+                        {
+                            '_like': {
+                                '_field': 'analyzerDefinition',
+                                '_value': analyzerId
                             }
-                        }, {
-                            _or: [
-                                {
-                                    analyzerId: analyzerId
-                                }, {
-                                    _like: {
-                                        _field: 'analyzerDefinition',
-                                        _value: analyzerId
-                                    }
-                                }
-                            ]
                         }
                     ]
+                },
+                {
+                    '_name': 'sort',
+                    '_fields': [
+                        {
+                            'startDate': 'desc'
+                        }
+                    ]
+                },
+                {
+                    '_name': 'page',
+                    'from': 0,
+                    'to': limit || 10
+                }
+            ], {
+                params: {
+                    name: 'observable-jobs-' + observableId
                 }
             });
         };

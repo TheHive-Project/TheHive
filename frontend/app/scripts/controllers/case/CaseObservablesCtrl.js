@@ -366,11 +366,12 @@
 
             $scope.showReport = function(observable, analyzerId) {
                 CortexSrv.getJobs($scope.caseId, observable._id, analyzerId, 1)
-                    .then(function(response) {
-                        return CortexSrv.getJob(response.data[0].id);
-                    })
                     .then(function(response){
-                        var job = response.data;
+                        if(!response.data || response.data.length !== 1) {
+                            return;
+                        }
+
+                        var job = response.data[0];
                         var report = {
                             job: job,
                             template: job.analyzerName || job.analyzerId,
