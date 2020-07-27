@@ -24,6 +24,11 @@ CONFIG_MISP=0
 MISP_HOSTNAMES="misp"
 MISP_PROTO="http"
 MISP_PORT="80"
+# Default values for Auth part
+CONFIG_AUTH=0
+AUTH_USERHEADER="TheHiveAuth"
+AUTH_SSL="false"
+AUTH_AUTHHEADER="Bearer "
 function usage {
   cat <<- _EOF_
     Available options:
@@ -56,6 +61,32 @@ function usage {
     --misp-exc-orgs <org>,<org>, ...            | List of MISP organisation from which event will not be imported (Optional)
     --misp-exc-tags <tag>,<tag>, ...            | Don't import MISP events which have one of these tags (Optional)
     --misp-wh-tags <tag>,<tag>, ...             | Import only MISP events which have one of these tags (Optional)
+    --config-auth                               | Enable adding authentication configuration
+    --auth-header                               | Enable header authentication module
+    --auth-ad                                   | Enable Active Directory authentication module
+    --auth-ldap                                 | Enable LDAP authentication module
+    --auth-oauth                                | Enable Oauth2 authentication module
+    --auth-userheader <Header Name>             | The name of the header that contain the user login (default: TheHiveAuth)
+    --auth-windomain <Win Domain Name>          | The Windows domain name (ex: MYDOMAIN)
+    --auth-dnsdomain <DNS>                      | The Windows domain name in DNS format (ex: mydomain.local)
+    --auth-ssl <boolean>                        | Indicate if SSL must be used to connect to Domain Dontroller/LDAP server (default: false)
+    --auth-ad-hosts <host>,<host>, ...          | The addresses of the domain controllers. If missing, the dnsDomain is used.
+    --auth-binddn <BindDN>                      | DN of the service account in LDAP. This account is used to search the user.
+    --auth-bindpw <BindPW>                      | Password of the service account.
+    --auth-basedn <BaseDN>                      | DN where the users are located in.
+    --auth-filter <filter>                      | Filter used to search the user. "{0}" is replaced by the user login. A valid filter is: (&(uid={0})(objectClass=posixAccount))
+    --auth-ldap-hosts <host>,<host>, ...        | The addresses of the LDAP servers.
+    --auth-clientid <ClientID>                  | Client ID in the OAuth2 server.
+    --auth-clientsecret <ClientSecret>          | Client secret in the OAuth2 server.
+    --thehive-url <URL>                         | Url or domain of TheHive (ex: http://www.thehive.com)
+    --auth-url <URL>                            | The url of the OAuth2 server.
+    --auth-authheader <AuthHeader>              | Prefix of the authorization header to get user info: Bearer, token, .. (default: Bearer)
+    --token-url <URL>                           | The token url of the OAuth2 server.
+    --user-url <URL>                            | The url to get user information in OAuth2 server.
+    --auth-scope <scope>,<scope>, ...           | List of scope
+    --auth-userid <UserID>                      | The field that contains the id of the user in user info
+    --auth-org <Org>                            | The field that contains the organisation name in user info (Optional)
+    --auth-deforg <Org>                         | The default organisation used to login if not present on user info (Optional)
 _EOF_
   exit 1
 }
@@ -94,6 +125,32 @@ do
     "--misp-exc-orgs")     shift; MISP_EXC_ORG=$1 ;;
     "--misp-exc-tags")     shift; MISP_EXC_TAGS=$1 ;;
     "--misp-wh-tags")      shift; MISP_WH_TAGS=$1 ;;
+    "--config-auth")       CONFIG_AUTH=1 ;;
+    "--auth-header")       AUTH_HEADER=1 ;;
+    "--auth-ad")           AUTH_AD=1 ;;
+    "--auth-ldap")         AUTH_LDAP ;;
+    "--auth-oauth")        AUTH_OAUTH=1 ;;
+    "--auth-userheader")   shift; AUTH_USERHEADER=$1 ;;
+    "--auth-windomain")    shift; AUTH_WINDOMAIN=$1 ;;
+    "--auth-dnsdomain")    shift; AUTH_DNSDOMAIN=$1 ;;
+    "--auth-ssl")          shift; AUTH_SSL=$1 ;;
+    "--auth-ad-hosts")     shift; AUTH_AD_HOSTS=$1 ;;
+    "--auth-binddn")       shift; AUTH_BINDDN=$1 ;;
+    "--auth-bindpw")       shift; AUTH_BINDPW=$1 ;;
+    "--auth-basedn")       shift; AUTH_BASEDN=$1 ;;
+    "--auth-filter")       shift; AUTH_FILTER=$1 ;;
+    "--auth-ldap-hosts")   shift; AUTH_LDAP_HOSTS=$1 ;;
+    "--auth-clientid")     shift; AUTH_CLIENTID=$1 ;;
+    "--auth-clientsecret") shift; AUTH_CLIENTSECRET=$1 ;;
+    "--thehive-url")       shift; THEHIVE_URL=$1 ;;
+    "--auth-url")          shift; AUTH_URL=$1 ;;
+    "--auth-authheader")   shift; AUTH_AUTHHEADER=$1 ;;
+    "--token-url")         shift; TOKEN_URL=$1 ;;
+    "--user-url")          shift; USER_URL=$1 ;;
+    "--auth-scope")        shift; AUTH_SCOPE=$1 ;;
+    "--auth-userid")       shift; AUTH_USERID=$1 ;;
+    "--auth-org")          shift; AUTH_ORG=$1 ;;
+    "--auth-deforg")       shift; AUTH_DEFORG=$1 ;;
     "--")                  STOP=1;;
     *)                     usage
   esac
@@ -147,6 +204,90 @@ then
     fi
     echo "}" >> ${CONFIG_FILE}
   fi
+
+## Auth Config ##
+if [[ $CONFIG_AUTH -eq 1 ]];then
+    echo "auth.providers = [" >> ${CONFIG_FILE}
+    echo "{name: session}" >> ${CONFIG_FILE}
+    echo "{name: basic, realm: thehive}" >> ${CONFIG_FILE}
+    echo "{name: local}" >> ${CONFIG_FILE}
+    echo "{name: key}" >> ${CONFIG_FILE}
+    if [[ $AUTH_HEADER -eq 1 ]];then
+        echo "{" >> ${CONFIG_FILE}
+        echo "name = header" >> ${CONFIG_FILE}
+        echo "Setting Header Authentication and the HeaderName=${AUTH_HEADER}"
+        echo "userHeader = \"${AUTH_USERHEADER}\"" >> ${CONFIG_FILE}
+        echo "}" >> ${CONFIG_FILE}
+    fi
+    if [[ $AUTH_AD -eq 1 ]];then
+        echo "{" >> ${CONFIG_FILE}
+        echo "name = ad" >> ${CONFIG_FILE}
+        echo "winDomain = \"${AUTH_WINDOMAIN}\"" >> ${CONFIG_FILE}
+        echo "dnsDomain = \"${AUTH_DNSDOMAIN}\"" >> ${CONFIG_FILE}
+        echo "useSSL = ${AUTH_SSL}" >> ${CONFIG_FILE}
+        echo "Using AD Authentication with the domain ${AUTH_WINDOMAIN}"
+        # Converting hosts to list of strings #
+        IFS="," read -r -a authhosts <<<"${AUTH_AD_HOSTS}"
+        if [[ ${#authhosts[@]} -gt 0 ]];then
+            for host in ${authhosts[@]};do
+                ahosts="${ahosts}\"${host}\","
+            done
+            echo "hosts = [${ahosts:0:${#ahosts}-1}]" >> ${CONFIG_FILE}
+        fi
+        echo "}" >> ${CONFIG_FILE}
+    fi
+    if [[ $AUTH_LDAP -eq 1 ]];then
+        echo "{" >> ${CONFIG_FILE}
+        echo "name = ldap" >> ${CONFIG_FILE}
+        echo "bindDN = \"${AUTH_BINDDN}\"" >> ${CONFIG_FILE}
+        echo "bindPW = \"${AUTH_BINDPW}\"" >> ${CONFIG_FILE}
+        echo "baseDN = \"${AUTH_BASEDN}\"" >> ${CONFIG_FILE}
+        echo "filter = \"${AUTH_FILTER}\"" >> ${CONFIG_FILE}
+        echo "useSSL = ${AUTH_SSL}" >> ${CONFIG_FILE}
+        # Converting hosts to list of strings #
+        IFS="," read -r -a authhosts <<<"${AUTH_LDAP_HOSTS}"
+        if [[ ${#authhosts[@]} -gt 0 ]];then
+            for host in ${authhosts[@]};do  
+                ahosts="${ahosts}\"${host}\","
+            done
+            echo "hosts = [${ahosts:0:${#ahosts}-1}]" >> ${CONFIG_FILE}
+        fi
+        echo "}" >> ${CONFIG_FILE}
+    fi
+    if [[ $AUTH_OAUTH -eq 1 ]];then
+        echo "{" >> ${CONFIG_FILE}
+        echo "name = oauth2" >> ${CONFIG_FILE}
+        echo "clientId = \"${AUTH_CLIENTID}\"" >> ${CONFIG_FILE}
+        echo "clientSecret = \"${AUTH_CLIENTSECRET}\"" >> ${CONFIG_FILE}
+        echo "redirectUri = \"${THEHIVE_URL}/api/ssoLogin\"" >> ${CONFIG_FILE}
+        echo "responseType = \"code\"" >> ${CONFIG_FILE}
+        echo "grantType = \"authorization_code\"" >> ${CONFIG_FILE}
+        echo "authorizationUrl = \"${AUTH_URL}\"" >> ${CONFIG_FILE}
+        echo "tokenUrl = \"${TOKEN_URL}\"" >> ${CONFIG_FILE}
+        echo "userUrl = \"${USER_URL}\"" >> ${CONFIG_FILE}
+        echo "authorizationHeader = \"${AUTH_AUTHHEADER}\"" >> ${CONFIG_FILE}
+        # Converting scopes to list of strings #
+        IFS="," read -r -a authscope <<<"${AUTH_SCOPE}"
+        if [[ ${#authscope[@]} -gt 0 ]];then
+            for scope in ${authscope[@]};do  
+                scopes="${scopes}\"${scope}\","
+            done
+            echo "scope = [${scopes:0:${#scopes}-1}]" >> ${CONFIG_FILE}
+        fi
+        ###
+        echo  "userIdField = \"${AUTH_USERID}\"" >> ${CONFIG_FILE}
+       if [[ -n $AUTH_ORG ]];then
+           echo "organisationField = \"${AUTH_ORG}\"" >> ${CONFIG_FILE}
+       fi
+       if [[ -n $AUTH_DEFORG ]];then
+           echo "defaultOrganisation = \"${AUTH_DEFORG}\""  >> ${CONFIG_FILE}
+       fi
+       echo "}" >> ${CONFIG_FILE}
+    fi
+
+echo "]" >> ${CONFIG_FILE}
+fi
+#####
 
   if test "${CONFIG_STORAGE}" = 1
   then
