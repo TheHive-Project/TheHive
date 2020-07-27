@@ -79,6 +79,8 @@ TheHive 4 supports authentication methods:
 ### Statistics & Dashboards
 TheHive comes with a powerful statistics module that allows you to create meaningful dashboards to drive your activity and support your budget requests.
 
+## Integrations 
+
 ### MISP and Cortex
 TheHive can be configured to import events from one or multiple [MISP](http://www.misp-project.org/) instances. You can also use TheHive to export cases as MISP events to one or several MISP servers. 
 
@@ -89,6 +91,10 @@ TheHive Project provides [DigitalShadows2TH](https://github.com/TheHive-Project/
 
 ### Integration with Zerofox
 [Zerofox2TH](https://github.com/TheHive-Project/Zerofox2TH) is a free, open source [ZeroFOX](https://www.zerofox.com/) alert feeder for TheHive, written by TheHive Project. You can use it to feed ZeroFOX alerts into TheHive, where they can be previewed and transformed into new cases using pre-defined incident response templates or added into existing ones.
+
+### And many more
+
+Lots of **awesome** integrations shared by the community could be listed there. If you're looking for a specific one, **a  dedicated repository** containing all known details and references about existing integrations is updated frequently, and can be found here: [https://github.com/TheHive-Project/awesome](https://github.com/TheHive-Project/awesome).
 
 # License
 TheHive is an open source and free software released under the [AGPL](https://github.com/TheHive-Project/TheHive/blob/master/LICENSE) (Affero General Public License). We, TheHive Project, are committed to ensure that TheHive will remain a free and open source project on the long-run.
