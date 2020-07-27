@@ -3,13 +3,16 @@
 
 [![Join the chat at https://gitter.im/TheHive-Project/TheHive](https://badges.gitter.im/TheHive-Project/TheHive.svg)](https://gitter.im/TheHive-Project/TheHive?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-
 [TheHive](https://thehive-project.org/) is a scalable 3-in-1 open source and free Security Incident Response Platform designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly. It is the perfect companion to [MISP](http://www.misp-project.org/). You can synchronize it with one or multiple MISP instances to start investigations out of MISP events. You can also export an investigation's results as a MISP event to help your peers detect and react to attacks you've dealt with. Additionally, when TheHive is used in conjunction with [Cortex](https://github.com/TheHive-Project/Cortex/), security analysts and researchers can easily analyze tens if not hundred of observables.  
 
 ![Current Cases View](images/Current_cases.png)
 
 ## Collaborate
-Collaboration is at the heart of TheHive. Multiple analysts can work on the same case simultaneously. For example, an analyst may deal with malware analysis while another may work on tracking C2 beaconing activity on proxy logs as soon as IOCs have been added by their coworker. Using TheHive's live stream, everyone can keep an eye on what's happening on the platform, in real time.
+Collaboration is at the heart of TheHive.
+
+Multiple analysts from one organisations can work together on the same case simultaneously. For example, an analyst may deal with malware analysis while another may work on tracking C2 beaconing activity on proxy logs as soon as IOCs have been added by their coworker. Using TheHive's live stream, everyone can keep an eye on what's happening on the platform, in real time.
+
+Multi-tenancy and fine grained user profiles let organisations and analysts work and collaborate on a same case accross organisations. For example, one case can be created by a first organisation who start investigating and ask for contribution from other teams or escalate to another organisation.
 
 ## Elaborate
 Within TheHive, every investigation corresponds to a case. Cases can be created from scratch or from [MISP](http://www.misp-project.org/) events, SIEM alerts, email reports and any other noteworthy source of security events.
@@ -34,39 +37,47 @@ Analysts can analyze tens or hundreds of observables in a few clicks by leveragi
 Security analysts with a knack for scripting can easily add their own analyzers to Cortex in order to automate actions that must be performed on observables or IOCs. They can also decide how analyzers behave according to the TLP. For example, a file added as observable can be submitted to VirusTotal if the associated TLP is WHITE or GREEN. If it's AMBER, its hash is computed and submitted to VT but not the file. If it's RED, no VT lookup is done.
 
 # Try it
-To try TheHive, you can use the [training VM](https://github.com/TheHive-Project/TheHiveDocs/blob/master/training-material.md) or install it by reading the [Installation Guide](https://github.com/TheHive-Project/TheHiveDocs/blob/master/installation/install-guide.md).
+To try TheHive, you can use the [training VM](https://github.com/TheHive-Project/TheHiveDocs/blob/master/training-material.md) or install it by reading the [Installation Guide](https://github.com/TheHive-Project/TheHiveDocs/tree/master/TheHive4/Installation).
 
 # Details
 
 ## Documentation
-We have made several guides available in the [Documentation repository](https://github.com/TheHive-Project/TheHiveDocs).
+We have made several guides available in the [Documentation repository](https://github.com/TheHive-Project/TheHiveDocs/tree/master/TheHive4).
 
-## Architecture
-TheHive is written in Scala and uses ElasticSearch 5.x for storage. Its REST API is stateless which allows it to be horizontally scalable. The front-end uses AngularJS with Bootstrap.
 
-![architecture](images/thehive-architecture.png)
 
-## Workflow
-The following image shows a typical workflow:
+## Main features
 
-![workflow](images/thehive-workflow.png)
+### Multi-tenancy
+TheHive comes with a special multi-tenancy support. It allows the following strategies:
 
-## Additional features
+- Use a siloed multi-tenancy: many organisations can be defined without allowing them to share data;
+- Use a collaborative multi-tenancy: a set of organisations can be allowed to collaborate on specific cases/tasks/observables, using custom defined user profiles (RBAC).
+
+
+### RBAC
+TheHive comes with a set of permissions and several pre-configured user profiles: 
+
+- `admin`: full administrative permissions on the plateform ; can't manage any Cases or other data related to investigations;
+- `org-admin`: manage users and all organisation-level configuration, can create and edit Cases, Tasks, Observables and run Analyzers and Responders;
+- `analyst`: can create and edit _Cases_, _Tasks_, _Observables_ and run _Analyzers_ & _Responders_;
+- `read-only`: Can only read, Cases, Tasks and Observables details;
+
+New profiles can be created by administrators of the platform. 
+
 ### Authentication
-TheHive supports 4 authentication methods:
-+ Active Directory
-+ LDAP
-+ API keys
-+ local
+TheHive 4 supports authentication methods:
 
-### Statistics
+- local accounts
+- Active Directory
+- LDAP
+- Basic Auth
+- API keys
+- OAUTH2
+- Multi Factor Authentication
+
+### Statistics & Dashboards
 TheHive comes with a powerful statistics module that allows you to create meaningful dashboards to drive your activity and support your budget requests.
-
-### Case Merging
-Two cases can be easily merged together if you believe they relate to the same threat or have a significant observable overlap.
-
-### Case and Observable Filtering
-You can filter cases and observables very easily to show only the data that is of interest to you.
 
 ### MISP and Cortex
 TheHive can be configured to import events from one or multiple [MISP](http://www.misp-project.org/) instances. You can also use TheHive to export cases as MISP events to one or several MISP servers. 
