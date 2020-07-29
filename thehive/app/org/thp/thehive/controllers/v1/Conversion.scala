@@ -145,6 +145,7 @@ object Conversion {
       .withFieldConst(_._type, "CaseTemplate")
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.tasks, _.tasks.map(_.toOutput))
       .transform
   )
 
