@@ -24,24 +24,37 @@ case class InputCustomFieldValue(name: String, value: Option[Any], order: Option
 
 object InputCustomFieldValue {
 
-  val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValue") {
+  val valueParser: FieldsParser[Option[Any]] = FieldsParser("customFieldValue") {
+    case (_, FString(value))     => Good(Some(value))
+    case (_, FNumber(value))     => Good(Some(value))
+    case (_, FBoolean(value))    => Good(Some(value))
+    case (_, FAny(value :: _))   => Good(Some(value))
+    case (_, FUndefined | FNull) => Good(None)
+  }
+
+  val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValues") {
     case (_, FObject(fields)) =>
       fields
         .toSeq
         .validatedBy {
-          case (name, FString(value))   => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FNumber(value))   => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FBoolean(value))  => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FNull)            => Good(InputCustomFieldValue(name, None, None))
-          case (name, other) =>
-            Bad(
-              One(
-                InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: date"), other)
-              )
-            )
+          case (name, valueField) => valueParser(valueField).map(v => InputCustomFieldValue(name, v, None))
         }
         .map(_.toSeq)
+    case (_, FSeq(list)) =>
+      list.zipWithIndex.validatedBy {
+        case (cf: FObject, i) =>
+          val order = FieldsParser.int(cf.get("order")).getOrElse(i)
+          for {
+            name  <- FieldsParser.string(cf.get("name"))
+            value <- valueParser(cf.get("value"))
+          } yield InputCustomFieldValue(name, value, Some(order))
+        case (other, i) =>
+          Bad(
+            One(
+              InvalidFormatAttributeError(s"customFild[$i]", "CustomFieldValue", Set.empty, other)
+            )
+          )
+      }
     case _ => Good(Nil)
   }
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
