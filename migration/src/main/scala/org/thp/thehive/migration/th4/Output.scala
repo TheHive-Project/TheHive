@@ -670,9 +670,14 @@ class Output @Inject() (
             }
           )
         tags = inputAlert.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
-        alert <- alertSrv.create(inputAlert.alert, organisation, tags, inputAlert.customFields, caseTemplate)
-        _ = updateMetaData(alert.alert, inputAlert.metaData)
-        _ = inputAlert.caseId.flatMap(getCase(_).toOption).foreach(alertSrv.alertCaseSrv.create(AlertCase(), alert.alert, _))
+//        alert <- alertSrv.create(inputAlert.alert, organisation, tags, inputAlert.customFields, caseTemplate) // FIXME don't check duplicate
+        alert <- alertSrv.createEntity(inputAlert.alert)
+        _     <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), alert, organisation)
+        _     <- caseTemplate.map(ct => alertSrv.alertCaseTemplateSrv.create(AlertCaseTemplate(), alert, ct)).flip
+        _     <- tags.toTry(t => alertSrv.alertTagSrv.create(AlertTag(), alert, t))
+        _     <- inputAlert.customFields.toTry { case (name, value) => alertSrv.createCustomField(alert, name, value) }
+        _ = updateMetaData(alert, inputAlert.metaData)
+        _ = inputAlert.caseId.flatMap(getCase(_).toOption).foreach(alertSrv.alertCaseSrv.create(AlertCase(), alert, _))
       } yield IdMapping(inputAlert.metaData.id, alert._id)
   }
 
