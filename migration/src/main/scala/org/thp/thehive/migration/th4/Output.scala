@@ -228,6 +228,27 @@ class Output @Inject() (
     caseTemplates = caseTemplatesBuilder.result()
     caseNumbers = caseNumbersBuilder.result()
     alerts = alertsBuilder.result()
+    if (profiles.nonEmpty ||
+        organisations.nonEmpty ||
+        users.nonEmpty ||
+        impactStatuses.nonEmpty ||
+        resolutionStatuses.nonEmpty ||
+        observableTypes.nonEmpty ||
+        customFields.nonEmpty ||
+        caseTemplates.nonEmpty ||
+        caseNumbers.nonEmpty ||
+        alerts.nonEmpty)
+      logger.info(s"""Already migrated: 
+                     | ${profiles.size} profiles\n
+                     | ${organisations.size} organisations\n
+                     | ${users.size} users\n
+                     | ${impactStatuses.size} impactStatuses\n
+                     | ${resolutionStatuses.size} resolutionStatuses\n
+                     | ${observableTypes.size} observableTypes\n
+                     | ${customFields.size} customFields\n
+                     | ${caseTemplates.size} caseTemplates\n
+                     | ${caseNumbers.size} caseNumbers\n
+                     | ${alerts.size} alerts""".stripMargin)
   }
 
   def startMigration(): Try[Unit] = {

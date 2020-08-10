@@ -25,7 +25,7 @@ class MigrationStats() {
       count = 0
       sum = 0
     }
-    def isEmpty: Boolean          = count == 0
+    def isEmpty: Boolean          = count == 0L
     override def toString: String = if (isEmpty) "0" else (sum / count).toString
   }
 
