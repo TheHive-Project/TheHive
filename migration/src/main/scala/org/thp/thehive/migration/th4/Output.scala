@@ -526,7 +526,7 @@ class Output @Inject() (
         }
         inputCase.organisations.foldLeft(false) {
           case (ownerSet, (organisationName, profileName)) =>
-            val owner = profileName == profileSrv.orgAdmin.name && !ownerSet
+            val owner = profileName == Profile.orgAdmin.name && !ownerSet
             val shared = for {
               organisation <- getOrganisation(organisationName)
               profile      <- getProfile(profileName)
