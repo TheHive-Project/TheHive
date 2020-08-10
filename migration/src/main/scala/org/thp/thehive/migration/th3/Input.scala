@@ -96,10 +96,9 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[InputCase]
 
   override def countCases(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(bool(caseFilter(filter) :+ termQuery("relations", "case"), Nil, Nil))
-        .limit(0)
     )._2
 
   override def listCaseObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed] =
@@ -118,7 +117,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputObservable](json => Try((json \ "_parent").as[String]))
 
   override def countCaseObservables(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -130,7 +129,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listCaseObservables(caseId: String): Source[Try[(String, InputObservable)], NotUsed] =
@@ -149,7 +147,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputObservable](json => Try((json \ "_parent").as[String]))
 
   override def countCaseObservables(caseId: String): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -161,7 +159,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listCaseTasks(filter: Filter): Source[Try[(String, InputTask)], NotUsed] =
@@ -180,7 +177,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputTask](json => Try((json \ "_parent").as[String]))
 
   override def countCaseTasks(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -192,7 +189,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listCaseTasks(caseId: String): Source[Try[(String, InputTask)], NotUsed] =
@@ -211,7 +207,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputTask](json => Try((json \ "_parent").as[String]))
 
   override def countCaseTasks(caseId: String): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -223,7 +219,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listCaseTaskLogs(filter: Filter): Source[Try[(String, InputLog)], NotUsed] =
@@ -246,7 +241,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
 
   override def countCaseTaskLogs(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -262,7 +257,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listCaseTaskLogs(caseId: String): Source[Try[(String, InputLog)], NotUsed] =
@@ -285,7 +279,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
 
   override def countCaseTaskLogs(caseId: String): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -301,7 +295,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   def alertFilter(filter: Filter): Seq[RangeQuery] =
@@ -318,7 +311,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[InputAlert]
 
   override def countAlerts(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil)).limit(0))._2
+    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil)))._2
 
   override def listAlertObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil)))
@@ -382,7 +375,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[InputUser]
 
   override def countUsers(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "user")).limit(0))._2
+    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(termQuery("relations", "user")))._2
 
   override def listCustomFields(filter: Filter): Source[Try[InputCustomField], NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
@@ -396,7 +389,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )._1.read[InputCustomField]
 
   override def countCustomFields(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -405,7 +398,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listObservableTypes(filter: Filter): Source[Try[InputObservableType], NotUsed] =
@@ -415,8 +407,8 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[InputObservableType]
 
   override def countObservableTypes(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "list_artifactDataType")), Nil, Nil)).limit(0)
+    dbFind(Some("0-0"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "dblist"), termQuery("dblist", "list_artifactDataType")), Nil, Nil))
     )._2
 
   override def listProfiles(filter: Filter): Source[Try[InputProfile], NotUsed] =
@@ -444,7 +436,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[InputCaseTemplate]
 
   override def countCaseTemplate(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "caseTemplate")).limit(0))._2
+    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(termQuery("relations", "caseTemplate")))._2
 
   override def listCaseTemplateTask(filter: Filter): Source[Try[(String, InputTask)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "caseTemplate")))
@@ -507,7 +499,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputJob](json => Try((json \ "_parent").as[String]))(jobReads, classTag[InputJob])
 
   override def countJobs(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -523,7 +515,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listJobs(caseId: String): Source[Try[(String, InputJob)], NotUsed] =
@@ -546,7 +537,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .readWithParent[InputJob](json => Try((json \ "_parent").as[String]))(jobReads, classTag[InputJob])
 
   override def countJobs(caseId: String): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
+    dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
           bool(
@@ -562,7 +553,6 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             Nil
           )
         )
-        .limit(0)
     )._2
 
   override def listJobObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed] =
@@ -631,7 +621,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[(String, InputAction)]
 
   override def countAction(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(termQuery("relations", "action")).limit(0))._2
+    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(termQuery("relations", "action")))._2
 
   override def listAction(entityId: String): Source[Try[(String, InputAction)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(Seq(termQuery("relations", "action"), idsQuery(entityId)), Nil, Nil)))
@@ -639,7 +629,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[(String, InputAction)]
 
   override def countAction(entityId: String): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(Seq(termQuery("relations", "action"), idsQuery(entityId)), Nil, Nil)).limit(0))._2
+    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(bool(Seq(termQuery("relations", "action"), idsQuery(entityId)), Nil, Nil)))._2
 
   def auditFilter(filter: Filter): Seq[RangeQuery] =
     if (filter.auditDateRange._1.isDefined || filter.auditDateRange._2.isDefined) {
@@ -654,7 +644,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .read[(String, InputAudit)]
 
   override def countAudit(filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit"), Nil, Nil)).limit(0))._2
+    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit"), Nil, Nil)))._2
 
   override def listAudit(entityId: String, filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
@@ -662,7 +652,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )._1.read[(String, InputAudit)]
 
   def countAudit(entityId: String, filter: Filter): Future[Long] =
-    dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId), Nil, Nil)).limit(0)
+    dbFind(Some("0-0"), Nil)(indexName =>
+      search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId), Nil, Nil))
     )._2
 }
