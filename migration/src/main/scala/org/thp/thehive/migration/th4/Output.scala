@@ -388,7 +388,7 @@ class Output @Inject() (
     observableTypes
       .get(typeName)
       .fold[Try[ObservableType with Entity]] {
-        observableTypeSrv.create(ObservableType(typeName, isAttachment = false)).map { ot =>
+        observableTypeSrv.createEntity(ObservableType(typeName, isAttachment = false)).map { ot =>
           observableTypes += (typeName -> ot)
           ot
         }
