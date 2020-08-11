@@ -35,12 +35,18 @@ class MispSynchro @Inject()(
     tempSrv: TempSrv,
     lifecycle: ApplicationLifecycle,
     system: ActorSystem,
-    implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
   private[misp] lazy val logger   = Logger(getClass)
   private[misp] lazy val alertSrv = alertSrvProvider.get
+  implicit val ec: ExecutionContext = try {
+    system.dispatchers.lookup("misp-thread-pools")
+  } catch {
+    case e: Throwable =>
+      logger.warn(s"Unable to use MISP specific dispatcher ($e). Fallback  to default dispatcher")
+      system.dispatcher
+  }
 
   private[misp] def initScheduler(): Unit = {
     val task = system.scheduler.scheduleWithFixedDelay(0.seconds, mispConfig.interval) {() =>
