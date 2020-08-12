@@ -20,7 +20,7 @@ class SimpleUserMapper(
 
   @Inject() def this(configuration: Configuration, ec: ExecutionContext) =
     this(
-      configuration.getOptional[String]("auth.sso.attributes.login").getOrElse("sub"),
+      configuration.getOptional[String]("auth.sso.attributes.login").getOrElse("login"),
       configuration.getOptional[String]("auth.sso.attributes.name").getOrElse("name"),
       configuration.getOptional[String]("auth.sso.attributes.roles"),
       configuration.getOptional[Seq[String]]("auth.sso.defaultRoles").getOrElse(Seq()),
@@ -37,7 +37,8 @@ class SimpleUserMapper(
     } yield Fields(Json.obj("login" → login, "name" → name, "roles" → roles))
     fields match {
       case JsSuccess(f, _) ⇒ Future.successful(f)
-      case JsError(errors) ⇒ Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._2).map(_.map(_.messages.mkString(", ")).mkString("; ")).mkString}"))
+      case JsError(errors) ⇒
+        Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._2).map(_.map(_.messages.mkString(", ")).mkString("; ")).mkString}"))
     }
   }
 }
