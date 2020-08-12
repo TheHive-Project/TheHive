@@ -39,7 +39,6 @@ object AlertSrv {
 
 @Singleton
 class AlertSrv(
-    templates: Map[String, String],
     alertModel: AlertModel,
     createSrv: CreateSrv,
     getSrv: GetSrv,
@@ -51,7 +50,6 @@ class AlertSrv(
     caseTemplateSrv: CaseTemplateSrv,
     attachmentSrv: AttachmentSrv,
     connectors: ConnectorRouter,
-    hashAlg: Seq[String],
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) extends AlertTransformer {
@@ -73,7 +71,6 @@ class AlertSrv(
       mat: Materializer
   ) =
     this(
-      Map.empty[String, String],
       alertModel: AlertModel,
       createSrv,
       getSrv,
@@ -85,7 +82,6 @@ class AlertSrv(
       caseTemplateSrv,
       attachmentSrv,
       connectors,
-      (configuration.get[String]("datastore.hash.main") +: configuration.get[Seq[String]]("datastore.hash.extra")).distinct,
       ec,
       mat
     )
@@ -204,7 +200,7 @@ class AlertSrv(
       case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"), modifyConfig)
     }
 
-  def getCaseTemplate(alert: Alert, customCaseTemplate: Option[String]): Future[Option[CaseTemplate]] =
+  def getCaseTemplate(customCaseTemplate: Option[String]): Future[Option[CaseTemplate]] =
     customCaseTemplate.fold[Future[Option[CaseTemplate]]](Future.successful(None)) { templateName ⇒
       caseTemplateSrv
         .getByName(templateName)
@@ -226,7 +222,7 @@ class AlertSrv(
             } yield caze
           case _ ⇒
             for {
-              caseTemplate ← getCaseTemplate(alert, customCaseTemplate)
+              caseTemplate ← getCaseTemplate(customCaseTemplate)
               caze ← caseSrv.create(
                 Fields
                   .empty

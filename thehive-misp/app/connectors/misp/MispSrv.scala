@@ -2,28 +2,26 @@ package connectors.misp
 
 import java.util.Date
 
+import akka.NotUsed
+import akka.stream.Materializer
+import akka.stream.scaladsl.{FileIO, Sink, Source}
+import connectors.misp.JsonFormat._
 import javax.inject.{Inject, Provider, Singleton}
-
-import scala.concurrent.{ExecutionContext, Future}
+import models._
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.exception.ZipException
+import org.elastic4play.controllers.{Fields, FileInputValue}
+import org.elastic4play.services.{Attachment, AuthContext, TempSrv}
+import org.elastic4play.{InternalError, NotFoundError}
 import play.api.Logger
 import play.api.libs.json.JsLookupResult.jsLookupResultToJsLookup
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import play.api.libs.json._
 import play.api.libs.ws.WSBodyWritables.writeableOf_JsValue
-import akka.NotUsed
-import akka.stream.Materializer
-import akka.stream.scaladsl.{FileIO, Sink, Source}
-import connectors.misp.JsonFormat._
-import models._
-import net.lingala.zip4j.core.ZipFile
-import net.lingala.zip4j.exception.ZipException
-import net.lingala.zip4j.model.FileHeader
 import services._
-import org.elastic4play.controllers.{Fields, FileInputValue}
-import org.elastic4play.services.{Attachment, AuthContext, TempSrv}
-import org.elastic4play.{InternalError, NotFoundError}
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 @Singleton
@@ -64,7 +62,7 @@ class MispSrv @Inject()(
     logger.debug(s"Get MISP events from $fromDate")
     val date = fromDate.getTime / 1000
     Source
-      .fromFuture {
+      .future {
         mispConnection("events/index")
           .post(Json.obj("searchpublish_timestamp" → date))
       }
@@ -208,7 +206,7 @@ class MispSrv @Inject()(
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
         for {
-          caseTemplate ← alertSrv.getCaseTemplate(alert, customCaseTemplate)
+          caseTemplate ← alertSrv.getCaseTemplate(customCaseTemplate)
           caze         ← caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
           _            ← importArtifacts(alert, caze)
         } yield caze
@@ -273,10 +271,10 @@ class MispSrv @Inject()(
       val zipFile = new ZipFile(file.filepath.toFile)
 
       if (zipFile.isEncrypted)
-        zipFile.setPassword("infected")
+        zipFile.setPassword("infected".toCharArray)
 
       // Get the list of file headers from the zip file
-      val fileHeaders = zipFile.getFileHeaders.asScala.toList.asInstanceOf[List[FileHeader]]
+      val fileHeaders = zipFile.getFileHeaders.asScala.toList
       val (fileNameHeaders, contentFileHeaders) = fileHeaders.partition { fileHeader ⇒
         fileHeader.getFileName.endsWith(".filename.txt")
       }
@@ -300,7 +298,7 @@ class MispSrv @Inject()(
 
         tempFile = tempSrv.newTemporaryFile("misp", "malware")
         _        = logger.info(s"Extract malware file ${file.filepath} in file $tempFile")
-        _        = zipFile.extractFile(contentFileHeader, tempFile.getParent.toString, null, tempFile.getFileName.toString)
+        _        = zipFile.extractFile(contentFileHeader, tempFile.getParent.toString, tempFile.getFileName.toString)
       } yield FileInputValue(filename, tempFile, "application/octet-stream")).getOrElse(file)
     } catch {
       case e: ZipException ⇒
@@ -325,9 +323,7 @@ class MispSrv @Inject()(
           response
             .bodyAsSource
             .runWith(FileIO.toPath(tempFile))
-            .map { ioResult ⇒
-              if (!ioResult.wasSuccessful) // throw an exception if transfer failed
-                throw ioResult.getError
+            .map { _ ⇒
               val contentType = response.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
               val filename = response
                 .headers

@@ -28,7 +28,7 @@ trait ReportTemplateAttributes { _: AttributeDef ⇒
 class ReportTemplateModel @Inject()
     extends ModelDef[ReportTemplateModel, ReportTemplate]("reportTemplate", "Report template", "/connector/cortex/reportTemplate")
     with ReportTemplateAttributes {
-  override def creationHook(parent: Option[BaseEntity], attrs: JsObject) = {
+  override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
     val maybeId = for {
       analyzerId ← (attrs \ "analyzerId").asOpt[String]
       reportType ← (attrs \ "reportType").asOpt[String]

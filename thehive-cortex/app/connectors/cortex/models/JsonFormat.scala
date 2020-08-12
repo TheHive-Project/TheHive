@@ -43,23 +43,20 @@ object JsonFormat {
   )
   private val fileArtifactFormat = OFormat(fileArtifactReads, fileArtifactWrites)
   private val dataArtifactFormat = Json.format[DataArtifact]
-  private val artifactReads = Reads[CortexArtifact](
+  implicit val artifactReads: Reads[CortexArtifact] = Reads[CortexArtifact](
     json ⇒
       json.validate[JsObject].flatMap {
         case a if a.keys.contains("data") ⇒ json.validate[DataArtifact](dataArtifactFormat)
         case _                            ⇒ json.validate[FileArtifact](fileArtifactFormat)
       }
   )
-  private val artifactWrites = OWrites[CortexArtifact] {
+  implicit def artifactWrites[A <: CortexArtifact]: OWrites[A] = OWrites[A] {
     case dataArtifact: DataArtifact ⇒ dataArtifactFormat.writes(dataArtifact)
     case fileArtifact: FileArtifact ⇒ fileArtifactWrites.writes(fileArtifact)
   }
 
-  implicit val artifactFormat: OFormat[CortexArtifact] = OFormat(artifactReads, artifactWrites)
+//  implicit def artifactFormat[A <: CortexArtifact]: OFormat[A] = OFormat(artifactReads, artifactWrites)
   implicit val jobStatusFormat: Format[JobStatus.Type] = enumFormat(JobStatus)
-
-  private def filterObject(json: JsObject, attributes: String*): JsObject =
-    JsObject(attributes.flatMap(a ⇒ (json \ a).asOpt[JsValue].map(a → _)))
 
   implicit val cortexJobReads: Reads[CortexJob] = Reads[CortexJob](
     json ⇒
@@ -68,7 +65,11 @@ object JsonFormat {
         analyzerId ← (json \ "workerId").orElse(json \ "analyzerId").validate[String]
         analyzerName       = (json \ "workerName").orElse(json \ "analyzerName").validate[String].getOrElse(analyzerId)
         analyzerDefinition = (json \ "workerDefinitionId").orElse(json \ "analyzerDefinitionId").validate[String].getOrElse(analyzerId)
-        attributes         = filterObject(json.as[JsObject], "tlp", "message", "parameters")
+        attributes         = JsObject(
+          (json \ "tlp").asOpt[JsValue].map("tlp" -> _).toList :::
+            (json \ "message").asOpt[JsValue].map("message" -> _).toList :::
+            (json \ "parameters").asOpt[JsValue].map("parameters" -> _).toList
+        )
         artifact = (json \ "artifact")
           .validate[CortexArtifact]
           .getOrElse {

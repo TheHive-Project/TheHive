@@ -67,22 +67,49 @@
                         return item.selected === true;
                     }), 'dataType');
 
-                    var message = [
-                        '### Discovered from:',
-                        '- Observable: **['+ $scope.origin.dataType + '] - ' + $filter('fang')($scope.origin.data) + '**',
-                        '- Analyzer: **'+ $scope.analyzer + '**'
-                    ].join('\n');
+
 
                     _.each(toImport, function(list, key) {
-                        var params = {
-                            dataType: key,
-                            single: list.length === 1,
-                            ioc: false,
-                            sighted: false,
-                            tlp: 2,
-                            message: message,
-                            tags: [{text: 'src:' + $scope.analyzer}]
-                        };
+                        var message = [
+                            '### Discovered from:',
+                            '- Observable: **['+ $scope.origin.dataType + '] - ' + $filter('fang')($scope.origin.data) + '**',
+                            '- Analyzer: **'+ $scope.analyzer + '**'
+                        ];
+                        
+                        var params;
+
+                        if(list.length === 1) {
+                            var obs = list[0];
+
+                            if(obs.message) {
+                                message.push('- Message: ' + obs.message);
+                            }
+
+                            params = {
+                                dataType: key,
+                                single: true,
+                                ioc: false,
+                                sighted: false,
+                                tlp: obs.tlp || 2,
+                                message: message.join('\n'),
+                                tags: [{text: 'src:' + $scope.analyzer}].concat(_.map(_.uniq(obs.tags), function(i) {
+                                    return {text: i};
+                                }))
+                            };
+                        } else {
+                            params = {
+                                dataType: key,
+                                single: list.length === 1,
+                                ioc: false,
+                                sighted: false,
+                                tlp: 2,
+                                message: message.join('\n'),
+                                tags: [{text: 'src:' + $scope.analyzer}]
+                            };
+                        }
+
+
+
 
                         if(key === 'file') {
                             params.attachment = _.pluck(list, 'attachment');

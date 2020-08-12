@@ -1,5 +1,6 @@
 import Common._
 import Dependencies._
+import org.thp.ghcl.Milestone
 
 lazy val thehiveBackend = (project in file("thehive-backend"))
   .enablePlugins(PlayScala)
@@ -17,6 +18,7 @@ lazy val thehiveBackend = (project in file("thehive-backend"))
       Library.zip4j,
       Library.reflections,
       Library.akkaCluster,
+      Library.akkaClusterTyped,
       Library.akkaClusterTools
     ),
     play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"
@@ -104,6 +106,8 @@ rpmReleaseFile := {
   ).!!
   rpmFile
 }
+
+milestoneFilter := ((milestone: Milestone) ⇒ milestone.title.head < '4')
 
 bintrayOrganization := Some("thehive-project")
 

@@ -24,7 +24,7 @@ trait AuditedModel { self: BaseModelDef ⇒
   lazy val auditedAttributes: Map[String, Attribute[_]] =
     attributes.collect { case a if !a.isUnaudited ⇒ a.attributeName → a }.toMap
 
-  def selectAuditedAttributes(attrs: JsObject) = JsObject {
+  def selectAuditedAttributes(attrs: JsObject): JsObject = JsObject {
     attrs.fields.flatMap {
       case (attrName, value) ⇒
         val attrNames = attrName.split("\\.").toSeq
@@ -102,7 +102,7 @@ class AuditActor @Inject()(auditModel: AuditModel, createSrv: CreateSrv, eventSr
     extends Actor {
 
   object EntityExtractor {
-    def unapply(e: BaseEntity) = Some((e.model, e.id, e.routing))
+    def unapply(e: BaseEntity): Some[(BaseModelDef, String, String)] = Some((e.model, e.id, e.routing))
   }
   var currentRequestIds               = Set.empty[String]
   private[AuditActor] lazy val logger = Logger(getClass)

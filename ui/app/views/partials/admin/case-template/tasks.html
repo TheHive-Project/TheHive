@@ -7,7 +7,7 @@
     </h4>
 
     <div class="empty-message" ng-if="!$vm.template.tasks || $vm.template.tasks.length === 0">
-        No tasks have been specified.
+        No tasks have been specified. <a href class="mr-xxxs" ng-click="$vm.addTask()">Add a task</a>
     </div>
 
     <div ng-if="$vm.template.tasks.length !== 0" ui-sortable="$vm.sortableOptions" ng-model="$vm.template.tasks">

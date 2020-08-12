@@ -32,7 +32,7 @@ case class AggregatedAuditMessage(auxSrv: AuxSrv, message: Future[JsObject], sum
 }
 
 object AggregatedAuditMessage {
-  lazy val logger = Logger(getClass)
+  lazy val logger: Logger = Logger(getClass)
 
   def apply(auxSrv: AuxSrv, operation: AuditOperation)(implicit ec: ExecutionContext): AggregatedAuditMessage = {
     // First operation of the group

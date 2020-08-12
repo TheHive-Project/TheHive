@@ -26,7 +26,8 @@
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th style="width:20px;"></th>
+                    <th style="width:10px;"></th>
+                    <th style="width:10px;"></th>
                     <th style="width:20px;"></th>
                     <th style="width:150px;">Type</th>
                     <th>Data</th>
@@ -38,6 +39,7 @@
                         offset: (pagination.currentPage-1)*pagination.pageSize |
                         limitTo: pagination.pageSize ">
                     <td><input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="observable.id"></td>
+                    <td><tlp value="observable.tlp"></tlp></td>
                     <td>
                         <span uib-tooltip="Observable already id" tooltip-popup-delay="500" tooltip-placement="bottom" ng-if="observable.id" class="glyphicon glyphicon-eye-open"></span>
                     </td>

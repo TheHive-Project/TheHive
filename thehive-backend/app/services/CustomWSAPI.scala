@@ -60,7 +60,7 @@ object CustomWSAPI {
                     .trustManagerConfig
                     .withTrustStoreConfigs(
                       clientConfig.wsClientConfig.ssl.trustManagerConfig.trustStoreConfigs :+ TrustStoreConfig(
-                        filePath = Some(p.toString),
+                        filePath = Some(p),
                         data = None
                       )
                     )

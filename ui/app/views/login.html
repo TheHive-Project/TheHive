@@ -22,10 +22,10 @@
         </form>
     </div>
     <div class="sso-login-box" ng-if="::ssoEnabled()">
-        <div class="row">
-            <div class="col-xs-6" style="margin: 0 auto; float: none;">
-		    <button type="submit" class="btn btn-sm btn-flat" ng-class="{'btn-warning': ssoLogingIn, 'btn-success': !ssoLogingIn}" ng-click="ssoLogin()" ng-disabled="ssoLogingIn">{{ ssoLogingIn ? "Signing in with SSO..." : "Sign in with SSO" }}</button>
-            </div>
+        <div class="mt-s or-separator">OR</div>
+
+        <div class="mv-xs">
+            <a class="btn btn-success btn-m btn-block" href="./api/ssoLogin">Sign In with SSO</a>
         </div>
     </div>
 

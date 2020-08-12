@@ -36,7 +36,7 @@ class CaseTemplateCtrl @Inject()(
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     caseTemplateSrv
       .get(id)
       .map(caze ⇒ renderer.toOutput(OK, caze))

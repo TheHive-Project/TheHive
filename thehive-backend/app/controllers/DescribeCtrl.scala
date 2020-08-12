@@ -33,7 +33,7 @@ class DescribeCtrl @Inject()(
     Json.obj("label" → model.label, "path" → model.path, "attributes" → attributeDefinitions)
   }
 
-  def describe(modelName: String): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
+  def describe(modelName: String): Action[AnyContent] = authenticated(Roles.read) { _ ⇒
     modelSrv(modelName)
       .map { model ⇒
         renderer.toOutput(OK, modelToJson(model))
@@ -43,7 +43,7 @@ class DescribeCtrl @Inject()(
 
   private val allModels: Seq[String] = Seq("case", "case_artifact", "case_task", "case_task_log", "alert", "case_artifact_job", "audit", "action")
 
-  def describeAll: Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
+  def describeAll: Action[AnyContent] = authenticated(Roles.read) { _ ⇒
     val entityDefinitions = modelSrv
       .list
       .collect {

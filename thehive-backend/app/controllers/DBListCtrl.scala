@@ -23,14 +23,14 @@ class DBListCtrl @Inject()(
 ) extends AbstractController(components) {
 
   @Timed("controllers.DBListCtrl.list")
-  def list: Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def list: Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     dblists.listAll.map { listNames ⇒
       renderer.toOutput(OK, listNames)
     }
   }
 
   @Timed("controllers.DBListCtrl.listItems")
-  def listItems(listName: String): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
+  def listItems(listName: String): Action[AnyContent] = authenticated(Roles.read) { _ ⇒
     val (src, _) = dblists(listName).getItems[JsValue]
     val items = src
       .map { case (id, value) ⇒ s""""$id":$value""" }

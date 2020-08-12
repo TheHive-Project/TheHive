@@ -21,7 +21,6 @@ import org.elastic4play.{AuthorizationError, BadRequestError, Timed}
 @Singleton
 class DashboardCtrl @Inject()(
     dashboardSrv: DashboardSrv,
-    auxSrv: AuxSrv,
     authenticated: Authenticated,
     renderer: Renderer,
     components: ControllerComponents,
@@ -41,7 +40,7 @@ class DashboardCtrl @Inject()(
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     dashboardSrv.get(id).map { dashboard ⇒
       renderer.toOutput(OK, dashboard)
     }

@@ -1,27 +1,22 @@
 package connectors.cortex.services
 
-import javax.inject.{Inject, Singleton}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
+import connectors.cortex.models.{ReportTemplate, ReportTemplateModel}
+import javax.inject.{Inject, Singleton}
+import org.elastic4play.controllers.Fields
+import org.elastic4play.database.ModifyConfig
+import org.elastic4play.services._
 import play.api.Logger
 import play.api.libs.json.JsObject
 
-import org.elastic4play.controllers.Fields
-import org.elastic4play.services.{Agg, AuthContext, CreateSrv, DeleteSrv, FindSrv, GetSrv, QueryDef, UpdateSrv}
-import connectors.cortex.models.{ReportTemplate, ReportTemplateModel}
-import services.ArtifactSrv
-
-import org.elastic4play.database.ModifyConfig
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class ReportTemplateSrv @Inject()(
     reportTemplateModel: ReportTemplateModel,
     createSrv: CreateSrv,
-    artifactSrv: ArtifactSrv,
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
@@ -56,7 +51,4 @@ class ReportTemplateSrv @Inject()(
     findSrv[ReportTemplateModel, ReportTemplate](reportTemplateModel, queryDef, range, sortBy)
 
   def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(reportTemplateModel, queryDef, aggs: _*)
-
-  def getStats(id: String): Future[JsObject] =
-    Future.successful(JsObject.empty)
 }

@@ -3,21 +3,18 @@ package connectors.cortex.controllers
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-
 import play.api.{Configuration, Logger}
 import play.api.http.Status
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
-import play.api.routing.SimpleRouter
+import play.api.routing.{Router, SimpleRouter}
 import play.api.routing.sird.{DELETE, GET, PATCH, POST, UrlContext}
-
 import akka.actor.ActorSystem
 import connectors.Connector
 import connectors.cortex.models.JsonFormat.{analyzerFormat, responderFormat}
 import connectors.cortex.services.{CortexActionSrv, CortexAnalyzerSrv, CortexConfig}
 import javax.inject.{Inject, Singleton}
 import models.{HealthStatus, Roles}
-
 import org.elastic4play.controllers.{Authenticated, Fields, FieldsBodyParser, Renderer}
 import org.elastic4play.models.JsonFormat.baseModelEntityWrites
 import org.elastic4play.services.JsonFormat.{aggReads, queryReads}
@@ -114,7 +111,7 @@ class CortexCtrl(
 
   override def health: HealthStatus.Type = _health
 
-  val router = SimpleRouter {
+  val router: Router = SimpleRouter {
     case POST(p"/job")              ⇒ createJob
     case GET(p"/job/$jobId<[^/]*>") ⇒ getJob(jobId)
     case POST(p"/job/_search")      ⇒ findJob
@@ -194,33 +191,33 @@ class CortexCtrl(
   }
 
   @Timed
-  def getAnalyzer(analyzerId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def getAnalyzer(analyzerId: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     cortexAnalyzerSrv.getAnalyzer(analyzerId).map { analyzer ⇒
       renderer.toOutput(OK, analyzer)
     }
   }
 
   @Timed
-  def getAnalyzerFor(dataType: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def getAnalyzerFor(dataType: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     cortexAnalyzerSrv.getAnalyzersFor(dataType).map { analyzers ⇒
       renderer.toOutput(OK, analyzers)
     }
   }
 
   @Timed
-  def listAnalyzer: Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def listAnalyzer: Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     cortexAnalyzerSrv.listAnalyzer.map { analyzers ⇒
       renderer.toOutput(OK, analyzers)
     }
   }
 
-  def getResponder(responderId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def getResponder(responderId: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     cortexActionSrv.getResponderById(responderId).map { responder ⇒
       renderer.toOutput(OK, responder)
     }
   }
 
-  def getResponders(entityType: String, entityId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def getResponders(entityType: String, entityId: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     cortexActionSrv.findResponderFor(entityType, entityId).map { responders ⇒
       renderer.toOutput(OK, responders)
     }
@@ -265,7 +262,7 @@ class CortexCtrl(
     renderer.toOutput(OK, actions, total)
   }
 
-  def getAction(actionId: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def getAction(actionId: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     cortexActionSrv.getAction(actionId).map { action ⇒
       renderer.toOutput(OK, action)
     }

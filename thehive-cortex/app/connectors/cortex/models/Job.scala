@@ -57,7 +57,7 @@ object Job {
 }
 
 class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job](model, Job.fixJobAttr(attributes)) with JobAttributes {
-  override def toJson = super.toJson + ("report" → report().fold[JsValue](JsObject.empty)(r ⇒ Json.parse(r))) // FIXME is parse fails (invalid report)
+  override def toJson: JsObject = super.toJson + ("report" → report().fold[JsValue](JsObject.empty)(r ⇒ Json.parse(r))) // FIXME is parse fails (invalid report)
 }
 
 case class CortexJob(

@@ -41,7 +41,7 @@ class UserCtrl @Inject()(
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
     userSrv
       .get(id)
       .map { user ⇒

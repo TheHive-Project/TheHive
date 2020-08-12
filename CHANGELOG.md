@@ -1,5 +1,23 @@
 # Change Log
 
+## [3.5.0-RC1](https://github.com/TheHive-Project/TheHive/milestone/44) (2020-08-12)
+
+**Implemented enhancements:**
+
+- Support of ElasticSearch 7 [\#1377](https://github.com/TheHive-Project/TheHive/issues/1377)
+- [Enhancement] MISP sync [\#1398](https://github.com/TheHive-Project/TheHive/issues/1398)
+
+**Closed issues:**
+
+- OAuth2 not working : Authentication failure [\#946](https://github.com/TheHive-Project/TheHive/issues/946)
+
+**Fixed bugs:**
+
+- [Bug] OAuth2/OpenIDC Authentication failure [\#1291](https://github.com/TheHive-Project/TheHive/issues/1291)
+- [Feature Request] OAuth support for Basic authentication to authorization server's tokenUrl [\#1294](https://github.com/TheHive-Project/TheHive/issues/1294)
+- [Bug] Can't auth with SSO/OAuth with FusionAuth [\#1342](https://github.com/TheHive-Project/TheHive/issues/1342)
+- [Bug] TheHive is stalled while importing Alerts with a large number of observables [\#1416](https://github.com/TheHive-Project/TheHive/issues/1416)
+
 ## [3.4.2](https://github.com/TheHive-Project/TheHive/milestone/57) (2020-04-25)
 
 **Implemented enhancements:**

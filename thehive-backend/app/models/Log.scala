@@ -35,7 +35,7 @@ class LogModel @Inject()(taskModel: TaskModel)
     extends ChildModelDef[LogModel, Log, TaskModel, Task](taskModel, "case_task_log", "Log", "/case/task/log")
     with LogAttributes
     with AuditedModel {
-  override val defaultSortBy   = Seq("-startDate")
-  override val removeAttribute = Json.obj("status" → LogStatus.Deleted)
+  override val defaultSortBy: Seq[String] = Seq("-startDate")
+  override val removeAttribute: JsObject = Json.obj("status" → LogStatus.Deleted)
 }
 class Log(model: LogModel, attributes: JsObject) extends EntityDef[LogModel, Log](model, attributes) with LogAttributes

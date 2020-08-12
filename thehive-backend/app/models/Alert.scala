@@ -2,32 +2,18 @@ package models
 
 import java.util.Date
 
-import scala.concurrent.Future
-import scala.util.Try
-
-import play.api.Logger
-import play.api.libs.json._
-
-import javax.inject.{Inject, Singleton}
+import javax.inject.Singleton
 import models.JsonFormat.alertStatusFormat
-import services.AuditedModel
-
 import org.elastic4play.controllers.JsonInputValue
-import org.elastic4play.models.{
-  Attribute,
-  AttributeDef,
-  BaseEntity,
-  EntityDef,
-  HiveEnumeration,
-  ModelDef,
-  MultiAttributeFormat,
-  OptionalAttributeFormat,
-  AttributeFormat ⇒ F,
-  AttributeOption ⇒ O
-}
-import org.elastic4play.services.DBLists
+import org.elastic4play.models.{Attribute, AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, MultiAttributeFormat, OptionalAttributeFormat, AttributeFormat => F, AttributeOption => O}
 import org.elastic4play.utils.Hasher
 import org.elastic4play.{AttributeCheckingError, InvalidFormatAttributeError}
+import play.api.Logger
+import play.api.libs.json._
+import services.AuditedModel
+
+import scala.concurrent.Future
+import scala.util.Try
 
 object AlertStatus extends Enumeration with HiveEnumeration {
   type Type = Value
@@ -60,7 +46,7 @@ trait AlertAttributes {
       Attribute("alert", "ioc", OptionalAttributeFormat(F.booleanFmt), Nil, None, "")
     )
   }
-  
+
   val alertId: A[String]              = attribute("_id", F.stringFmt, "Alert id", O.readonly)
   val tpe: A[String]                  = attribute("type", F.stringFmt, "Type of the alert", O.readonly)
   val source: A[String]               = attribute("source", F.stringFmt, "Source of the alert", O.readonly)
@@ -81,7 +67,7 @@ trait AlertAttributes {
 }
 
 @Singleton
-class AlertModel @Inject()(dblists: DBLists) extends ModelDef[AlertModel, Alert]("alert", "Alert", "/alert") with AlertAttributes with AuditedModel {
+class AlertModel extends ModelDef[AlertModel, Alert]("alert", "Alert", "/alert") with AlertAttributes with AuditedModel {
 
   private[AlertModel] lazy val logger     = Logger(getClass)
   override val defaultSortBy: Seq[String] = Seq("-date")

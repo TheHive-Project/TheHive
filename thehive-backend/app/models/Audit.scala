@@ -48,7 +48,7 @@ class AuditModel(auditName: String, auditedModels: immutable.Set[AuditedModel], 
     extends ModelDef[AuditModel, Audit](auditName, "Audit", "/audit")
     with AuditAttributes {
 
-  lazy val auxSrv = auxSrvProvider.get()
+  lazy val auxSrv: AuxSrv = auxSrvProvider.get()
 
   @Inject() def this(
       configuration: Configuration,
@@ -134,5 +134,5 @@ class AuditModel(auditName: String, auditedModels: immutable.Set[AuditedModel], 
 }
 
 class Audit(model: AuditModel, attributes: JsObject) extends EntityDef[AuditModel, Audit](model, attributes) with AuditAttributes {
-  def detailsAttributes = Nil
+  def detailsAttributes: Seq[Attribute[_]] = Nil
 }
