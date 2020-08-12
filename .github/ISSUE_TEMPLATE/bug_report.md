@@ -1,6 +1,6 @@
 ---
 name: Bug Report / Feature Request 
-about: Create a bug report or a feature request to help us improve TheHive 3.4.
+about: Create a bug report or a feature request to help us improve TheHive 3.x.
 title: "[Bug]"
 labels: bug
 assignees: ''

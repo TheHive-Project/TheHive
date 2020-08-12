@@ -20,8 +20,7 @@ steps:
   - name: run-tests
     image: thehiveproject/drone-scala-node
     commands:
-      - . ~/.nvm/nvm.sh
-      - sbt -Duser.home=$PWD test
+      - sbt -Duser.home=$PWD test:compile test
 
   # Build packages
   - name: build-packages
@@ -55,9 +54,11 @@ steps:
     image: drillster/drone-volume-cache
     settings:
       rebuild: true
+      backend: "filesystem"
       mount:
         - .sbt
         - .ivy2
+        - .cache
         - ui/node_modules
         - ui/bower_components
     volumes: [{name: cache, path: /cache}]
@@ -66,9 +67,9 @@ steps:
   - name: send packages
     image: appleboy/drone-scp
     settings:
-      host: {from_secret: scp_host}
-      username: {from_secret: scp_user}
-      key: {from_secret: scp_key}
+      host: {from_secret: package_host}
+      username: {from_secret: package_user}
+      key: {from_secret: package_key}
       target: {from_secret: incoming_path}
       source:
         - target/thehive*.deb
@@ -82,9 +83,9 @@ steps:
   - name: publish packages
     image: appleboy/drone-ssh
     settings:
-      host: {from_secret: scp_host}
-      user: {from_secret: scp_user}
-      key: {from_secret: scp_key}
+      host: {from_secret: package_host}
+      user: {from_secret: package_user}
+      key: {from_secret: package_key}
       publish_script: {from_secret: publish_script}
     commands:
       - PLUGIN_SCRIPT="bash $PLUGIN_PUBLISH_SCRIPT thehive $(cat thehive-version.txt)" /bin/drone-ssh
@@ -109,7 +110,7 @@ steps:
     settings:
       context: target/docker/stage
       dockerfile: target/docker/stage/Dockerfile
-      registry: {from_secret: harbor_server}
+      registry: {from_secret: harbor_registry}
       repo: {from_secret: harbor_repo}
       username: {from_secret: harbor_username}
       password: {from_secret: harbor_password}

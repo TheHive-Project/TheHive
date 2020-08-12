@@ -1,5 +1,6 @@
 import Common._
 import Dependencies._
+import org.thp.ghcl.Milestone
 
 lazy val thehiveBackend = (project in file("thehive-backend"))
   .enablePlugins(PlayScala)
@@ -105,6 +106,8 @@ rpmReleaseFile := {
   ).!!
   rpmFile
 }
+
+milestoneFilter := ((milestone: Milestone) ⇒ milestone.title.head < '4')
 
 bintrayOrganization := Some("thehive-project")
 
