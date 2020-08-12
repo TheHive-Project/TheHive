@@ -1,16 +1,9 @@
 ---
 kind: pipeline
 name: default
-
-# Disable default clone
-clone:
-  disable: true
+type: docker
 
 steps:
-  # This clone step doesn't use "root" user
-  - name: clone
-    image: plugins/git:next
-
   # Restore cache of downloaded dependencies
   - name: restore-cache
     image: drillster/drone-volume-cache
@@ -28,7 +21,7 @@ steps:
     image: thehiveproject/drone-scala-node
     commands:
       - . ~/.nvm/nvm.sh
-      - sbt -Duser.home=$PWD test stage
+      - sbt -Duser.home=$PWD test
 
   # Build packages
   - name: build-packages
@@ -37,9 +30,23 @@ steps:
       pgp_key: {from_secret: pgp_key}
     commands:
       - |
+        V=$(sbt -no-colors --error "print thehive/version" | tail -1)
+        if ( echo $V | grep -qi snapshot)
+        then
+          exit 1
+        fi
         . ~/.nvm/nvm.sh
         [ -n "$PLUGIN_PGP_KEY" ] && gpg --batch --import - <<< $PLUGIN_PGP_KEY
         sbt -Duser.home=$PWD docker:stage debian:packageBin rpm:packageBin universal:packageBin
+        if ( echo $V | grep -qi rc )
+        then
+          echo $( echo $V | sed -re 's/([0-9]+.[0-9]+.[0-9]+)-RC([0-9]+)-([0-9]+)/\1-RC\2,\1-RC\2-\3/' ) > .tags
+        else
+          echo $( echo $V | sed -re 's/([0-9]+).([0-9]+).([0-9]+)-([0-9]+)/\1,\1.\2,\1.\2.\3,\1.\2.\3-\4,latest/' ) > .tags
+        fi
+        echo $V > thehive-version.txt
+        mv target/rpm/RPMS/noarch/thehive*.rpm target/
+        mv target/universal/thehive*.zip target/
     when:
       event: [tag]
 
@@ -55,149 +62,80 @@ steps:
         - ui/bower_components
     volumes: [{name: cache, path: /cache}]
 
-  - name: publish-package
-    image: thehiveproject/drone-bintray
+  # Send packages using scp
+  - name: send packages
+    image: appleboy/drone-scp
     settings:
-      user: {from_secret: bintray_user}
-      key: {from_secret: bintray_key}
-      subject: thehive-project
-      package: thehive
-    commands:
-      - |
-        export PLUGIN_USER
-        export PLUGIN_KEY
-        export PLUGIN_SUBJECT
-        export PLUGIN_PACKAGE
-        export PLUGIN_VERSION=$(cut -d\" -f2 version.sbt)
-        echo "Publishing package version $PLUGIN_VERSION"
-
-        if echo $PLUGIN_VERSION | grep -qvi -E \
-            -e '^[0-9]+\.[0-9]+\.[0-9]+$' \
-            -e '^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$' \
-            -e '^[0-9]+\.[0-9]+\.[0-9]+-RC[0-9]+$'; then
-          echo The version $PLUGIN_VERSION has invalid format
-          exit 1
-        fi
-
-        CHANNEL=stable
-        if $(echo $PLUGIN_VERSION | grep -qi rc)
-        then
-          CHANNEL=beta
-          V=$(echo $PLUGIN_VERSION | sed -e 's/-\([rR][cC]\)/-0.1\1/')
-          DEB_FILE=target/thehive_$${V}_all.deb
-          RPM_FILE=target/rpm/RPMS/noarch/thehive-$${V}.noarch.rpm
-        else
-          DEB_FILE=target/thehive_$${PLUGIN_VERSION}_all.deb
-          RPM_FILE=target/rpm/RPMS/noarch/thehive-$${PLUGIN_VERSION}.noarch.rpm
-        fi
-
-        ZIP_FILE=target/universal/thehive-$${PLUGIN_VERSION}.zip
-
-        upload \
-          --file $DEB_FILE \
-          --repo debian-beta \
-          --extra-param deb_distribution=any \
-          --extra-param deb_component=main \
-          --extra-param deb_architecture=all
-
-        [ $CHANNEL = stable ] && upload \
-          --file $DEB_FILE \
-          --repo debian-stable \
-          --extra-param deb_distribution=any \
-          --extra-param deb_component=main \
-          --extra-param deb_architecture=all
-
-        upload \
-          --file $RPM_FILE \
-          --repo rpm-beta
-
-        [ $CHANNEL = stable ] && upload \
-          --file $RPM_FILE \
-          --repo rpm-stable
-
-        upload \
-          --file $ZIP_FILE \
-          --repo binary
-
-        LATEST_VERSION=latest
-        [ $CHANNEL = beta ] && LATEST_VERSION=latest-beta
-
-        removeVersion \
-          --repo binary \
-          --version $LATEST_VERSION
-
-        upload \
-          --file $ZIP_FILE \
-          --repo binary \
-          --version $LATEST_VERSION \
-          --dest-file thehive-$${LATEST_VERSION}.zip
+      host: {from_secret: scp_host}
+      username: {from_secret: scp_user}
+      key: {from_secret: scp_key}
+      target: {from_secret: incoming_path}
+      source:
+        - target/thehive*.deb
+        - target/thehive*.rpm
+        - target/thehive*.zip
+      strip_components: 1
     when:
       event: [tag]
 
-  # Publish docker image
+  # Publish packages
+  - name: publish packages
+    image: appleboy/drone-ssh
+    settings:
+      host: {from_secret: scp_host}
+      user: {from_secret: scp_user}
+      key: {from_secret: scp_key}
+      publish_script: {from_secret: publish_script}
+    commands:
+      - PLUGIN_SCRIPT="bash $PLUGIN_PUBLISH_SCRIPT thehive $(cat thehive-version.txt)" /bin/drone-ssh
+    when:
+      event: [tag]
+
+  # Publish docker image on Docker Hub
   - name: docker
     image: plugins/docker
     settings:
       context: target/docker/stage
       dockerfile: target/docker/stage/Dockerfile
       repo: thehiveproject/thehive
-      auto_tag: true
       username: {from_secret: docker_username}
       password: {from_secret: docker_password}
     when:
       event: [tag]
 
-  # Deploy binaries in integration environment
-  - name: copy binaries in integration environment
-    image: appleboy/drone-scp
+  # Publish docker image on Harbor
+  - name: harbor
+    image: plugins/docker
     settings:
-      host: {from_secret: deploy_beta_host}
-      username: {from_secret: deploy_username}
-      key: {from_secret: deploy_key}
-      target: ./thehive-builds/${DRONE_BUILD_NUMBER}
-      source: target/universal/stage
-      strip_components: 3
+      context: target/docker/stage
+      dockerfile: target/docker/stage/Dockerfile
+      registry: {from_secret: harbor_server}
+      repo: {from_secret: harbor_repo}
+      username: {from_secret: harbor_username}
+      password: {from_secret: harbor_password}
     when:
-      branch: [develop]
-      event: {exclude: [pull_request]}
+      event: [tag]
 
-  - name: deploy binaries in integration environment
-    image: appleboy/drone-ssh
+  - name: send message
+    image: thehiveproject/drone_keybase
     settings:
-      host: {from_secret: deploy_beta_host}
-      username: {from_secret: deploy_username}
-      key: {from_secret: deploy_key}
-      script:
-        - ./start thehive ${DRONE_BUILD_NUMBER}
+      username: {from_secret: keybase_username}
+      paperkey: {from_secret: keybase_paperkey}
+      channel: {from_secret: keybase_channel}
+    commands:
+      - |
+        keybase oneshot -u "$PLUGIN_USERNAME" --paperkey "$PLUGIN_PAPERKEY"
+        URL="$DRONE_SYSTEM_PROTO://$DRONE_SYSTEM_HOST/$DRONE_REPO/$DRONE_BUILD_NUMBER"
+        if [ $DRONE_BUILD_STATUS = "success" ]
+        then
+          keybase chat send "$PLUGIN_CHANNEL" ":white_check_mark: $DRONE_REPO: build succeeded $URL"
+        else
+          keybase chat send "$PLUGIN_CHANNEL" ":x: $DRONE_REPO: build failed $URL"
+        fi
     when:
-      branch: [develop]
-      event: {exclude: [pull_request]}
-
-  # Deploy binaries in staging environment
-  - name: copy binaries in staging environment
-    image: appleboy/drone-scp
-    settings:
-      host: {from_secret: deploy_stable_host}
-      username: {from_secret: deploy_username}
-      key: {from_secret: deploy_key}
-      target: ./thehive-builds/${DRONE_BUILD_NUMBER}
-      source: target/universal/stage
-      strip_components: 3
-    when:
-      branch: [master]
-      event: {exclude: [pull_request]}
-
-  - name: deploy binaries in staging environment
-    image: appleboy/drone-ssh
-    settings:
-      host: {from_secret: deploy_stable_host}
-      username: {from_secret: deploy_username}
-      key: {from_secret: deploy_key}
-      script:
-        - ./start thehive ${DRONE_BUILD_NUMBER}
-    when:
-      branch: [master]
-      event: {exclude: [pull_request]}
+      status:
+      - success
+      - failure
 
 volumes:
   - name: cache
