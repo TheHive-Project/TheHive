@@ -7,6 +7,7 @@ GET      /api/status                              controllers.StatusCtrl.get
 GET      /api/health                              controllers.StatusCtrl.health
 GET      /api/logout                              controllers.AuthenticationCtrl.logout()
 POST     /api/login                               controllers.AuthenticationCtrl.login()
+GET      /api/ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 POST     /api/ssoLogin                            controllers.AuthenticationCtrl.ssoLogin()
 
 POST     /api/_search                             controllers.SearchCtrl.find()

@@ -5,7 +5,8 @@ import models.UserStatus
 import org.elastic4play.controllers.{Authenticated, Fields, FieldsBodyParser}
 import org.elastic4play.database.DBIndex
 import org.elastic4play.services.AuthSrv
-import org.elastic4play.{AuthorizationError, OAuth2Redirect, Timed}
+import org.elastic4play.{AuthorizationError, Timed}
+import play.api.Configuration
 import play.api.mvc._
 import services.UserSrv
 
@@ -13,6 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AuthenticationCtrl @Inject()(
+    configuration: Configuration,
     authSrv: AuthSrv,
     userSrv: UserSrv,
     authenticated: Authenticated,
@@ -44,19 +46,18 @@ class AuthenticationCtrl @Inject()(
     dbIndex.getIndexStatus.flatMap {
       case false ⇒ Future.successful(Results.Status(520))
       case _ ⇒
-        (for {
-          authContext ← authSrv.authenticate()
-          user        ← userSrv.get(authContext.userId)
-        } yield {
-          if (user.status() == UserStatus.Ok)
-            authenticated.setSessingUser(Ok, authContext)
-          else
-            throw AuthorizationError("Your account is locked")
-        }) recover {
-          // A bit of a hack with the status code, so that Angular doesn't reject the origin
-          case OAuth2Redirect(redirectUrl, qp) ⇒ Redirect(redirectUrl, qp, status = OK)
-          case e                               ⇒ throw e
-        }
+        authSrv
+          .authenticate()
+          .flatMap {
+            case Right(authContext) ⇒
+              userSrv.get(authContext.userId).map { user ⇒
+                if (user.status() == UserStatus.Ok)
+                  authenticated.setSessingUser(Redirect(configuration.get[String]("play.http.context").stripSuffix("/") + "/index.html"), authContext)
+                else
+                  throw AuthorizationError("Your account is locked")
+              }
+            case Left(result) ⇒ Future.successful(result)
+          }
     }
   }
 
