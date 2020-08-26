@@ -58,6 +58,34 @@ class Router @Inject() (
     case DELETE(p"/case/share/$shareId")                       => shareCtrl.removeShare(shareId)
     case PATCH(p"/case/share/$shareId")                        => shareCtrl.updateShare(shareId)
 
+    case GET(p"/case/task")           => queryExecutor.task.search
+    case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
+    case GET(p"/case/task/$taskId")   => taskCtrl.get(taskId)
+    case PATCH(p"/case/task/$taskId") => taskCtrl.update(taskId) // Audit ok
+    case POST(p"/case/task/_search")  => queryExecutor.task.search
+    //case POST(p"/case/$caseId/task/_search") => taskCtrl.search
+    case POST(p"/case/task/_stats") => queryExecutor.task.stats
+
+    //case GET(p"/case/task/$taskId/log") => logCtrl.findInTask(taskId)
+    //case POST(p"/case/task/$taskId/log/_search") => logCtrl.findInTask(taskId)
+    case POST(p"/case/task/log/_search")  => queryExecutor.log.search
+    case POST(p"/case/task/log/_stats")   => queryExecutor.log.stats
+    case POST(p"/case/task/$taskId/log")  => logCtrl.create(taskId) // Audit ok
+    case PATCH(p"/case/task/log/$logId")  => logCtrl.update(logId) // Audit ok
+    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId) // Audit ok, weird logs/silent errors though (stream related)
+    //    case GET(p"/case/task/log/$logId") => logCtrl.get(logId)
+
+    case POST(p"/case/artifact/_search") => queryExecutor.observable.search
+    //    case POST(p"/case/:caseId/artifact/_search")    ⇒ observableCtrl.findInCase(caseId)
+    case POST(p"/case/artifact/_stats")               => queryExecutor.observable.stats
+    case POST(p"/case/$caseId/artifact")              => observableCtrl.create(caseId) // Audit ok
+    case GET(p"/case/artifact/$observableId")         => observableCtrl.get(observableId)
+    case DELETE(p"/case/artifact/$observableId")      => observableCtrl.delete(observableId) // Audit ok
+    case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate // Audit ok
+    case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId) // Audit ok
+    case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
+    case POST(p"/case/artifact/$observableId/shares") => shareCtrl.shareObservable(observableId)
+
     case GET(p"/case")                  => queryExecutor.`case`.search
     case POST(p"/case")                 => caseCtrl.create // Audit ok
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
@@ -106,34 +134,6 @@ class Router @Inject() (
     case PUT(p"/organisation/$organisationId1/link/$organisationId2")    => organisationCtrl.link(organisationId1, organisationId2)
     case PUT(p"/organisation/$organisationId1/links")                    => organisationCtrl.bulkLink(organisationId1)
     case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
-
-    case GET(p"/case/task")           => queryExecutor.task.search
-    case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
-    case GET(p"/case/task/$taskId")   => taskCtrl.get(taskId)
-    case PATCH(p"/case/task/$taskId") => taskCtrl.update(taskId) // Audit ok
-    case POST(p"/case/task/_search")  => queryExecutor.task.search
-    //case POST(p"/case/$caseId/task/_search") => taskCtrl.search
-    case POST(p"/case/task/_stats") => queryExecutor.task.stats
-
-//case GET(p"/case/task/$taskId/log") => logCtrl.findInTask(taskId)
-//case POST(p"/case/task/$taskId/log/_search") => logCtrl.findInTask(taskId)
-    case POST(p"/case/task/log/_search")  => queryExecutor.log.search
-    case POST(p"/case/task/log/_stats")   => queryExecutor.log.stats
-    case POST(p"/case/task/$taskId/log")  => logCtrl.create(taskId) // Audit ok
-    case PATCH(p"/case/task/log/$logId")  => logCtrl.update(logId) // Audit ok
-    case DELETE(p"/case/task/log/$logId") => logCtrl.delete(logId) // Audit ok, weird logs/silent errors though (stream related)
-//    case GET(p"/case/task/log/$logId") => logCtrl.get(logId)
-
-    case POST(p"/case/artifact/_search") => queryExecutor.observable.search
-//    case POST(p"/case/:caseId/artifact/_search")    ⇒ observableCtrl.findInCase(caseId)
-    case POST(p"/case/artifact/_stats")               => queryExecutor.observable.stats
-    case POST(p"/case/$caseId/artifact")              => observableCtrl.create(caseId) // Audit ok
-    case GET(p"/case/artifact/$observableId")         => observableCtrl.get(observableId)
-    case DELETE(p"/case/artifact/$observableId")      => observableCtrl.delete(observableId) // Audit ok
-    case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate // Audit ok
-    case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId) // Audit ok
-    case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
-    case POST(p"/case/artifact/$observableId/shares") => shareCtrl.shareObservable(observableId)
 
     case GET(p"/customField")          => customFieldCtrl.list
     case POST(p"/customField")         => customFieldCtrl.create
