@@ -124,7 +124,7 @@ class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Databa
           .toTry(query => queryExecutor.execute(query, graph, request.authContext))
           .map { outputs =>
             val results = outputs.map(_.toJson).foldLeft(JsObject.empty) {
-              case (acc, o: JsObject) => acc ++ o
+              case (acc, o: JsObject) => acc deepMerge o
               case (acc, r) =>
                 logger.warn(s"Invalid stats result: $r")
                 acc
