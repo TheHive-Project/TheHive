@@ -7,25 +7,26 @@ import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsNull, JsObject, Json}
 import play.api.mvc._
 
-import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class UserCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     userSrv: UserSrv,
     authSrv: AuthSrv,
@@ -33,40 +34,40 @@ class UserCtrl @Inject() (
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    implicit val ec: ExecutionContext
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.user ::: metaProperties[UserSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.user
 
   override val initialQuery: Query =
-    Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+    Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
 
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[User]](
     "getUser",
     FieldsParser[IdOrName],
     (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
   )
 
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, range.extraData.contains("total"))
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext))
+    Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query.init[UserSteps]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
-    Query[UserSteps, TaskSteps]("tasks", (userSteps, authContext) => userSteps.tasks.visible(authContext)),
-    Query[UserSteps, CaseSteps]("cases", (userSteps, authContext) => userSteps.cases.visible(authContext))
+    Query.init[Traversal.V[User]]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
+    Query[Traversal.V[User], Traversal.V[Task]]("tasks", (userSteps, authContext) => userSteps.tasks.visible(authContext)),
+    Query[Traversal.V[User], Traversal.V[Case]]("cases", (userSteps, authContext) => userSteps.cases.visible(authContext))
   )
   def current: Action[AnyContent] =
     entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
           .current
-          .richUserWithCustomRenderer(request.organisation, _.organisationWithRole.map(_.asScala.toSeq))
+          .richUserWithCustomRenderer(request.organisation, _.organisationWithRole)
           .getOrFail("User")
           .map(user =>
             Results
@@ -82,23 +83,22 @@ class UserCtrl @Inject() (
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
         db.tryTransaction { implicit graph =>
-            val organisationName = inputUser.organisation.getOrElse(request.organisation)
-            for {
-              _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
-              organisation <- organisationSrv.getOrFail(organisationName)
-              profile      <- profileSrv.getOrFail(inputUser.profile)
-              user         <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
-            } yield user -> userSrv.canSetPassword(user.user)
-          }
-          .flatMap {
-            case (user, true) =>
-              inputUser
-                .password
-                .map(password => authSrv.setPassword(user._id, password))
-                .flip
-                .map(_ => Results.Created(user.toJson))
-            case (user, _) => Success(Results.Created(user.toJson))
-          }
+          val organisationName = inputUser.organisation.getOrElse(request.organisation)
+          for {
+            _            <- userSrv.current.organisations(Permissions.manageUser).getByName(organisationName).existsOrFail
+            organisation <- organisationSrv.getOrFail(organisationName)
+            profile      <- profileSrv.getOrFail(inputUser.profile)
+            user         <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
+          } yield user -> userSrv.canSetPassword(user.user)
+        }.flatMap {
+          case (user, true) =>
+            inputUser
+              .password
+              .map(password => authSrv.setPassword(user._id, password))
+              .flip
+              .map(_ => Results.Created(user.toJson))
+          case (user, _) => Success(Results.Created(user.toJson))
+        }
       }
 
   def lock(userId: String): Action[AnyContent] =
@@ -148,7 +148,7 @@ class UserCtrl @Inject() (
           userSrv
             .current
             .get(userId)
-            .exists()
+            .exists
 
         val isUserAdmin: Boolean =
           userSrv
@@ -156,7 +156,7 @@ class UserCtrl @Inject() (
             .organisations(Permissions.manageUser)
             .users
             .get(userId)
-            .exists()
+            .exists
 
         def requireAdmin[A](body: => Try[A]): Try[A] =
           if (isUserAdmin) body else Failure(AuthorizationError("You are not permitted to update this user"))
@@ -167,10 +167,14 @@ class UserCtrl @Inject() (
             auditSrv
               .mergeAudits {
                 for {
-                  updateName <- maybeName.map(name => userSrv.get(user).update("name" -> name).map(_ => Json.obj("name" -> name))).flip
-                  updateLocked <- maybeLocked
-                    .map(locked => requireAdmin(if (locked) userSrv.lock(user) else userSrv.unlock(user)).map(_ => Json.obj("locked" -> locked)))
-                    .flip
+                  updateName <-
+                    maybeName
+                      .map(name => userSrv.get(user).update(_.name, name).domainMap(_ => Json.obj("name" -> name)).getOrFail("User"))
+                      .flip
+                  updateLocked <-
+                    maybeLocked
+                      .map(locked => requireAdmin(if (locked) userSrv.lock(user) else userSrv.unlock(user)).map(_ => Json.obj("locked" -> locked)))
+                      .flip
                   updateProfile <- maybeProfile.map { profileName =>
                     requireAdmin {
                       maybeOrganisation.fold[Try[JsObject]](Failure(BadRequestError("Organisation information is required to update user profile"))) {
@@ -286,7 +290,7 @@ class UserCtrl @Inject() (
   def avatar(userId: String): Action[AnyContent] =
     entrypoint("get user avatar")
       .authTransaction(db) { implicit request => implicit graph =>
-        userSrv.get(userId).visible.avatar.headOption() match {
+        userSrv.get(userId).visible.avatar.headOption match {
           case Some(avatar) if attachmentSrv.exists(avatar) =>
             Success(
               Result(

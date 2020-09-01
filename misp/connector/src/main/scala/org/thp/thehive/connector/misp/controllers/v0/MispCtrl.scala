@@ -5,9 +5,11 @@ import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv}
 import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.{AlertSrv, CaseSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -50,7 +52,7 @@ class MispCtrl @Inject() (
     entrypoint("clean MISP alerts")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .initSteps
+          .startTraversal
           .has("type", "misp")
           .visible
           .toIterator

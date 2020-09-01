@@ -1,12 +1,17 @@
 package org.thp.thehive.connector.cortex.services
 
-import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
@@ -33,13 +38,13 @@ class EntityHelper @Inject() (
     * @param authContext auth for permission check
     * @return
     */
-  def get(objectType: String, objectId: String, permission: Permission)(implicit graph: Graph, authContext: AuthContext): Try[Entity] =
+  def get(objectType: String, objectId: String, permission: Permission)(implicit graph: Graph, authContext: AuthContext): Try[Product with Entity] =
     objectType match {
-      case "Task"       => taskSrv.getByIds(objectId).can(permission).getOrFail()
-      case "Case"       => caseSrv.get(objectId).can(permission).getOrFail()
-      case "Observable" => observableSrv.getByIds(objectId).can(permission).getOrFail()
-      case "Log"        => logSrv.getByIds(objectId).can(permission).getOrFail()
-      case "Alert"      => alertSrv.getByIds(objectId).can(permission).getOrFail()
+      case "Task"       => taskSrv.getByIds(objectId).can(permission).getOrFail("Task")
+      case "Case"       => caseSrv.get(objectId).can(permission).getOrFail("Case")
+      case "Observable" => observableSrv.getByIds(objectId).can(permission).getOrFail("Observable")
+      case "Log"        => logSrv.getByIds(objectId).can(permission).getOrFail("Log")
+      case "Alert"      => alertSrv.getByIds(objectId).can(permission).getOrFail("Alert")
       case _            => Failure(BadRequestError(s"objectType $objectType is not recognised"))
     }
 
@@ -49,13 +54,14 @@ class EntityHelper @Inject() (
     * @param graph db traversal
     * @return
     */
-  def parentCase(entity: Entity)(implicit graph: Graph): Option[Case with Entity] = entity match {
-    case t: Task  => taskSrv.get(t).`case`.headOption()
-    case c: Case  => Some(c)
-    case l: Log   => logSrv.get(l).`case`.headOption()
-    case _: Alert => None
-    case _        => None
-  }
+  def parentCase(entity: Entity)(implicit graph: Graph): Option[Case with Entity] =
+    entity._label match {
+      case "Task"  => taskSrv.get(entity).`case`.headOption
+      case "Case"  => caseSrv.get(entity).headOption
+      case "Log"   => logSrv.get(entity).`case`.headOption
+      case "Alert" => None
+      case _       => None
+    }
 
   /**
     * Retrieves an optional parent Task
@@ -63,10 +69,11 @@ class EntityHelper @Inject() (
     * @param graph db traversal
     * @return
     */
-  def parentTask(entity: Entity)(implicit graph: Graph): Option[Task with Entity] = entity match {
-    case l: Log => logSrv.get(l).task.headOption()
-    case _      => None
-  }
+  def parentTask(entity: Entity)(implicit graph: Graph): Option[Task with Entity] =
+    entity._label match {
+      case "Log" => logSrv.get(entity).task.headOption
+      case _     => None
+    }
 
   /**
     * Tries to fetch the tlp and pap associated to the supplied entity
@@ -78,14 +85,14 @@ class EntityHelper @Inject() (
     */
   def entityInfo(entity: Entity)(implicit graph: Graph, authContext: AuthContext): Try[(String, Int, Int)] =
     entity match {
-      case t: Task  => taskSrv.get(t).visible.`case`.getOrFail().map(c => (s"${t.title} (${t.status})", c.tlp, c.pap))
-      case c: Case  => caseSrv.get(c).visible.getOrFail().map(c => (s"#${c.number} ${c.title}", c.tlp, c.pap))
-      case l: Log   => logSrv.get(l).visible.`case`.getOrFail().map(c => (s"${l.message} from ${l._createdBy}", c.tlp, c.pap))
-      case a: Alert => alertSrv.get(a).visible.getOrFail().map(a => (s"[${a.source}:${a.sourceRef}] ${a.title}", a.tlp, a.pap))
+      case t: Task  => taskSrv.get(t).visible.`case`.getOrFail("Case").map(c => (s"${t.title} (${t.status})", c.tlp, c.pap))
+      case c: Case  => caseSrv.get(c).visible.getOrFail("Case").map(c => (s"#${c.number} ${c.title}", c.tlp, c.pap))
+      case l: Log   => logSrv.get(l).visible.`case`.getOrFail("Case").map(c => (s"${l.message} from ${l._createdBy}", c.tlp, c.pap))
+      case a: Alert => alertSrv.get(a).visible.getOrFail("Alert").map(a => (s"[${a.source}:${a.sourceRef}] ${a.title}", a.tlp, a.pap))
       case o: Observable =>
         for {
-          ro <- observableSrv.get(o).visible.richObservable.getOrFail()
-          c  <- observableSrv.get(o).`case`.getOrFail()
+          ro <- observableSrv.get(o).visible.richObservable.getOrFail("Observable")
+          c  <- observableSrv.get(o).`case`.getOrFail("Case")
         } yield (s"[${ro.`type`.name}] ${ro.data.map(_.data).getOrElse("<no data>")}", ro.tlp, c.pap) // TODO add attachment info
     }
 }

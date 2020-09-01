@@ -3,7 +3,7 @@ package org.thp.thehive.services.notification.triggers
 import java.util.Date
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.controllers.v0.AlertCtrl
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
@@ -44,15 +44,15 @@ class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
         status(result) should equalTo(201)
 
         val alertOutput = contentAsJson(result).as[OutputAlert]
-        val alert       = app[AlertSrv].get(alertOutput.id).getOrFail()
+        val alert       = app[AlertSrv].get(alertOutput.id).getOrFail("Alert")
 
         alert must beSuccessfulTry
 
-        val audit = app[AuditSrv].initSteps.has("objectId", alert.get._id).getOrFail()
+        val audit = app[AuditSrv].startTraversal.has("objectId", alert.get._id).getOrFail("Audit")
 
         audit must beSuccessfulTry
 
-        val organisation = app[OrganisationSrv].get("cert").getOrFail()
+        val organisation = app[OrganisationSrv].get("cert").getOrFail("Organisation")
 
         organisation must beSuccessfulTry
 

@@ -1,24 +1,28 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList, Set => JSet}
+import java.util.{List => JList, Map => JMap}
 
 import akka.actor.ActorRef
-import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, P => JP}
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
+import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{CreateError, EntitySteps, RichJMap, RichOptionTry, RichSeq}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.{CreateError, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CustomFieldOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -36,7 +40,7 @@ class CaseSrv @Inject() (
     impactStatusSrv: ImpactStatusSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Case, CaseSteps] {
+    extends VertexSrv[Case] {
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
@@ -63,7 +67,7 @@ class CaseSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
     for {
       createdCase <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
-      assignee    <- user.fold(userSrv.current.getOrFail())(Success(_))
+      assignee    <- user.fold(userSrv.current.getOrFail("User"))(Success(_))
       _           <- caseUserSrv.create(CaseUser(), createdCase, assignee)
       _           <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
       _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
@@ -82,14 +86,14 @@ class CaseSrv @Inject() (
       _ <- auditSrv.`case`.create(createdCase, richCase.toJson)
     } yield richCase
 
-  def nextCaseNumber(implicit graph: Graph): Int = initSteps.getLast.headOption().fold(0)(_.number) + 1
+  def nextCaseNumber(implicit graph: Graph): Int = startTraversal.getLast.headOption.fold(0)(_.number) + 1
 
-  override def exists(e: Case)(implicit graph: Graph): Boolean = initSteps.getByNumber(e.number).exists()
+  override def exists(e: Case)(implicit graph: Graph): Boolean = startTraversal.getByNumber(e.number).exists
 
   override def update(
-      steps: CaseSteps,
+      traversal: Traversal.V[Case],
       propertyUpdaters: Seq[PropertyUpdater]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(CaseSteps, JsObject)] = {
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Case], JsObject)] = {
     val closeCase = PropertyUpdater(FPathElem("closeCase"), "") { (vertex, _, _, _) =>
       get(vertex)
         .tasks
@@ -108,11 +112,11 @@ class CaseSrv @Inject() (
     val isCloseCase = propertyUpdaters.exists(p => p.path.matches(FPathElem("status")) && p.value == CaseStatus.Resolved)
 
     val newPropertyUpdaters = if (isCloseCase) closeCase +: propertyUpdaters else propertyUpdaters
-    auditSrv.mergeAudits(super.update(steps, newPropertyUpdaters)) {
+    auditSrv.mergeAudits(super.update(traversal, newPropertyUpdaters)) {
       case (caseSteps, updatedFields) =>
         caseSteps
-          .newInstance()
-          .getOrFail()
+          .clone()
+          .getOrFail("Case")
           .flatMap(auditSrv.`case`.update(_, updatedFields))
     }
   }
@@ -138,7 +142,7 @@ class CaseSrv @Inject() (
   def addTags(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val currentTags = get(`case`)
       .tags
-      .toList
+      .toSeq
       .map(_.toString)
       .toSet
     for {
@@ -158,7 +162,7 @@ class CaseSrv @Inject() (
       .visible
       .`case`
       .hasId(`case`._id)
-      .exists() || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists()
+      .exists || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists
     if (alreadyExistInThatCase)
       Failure(CreateError("Observable already exists"))
     else
@@ -177,15 +181,15 @@ class CaseSrv @Inject() (
       get(`case`).remove()
     }
 
-  override def get(idOrNumber: String)(implicit graph: Graph): CaseSteps =
+  override def get(idOrNumber: String)(implicit graph: Graph): Traversal.V[Case] =
     Success(idOrNumber)
       .filter(_.headOption.contains('#'))
       .map(_.tail.toInt)
-      .map(initSteps.getByNumber(_))
+      .map(startTraversal.getByNumber(_))
       .getOrElse(super.getByIds(idOrNumber))
 
   def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
-    get(`case`).customFields(customFieldName).richCustomField.headOption()
+    get(`case`).customFields(customFieldName).richCustomField.headOption
 
   def updateCustomField(
       `case`: Case with Entity,
@@ -193,8 +197,7 @@ class CaseSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val customFieldNames = customFieldValues.map(_._1.name)
     get(`case`)
-      .customFields
-      .richCustomField
+      .richCustomFields
       .toIterator
       .filterNot(rcf => customFieldNames.contains(rcf.name))
       .foreach(rcf => get(`case`).customFields(rcf.name).remove())
@@ -208,7 +211,7 @@ class CaseSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] = {
     val cfv = get(`case`).customFields(customFieldName)
-    if (cfv.newInstance().exists())
+    if (cfv.clone().exists)
       cfv.setValue(value)
     else
       createCustomField(`case`, customFieldName, value, order).map(_ => ())
@@ -225,8 +228,6 @@ class CaseSrv @Inject() (
       ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue).map(_.order_=(order))
       ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
     } yield RichCustomField(cf, ccfe)
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CaseSteps = new CaseSteps(raw)
 
   def setImpactStatus(
       `case`: Case with Entity,
@@ -330,247 +331,245 @@ class CaseSrv @Inject() (
 //      .flatMap(_.observables.toList
 //      .foreach(observable ⇒ observableCaseSrv.create(ObservableCase(), observable, mergedCase))
 //
-//    get(mergedCase).richCase.head()
+//    get(mergedCase).richCase.head
 //  }
 }
 
-@EntitySteps[Case]
-class CaseSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Case](raw) {
-  def resolutionStatus: ResolutionStatusSteps = new ResolutionStatusSteps(raw.outTo[CaseResolutionStatus])
+object CaseOps {
 
-  def get(id: String): CaseSteps =
-    Success(id)
-      .filter(_.headOption.contains('#'))
-      .map(_.tail.toInt)
-      .map(getByNumber)
-      .getOrElse(this.getByIds(id))
+  implicit class CaseOpsDefs(traversal: Traversal.V[Case]) {
 
-  def getByNumber(caseNumber: Int): CaseSteps = newInstance(raw.has(Key("number") of caseNumber))
+    def resolutionStatus: Traversal.V[ResolutionStatus] = traversal.out[CaseResolutionStatus].v[ResolutionStatus]
 
-  def visible(implicit authContext: AuthContext): CaseSteps = visible(authContext.organisation)
+    def get(id: String): Traversal.V[Case] =
+      Success(id)
+        .filter(_.headOption.contains('#'))
+        .map(_.tail.toInt)
+        .map(getByNumber)
+        .getOrElse(traversal.getByIds(id))
 
-  def visible(organisationName: String): CaseSteps =
-    this.filter(_.inTo[ShareCase].inTo[OrganisationShare].has("name", organisationName))
+    def getByNumber(caseNumber: Int): Traversal.V[Case] = traversal.has("number", caseNumber)
 
-  def assignee: UserSteps = new UserSteps(raw.outTo[CaseUser])
+    def visible(implicit authContext: AuthContext): Traversal.V[Case] = visible(authContext.organisation)
 
-  def can(permission: Permission)(implicit authContext: AuthContext): CaseSteps =
-    if (authContext.permissions.contains(permission))
-      this.filter(
-        _.inTo[ShareCase]
-          .filter(_.outTo[ShareProfile].has("permissions", permission))
-          .inTo[OrganisationShare]
-          .has("name", authContext.organisation)
-      )
-    else
-      this.limit(0)
+    def visible(organisationName: String): Traversal.V[Case] =
+      traversal.filter(_.in[ShareCase].in[OrganisationShare].has("name", organisationName))
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): CaseSteps = new CaseSteps(newRaw)
+    def assignee: Traversal.V[User] = traversal.out[CaseUser].v[User]
 
-  override def newInstance(): CaseSteps = new CaseSteps(raw.clone())
+    def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Case] =
+      if (authContext.permissions.contains(permission))
+        traversal.filter(
+          _.in[ShareCase]
+            .filter(_.out[ShareProfile].has("permissions", permission))
+            .in[OrganisationShare]
+            .has("name", authContext.organisation)
+        )
+      else
+        traversal.limit(0)
 
-  def getLast: CaseSteps =
-    newInstance(raw.order(By(Key[Int]("number"), Order.desc)))
+    def getLast: Traversal.V[Case] =
+      traversal.sort(_.by("number", Order.desc))
 
-  def richCaseWithCustomRenderer[A](
-      entityRenderer: CaseSteps => TraversalLike[_, A]
-  )(implicit authContext: AuthContext): Traversal[(RichCase, A), (RichCase, A)] =
-    this
-      .project(
-        _.by
-          .by(_.tags.fold)
-          .by(_.impactStatus.value.fold)
-          .by(_.resolutionStatus.value.fold)
-          .by(_.assignee.login.fold)
-          .by(_.richCustomFields.fold)
-          .by(entityRenderer)
-          .by(_.userPermissions)
-      )
-      .map {
-        case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, userPermissions) =>
-          RichCase(
-            caze.as[Case],
-            tags.asScala.map(_.as[Tag]),
-            atMostOneOf[String](impactStatus),
-            atMostOneOf[String](resolutionStatus),
-            atMostOneOf[String](user),
-            customFields.asScala,
-            userPermissions
-          ) -> renderedEntity
-      }
+    def richCaseWithCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Case] => Traversal[D, G, C]
+    )(implicit authContext: AuthContext) =
+      traversal
+        .project(
+          _.by
+            .by(_.tags.v[Tag].fold)
+            .by(_.impactStatus.value(_.value).fold)
+            .by(_.resolutionStatus.value(_.value).fold)
+            .by(_.assignee.value(_.login).fold)
+            .by(_.richCustomFields.fold)
+            .by(entityRenderer)
+            .by(_.userPermissions)
+        )
+        .domainMap {
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, userPermissions) =>
+            RichCase(
+              caze,
+              tags,
+              impactStatus.headOption,
+              resolutionStatus.headOption,
+              user.headOption,
+              customFields,
+              userPermissions
+            ) -> renderedEntity
+        }
 
-  def customFields(name: String): CustomFieldValueSteps =
-    new CustomFieldValueSteps(raw.outToE[CaseCustomField].filter(_.inV().has(Key("name") of name)))
+    def customFields(name: String): Traversal.E[CaseCustomField] =
+      traversal.outE[CaseCustomField].filter(_.inV.has("name", name)).e[CaseCustomField]
 
-  def customFields: CustomFieldValueSteps =
-    new CustomFieldValueSteps(raw.outToE[CaseCustomField])
+    def customFields: Traversal.E[CaseCustomField] =
+      traversal.outE[CaseCustomField].e[CaseCustomField]
 
-  def richCustomFields: Traversal[RichCustomField, RichCustomField] =
-    this.outToE[CaseCustomField].project(_.by.by(_.inV())).map {
-      case (cfv, cf) => RichCustomField(cf.as[CustomField], cfv.as[CaseCustomField])
+    def richCustomFields: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] =
+      traversal
+        .outE[CaseCustomField]
+        .e[CaseCustomField]
+        .project(_.by.by(_.inV.v[CustomField]))
+        .domainMap {
+          case (cfv, cf) => RichCustomField(cf, cfv)
+        }
+
+    def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
+
+    def share(organisationName: String): Traversal.V[Share] =
+      traversal.in[ShareCase].filter(_.in[OrganisationShare].has("name", organisationName)).v[Share]
+
+    def shares: Traversal.V[Share] = traversal.in[ShareCase].v[Share]
+
+    def organisations: Traversal.V[Organisation] = traversal.in[ShareCase].in[OrganisationShare].v[Organisation]
+
+    def organisations(permission: Permission): Traversal.V[Organisation] =
+      traversal.in[ShareCase].filter(_.out[ShareProfile].has("permissions", permission)).in[OrganisationShare].v[Organisation]
+
+    def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Vertex, Converter[Set[Permission], Vertex]] =
+      traversal
+        .share(authContext.organisation)
+        .profile
+        .domainMap(profile => profile.permissions & authContext.permissions)
+
+    def origin: Traversal.V[Organisation] = traversal.in[ShareCase].has("owner", true).in[OrganisationShare].v[Organisation]
+
+    def audits(implicit authContext: AuthContext): Traversal.V[Audit] = audits(authContext.organisation)
+
+    def audits(organisationName: String): Traversal.V[Audit] =
+      traversal
+        .unionFlat(_.visible(organisationName), _.observables(organisationName), _.tasks(organisationName), _.share(organisationName))
+        .in[AuditContext]
+        .v[Audit]
+
+    // Warning: this method doesn't generate audit log
+    def unassign(): Unit =
+      traversal.outE[CaseUser].remove()
+
+    def unsetResolutionStatus(): Unit =
+      traversal.outE[CaseResolutionStatus].remove()
+
+    def unsetImpactStatus(): Unit =
+      traversal.outE[CaseImpactStatus].remove()
+
+    def removeTags(tags: Set[Tag with Entity]): Unit =
+      if (tags.nonEmpty)
+        traversal.outE[CaseTag].filter(_.otherV.hasId(tags.map(_._id).toSeq: _*)).remove()
+
+    def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
+      val originCaseLabel = StepLabel.v[Case]
+      val observableLabel = StepLabel.v[Observable]
+      val linkedCaseLabel = StepLabel.v[Case]
+
+      val richCaseLabel = StepLabel[RichCase, JMap[String, Any], Converter[RichCase, JMap[String, Any]]]
+      val richObservablesLabel =
+        StepLabel[Seq[RichObservable], JList[JMap[String, Any]], Converter.CList[RichObservable, JMap[String, Any], Converter[
+          RichObservable,
+          JMap[String, Any]
+        ]]]
+      traversal
+        .`match`(
+          _.as(originCaseLabel)(
+            _.in[ShareCase]
+              .filter(
+                _.in[OrganisationShare]
+                  .has("name", authContext.organisation)
+              )
+              .out[ShareObservable]
+              .v[Observable]
+          ).as(observableLabel),
+          _.as(observableLabel)(
+            _.out[ObservableData]
+              .in[ObservableData]
+              .in[ShareObservable]
+              .filter(
+                _.in[OrganisationShare]
+                  .has("name", authContext.organisation)
+              )
+              .out("ShareCase")
+              .where(P.neq(originCaseLabel.name))
+              .v[Case]
+          ).as(linkedCaseLabel),
+          _.as(linkedCaseLabel)(_.richCase).as(richCaseLabel),
+          _.as(observableLabel)(_.richObservable.fold).as(richObservablesLabel)
+        )
+        .dedup(richCaseLabel)
+        .select((richCaseLabel, richObservablesLabel))
+        .toSeq
     }
 
-  def share(implicit authContext: AuthContext): ShareSteps = share(authContext.organisation)
-
-  def share(organisationName: String): ShareSteps =
-    new ShareSteps(
-      this.inTo[ShareCase].filter(_.inTo[OrganisationShare].has("name", organisationName)).raw
-    )
-
-  def shares: ShareSteps = new ShareSteps(raw.inTo[ShareCase])
-
-  def organisations: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].inTo[OrganisationShare])
-
-  def organisations(permission: Permission) =
-    new OrganisationSteps(raw.inTo[ShareCase].filter(_.outTo[ShareProfile].has(Key("permissions") of permission)).inTo[OrganisationShare])
-
-  def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Set[Permission]] =
-    this
-      .share(authContext.organisation)
-      .profile
-      .map(profile => profile.permissions & authContext.permissions)
-
-  def origin: OrganisationSteps = new OrganisationSteps(raw.inTo[ShareCase].has(Key("owner") of true).inTo[OrganisationShare])
-
-  def audits(implicit authContext: AuthContext): AuditSteps = audits(authContext.organisation)
-
-  def audits(organisationName: String): AuditSteps = new AuditSteps(
-    this
-      .union(_.visible(organisationName), _.observables(organisationName), _.tasks(organisationName), _.share(organisationName))
-      .inTo[AuditContext]
-      .raw
-  )
-
-  // Warning: this method doesn't generate audit log
-  def unassign(): Unit = {
-    raw.outToE[CaseUser].drop().iterate()
-    ()
-  }
-
-  def unsetResolutionStatus(): Unit = {
-    raw.outToE[CaseResolutionStatus].drop().iterate()
-    ()
-  }
-
-  def unsetImpactStatus(): Unit = {
-    raw.outToE[CaseImpactStatus].drop().iterate()
-    ()
-  }
-
-  def removeTags(tags: Set[Tag with Entity]): Unit =
-    if (tags.nonEmpty)
-      this.outToE[CaseTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
-
-  def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
-    val originCaseLabel = StepLabel[JSet[Vertex]]()
-    val observableLabel = StepLabel[Vertex]()
-    val linkedCaseLabel = StepLabel[Vertex]()
-
-    val richCaseLabel        = StepLabel[RichCase]()
-    val richObservablesLabel = StepLabel[JList[RichObservable]]()
-    Traversal(
-      raw
-        .`match`(
-          _.as(originCaseLabel.name)
-            .in("ShareCase")
-            .filter(
-              _.inTo[OrganisationShare]
-                .has(Key("name") of authContext.organisation)
-            )
-            .out("ShareObservable")
-            .as(observableLabel.name),
-          _.as(observableLabel.name)
-            .out("ObservableData")
-            .in("ObservableData")
-            .in("ShareObservable")
-            .filter(
-              _.inTo[OrganisationShare]
-                .has(Key("name") of authContext.organisation)
-            )
-            .out("ShareCase")
-            .where(JP.neq(originCaseLabel.name))
-            .as(linkedCaseLabel.name),
-          c => new CaseSteps(c.as(linkedCaseLabel)).richCase.as(richCaseLabel).raw,
-          o => new ObservableSteps(o.as(observableLabel)).richObservable.fold.as(richObservablesLabel).raw
+    def richCase(implicit authContext: AuthContext): Traversal[RichCase, JMap[String, Any], Converter[RichCase, JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.tags.v[Tag].fold)
+            .by(_.impactStatus.value(_.value).fold)
+            .by(_.resolutionStatus.value(_.value).fold)
+            .by(_.assignee.value(_.login).fold)
+            .by(_.richCustomFields.fold)
+            .by(_.userPermissions)
         )
-        .dedup(richCaseLabel.name)
-        .select(richCaseLabel.name, richObservablesLabel.name)
-    ).toList
-      .map { resultMap =>
-        resultMap.getValue(richCaseLabel) -> resultMap.getValue(richObservablesLabel).asScala
-      }
+        .domainMap {
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields, userPermissions) =>
+            RichCase(
+              caze,
+              tags,
+              impactStatus.headOption,
+              resolutionStatus.headOption,
+              user.headOption,
+              customFields,
+              userPermissions
+            )
+        }
+
+    def user: Traversal.V[User] = traversal.out[CaseUser].v[User]
+
+    def richCaseWithoutPerms: Traversal[RichCase, JMap[String, Any], Converter[RichCase, JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.tags.fold)
+            .by(_.impactStatus.value(_.value).fold)
+            .by(_.resolutionStatus.value(_.value).fold)
+            .by(_.assignee.value(_.login).fold)
+            .by(_.richCustomFields.fold)
+        )
+        .domainMap {
+          case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
+            RichCase(
+              caze,
+              tags,
+              impactStatus.headOption,
+              resolutionStatus.headOption,
+              user.headOption,
+              customFields,
+              Set.empty
+            )
+        }
+
+    def tags: Traversal.V[Tag] = traversal.out[CaseTag].v[Tag]
+
+    def impactStatus: Traversal.V[ImpactStatus] = traversal.out[CaseImpactStatus].v[ImpactStatus]
+
+    def tasks(implicit authContext: AuthContext): Traversal.V[Task] = tasks(authContext.organisation)
+
+    def tasks(organisationName: String): Traversal.V[Task] =
+      share(organisationName).tasks
+
+    def observables(implicit authContext: AuthContext): Traversal.V[Observable] = observables(authContext.organisation)
+
+    def observables(organisationName: String): Traversal.V[Observable] =
+      share(organisationName).observables
+
+    def assignableUsers(implicit authContext: AuthContext): Traversal.V[User] =
+      organisations(Permissions.manageCase)
+        .visible
+        .users(Permissions.manageCase)
+        .dedup
+
+    def alert: Traversal.V[Alert] = traversal.in[AlertCase].v[Alert]
   }
 
-  def richCase(implicit authContext: AuthContext): Traversal[RichCase, RichCase] =
-    this
-      .project(
-        _.by
-          .by(_.tags.fold)
-          .by(_.impactStatus.value.fold)
-          .by(_.resolutionStatus.value.fold)
-          .by(_.assignee.login.fold)
-          .by(_.richCustomFields.fold)
-          .by(_.userPermissions)
-      )
-      .map {
-        case (caze, tags, impactStatus, resolutionStatus, user, customFields, userPermissions) =>
-          RichCase(
-            caze.as[Case],
-            tags.asScala.map(_.as[Tag]),
-            atMostOneOf[String](impactStatus),
-            atMostOneOf[String](resolutionStatus),
-            atMostOneOf[String](user),
-            customFields.asScala,
-            userPermissions
-          )
-      }
-
-  def user: UserSteps = new UserSteps(raw.outTo[CaseUser])
-
-  def richCaseWithoutPerms: Traversal[RichCase, RichCase] =
-    this
-      .project(
-        _.by
-          .by(_.tags.fold)
-          .by(_.impactStatus.value.fold)
-          .by(_.resolutionStatus.value.fold)
-          .by(_.assignee.login.fold)
-          .by(_.richCustomFields.fold)
-      )
-      .map {
-        case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
-          RichCase(
-            caze.as[Case],
-            tags.asScala.map(_.as[Tag]),
-            atMostOneOf[String](impactStatus),
-            atMostOneOf[String](resolutionStatus),
-            atMostOneOf[String](user),
-            customFields.asScala,
-            Set.empty
-          )
-      }
-
-  def tags: TagSteps = new TagSteps(raw.outTo[CaseTag])
-
-  def impactStatus: ImpactStatusSteps = new ImpactStatusSteps(raw.outTo[CaseImpactStatus])
-
-  def tasks(implicit authContext: AuthContext): TaskSteps = tasks(authContext.organisation)
-
-  def tasks(organisationName: String): TaskSteps =
-    share(organisationName).tasks
-
-  def observables(implicit authContext: AuthContext): ObservableSteps = observables(authContext.organisation)
-
-  def observables(organisationName: String): ObservableSteps =
-    share(organisationName).observables
-
-  def assignableUsers(implicit authContext: AuthContext): UserSteps =
-    organisations(Permissions.manageCase)
-      .visible
-      .users(Permissions.manageCase)
-      .dedup
-
-  def alert: AlertSteps = new AlertSteps(raw.inTo[AlertCase])
+//  implicit class CaseCustomFieldsOpsDefs(traversal: Traversal.E[CaseCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
 class CaseIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {
@@ -581,15 +580,16 @@ class CaseIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Dat
           resolve(entities)
         }
       }
-  override def resolve(entities: List[Case with Entity])(implicit graph: Graph): Try[Unit] = {
+
+  override def resolve(entities: Seq[Case with Entity])(implicit graph: Graph): Try[Unit] = {
     val nextNumber = service.nextCaseNumber
     firstCreatedEntity(entities).foreach(
       _._2
-        .flatMap(service.get(_).raw.headOption())
+        .flatMap(service.get(_).setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity).headOption)
         .zipWithIndex
         .foreach {
           case (vertex, index) =>
-            db.setSingleProperty(vertex, "number", nextNumber + index, UniMapping.int)
+            UMapping.int.setProperty(vertex, "number", nextNumber + index)
         }
     )
     Success(())

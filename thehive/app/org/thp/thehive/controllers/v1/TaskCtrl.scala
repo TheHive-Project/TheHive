@@ -4,13 +4,15 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
-import org.thp.thehive.models.{Permissions, RichTask, TaskStatus}
-import org.thp.thehive.services.{CaseSrv, CaseSteps, LogSteps, OrganisationSrv, OrganisationSteps, ShareSrv, TaskSrv, TaskSteps, UserSteps}
-import play.api.libs.json.JsObject
+import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -28,32 +30,32 @@ class TaskCtrl @Inject() (
     with TaskRenderer {
 
   override val entityName: String                           = "task"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.task ::: metaProperties[TaskSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.task
   override val initialQuery: Query =
-    Query.init[TaskSteps]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TaskSteps, PagedResult[(RichTask, JsObject)]](
+    Query.init[Traversal.V[Task]]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, taskSteps, authContext) =>
       taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
-        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext, db, taskSteps.graph))
+        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))
       )
   )
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TaskSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Task]](
     "getTask",
     FieldsParser[IdOrName],
     (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask, TaskSteps](_.richTask)
+  override val outputQuery: Query = Query.output[RichTask, Traversal.V[Task]](_.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query.init[TaskSteps](
+    Query.init[Traversal.V[Task]](
       "waitingTask",
-      (graph, authContext) => taskSrv.initSteps(graph).has("status", TaskStatus.Waiting).visible(authContext)
+      (graph, authContext) => taskSrv.startTraversal(graph).has("status", TaskStatus.Waiting).visible(authContext)
     ),
-    Query[TaskSteps, UserSteps]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
-    Query[TaskSteps, LogSteps]("logs", (taskSteps, _) => taskSteps.logs),
-    Query[TaskSteps, CaseSteps]("case", (taskSteps, _) => taskSteps.`case`),
-    Query[TaskSteps, OrganisationSteps]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
+    Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
+    Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
+    Query[Traversal.V[Task], Traversal.V[Case]]("case", (taskSteps, _) => taskSteps.`case`),
+    Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
   )
 
   def create: Action[AnyContent] =
@@ -86,10 +88,10 @@ class TaskCtrl @Inject() (
     entrypoint("list task")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val tasks = taskSrv
-          .initSteps
+          .startTraversal
           .visible
           .richTask
-          .toList
+          .toSeq
         Success(Results.Ok(tasks.toJson))
       }
 

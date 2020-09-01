@@ -122,7 +122,7 @@ trait MigrationOps {
   lazy val logger: Logger            = Logger(getClass)
   val migrationStats: MigrationStats = new MigrationStats
 
-  implicit class IdMappingOps(idMappings: Seq[IdMapping]) {
+  implicit class IdMappingOpsDefs(idMappings: Seq[IdMapping]) {
 
     def fromInput(id: String): Try[String] =
       idMappings

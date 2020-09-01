@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputPage
 import org.thp.thehive.services.PageSrv
@@ -69,7 +69,7 @@ class PageCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       app[Database].roTransaction { implicit graph =>
-        app[PageSrv].get("how_to_create_a_case").exists()
+        app[PageSrv].get("how_to_create_a_case").exists
       } must beFalse
     }
   }

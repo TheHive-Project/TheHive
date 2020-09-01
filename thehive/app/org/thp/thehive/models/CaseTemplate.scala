@@ -3,12 +3,12 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 
-@EdgeEntity[CaseTemplate, Organisation]
+@BuildEdgeEntity[CaseTemplate, Organisation]
 case class CaseTemplateOrganisation()
 
-@EdgeEntity[CaseTemplate, CustomField]
+@BuildEdgeEntity[CaseTemplate, CustomField]
 case class CaseTemplateCustomField(
     order: Option[Int] = None,
     stringValue: Option[String] = None,
@@ -25,13 +25,13 @@ case class CaseTemplateCustomField(
   override def dateValue_=(value: Option[Date]): CaseTemplateCustomField       = copy(dateValue = value)
 }
 
-@EdgeEntity[CaseTemplate, Tag]
+@BuildEdgeEntity[CaseTemplate, Tag]
 case class CaseTemplateTag()
 
-@EdgeEntity[CaseTemplate, Task]
+@BuildEdgeEntity[CaseTemplate, Task]
 case class CaseTemplateTask()
 
-@VertexEntity
+@BuildVertexEntity
 case class CaseTemplate(
     name: String,
     displayName: String,

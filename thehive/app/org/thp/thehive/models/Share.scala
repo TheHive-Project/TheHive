@@ -3,21 +3,21 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 
-@VertexEntity
+@BuildVertexEntity
 case class Share(owner: Boolean)
 
-@EdgeEntity[Share, Case]
+@BuildEdgeEntity[Share, Case]
 case class ShareCase()
 
-@EdgeEntity[Share, Observable]
+@BuildEdgeEntity[Share, Observable]
 case class ShareObservable()
 
-@EdgeEntity[Share, Task]
+@BuildEdgeEntity[Share, Task]
 case class ShareTask()
 
-@EdgeEntity[Share, Profile]
+@BuildEdgeEntity[Share, Profile]
 case class ShareProfile()
 
 case class RichShare(share: Share with Entity, caseId: String, organisationName: String, profileName: String) {

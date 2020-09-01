@@ -5,22 +5,22 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query, SubType}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{PagedResult, VertexSteps}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.dto.v0.InputAction
-import org.thp.thehive.connector.cortex.models.{ActionContext, RichAction}
-import org.thp.thehive.connector.cortex.services.{ActionSrv, ActionSteps, EntityHelper}
+import org.thp.thehive.connector.cortex.models.{Action, ActionContext, RichAction}
+import org.thp.thehive.connector.cortex.services.ActionOps._
+import org.thp.thehive.connector.cortex.services.{ActionSrv, EntityHelper}
 import org.thp.thehive.controllers.v0.Conversion.{toObjectType, _}
 import org.thp.thehive.controllers.v0.{AuditRenderer, IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, Json, OWrites}
-import play.api.mvc.{Action, AnyContent, Results}
+import play.api.mvc.{AnyContent, Results, Action => PlayAction}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.{universe => ru}
-
 @Singleton
 class ActionCtrl @Inject() (
     entrypoint: Entrypoint,
@@ -48,42 +48,41 @@ class ActionCtrl @Inject() (
           case a: Alert      => alertToJson(alertSrv.get(a)).getOrFail("Alert")
         }
       }
-      .getOrElse(Json.obj("_type" -> entity._model.label, "_id" -> entity._id))
+      .getOrElse(Json.obj("_type" -> entity._label, "_id" -> entity._id))
   }
 
   override val entityName: String                           = "action"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.action ::: metaProperties[ActionSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.action
   override val initialQuery: Query =
-    Query.init[ActionSteps]("listAction", (graph, authContext) => actionSrv.initSteps(graph).visible(authContext))
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ActionSteps](
+    Query.init[Traversal.V[Action]]("listAction", (graph, authContext) => actionSrv.startTraversal(graph).visible(authContext))
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Action]](
     "getAction",
     FieldsParser[IdOrName],
     (param, graph, authContext) => actionSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ActionSteps, PagedResult[RichAction]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Action], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
-  override val outputQuery: Query = Query.output[RichAction, ActionSteps](_.richAction)
+  override val outputQuery: Query = Query.output[RichAction, Traversal.V[Action]](_.richAction)
 
   val actionsQuery: Query = new Query {
     override val name: String = "actions"
     override def checkFrom(t: ru.Type): Boolean =
-      SubType(t, ru.typeOf[CaseSteps]) || SubType(t, ru.typeOf[ObservableSteps]) ||
-        SubType(t, ru.typeOf[TaskSteps]) ||
-        SubType(t, ru.typeOf[LogSteps]) ||
-        SubType(t, ru.typeOf[AlertSteps])
-    override def toType(t: ru.Type): ru.Type = ru.typeOf[ActionSteps]
-    override def apply(param: Unit, from: Any, authContext: AuthContext): Any = {
-      val fromSteps = from.asInstanceOf[VertexSteps[_]]
-      new ActionSteps(from.asInstanceOf[VertexSteps[_]].inTo[ActionContext].raw)(db, fromSteps.graph, schema)
-    }
+      SubType(t, ru.typeOf[Traversal.V[Case]]) || SubType(t, ru.typeOf[Traversal.V[Observable]]) ||
+        SubType(t, ru.typeOf[Traversal.V[Task]]) ||
+        SubType(t, ru.typeOf[Traversal.V[Log]]) ||
+        SubType(t, ru.typeOf[Traversal.V[Alert]])
+    override def toType(t: ru.Type): ru.Type = ru.typeOf[Traversal.V[Action]]
+
+    override def apply(param: Unit, fromType: ru.Type, from: Any, authContext: AuthContext): Any =
+      from.asInstanceOf[Traversal.V[_]].in[ActionContext].v[Action]
   }
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(actionsQuery)
 
-  def create: Action[AnyContent] =
+  def create: PlayAction[AnyContent] =
     entrypoint("create action")
       .extract("action", FieldsParser[InputAction])
       .asyncAuth { implicit request =>
@@ -97,7 +96,7 @@ class ActionCtrl @Inject() (
         } yield Results.Ok(action.toJson)
       }
 
-  def getByEntity(objectType: String, objectId: String): Action[AnyContent] =
+  def getByEntity(objectType: String, objectId: String): PlayAction[AnyContent] =
     entrypoint("get by entity")
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {

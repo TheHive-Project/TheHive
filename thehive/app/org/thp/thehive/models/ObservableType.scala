@@ -1,12 +1,12 @@
 package org.thp.thehive.models
 
 import org.thp.scalligraph.models.{DefineIndex, IndexType}
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 
-@EdgeEntity[Observable, ObservableType]
+@BuildEdgeEntity[Observable, ObservableType]
 case class ObservableObservableType()
 
-@VertexEntity
+@BuildVertexEntity
 @DefineIndex(IndexType.unique, "name")
 case class ObservableType(name: String, isAttachment: Boolean)
 

@@ -11,8 +11,8 @@ import org.thp.thehive.ClusterSetup
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Try}
 
 @Singleton

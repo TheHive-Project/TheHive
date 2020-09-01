@@ -3,11 +3,11 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.connector.cortex.services.{Connector, CortexActor, TestConnector}
 import org.thp.thehive.services.ObservableSrv
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -28,7 +28,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
   "job controller" should {
     "get a job" in testApp { app =>
       val observable = app[Database].roTransaction { implicit graph =>
-        app[ObservableSrv].initSteps.has("message", "Some weird domain").getOrFail("Observable").get
+        app[ObservableSrv].startTraversal.has("message", "Some weird domain").getOrFail("Observable").get
       }
 
       val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")

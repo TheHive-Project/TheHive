@@ -1,77 +1,88 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.{Map => JMap}
+import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.util.{List => JList, Map => JMap}
 
-import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.services.ObservableSteps
+import org.thp.thehive.models.Observable
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json._
-
-import scala.collection.JavaConverters._
 
 trait ObservableRenderer {
 
-  def seen(observableSteps: ObservableSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    observableSteps
-      .similar
+  def seenStats(implicit
+      authContext: AuthContext
+  ): Traversal.V[Observable] => Traversal[JsObject, JMap[JBoolean, JLong], Converter[JsObject, JMap[JBoolean, JLong]]] =
+    _.similar
       .visible
-      .groupCount(By(Key[Boolean]("ioc")))
-      .map { stats =>
-        val m      = stats.asScala
-        val nTrue  = m.get(true).fold(0L)(_.toLong)
-        val nFalse = m.get(false).fold(0L)(_.toLong)
+      .groupCount(_.byValue(_.ioc))
+      .domainMap { stats =>
+        val nTrue  = stats.getOrElse(true, 0L)
+        val nFalse = stats.getOrElse(false, 0L)
         Json.obj(
           "seen" -> (nTrue + nFalse),
           "ioc"  -> (nTrue > 0)
         )
       }
 
-  def shares(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
-    observableSteps.shares.organisation.name.fold.map(orgs => Json.toJson(orgs.asScala))
+  def sharesStats: Traversal.V[Observable] => Traversal[JsValue, JList[String], Converter[JsValue, JList[String]]] =
+    _.organisations.value(_.name).fold.domainMap(Json.toJson(_))
 
-  def shareCount(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
-    observableSteps.organisations.count.map(c => JsNumber(c - 1))
+  def shareCount: Traversal.V[Observable] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
+    _.organisations.count.domainMap(count => JsNumber(count.longValue() - 1))
 
-  def isOwner(
-      observableSteps: ObservableSteps
-  )(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    observableSteps.origin.has("name", authContext.organisation).fold.map(l => JsBoolean(!l.isEmpty))
+  def isOwner(implicit
+      authContext: AuthContext
+  ): Traversal.V[Observable] => Traversal[JsBoolean, JList[Vertex], Converter[JsBoolean, JList[Vertex]]] =
+    _.origin.has("name", authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
 
-  def observableLinks(observableSteps: ObservableSteps): Traversal[JsValue, JsValue] =
-    observableSteps.coalesce(
-      _.alert.richAlert.map(a => Json.obj("alert"            -> a.toJson)),
-      _.`case`.richCaseWithoutPerms.map(c => Json.obj("case" -> c.toJson))
+  def observableLinks: Traversal.V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+    _.coalesce(
+      _.alert.richAlert.domainMap(a => Json.obj("alert" -> a.toJson)),
+      _.`case`.richCaseWithoutPerms.domainMap(c => Json.obj("case" -> c.toJson))
     )
 
-  def permissions(observableSteps: ObservableSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    observableSteps.userPermissions.map(permissions => Json.toJson(permissions))
+  def permissions(implicit authContext: AuthContext): Traversal.V[Observable] => Traversal[JsValue, Vertex, Converter[JsValue, Vertex]] =
+    _.userPermissions.domainMap(permissions => Json.toJson(permissions))
 
-  def observableStatsRenderer(extraData: Set[String])(
-      implicit authContext: AuthContext,
-      db: Database,
-      graph: Graph
-  ): ObservableSteps => Traversal[JsObject, JsObject] = {
-    def addData(f: ObservableSteps => Traversal[JsValue, JsValue]): GremlinScala[JMap[String, JsValue]] => GremlinScala[JMap[String, JsValue]] =
-      _.by(f(new ObservableSteps(__[Vertex])).raw.traversal)
-
-    if (extraData.isEmpty) _.constant(JsObject.empty)
-    else {
-      val dataName = extraData.toSeq
-      dataName
-        .foldLeft[ObservableSteps => GremlinScala[JMap[String, JsValue]]](_.raw.project(dataName.head, dataName.tail: _*)) {
-          case (f, "seen")        => f.andThen(addData(seen))
-          case (f, "shares")      => f.andThen(addData(shares))
-          case (f, "isOwner")     => f.andThen(addData(isOwner))
-          case (f, "shareCount")  => f.andThen(addData(shareCount))
-          case (f, "links")       => f.andThen(addData(observableLinks))
-          case (f, "permissions") => f.andThen(addData(permissions))
-          case (f, _)             => f.andThen(_.by(__.constant(JsNull).traversal))
+  def observableStatsRenderer(
+      extraData: Set[String]
+  )(implicit authContext: AuthContext): Traversal.V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = {
+    traversal =>
+      def addData[G](
+          name: String
+      )(f: Traversal.V[Observable] => Traversal[JsValue, G, Converter[JsValue, G]]): Traversal[JsObject, JMap[String, Any], Converter[
+        JsObject,
+        JMap[String, Any]
+      ]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { t =>
+        val dataTraversal = f(traversal.start)
+        t.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.by(dataTraversal.raw)) { jmap =>
+          t.converter(jmap) + (name -> dataTraversal.converter(jmap.get(name).asInstanceOf[G]))
         }
-        .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))
-    }
+      }
+
+      if (extraData.isEmpty) traversal.constant2[JsObject, JMap[String, Any]](JsObject.empty)
+      else {
+        val dataName = extraData.toSeq
+        dataName.foldLeft[Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
+          traversal.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.project(dataName.head, dataName.tail: _*))(_ =>
+            JsObject.empty
+          )
+        ) {
+          case (f, "seen")        => addData("seen")(seenStats)(f)
+          case (f, "shares")      => addData("shares")(sharesStats)(f)
+          case (f, "links")       => addData("links")(observableLinks)(f)
+          case (f, "permissions") => addData("permissions")(permissions)(f)
+          case (f, "isOwner")     => addData("isOwner")(isOwner)(f)
+          case (f, "shareCount")  => addData("shareCount")(shareCount)(f)
+          case (f, _)             => f
+        }
+      }
   }
 }

@@ -5,11 +5,13 @@ import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputOrganisation
-import org.thp.thehive.models.{Organisation, Permissions}
+import org.thp.thehive.models.{CaseTemplate, Organisation, Permissions, User}
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -18,31 +20,31 @@ import scala.util.{Failure, Success}
 @Singleton
 class OrganisationCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv
+    userSrv: UserSrv,
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "organisation"
   override val publicProperties: List[PublicProperty[_, _]] = properties.organisation
   override val initialQuery: Query =
-    Query.init[OrganisationSteps]("listOrganisation", (graph, authContext) => organisationSrv.initSteps(graph).visible(authContext))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, OrganisationSteps, PagedResult[Organisation with Entity]](
+    Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext))
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Organisation with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, OrganisationSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Organisation]](
     "getOrganisation",
     FieldsParser[IdOrName],
     (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[OrganisationSteps, OrganisationSteps]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
-    Query[OrganisationSteps, UserSteps]("users", (organisationSteps, _) => organisationSteps.users),
-    Query[OrganisationSteps, CaseTemplateSteps]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
+    Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
+    Query[Traversal.V[Organisation], Traversal.V[User]]("users", (organisationSteps, _) => organisationSteps.users),
+    Query[Traversal.V[Organisation], Traversal.V[CaseTemplate]]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
   )
 
   def create: Action[AnyContent] =
@@ -51,7 +53,7 @@ class OrganisationCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
-          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(Organisation.administration.name).existsOrFail()
+          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(Organisation.administration.name).existsOrFail
           org <- organisationSrv.create(inputOrganisation.toOrganisation)
 
         } yield Results.Created(org.toJson)
@@ -72,10 +74,10 @@ class OrganisationCtrl @Inject() (
     entrypoint("list organisation")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val organisations = organisationSrv
-          .initSteps
+          .startTraversal
           .visible
           .richOrganisation
-          .toList
+          .toSeq
 
         Success(Results.Ok(organisations.toJson))
       }
@@ -128,7 +130,7 @@ class OrganisationCtrl @Inject() (
   def listLinks(organisationId: String): Action[AnyContent] =
     entrypoint("list organisation links")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val isInDefaultOrganisation = userSrv.current.organisations.get(Organisation.administration.name).exists()
+        val isInDefaultOrganisation = userSrv.current.organisations.get(Organisation.administration.name).exists
         val organisation =
           if (isInDefaultOrganisation)
             organisationSrv.get(organisationId)
@@ -137,7 +139,7 @@ class OrganisationCtrl @Inject() (
               .current
               .organisations
               .get(organisationId)
-        val organisations = organisation.links.toList
+        val organisations = organisation.links.toSeq
 
         Success(Results.Ok(organisations.toJson))
       }

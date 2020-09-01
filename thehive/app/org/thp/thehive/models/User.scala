@@ -4,17 +4,17 @@ import java.util.Date
 
 import org.thp.scalligraph.auth.{Permission, User => ScalligraphUser}
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 import org.thp.thehive.services.LocalPasswordAuthSrv
 
-@EdgeEntity[User, Role]
+@BuildEdgeEntity[User, Role]
 case class UserRole()
 
-@EdgeEntity[User, Attachment]
+@BuildEdgeEntity[User, Attachment]
 case class UserAttachment()
 
 @DefineIndex(IndexType.unique, "login")
-@VertexEntity
+@BuildVertexEntity
 case class User(login: String, name: String, apikey: Option[String], locked: Boolean, password: Option[String], totpSecret: Option[String])
     extends ScalligraphUser {
   override val id: String          = login

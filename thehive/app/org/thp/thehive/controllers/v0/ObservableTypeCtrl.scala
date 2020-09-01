@@ -4,12 +4,12 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputObservableType
 import org.thp.thehive.models.{ObservableType, Permissions}
-import org.thp.thehive.services.{ObservableTypeSrv, ObservableTypeSteps}
+import org.thp.thehive.services.ObservableTypeSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
@@ -22,14 +22,16 @@ class ObservableTypeCtrl @Inject() (
 
   override val entityName: String                           = "ObjservableType"
   override val publicProperties: List[PublicProperty[_, _]] = properties.observableType
-  override val initialQuery: Query                          = Query.init[ObservableTypeSteps]("listObservableType", (graph, _) => observableTypeSrv.initSteps(graph))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ObservableTypeSteps, PagedResult[ObservableType with Entity]](
-    "page",
-    FieldsParser[OutputParam],
-    (range, observableTypeSteps, _) => observableTypeSteps.page(range.from, range.to, withTotal = true)
-  )
+  override val initialQuery: Query =
+    Query.init[Traversal.V[ObservableType]]("listObservableType", (graph, _) => observableTypeSrv.startTraversal(graph))
+  override val pageQuery: ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[ObservableType], IteratorOutput](
+      "page",
+      FieldsParser[OutputParam],
+      (range, observableTypeSteps, _) => observableTypeSteps.richPage(range.from, range.to, withTotal = true)(identity)
+    )
   override val outputQuery: Query = Query.output[ObservableType with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ObservableTypeSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[ObservableType]](
     "getObservableType",
     FieldsParser[IdOrName],
     (param, graph, _) => observableTypeSrv.get(param.idOrName)(graph)

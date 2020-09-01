@@ -78,7 +78,7 @@ case class OutputReport(
 )
 
 object OutputReport {
-  implicit val writes: Writes[OutputReport] = Writes[OutputReport] { outputReport =>
+  implicit val writes: OWrites[OutputReport] = OWrites[OutputReport] { outputReport =>
     Json.obj(
       "summary"      -> Json.obj("taxonomies" -> Json.toJson(outputReport.summary)),
       "full"         -> Json.toJson(outputReport.full),

@@ -4,12 +4,14 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputPage
 import org.thp.thehive.models.{Page, Permissions}
-import org.thp.thehive.services.{OrganisationSrv, PageSrv, PageSteps}
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.PageOps._
+import org.thp.thehive.services.{OrganisationSrv, PageSrv}
 import play.api.mvc._
 
 @Singleton
@@ -22,15 +24,15 @@ class PageCtrl @Inject() (
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "page"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.page ::: metaProperties[PageSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.page
   override val initialQuery: Query =
-    Query.init[PageSteps]("listPage", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).pages)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, PageSteps](
+    Query.init[Traversal.V[Page]]("listPage", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).pages)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Page]](
     "getPage",
     FieldsParser[IdOrName],
     (param, graph, authContext) => pageSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, PageSteps, PagedResult[Page with Entity]](
+  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Page], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, pageSteps, _) => pageSteps.page(range.from, range.to, withTotal = true)
@@ -43,7 +45,7 @@ class PageCtrl @Inject() (
         pageSrv
           .get(idOrTitle)
           .visible
-          .getOrFail()
+          .getOrFail("Page")
           .map(p => Results.Ok(p.toJson))
       }
 
@@ -65,7 +67,7 @@ class PageCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("page")
 
         for {
-          page    <- pageSrv.get(idOrTitle).visible.getOrFail()
+          page    <- pageSrv.get(idOrTitle).visible.getOrFail("Page")
           updated <- pageSrv.update(page, propertyUpdaters)
         } yield Results.Ok(updated.toJson)
       }
@@ -74,7 +76,7 @@ class PageCtrl @Inject() (
     entrypoint("delete a page")
       .authPermittedTransaction(db, Permissions.managePage) { implicit request => implicit graph =>
         for {
-          page <- pageSrv.get(idOrTitle).visible.getOrFail()
+          page <- pageSrv.get(idOrTitle).visible.getOrFail("Page")
           _    <- pageSrv.delete(page)
         } yield Results.NoContent
       }

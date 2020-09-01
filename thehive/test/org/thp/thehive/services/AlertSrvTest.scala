@@ -5,9 +5,13 @@ import java.util.Date
 import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
 import play.api.libs.json.JsString
 import play.api.test.PlaySpecification
 
@@ -53,9 +57,9 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].roTransaction { implicit graph =>
         app[OrganisationSrv].get("cert").alerts.toList must contain(a.get.alert)
 
-        val tags = app[TagSrv].initSteps.toList.filter(t => t.predicate == "tag1" || t.predicate == "tag2")
+        val tags = app[TagSrv].startTraversal.toSeq.filter(t => t.predicate == "tag1" || t.predicate == "tag2")
 
-        app[AlertSrv].get(a.get.alert).tags.toList must containTheSameElementsAs(tags)
+        app[AlertSrv].get(a.get.alert).tags.toSeq must containTheSameElementsAs(tags)
       }
     }
 
@@ -66,7 +70,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
           tag3  <- app[TagSrv].getOrCreate("tag3")
           tag5  <- app[TagSrv].getOrCreate("tag5")
           _     <- app[AlertSrv].updateTags(alert, Set(tag3, tag5))
-        } yield app[AlertSrv].get("testType;testSource;ref1").tags.toList
+        } yield app[AlertSrv].get("testType;testSource;ref1").tags.toSeq
       }
       newTags must beSuccessfulTry.which(t => t.map(_.toString) must contain(exactly("tag3", "tag5")))
     }
@@ -76,7 +80,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         for {
           alert <- app[AlertSrv].getOrFail("testType;testSource;ref1")
           _     <- app[AlertSrv].updateTagNames(alert, Set("tag3", "tag5"))
-        } yield app[AlertSrv].get("testType;testSource;ref1").tags.toList
+        } yield app[AlertSrv].get("testType;testSource;ref1").tags.toSeq
       }
       tags must beSuccessfulTry.which(t => t.map(_.toString) must contain(exactly("tag3", "tag5")))
     }
@@ -86,7 +90,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         for {
           alert <- app[AlertSrv].getOrFail("testType;testSource;ref1")
           _     <- app[AlertSrv].addTags(alert, Set("tag7"))
-        } yield app[AlertSrv].get("testType;testSource;ref1").tags.toList
+        } yield app[AlertSrv].get("testType;testSource;ref1").tags.toSeq
       }
 
       tags must beSuccessfulTry.which(t =>
@@ -123,7 +127,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       } must beASuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get("testType;testSource;ref1").observables.filterOnData("perdu.com").filterOnType("domain").exists()
+        app[AlertSrv].get("testType;testSource;ref1").observables.filterOnData("perdu.com").filterOnType("domain").exists
       } must beTrue
     }
 
@@ -137,7 +141,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       } must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get("testType;testSource;ref1").customFields("string1").nameJsonValue.headOption()
+        app[AlertSrv].get("testType;testSource;ref1").customFields("string1").nameJsonValue.headOption
       } must beSome("string1" -> JsString("sad"))
     }
 
@@ -180,11 +184,11 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
     "create a case" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          alert        <- app[AlertSrv].get("testType;testSource;ref1").richAlert.getOrFail()
+          alert        <- app[AlertSrv].get("testType;testSource;ref1").richAlert.getOrFail("Alert")
           organisation <- app[OrganisationSrv].getOrFail("cert")
           c            <- app[AlertSrv].createCase(alert, None, organisation)
           _ = c.title must beEqualTo("[SPAM] alert#1")
-          _ <- app[CaseSrv].initSteps.has("title", "[SPAM] alert#1").getOrFail()
+          _ <- app[CaseSrv].startTraversal.has("title", "[SPAM] alert#1").getOrFail("Alert")
         } yield ()
       } must beASuccessfulTry(())
     }
@@ -196,7 +200,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         } must beASuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].get("#1").richCase.getOrFail().get
+        app[CaseSrv].get("#1").richCase.getOrFail("Case").get
         pending("must check tags, description and observables")
       }
     }
@@ -209,8 +213,8 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
-//        app[ObservableSrv].initSteps.filterOnType("domain").filterOnData("perdu.com").exists() must beFalse
-        app[AlertSrv].initSteps.get("testType;testSource;ref4").exists() must beFalse
+//        app[ObservableSrv].initSteps.filterOnType("domain").filterOnData("perdu.com").exists must beFalse
+        app[AlertSrv].startTraversal.get("testType;testSource;ref4").exists must beFalse
       }
     }
   }

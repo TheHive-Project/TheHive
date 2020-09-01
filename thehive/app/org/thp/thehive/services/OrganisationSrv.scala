@@ -1,20 +1,21 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.scalligraph.{BadRequestError, EntitySteps, RichSeq}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.{BadRequestError, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.RoleOps._
 import play.api.libs.json.JsObject
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -25,12 +26,10 @@ class OrganisationSrv @Inject() (
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(
     implicit @Named("with-thehive-schema") db: Database
-) extends VertexSrv[Organisation, OrganisationSteps] {
+) extends VertexSrv[Organisation] {
 
   val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): OrganisationSteps = new OrganisationSteps(raw)
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("Organisation")
@@ -49,32 +48,32 @@ class OrganisationSrv @Inject() (
       _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
     } yield createdOrganisation
 
-  def current(implicit graph: Graph, authContext: AuthContext): OrganisationSteps = get(authContext.organisation)
+  def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
 
-  override def get(idOrName: String)(implicit graph: Graph): OrganisationSteps =
+  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[Organisation] =
     if (db.isValidId(idOrName)) getByIds(idOrName)
-    else initSteps.getByName(idOrName)
+    else startTraversal.getByName(idOrName)
 
-  override def exists(e: Organisation)(implicit graph: Graph): Boolean = initSteps.getByName(e.name).exists()
+  override def exists(e: Organisation)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
   override def update(
-      steps: OrganisationSteps,
+      traversal: Traversal.V[Organisation],
       propertyUpdaters: Seq[PropertyUpdater]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(OrganisationSteps, JsObject)] =
-    if (steps.newInstance().has("name", Organisation.administration.name).exists())
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Organisation], JsObject)] =
+    if (traversal.clone().has("name", Organisation.administration.name).exists)
       Failure(BadRequestError("Admin organisation is unmodifiable"))
     else {
-      auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+      auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
         case (orgSteps, updatedFields) =>
           orgSteps
-            .newInstance()
+            .clone()
             .getOrFail("Organisation")
             .flatMap(auditSrv.organisation.update(_, updatedFields))
       }
     }
 
   def linkExists(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Boolean =
-    fromOrg._id == toOrg._id || get(fromOrg).links.hasId(toOrg._id).exists()
+    fromOrg._id == toOrg._id || get(fromOrg).links.hasId(toOrg._id).exists
 
   def link(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
     if (linkExists(fromOrg, toOrg)) Success(())
@@ -91,8 +90,8 @@ class OrganisationSrv @Inject() (
   def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Try[Unit] =
     Success(
       get(fromOrg)
-        .outToE[OrganisationOrganisation]
-        .filter(_.otherV().hasId(toOrg._id))
+        .outE[OrganisationOrganisation]
+        .filter(_.otherV.hasId(toOrg._id))
         .remove()
     )
 
@@ -104,7 +103,7 @@ class OrganisationSrv @Inject() (
   def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[String])(implicit authContext: AuthContext, graph: Graph): Try[Unit] = {
     val (orgToAdd, orgToRemove) = get(fromOrg)
       .links
-      .name
+      .property[String, String]("name", identity[String])
       .toIterator
       .foldLeft((toOrganisations.toSet, Set.empty[String])) {
         case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
@@ -117,87 +116,85 @@ class OrganisationSrv @Inject() (
   }
 }
 
-@EntitySteps[Organisation]
-class OrganisationSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
-    extends VertexSteps[Organisation](raw) {
+object OrganisationOps {
 
-  def links: OrganisationSteps = newInstance(raw.outTo[OrganisationOrganisation])
+  implicit class OrganisationOpsDefs(traversal: Traversal.V[Organisation]) {
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): OrganisationSteps = new OrganisationSteps(newRaw)
+    def links: Traversal.V[Organisation] = traversal.out[OrganisationOrganisation].v[Organisation]
 
-  def cases: CaseSteps = new CaseSteps(raw.outTo[OrganisationShare].outTo[ShareCase])
+    def cases: Traversal.V[Case] = traversal.out[OrganisationShare].out[ShareCase].v[Case]
 
-  def shares: ShareSteps = new ShareSteps(raw.outTo[OrganisationShare])
+    def shares: Traversal.V[Share] = traversal.out[OrganisationShare].v[Share]
 
-  def caseTemplates: CaseTemplateSteps = new CaseTemplateSteps(raw.inTo[CaseTemplateOrganisation])
+    def caseTemplates: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateOrganisation].v[CaseTemplate]
 
-  def users(requiredPermission: Permission): UserSteps = new UserSteps(
-    raw
-      .inTo[RoleOrganisation]
-      .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
-      .inTo[UserRole]
-  )
+    def users(requiredPermission: Permission): Traversal.V[User] =
+      traversal
+        .in[RoleOrganisation]
+        .filter(_.out[RoleProfile].has("permissions", requiredPermission))
+        .in[UserRole]
+        .v[User]
 
-  def userPermissions(userId: String): Traversal[Permission, String] =
-    this
-      .roles
-      .filter(_.user.has("login", userId))
-      .profile
-      .permissions
+    def userPermissions(userId: String): Traversal[Permission, String, Converter[Permission, String]] =
+      traversal
+        .roles
+        .filter(_.user.has("login", userId))
+        .profile
+        .property("permissions", Permission(_: String))
 
-  def roles: RoleSteps = new RoleSteps(raw.inTo[RoleOrganisation])
+    def roles: Traversal.V[Role] = traversal.in[RoleOrganisation].v[Role]
 
-  def pages: PageSteps = new PageSteps(raw.outTo[OrganisationPage])
+    def pages: Traversal.V[Page] = traversal.out[OrganisationPage].v[Page]
 
-  def alerts: AlertSteps = new AlertSteps(raw.inTo[AlertOrganisation])
+    def alerts: Traversal.V[Alert] = traversal.in[AlertOrganisation].v[Alert]
 
-  def dashboards: DashboardSteps = new DashboardSteps(raw.outTo[OrganisationDashboard])
+    def dashboards: Traversal.V[Dashboard] = traversal.out[OrganisationDashboard].v[Dashboard]
 
-  def visible(implicit authContext: AuthContext): OrganisationSteps =
-    if (authContext.isPermitted(Permissions.manageOrganisation)) this
-    else
-      this.filter(_.visibleOrganisationsTo.users.has("login", authContext.userId))
+    def visible(implicit authContext: AuthContext): Traversal.V[Organisation] =
+      if (authContext.isPermitted(Permissions.manageOrganisation)) traversal
+      else
+        traversal.filter(_.visibleOrganisationsTo.users.has("login", authContext.userId))
 
-  def richOrganisation: Traversal[RichOrganisation, RichOrganisation] =
-    this
-      .project(
-        _.by
-          .by(_.outTo[OrganisationOrganisation].fold)
-      )
-      .map {
-        case (organisation, linkedOrganisations) =>
-          RichOrganisation(organisation.as[Organisation], linkedOrganisations.asScala.map(_.as[Organisation]))
-      }
+    def richOrganisation =
+      traversal
+        .project(
+          _.by
+            .by(_.out[OrganisationOrganisation].v[Organisation].fold)
+        )
+        .domainMap {
+          case (organisation, linkedOrganisations) =>
+            RichOrganisation(organisation, linkedOrganisations)
+        }
 
-  def users: UserSteps = new UserSteps(raw.inTo[RoleOrganisation].inTo[UserRole])
+    def users: Traversal.V[User] = traversal.in[RoleOrganisation].in[UserRole].v[User]
 
-  def userProfile(login: String): ProfileSteps =
-    new ProfileSteps(
-      this
-        .inTo[RoleOrganisation]
-        .filter(_.inTo[UserRole].has("login", login))
-        .outTo[RoleProfile]
-        .raw
-    )
+    def userProfile(login: String): Traversal.V[Profile] =
+      traversal
+        .in[RoleOrganisation]
+        .filter(_.in[UserRole].has("login", login))
+        .out[RoleProfile]
+        .v[Profile]
 
-  def visibleOrganisationsTo: OrganisationSteps = new OrganisationSteps(raw.unionFlat(_.identity(), _.inTo[OrganisationOrganisation]).dedup())
+    def visibleOrganisationsTo: Traversal.V[Organisation] =
+      traversal.unionFlat(identity, _.in[OrganisationOrganisation]).dedup().v[Organisation]
 
-  def visibleOrganisationsFrom: OrganisationSteps = new OrganisationSteps(raw.unionFlat(_.identity(), _.outTo[OrganisationOrganisation]).dedup())
+    def visibleOrganisationsFrom: Traversal.V[Organisation] =
+      traversal.unionFlat(identity, _.out[OrganisationOrganisation]).dedup().v[Organisation]
 
-  def config: ConfigSteps = new ConfigSteps(raw.outTo[OrganisationConfig])
+    def config: Traversal.V[Config] = traversal.out[OrganisationConfig].v[Config]
 
-  def get(idOrName: String): OrganisationSteps =
-    if (db.isValidId(idOrName)) this.getByIds(idOrName)
-    else getByName(idOrName)
+    def get(idOrName: String)(implicit db: Database): Traversal.V[Organisation] =
+      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
+      else getByName(idOrName)
 
-  def getByName(name: String): OrganisationSteps = this.has("name", name)
+    def getByName(name: String): Traversal.V[Organisation] = traversal.has("name", name)
+  }
 
-  override def newInstance(): OrganisationSteps = new OrganisationSteps(raw.clone())
 }
 
 class OrganisationIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: OrganisationSrv)
     extends IntegrityCheckOps[Organisation] {
-  override def resolve(entities: List[Organisation with Entity])(implicit graph: Graph): Try[Unit] = entities match {
+  override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
       tail.foreach(copyEdge(_, head))
       service.getByIds(tail.map(_._id): _*).remove()

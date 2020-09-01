@@ -28,12 +28,12 @@ class CortexSchemaDefinition @Inject() () extends Schema with UpdatableSchema {
   override lazy val modelList: Seq[Model] = {
     val rm: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
     reflectionClasses
-      .getSubTypesOf(classOf[HasModel[_]])
+      .getSubTypesOf(classOf[HasModel])
       .asScala
       .filterNot(c => java.lang.reflect.Modifier.isAbstract(c.getModifiers))
       .map(modelClass => rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance)
       .collect {
-        case hasModel: HasModel[_] =>
+        case hasModel: HasModel =>
           logger.info(s"Loading model ${hasModel.model.label}")
           hasModel.model
       }

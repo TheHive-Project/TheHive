@@ -1,13 +1,13 @@
 package org.thp.thehive.models
 
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 import play.api.libs.json.JsValue
 
-@VertexEntity
+@BuildVertexEntity
 case class Config(name: String, value: JsValue)
 
-@EdgeEntity[Organisation, Config]
+@BuildEdgeEntity[Organisation, Config]
 case class OrganisationConfig()
 
-@EdgeEntity[User, Config]
+@BuildEdgeEntity[User, Config]
 case class UserConfig()

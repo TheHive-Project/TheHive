@@ -1,12 +1,14 @@
 package org.thp.thehive.connector.cortex.services
 
 import com.google.inject.name.Named
-import gremlin.scala.P
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.thehive.models.Organisation
 import org.thp.thehive.services._
 import play.api.Logger
 
@@ -28,7 +30,7 @@ class ServiceHelper @Inject() (
     val l = clients
       .filter(c =>
         organisationFilter(
-          organisationSrv.initSteps,
+          organisationSrv.startTraversal,
           c.includedTheHiveOrganisations,
           c.excludedTheHiveOrganisations
         ).toList
@@ -51,10 +53,10 @@ class ServiceHelper @Inject() (
     * @return
     */
   def organisationFilter(
-      organisationSteps: OrganisationSteps,
+      organisationSteps: Traversal.V[Organisation],
       includedTheHiveOrganisations: Seq[String],
       excludedTheHiveOrganisations: Seq[String]
-  ): OrganisationSteps = {
+  ): Traversal.V[Organisation] = {
     val includedOrgs =
       if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
       else organisationSteps.has("name", P.within(includedTheHiveOrganisations))

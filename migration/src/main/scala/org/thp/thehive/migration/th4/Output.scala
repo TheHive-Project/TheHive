@@ -1,46 +1,26 @@
 package org.thp.thehive.migration.th4
 
-import java.util.Date
-
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.google.inject.Guice
-import gremlin.scala._
 import javax.inject.{Inject, Named, Provider, Singleton}
 import net.codingwell.scalaguice.ScalaModule
+import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{Database, Entity, Schema, UniMapping}
-import org.thp.scalligraph.services.{DatabaseStorageSrv, HadoopStorageSrv, LocalFileSystemStorageSrv, S3StorageSrv, StorageSrv}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.models.{Database, Entity, Schema, UMapping}
+import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.models.{CortexSchemaDefinition, TheHiveCortexSchemaProvider}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
 import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
-import org.thp.thehive.services.{
-  AlertSrv,
-  AttachmentSrv,
-  AuditSrv,
-  CaseSrv,
-  CaseTemplateSrv,
-  CustomFieldSrv,
-  DataSrv,
-  ImpactStatusSrv,
-  LocalUserSrv,
-  LogSrv,
-  ObservableSrv,
-  ObservableTypeSrv,
-  OrganisationSrv,
-  ProfileSrv,
-  ResolutionStatusSrv,
-  ShareSrv,
-  TagSrv,
-  TaskSrv,
-  UserSrv
-}
+import org.thp.thehive.services._
 import play.api.cache.SyncCacheApi
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
@@ -161,11 +141,11 @@ class Output @Inject() (
     val caseNumbersBuilder        = Set.newBuilder[Int]
     val alertsBuilder             = Set.newBuilder[(String, String, String)]
 
-    db.roTransaction { graph =>
-      graph
+    db.roTransaction { implicit graph =>
+      Traversal
         .V()
         .has(
-          Key[String]("_label"),
+          "_label",
           P.within(
             Seq(
               "Profile",
@@ -181,39 +161,39 @@ class Output @Inject() (
             )
           )
         )
-        .toIterator()
+        .toIterator
         .map(v => v.value[String]("_label") -> v)
         .foreach {
           case ("Profile", vertex) =>
-            val profile = profileSrv.model.toDomain(vertex)(db)
+            val profile = profileSrv.model.converter(vertex)
             profilesBuilder += (profile.name -> profile)
           case ("Organisation", vertex) =>
-            val organisation = organisationSrv.model.toDomain(vertex)(db)
+            val organisation = organisationSrv.model.converter(vertex)
             organisationsBuilder += (organisation.name -> organisation)
           case ("User", vertex) =>
-            val user = userSrv.model.toDomain(vertex)(db)
+            val user = userSrv.model.converter(vertex)
             usersBuilder += (user.login -> user)
           case ("ImpactStatus", vertex) =>
-            val impactStatuse = impactStatusSrv.model.toDomain(vertex)(db)
+            val impactStatuse = impactStatusSrv.model.converter(vertex)
             impactStatusesBuilder += (impactStatuse.value -> impactStatuse)
           case ("ResolutionStatus", vertex) =>
-            val resolutionStatuse = resolutionStatusSrv.model.toDomain(vertex)(db)
+            val resolutionStatuse = resolutionStatusSrv.model.converter(vertex)
             resolutionStatusesBuilder += (resolutionStatuse.value -> resolutionStatuse)
           case ("ObservableType", vertex) =>
-            val observableType = observableTypeSrv.model.toDomain(vertex)(db)
+            val observableType = observableTypeSrv.model.converter(vertex)
             observableTypesBuilder += (observableType.name -> observableType)
           case ("CustomField", vertex) =>
-            val customField = customFieldSrv.model.toDomain(vertex)(db)
+            val customField = customFieldSrv.model.converter(vertex)
             customFieldsBuilder += (customField.name -> customField)
           case ("CaseTemplate", vertex) =>
-            val caseTemplate = caseTemplateSrv.model.toDomain(vertex)(db)
+            val caseTemplate = caseTemplateSrv.model.converter(vertex)
             caseTemplatesBuilder += (caseTemplate.name -> caseTemplate)
           case ("Case", vertex) =>
-            caseNumbersBuilder += db.getSingleProperty(vertex, "number", UniMapping.int)
+            caseNumbersBuilder += UMapping.int.getProperty(vertex, "number")
           case ("Alert", vertex) =>
-            val `type`    = db.getSingleProperty(vertex, "type", UniMapping.string)
-            val source    = db.getSingleProperty(vertex, "source", UniMapping.string)
-            val sourceRef = db.getSingleProperty(vertex, "sourceRef", UniMapping.string)
+            val `type`    = UMapping.string.getProperty(vertex, "type")
+            val source    = UMapping.string.getProperty(vertex, "source")
+            val sourceRef = UMapping.string.getProperty(vertex, "sourceRef")
             alertsBuilder += ((`type`, source, sourceRef))
           case _ =>
         }
@@ -256,13 +236,13 @@ class Output @Inject() (
       case jdb: JanusDatabase => jdb.dropOtherConnections.recover { case error => logger.error(s"Fail to remove other connection", error) }
       case _                  =>
     }
-    if (db.version("thehive") == 0) {
+    if (db.version("thehive") == 0)
       db.createSchemaFrom(theHiveSchema)(LocalUserSrv.getSystemAuthContext)
         .flatMap(_ => db.setVersion(theHiveSchema.name, theHiveSchema.operations.lastVersion))
         .flatMap(_ => db.createSchemaFrom(cortexSchema)(LocalUserSrv.getSystemAuthContext))
         .flatMap(_ => db.setVersion(cortexSchema.name, cortexSchema.operations.lastVersion))
         .map(_ => retrieveExistingData())
-    } else {
+    else
       theHiveSchema
         .update(db)(LocalUserSrv.getSystemAuthContext)
         .flatMap(_ => cortexSchema.update(db)(LocalUserSrv.getSystemAuthContext))
@@ -270,7 +250,6 @@ class Output @Inject() (
           retrieveExistingData()
           db.removeAllIndexes()
         }
-    }
   }
 
   def endMigration(): Try[Unit] = {
@@ -286,10 +265,9 @@ class Output @Inject() (
   }
 
   def updateMetaData(entity: Entity, metaData: MetaData)(implicit graph: Graph): Unit = {
-    val e1 = graph.V(entity._id).property(Key[Date]("_createdAt"), metaData.createdAt)
-    val e2 = metaData.updatedAt.fold(e1)(e1.property(Key[Date]("_updatedAt"), _))
-    metaData.updatedAt.fold(e2)(e2.property(Key[Date]("_updatedAt"), _)).iterate()
-    ()
+    val vertex = Traversal.V(entity._id).head
+    UMapping.date.setProperty(vertex, "_createdAt", metaData.createdAt)
+    UMapping.date.optional.setProperty(vertex, "_updatedAt", metaData.updatedAt)
   }
 
   def getAuthContext(userId: String): AuthContext =
@@ -298,9 +276,10 @@ class Output @Inject() (
     else if (userId.contains('@')) AuthContextImpl(userId, userId, "admin", "mig-request", Permissions.all)
     else AuthContextImpl(s"$userId@$defaultUserDomain", s"$userId@$defaultUserDomain", "admin", "mig-request", Permissions.all)
 
-  def authTransaction[A](userId: String)(body: Graph => AuthContext => Try[A]): Try[A] = db.tryTransaction { implicit graph =>
-    body(graph)(getAuthContext(userId))
-  }
+  def authTransaction[A](userId: String)(body: Graph => AuthContext => Try[A]): Try[A] =
+    db.tryTransaction { implicit graph =>
+      body(graph)(getAuthContext(userId))
+    }
 
   def getTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
     cache.getOrElseUpdate(s"tag-$tagName")(tagSrv.createEntity(Tag.fromString(tagName, tagSrv.defaultNamespace, tagSrv.defaultColour)))
@@ -312,15 +291,15 @@ class Output @Inject() (
       .get(organisationName)
       .fold[Try[Organisation with Entity]](Failure(NotFoundError(s"Organisation $organisationName not found")))(Success.apply)
 
-  override def createOrganisation(inputOrganisation: InputOrganisation): Try[IdMapping] = authTransaction(inputOrganisation.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createOrganisation(inputOrganisation: InputOrganisation): Try[IdMapping] =
+    authTransaction(inputOrganisation.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create organisation ${inputOrganisation.organisation.name}")
       organisationSrv.create(inputOrganisation.organisation).map { o =>
         updateMetaData(o, inputOrganisation.metaData)
         organisations += (o.name -> o)
         IdMapping(inputOrganisation.metaData.id, o._id)
       }
-  }
+    }
 
   override def userExists(inputUser: InputUser): Boolean = {
     val validLogin =
@@ -338,8 +317,8 @@ class Output @Inject() (
       .fold[Try[User with Entity]](Failure(NotFoundError(s"User $login not found")))(Success.apply)
   }
 
-  override def createUser(inputUser: InputUser): Try[IdMapping] = authTransaction(inputUser.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createUser(inputUser: InputUser): Try[IdMapping] =
+    authTransaction(inputUser.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create user ${inputUser.user.login}")
       userSrv.checkUser(inputUser.user).flatMap(userSrv.createEntity).map { createdUser =>
         updateMetaData(createdUser, inputUser.metaData)
@@ -364,22 +343,22 @@ class Output @Inject() (
         users += (createdUser.login -> createdUser)
         IdMapping(inputUser.metaData.id, createdUser._id)
       }
-  }
+    }
 
   override def customFieldExists(inputCustomField: InputCustomField): Boolean = customFields.contains(inputCustomField.customField.name)
 
   private def getCustomField(name: String): Try[CustomField with Entity] =
     customFields.get(name).fold[Try[CustomField with Entity]](Failure(NotFoundError(s"Custom field $name not found")))(Success.apply)
 
-  override def createCustomField(inputCustomField: InputCustomField): Try[IdMapping] = authTransaction(inputCustomField.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createCustomField(inputCustomField: InputCustomField): Try[IdMapping] =
+    authTransaction(inputCustomField.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create custom field ${inputCustomField.customField.name}")
       customFieldSrv.create(inputCustomField.customField).map { cf =>
         updateMetaData(cf, inputCustomField.metaData)
         customFields += (cf.name -> cf)
         IdMapping(inputCustomField.customField.name, cf._id)
       }
-  }
+    }
 
   override def observableTypeExists(inputObservableType: InputObservableType): Boolean =
     observableTypes.contains(inputObservableType.observableType.name)
@@ -416,15 +395,15 @@ class Output @Inject() (
         }
       }(Success.apply)
 
-  override def createProfile(inputProfile: InputProfile): Try[IdMapping] = authTransaction(inputProfile.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createProfile(inputProfile: InputProfile): Try[IdMapping] =
+    authTransaction(inputProfile.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create profile ${inputProfile.profile.name}")
       profileSrv.create(inputProfile.profile).map { profile =>
         updateMetaData(profile, inputProfile.metaData)
         profiles += (profile.name -> profile)
         IdMapping(inputProfile.profile.name, profile._id)
       }
-  }
+    }
 
   override def impactStatusExists(inputImpactStatus: InputImpactStatus): Boolean = impactStatuses.contains(inputImpactStatus.impactStatus.value)
 
@@ -438,15 +417,15 @@ class Output @Inject() (
         }
       }(Success.apply)
 
-  override def createImpactStatus(inputImpactStatus: InputImpactStatus): Try[IdMapping] = authTransaction(inputImpactStatus.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createImpactStatus(inputImpactStatus: InputImpactStatus): Try[IdMapping] =
+    authTransaction(inputImpactStatus.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create impact status ${inputImpactStatus.impactStatus.value}")
       impactStatusSrv.create(inputImpactStatus.impactStatus).map { status =>
         updateMetaData(status, inputImpactStatus.metaData)
         impactStatuses += (status.value -> status)
         IdMapping(inputImpactStatus.impactStatus.value, status._id)
       }
-  }
+    }
 
   override def resolutionStatusExists(inputResolutionStatus: InputResolutionStatus): Boolean =
     resolutionStatuses.contains(inputResolutionStatus.resolutionStatus.value)
@@ -477,8 +456,8 @@ class Output @Inject() (
 
   private def getCaseTemplate(name: String): Option[CaseTemplate with Entity] = caseTemplates.get(name)
 
-  override def createCaseTemplate(inputCaseTemplate: InputCaseTemplate): Try[IdMapping] = authTransaction(inputCaseTemplate.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createCaseTemplate(inputCaseTemplate: InputCaseTemplate): Try[IdMapping] =
+    authTransaction(inputCaseTemplate.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create case template ${inputCaseTemplate.caseTemplate.name}")
       for {
         organisation     <- getOrganisation(inputCaseTemplate.organisation)
@@ -495,10 +474,10 @@ class Output @Inject() (
         }
         _ = caseTemplates += (inputCaseTemplate.caseTemplate.name -> richCaseTemplate.caseTemplate)
       } yield IdMapping(inputCaseTemplate.metaData.id, richCaseTemplate._id)
-  }
+    }
 
-  override def createCaseTemplateTask(caseTemplateId: String, inputTask: InputTask): Try[IdMapping] = authTransaction(inputTask.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createCaseTemplateTask(caseTemplateId: String, inputTask: InputTask): Try[IdMapping] =
+    authTransaction(inputTask.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create task ${inputTask.task.title} in case template $caseTemplateId")
       for {
         caseTemplate <- caseTemplateSrv.getOrFail(caseTemplateId)
@@ -507,11 +486,11 @@ class Output @Inject() (
         _ = updateMetaData(richTask.task, inputTask.metaData)
         _ <- caseTemplateSrv.addTask(caseTemplate, richTask.task)
       } yield IdMapping(inputTask.metaData.id, richTask._id)
-  }
+    }
 
   override def caseExists(inputCase: InputCase): Boolean = caseNumbers.contains(inputCase.`case`.number)
 
-  private def getCase(caseId: String)(implicit graph: Graph): Try[Case with Entity] = caseSrv.getByIds(caseId).getOrFail()
+  private def getCase(caseId: String)(implicit graph: Graph): Try[Case with Entity] = caseSrv.getByIds(caseId).getOrFail("Case")
 
   override def createCase(inputCase: InputCase): Try[IdMapping] =
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
@@ -615,20 +594,20 @@ class Output @Inject() (
       for {
         observableType <- getObservableType(inputObservable.`type`)
         tags           <- inputObservable.tags.filterNot(_.isEmpty).toTry(getTag)
-        richObservable <- inputObservable
-          .dataOrAttachment
-          .fold(
-            { dataValue =>
-              dataSrv.createEntity(Data(dataValue)).flatMap { data =>
-                observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
-              }
-            }, { inputAttachment =>
-              attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
-                attachment =>
-                  observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
-              }
-            }
-          )
+        richObservable <-
+          inputObservable
+            .dataOrAttachment
+            .fold(
+              dataValue =>
+                dataSrv.createEntity(Data(dataValue)).flatMap { data =>
+                  observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
+                },
+              inputAttachment =>
+                attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
+                  attachment =>
+                    observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
+                }
+            )
         _ = updateMetaData(richObservable.observable, inputObservable.metaData)
         case0 <- getCase(caseId)
         orgs  <- inputObservable.organisations.toTry(getOrganisation)
@@ -653,20 +632,20 @@ class Output @Inject() (
         job            <- jobSrv.getOrFail(jobId)
         observableType <- getObservableType(inputObservable.`type`)
         tags = inputObservable.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
-        richObservable <- inputObservable
-          .dataOrAttachment
-          .fold(
-            { dataValue =>
-              dataSrv.createEntity(Data(dataValue)).flatMap { data =>
-                observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
-              }
-            }, { inputAttachment =>
-              attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
-                attachment =>
-                  observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
-              }
-            }
-          )
+        richObservable <-
+          inputObservable
+            .dataOrAttachment
+            .fold(
+              dataValue =>
+                dataSrv.createEntity(Data(dataValue)).flatMap { data =>
+                  observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
+                },
+              inputAttachment =>
+                attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
+                  attachment =>
+                    observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
+                }
+            )
         _ = updateMetaData(richObservable.observable, inputObservable.metaData)
         _ <- jobSrv.addObservable(job, richObservable.observable)
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
@@ -675,21 +654,22 @@ class Output @Inject() (
   override def alertExists(inputAlert: InputAlert): Boolean =
     alerts.contains((inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef))
 
-  override def createAlert(inputAlert: InputAlert): Try[IdMapping] = authTransaction(inputAlert.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createAlert(inputAlert: InputAlert): Try[IdMapping] =
+    authTransaction(inputAlert.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
       for {
         organisation <- getOrganisation(inputAlert.organisation)
-        caseTemplate = inputAlert
-          .caseTemplate
-          .flatMap(ct =>
-            getCaseTemplate(ct).orElse {
-              logger.warn(
-                s"Case template $ct not found (used in alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef})"
-              )
-              None
-            }
-          )
+        caseTemplate =
+          inputAlert
+            .caseTemplate
+            .flatMap(ct =>
+              getCaseTemplate(ct).orElse {
+                logger.warn(
+                  s"Case template $ct not found (used in alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef})"
+                )
+                None
+              }
+            )
         tags = inputAlert.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
 //        alert <- alertSrv.create(inputAlert.alert, organisation, tags, inputAlert.customFields, caseTemplate) // FIXME don't check duplicate
         alert <- alertSrv.createEntity(inputAlert.alert)
@@ -700,7 +680,7 @@ class Output @Inject() (
         _ = updateMetaData(alert, inputAlert.metaData)
         _ = inputAlert.caseId.flatMap(getCase(_).toOption).foreach(alertSrv.alertCaseSrv.create(AlertCase(), alert, _))
       } yield IdMapping(inputAlert.metaData.id, alert._id)
-  }
+    }
 
   override def createAlertObservable(alertId: String, inputObservable: InputObservable): Try[IdMapping] =
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
@@ -708,38 +688,39 @@ class Output @Inject() (
       for {
         observableType <- getObservableType(inputObservable.`type`)
         tags = inputObservable.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
-        richObservable <- inputObservable
-          .dataOrAttachment
-          .fold(
-            { dataValue =>
-              dataSrv.createEntity(Data(dataValue)).flatMap { data =>
-                observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
-              }
-            }, { inputAttachment =>
-              attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
-                attachment =>
-                  observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
-              }
-            }
-          )
+        richObservable <-
+          inputObservable
+            .dataOrAttachment
+            .fold(
+              dataValue =>
+                dataSrv.createEntity(Data(dataValue)).flatMap { data =>
+                  observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
+                },
+              inputAttachment =>
+                attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
+                  attachment =>
+                    observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
+                }
+            )
         _ = updateMetaData(richObservable.observable, inputObservable.metaData)
         alert <- alertSrv.getOrFail(alertId)
         _     <- alertSrv.alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
 
-  private def getEntity(entityType: String, entityId: String)(implicit graph: Graph): Try[Entity] = entityType match {
-    case "Task"       => taskSrv.getOrFail(entityId)
-    case "Case"       => getCase(entityId)
-    case "Observable" => observableSrv.getOrFail(entityId)
-    case "Log"        => logSrv.getOrFail(entityId)
-    case "Alert"      => alertSrv.getOrFail(entityId)
-    case "Job"        => jobSrv.getOrFail(entityId)
-    case _            => Failure(BadRequestError(s"objectType $entityType is not recognised"))
-  }
+  private def getEntity(entityType: String, entityId: String)(implicit graph: Graph): Try[Product with Entity] =
+    entityType match {
+      case "Task"       => taskSrv.getOrFail(entityId)
+      case "Case"       => getCase(entityId)
+      case "Observable" => observableSrv.getOrFail(entityId)
+      case "Log"        => logSrv.getOrFail(entityId)
+      case "Alert"      => alertSrv.getOrFail(entityId)
+      case "Job"        => jobSrv.getOrFail(entityId)
+      case _            => Failure(BadRequestError(s"objectType $entityType is not recognised"))
+    }
 
-  override def createAction(objectId: String, inputAction: InputAction): Try[IdMapping] = authTransaction(inputAction.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createAction(objectId: String, inputAction: InputAction): Try[IdMapping] =
+    authTransaction(inputAction.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(
         s"Create action ${inputAction.action.cortexId}:${inputAction.action.workerName}:${inputAction.action.cortexJobId} for ${inputAction.objectType} $objectId"
       )
@@ -748,17 +729,17 @@ class Output @Inject() (
         action <- actionSrv.create(inputAction.action, entity)
         _ = updateMetaData(action.action, inputAction.metaData)
       } yield IdMapping(inputAction.metaData.id, action._id)
-  }
+    }
 
-  override def createAudit(contextId: String, inputAudit: InputAudit): Try[Unit] = authTransaction(inputAudit.metaData.createdBy) {
-    implicit graph => implicit authContext =>
+  override def createAudit(contextId: String, inputAudit: InputAudit): Try[Unit] =
+    authTransaction(inputAudit.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create audit ${inputAudit.audit.action} on ${inputAudit.audit.objectType} ${inputAudit.audit.objectId}")
       for {
         obj <- (for {
-          t <- inputAudit.audit.objectType
-          i <- inputAudit.audit.objectId
-        } yield getEntity(t, i)).flip
-        ctxType = obj.map(_._model.label).map {
+            t <- inputAudit.audit.objectType
+            i <- inputAudit.audit.objectId
+          } yield getEntity(t, i)).flip
+        ctxType = obj.map(_._label).map {
           case "Alert"                                        => "Alert"
           case "Log" | "Task" | "Observable" | "Case" | "Job" => "Case"
           case "User"                                         => "User"
@@ -774,5 +755,5 @@ class Output @Inject() (
         _ <- obj.map(auditSrv.auditedSrv.create(Audited(), createdAudit, _)).flip
         _ <- context.map(auditSrv.auditContextSrv.create(AuditContext(), createdAudit, _)).flip
       } yield ()
-  }
+    }
 }

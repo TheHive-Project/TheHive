@@ -1,9 +1,8 @@
 package org.thp.thehive.models
 
-import java.util.Date
+import java.util.{Date, NoSuchElementException}
 
-import gremlin.scala.Edge
-import javax.inject.Named
+import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph._
 import org.thp.scalligraph.models._
 import play.api.libs.json._
@@ -25,49 +24,49 @@ trait CustomFieldValue[C] extends Product {
   def dateValue_=(value: Option[Date]): C
 }
 
-class CustomFieldValueEdge(@Named("with-thehive-schema") db: Database, edge: Edge) extends CustomFieldValue[CustomFieldValueEdge] with Entity {
-  override def order: Option[Int]            = db.getOptionProperty(edge, "order", UniMapping.int.optional)
-  override def stringValue: Option[String]   = db.getOptionProperty(edge, "stringValue", UniMapping.string.optional)
-  override def booleanValue: Option[Boolean] = db.getOptionProperty(edge, "booleanValue", UniMapping.boolean.optional)
-  override def integerValue: Option[Int]     = db.getOptionProperty(edge, "integerValue", UniMapping.int.optional)
-  override def floatValue: Option[Double]    = db.getOptionProperty(edge, "floatValue", UniMapping.double.optional)
-  override def dateValue: Option[Date]       = db.getOptionProperty(edge, "dateValue", UniMapping.date.optional)
+class CustomFieldValueEdge(edge: Edge) extends CustomFieldValue[CustomFieldValueEdge] with Entity {
+  override def order: Option[Int]            = UMapping.int.optional.getProperty(edge, "order")
+  override def stringValue: Option[String]   = UMapping.string.optional.getProperty(edge, "stringValue")
+  override def booleanValue: Option[Boolean] = UMapping.boolean.optional.getProperty(edge, "booleanValue")
+  override def integerValue: Option[Int]     = UMapping.int.optional.getProperty(edge, "integerValue")
+  override def floatValue: Option[Double]    = UMapping.double.optional.getProperty(edge, "floatValue")
+  override def dateValue: Option[Date]       = UMapping.date.optional.getProperty(edge, "dateValue")
 
   override def order_=(value: Option[Int]): CustomFieldValueEdge = {
-    db.setProperty(edge, "order", value, UniMapping.int.optional)
+    UMapping.int.optional.setProperty(edge, "order", value)
     this
   }
 
   override def stringValue_=(value: Option[String]): CustomFieldValueEdge = {
-    db.setOptionProperty(edge, "stringValue", value, UniMapping.string.optional)
+    UMapping.string.optional.setProperty(edge, "stringValue", value)
     this
   }
   override def booleanValue_=(value: Option[Boolean]): CustomFieldValueEdge = {
-    db.setOptionProperty(edge, "booleanValue", value, UniMapping.boolean.optional)
+    UMapping.boolean.optional.setProperty(edge, "booleanValue", value)
     this
   }
   override def integerValue_=(value: Option[Int]): CustomFieldValueEdge = {
-    db.setOptionProperty(edge, "integerValue", value, UniMapping.int.optional)
+    UMapping.int.optional.setProperty(edge, "integerValue", value)
     this
   }
   override def floatValue_=(value: Option[Double]): CustomFieldValueEdge = {
-    db.setOptionProperty(edge, "floatValue", value, UniMapping.double.optional)
+    UMapping.double.optional.setProperty(edge, "floatValue", value)
     this
   }
   override def dateValue_=(value: Option[Date]): CustomFieldValueEdge = {
-    db.setOptionProperty(edge, "dateValue", value, UniMapping.date.optional)
+    UMapping.date.optional.setProperty(edge, "dateValue", value)
     this
   }
-  override def productElement(n: Int): Any  = ???
+  override def productElement(n: Int): Any  = throw new NoSuchElementException
   override def productArity: Int            = 0
   override def canEqual(that: Any): Boolean = that.isInstanceOf[CustomFieldValueEdge]
 
   override def _id: String                = edge.id().toString
-  override def _model: Model              = ???
-  override def _createdBy: String         = db.getSingleProperty(edge, "_createdBy", UniMapping.string)
-  override def _updatedBy: Option[String] = db.getOptionProperty(edge, "_updatedBy", UniMapping.string.optional)
-  override def _createdAt: Date           = db.getSingleProperty(edge, "_createdAt", UniMapping.date)
-  override def _updatedAt: Option[Date]   = db.getOptionProperty(edge, "_updatedAt", UniMapping.date.optional)
+  override def _label: String             = edge.label()
+  override def _createdBy: String         = UMapping.string.getProperty(edge, "_createdBy")
+  override def _updatedBy: Option[String] = UMapping.string.optional.getProperty(edge, "_updatedBy")
+  override def _createdAt: Date           = UMapping.date.getProperty(edge, "_createdAt")
+  override def _updatedAt: Option[Date]   = UMapping.date.optional.getProperty(edge, "_updatedAt")
 }
 
 object CustomFieldType extends Enumeration {
@@ -198,7 +197,7 @@ object CustomFieldDate extends CustomFieldType[Date] {
 }
 
 @DefineIndex(IndexType.unique, "name")
-@VertexEntity
+@BuildVertexEntity
 case class CustomField(
     name: String,
     displayName: String,

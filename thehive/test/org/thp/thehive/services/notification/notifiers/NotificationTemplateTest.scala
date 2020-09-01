@@ -3,8 +3,8 @@ package org.thp.thehive.services.notification.notifiers
 import java.util.{HashMap => JHashMap}
 
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.services.{AuditSrv, CaseSrv, UserSrv}
 import play.api.test.PlaySpecification
@@ -13,10 +13,12 @@ import scala.collection.JavaConverters._
 
 class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local").authContext
-  val templateEngine: Template          = new Object with Template {}
+  def templateEngine(testSchema: Schema): Template = new Object with Template {
+    val schema = testSchema
+  }
 
   "template engine" should {
-    "format message" in {
+    "format message" in testApp { app =>
       val template =
         """Dear {{user.name}},
           |you have a new notification:
@@ -42,7 +44,7 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
       model.put("object", Map("_type" -> "Case", "title" -> "case title").asJava)
       model.put("user", Map("name"    -> "Thomas").asJava)
       model.put("context", Map("_id"  -> "2231").asJava)
-      val message = templateEngine.handlebars.compileInline(template).apply(model)
+      val message = templateEngine(app[Schema]).handlebars.compileInline(template).apply(model)
       message must beEqualTo("""Dear Thomas,
                                |you have a new notification:
                                |
@@ -75,12 +77,12 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
 
       val message = app[Database].tryTransaction { implicit graph =>
         for {
-          case4 <- app[CaseSrv].get("#1").getOrFail()
+          case4 <- app[CaseSrv].get("#1").getOrFail("Case")
           _     <- app[CaseSrv].addTags(case4, Set("emailer test"))
           _     <- app[CaseSrv].addTags(case4, Set("emailer test")) // this is needed to make AuditSrv write Audit in DB
-          audit <- app[AuditSrv].initSteps.has("objectId", case4._id).getOrFail()
-          user  <- app[UserSrv].get("certuser@thehive.local").getOrFail()
-          msg   <- templateEngine.buildMessage(template, audit, Some(case4), Some(case4), Some(user), "http://localhost/")
+          audit <- app[AuditSrv].startTraversal.has("objectId", case4._id).getOrFail("Audit")
+          user  <- app[UserSrv].get("certuser@thehive.local").getOrFail("User")
+          msg   <- templateEngine(app[Schema]).buildMessage(template, audit, Some(case4), Some(case4), Some(user), "http://localhost/")
         } yield msg
       }
       message must beSuccessfulTry.which { m =>

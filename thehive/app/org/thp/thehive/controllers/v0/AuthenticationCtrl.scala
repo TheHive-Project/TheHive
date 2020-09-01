@@ -5,14 +5,14 @@ import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.controllers.v0.Conversion._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services.UserSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
-
 @Singleton
 class AuthenticationCtrl @Inject() (
     entrypoint: Entrypoint,
@@ -42,7 +42,7 @@ class AuthenticationCtrl @Inject() (
             authContext <- authSrv.authenticate(login, password, organisation, code)
             user        <- db.roTransaction(userSrv.getOrFail(authContext.userId)(_))
             _           <- if (user.locked) Failure(AuthorizationError("Your account is locked")) else Success(())
-            body = organisation.flatMap(userSrv.get(user).richUser(_).headOption()).fold(user.toJson)(_.toJson)
+            body = organisation.flatMap(userSrv.get(user).richUser(_).headOption).fold(user.toJson)(_.toJson)
           } yield authSrv.setSessionUser(authContext)(Results.Ok(body))
         }
       }

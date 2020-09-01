@@ -5,15 +5,18 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.models._
-import org.thp.thehive.services._
-import play.api.Logger
-import play.api.libs.json.JsObject
-import play.api.mvc.{Action, AnyContent, Results}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputObservable
+import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services._
+import play.api.Logger
+import play.api.mvc.{Action, AnyContent, Results}
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -29,29 +32,38 @@ class ObservableCtrl @Inject() (
 
   lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "observable"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.observable ::: metaProperties[ObservableSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.observable
   override val initialQuery: Query =
-    Query.init[ObservableSteps]("listObservable", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ObservableSteps](
+    Query.init[Traversal.V[Observable]](
+      "listObservable",
+      (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables
+    )
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Observable]](
     "getObservable",
     FieldsParser[IdOrName],
     (param, graph, authContext) => observableSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ObservableSteps, PagedResult[(RichObservable, JsObject)]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
     "page",
     FieldsParser[OutputParam], {
       case (OutputParam(from, to, extraData), observableSteps, authContext) =>
         observableSteps.richPage(from, to, extraData.contains("total")) {
-          _.richObservableWithCustomRenderer(observableStatsRenderer(extraData - "total")(authContext, db, observableSteps.graph))
+          _.richObservableWithCustomRenderer(observableStatsRenderer(extraData - "total")(authContext))(authContext)
         }
     }
   )
-  override val outputQuery: Query = Query.output[RichObservable, ObservableSteps](_.richObservable)
+  override val outputQuery: Query = Query.output[RichObservable, Traversal.V[Observable]](_.richObservable)
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[ObservableSteps, OrganisationSteps]("organisations", (observableSteps, authContext) => observableSteps.organisations.visible(authContext)),
-    Query[ObservableSteps, ObservableSteps]("similar", (observableSteps, authContext) => observableSteps.similar.visible(authContext)),
-    Query[ObservableSteps, CaseSteps]("case", (observableSteps, _) => observableSteps.`case`)
+    Query[Traversal.V[Observable], Traversal.V[Organisation]](
+      "organisations",
+      (observableSteps, authContext) => observableSteps.organisations.visible(authContext)
+    ),
+    Query[Traversal.V[Observable], Traversal.V[Observable]](
+      "similar",
+      (observableSteps, authContext) => observableSteps.similar.visible(authContext)
+    ),
+    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`)
   )
 
   def create(caseId: String): Action[AnyContent] =

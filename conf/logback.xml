@@ -35,7 +35,7 @@
     </appender>
 
     <logger name="org.thp.scalligraph.models" level="TRACE"/>
-    <logger name="org.thp.scalligraph.steps" level="TRACE"/>
+    <logger name="org.thp.scalligraph.traversal" level="TRACE"/>
     <!--
     <logger name="org.janusgraph.graphdb" level="INFO" />
     <logger name="org.thp.thehive.client" level="DEBUG" />

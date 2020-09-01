@@ -7,10 +7,11 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.{ParamQuery, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.models.RichAudit
+import org.thp.thehive.models.{Audit, RichAudit}
+import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.FlowActor.{AuditIds, FlowId}
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
@@ -36,7 +37,7 @@ class AuditCtrl @Inject() (
 
   implicit val timeout: Timeout = Timeout(5.minutes)
 
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, AuditSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Audit]](
     "getAudit",
     FieldsParser[IdOrName],
     (param, graph, authContext) => auditSrv.get(param.idOrName)(graph).visible(authContext)
@@ -45,16 +46,16 @@ class AuditCtrl @Inject() (
   override val entityName: String = "audit"
 
   override val initialQuery: Query =
-    Query.init[AuditSteps]("listAudit", (graph, authContext) => auditSrv.initSteps(graph).visible(authContext))
-  override val publicProperties: List[org.thp.scalligraph.query.PublicProperty[_, _]] = properties.audit ::: metaProperties[LogSteps]
+    Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(authContext))
+  override val publicProperties: List[org.thp.scalligraph.query.PublicProperty[_, _]] = properties.audit
 
   override val pageQuery: ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
-    Query.withParam[OutputParam, AuditSteps, PagedResult[RichAudit]](
+    Query.withParam[OutputParam, Traversal.V[Audit], IteratorOutput](
       "page",
       FieldsParser[OutputParam],
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
-  override val outputQuery: Query = Query.output[RichAudit, AuditSteps](_.richAudit)
+  override val outputQuery: Query = Query.output[RichAudit, Traversal.V[Audit]](_.richAudit)
 
   def flow(caseId: Option[String]): Action[AnyContent] =
     entryPoint("audit flow")

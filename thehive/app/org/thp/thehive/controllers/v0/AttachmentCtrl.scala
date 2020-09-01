@@ -11,8 +11,9 @@ import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.controllers.HttpHeaderParameterEncoding
+import org.thp.thehive.services.AttachmentOps._
 import org.thp.thehive.services.AttachmentSrv
 import play.api.http.HttpEntity
 import play.api.mvc._

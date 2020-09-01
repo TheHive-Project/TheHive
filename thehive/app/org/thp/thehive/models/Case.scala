@@ -4,7 +4,7 @@ import java.util.Date
 
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.Permission
-import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType, Model}
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import play.api.libs.json.{Format, Json}
 
 object CaseStatus extends Enumeration {
@@ -13,7 +13,7 @@ object CaseStatus extends Enumeration {
   implicit val format: Format[CaseStatus.Value] = Json.formatEnum(CaseStatus)
 }
 
-@VertexEntity
+@BuildVertexEntity
 @DefineIndex(IndexType.unique, "value")
 case class ResolutionStatus(value: String) {
   require(!value.isEmpty, "ResolutionStatus can't be empty")
@@ -29,10 +29,10 @@ object ResolutionStatus {
   val initialValues = Seq(indeterminate, falsePositive, truePositive, other, duplicated)
 }
 
-@EdgeEntity[Case, ResolutionStatus]
+@BuildEdgeEntity[Case, ResolutionStatus]
 case class CaseResolutionStatus()
 
-@VertexEntity
+@BuildVertexEntity
 @DefineIndex(IndexType.unique, "value")
 case class ImpactStatus(value: String) {
   require(!value.isEmpty, "ImpactStatus can't be empty")
@@ -45,16 +45,16 @@ object ImpactStatus {
   val initialValues: Seq[ImpactStatus] = Seq(noImpact, withImpact, notApplicable)
 }
 
-@EdgeEntity[Case, ImpactStatus]
+@BuildEdgeEntity[Case, ImpactStatus]
 case class CaseImpactStatus()
 
-@EdgeEntity[Case, Tag]
+@BuildEdgeEntity[Case, Tag]
 case class CaseTag()
 
-@EdgeEntity[Case, Case]
+@BuildEdgeEntity[Case, Case]
 case class MergedFrom()
 
-@EdgeEntity[Case, CustomField]
+@BuildEdgeEntity[Case, CustomField]
 case class CaseCustomField(
     order: Option[Int] = None,
     stringValue: Option[String] = None,
@@ -71,13 +71,13 @@ case class CaseCustomField(
   override def dateValue_=(value: Option[Date]): CaseCustomField       = copy(dateValue = value)
 }
 
-@EdgeEntity[Case, User]
+@BuildEdgeEntity[Case, User]
 case class CaseUser()
 
-@EdgeEntity[Case, CaseTemplate]
+@BuildEdgeEntity[Case, CaseTemplate]
 case class CaseCaseTemplate()
 
-@VertexEntity
+@BuildVertexEntity
 @DefineIndex(IndexType.unique, "number")
 //@DefineIndex(IndexType.fulltext, "title")
 //@DefineIndex(IndexType.fulltext, "description")
@@ -152,7 +152,7 @@ object RichCase {
   ): RichCase = {
     val `case`: Case with Entity = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
       override val _id: String                = __id
-      override val _model: Model              = Model.vertex[Case]
+      override val _label: String             = "Case"
       override val _createdBy: String         = __createdBy
       override val _updatedBy: Option[String] = __updatedBy
       override val _createdAt: Date           = __createdAt

@@ -8,9 +8,12 @@ import org.thp.misp.dto.{Event, Organisation, Tag, User}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 import play.api.test.PlaySpecification
 
@@ -68,12 +71,12 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
     }
   }
 
-  "MISP service " should {
+  "MISP service" should {
     "import events" in testApp { app =>
       await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].initSteps.getBySourceId("misp", "ORGNAME", "1").visible.getOrFail("Alert")
+        app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible.getOrFail("Alert")
       } must beSuccessfulTry(
         Alert(
           `type` = "misp",
@@ -90,7 +93,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
           read = false,
           follow = true
         )
-      )
+      ).eventually(5, 100.milliseconds)
 
       val observables = app[Database]
         .roTransaction { implicit graph =>

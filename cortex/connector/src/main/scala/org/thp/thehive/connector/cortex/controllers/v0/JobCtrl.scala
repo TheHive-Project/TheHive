@@ -5,16 +5,18 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, ErrorHandler}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
-import org.thp.thehive.connector.cortex.models.{ObservableJob, RichJob}
-import org.thp.thehive.connector.cortex.services.{JobSrv, JobSteps}
+import org.thp.thehive.connector.cortex.models.{Job, RichJob}
+import org.thp.thehive.connector.cortex.services.JobOps._
+import org.thp.thehive.connector.cortex.services.JobSrv
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
 import org.thp.thehive.models.{Permissions, RichCase, RichObservable}
-import org.thp.thehive.services.{ObservableSrv, ObservableSteps}
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.ObservableSrv
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -33,31 +35,25 @@ class JobCtrl @Inject() (
     with JobRenderer {
   lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "job"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.job ::: metaProperties[JobSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.job
   override val initialQuery: Query =
-    Query.init[JobSteps]("listJob", (graph, authContext) => jobSrv.initSteps(graph).visible(authContext))
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, JobSteps](
+    Query.init[Traversal.V[Job]]("listJob", (graph, authContext) => jobSrv.startTraversal(graph).visible(authContext))
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Job]](
     "getJob",
     FieldsParser[IdOrName],
     (param, graph, authContext) => jobSrv.get(param.idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
-    Query.withParam[OutputParam, JobSteps, PagedResult[(RichJob, Option[(RichObservable, RichCase)])]](
+    Query.withParam[OutputParam, Traversal.V[Job], IteratorOutput](
       "page",
       FieldsParser[OutputParam], {
         case (OutputParam(from, to, _, withParents), jobSteps, authContext) if withParents > 0 =>
           jobSteps.richPage(from, to, withTotal = true)(_.richJobWithCustomRenderer(jobParents(_)(authContext))(authContext))
-        case (range, jobSteps, authContext) => jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob(authContext).map((_, None)))
+        case (range, jobSteps, authContext) =>
+          jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob(authContext).domainMap((_, None: Option[(RichObservable, RichCase)])))
       }
     )
-  override val outputQuery: Query = Query.outputWithContext[RichJob, JobSteps]((jobSteps, authContext) => jobSteps.richJob(authContext))
-
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[ObservableSteps, JobSteps](
-      "jobs",
-      (observableSteps, _) => new JobSteps(observableSteps.outTo[ObservableJob].raw)(db, observableSteps.graph)
-    )
-  )
+  override val outputQuery: Query = Query.outputWithContext[RichJob, Traversal.V[Job]]((jobSteps, authContext) => jobSteps.richJob(authContext))
 
   def get(jobId: String): Action[AnyContent] =
     entrypoint("get job")
@@ -66,7 +62,7 @@ class JobCtrl @Inject() (
           .getByIds(jobId)
           .visible
           .richJob
-          .getOrFail()
+          .getOrFail("Job")
           .map(job => Results.Ok(job.toJson))
       }
 

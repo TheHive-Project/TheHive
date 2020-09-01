@@ -1,14 +1,14 @@
 package org.thp.thehive.connector.misp.services
 
 import akka.stream.Materializer
-import gremlin.scala.P
 import javax.inject.Inject
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
 import org.thp.misp.client.{MispClient, MispPurpose}
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.models.HealthStatus
-import org.thp.thehive.services.OrganisationSteps
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.thehive.models.{HealthStatus, Organisation}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClientConfig
@@ -137,7 +137,7 @@ class TheHiveMispClient(
     case MispPurpose.ExportOnly      => (false, true)
   }
 
-  def organisationFilter(organisationSteps: OrganisationSteps): OrganisationSteps = {
+  def organisationFilter(organisationSteps: Traversal.V[Organisation]): Traversal.V[Organisation] = {
     val includedOrgs =
       if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
       else organisationSteps.has("name", P.within(includedTheHiveOrganisations))

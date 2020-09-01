@@ -1,28 +1,27 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.{CreateError, EntitySteps}
+import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.ImpactStatus
+import org.thp.thehive.services.ImpactStatusOps._
 
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ImpactStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(
     implicit @Named("with-thehive-schema") db: Database
-) extends VertexSrv[ImpactStatus, ImpactStatusSteps] {
+) extends VertexSrv[ImpactStatus] {
 
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ImpactStatusSteps = new ImpactStatusSteps(raw)
-
-  override def get(idOrName: String)(implicit graph: Graph): ImpactStatusSteps =
+  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[ImpactStatus] =
     if (db.isValidId(idOrName)) getByIds(idOrName)
-    else initSteps.getByName(idOrName)
+    else startTraversal.getByName(idOrName)
 
   override def createEntity(e: ImpactStatus)(implicit graph: Graph, authContext: AuthContext): Try[ImpactStatus with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("ImpactStatus")
@@ -35,25 +34,22 @@ class ImpactStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckA
     else
       createEntity(impactStatus)
 
-  override def exists(e: ImpactStatus)(implicit graph: Graph): Boolean = initSteps.getByName(e.value).exists()
+  override def exists(e: ImpactStatus)(implicit graph: Graph): Boolean = startTraversal.getByName(e.value).exists
 }
 
-@EntitySteps[ImpactStatus]
-class ImpactStatusSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
-    extends VertexSteps[ImpactStatus](raw) {
-  override def newInstance(newRaw: GremlinScala[Vertex]): ImpactStatusSteps = new ImpactStatusSteps(newRaw)
-  override def newInstance(): ImpactStatusSteps                             = new ImpactStatusSteps(raw.clone())
+object ImpactStatusOps {
+  implicit class ImpactStatusOpsDefs(traversal: Traversal.V[ImpactStatus]) {
+    def get(idOrName: String)(implicit db: Database): Traversal.V[ImpactStatus] =
+      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
+      else getByName(idOrName)
 
-  def get(idOrName: String): ImpactStatusSteps =
-    if (db.isValidId(idOrName)) this.getByIds(idOrName)
-    else getByName(idOrName)
-
-  def getByName(name: String): ImpactStatusSteps = new ImpactStatusSteps(raw.has(Key("value") of name))
+    def getByName(name: String): Traversal.V[ImpactStatus] = traversal.has("value", name).v[ImpactStatus]
+  }
 }
 
 class ImpactStatusIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ImpactStatusSrv)
     extends IntegrityCheckOps[ImpactStatus] {
-  override def resolve(entities: List[ImpactStatus with Entity])(implicit graph: Graph): Try[Unit] = entities match {
+  override def resolve(entities: Seq[ImpactStatus with Entity])(implicit graph: Graph): Try[Unit] = entities match {
     case head :: tail =>
       tail.foreach(copyEdge(_, head))
       service.getByIds(tail.map(_._id): _*).remove()

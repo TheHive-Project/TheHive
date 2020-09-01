@@ -1,41 +1,41 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.models.UniMapping
+import org.thp.scalligraph.models.UMapping
 import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.connector.cortex.models.ActionContext
-import org.thp.thehive.connector.cortex.services.{ActionSteps, AnalyzerTemplateSteps, JobSteps}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.thehive.connector.cortex.models.{Action, ActionContext, AnalyzerTemplate, Job}
+import org.thp.thehive.connector.cortex.services.ActionOps._
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
 
 @Singleton
 class Properties @Inject() () {
 
   lazy val action: List[PublicProperty[_, _]] =
-    PublicPropertyListBuilder[ActionSteps]
-      .property("responderId", UniMapping.string)(_.field.readonly)
-      .property("objectType", UniMapping.string)(_.select(_.context.map(o => fromObjectType(o._model.label))).readonly)
-      .property("status", UniMapping.string)(_.field.readonly)
-      .property("startDate", UniMapping.date)(_.field.readonly)
-      .property("objectId", UniMapping.id)(_.select(_.outTo[ActionContext]._id).readonly)
-      .property("responderName", UniMapping.string.optional)(_.field.readonly)
-      .property("cortexId", UniMapping.string.optional)(_.field.readonly)
-      .property("tlp", UniMapping.int.optional)(_.field.readonly)
+    PublicPropertyListBuilder[Action]
+      .property("responderId", UMapping.string)(_.field.readonly)
+      .property("objectType", UMapping.string)(_.select(_.context.domainMap(o => fromObjectType(o._label))).readonly)
+      .property("status", UMapping.string)(_.field.readonly)
+      .property("startDate", UMapping.date)(_.field.readonly)
+      .property("objectId", UMapping.id)(_.select(_.out[ActionContext]._id).readonly)
+      .property("responderName", UMapping.string.optional)(_.field.readonly)
+      .property("cortexId", UMapping.string.optional)(_.field.readonly)
+      .property("tlp", UMapping.int.optional)(_.field.readonly)
       .build
 
   lazy val analyzerTemplate: List[PublicProperty[_, _]] =
-    PublicPropertyListBuilder[AnalyzerTemplateSteps]
-      .property("analyzerId", UniMapping.string)(_.rename("workerId").readonly)
-      .property("reportType", UniMapping.string)(_.field.readonly)
-      .property("content", UniMapping.string)(_.field.updatable)
+    PublicPropertyListBuilder[AnalyzerTemplate]
+      .property("analyzerId", UMapping.string)(_.rename("workerId").readonly)
+      .property("reportType", UMapping.string)(_.field.readonly)
+      .property("content", UMapping.string)(_.field.updatable)
       .build
 
   val job: List[PublicProperty[_, _]] =
-    PublicPropertyListBuilder[JobSteps]
-      .property("analyzerId", UniMapping.string)(_.rename("workerId").readonly)
-      .property("cortexId", UniMapping.string.optional)(_.field.readonly)
-      .property("startDate", UniMapping.date)(_.field.readonly)
-      .property("status", UniMapping.string)(_.field.readonly)
-      .property("analyzerDefinition", UniMapping.string)(_.rename("workerDefinition").readonly)
+    PublicPropertyListBuilder[Job]
+      .property("analyzerId", UMapping.string)(_.rename("workerId").readonly)
+      .property("cortexId", UMapping.string.optional)(_.field.readonly)
+      .property("startDate", UMapping.date)(_.field.readonly)
+      .property("status", UMapping.string)(_.field.readonly)
+      .property("analyzerDefinition", UMapping.string)(_.rename("workerDefinition").readonly)
       .build
 }

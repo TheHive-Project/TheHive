@@ -7,17 +7,17 @@ import akka.NotUsed
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.stream.{IOResult, Materializer}
 import akka.util.ByteString
-import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{StorageSrv, VertexSrv}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
+import org.thp.thehive.services.AttachmentOps._
 import play.api.Configuration
 
 import scala.concurrent.Future
@@ -27,11 +27,9 @@ import scala.util.Try
 class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(
     implicit @Named("with-thehive-schema") db: Database,
     mat: Materializer
-) extends VertexSrv[Attachment, AttachmentSteps] {
+) extends VertexSrv[Attachment] {
 
   val hashers: Hasher = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AttachmentSteps = new AttachmentSteps(raw)
 
   def create(file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] = {
     val hs = hashers.fromPath(file.filepath)
@@ -63,9 +61,9 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
     storageSrv.saveBinary("attachment", id, data).flatMap(_ => createEntity(Attachment(filename, size, contentType, hs, id)))
   }
 
-  override def get(idOrAttachmentId: String)(implicit graph: Graph): AttachmentSteps =
+  override def get(idOrAttachmentId: String)(implicit graph: Graph): Traversal.V[Attachment] =
     if (db.isValidId(idOrAttachmentId)) getByIds(idOrAttachmentId)
-    else initSteps.getByAttachmentId(idOrAttachmentId)
+    else startTraversal.getByAttachmentId(idOrAttachmentId)
 
   def source(attachment: Attachment with Entity): Source[ByteString, Future[IOResult]] =
     StreamConverters.fromInputStream(() => stream(attachment))
@@ -80,13 +78,11 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
 
 }
 
-@EntitySteps[Attachment]
-class AttachmentSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
-    extends VertexSteps[Attachment](raw) {
-  override def newInstance(newRaw: GremlinScala[Vertex]): AttachmentSteps = new AttachmentSteps(newRaw)
-  override def newInstance(): AttachmentSteps                             = new AttachmentSteps(raw.clone())
+object AttachmentOps {
+  implicit class AttachmentOpsDefs(traversal: Traversal.V[Attachment]) {
+    def getByAttachmentId(attachmentId: String): Traversal.V[Attachment] = traversal.has("attachmentId", attachmentId)
 
-  def getByAttachmentId(attachmentId: String): AttachmentSteps = this.has("attachmentId", attachmentId)
+    def visible(implicit authContext: AuthContext): Traversal.V[Attachment] = traversal // TODO
 
-  def visible(implicit authContext: AuthContext): AttachmentSteps = this // TODO
+  }
 }

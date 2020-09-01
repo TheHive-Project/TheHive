@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{FObject, FieldsParser}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 
 case class OutputParam(from: Long, to: Long, extraData: Set[String])
@@ -37,7 +37,15 @@ class TheHiveQueryExecutor @Inject() (
     caseCtrl :: taskCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: organisationCtrl :: auditCtrl :: observableCtrl :: logCtrl :: Nil
   override val version: (Int, Int) = 1 -> 1
 
-  override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
+  def metaProperties: List[PublicProperty[_, _]] =
+    PublicPropertyListBuilder[Product]
+      .property("_createdBy", UMapping.string)(_.field.readonly)
+      .property("_createdAt", UMapping.date)(_.field.readonly)
+      .property("_updatedBy", UMapping.string.optional)(_.field.readonly)
+      .property("_updatedAt", UMapping.date.optional)(_.field.readonly)
+      .build
+
+  override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties) ::: metaProperties
 
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) :::

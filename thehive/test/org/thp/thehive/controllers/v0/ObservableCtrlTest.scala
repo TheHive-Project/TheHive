@@ -8,11 +8,12 @@ import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
+import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.DataSrv
 import play.api.Configuration
 import play.api.libs.Files
@@ -282,7 +283,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
     val dataSrv: DataSrv = app.apply[DataSrv]
     val db: Database     = app.apply[Database]
     db.roTransaction { implicit graph =>
-      dataSrv.initSteps.getByData(data).toList
+      dataSrv.startTraversal.getByData(data).toList
     }
   }
 }

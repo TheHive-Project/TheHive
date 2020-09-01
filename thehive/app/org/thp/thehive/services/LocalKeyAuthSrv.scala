@@ -6,7 +6,8 @@ import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
@@ -33,9 +34,9 @@ class LocalKeyAuthSrv(
   override def authenticate(key: String, organisation: Option[String])(implicit request: RequestHeader): Try[AuthContext] =
     db.roTransaction { implicit graph =>
       userSrv
-        .initSteps
+        .startTraversal
         .getByAPIKey(key)
-        .getOrFail()
+        .getOrFail("User")
         .flatMap(user => localUserSrv.getAuthContext(request, user.login, organisation))
     }
 
@@ -44,8 +45,9 @@ class LocalKeyAuthSrv(
       val newKey = generateKey()
       userSrv
         .get(username)
-        .update("apikey" -> Some(newKey))
-        .map(_ => newKey)
+        .update(_.apikey, Some(newKey))
+        .domainMap(_ => newKey)
+        .getOrFail("User")
     }
 
   override def getKey(username: String)(implicit authContext: AuthContext): Try[String] =
@@ -59,8 +61,9 @@ class LocalKeyAuthSrv(
     db.tryTransaction { implicit graph =>
       userSrv
         .get(username)
-        .update("apikey" -> None)
-        .map(_ => ())
+        .update(_.apikey, None)
+        .domainMap(_ => ())
+        .getOrFail("User")
     }
 }
 

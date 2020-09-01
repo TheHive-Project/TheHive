@@ -11,7 +11,7 @@ object OutputEntity {
   implicit val format: OFormat[OutputEntity] = Json.format[OutputEntity]
 
   def apply(e: Entity): OutputEntity = OutputEntity(
-    e._model.label,
+    e._label,
     e._id,
     e._createdAt,
     e._createdBy,

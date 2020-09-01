@@ -1,6 +1,6 @@
 package org.thp.thehive.models
 
-import org.thp.scalligraph.VertexEntity
+import org.thp.scalligraph.BuildVertexEntity
 import org.thp.scalligraph.models.{DefineIndex, IndexType}
 import play.api.Logger
 
@@ -8,7 +8,7 @@ import scala.util.Try
 import scala.util.matching.Regex
 
 @DefineIndex(IndexType.unique, "namespace", "predicate", "value")
-@VertexEntity
+@BuildVertexEntity
 case class Tag(
     namespace: String,
     predicate: String,

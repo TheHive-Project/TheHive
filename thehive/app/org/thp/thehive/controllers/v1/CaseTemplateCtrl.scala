@@ -4,12 +4,14 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCaseTemplate
-import org.thp.thehive.models.{Permissions, RichCaseTemplate}
-import org.thp.thehive.services.{CaseTemplateSrv, CaseTemplateSteps, OrganisationSrv}
+import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate}
+import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -17,27 +19,28 @@ import scala.util.Success
 @Singleton
 class CaseTemplateCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                           = "caseTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.caseTemplate ::: metaProperties[CaseTemplateSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.caseTemplate
   override val initialQuery: Query =
-    Query.init[CaseTemplateSteps]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseTemplateSteps](
+    Query
+      .init[Traversal.V[CaseTemplate]]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[CaseTemplate]](
     "getCaseTemplate",
     FieldsParser[IdOrName],
     (param, graph, authContext) => caseTemplateSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseTemplateSteps, PagedResult[RichCaseTemplate]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CaseTemplate], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richCaseTemplate)
   )
-  override val outputQuery: Query               = Query.output[RichCaseTemplate, CaseTemplateSteps](_.richCaseTemplate)
+  override val outputQuery: Query               = Query.output[RichCaseTemplate, Traversal.V[CaseTemplate]](_.richCaseTemplate)
   override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
   def create: Action[AnyContent] =
@@ -68,10 +71,10 @@ class CaseTemplateCtrl @Inject() (
     entrypoint("list case template")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val caseTemplates = caseTemplateSrv
-          .initSteps
+          .startTraversal
           .visible
           .richCaseTemplate
-          .toList
+          .toSeq
         Success(Results.Ok(caseTemplates.toJson))
       }
 

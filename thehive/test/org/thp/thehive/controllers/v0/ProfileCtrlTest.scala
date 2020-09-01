@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputProfile
 import org.thp.thehive.models.Profile
@@ -58,7 +58,7 @@ class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[ProfileCtrl].delete("testProfile")(request)
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
       app[Database].roTransaction { implicit graph =>
-        app[ProfileSrv].get("testProfile").exists() must beFalse
+        app[ProfileSrv].get("testProfile").exists must beFalse
       }
     }
 

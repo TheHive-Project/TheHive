@@ -6,20 +6,21 @@ import java.util.Date
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
-import gremlin.scala.{__, By, Key, P, Vertex}
 import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.services.RichVertexGremlinScala
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -75,13 +76,13 @@ class MispImportSrv @Inject() (
         db.roTransaction { implicit graph =>
           observableTypeSrv
             .get(attrConv.`type`)
-            .headOption()
+            .headOption
             .map(_ -> attrConv.tags)
         }
       }
     db.roTransaction { implicit graph =>
       obsTypeFromConfig
-        .orElse(observableTypeSrv.get(attributeType).headOption().map(_ -> Nil))
+        .orElse(observableTypeSrv.get(attributeType).headOption.map(_ -> Nil))
         .fold(observableTypeSrv.getOrFail("other").map(_ -> Seq.empty[String]))(Success(_))
     }
   }
@@ -152,27 +153,23 @@ class MispImportSrv @Inject() (
       }
 
   def getLastSyncDate(client: TheHiveMispClient, mispOrganisation: String, organisations: Seq[Organisation with Entity]): Option[Date] = {
-    val lastOrgSynchro = db
-      .roTransaction { implicit graph =>
-        client
-          .organisationFilter(organisationSrv.initSteps)
-          .groupBy(
-            By(),
-            By(
-              __[Vertex]
-                .inTo[AlertOrganisation]
-                .has(Key("source") of mispOrganisation)
-                .has(Key("type") of "misp")
-                .value[Date]("lastSyncDate")
-                .max[Date]
-            )
+    val lastOrgSynchro = db.roTransaction { implicit graph =>
+      client
+        .organisationFilter(organisationSrv.startTraversal)
+        .group(
+          _.by,
+          _.by(
+            _.in[AlertOrganisation]
+              .v[Alert]
+              .has("source", mispOrganisation)
+              .has("type", "misp")
+              .value(_.lastSyncDate)
+              .max
           )
-          .head()
-      }
-      .values()
-      .asScala
-      .toSeq
-      .asInstanceOf[Seq[Date]]
+        )
+        .head
+    }.values
+//      .asInstanceOf[Seq[Date]]
 
     if (lastOrgSynchro.size == organisations.size && organisations.nonEmpty) Some(lastOrgSynchro.min)
     else None
@@ -192,7 +189,7 @@ class MispImportSrv @Inject() (
         .filterOnType(observableType.name)
         .filterOnData(data)
         .richObservable
-        .headOption() match {
+        .headOption match {
         case None =>
           logger.debug(s"Observable ${observableType.name}:$data doesn't exist, create it")
           for {
@@ -201,13 +198,15 @@ class MispImportSrv @Inject() (
           } yield richObservable.observable
         case Some(richObservable) =>
           logger.debug(s"Observable ${observableType.name}:$data exists, update it")
-          val updateFields = (if (richObservable.message != observable.message) Seq("message" -> observable.message) else Nil) ++
-            (if (richObservable.tlp != observable.tlp) Seq("tlp"             -> observable.tlp) else Nil) ++
-            (if (richObservable.ioc != observable.ioc) Seq("ioc"             -> observable.ioc) else Nil) ++
-            (if (richObservable.sighted != observable.sighted) Seq("sighted" -> observable.sighted) else Nil)
-          for { // update observable even if updateFields is empty in order to remove unupdated observables
-            updatedObservable <- observableSrv.get(richObservable.observable).updateOne(updateFields: _*)
-            _                 <- observableSrv.updateTagNames(updatedObservable, tags)
+          for {
+            updatedObservable <- Some(observableSrv.get(richObservable.observable))
+              .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
+              .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
+              .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
+              .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
+              .get
+              .getOrFail("Observable")
+            _ <- observableSrv.updateTagNames(updatedObservable, tags)
           } yield updatedObservable
       }
     }
@@ -229,7 +228,7 @@ class MispImportSrv @Inject() (
         .filterOnAttachmentName(filename)
         .filterOnAttachmentName(contentType)
         .richObservable
-        .headOption()
+        .headOption
     } match {
       case None =>
         logger.debug(s"Observable ${observableType.name}:$filename:$contentType doesn't exist, create it")
@@ -250,15 +249,17 @@ class MispImportSrv @Inject() (
           .andThen { case _ => Files.delete(file) }
       case Some(richObservable) =>
         logger.debug(s"Observable ${observableType.name}:$filename:$contentType exists, update it")
-        val updateFields = (if (richObservable.message != observable.message) Seq("message" -> observable.message) else Nil) ++
-          (if (richObservable.tlp != observable.tlp) Seq("tlp"             -> observable.tlp) else Nil) ++
-          (if (richObservable.ioc != observable.ioc) Seq("ioc"             -> observable.ioc) else Nil) ++
-          (if (richObservable.sighted != observable.sighted) Seq("sighted" -> observable.sighted) else Nil)
         Future.fromTry {
           db.tryTransaction { implicit graph =>
-            for { // update observable even if updateFields is empty in order to remove unupdated observables
-              updatedObservable <- observableSrv.get(richObservable.observable).updateOne(updateFields: _*)
-              _                 <- observableSrv.updateTagNames(updatedObservable, tags)
+            for {
+              updatedObservable <- Some(observableSrv.get(richObservable.observable))
+                .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
+                .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
+                .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
+                .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
+                .get
+                .getOrFail("Observable")
+              _ <- observableSrv.updateTagNames(updatedObservable, tags)
             } yield updatedObservable
           }
         }
@@ -346,25 +347,27 @@ class MispImportSrv @Inject() (
           .alerts
           .getBySourceId("misp", mispOrganisation, event.id)
           .richAlert
-          .headOption() match {
+          .headOption match {
           case None => // if the related alert doesn't exist, create it
             logger.debug(s"Event ${client.name}#${event.id} has no related alert for organisation ${organisation.name}")
             alertSrv
               .create(alert, organisation, event.tags.map(_.name).toSet, Map.empty[String, Option[Any]], caseTemplate)
               .map(_.alert)
-          case Some(richAlert) =>
+          case someAlert @ Some(richAlert) =>
             logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
-            val updateFields = (if (richAlert.title != alert.title) Seq("title" -> alert.title) else Nil) ++
-              (if (richAlert.lastSyncDate != alert.lastSyncDate) Seq("lastSyncDate" -> alert.lastSyncDate) else Nil) ++
-              (if (richAlert.description != alert.description) Seq("description"    -> alert.description) else Nil) ++
-              (if (richAlert.severity != alert.severity) Seq("severity"             -> alert.severity) else Nil) ++
-              (if (richAlert.date != alert.date) Seq("date"                         -> alert.date) else Nil) ++
-              (if (richAlert.tlp != alert.tlp) Seq("tlp"                            -> alert.tlp) else Nil) ++
-              (if (richAlert.pap != alert.pap) Seq("pap"                            -> alert.pap) else Nil) ++
-              (if (richAlert.externalLink != alert.externalLink) Seq("externalLink" -> alert.externalLink) else Nil)
             for {
-              updatedAlert <- if (updateFields.nonEmpty) alertSrv.get(richAlert.alert).updateOne(updateFields: _*) else Success(richAlert.alert)
-              _            <- alertSrv.updateTagNames(updatedAlert, event.tags.map(_.name).toSet)
+              updatedAlert <- Some(alertSrv.get(richAlert.alert))
+                .map(t => if (richAlert.title != alert.title) t.update(_.title, alert.title) else t)
+                .map(t => if (richAlert.lastSyncDate != alert.lastSyncDate) t.update(_.lastSyncDate, alert.lastSyncDate) else t)
+                .map(t => if (richAlert.description != alert.description) t.update(_.description, alert.description) else t)
+                .map(t => if (richAlert.severity != alert.severity) t.update(_.severity, alert.severity) else t)
+                .map(t => if (richAlert.date != alert.date) t.update(_.date, alert.date) else t)
+                .map(t => if (richAlert.tlp != alert.tlp) t.update(_.tlp, alert.tlp) else t)
+                .map(t => if (richAlert.pap != alert.pap) t.update(_.pap, alert.pap) else t)
+                .map(t => if (richAlert.externalLink != alert.externalLink) t.update(_.externalLink, alert.externalLink) else t)
+                .get
+                .getOrFail("Alert")
+              _ <- alertSrv.updateTagNames(updatedAlert, event.tags.map(_.name).toSet)
             } yield updatedAlert
         }
       }
@@ -375,30 +378,34 @@ class MispImportSrv @Inject() (
     Future.fromTry(client.currentOrganisationName).flatMap { mispOrganisation =>
       lazy val caseTemplate = client.caseTemplate.flatMap { caseTemplateName =>
         db.roTransaction { implicit graph =>
-          caseTemplateSrv.get(caseTemplateName).headOption()
+          caseTemplateSrv.get(caseTemplateName).headOption
         }
       }
+      logger.debug(s"Get eligible organisations")
       val organisations = db.roTransaction { implicit graph =>
-        client.organisationFilter(organisationSrv.initSteps).toList
+        client.organisationFilter(organisationSrv.startTraversal).toSeq
       }
       val lastSynchro = getLastSyncDate(client, mispOrganisation, organisations)
       logger.debug(s"Last synchronisation is $lastSynchro")
       client
         .searchEvents(publishDate = lastSynchro)
         .runWith(Sink.foreachAsync(1) { event =>
-          logger.debug(s"Importing event ${client.name}#${event.id}")
+          logger.debug(s"Importing event ${client.name}#${event.id} in organisation(s): ${organisations.mkString(",")}")
           Future
             .traverse(organisations) { organisation =>
               Future
                 .fromTry(updateOrCreateAlert(client, organisation, mispOrganisation, event, caseTemplate))
                 .flatMap(alert => importAttibutes(client, event, alert, lastSynchro))
-                .recoverWith {
+                .recover {
                   case error =>
                     logger.warn(s"Unable to create alert from MISP event ${client.name}#${event.id}", error)
-                    Future.successful(())
                 }
             }
             .map(_ => ())
+            .recover {
+              case error =>
+                logger.warn(s"Unable to create alert from MISP event ${client.name}#${event.id}", error)
+            }
         })
         .map(_ => ())
     }
