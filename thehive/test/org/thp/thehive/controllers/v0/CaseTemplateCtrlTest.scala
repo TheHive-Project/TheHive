@@ -1,9 +1,10 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputCaseTemplate
+import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CaseTemplateSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -132,7 +133,7 @@ class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val updatedOutput = app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get("spam").richCaseTemplate.head()
+        app[CaseTemplateSrv].get("spam").richCaseTemplate.head
       }
 
       updatedOutput.displayName shouldEqual "patched"

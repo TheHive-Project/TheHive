@@ -3,15 +3,17 @@ package org.thp.thehive.controllers.v0
 import java.nio.file.Files
 
 import javax.inject.{Inject, Named}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser, Renderer}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{PagedResult, Traversal}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
-import org.thp.thehive.services.{TagSrv, TagSteps}
+import org.thp.thehive.services.TagOps._
+import org.thp.thehive.services.TagSrv
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -24,25 +26,25 @@ class TagCtrl @Inject() (
     tagSrv: TagSrv
 ) extends QueryableCtrl {
   override val entityName: String                           = "tag"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.tag ::: metaProperties[TagSteps]
-  override val initialQuery: Query                          = Query.init[TagSteps]("listTag", (graph, _) => tagSrv.initSteps(graph))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TagSteps, PagedResult[Tag with Entity]](
+  override val publicProperties: List[PublicProperty[_, _]] = properties.tag
+  override val initialQuery: Query                          = Query.init[Traversal.V[Tag]]("listTag", (graph, _) => tagSrv.startTraversal(graph))
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Tag with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TagSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Tag]](
     "getTag",
     FieldsParser[IdOrName],
     (param, graph, _) => tagSrv.get(param.idOrName)(graph)
   )
-  implicit val stringRenderer: Renderer.Aux[String, String] = Renderer.json[String, String](identity)
+  implicit val stringRenderer: Renderer[String] = Renderer.toJson[String, String](identity)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[TagSteps, TagSteps]("fromCase", (tagSteps, _) => tagSteps.fromCase),
-    Query[TagSteps, TagSteps]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
-    Query[TagSteps, Traversal[String, String]]("text", (tagSteps, _) => tagSteps.displayName),
-    Query.output[String, Traversal[String, String]]
+    Query[Traversal.V[Tag], Traversal.V[Tag]]("fromCase", (tagSteps, _) => tagSteps.fromCase),
+    Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
+    Query[Traversal.V[Tag], Traversal[String, Vertex, Converter[String, Vertex]]]("text", (tagSteps, _) => tagSteps.displayName),
+    Query.output[String, Traversal[String, Vertex, Converter[String, Vertex]]]
   )
 
   def importTaxonomy: Action[AnyContent] =
@@ -57,7 +59,7 @@ class TagCtrl @Inject() (
           content.fold(Seq.empty[Tag])(parseTaxonomy)
 
         tags
-          .filterNot(tagSrv.initSteps.getTag(_).exists())
+          .filterNot(tagSrv.startTraversal.getTag(_).exists)
           .toTry(tagSrv.create)
           .map(ts => Results.Ok(JsNumber(ts.size)))
       }

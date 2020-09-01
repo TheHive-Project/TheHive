@@ -4,14 +4,18 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
-import org.thp.thehive.models.{Permissions, RichCase, User}
+import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.{Success, Try}
@@ -19,41 +23,42 @@ import scala.util.{Success, Try}
 @Singleton
 class CaseCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     tagSrv: TagSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl
     with CaseRenderer {
 
   override val entityName: String                           = "case"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.`case` ::: metaProperties[CaseSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.`case`
   override val initialQuery: Query =
-    Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseSteps](
+    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Case]](
     "getCase",
     FieldsParser[IdOrName],
     (param, graph, authContext) => caseSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
     "page",
-    FieldsParser[OutputParam], {
+    FieldsParser[OutputParam],
+    {
       case (OutputParam(from, to, extraData), caseSteps, authContext) =>
         caseSteps.richPage(from, to, extraData.contains("total")) {
-          _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext, db, caseSteps.graph))(authContext)
+          _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext))(authContext)
         }
     }
   )
-  override val outputQuery: Query = Query.outputWithContext[RichCase, CaseSteps]((caseSteps, authContext) => caseSteps.richCase(authContext))
+  override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
-    Query[CaseSteps, ObservableSteps]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
-    Query[CaseSteps, UserSteps]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
-    Query[CaseSteps, OrganisationSteps]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
-    Query[CaseSteps, AlertSteps]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(authContext))
+    Query[Traversal.V[Case], Traversal.V[Task]]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Observable]]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
+    Query[Traversal.V[Case], Traversal.V[User]]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Organisation]]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Alert]]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(authContext))
   )
 
   def create: Action[AnyContent] =
@@ -78,7 +83,7 @@ class CaseCtrl @Inject() (
             tags.toSet,
             customFields,
             caseTemplate,
-            inputTasks.map(t => t.toTask -> t.assignee.flatMap(userSrv.get(_).headOption()))
+            inputTasks.map(t => t.toTask -> t.assignee.flatMap(userSrv.get(_).headOption))
           )
         } yield Results.Created(richCase.toJson)
       }
@@ -110,7 +115,8 @@ class CaseCtrl @Inject() (
         caseSrv
           .get(caseIdOrNumber)
           .can(Permissions.manageCase)
-          .update("status" -> "deleted")
+          .update(_.status, CaseStatus.Deleted)
+          .getOrFail("Case")
           .map(_ => Results.NoContent)
       }
 

@@ -4,7 +4,7 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.Permissions
@@ -36,8 +36,8 @@ class CustomFieldCtrl @Inject() (
     entrypoint("list custom fields")
       .authRoTransaction(db) { _ => implicit graph =>
         val customFields = customFieldSrv
-          .initSteps
-          .toList
+          .startTraversal
+          .toSeq
         Success(Results.Ok(customFields.toJson))
       }
 

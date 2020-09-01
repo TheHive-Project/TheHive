@@ -1,22 +1,23 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import gremlin.scala.{Graph, GremlinScala, Key, Vertex}
 import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.{CaseTag, ObservableTag, Tag}
+import org.thp.thehive.services.TagOps._
 
 import scala.util.{Success, Try}
 
 @Singleton
 class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
     implicit @Named("with-thehive-schema") db: Database
-) extends VertexSrv[Tag, TagSteps] {
+) extends VertexSrv[Tag] {
 
   val autoCreateConfig: ConfigItem[Boolean, Boolean] =
     appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
@@ -38,15 +39,13 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
     )
   def defaultColour: Int = defaultColourConfig.get
 
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): TagSteps = new TagSteps(raw)
-
   def parseString(tagName: String): Tag =
     Tag.fromString(tagName, defaultNamespace, defaultColour)
 
-  override def get(idOrName: String)(implicit graph: Graph): TagSteps =
+  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[Tag] =
     getByIds(idOrName)
 
-  def getTag(tag: Tag)(implicit graph: Graph): TagSteps = initSteps.getTag(tag)
+  def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     val tag = parseString(tagName)
@@ -62,34 +61,34 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
 
   def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = createEntity(tag)
 
-  override def exists(e: Tag)(implicit graph: Graph): Boolean = initSteps.getByName(e.namespace, e.predicate, e.value).exists()
+  override def exists(e: Tag)(implicit graph: Graph): Boolean = startTraversal.getByName(e.namespace, e.predicate, e.value).exists
 }
 
-class TagSteps(raw: GremlinScala[Vertex])(implicit db: Database, graph: Graph) extends VertexSteps[Tag](raw) {
-  override def newInstance(newRaw: GremlinScala[Vertex]): TagSteps = new TagSteps(newRaw)
-  override def newInstance(): TagSteps                             = new TagSteps(raw.clone())
+object TagOps {
 
-  def getTag(tag: Tag): TagSteps = getByName(tag.namespace, tag.predicate, tag.value)
+  implicit class TagOpsDefs(traversal: Traversal.V[Tag]) {
 
-  def getByName(namespace: String, predicate: String, value: Option[String]): TagSteps = {
-    val step = newInstance(
-      raw
-        .has(Key("namespace") of namespace)
-        .has(Key("predicate") of predicate)
-    )
-    value.fold(step.hasNot("value"))(v => step.has("value", v))
+    def getTag(tag: Tag): Traversal.V[Tag] = getByName(tag.namespace, tag.predicate, tag.value)
+
+    def getByName(namespace: String, predicate: String, value: Option[String]): Traversal.V[Tag] = {
+      val step = traversal
+        .has("namespace", namespace)
+        .has("predicate", predicate)
+      value.fold(step.hasNot("value"))(v => step.has("value", v))
+    }
+
+    def displayName: Traversal[String, Vertex, Converter[String, Vertex]] = traversal.domainMap(_.toString)
+
+    def fromCase: Traversal.V[Tag] = traversal.filter(_.in[CaseTag])
+
+    def fromObservable: Traversal.V[Tag] = traversal.filter(_.in[ObservableTag])
   }
 
-  def displayName: Traversal[String, String] = this.map(_.toString)
-
-  def fromCase: TagSteps = this.filter(_.inTo[CaseTag])
-
-  def fromObservable: TagSteps = this.filter(_.inTo[ObservableTag])
 }
 
 class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
 
-  override def resolve(entities: List[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
+  override def resolve(entities: Seq[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
     firstCreatedEntity(entities).foreach {
       case (head, tail) =>
         tail.foreach(copyEdge(_, head))

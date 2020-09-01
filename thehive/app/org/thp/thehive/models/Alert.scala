@@ -6,7 +6,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 
-@EdgeEntity[Alert, CustomField]
+@BuildEdgeEntity[Alert, CustomField]
 case class AlertCustomField(
     order: Option[Int] = None,
     stringValue: Option[String] = None,
@@ -23,22 +23,22 @@ case class AlertCustomField(
   override def dateValue_=(value: Option[Date]): AlertCustomField       = copy(dateValue = value)
 }
 
-@EdgeEntity[Alert, Observable]
+@BuildEdgeEntity[Alert, Observable]
 case class AlertObservable()
 
-@EdgeEntity[Alert, Organisation]
+@BuildEdgeEntity[Alert, Organisation]
 case class AlertOrganisation()
 
-@EdgeEntity[Alert, Case]
+@BuildEdgeEntity[Alert, Case]
 case class AlertCase()
 
-@EdgeEntity[Alert, CaseTemplate]
+@BuildEdgeEntity[Alert, CaseTemplate]
 case class AlertCaseTemplate()
 
-@EdgeEntity[Alert, Tag]
+@BuildEdgeEntity[Alert, Tag]
 case class AlertTag()
 
-@VertexEntity
+@BuildVertexEntity
 @DefineIndex(IndexType.basic, "type", "source", "sourceRef")
 case class Alert(
     `type`: String,

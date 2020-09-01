@@ -4,7 +4,7 @@ import io.github.nremond.SecureHash
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError}
 import org.thp.thehive.models.User
@@ -63,7 +63,8 @@ class LocalPasswordAuthSrv(@Named("with-thehive-schema") db: Database, userSrv: 
     db.tryTransaction { implicit graph =>
       userSrv
         .get(username)
-        .update("password" -> Some(hashPassword(newPassword)))
+        .update(_.password, Some(hashPassword(newPassword)))
+        .getOrFail("User")
         .map(_ => ())
     }
 }

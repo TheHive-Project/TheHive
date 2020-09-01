@@ -1,27 +1,26 @@
 package org.thp.thehive.services
 
-import java.util.Date
+import java.util.{Map => JMap}
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-import gremlin.scala._
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Transaction.Status
-import org.thp.scalligraph.EntitySteps
+import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.libs.json.{JsObject, JsValue, Json}
 
-import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
-case class PendingAudit(audit: Audit, context: Option[Entity], `object`: Option[Entity])
+case class PendingAudit(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])
 
 @Singleton
 class AuditSrv @Inject() (
@@ -29,7 +28,7 @@ class AuditSrv @Inject() (
     @Named("notification-actor") notificationActor: ActorRef,
     eventSrv: EventSrv
 )(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Audit, AuditSteps] { auditSrv =>
+    extends VertexSrv[Audit] { auditSrv =>
   lazy val userSrv: UserSrv                               = userSrvProvider.get
   val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv                                          = new EdgeSrv[Audited, Audit, Product]
@@ -57,8 +56,6 @@ class AuditSrv @Inject() (
   private var transactionAuditIds: List[(AnyRef, String)] = Nil
   private var unauditedTransactions: Set[AnyRef]          = Set.empty
 
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AuditSteps = new AuditSteps(raw)
-
   /**
     * Gets the main action Audits by ids sorted by date
     * @param order the sort
@@ -66,10 +63,10 @@ class AuditSrv @Inject() (
     * @param graph db
     * @return
     */
-  def getMainByIds(order: Order, ids: String*)(implicit graph: Graph): AuditSteps =
+  def getMainByIds(order: Order, ids: String*)(implicit graph: Graph): Traversal.V[Audit] =
     getByIds(ids: _*)
       .has("mainAction", true)
-      .order(List(By(Key[Date]("_createdAt"), order)))
+      .sort(_.by("_createdAt", order))
 
   def mergeAudits[R](body: => Try[R])(auditCreator: R => Try[Unit])(implicit graph: Graph): Try[R] = {
     val tx = db.currentTransactionId(graph)
@@ -110,13 +107,13 @@ class AuditSrv @Inject() (
     }
   }
 
-  private def createFromPending(tx: AnyRef, audit: Audit, context: Option[Entity], `object`: Option[Entity])(
+  private def createFromPending(tx: AnyRef, audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     logger.debug(s"Store audit entity: $audit")
     for {
-      user         <- userSrv.current.getOrFail()
+      user         <- userSrv.current.getOrFail("User")
       createdAudit <- createEntity(audit)
       _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
       _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
@@ -126,7 +123,10 @@ class AuditSrv @Inject() (
     }
   }
 
-  def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
     def setupCallbacks(tx: AnyRef): Try[Unit] = {
       logger.debug("Setup callbacks for the current transaction")
       db.addTransactionListener {
@@ -157,7 +157,7 @@ class AuditSrv @Inject() (
     }
   }
 
-  def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Entity] = get(audit).`object`.headOption()
+  def getObject(audit: Audit with Entity)(implicit graph: Graph): Option[Product with Entity] = get(audit).`object`.entity.headOption
 
   class ObjectAudit[E <: Product, C <: Product] {
 
@@ -184,7 +184,7 @@ class AuditSrv @Inject() (
       if (details == JsObject.empty) Success(())
       else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity, context: Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def delete(entity: E with Entity, context: Product with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), Some(context), None)
   }
 
@@ -272,91 +272,86 @@ class AuditSrv @Inject() (
   }
 }
 
-@EntitySteps[Audit]
-class AuditSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Audit](raw) {
+object AuditOps {
 
-  def auditContextObjectOrganisation(implicit schema: Schema): Traversal[
-    (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]),
-    (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity])
-  ] =
-    this
-      .project(
-        _.by
-          .by(_.context.fold)
-          .by(_.`object`.fold)
-          .by(_.organisation.fold)
-      )
-      .map {
-        case (audit, context, obj, organisation) =>
-          (
-            audit.as[Audit],
-            context.asScala.headOption.map(_.asEntity),
-            obj.asScala.headOption.map(_.asEntity),
-            organisation.asScala.headOption.map(_.as[Organisation])
-          )
-      }
+  implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
 
-  def richAudit(implicit schema: Schema): Traversal[RichAudit, RichAudit] =
-    this
-      .project(
-        _.by
-          .by(_.`case`.fold)
-          .by(_.context)
-          .by(_.`object`.fold)
-      )
-      .map {
-        case (audit, context, visibilityContext, obj) =>
-          val ctx = if (context.isEmpty) visibilityContext else context.get(0)
-          RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.asEntity, atMostOneOf[Vertex](obj).map(_.asEntity))
+    def auditContextObjectOrganisation
+        : Traversal[(Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]), JMap[String, Any], Converter[
+          (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]),
+          JMap[String, Any]
+        ]] =
+      traversal
+        .project(
+          _.by
+            .by(_.context.entity.fold)
+            .by(_.`object`.entity.fold)
+            .by(_.organisation.v[Organisation].fold)
+        )
+        .domainMap {
+          case (audit, context, obj, organisation) => (audit, context.headOption, obj.headOption, organisation.headOption)
+        }
 
-      }
+    def richAudit: Traversal[RichAudit, JMap[String, Any], Converter[RichAudit, JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.`case`.entity.fold)
+            .by(_.context.entity)
+            .by(_.`object`.entity.fold)
+        )
+        .domainMap {
+          case (audit, context, visibilityContext, obj) =>
+            val ctx = if (context.isEmpty) visibilityContext else context.head
+            RichAudit(audit, ctx, visibilityContext, obj.headOption)
+        }
 
-  def richAuditWithCustomRenderer[A](
-      entityRenderer: AuditSteps => TraversalLike[_, A]
-  )(implicit schema: Schema): Traversal[(RichAudit, A), (RichAudit, A)] =
-    this
-      .project(
-        _.by
-          .by(_.`case`.fold)
-          .by(_.context.fold)
-          .by(_.`object`.fold)
-          .by(entityRenderer)
-      )
-      .collect {
-        case (audit, context, visibilityContext, obj, renderedObject) if !context.isEmpty || !visibilityContext.isEmpty =>
-          val ctx = if (context.isEmpty) visibilityContext.get(0) else context.get(0)
-          RichAudit(audit.as[Audit], ctx.asEntity, visibilityContext.get(0).asEntity, atMostOneOf[Vertex](obj).map(_.asEntity)) -> renderedObject
-      }
+    def richAuditWithCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Audit] => Traversal[D, G, C]
+    ): Traversal[(RichAudit, D), JMap[String, Any], Converter[(RichAudit, D), JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.`case`.entity.fold)
+            .by(_.context.entity.fold)
+            .by(_.`object`.entity.fold)
+            .by(entityRenderer)
+        )
+        .domainMap {
+          case (audit, context, visibilityContext, obj, renderedObject) if context.nonEmpty || visibilityContext.nonEmpty =>
+            val ctx = if (context.isEmpty) visibilityContext.head else context.head
+            RichAudit(audit, ctx, visibilityContext.head, obj.headOption) -> renderedObject
+          // case otherwise // FIXME
+        }
 
-  def forCase(caseId: String): AuditSteps = this.filter(_.`case`.hasId(caseId))
+    def forCase(caseId: String): Traversal.V[Audit] = traversal.filter(_.`case`.hasId(caseId))
 
-  def `case`: CaseSteps =
-    new CaseSteps(
-      raw
-        .outTo[AuditContext]
+    def `case`: Traversal.V[Case] =
+      traversal
+        .out[AuditContext]
         .coalesce(_.in().hasLabel("Share"), _.hasLabel("Share"))
-        .outTo[ShareCase]
-    )
+        .out[ShareCase]
+        .v[Case]
 
-  def organisation: OrganisationSteps = new OrganisationSteps(
-    raw
-      .outTo[AuditContext]
-      .coalesce(
-        _.hasLabel("Organisation"),
-        _.in().hasLabel("Share").inTo[OrganisationShare],
-        _.both().hasLabel("Organisation")
-      )
-  )
-  override def newInstance(newRaw: GremlinScala[Vertex]): AuditSteps = new AuditSteps(newRaw)
+    def organisation: Traversal.V[Organisation] =
+      traversal
+        .out[AuditContext]
+        .coalesce(
+          _.hasLabel("Organisation"),
+          _.in().hasLabel("Share").in[OrganisationShare],
+          _.both().hasLabel("Organisation")
+        )
+        .v[Organisation]
 
-  def visible(implicit authContext: AuthContext): AuditSteps = visible(authContext.organisation)
+    def visible(implicit authContext: AuthContext): Traversal.V[Audit] = visible(authContext.organisation)
 
-  def visible(organisationName: String): AuditSteps = this.filter(_.organisation.has("name", organisationName))
+    def visible(organisationName: String): Traversal.V[Audit] = traversal.filter(_.organisation.has("name", organisationName))
 
-  override def newInstance(): AuditSteps = new AuditSteps(raw.clone())
+    def `object`: Traversal[Vertex, Vertex, IdentityConverter[Vertex]] = traversal.out[Audited]
 
-  def `object`: VertexSteps[_ <: Product] = new VertexSteps[Entity](raw.outTo[Audited])
+    def context: Traversal[Vertex, Vertex, IdentityConverter[Vertex]] = traversal.out[AuditContext]
 
-  def context: VertexSteps[_ <: Product] = new VertexSteps[Entity](raw.outTo[AuditContext])
-//    Traversal(raw.outTo[AuditContext].map(_.asEntity))
+    //    Traversal(raw.out[AuditContext].map(_.asEntity))
+  }
+
 }

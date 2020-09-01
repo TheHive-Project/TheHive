@@ -2,15 +2,21 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Case, CaseStatus, Permissions}
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
+import org.thp.thehive.services.{CaseSrv, FlowActor, OrganisationSrv}
 import play.api.libs.json.JsObject
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
+  override def appConfigure: AppBuilder =
+    super
+      .appConfigure
+      .`override`(_.bindActor[FlowActor]("flow-actor"))
+
   val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
 
   "return a list of audits including the last created one" in testApp { app =>

@@ -1,15 +1,22 @@
 package org.thp.thehive.services
 
-import gremlin.scala._
+import java.util.{Map => JMap}
+
 import javax.inject.{Inject, Named, Provider, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.structure.{Graph, T}
+import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.scalligraph.{CreateError, EntitySteps}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services.TaskOps._
 
 import scala.util.{Failure, Try}
 
@@ -20,7 +27,7 @@ class ShareSrv @Inject() (
     caseSrvProvider: Provider[CaseSrv],
     taskSrv: TaskSrv,
     observableSrvProvider: Provider[ObservableSrv]
-) extends VertexSrv[Share, ShareSteps] {
+) extends VertexSrv[Share] {
   lazy val caseSrv: CaseSrv             = caseSrvProvider.get
   lazy val observableSrv: ObservableSrv = observableSrvProvider.get
 
@@ -29,8 +36,6 @@ class ShareSrv @Inject() (
   val shareCaseSrv         = new EdgeSrv[ShareCase, Share, Case]
   val shareTaskSrv         = new EdgeSrv[ShareTask, Share, Task]
   val shareObservableSrv   = new EdgeSrv[ShareObservable, Share, Observable]
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ShareSteps = new ShareSteps(raw)
 
   /**
     * Shares a case (creates a share entity) for a precise organisation
@@ -46,7 +51,7 @@ class ShareSrv @Inject() (
       implicit graph: Graph,
       authContext: AuthContext
   ): Try[Share with Entity] =
-    get(`case`, organisation.name).headOption() match {
+    get(`case`, organisation.name).headOption match {
       case Some(_) => Failure(CreateError(s"Case #${`case`.number} is already shared with organisation ${organisation.name}"))
       case None =>
         for {
@@ -58,20 +63,20 @@ class ShareSrv @Inject() (
         } yield createdShare
     }
 
-  def get(`case`: Case with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+  def get(`case`: Case with Entity, organisationName: String)(implicit graph: Graph): Traversal.V[Share] =
     caseSrv.get(`case`).share(organisationName)
 
-  def get(observable: Observable with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+  def get(observable: Observable with Entity, organisationName: String)(implicit graph: Graph): Traversal.V[Share] =
     observableSrv.get(observable).share(organisationName)
 
-  def get(task: Task with Entity, organisationName: String)(implicit graph: Graph): ShareSteps =
+  def get(task: Task with Entity, organisationName: String)(implicit graph: Graph): Traversal.V[Share] =
     taskSrv.get(task).share(organisationName)
 
   def update(
       share: Share with Entity,
       profile: Profile with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[ShareProfile with Entity] = {
-    get(share).outToE[ShareProfile].remove()
+    get(share).outE[ShareProfile].remove()
     for {
       newShareProfile <- shareProfileSrv.create(ShareProfile(), share, profile)
       case0           <- get(share).`case`.getOrFail("Case")
@@ -81,7 +86,7 @@ class ShareSrv @Inject() (
   }
 
 //  def remove(`case`: Case with Entity, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-//    caseSrv.get(`case`).inTo[ShareCase].filter(_.inTo[OrganisationShare])._id.getOrFail().flatMap(remove(_)) // FIXME add organisation ?
+//    caseSrv.get(`case`).in[ShareCase].filter(_.in[OrganisationShare])._id.getOrFail().flatMap(remove(_)) // FIXME add organisation ?
 
   def remove(shareId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -103,8 +108,8 @@ class ShareSrv @Inject() (
     for {
       shareTask <- taskSrv
         .get(task)
-        .inToE[ShareTask]
-        .filter(st => new ShareSteps(st.outV().raw).byOrganisationName(organisation.name))
+        .inE[ShareTask]
+        .filter(_.outV.v[Share].byOrganisationName(organisation.name))
         .getOrFail("Task")
       case0 <- taskSrv.get(task).`case`.getOrFail("Case")
       _     <- auditSrv.share.unshareTask(task, case0, organisation)
@@ -123,8 +128,8 @@ class ShareSrv @Inject() (
     for {
       shareObservable <- observableSrv
         .get(observable)
-        .inToE[ShareObservable]
-        .filter(_.outV().inTo[OrganisationShare].hasId(organisation._id))
+        .inE[ShareObservable]
+        .filter(_.outV.in[OrganisationShare].hasId(organisation._id))
         .getOrFail("Share")
       case0 <- observableSrv.get(observable).`case`.getOrFail("Case")
       _     <- auditSrv.share.unshareObservable(observable, case0, organisation)
@@ -138,7 +143,12 @@ class ShareSrv @Inject() (
   def shareCaseTasks(
       share: Share with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareTask with Entity]] =
-    get(share).`case`.tasks.filter(_.not(_.shares.hasId(share._id))).toIterator.toTry(shareTaskSrv.create(ShareTask(), share, _))
+    get(share)
+      .`case`
+      .tasks
+      .filterNot(_.shares.hasId(share._id))
+      .toIterator
+      .toTry(shareTaskSrv.create(ShareTask(), share, _))
 
   /**
     * Shares a task for an already shared case
@@ -180,7 +190,12 @@ class ShareSrv @Inject() (
   def shareCaseObservables(
       share: Share with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareObservable with Entity]] =
-    get(share).`case`.observables.filter(_.not(_.shares.hasId(share._id))).toIterator.toTry(shareObservableSrv.create(ShareObservable(), share, _))
+    get(share)
+      .`case`
+      .observables
+      .filter(_.shares.has(T.id, P.neq(share._id)))
+      .toIterator
+      .toTry(shareObservableSrv.create(ShareObservable(), share, _))
 
   /**
     * Does a full rebuild of the share status of a task,
@@ -223,7 +238,7 @@ class ShareSrv @Inject() (
       .get(task)
       .shares
       .organisation
-      .toList
+      .toSeq
 
     organisations
       .filterNot(existingOrgs.contains)
@@ -246,7 +261,7 @@ class ShareSrv @Inject() (
       .get(observable)
       .shares
       .organisation
-      .toList
+      .toSeq
 
     organisations
       .filterNot(existingOrgs.contains)
@@ -295,53 +310,50 @@ class ShareSrv @Inject() (
   }
 }
 
-@EntitySteps[Share]
-class ShareSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Share](raw) {
-  override def newInstance(newRaw: GremlinScala[Vertex]): ShareSteps = new ShareSteps(newRaw)
-  override def newInstance(): ShareSteps                             = new ShareSteps(raw.clone())
+object ShareOps {
+  implicit class ShareOpsDefs(traversal: Traversal.V[Share]) {
+    def relatedTo(`case`: Case with Entity): Traversal.V[Share] = traversal.filter(_.`case`.hasId(`case`._id))
 
-  def relatedTo(`case`: Case with Entity): ShareSteps = this.filter(_.`case`.get(`case`._id))
+    def `case`: Traversal.V[Case] = traversal.out[ShareCase].v[Case]
 
-  def `case`: CaseSteps = new CaseSteps(raw.outTo[ShareCase])
+    def relatedTo(organisation: Organisation with Entity): Traversal.V[Share] = traversal.filter(_.organisation.hasId(organisation._id))
 
-  def relatedTo(organisation: Organisation with Entity): ShareSteps = this.filter(_.organisation.get(organisation._id))
+    def organisation: Traversal.V[Organisation] = traversal.in[OrganisationShare].v[Organisation]
 
-  def organisation: OrganisationSteps = new OrganisationSteps(raw.inTo[OrganisationShare])
+    def tasks: Traversal.V[Task] = traversal.out[ShareTask].v[Task]
 
-  def tasks = new TaskSteps(raw.outTo[ShareTask])
+    def byTask(taskId: String): Traversal.V[Share] = traversal.filter(
+      _.out[ShareTask].hasId(taskId)
+    )
 
-  def byTask(taskId: String): ShareSteps = this.filter(
-    _.outTo[ShareTask].hasId(taskId)
-  )
+    def byObservable(observableId: String): Traversal.V[Share] = traversal.filter(
+      _.out[ShareObservable].hasId(observableId)
+    )
 
-  def byObservable(observableId: String): ShareSteps = this.filter(
-    _.outTo[ShareObservable].hasId(observableId)
-  )
+    def byOrganisationName(organisationName: String): Traversal.V[Share] = traversal.filter(
+      _.in[OrganisationShare].has("name", organisationName)
+    )
 
-  def byOrganisationName(organisationName: String): ShareSteps = this.filter(
-    _.inTo[OrganisationShare].has("name", organisationName)
-  )
+    def observables: Traversal.V[Observable] = traversal.out[ShareObservable].v[Observable]
 
-  def observables = new ObservableSteps(raw.outTo[ShareObservable])
+    def profile: Traversal.V[Profile] = traversal.out[ShareProfile].v[Profile]
 
-  def profile: ProfileSteps = new ProfileSteps(raw.outTo[ShareProfile])
-
-  def richShare: Traversal[RichShare, RichShare] = Traversal(
-    raw
-      .project(
-        _.apply(By[Vertex]())
-          .and(By(__[Vertex].inTo[OrganisationShare].values[String]("name").fold))
-          .and(By(__[Vertex].outTo[ShareCase].id().fold))
-          .and(By(__[Vertex].outTo[ShareProfile].values[String]("name").fold))
-      )
-      .map {
-        case (share, organisationName, caseId, profileName) =>
-          RichShare(
-            share.as[Share],
-            onlyOneOf[AnyRef](caseId).toString,
-            onlyOneOf[String](organisationName),
-            onlyOneOf[String](profileName)
-          )
-      }
-  )
+    def richShare: Traversal[RichShare, JMap[String, Any], Converter[RichShare, JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.in[OrganisationShare].v[Organisation].value(_.name).fold)
+            .by(_.out[ShareCase]._id.fold)
+            .by(_.out[ShareProfile].v[Profile].value(_.name).fold)
+        )
+        .domainMap {
+          case (share, organisationName, caseId, profileName) =>
+            RichShare(
+              share,
+              caseId.head,
+              organisationName.head,
+              profileName.head
+            )
+        }
+  }
 }

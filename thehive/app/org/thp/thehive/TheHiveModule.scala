@@ -10,22 +10,7 @@ import org.thp.scalligraph.services.{GenIntegrityCheckOps, HadoopStorageSrv, S3S
 import org.thp.thehive.models.{DatabaseProvider, TheHiveSchemaDefinition}
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{
-  CaseIntegrityCheckOps,
-  CaseTemplateIntegrityCheckOps,
-  CustomFieldIntegrityCheckOps,
-  DataIntegrityCheckOps,
-  FlowActorProvider,
-  ImpactStatusIntegrityCheckOps,
-  IntegrityCheckActorProvider,
-  ObservableTypeIntegrityCheckOps,
-  OrganisationIntegrityCheckOps,
-  ProfileIntegrityCheckOps,
-  ResolutionStatusIntegrityCheckOps,
-  TOTPAuthSrvProvider,
-  TagIntegrityCheckOps,
-  UserIntegrityCheckOps
-}
+import org.thp.thehive.services.{UserSrv => _, _}
 import play.api.libs.concurrent.AkkaGuiceSupport
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
@@ -59,7 +44,6 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     authBindings.addBinding.to[PkiAuthProvider]
     authBindings.addBinding.to[SessionAuthProvider]
     authBindings.addBinding.to[OAuth2Provider]
-    // TODO add more authSrv
 
     val triggerBindings = ScalaMultibinder.newSetBinder[TriggerProvider](binder)
     triggerBindings.addBinding.to[AlertCreatedProvider]

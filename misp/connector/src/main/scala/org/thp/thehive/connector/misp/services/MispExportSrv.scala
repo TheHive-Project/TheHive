@@ -2,14 +2,16 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.Date
 
-import gremlin.scala.Graph
 import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.misp.dto.{Attribute, Tag => MispTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
 import play.api.Logger
 
@@ -72,7 +74,7 @@ class MispExportSrv @Inject() (
       .alert
       .has("type", "misp")
       .has("source", orgName)
-      .headOption()
+      .headOption
 
   def getAttributes(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
     caseSrv.get(`case`).observables.has("ioc", true).richObservable.toIterator.flatMap(observableToAttribute)
@@ -133,7 +135,7 @@ class MispExportSrv @Inject() (
 
   def canExport(client: TheHiveMispClient)(implicit authContext: AuthContext): Boolean =
     client.canExport && db.roTransaction { implicit graph =>
-      client.organisationFilter(organisationSrv.current).exists()
+      client.organisationFilter(organisationSrv.current).exists
     }
 
   def export(mispId: String, `case`: Case with Entity)(implicit authContext: AuthContext, ec: ExecutionContext): Future[String] = {

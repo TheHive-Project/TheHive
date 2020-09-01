@@ -3,16 +3,16 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 import play.api.libs.json.JsObject
 
-@VertexEntity
+@BuildVertexEntity
 case class Dashboard(title: String, description: String, definition: JsObject)
 
-@EdgeEntity[Dashboard, User]
+@BuildEdgeEntity[Dashboard, User]
 case class DashboardUser()
 
-@EdgeEntity[Organisation, Dashboard]
+@BuildEdgeEntity[Organisation, Dashboard]
 case class OrganisationDashboard(writable: Boolean)
 
 case class RichDashboard(

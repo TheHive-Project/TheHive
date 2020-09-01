@@ -3,11 +3,11 @@ package org.thp.thehive.connector.cortex.services
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Organisation
 import org.thp.thehive.services._
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.test.PlaySpecification
 
 class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
@@ -29,7 +29,7 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
       val r = app[Database].roTransaction { implicit graph =>
         app[ServiceHelper]
           .organisationFilter(
-            app.apply[OrganisationSrv].initSteps,
+            app.apply[OrganisationSrv].startTraversal,
             List("*"),
             List("cert")
           )
@@ -40,7 +40,7 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
       val r2 = app[Database].roTransaction { implicit graph =>
         app[ServiceHelper]
           .organisationFilter(
-            app.apply[OrganisationSrv].initSteps,
+            app.apply[OrganisationSrv].startTraversal,
             Nil,
             Nil
           )

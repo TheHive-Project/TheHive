@@ -4,11 +4,7 @@ import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import com.google.inject.Injector
 import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.models.Database
-import play.api.inject.ApplicationLifecycle
 import play.api.{Configuration, Logger}
-
-import scala.concurrent.Future
 
 @Singleton
 class ClusterSetup @Inject() (

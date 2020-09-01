@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputDashboard
 import org.thp.thehive.services.DashboardSrv
@@ -29,7 +29,7 @@ class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "get a dashboard if visible" in testApp { app =>
       val dashboard = app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].initSteps.has("title", "dashboard cert").getOrFail().get
+        app[DashboardSrv].startTraversal.has("title", "dashboard cert").getOrFail("Dashboard").get
       }
 
       val request = FakeRequest("GET", s"/api/dashboard/${dashboard._id}")
@@ -47,7 +47,7 @@ class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "update a dashboard" in testApp { app =>
       val dashboard = app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].initSteps.has("title", "dashboard cert").getOrFail().get
+        app[DashboardSrv].startTraversal.has("title", "dashboard cert").getOrFail("Dashboard").get
       }
 
       val request = FakeRequest("PATCH", s"/api/dashboard/${dashboard._id}")
@@ -67,7 +67,7 @@ class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "delete a dashboard" in testApp { app =>
       val dashboard = app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].initSteps.has("title", "dashboard cert").getOrFail().get
+        app[DashboardSrv].startTraversal.has("title", "dashboard cert").getOrFail("Dashboard").get
       }
 
       val request = FakeRequest("DELETE", s"/api/dashboard/${dashboard._id}")
@@ -77,7 +77,7 @@ class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].initSteps.has("title", "dashboard cert").exists() must beFalse
+        app[DashboardSrv].startTraversal.has("title", "dashboard cert").exists must beFalse
       }
     }
   }

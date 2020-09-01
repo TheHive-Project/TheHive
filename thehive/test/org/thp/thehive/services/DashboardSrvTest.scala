@@ -2,9 +2,10 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import org.thp.thehive.services.DashboardOps._
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.PlaySpecification
 
@@ -61,10 +62,10 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
     "share a dashboard" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].initSteps.has("title", "dashboard soc").getOrFail()
-          _ = app[DashboardSrv].get(dashboard).visible.headOption() must beNone
+          dashboard <- app[DashboardSrv].startTraversal.has("title", "dashboard soc").getOrFail("Dashboard")
+          _ = app[DashboardSrv].get(dashboard).visible.headOption must beNone
           _ <- app[DashboardSrv].share(dashboard, "cert", writable = false)
-          _ = app[DashboardSrv].get(dashboard).visible.headOption() must beSome
+          _ = app[DashboardSrv].get(dashboard).visible.headOption must beSome
         } yield ()
       } must beASuccessfulTry
     }
@@ -80,9 +81,9 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
     "remove a dashboard" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].initSteps.has("title", "dashboard soc").getOrFail()
+          dashboard <- app[DashboardSrv].startTraversal.has("title", "dashboard soc").getOrFail("Dashboard")
           _         <- app[DashboardSrv].remove(dashboard)
-        } yield app[DashboardSrv].initSteps.has("title", "dashboard soc").exists()
+        } yield app[DashboardSrv].startTraversal.has("title", "dashboard soc").exists
       } must beASuccessfulTry(false)
     }
   }

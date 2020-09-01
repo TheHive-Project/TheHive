@@ -3,10 +3,11 @@ package org.thp.thehive.services
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, User => ScalligraphUser, UserSrv => ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Instance
 import org.thp.scalligraph.{AuthenticationError, CreateError, NotFoundError}
 import org.thp.thehive.models.{Organisation, Permissions, Profile, User}
+import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.libs.json.JsObject
 import play.api.mvc.RequestHeader
@@ -27,21 +28,21 @@ class LocalUserSrv @Inject() (
       val requestId = Instance.getRequestId(request)
       val userSteps = userSrv.get(userId)
 
-      if (userSteps.newInstance().exists()) {
+      if (userSteps.clone().exists)
         userSteps
-          .newInstance()
+          .clone()
           .getAuthContext(requestId, organisationName)
-          .headOption()
+          .headOption
           .orElse {
             organisationName.flatMap { org =>
               userSteps
                 .getAuthContext(requestId, Organisation.administration.name)
-                .headOption()
+                .headOption
                 .map(authContext => authContext.changeOrganisation(org, authContext.permissions))
             }
           }
           .fold[Try[AuthContext]](Failure(AuthenticationError("Authentication failure")))(Success.apply)
-      } else Failure(NotFoundError(s"User $userId not found"))
+      else Failure(NotFoundError(s"User $userId not found"))
     }
 
   override def createUser(userId: String, userInfo: JsObject): Try[ScalligraphUser] = {

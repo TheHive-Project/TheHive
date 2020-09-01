@@ -14,23 +14,7 @@ import org.thp.scalligraph.{janus, AppBuilder}
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{
-  CaseIntegrityCheckOps,
-  CaseTemplateIntegrityCheckOps,
-  CustomFieldIntegrityCheckOps,
-  DataIntegrityCheckOps,
-  FlowActor,
-  ImpactStatusIntegrityCheckOps,
-  LocalKeyAuthProvider,
-  LocalPasswordAuthProvider,
-  LocalUserSrv,
-  ObservableTypeIntegrityCheckOps,
-  OrganisationIntegrityCheckOps,
-  ProfileIntegrityCheckOps,
-  ResolutionStatusIntegrityCheckOps,
-  TagIntegrityCheckOps,
-  UserIntegrityCheckOps
-}
+import org.thp.thehive.services.{UserSrv => _, _}
 
 import scala.util.Try
 
@@ -69,7 +53,7 @@ trait TestAppBuilder {
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
       .bindActor[DummyActor]("integrity-check-actor")
-      .bindActor[FlowActor]("flow-actor")
+      .bindActor[DummyActor]("flow-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
       .addConfiguration("play.mailer.mock = yes")

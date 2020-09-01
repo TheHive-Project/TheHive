@@ -3,11 +3,12 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.ObservableType
+import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -43,7 +44,7 @@ class ListCtrl @Inject() (
           case "custom_fields" =>
             val cf = db
               .roTransaction { implicit grap =>
-                customFieldSrv.initSteps.toList
+                customFieldSrv.startTraversal.toSeq
               }
               .map(cf => cf._id -> cf.toJson)
             JsObject(cf)
@@ -88,8 +89,8 @@ class ListCtrl @Inject() (
           case "custom_fields" =>
             val v: String = request.body("value")
             customFieldSrv
-              .initSteps
-              .get(v)
+              .startTraversal
+              .getByName(v)
               .getOrFail("CustomField")
               .map(f => Results.Conflict(Json.obj("found" -> f.toJson)))
               .orElse(Success(Results.Ok))

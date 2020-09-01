@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.controllers.Renderer.setRenderer
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.Permissions
 import play.api.mvc.{Action, AnyContent, Results}

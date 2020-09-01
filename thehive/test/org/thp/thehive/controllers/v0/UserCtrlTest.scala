@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import akka.stream.Materializer
 import org.thp.scalligraph.AuthenticationError
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputUser
 import org.thp.thehive.services.UserSrv
@@ -144,7 +144,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must beEqualTo(204)
 
       app[Database].roTransaction { implicit graph =>
-        app[UserSrv].get("certro@thehive.local").exists()
+        app[UserSrv].get("certro@thehive.local").exists
       } must beFalse
     }
   }

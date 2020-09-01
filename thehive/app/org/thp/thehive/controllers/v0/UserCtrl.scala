@@ -5,52 +5,52 @@ import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 @Singleton
 class UserCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
-    implicit val ec: ExecutionContext
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl {
   lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.user ::: metaProperties[UserSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.user
 
   override val initialQuery: Query =
-    Query.init[UserSteps]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+    Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
 
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, UserSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[User]](
     "getUser",
     FieldsParser[IdOrName],
     (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
   )
 
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, UserSteps, PagedResult[RichUser]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichUser, UserSteps]((userSteps, authContext) => userSteps.richUser(authContext))
+    Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
@@ -76,26 +76,26 @@ class UserCtrl @Inject() (
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
         db.tryTransaction { implicit graph =>
-            val organisationName = inputUser.organisation.getOrElse(request.organisation)
-            for {
-              _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail()
-              organisation <- organisationSrv.getOrFail(organisationName)
-              profile <- if (inputUser.roles.contains("admin")) profileSrv.getOrFail(Profile.admin.name)
+          val organisationName = inputUser.organisation.getOrElse(request.organisation)
+          for {
+            _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail
+            organisation <- organisationSrv.getOrFail(organisationName)
+            profile <-
+              if (inputUser.roles.contains("admin")) profileSrv.getOrFail(Profile.admin.name)
               else if (inputUser.roles.contains("write")) profileSrv.getOrFail(Profile.analyst.name)
               else if (inputUser.roles.contains("read")) profileSrv.getOrFail(Profile.readonly.name)
               else profileSrv.getOrFail(Profile.readonly.name)
-              user <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
-            } yield user -> userSrv.canSetPassword(user.user)
-          }
-          .flatMap {
-            case (user, true) =>
-              inputUser
-                .password
-                .map(password => authSrv.setPassword(user._id, password))
-                .flip
-                .map(_ => Results.Created(user.toJson))
-            case (user, _) => Success(Results.Created(user.toJson))
-          }
+            user <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
+          } yield user -> userSrv.canSetPassword(user.user)
+        }.flatMap {
+          case (user, true) =>
+            inputUser
+              .password
+              .map(password => authSrv.setPassword(user._id, password))
+              .flip
+              .map(_ => Results.Created(user.toJson))
+          case (user, _) => Success(Results.Created(user.toJson))
+        }
       }
 
   def lock(userId: String): Action[AnyContent] =
@@ -134,9 +134,10 @@ class UserCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         for {
-          user <- userSrv
-            .update(userSrv.get(userId), propertyUpdaters) // Authorisation is managed in public properties
-            .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail("User") }
+          user <-
+            userSrv
+              .update(userSrv.get(userId), propertyUpdaters) // Authorisation is managed in public properties
+              .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail("User") }
         } yield Results.Ok(user.toJson)
 
       }
@@ -155,7 +156,7 @@ class UserCtrl @Inject() (
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .get(u)
+                  .getByIds(u._id)
                   .getOrFail("User")
               }
           }
@@ -169,13 +170,13 @@ class UserCtrl @Inject() (
       .extract("password", FieldsParser[String].on("password"))
       .extract("currentPassword", FieldsParser[String].on("currentPassword"))
       .auth { implicit request =>
-        if (userId == request.userId) {
+        if (userId == request.userId)
           for {
             user <- db.roTransaction(implicit graph => userSrv.get(userId).getOrFail("User"))
             _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
             _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
           } yield Results.NoContent
-        } else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
+        else Failure(AuthorizationError(s"You are not authorized to change password of $userId"))
       }
 
   def getKey(userId: String): Action[AnyContent] =
@@ -191,12 +192,13 @@ class UserCtrl @Inject() (
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .get(u)
+                  .getByIds(u._id)
                   .getOrFail("User")
               }
           }
-          key <- authSrv
-            .getKey(user._id)
+          key <-
+            authSrv
+              .getKey(user._id)
         } yield Results.Ok(key)
       }
 
@@ -213,7 +215,7 @@ class UserCtrl @Inject() (
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .get(u)
+                  .getByIds(u._id)
                   .getOrFail("User")
               }
           }
@@ -236,7 +238,7 @@ class UserCtrl @Inject() (
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .get(u)
+                  .getByIds(u._id)
                   .getOrFail("User")
               }
           }

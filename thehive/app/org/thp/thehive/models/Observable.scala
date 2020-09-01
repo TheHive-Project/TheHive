@@ -3,21 +3,21 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 
-@EdgeEntity[Observable, KeyValue]
+@BuildEdgeEntity[Observable, KeyValue]
 case class ObservableKeyValue()
 
-@EdgeEntity[Observable, Attachment]
+@BuildEdgeEntity[Observable, Attachment]
 case class ObservableAttachment()
 
-@EdgeEntity[Observable, Data]
+@BuildEdgeEntity[Observable, Data]
 case class ObservableData()
 
-@EdgeEntity[Observable, Tag]
+@BuildEdgeEntity[Observable, Tag]
 case class ObservableTag()
 
-@VertexEntity
+@BuildVertexEntity
 case class Observable(message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
 
 case class RichObservable(
@@ -42,5 +42,5 @@ case class RichObservable(
 }
 
 @DefineIndex(IndexType.unique, "data")
-@VertexEntity
+@BuildVertexEntity
 case class Data(data: String)

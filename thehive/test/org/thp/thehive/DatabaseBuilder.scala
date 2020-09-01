@@ -2,8 +2,8 @@ package org.thp.thehive
 
 import java.io.File
 
-import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.scalactic.Or
 import org.thp.scalligraph.RichOption
 import org.thp.scalligraph.auth.AuthContext
@@ -192,7 +192,7 @@ class DatabaseBuilder @Inject() (
   }
 
   def createVertex[V <: Product](
-      srv: VertexSrv[V, _],
+      srv: VertexSrv[V],
       parser: FieldsParser[V]
   )(implicit graph: Graph, authContext: AuthContext): Map[String, String] =
     readJsonFile(s"data/${srv.model.label}.json").flatMap { fields =>
@@ -205,8 +205,8 @@ class DatabaseBuilder @Inject() (
 
   def createEdge[E <: Product, FROM <: Product: ru.TypeTag, TO <: Product: ru.TypeTag](
       srv: EdgeSrv[E, FROM, TO],
-      fromSrv: VertexSrv[FROM, _],
-      toSrv: VertexSrv[TO, _],
+      fromSrv: VertexSrv[FROM],
+      toSrv: VertexSrv[TO],
       parser: FieldsParser[E],
       idMap: Map[String, String]
   )(implicit graph: Graph, authContext: AuthContext): Seq[E with Entity] =

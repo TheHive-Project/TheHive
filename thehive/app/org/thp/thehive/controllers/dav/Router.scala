@@ -69,7 +69,7 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-s
           if (request.uri.endsWith("/")) request.uri
           else request.uri + '/'
         val resources =
-          if (request.headers.get("Depth").contains("1")) vfs.get(pathElements) ::: vfs.list(pathElements)
+          if (request.headers.get("Depth").contains("1")) vfs.get(pathElements) ++ vfs.list(pathElements)
           else vfs.get(pathElements)
         val props: NodeSeq = request.body("xml") \ "prop" \ "_"
         val response = <D:multistatus xmlns:D="DAV:">

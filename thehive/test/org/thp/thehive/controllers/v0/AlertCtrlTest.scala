@@ -4,11 +4,13 @@ import java.util.Date
 
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.RichObservable
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseSrv
+import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 

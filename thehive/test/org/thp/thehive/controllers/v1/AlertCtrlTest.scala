@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import java.util.Date
 
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
@@ -136,7 +136,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     "get an alert" in testApp { app =>
       val alertSrv = app.apply[AlertSrv]
       app.apply[Database].roTransaction { implicit graph =>
-        alertSrv.initSteps.has("sourceRef", "ref1").getOrFail()
+        alertSrv.startTraversal.has("sourceRef", "ref1").getOrFail("Alert")
       } must beSuccessfulTry.which { alert: Alert with Entity =>
         val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "socuser@thehive.local")
         val result  = app[AlertCtrl].get(alert._id)(request)

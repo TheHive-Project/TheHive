@@ -1,8 +1,9 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{LogSrv, TaskSrv}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -13,7 +14,7 @@ class LogCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "be able to create a log" in testApp { app =>
       val task = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1").headOption().get
+        app[TaskSrv].startTraversal.has("title", "case 1 task 1").headOption.get
       }
 
       val request = FakeRequest("POST", s"/api/case/task/${task._id}/log")
@@ -26,13 +27,13 @@ class LogCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) shouldEqual 201
 
       app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].get(task).logs.has("message", "log 1\n\n### yeahyeahyeahs").exists()
+        app[TaskSrv].get(task).logs.has("message", "log 1\n\n### yeahyeahyeahs").exists
       } must beTrue
     }
 
     "be able to create and remove a log" in testApp { app =>
       val log = app[Database].roTransaction { implicit graph =>
-        app[LogSrv].initSteps.has("message", "log for action test").getOrFail("Log").get
+        app[LogSrv].startTraversal.has("message", "log for action test").getOrFail("Log").get
       }
 
       val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log._id}").withHeaders("user" -> "certuser@thehive.local")
@@ -41,7 +42,7 @@ class LogCtrlTest extends PlaySpecification with TestAppBuilder {
       status(resultDelete) shouldEqual 204
 
       val deletedLog = app[Database].roTransaction { implicit graph =>
-        app[LogSrv].initSteps.has("message", "log for action test").headOption()
+        app[LogSrv].startTraversal.has("message", "log for action test").headOption
       }
       deletedLog should beNone
     }

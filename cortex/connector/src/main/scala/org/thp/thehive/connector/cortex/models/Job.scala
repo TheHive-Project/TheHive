@@ -3,7 +3,7 @@ package org.thp.thehive.connector.cortex.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 import org.thp.thehive.models.{Observable, RichObservable}
 import play.api.libs.json.{Format, JsObject, Json}
 
@@ -13,13 +13,13 @@ object JobStatus extends Enumeration {
   implicit val format: Format[JobStatus.Value] = Json.formatEnum(JobStatus)
 }
 
-@EdgeEntity[Observable, Job]
+@BuildEdgeEntity[Observable, Job]
 case class ObservableJob()
 
-@EdgeEntity[Job, Observable]
+@BuildEdgeEntity[Job, Observable]
 case class ReportObservable()
 
-@VertexEntity
+@BuildVertexEntity
 case class Job(
     workerId: String,
     workerName: String,

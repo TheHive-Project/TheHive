@@ -1,44 +1,55 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.{Map => JMap}
+import java.lang.{Long => JLong}
+import java.util.{List => JList, Map => JMap}
 
-import gremlin.scala.{__, Graph, GremlinScala, Vertex}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.Traversal
+import org.apache.tinkerpop.gremlin.structure.Vertex
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.services.LogSteps
-import play.api.libs.json.{JsNull, JsNumber, JsObject, JsString, JsValue}
-
-import scala.collection.JavaConverters._
+import org.thp.thehive.models.Log
+import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.TaskOps._
+import play.api.libs.json._
 
 trait LogRenderer {
 
-  def taskParent(logSteps: LogSteps): Traversal[JsValue, JsValue] =
-    logSteps.task.richTask.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(_.toJson))
+  def taskParent: Traversal.V[Log] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] =
+    _.task.richTask.fold.domainMap(_.headOption.fold[JsValue](JsNull)(_.toJson))
 
-  def taskParentId(logSteps: LogSteps): Traversal[JsValue, JsValue] =
-    logSteps.task.fold.map(_.asScala.headOption.fold[JsValue](JsNull)(c => JsString(c.id().toString)))
+  def taskParentId: Traversal.V[Log] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
+    _.task.fold.domainMap(_.headOption.fold[JsValue](JsNull)(c => JsString(c._id)))
 
-  def actionCount(logSteps: LogSteps): Traversal[JsValue, JsValue] =
-    Traversal(logSteps.raw.in("ActionContext").count()).map(c => JsNumber(c.longValue()))
+  def actionCount: Traversal.V[Log] => Traversal[JsNumber, JLong, Converter[JsNumber, JLong]] =
+    _.in("ActionContext").count.domainMap(JsNumber(_))
 
-  def logStatsRenderer(extraData: Set[String])(implicit db: Database, graph: Graph): LogSteps => Traversal[JsObject, JsObject] = {
-    def addData(f: LogSteps => Traversal[JsValue, JsValue]): GremlinScala[JMap[String, JsValue]] => GremlinScala[JMap[String, JsValue]] =
-      _.by(f(new LogSteps(__[Vertex])).raw.traversal)
-
-    if (extraData.isEmpty) _.constant(JsObject.empty)
-    else {
-      val dataName = extraData.toSeq
-      dataName
-        .foldLeft[LogSteps => GremlinScala[JMap[String, JsValue]]](_.raw.project(dataName.head, dataName.tail: _*)) {
-          case (f, "task")        => f.andThen(addData(taskParent))
-          case (f, "taskId")      => f.andThen(addData(taskParentId))
-          case (f, "actionCount") => f.andThen(addData(actionCount))
-          case (f, _)             => f.andThen(_.by(__.constant(JsNull).traversal))
+  def logStatsRenderer(extraData: Set[String]): Traversal.V[Log] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = {
+    traversal =>
+      def addData[G](
+          name: String
+      )(f: Traversal.V[Log] => Traversal[JsValue, G, Converter[JsValue, G]]): Traversal[JsObject, JMap[String, Any], Converter[
+        JsObject,
+        JMap[String, Any]
+      ]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { t =>
+        val dataTraversal = f(traversal.start)
+        t.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.by(dataTraversal.raw)) { jmap =>
+          t.converter(jmap) + (name -> dataTraversal.converter(jmap.get(name).asInstanceOf[G]))
         }
-        .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))
-    }
-  }
+      }
 
+      if (extraData.isEmpty) traversal.constant2[JsObject, JMap[String, Any]](JsObject.empty)
+      else {
+        val dataName = extraData.toSeq
+        dataName.foldLeft[Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
+          traversal.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.project(dataName.head, dataName.tail: _*))(_ =>
+            JsObject.empty
+          )
+        ) {
+          case (f, "task")        => addData("task")(taskParent)(f)
+          case (f, "taskId")      => addData("taskId")(taskParentId)(f)
+          case (f, "actionCount") => addData("actionCount")(actionCount)(f)
+          case (f, _)             => f
+        }
+      }
+  }
 }

@@ -4,12 +4,16 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{RichSeq, _}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsNumber, JsObject}
@@ -20,43 +24,43 @@ import scala.util.Success
 @Singleton
 class CaseCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
     properties: Properties,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
     tagSrv: TagSrv,
     userSrv: UserSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl
     with CaseRenderer {
 
   lazy val logger: Logger                                   = Logger(getClass)
   override val entityName: String                           = "case"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.`case` ::: metaProperties[CaseSteps]
+  override val publicProperties: List[PublicProperty[_, _]] = properties.`case`
   override val initialQuery: Query =
-    Query.init[CaseSteps]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, CaseSteps](
+    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Case]](
     "getCase",
     FieldsParser[IdOrName],
     (param, graph, authContext) => caseSrv.get(param.idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, CaseSteps, PagedResult[(RichCase, JsObject)]](
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
     "page",
     FieldsParser[OutputParam], {
       case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
         caseSteps
           .richPage(from, to, withTotal = true) {
             case c if withStats =>
-              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext, db, caseSteps.graph))(authContext)
+              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext))(authContext)
             case c =>
-              c.richCase(authContext).map(_ -> JsObject.empty)
+              c.richCase(authContext).domainMap(_ -> JsObject.empty)
           }
     }
   )
-  override val outputQuery: Query = Query.outputWithContext[RichCase, CaseSteps]((caseSteps, authContext) => caseSteps.richCase(authContext))
+  override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[CaseSteps, ObservableSteps]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
-    Query[CaseSteps, TaskSteps]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
+    Query[Traversal.V[Case], Traversal.V[Observable]]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Task]]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
   )
 
   def create: Action[AnyContent] =
@@ -100,14 +104,14 @@ class CaseCtrl @Inject() (
           .visible
         val stats: Option[Boolean] = request.body("stats")
         if (stats.contains(true)) {
-          c.richCaseWithCustomRenderer(caseStatsRenderer(request, db, graph))
-            .getOrFail()
+          c.richCaseWithCustomRenderer(caseStatsRenderer(request))
+            .getOrFail("Case")
             .map {
               case (richCase, stats) => Results.Ok(richCase.toJson.as[JsObject] + ("stats" -> stats))
             }
         } else {
           c.richCase
-            .getOrFail()
+            .getOrFail("Case")
             .map(richCase => Results.Ok(richCase.toJson))
         }
       }
@@ -127,7 +131,7 @@ class CaseCtrl @Inject() (
             case (caseSteps, _) =>
               caseSteps
                 .richCase
-                .getOrFail()
+                .getOrFail("Case")
                 .map(richCase => Results.Ok(richCase.toJson))
           }
       }
@@ -150,7 +154,7 @@ class CaseCtrl @Inject() (
                 case (caseSteps, _) =>
                   caseSteps
                     .richCase
-                    .getOrFail()
+                    .getOrFail("Case")
               }
           }
           .map(richCases => Results.Ok(richCases.toJson))
@@ -162,7 +166,8 @@ class CaseCtrl @Inject() (
         caseSrv
           .get(caseIdOrNumber)
           .can(Permissions.manageCase)
-          .update("status" -> CaseStatus.Deleted)
+          .update(_.status, CaseStatus.Deleted)
+          .getOrFail("Case")
           .map(_ => Results.NoContent)
       }
 
@@ -173,7 +178,7 @@ class CaseCtrl @Inject() (
           c <- caseSrv
             .get(caseIdOrNumber)
             .can(Permissions.manageCase)
-            .getOrFail()
+            .getOrFail("Case")
           _ <- caseSrv.remove(c)
         } yield Results.NoContent
       }
@@ -188,7 +193,7 @@ class CaseCtrl @Inject() (
             caseSrv
               .get(_)
               .visible
-              .getOrFail()
+              .getOrFail("Case")
           )
           .map { cases =>
             val mergedCase = caseSrv.merge(cases)

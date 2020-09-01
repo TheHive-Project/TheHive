@@ -19,7 +19,7 @@ class CortexAuditSrv @Inject() (
     extends AuditSrv(userSrvProvider, notificationActor, eventSrv) {
 
   val job              = new ObjectAudit[Job, Observable]
-  val action           = new ObjectAudit[Action, Entity]
+  val action           = new ObjectAudit[Action, Product with Entity]
   val analyzerTemplate = new SelfContextObjectAudit[AnalyzerTemplate]
 
 }

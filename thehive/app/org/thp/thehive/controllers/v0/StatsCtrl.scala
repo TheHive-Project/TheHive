@@ -27,19 +27,19 @@ class StatsCtrl @Inject() (
             for {
               model <- FieldsParser.string(s.get("model"))
               queryCtrl = model match {
-                case "case"         => queryExecutor.`case`
-                case "task"         => queryExecutor.task
-                case "log"          => queryExecutor.log
-                case "alert"        => queryExecutor.alert
-                case "user"         => queryExecutor.user
-                case "caseTemplate" => queryExecutor.caseTemplate
-                case "observable"   => queryExecutor.observable
-                case "dashboard"    => queryExecutor.dashboard
-                case "organisation" => queryExecutor.organisation
-                case "audit"        => queryExecutor.audit
-                case "profile"      => queryExecutor.profile
-                case "tag"          => queryExecutor.tag
-                case "page"         => queryExecutor.page
+                case "case"          => queryExecutor.`case`
+                case "case_task"     => queryExecutor.task
+                case "case_task_log" => queryExecutor.log
+                case "alert"         => queryExecutor.alert
+                case "user"          => queryExecutor.user
+                case "caseTemplate"  => queryExecutor.caseTemplate
+                case "case_artifact" => queryExecutor.observable
+                case "dashboard"     => queryExecutor.dashboard
+                case "organisation"  => queryExecutor.organisation
+                case "audit"         => queryExecutor.audit
+                case "profile"       => queryExecutor.profile
+                case "tag"           => queryExecutor.tag
+                case "page"          => queryExecutor.page
               }
               queries <- queryCtrl.statsParser(s)
             } yield queries

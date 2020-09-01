@@ -1,6 +1,6 @@
 package org.thp.thehive.connector.cortex.models
 
-import org.thp.scalligraph.VertexEntity
+import org.thp.scalligraph.BuildVertexEntity
 
-@VertexEntity
+@BuildVertexEntity
 case class AnalyzerTemplate(workerId: String, content: String)

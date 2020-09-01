@@ -4,18 +4,7 @@ import org.specs2.mock.Mockito
 import org.thp.scalligraph.controllers.{Entrypoint, Field}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperty, QueryExecutor}
-import org.thp.thehive.services.{
-  AlertSrv,
-  CaseSrv,
-  CaseTemplateSrv,
-  CustomFieldSrv,
-  DashboardSrv,
-  ObservableSrv,
-  OrganisationSrv,
-  ShareSrv,
-  TaskSrv,
-  UserSrv
-}
+import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
@@ -29,7 +18,8 @@ class QueryTest extends PlaySpecification with Mockito {
     mock[ObservableSrv],
     mock[CaseTemplateSrv],
     mock[TaskSrv],
-    mock[CustomFieldSrv]
+    mock[CustomFieldSrv],
+    mock[Database]
   )
 
   val taskCtrl = new TaskCtrl(

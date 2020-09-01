@@ -5,32 +5,37 @@ import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
-import org.thp.scalligraph.steps.PagedResult
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputProfile
 import org.thp.thehive.models.{Permissions, Profile}
-import org.thp.thehive.services.{ProfileSrv, ProfileSteps}
+import org.thp.thehive.services.ProfileOps._
+import org.thp.thehive.services.ProfileSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Failure
 
 @Singleton
-class ProfileCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database, properties: Properties, profileSrv: ProfileSrv)
-    extends QueryableCtrl {
+class ProfileCtrl @Inject() (
+    entrypoint: Entrypoint,
+    properties: Properties,
+    profileSrv: ProfileSrv,
+    @Named("with-thehive-schema") implicit val db: Database
+) extends QueryableCtrl {
 
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, ProfileSteps](
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Profile]](
     "getProfile",
     FieldsParser[IdOrName],
     (param, graph, _) => profileSrv.get(param.idOrName)(graph)
   )
   val entityName: String                           = "profile"
-  val publicProperties: List[PublicProperty[_, _]] = properties.profile ::: metaProperties[ProfileSteps]
+  val publicProperties: List[PublicProperty[_, _]] = properties.profile
 
   val initialQuery: Query =
-    Query.init[ProfileSteps]("listProfile", (graph, _) => profileSrv.initSteps(graph))
+    Query.init[Traversal.V[Profile]]("listProfile", (graph, _) => profileSrv.startTraversal(graph))
 
-  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, ProfileSteps, PagedResult[Profile with Entity]](
+  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Profile], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     (range, profileSteps, _) => profileSteps.page(range.from, range.to, withTotal = true)

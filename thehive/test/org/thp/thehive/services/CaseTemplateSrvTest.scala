@@ -2,9 +2,11 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.TagOps._
 import play.api.libs.json.{JsNumber, JsString, JsTrue, JsValue}
 import play.api.test.PlaySpecification
 
@@ -31,7 +33,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
           tasks = Seq(
             (
               Task("task case template case template test 1", "group1", None, TaskStatus.Waiting, flag = false, None, None, 0, None),
-              app[UserSrv].get("certuser@thehive.local").headOption()
+              app[UserSrv].get("certuser@thehive.local").headOption
             )
           ),
           customFields = Seq(("string1", Some("love")), ("boolean1", Some(false)))
@@ -39,9 +41,9 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
       } must beASuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[TagSrv].initSteps.getByName("testNamespace", "testPredicate", Some("newOne")).exists() must beTrue
-        app[TaskSrv].initSteps.has("title", "task case template case template test 1").exists() must beTrue
-        val richCT = app[CaseTemplateSrv].initSteps.has("name", "case template test 1").richCaseTemplate.getOrFail().get
+        app[TagSrv].startTraversal.getByName("testNamespace", "testPredicate", Some("newOne")).exists must beTrue
+        app[TaskSrv].startTraversal.has("title", "task case template case template test 1").exists must beTrue
+        val richCT = app[CaseTemplateSrv].startTraversal.has("name", "case template test 1").richCaseTemplate.getOrFail("CaseTemplate").get
         richCT.customFields.length shouldEqual 2
       }
     }
@@ -56,7 +58,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
       } must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get("spam").tasks.has("title", "t1").exists()
+        app[CaseTemplateSrv].get("spam").tasks.has("title", "t1").exists
       } must beTrue
     }
 
@@ -109,7 +111,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
 
       val expected: Seq[(String, JsValue)] = Seq("string1" -> JsString("hate"), "boolean1" -> JsTrue, "integer1" -> JsNumber(1))
       app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get("spam").customFields.nameJsonValue.toList
+        app[CaseTemplateSrv].get("spam").customFields.nameJsonValue.toSeq
       } must contain(exactly(expected: _*))
     }
   }

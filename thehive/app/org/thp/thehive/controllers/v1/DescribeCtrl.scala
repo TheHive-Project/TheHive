@@ -10,7 +10,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PublicProperty
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.services.{CustomFieldSrv, ImpactStatusSrv, ResolutionStatusSrv}
 import play.api.Logger
@@ -86,16 +86,16 @@ class DescribeCtrl @Inject() (
   implicit val propertyDescriptionWrites: Writes[PropertyDescription] =
     Json.writes[PropertyDescription].transform((_: JsObject) + ("description" -> JsString("")))
 
-  def customFields: List[PropertyDescription] = db.roTransaction { implicit graph =>
-    customFieldSrv.initSteps.toList.map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString))
+  def customFields: Seq[PropertyDescription] = db.roTransaction { implicit graph =>
+    customFieldSrv.startTraversal.toSeq.map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString))
   }
 
   def impactStatus: PropertyDescription = db.roTransaction { implicit graph =>
-    PropertyDescription("impactStatus", "enumeration", impactStatusSrv.initSteps.toList.map(s => JsString(s.value)))
+    PropertyDescription("impactStatus", "enumeration", impactStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
   }
 
   def resolutionStatus: PropertyDescription = db.roTransaction { implicit graph =>
-    PropertyDescription("resolutionStatus", "enumeration", resolutionStatusSrv.initSteps.toList.map(s => JsString(s.value)))
+    PropertyDescription("resolutionStatus", "enumeration", resolutionStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
   }
 
   def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] = (model, propertyName) match {

@@ -3,15 +3,15 @@ package org.thp.thehive.services
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
-import gremlin.scala.Graph
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.commons.codec.binary.Base32
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthenticationError, MultiFactorCodeRequired}
 import play.api.Configuration
 import play.api.mvc.RequestHeader
@@ -72,10 +72,10 @@ class TOTPAuthSrv(
     }
 
   def getSecret(username: String)(implicit graph: Graph): Option[String] =
-    userSrv.get(username).headOption().flatMap(_.totpSecret)
+    userSrv.get(username).headOption.flatMap(_.totpSecret)
 
   def unsetSecret(username: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    userSrv.get(username).updateOne("totpSecret" -> None).map(_ => ())
+    userSrv.get(username).update(_.totpSecret, None).domainMap(_ => ()).getOrFail("User")
 
   def generateSecret(): String = {
     val key = Array.ofDim[Byte](20)
@@ -89,8 +89,9 @@ class TOTPAuthSrv(
   def setSecret(username: String, secret: String)(implicit graph: Graph, authContext: AuthContext): Try[String] =
     userSrv
       .get(username)
-      .update("totpSecret" -> Some(secret))
-      .map(_ => secret)
+      .update(_.totpSecret, Some(secret))
+      .domainMap(_ => secret)
+      .getOrFail("User")
 
   def getSecretURI(username: String, secret: String): URI =
     new URI("otpauth", "totp", s"/TheHive:$username", s"secret=$secret&issuer=$issuerName", null)
