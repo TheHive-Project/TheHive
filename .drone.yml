@@ -125,6 +125,27 @@ steps:
     when:
       event: [tag]
 
+  - name: send message
+    image: thehiveproject/drone_keybase
+    settings:
+      username: {from_secret: keybase_username}
+      paperkey: {from_secret: keybase_paperkey}
+      channel: {from_secret: keybase_channel}
+    commands:
+      - |
+        keybase oneshot -u "$PLUGIN_USERNAME" --paperkey "$PLUGIN_PAPERKEY"
+        URL="$DRONE_SYSTEM_PROTO://$DRONE_SYSTEM_HOST/$DRONE_REPO/$DRONE_BUILD_NUMBER"
+        if [ $DRONE_BUILD_STATUS = "success" ]
+        then
+          keybase chat send "$PLUGIN_CHANNEL" ":white_check_mark: $DRONE_REPO: build succeeded $URL"
+        else
+          keybase chat send "$PLUGIN_CHANNEL" ":x: $DRONE_REPO: build failed $URL"
+        fi
+    when:
+      status:
+        - success
+        - failure
+
 volumes:
   - name: cache
     host:
