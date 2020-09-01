@@ -146,7 +146,7 @@ object TH3Aggregation {
   }
 }
 
-case class AggSum(aggName: Option[String], fieldName: String) extends Aggregation(s"sum_$fieldName") {
+case class AggSum(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
       db: Database,
       publicProperties: List[PublicProperty[_, _]],
@@ -166,7 +166,7 @@ case class AggSum(aggName: Option[String], fieldName: String) extends Aggregatio
     )
   }
 }
-case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregation(s"sum_$fieldName") {
+case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
       db: Database,
       publicProperties: List[PublicProperty[_, _]],
@@ -186,7 +186,7 @@ case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregatio
   }
 }
 
-case class AggMin(aggName: Option[String], fieldName: String) extends Aggregation(s"min_$fieldName") {
+case class AggMin(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"min_$fieldName")) {
   override def getTraversal(
       db: Database,
       publicProperties: List[PublicProperty[_, _]],
@@ -206,7 +206,7 @@ case class AggMin(aggName: Option[String], fieldName: String) extends Aggregatio
   }
 }
 
-case class AggMax(aggName: Option[String], fieldName: String) extends Aggregation(s"max_$fieldName") {
+case class AggMax(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"max_$fieldName")) {
   override def getTraversal(
       db: Database,
       publicProperties: List[PublicProperty[_, _]],
@@ -302,7 +302,7 @@ case class FieldAggregation(
           )
       )
       .fold
-      .domainMap(x => Output(JsObject(x.map(kv => kv._1.toString -> kv._2.toJson))))
+      .domainMap(kvs => Output(JsObject(kvs.map(kv => kv._1.toString -> kv._2.toJson))))
       .castDomain[Output[_]]
   }
 }
@@ -313,7 +313,7 @@ case class TimeAggregation(
     interval: Long,
     unit: ChronoUnit,
     subAggs: Seq[Aggregation]
-) extends Aggregation(aggName.getOrElse(s"time_$fieldName")) {
+) extends Aggregation(aggName.getOrElse(fieldName)) {
   val calendar: Calendar = Calendar.getInstance()
 
   def dateToKey(date: Date): Long =
@@ -392,7 +392,7 @@ case class TimeAggregation(
           )
       )
       .fold
-      .domainMap(x => Output(x.map(kv => kv._1 -> kv._2.toValue).toMap, JsObject(x.map(kv => kv._1.toString -> Json.obj(fieldName -> kv._2.toJson)))))
+      .domainMap(kvs => Output(JsObject(kvs.map(kv => kv._1.toString -> Json.obj(name -> kv._2.toJson)))))
       .castDomain[Output[_]]
   }
 }
