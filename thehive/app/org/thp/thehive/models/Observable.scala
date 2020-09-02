@@ -30,15 +30,16 @@ case class RichObservable(
     extensions: Seq[KeyValue with Entity],
     reportTags: Seq[ReportTag with Entity]
 ) {
-  def _id: String                = observable._id
-  def _createdBy: String         = observable._createdBy
-  def _updatedBy: Option[String] = observable._updatedBy
-  def _createdAt: Date           = observable._createdAt
-  def _updatedAt: Option[Date]   = observable._updatedAt
-  def message: Option[String]    = observable.message
-  def tlp: Int                   = observable.tlp
-  def ioc: Boolean               = observable.ioc
-  def sighted: Boolean           = observable.sighted
+  def _id: String                                                        = observable._id
+  def _createdBy: String                                                 = observable._createdBy
+  def _updatedBy: Option[String]                                         = observable._updatedBy
+  def _createdAt: Date                                                   = observable._createdAt
+  def _updatedAt: Option[Date]                                           = observable._updatedAt
+  def message: Option[String]                                            = observable.message
+  def tlp: Int                                                           = observable.tlp
+  def ioc: Boolean                                                       = observable.ioc
+  def sighted: Boolean                                                   = observable.sighted
+  def dataOrAttachment: Either[Data with Entity, Attachment with Entity] = data.toLeft(attachment.get)
 }
 
 @DefineIndex(IndexType.unique, "data")

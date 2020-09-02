@@ -288,7 +288,7 @@ object ObservableOps {
 
     def richObservableWithCustomRenderer[D, G, C <: Converter[D, G]](
         entityRenderer: Traversal.V[Observable] => Traversal[D, G, C]
-    )(implicit authContext: AuthContext) =
+    )(implicit authContext: AuthContext): Traversal[(RichObservable, D), JMap[String, Any], Converter[(RichObservable, D), JMap[String, Any]]] =
       traversal
         .project(
           _.by
