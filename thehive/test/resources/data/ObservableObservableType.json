@@ -2,5 +2,6 @@
   {"from": "h.fr", "to": "domain"},
   {"from": "c.fr", "to": "domain"},
   {"from": "helloworld", "to": "file"},
-  {"from": "perdu.com", "to": "domain"}
+  {"from": "perdu.com", "to": "domain"},
+  {"from": "alert-h.fr", "to": "domain"}
 ]

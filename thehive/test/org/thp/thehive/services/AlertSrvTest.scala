@@ -193,15 +193,19 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       } must beASuccessfulTry(())
     }
 
-    "merge a case" in testApp { app =>
+    "merge into an existing case" in testApp { app =>
       app[Database]
         .tryTransaction { implicit graph =>
           app[AlertSrv].mergeInCase("testType;testSource;ref1", "#1")
         } must beASuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].get("#1").richCase.getOrFail("Case").get
-        pending("must check tags, description and observables")
+        val observables = app[CaseSrv].get("#1").observables.richObservable.toList
+        observables must have size 1
+        observables must contain { (o: RichObservable) =>
+          o.data must beSome.which((_: Data).data must beEqualTo("h.fr"))
+          o.tags.map(_.toString) must contain("testNamespace:testPredicate=\"testDomain\"", "testNamespace:testPredicate=\"hello\"").exactly
+        }
       }
     }
 

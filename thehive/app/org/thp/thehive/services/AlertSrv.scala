@@ -33,8 +33,8 @@ class AlertSrv @Inject() (
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv
-)(
-    implicit @Named("with-thehive-schema") db: Database
+)(implicit
+    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Alert] {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
@@ -44,10 +44,11 @@ class AlertSrv @Inject() (
   val alertCaseTemplateSrv = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
   val alertObservableSrv   = new EdgeSrv[AlertObservable, Alert, Observable]
 
-  override def get(idOrSource: String)(implicit graph: Graph): Traversal.V[Alert] = idOrSource.split(';') match {
-    case Array(tpe, source, sourceRef) => startTraversal.getBySourceId(tpe, source, sourceRef)
-    case _                             => super.getByIds(idOrSource)
-  }
+  override def get(idOrSource: String)(implicit graph: Graph): Traversal.V[Alert] =
+    idOrSource.split(';') match {
+      case Array(tpe, source, sourceRef) => startTraversal.getBySourceId(tpe, source, sourceRef)
+      case _                             => super.getByIds(idOrSource)
+    }
 
   def create(
       alert: Alert,
@@ -55,8 +56,8 @@ class AlertSrv @Inject() (
       tagNames: Set[String],
       customFields: Map[String, Option[Any]],
       caseTemplate: Option[CaseTemplate with Entity]
-  )(
-      implicit graph: Graph,
+  )(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] =
     tagNames.toTry(tagSrv.getOrCreate).flatMap(create(alert, organisation, _, customFields, caseTemplate))
@@ -67,8 +68,8 @@ class AlertSrv @Inject() (
       tags: Seq[Tag with Entity],
       customFields: Map[String, Option[Any]],
       caseTemplate: Option[CaseTemplate with Entity]
-  )(
-      implicit graph: Graph,
+  )(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] = {
     val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).getCount
@@ -142,8 +143,8 @@ class AlertSrv @Inject() (
         auditSrv.observableInAlert.delete(observable, Some(alert))
       }
 
-  def addObservable(alert: Alert with Entity, richObservable: RichObservable)(
-      implicit graph: Graph,
+  def addObservable(alert: Alert with Entity, richObservable: RichObservable)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val alreadyExistInThatCase = observableSrv
@@ -172,8 +173,8 @@ class AlertSrv @Inject() (
       ccfe <- alertCustomFieldSrv.create(ccf, alert, cf)
     } yield RichCustomField(cf, ccfe)
 
-  def setOrCreateCustomField(alert: Alert with Entity, customFieldName: String, value: Option[Any])(
-      implicit graph: Graph,
+  def setOrCreateCustomField(alert: Alert with Entity, customFieldName: String, value: Option[Any])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val cfv = get(alert).customFields(customFieldName)
@@ -226,15 +227,16 @@ class AlertSrv @Inject() (
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
-  def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(
-      implicit graph: Graph,
+  def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichCase] =
     for {
-      caseTemplate <- alert
-        .caseTemplate
-        .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail("CaseTemplate"))
-        .flip
+      caseTemplate <-
+        alert
+          .caseTemplate
+          .map(caseTemplateSrv.get(_).richCaseTemplate.getOrFail("CaseTemplate"))
+          .flip
       customField = alert.customFields.map(f => (f.name, f.value, f.order))
       case0 = Case(
         number = 0,
@@ -274,8 +276,8 @@ class AlertSrv @Inject() (
       _ <- auditSrv.alertToCase.merge(alert, c)
     } yield c
 
-  def importObservables(alert: Alert with Entity, `case`: Case with Entity)(
-      implicit graph: Graph,
+  def importObservables(alert: Alert with Entity, `case`: Case with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     get(alert)
@@ -286,7 +288,23 @@ class AlertSrv @Inject() (
         observableSrv
           .duplicate(richObservable)
           .flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable))
-          .recover { case _: CreateError => () } // ignore if case already contains observable
+          .recover {
+            case _: CreateError => // if case already contains observable, update tags
+              caseSrv
+                .get(`case`)
+                .observables
+                .filter { o =>
+                  richObservable.dataOrAttachment.fold(d => o.filterOnData(d.data), a => o.attachments.has("attachmentId", a.attachmentId))
+                }
+                .headOption
+                .foreach { observable =>
+                  val newTags = observableSrv
+                    .get(observable)
+                    .tags
+                    .toSet ++ richObservable.tags
+                  observableSrv.updateTags(observable, newTags)
+                }
+          }
       }
       .map(_ => ())
 
@@ -302,10 +320,11 @@ class AlertSrv @Inject() (
 object AlertOps {
 
   implicit class AlertOpsDefs(traversal: Traversal.V[Alert]) {
-    def get(idOrSource: String): Traversal.V[Alert] = idOrSource.split(';') match {
-      case Array(tpe, source, sourceRef) => getBySourceId(tpe, source, sourceRef)
-      case _                             => traversal.getByIds(idOrSource)
-    }
+    def get(idOrSource: String): Traversal.V[Alert] =
+      idOrSource.split(';') match {
+        case Array(tpe, source, sourceRef) => getBySourceId(tpe, source, sourceRef)
+        case _                             => traversal.getByIds(idOrSource)
+      }
 
     def getBySourceId(`type`: String, source: String, sourceRef: String): Traversal.V[Alert] =
       traversal
@@ -339,8 +358,8 @@ object AlertOps {
 
     def imported: Traversal[Boolean, JLong, Converter[Boolean, JLong]] = traversal.outE[AlertCase].count.domainMap(_ > 0)
 
-    def similarCases(
-        implicit authContext: AuthContext
+    def similarCases(implicit
+        authContext: AuthContext
     ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] =
       observables
         .similar
@@ -368,8 +387,8 @@ object AlertOps {
 
     def alertUserOrganisation(
         permission: Permission
-    )(
-        implicit authContext: AuthContext
+    )(implicit
+        authContext: AuthContext
     ): Traversal[(RichAlert, Organisation with Entity), JMap[String, Any], Converter[(RichAlert, Organisation with Entity), JMap[String, Any]]] = {
       val alertLabel            = StepLabel.v[Alert]
       val organisationLabel     = StepLabel.v[Organisation]
