@@ -154,7 +154,20 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     )
 
     TestAlert(resultAlertOutput) shouldEqual expected
-    resultAlertOutput.artifacts must beEmpty
+    resultAlertOutput
+      .artifacts
+      .map(o => TestObservable(o)) must contain(
+      TestObservable(
+        "domain",
+        Some("h.fr"),
+        None,
+        1,
+        Set("testNamespace:testPredicate=\"hello\""),
+        ioc = true,
+        sighted = true,
+        Some("observable from alert")
+      )
+    )
   }
 
   "update an alert" in testApp { app =>
@@ -261,8 +274,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       summary = None,
       owner = Some("certuser@thehive.local"),
       customFields = Json.obj(
-        "boolean1" -> Json.obj("boolean" -> JsNull, "order"                 -> JsNull),
-        "string1"  -> Json.obj("string"  -> "string1 custom field", "order" -> JsNull)
+        "boolean1" -> Json.obj("boolean" -> JsNull, "order" -> JsNull),
+        "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> JsNull)
       ),
       stats = Json.obj()
     )
