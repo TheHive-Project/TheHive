@@ -260,17 +260,17 @@ object UserOps {
         .project(
           _.by
             .by(_.avatar.fold)
-            .by(_.role.project(_.by(_.profile).by(_.organisation.visible.value(_.name))).fold)
+            .by(_.role.project(_.by(_.profile).by(_.organisation.visible.value(_.name).fold)).fold)
         )
         .domainMap {
           case (user, attachment, profileOrganisations) =>
             profileOrganisations
-              .find(_._2 == authContext.organisation)
+              .find(_._2.contains(authContext.organisation))
               .orElse(profileOrganisations.headOption)
               .fold(throw InternalError(s"")) { // FIXME
                 case (profile, organisationName) =>
                   val avatar = attachment.headOption.map(_.attachmentId)
-                  RichUser(user, avatar, profile.name, profile.permissions, organisationName)
+                  RichUser(user, avatar, profile.name, profile.permissions, organisationName.headOption.getOrElse("***"))
               }
         }
 

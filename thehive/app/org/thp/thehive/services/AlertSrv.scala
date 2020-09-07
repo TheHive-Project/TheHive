@@ -4,13 +4,14 @@ import java.lang.{Long => JLong}
 import java.util.{Date, List => JList, Map => JMap}
 
 import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.traversal.{Converter, IdentityConverter, StepLabel, Traversal}
 import org.thp.scalligraph.{CreateError, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -356,7 +357,11 @@ object AlertOps {
         )
       else traversal.limit(0)
 
-    def imported: Traversal[Boolean, JLong, Converter[Boolean, JLong]] = traversal.outE[AlertCase].count.domainMap(_ > 0)
+    def imported: Traversal[Boolean, Boolean, IdentityConverter[Boolean]] =
+      traversal
+        .outE[AlertCase]
+        .count
+        .choose(_.is(P.gt(0)), onTrue = _.constant(true), onFalse = _.constant(false))
 
     def similarCases(implicit
         authContext: AuthContext
