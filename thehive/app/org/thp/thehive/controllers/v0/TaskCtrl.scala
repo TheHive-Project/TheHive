@@ -27,7 +27,7 @@ class TaskCtrl @Inject() (
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     shareSrv: ShareSrv,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicTask
 ) extends QueryCtrl {
 

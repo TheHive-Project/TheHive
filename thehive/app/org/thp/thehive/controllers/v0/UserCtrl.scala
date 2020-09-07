@@ -29,7 +29,7 @@ class UserCtrl @Inject() (
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
     @Named("with-thehive-schema") implicit override val db: Database,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicUser
 ) extends QueryCtrl {
   def current: Action[AnyContent] =

@@ -33,7 +33,7 @@ class CaseCtrl @Inject() (
     tagSrv: TagSrv,
     userSrv: UserSrv,
     override val publicData: PublicCase,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     @Named("with-thehive-schema") implicit override val db: Database
 ) extends CaseRenderer
     with QueryCtrl {

@@ -23,7 +23,7 @@ class TagCtrl @Inject() (
     override val entrypoint: Entrypoint,
     @Named("with-thehive-schema") override val db: Database,
     tagSrv: TagSrv,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicTag
 ) extends QueryCtrl {
   def importTaxonomy: Action[AnyContent] =

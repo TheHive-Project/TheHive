@@ -1,8 +1,8 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.scalactic.Good
-import org.thp.scalligraph.BadRequestError
+import org.thp.scalligraph.{BadRequestError, GlobalQueryExecutor}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FObject, Field, FieldsParser}
 import org.thp.scalligraph.models._
@@ -205,4 +205,9 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't child $childType"))
   }
+}
+
+@Singleton
+class QueryExecutorVersion0Provider @Inject() (globalQueryExecutor: GlobalQueryExecutor) extends Provider[QueryExecutor] {
+  override def get(): QueryExecutor = globalQueryExecutor.get(0)
 }

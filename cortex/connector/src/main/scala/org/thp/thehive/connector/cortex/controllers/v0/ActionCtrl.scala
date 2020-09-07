@@ -34,7 +34,7 @@ class ActionCtrl @Inject() (
     logSrv: LogSrv,
     alertSrv: AlertSrv,
     implicit val executionContext: ExecutionContext,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicAction
 ) extends AuditRenderer
     with QueryCtrl {

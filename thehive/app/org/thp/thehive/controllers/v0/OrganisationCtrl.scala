@@ -23,7 +23,7 @@ class OrganisationCtrl @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     @Named("with-thehive-schema") implicit override val db: Database,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicOrganisation
 ) extends QueryCtrl {
   def create: Action[AnyContent] =

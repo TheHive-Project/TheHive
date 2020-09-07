@@ -26,7 +26,7 @@ class DashboardCtrl @Inject() (
     userSrv: UserSrv,
     @Named("with-thehive-schema") implicit val db: Database,
     override val publicData: PublicDashboard,
-    override val queryExecutor: QueryExecutor
+    @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create dashboard")

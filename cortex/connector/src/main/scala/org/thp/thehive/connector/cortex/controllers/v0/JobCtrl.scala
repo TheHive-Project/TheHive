@@ -29,7 +29,7 @@ class JobCtrl @Inject() (
     observableSrv: ObservableSrv,
     errorHandler: ErrorHandler,
     implicit val ec: ExecutionContext,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicJob
 ) extends QueryCtrl {
   def get(jobId: String): Action[AnyContent] =
