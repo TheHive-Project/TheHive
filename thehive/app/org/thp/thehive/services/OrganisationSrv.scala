@@ -13,6 +13,7 @@ import org.thp.scalligraph.{BadRequestError, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services.RoleOps._
 import play.api.libs.json.JsObject
 
@@ -23,9 +24,10 @@ class OrganisationSrv @Inject() (
     roleSrv: RoleSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
+    userSrv: UserSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
-)(
-    implicit @Named("with-thehive-schema") db: Database
+)(implicit
+    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Organisation] {
 
   val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
@@ -50,6 +52,9 @@ class OrganisationSrv @Inject() (
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
 
+  def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
+    userSrv.current.organisations.visibleOrganisationsFrom
+
   override def get(idOrName: String)(implicit graph: Graph): Traversal.V[Organisation] =
     if (db.isValidId(idOrName)) getByIds(idOrName)
     else startTraversal.getByName(idOrName)
@@ -62,7 +67,7 @@ class OrganisationSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Organisation], JsObject)] =
     if (traversal.clone().has("name", Organisation.administration.name).exists)
       Failure(BadRequestError("Admin organisation is unmodifiable"))
-    else {
+    else
       auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
         case (orgSteps, updatedFields) =>
           orgSteps
@@ -70,7 +75,6 @@ class OrganisationSrv @Inject() (
             .getOrFail("Organisation")
             .flatMap(auditSrv.organisation.update(_, updatedFields))
       }
-    }
 
   def linkExists(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Boolean =
     fromOrg._id == toOrg._id || get(fromOrg).links.hasId(toOrg._id).exists
@@ -194,11 +198,12 @@ object OrganisationOps {
 
 class OrganisationIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: OrganisationSrv)
     extends IntegrityCheckOps[Organisation] {
-  override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head))
-      service.getByIds(tail.map(_._id): _*).remove()
-      Success(())
-    case _ => Success(())
-  }
+  override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] =
+    entities match {
+      case head :: tail =>
+        tail.foreach(copyEdge(_, head))
+        service.getByIds(tail.map(_._id): _*).remove()
+        Success(())
+      case _ => Success(())
+    }
 }
