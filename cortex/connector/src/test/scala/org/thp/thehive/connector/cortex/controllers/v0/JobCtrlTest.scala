@@ -22,7 +22,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
           .bindToProvider[CortexClient, TestCortexClientProvider]
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-          .bindToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]
+          .bindNamedToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]("v0")
           .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
       )
 
