@@ -31,7 +31,7 @@ trait TestAppBuilder {
       .bind[UserSrv, LocalUserSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchemaDefinition]
-      .bind[QueryExecutor, TheHiveQueryExecutor]
+      .bindNamed[QueryExecutor, TheHiveQueryExecutor]("v0")
       .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
       .multiBind[NotifierProvider](classOf[AppendToFileProvider])
       .multiBind[NotifierProvider](classOf[EmailerProvider])
