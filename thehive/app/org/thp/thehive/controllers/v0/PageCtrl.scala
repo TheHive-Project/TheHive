@@ -19,7 +19,7 @@ class PageCtrl @Inject() (
     override val entrypoint: Entrypoint,
     pageSrv: PageSrv,
     @Named("with-thehive-schema") override val db: Database,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicPage
 ) extends QueryCtrl {
   def get(idOrTitle: String): Action[AnyContent] =

@@ -21,7 +21,7 @@ class CustomFieldCtrl @Inject() (
     @Named("with-thehive-schema") override val db: Database,
     customFieldSrv: CustomFieldSrv,
     override val publicData: PublicCustomField,
-    override val queryExecutor: QueryExecutor
+    @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl
     with AuditRenderer {
   def create: Action[AnyContent] =

@@ -31,7 +31,7 @@ class CaseTemplateCtrl @Inject() (
     auditSrv: AuditSrv,
     override val publicData: PublicCaseTemplate,
     @Named("with-thehive-schema") implicit override val db: Database,
-    override val queryExecutor: QueryExecutor
+    @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create case template")

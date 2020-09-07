@@ -41,7 +41,7 @@ class AlertCtrl @Inject() (
     caseSrv: CaseSrv,
     override val publicData: PublicAlert,
     @Named("with-thehive-schema") implicit val db: Database,
-    override val queryExecutor: QueryExecutor
+    @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create alert")

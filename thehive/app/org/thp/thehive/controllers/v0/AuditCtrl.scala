@@ -28,7 +28,7 @@ class AuditCtrl @Inject() (
     override val publicData: PublicAudit,
     @Named("with-thehive-schema") implicit override val db: Database,
     implicit val ec: ExecutionContext,
-    val queryExecutor: QueryExecutor
+    @Named("v0") override val queryExecutor: QueryExecutor
 ) extends AuditRenderer
     with QueryCtrl {
   implicit val timeout: Timeout = Timeout(5.minutes)

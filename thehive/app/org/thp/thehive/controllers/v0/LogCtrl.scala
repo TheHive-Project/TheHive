@@ -22,7 +22,7 @@ class LogCtrl @Inject() (
     @Named("with-thehive-schema") override val db: Database,
     logSrv: LogSrv,
     taskSrv: TaskSrv,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicLog
 ) extends QueryCtrl {
 

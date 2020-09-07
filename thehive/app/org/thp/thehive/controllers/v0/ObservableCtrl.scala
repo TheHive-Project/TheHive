@@ -28,7 +28,7 @@ class ObservableCtrl @Inject() (
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservable
 ) extends ObservableRenderer
     with QueryCtrl {

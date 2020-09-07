@@ -26,7 +26,7 @@ class AnalyzerTemplateCtrl @Inject() (
     override val entrypoint: Entrypoint,
     @Named("with-thehive-cortex-schema") override val db: Database,
     analyzerTemplateSrv: AnalyzerTemplateSrv,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicAnalyzerTemplate
 ) extends QueryCtrl {
 

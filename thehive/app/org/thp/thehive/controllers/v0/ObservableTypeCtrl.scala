@@ -17,7 +17,7 @@ class ObservableTypeCtrl @Inject() (
     override val entrypoint: Entrypoint,
     @Named("with-thehive-schema") override val db: Database,
     observableTypeSrv: ObservableTypeSrv,
-    override val queryExecutor: QueryExecutor,
+    @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservableType
 ) extends QueryCtrl {
   def get(idOrName: String): Action[AnyContent] =
