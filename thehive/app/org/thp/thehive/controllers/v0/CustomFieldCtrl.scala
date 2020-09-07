@@ -2,12 +2,13 @@ package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
-import org.thp.thehive.models.Permissions
+import org.thp.thehive.models.{CustomField, Permissions}
 import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.{JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -16,12 +17,13 @@ import scala.util.Success
 
 @Singleton
 class CustomFieldCtrl @Inject() (
-    entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
-    properties: Properties,
-    customFieldSrv: CustomFieldSrv
-) extends AuditRenderer {
-
+    override val entrypoint: Entrypoint,
+    @Named("with-thehive-schema") override val db: Database,
+    customFieldSrv: CustomFieldSrv,
+    override val publicData: PublicCustomField,
+    override val queryExecutor: QueryExecutor
+) extends QueryCtrl
+    with AuditRenderer {
   def create: Action[AnyContent] =
     entrypoint("create custom field")
       .extract("customField", FieldsParser[InputCustomField])
@@ -60,7 +62,7 @@ class CustomFieldCtrl @Inject() (
 
   def update(id: String): Action[AnyContent] =
     entrypoint("update custom field")
-      .extract("customField", FieldsParser.update("customField", properties.customField))
+      .extract("customField", FieldsParser.update("customField", publicData.publicProperties))
       .authPermittedTransaction(db, Permissions.manageCustomField) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("customField")
 
@@ -81,4 +83,33 @@ class CustomFieldCtrl @Inject() (
           Results.Ok(countStats + ("total" -> JsNumber(total)))
         }
       }
+}
+
+@Singleton
+class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends PublicData {
+  override val entityName: String  = "CustomField"
+  override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
+    "page",
+    FieldsParser[OutputParam],
+    {
+      case (OutputParam(from, to, _, _), customFieldSteps, _) =>
+        customFieldSteps.page(from, to, withTotal = true)
+    }
+  )
+  override val outputQuery: Query = Query.output[CustomField with Entity]
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[CustomField]](
+    "getCustomField",
+    FieldsParser[IdOrName],
+    (param, graph, _) => customFieldSrv.get(param.idOrName)(graph)
+  )
+  override val publicProperties: PublicProperties =
+    PublicPropertyListBuilder[CustomField]
+      .property("name", UMapping.string)(_.rename("displayName").updatable)
+      .property("description", UMapping.string)(_.field.updatable)
+      .property("reference", UMapping.string)(_.rename("name").readonly)
+      .property("mandatory", UMapping.boolean)(_.field.updatable)
+      .property("type", UMapping.string)(_.field.readonly)
+      .property("options", UMapping.json.sequence)(_.field.updatable)
+      .build
 }

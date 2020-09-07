@@ -29,7 +29,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
         )
         .withHeaders("user" -> "socadmin@thehive.local")
 
-      val result = app[TheHiveQueryExecutor].user.search(request)
+      val result = app[UserCtrl].search(request)
       status(result) must_=== 200
 
       val resultUsers = contentAsJson(result)(defaultAwaitTimeout, app[Materializer])

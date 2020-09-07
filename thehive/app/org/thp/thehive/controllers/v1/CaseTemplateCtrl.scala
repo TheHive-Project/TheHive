@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -25,8 +25,8 @@ class CaseTemplateCtrl @Inject() (
     @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl {
 
-  override val entityName: String                           = "caseTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.caseTemplate
+  override val entityName: String                 = "caseTemplate"
+  override val publicProperties: PublicProperties = properties.caseTemplate
   override val initialQuery: Query =
     Query
       .init[Traversal.V[CaseTemplate]]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)

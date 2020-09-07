@@ -3,8 +3,8 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -19,34 +19,13 @@ import scala.util.{Failure, Success}
 
 @Singleton
 class OrganisationCtrl @Inject() (
-    entrypoint: Entrypoint,
-    properties: Properties,
+    override val entrypoint: Entrypoint,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database
-) extends QueryableCtrl {
-
-  override val entityName: String                           = "organisation"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.organisation
-  override val initialQuery: Query =
-    Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
-    "page",
-    FieldsParser[OutputParam],
-    (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
-  )
-  override val outputQuery: Query = Query.output[Organisation with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Organisation]](
-    "getOrganisation",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
-  )
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
-    Query[Traversal.V[Organisation], Traversal.V[User]]("users", (organisationSteps, _) => organisationSteps.users),
-    Query[Traversal.V[Organisation], Traversal.V[CaseTemplate]]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
-  )
-
+    @Named("with-thehive-schema") implicit override val db: Database,
+    override val queryExecutor: QueryExecutor,
+    override val publicData: PublicOrganisation
+) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create organisation")
       .extract("organisation", FieldsParser[InputOrganisation])
@@ -84,7 +63,7 @@ class OrganisationCtrl @Inject() (
 
   def update(organisationId: String): Action[AnyContent] =
     entrypoint("update organisation")
-      .extract("organisation", FieldsParser.update("organisation", properties.organisation))
+      .extract("organisation", FieldsParser.update("organisation", publicData.publicProperties))
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
 
@@ -122,8 +101,9 @@ class OrganisationCtrl @Inject() (
         for {
           fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
           toOrg   <- organisationSrv.getOrFail(toOrganisationId)
-          _ <- if (organisationSrv.linkExists(fromOrg, toOrg)) Success(organisationSrv.doubleUnlink(fromOrg, toOrg))
-          else Failure(NotFoundError(s"Organisation $fromOrganisationId is not linked to $toOrganisationId"))
+          _ <-
+            if (organisationSrv.linkExists(fromOrg, toOrg)) Success(organisationSrv.doubleUnlink(fromOrg, toOrg))
+            else Failure(NotFoundError(s"Organisation $fromOrganisationId is not linked to $toOrganisationId"))
         } yield Results.NoContent
       }
 
@@ -143,4 +123,32 @@ class OrganisationCtrl @Inject() (
 
         Success(Results.Ok(organisations.toJson))
       }
+}
+
+@Singleton
+class PublicOrganisation @Inject() (organisationSrv: OrganisationSrv) extends PublicData {
+  override val entityName: String = "organisation"
+
+  override val initialQuery: Query =
+    Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext))
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
+    "page",
+    FieldsParser[OutputParam],
+    (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
+  )
+  override val outputQuery: Query = Query.output[Organisation with Entity]
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Organisation]](
+    "getOrganisation",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
+    Query[Traversal.V[Organisation], Traversal.V[User]]("users", (organisationSteps, _) => organisationSteps.users),
+    Query[Traversal.V[Organisation], Traversal.V[CaseTemplate]]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
+  )
+  override val publicProperties: PublicProperties = PublicPropertyListBuilder[Organisation]
+    .property("name", UMapping.string)(_.field.updatable)
+    .property("description", UMapping.string)(_.field.updatable)
+    .build
 }

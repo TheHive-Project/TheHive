@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -27,7 +27,7 @@ class AuditCtrl @Inject() (
 
   val initialQuery: Query =
     Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(authContext))
-  val publicProperties: List[PublicProperty[_, _]] = properties.audit
+  val publicProperties: PublicProperties = properties.audit
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Audit]](
     "getAudit",
     FieldsParser[IdOrName],

@@ -4,7 +4,7 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -30,9 +30,9 @@ class ObservableCtrl @Inject() (
 ) extends QueryableCtrl
     with ObservableRenderer {
 
-  lazy val logger: Logger                                   = Logger(getClass)
-  override val entityName: String                           = "observable"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.observable
+  lazy val logger: Logger                         = Logger(getClass)
+  override val entityName: String                 = "observable"
+  override val publicProperties: PublicProperties = properties.observable
   override val initialQuery: Query =
     Query.init[Traversal.V[Observable]](
       "listObservable",
@@ -45,7 +45,8 @@ class ObservableCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
     "page",
-    FieldsParser[OutputParam], {
+    FieldsParser[OutputParam],
+    {
       case (OutputParam(from, to, extraData), observableSteps, authContext) =>
         observableSteps.richPage(from, to, extraData.contains("total")) {
           _.richObservableWithCustomRenderer(observableStatsRenderer(extraData - "total")(authContext))(authContext)
@@ -72,18 +73,21 @@ class ObservableCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputObservable: InputObservable = request.body("artifact")
         for {
-          case0 <- caseSrv
-            .get(caseId)
-            .can(Permissions.manageObservable)
-            .getOrFail("Case")
+          case0 <-
+            caseSrv
+              .get(caseId)
+              .can(Permissions.manageObservable)
+              .getOrFail("Case")
           observableType <- observableTypeSrv.getOrFail(inputObservable.dataType)
-          observablesWithData <- inputObservable
-            .data
-            .toTry(d => observableSrv.create(inputObservable.toObservable, observableType, d, inputObservable.tags, Nil))
-          observableWithAttachment <- inputObservable
-            .attachment
-            .map(a => observableSrv.create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil))
-            .flip
+          observablesWithData <-
+            inputObservable
+              .data
+              .toTry(d => observableSrv.create(inputObservable.toObservable, observableType, d, inputObservable.tags, Nil))
+          observableWithAttachment <-
+            inputObservable
+              .attachment
+              .map(a => observableSrv.create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil))
+              .flip
           createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
             caseSrv
               .addObservable(case0, richObservables)
@@ -137,10 +141,11 @@ class ObservableCtrl @Inject() (
     entryPoint("delete")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          observable <- observableSrv
-            .getByIds(obsId)
-            .can(Permissions.manageObservable)
-            .getOrFail("Observable")
+          observable <-
+            observableSrv
+              .getByIds(obsId)
+              .can(Permissions.manageObservable)
+              .getOrFail("Observable")
           _ <- observableSrv.remove(observable)
         } yield Results.NoContent
       }

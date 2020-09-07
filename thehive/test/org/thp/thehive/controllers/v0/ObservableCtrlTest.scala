@@ -129,7 +129,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 }
              }
             """.stripMargin))
-      val resultSearch = app[TheHiveQueryExecutor].observable.search(requestSearch)
+      val resultSearch = app[ObservableCtrl].search(requestSearch)
 
       status(resultSearch) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
 

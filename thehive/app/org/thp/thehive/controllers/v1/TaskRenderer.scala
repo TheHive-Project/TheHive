@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.{List => JList, Map => JMap}
 import java.lang.{Long => JLong}
+import java.util.{List => JList, Map => JMap}
 
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
@@ -12,7 +12,7 @@ import org.thp.thehive.models.Task
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.TaskOps._
-import play.api.libs.json.{JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue}
+import play.api.libs.json._
 
 trait TaskRenderer {
 

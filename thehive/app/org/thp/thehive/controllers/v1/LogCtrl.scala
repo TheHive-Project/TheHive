@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -27,9 +27,9 @@ class LogCtrl @Inject() (
     organisationSrv: OrganisationSrv
 ) extends QueryableCtrl
     with LogRenderer {
-  lazy val logger: Logger                                   = Logger(getClass)
-  override val entityName: String                           = "log"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.log
+  lazy val logger: Logger                         = Logger(getClass)
+  override val entityName: String                 = "log"
+  override val publicProperties: PublicProperties = properties.log
   override val initialQuery: Query =
     Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks.logs)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Log]](
@@ -53,10 +53,11 @@ class LogCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputLog: InputLog = request.body("log")
         for {
-          task <- taskSrv
-            .getByIds(taskId)
-            .can(Permissions.manageTask)
-            .getOrFail("Task")
+          task <-
+            taskSrv
+              .getByIds(taskId)
+              .can(Permissions.manageTask)
+              .getOrFail("Task")
           createdLog <- logSrv.create(inputLog.toLog, task)
           attachment <- inputLog.attachment.map(logSrv.addAttachment(createdLog, _)).flip
           richLog = RichLog(createdLog, attachment.toList)

@@ -5,7 +5,7 @@ import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -31,8 +31,8 @@ class AlertCtrl @Inject() (
 ) extends QueryableCtrl
     with AlertRenderer {
 
-  override val entityName: String                           = "alert"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.alert
+  override val entityName: String                 = "alert"
+  override val publicProperties: PublicProperties = properties.alert
   override val initialQuery: Query =
     Query.init[Traversal.V[Alert]]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
   override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Alert]](

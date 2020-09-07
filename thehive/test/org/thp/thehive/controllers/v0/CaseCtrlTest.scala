@@ -146,7 +146,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       )
 
       val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "certuser@thehive.local")
-      val resultList  = app[TheHiveQueryExecutor].task.search(requestList)
+      val resultList  = app[TaskCtrl].search(requestList)
 
       status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
       val tasksList = contentAsJson(resultList)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputTask]]
@@ -249,7 +249,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(
           Json.parse("""{"query":{"severity":2}}""")
         )
-      val result = app[TheHiveQueryExecutor].`case`.search()(request)
+      val result = app[CaseCtrl].search()(request)
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       header("X-Total", result) must beSome("2")
       val resultCases = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputCase]]
@@ -294,7 +294,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(
           Json.parse("""{"query":{"_and":[{"_field":"customFields.boolean1","_value":true},{"_not":{"status":"Deleted"}}]}}""")
         )
-      val resultSearch = app[TheHiveQueryExecutor].`case`.search()(requestSearch)
+      val resultSearch = app[CaseCtrl].search()(requestSearch)
       status(resultSearch) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
       contentAsJson(resultSearch)(defaultAwaitTimeout, app[Materializer]).as[List[OutputCase]] must not(beEmpty)
     }
@@ -322,7 +322,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
                             ]
                          }""")
         )
-      val result = app[TheHiveQueryExecutor].`case`.stats()(request)
+      val result = app[CaseCtrl].stats()(request)
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 

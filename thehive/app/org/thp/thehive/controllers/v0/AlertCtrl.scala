@@ -6,12 +6,12 @@ import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.controllers._
+import org.thp.scalligraph.models.{Database, IdMapping, UMapping}
+import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, InvalidFormatAttributeError, RichSeq}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.models._
@@ -20,9 +20,9 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -30,59 +30,19 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertCtrl @Inject() (
-    entrypoint: Entrypoint,
-    properties: Properties,
+    override val entrypoint: Entrypoint,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
-    organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
     caseSrv: CaseSrv,
-    @Named("with-thehive-schema") implicit val db: Database
-) extends QueryableCtrl {
-  lazy val logger: Logger                                   = Logger(getClass)
-  override val entityName: String                           = "alert"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.alert
-  override val initialQuery: Query =
-    Query
-      .init[Traversal.V[Alert]]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Alert]](
-    "getAlert",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => alertSrv.get(param.idOrName)(graph).visible(authContext)
-  )
-  override val pageQuery: ParamQuery[OutputParam] =
-    Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
-      "page",
-      FieldsParser[OutputParam],
-      (range, alertSteps, _) =>
-        alertSteps
-          .richPage(range.from, range.to, withTotal = true) { alerts =>
-            alerts.project(_.by(_.richAlert).by(_.observables.richObservable.fold))
-          }
-    )
-  override val outputQuery: Query = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[Traversal.V[Alert], Traversal.V[Case]]("cases", (alertSteps, _) => alertSteps.`case`),
-    Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
-    Query[
-      Traversal.V[Alert],
-      Traversal[(RichAlert, Seq[RichObservable]), JMap[String, Any], Converter[(RichAlert, Seq[RichObservable]), JMap[String, Any]]]
-    ](
-      "withObservables",
-      (alertSteps, _) =>
-        alertSteps
-          .project(
-            _.by(_.richAlert)
-              .by(_.observables.richObservable.fold)
-          )
-    ),
-    Query.output[(RichAlert, Seq[RichObservable])]
-  )
-
+    override val publicData: PublicAlert,
+    @Named("with-thehive-schema") implicit val db: Database,
+    override val queryExecutor: QueryExecutor
+) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create alert")
       .extract("alert", FieldsParser[InputAlert])
@@ -95,19 +55,20 @@ class AlertCtrl @Inject() (
         val customFields                      = inputAlert.customFields.map(c => c.name -> c.value).toMap
         val caseTemplate                      = caseTemplateName.flatMap(caseTemplateSrv.get(_).visible.headOption)
         for {
-          organisation <- userSrv
-            .current
-            .organisations(Permissions.manageAlert)
-            .get(request.organisation)
-            .orFail(AuthorizationError("Operation not permitted"))
+          organisation <-
+            userSrv
+              .current
+              .organisations(Permissions.manageAlert)
+              .get(request.organisation)
+              .orFail(AuthorizationError("Operation not permitted"))
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
           _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o)))(_ => Success(()))
         } yield Results.Created((richAlert -> richObservables).toJson)
       }
 
-  def alertSimilarityRenderer(
-      implicit authContext: AuthContext
+  def alertSimilarityRenderer(implicit
+      authContext: AuthContext
   ): Traversal.V[Alert] => Traversal[JsArray, JList[JMap[String, Any]], Converter[JsArray, JList[JMap[String, Any]]]] =
     _.similarCases
       .fold
@@ -165,7 +126,7 @@ class AlertCtrl @Inject() (
 
   def update(alertId: String): Action[AnyContent] =
     entrypoint("update alert")
-      .extract("alert", FieldsParser.update("alert", publicProperties))
+      .extract("alert", FieldsParser.update("alert", publicData.publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv
@@ -181,10 +142,11 @@ class AlertCtrl @Inject() (
     entrypoint("delete alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          alert <- alertSrv
-            .get(alertId)
-            .can(Permissions.manageAlert)
-            .getOrFail("Alert")
+          alert <-
+            alertSrv
+              .get(alertId)
+              .can(Permissions.manageAlert)
+              .getOrFail("Alert")
           _ <- alertSrv.remove(alert)
         } yield Results.NoContent
       }
@@ -197,10 +159,11 @@ class AlertCtrl @Inject() (
         ids
           .toTry { alertId =>
             for {
-              alert <- alertSrv
-                .get(alertId)
-                .can(Permissions.manageAlert)
-                .getOrFail("Alert")
+              alert <-
+                alertSrv
+                  .get(alertId)
+                  .can(Permissions.manageAlert)
+                  .getOrFail("Alert")
               _ <- alertSrv.remove(alert)
             } yield ()
           }
@@ -270,11 +233,12 @@ class AlertCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplate: Option[String] = request.body("caseTemplate")
         for {
-          (alert, organisation) <- alertSrv
-            .get(alertId)
-            .can(Permissions.manageAlert)
-            .alertUserOrganisation(Permissions.manageCase)
-            .getOrFail("Alert")
+          (alert, organisation) <-
+            alertSrv
+              .get(alertId)
+              .can(Permissions.manageAlert)
+              .alertUserOrganisation(Permissions.manageCase)
+              .getOrFail("Alert")
           alertWithCaseTemplate = caseTemplate.fold(alert)(ct => alert.copy(caseTemplate = Some(ct)))
           richCase <- alertSrv.createCase(alertWithCaseTemplate, None, organisation)
         } yield Results.Created(richCase.toJson)
@@ -306,8 +270,8 @@ class AlertCtrl @Inject() (
           }
       }
 
-  private def createObservable(observable: InputObservable)(
-      implicit graph: Graph,
+  private def createObservable(observable: InputObservable)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Seq[RichObservable]] =
     observableTypeSrv
@@ -325,4 +289,110 @@ class AlertCtrl @Inject() (
           }
         case dataType => observable.data.toTry(d => observableSrv.create(observable.toObservable, dataType, d, observable.tags, Nil))
       }
+}
+
+@Singleton
+class PublicAlert @Inject() (
+    alertSrv: AlertSrv,
+    organisationSrv: OrganisationSrv,
+    customFieldSrv: CustomFieldSrv
+) extends PublicData {
+  override val entityName: String = "alert"
+  override val initialQuery: Query =
+    Query
+      .init[Traversal.V[Alert]]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Alert]](
+    "getAlert",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => alertSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val pageQuery: ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
+      "page",
+      FieldsParser[OutputParam],
+      (range, alertSteps, _) =>
+        alertSteps
+          .richPage(range.from, range.to, withTotal = true) { alerts =>
+            alerts.project(_.by(_.richAlert).by(_.observables.richObservable.fold))
+          }
+    )
+  override val outputQuery: Query = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[Traversal.V[Alert], Traversal.V[Case]]("cases", (alertSteps, _) => alertSteps.`case`),
+    Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
+    Query[
+      Traversal.V[Alert],
+      Traversal[(RichAlert, Seq[RichObservable]), JMap[String, Any], Converter[(RichAlert, Seq[RichObservable]), JMap[String, Any]]]
+    ](
+      "withObservables",
+      (alertSteps, _) =>
+        alertSteps
+          .project(
+            _.by(_.richAlert)
+              .by(_.observables.richObservable.fold)
+          )
+    ),
+    Query.output[(RichAlert, Seq[RichObservable])]
+  )
+  override val publicProperties: PublicProperties =
+    PublicPropertyListBuilder[Alert]
+      .property("type", UMapping.string)(_.field.updatable)
+      .property("source", UMapping.string)(_.field.updatable)
+      .property("sourceRef", UMapping.string)(_.field.updatable)
+      .property("title", UMapping.string)(_.field.updatable)
+      .property("description", UMapping.string)(_.field.updatable)
+      .property("severity", UMapping.int)(_.field.updatable)
+      .property("date", UMapping.date)(_.field.updatable)
+      .property("lastSyncDate", UMapping.date.optional)(_.field.updatable)
+      .property("tags", UMapping.string.set)(
+        _.select(_.tags.displayName)
+          .custom { (_, value, vertex, _, graph, authContext) =>
+            alertSrv
+              .get(vertex)(graph)
+              .getOrFail("Alert")
+              .flatMap(alert => alertSrv.updateTagNames(alert, value)(graph, authContext))
+              .map(_ => Json.obj("tags" -> value))
+          }
+      )
+      .property("flag", UMapping.boolean)(_.field.updatable)
+      .property("tlp", UMapping.int)(_.field.updatable)
+      .property("pap", UMapping.int)(_.field.updatable)
+      .property("read", UMapping.boolean)(_.field.updatable)
+      .property("follow", UMapping.boolean)(_.field.updatable)
+      .property("status", UMapping.string)(
+        _.select(
+          _.project(
+            _.byValue(_.read)
+              .by(_.`case`.limit(1).count)
+          ).domainMap {
+            case (false, caseCount) if caseCount == 0L => "New"
+            case (false, _)                            => "Updated"
+            case (true, caseCount) if caseCount == 0L  => "Ignored"
+            case (true, _)                             => "Imported"
+          }
+        ).readonly
+      )
+      .property("summary", UMapping.string.optional)(_.field.updatable)
+      .property("user", UMapping.string)(_.field.updatable)
+      .property("customFields", UMapping.jsonNative)(_.subSelect {
+        case (FPathElem(_, FPathElem(name, _)), alertSteps) =>
+          alertSteps.customFields(name).jsonValue
+        case (_, alertSteps) => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+      }.custom {
+        case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+          for {
+            c <- alertSrv.getByIds(vertex.id.toString)(graph).getOrFail("Alert")
+            _ <- alertSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+          } yield Json.obj(s"customField.$name" -> value)
+        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          for {
+            c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+            _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
+          } yield Json.obj("customFields" -> values)
+
+        case _ => Failure(BadRequestError("Invalid custom fields format"))
+      })
+      .property("case", IdMapping)(_.select(_.`case`._id).readonly)
+      .build
 }

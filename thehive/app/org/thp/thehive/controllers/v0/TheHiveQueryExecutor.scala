@@ -35,35 +35,36 @@ object OutputParam {
 @Singleton
 class TheHiveQueryExecutor @Inject() (
     @Named("with-thehive-schema") override val db: Database,
-    caseCtrl: CaseCtrl,
-    taskCtrl: TaskCtrl,
-    logCtrl: LogCtrl,
-    observableCtrl: ObservableCtrl,
-    alertCtrl: AlertCtrl,
-    userCtrl: UserCtrl,
-    caseTemplateCtrl: CaseTemplateCtrl,
-    dashboardCtrl: DashboardCtrl,
-    organisationCtrl: OrganisationCtrl,
-    auditCtrl: AuditCtrl,
-    profileCtrl: ProfileCtrl,
-    tagCtrl: TagCtrl,
-    pageCtrl: PageCtrl,
-    observableTypeCtrl: ObservableTypeCtrl,
-    queryCtrlBuilder: QueryCtrlBuilder
+    `case`: PublicCase,
+    task: PublicTask,
+    log: PublicLog,
+    observable: PublicObservable,
+    alert: PublicAlert,
+    user: PublicUser,
+    caseTemplate: PublicCaseTemplate,
+    dashboard: PublicDashboard,
+    organisation: PublicOrganisation,
+    audit: PublicAudit,
+    profile: PublicProfile,
+    tag: PublicTag,
+    page: PublicPage,
+    observableType: PublicObservableType,
+    customField: PublicCustomField
 ) extends QueryExecutor {
 
-  lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: logCtrl :: observableCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: dashboardCtrl :: organisationCtrl :: auditCtrl :: profileCtrl :: tagCtrl :: pageCtrl :: observableTypeCtrl :: Nil
+  lazy val publicDatas: List[PublicData] =
+    `case` :: task :: log :: observable :: alert :: user :: caseTemplate :: dashboard :: organisation :: audit :: profile :: tag :: page :: observableType :: customField :: Nil
 
-  def metaProperties: List[PublicProperty[_, _]] =
-    PublicPropertyListBuilder[Product]
+  def metaProperties: PublicProperties =
+    PublicPropertyListBuilder
+      .forType[Product](_ => true)
       .property("createdBy", UMapping.string)(_.rename("_createdBy").readonly)
       .property("createdAt", UMapping.date)(_.rename("_createdAt").readonly)
       .property("updatedBy", UMapping.string.optional)(_.rename("_updatedBy").readonly)
       .property("updatedAt", UMapping.date.optional)(_.rename("_updatedAt").readonly)
       .build
 
-  override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties) ::: metaProperties
+  override lazy val publicProperties: PublicProperties = publicDatas.foldLeft(metaProperties)(_ ++ _.publicProperties)
 
   val childTypes: PartialFunction[(ru.Type, String), ru.Type] = {
     case (tpe, "case_task_log") if SubType(tpe, ru.typeOf[Traversal.V[Task]]) => ru.typeOf[Traversal.V[Log]]
@@ -87,26 +88,12 @@ class TheHiveQueryExecutor @Inject() (
   }
 
   override lazy val queries: Seq[ParamQuery[_]] =
-    controllers.map(_.initialQuery) :::
-      controllers.map(_.getQuery) :::
-      controllers.map(_.pageQuery) :::
-      controllers.map(_.outputQuery) :::
-      controllers.flatMap(_.extraQueries)
+    publicDatas.map(_.initialQuery) :::
+      publicDatas.map(_.getQuery) :::
+      publicDatas.map(_.pageQuery) :::
+      publicDatas.map(_.outputQuery) :::
+      publicDatas.flatMap(_.extraQueries)
   override val version: (Int, Int) = 0 -> 0
-  val `case`: QueryCtrl            = queryCtrlBuilder(caseCtrl, this)
-  val task: QueryCtrl              = queryCtrlBuilder(taskCtrl, this)
-  val log: QueryCtrl               = queryCtrlBuilder(logCtrl, this)
-  val alert: QueryCtrl             = queryCtrlBuilder(alertCtrl, this)
-  val user: QueryCtrl              = queryCtrlBuilder(userCtrl, this)
-  val caseTemplate: QueryCtrl      = queryCtrlBuilder(caseTemplateCtrl, this)
-  val observable: QueryCtrl        = queryCtrlBuilder(observableCtrl, this)
-  val observableType: QueryCtrl    = queryCtrlBuilder(observableTypeCtrl, this)
-  val dashboard: QueryCtrl         = queryCtrlBuilder(dashboardCtrl, this)
-  val organisation: QueryCtrl      = queryCtrlBuilder(organisationCtrl, this)
-  val audit: QueryCtrl             = queryCtrlBuilder(auditCtrl, this)
-  val profile: QueryCtrl           = queryCtrlBuilder(profileCtrl, this)
-  val tag: QueryCtrl               = queryCtrlBuilder(tagCtrl, this)
-  val page: QueryCtrl              = queryCtrlBuilder(pageCtrl, this)
 }
 
 object ParentIdFilter {
@@ -123,7 +110,7 @@ object ParentIdFilter {
 class ParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
@@ -154,7 +141,7 @@ object ParentQueryFilter {
 class ParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk]) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
@@ -194,7 +181,7 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
     extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext

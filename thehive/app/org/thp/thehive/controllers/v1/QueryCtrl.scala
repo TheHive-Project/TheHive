@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 
 case class IdOrName(idOrName: String)
 
 trait QueryableCtrl {
   val entityName: String
-  val publicProperties: List[PublicProperty[_, _]]
+  val publicProperties: PublicProperties
   val initialQuery: Query
   val pageQuery: ParamQuery[OutputParam]
   val outputQuery: Query

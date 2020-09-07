@@ -162,7 +162,7 @@ class TagCtrlTest extends PlaySpecification with TestAppBuilder {
       val request = FakeRequest("POST", s"/api/tag/_search")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(json)
-      val result = app[TheHiveQueryExecutor].tag.search(request)
+      val result = app[TagCtrl].search(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
