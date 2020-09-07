@@ -155,6 +155,7 @@ class ObservableSrv @Inject() (
       _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, richObservable.`type`)
       _                 <- richObservable.data.map(data => observableDataSrv.create(ObservableData(), createdObservable, data)).flip
       _                 <- richObservable.attachment.map(attachment => observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)).flip
+      _                 <- richObservable.tags.toTry(tag => observableTagSrv.create(ObservableTag(), createdObservable, tag))
       // TODO copy or link key value ?
     } yield richObservable.copy(observable = createdObservable)
 
