@@ -57,13 +57,13 @@ class Router @Inject() (
     case DELETE(p"/case/share/$shareId")                       => shareCtrl.removeShare(shareId)
     case PATCH(p"/case/share/$shareId")                        => shareCtrl.updateShare(shareId)
 
-    case GET(p"/case/task")           => taskCtrl.search
-    case POST(p"/case/$caseId/task")  => taskCtrl.create(caseId) // Audit ok
-    case GET(p"/case/task/$taskId")   => taskCtrl.get(taskId)
-    case PATCH(p"/case/task/$taskId") => taskCtrl.update(taskId) // Audit ok
-    case POST(p"/case/task/_search")  => taskCtrl.search
-    case POST(p"/case/task/_stats")   => taskCtrl.stats
-    //case POST(p"/case/$caseId/task/_search") => taskCtrl.search
+    case GET(p"/case/task")                  => taskCtrl.search
+    case POST(p"/case/$caseId/task")         => taskCtrl.create(caseId) // Audit ok
+    case GET(p"/case/task/$taskId")          => taskCtrl.get(taskId)
+    case PATCH(p"/case/task/$taskId")        => taskCtrl.update(taskId) // Audit ok
+    case POST(p"/case/task/_search")         => taskCtrl.search
+    case POST(p"/case/task/_stats")          => taskCtrl.stats
+    case POST(p"/case/$caseId/task/_search") => taskCtrl.searchInCase(caseId)
 
     //case GET(p"/case/task/$taskId/log") => logCtrl.findInTask(taskId)
     //case POST(p"/case/task/$taskId/log/_search") => logCtrl.findInTask(taskId)
