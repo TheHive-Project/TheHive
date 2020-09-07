@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -23,8 +23,8 @@ class OrganisationCtrl @Inject() (
     @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl {
 
-  override val entityName: String                           = "organisation"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.organisation
+  override val entityName: String                 = "organisation"
+  override val publicProperties: PublicProperties = properties.organisation
   override val initialQuery: Query =
     Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](

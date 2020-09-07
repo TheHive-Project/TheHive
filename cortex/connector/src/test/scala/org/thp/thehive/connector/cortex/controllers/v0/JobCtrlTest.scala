@@ -3,6 +3,7 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.connector.cortex.services.{Connector, CortexActor, TestConnector}
@@ -16,12 +17,12 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
   override def appConfigure: AppBuilder =
     super
       .appConfigure
-      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
       .`override`(
         _.bindActor[CortexActor]("cortex-actor")
           .bindToProvider[CortexClient, TestCortexClientProvider]
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+          .bindToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]
           .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
       )
 
@@ -49,7 +50,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
                  }
               }
             """.stripMargin))
-      val resultSearch = app[CortexQueryExecutor].job.search(requestSearch)
+      val resultSearch = app[JobCtrl].search(requestSearch)
       status(resultSearch) shouldEqual 200
     }
 
@@ -77,7 +78,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
                                      }]
                                    }
             """.stripMargin))
-      val result = app[CortexQueryExecutor].job.stats(request)
+      val result = app[JobCtrl].stats(request)
 
       status(result) shouldEqual 200
     }

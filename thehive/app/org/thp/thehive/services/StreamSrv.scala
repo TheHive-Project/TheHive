@@ -76,9 +76,8 @@ class StreamActor(
           .toSeq
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
-        if (visibleIds.nonEmpty) {
+        if (visibleIds.nonEmpty)
           context.become(receive(messages ++ visibleIds, keepAliveTimer))
-        }
       }
   }
 
@@ -125,9 +124,8 @@ class StreamActor(
             commitTimer.cancel()
             val newCommitTimer = context.system.scheduler.scheduleOnce(maxWait, self, Commit)
             context.become(receive(messages ++ visibleIds, requestActor, keepAliveTimer, newCommitTimer, Some(newGraceTimer)))
-          } else {
+          } else
             context.become(receive(messages ++ visibleIds, requestActor, keepAliveTimer, commitTimer, Some(newGraceTimer)))
-          }
         }
       }
   }

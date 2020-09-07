@@ -68,44 +68,49 @@ class DescribeCtrl @Inject() (
           .instanceOf(getClass.getClassLoader.loadClass(s"$packageName.$className"))
           .asInstanceOf[QueryableCtrl]
           .publicProperties
+          .list
           .flatMap(propertyToJson(name, _))
       )
     ).toOption
 
   val entityDescriptions: Seq[EntityDescription] = Seq(
-    EntityDescription("case", caseCtrl.publicProperties.flatMap(propertyToJson("case", _))),
-    EntityDescription("case_task", taskCtrl.publicProperties.flatMap(propertyToJson("case_task", _))),
-    EntityDescription("alert", alertCtrl.publicProperties.flatMap(propertyToJson("alert", _))),
-    EntityDescription("case_artifact", observableCtrl.publicProperties.flatMap(propertyToJson("case_artifact", _))),
-    EntityDescription("user", userCtrl.publicProperties.flatMap(propertyToJson("user", _))),
-//    EntityDescription("case_task_log", logCtrl.publicProperties.flatMap(propertyToJson("case_task_log", _))),
-    EntityDescription("audit", auditCtrl.publicProperties.flatMap(propertyToJson("audit", _)))
+    EntityDescription("case", caseCtrl.publicProperties.list.flatMap(propertyToJson("case", _))),
+    EntityDescription("case_task", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
+    EntityDescription("alert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
+    EntityDescription("case_artifact", observableCtrl.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
+    EntityDescription("user", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _))),
+//    EntityDescription("case_task_log", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
+    EntityDescription("audit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _)))
   ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
     describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
 
   implicit val propertyDescriptionWrites: Writes[PropertyDescription] =
     Json.writes[PropertyDescription].transform((_: JsObject) + ("description" -> JsString("")))
 
-  def customFields: Seq[PropertyDescription] = db.roTransaction { implicit graph =>
-    customFieldSrv.startTraversal.toSeq.map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString))
-  }
+  def customFields: Seq[PropertyDescription] =
+    db.roTransaction { implicit graph =>
+      customFieldSrv.startTraversal.toSeq.map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString))
+    }
 
-  def impactStatus: PropertyDescription = db.roTransaction { implicit graph =>
-    PropertyDescription("impactStatus", "enumeration", impactStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
-  }
+  def impactStatus: PropertyDescription =
+    db.roTransaction { implicit graph =>
+      PropertyDescription("impactStatus", "enumeration", impactStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
+    }
 
-  def resolutionStatus: PropertyDescription = db.roTransaction { implicit graph =>
-    PropertyDescription("resolutionStatus", "enumeration", resolutionStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
-  }
+  def resolutionStatus: PropertyDescription =
+    db.roTransaction { implicit graph =>
+      PropertyDescription("resolutionStatus", "enumeration", resolutionStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
+    }
 
-  def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] = (model, propertyName) match {
-    case (_, "assignee") => Some(Seq(PropertyDescription("assignee", "user")))
-    case ("case", "status") =>
-      Some(
-        Seq(PropertyDescription("status", "enumeration", Seq(JsString("Open"), JsString("Resolved"), JsString("Deleted"), JsString("Duplicated"))))
-      )
-    case ("case", "impactStatus")     => Some(Seq(impactStatus))
-    case ("case", "resolutionStatus") => Some(Seq(resolutionStatus))
+  def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] =
+    (model, propertyName) match {
+      case (_, "assignee") => Some(Seq(PropertyDescription("assignee", "user")))
+      case ("case", "status") =>
+        Some(
+          Seq(PropertyDescription("status", "enumeration", Seq(JsString("Open"), JsString("Resolved"), JsString("Deleted"), JsString("Duplicated"))))
+        )
+      case ("case", "impactStatus")     => Some(Seq(impactStatus))
+      case ("case", "resolutionStatus") => Some(Seq(resolutionStatus))
 //    //case ("observable", "status") =>
 //    //  Some(PropertyDescription("status", "enumeration", Seq(JsString("Ok"))))
 //    //case ("observable", "dataType") =>
@@ -128,19 +133,28 @@ class DescribeCtrl @Inject() (
 //          )
 //        )
 //      )
-    case (_, "tlp") =>
-      Some(Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red"))))
-    case (_, "pap") =>
-      Some(Seq(PropertyDescription("pap", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red"))))
-    case (_, "severity") =>
-      Some(
-        Seq(
-          PropertyDescription("severity", "number", Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)), Seq("low", "medium", "high", "critical"))
+      case (_, "tlp") =>
+        Some(
+          Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
         )
-      )
-    case (_, "_createdBy")   => Some(Seq(PropertyDescription("_createdBy", "user")))
-    case (_, "_updatedBy")   => Some(Seq(PropertyDescription("_updatedBy", "user")))
-    case (_, "customFields") => Some(customFields)
+      case (_, "pap") =>
+        Some(
+          Seq(PropertyDescription("pap", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
+        )
+      case (_, "severity") =>
+        Some(
+          Seq(
+            PropertyDescription(
+              "severity",
+              "number",
+              Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)),
+              Seq("low", "medium", "high", "critical")
+            )
+          )
+        )
+      case (_, "_createdBy")   => Some(Seq(PropertyDescription("_createdBy", "user")))
+      case (_, "_updatedBy")   => Some(Seq(PropertyDescription("_updatedBy", "user")))
+      case (_, "customFields") => Some(customFields)
 //    case ("case_artifact_job" | "action", "status") =>
 //      Some(
 //        Seq(
@@ -151,8 +165,8 @@ class DescribeCtrl @Inject() (
 //          )
 //        )
 //      )
-    case _ => None
-  }
+      case _ => None
+    }
 
   def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
     customDescription(model, prop.propertyName).getOrElse {

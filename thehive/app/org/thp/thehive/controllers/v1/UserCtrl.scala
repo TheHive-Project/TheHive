@@ -6,7 +6,7 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError, RichOptionTry}
@@ -37,8 +37,8 @@ class UserCtrl @Inject() (
     @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryableCtrl {
 
-  override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.user
+  override val entityName: String                 = "user"
+  override val publicProperties: PublicProperties = properties.user
 
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)

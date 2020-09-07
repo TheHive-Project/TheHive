@@ -4,7 +4,7 @@ import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models.{IdMapping, UMapping}
-import org.thp.scalligraph.query.{PublicProperty, PublicPropertyListBuilder}
+import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -31,7 +31,7 @@ class Properties @Inject() (
     observableSrv: ObservableSrv
 ) {
 
-  lazy val alert: List[PublicProperty[_, _]] =
+  lazy val alert: PublicProperties =
     PublicPropertyListBuilder[Alert]
       .property("type", UMapping.string)(_.field.updatable)
       .property("source", UMapping.string)(_.field.updatable)
@@ -73,7 +73,7 @@ class Properties @Inject() (
       })
       .build
 
-  lazy val audit: List[PublicProperty[_, _]] =
+  lazy val audit: PublicProperties =
     PublicPropertyListBuilder[Audit]
       .property("operation", UMapping.string)(_.rename("action").readonly)
       .property("details", UMapping.string)(_.field.readonly)
@@ -85,7 +85,7 @@ class Properties @Inject() (
       .property("rootId", IdMapping)(_.select(_.context._id).readonly)
       .build
 
-  lazy val `case`: List[PublicProperty[_, _]] =
+  lazy val `case`: PublicProperties =
     PublicPropertyListBuilder[Case]
       .property("title", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string)(_.field.updatable)
@@ -139,7 +139,7 @@ class Properties @Inject() (
       })
       .build
 
-  lazy val caseTemplate: List[PublicProperty[_, _]] =
+  lazy val caseTemplate: PublicProperties =
     PublicPropertyListBuilder[CaseTemplate]
       .property("name", UMapping.string)(_.field.updatable)
       .property("displayName", UMapping.string)(_.field.updatable)
@@ -174,19 +174,19 @@ class Properties @Inject() (
       })
       .build
 
-  lazy val organisation: List[PublicProperty[_, _]] =
+  lazy val organisation: PublicProperties =
     PublicPropertyListBuilder[Organisation]
       .property("name", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string)(_.field.updatable)
       .build
 
-  lazy val profile: List[PublicProperty[_, _]] =
+  lazy val profile: PublicProperties =
     PublicPropertyListBuilder[Profile]
       .property("name", UMapping.string)(_.field.updatable)
       .property("permissions", UMapping.string.set)(_.field.updatable)
       .build
 
-  lazy val task: List[PublicProperty[_, _]] =
+  lazy val task: PublicProperties =
     PublicPropertyListBuilder[Task]
       .property("title", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string.optional)(_.field.updatable)
@@ -213,7 +213,7 @@ class Properties @Inject() (
       })
       .build
 
-  lazy val log: List[PublicProperty[_, _]] =
+  lazy val log: PublicProperties =
     PublicPropertyListBuilder[Log]
       .property("message", UMapping.string)(_.field.updatable)
       .property("deleted", UMapping.boolean)(_.field.updatable)
@@ -221,7 +221,7 @@ class Properties @Inject() (
       .property("attachment", IdMapping)(_.select(_.attachments._id).readonly)
       .build
 
-  lazy val user: List[PublicProperty[_, _]] =
+  lazy val user: PublicProperties =
     PublicPropertyListBuilder[User]
       .property("login", UMapping.string)(_.field.readonly)
       .property("name", UMapping.string)(_.field.readonly)
@@ -229,7 +229,7 @@ class Properties @Inject() (
       .property("avatar", UMapping.string.optional)(_.select(_.avatar.value(_.attachmentId).domainMap(id => s"/api/datastore/$id")).readonly)
       .build
 
-  lazy val observable: List[PublicProperty[_, _]] =
+  lazy val observable: PublicProperties =
     PublicPropertyListBuilder[Observable]
       .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
       .property("startDate", UMapping.date)(_.select(_._createdAt).readonly)

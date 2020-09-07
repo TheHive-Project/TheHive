@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.scalactic.Accumulation._
@@ -19,25 +18,27 @@ import scala.util.Try
 
 case class IdOrName(idOrName: String)
 
-trait QueryableCtrl {
+trait PublicData {
   val entityName: String
-  val publicProperties: List[PublicProperty[_, _]]
+  val publicProperties: PublicProperties
   val initialQuery: Query
   val pageQuery: ParamQuery[OutputParam]
   val outputQuery: Query
   val getQuery: ParamQuery[IdOrName]
   val extraQueries: Seq[ParamQuery[_]] = Nil
 }
-
-class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database, ctrl: QueryableCtrl, queryExecutor: QueryExecutor) {
+trait QueryCtrl {
   lazy val logger: Logger = Logger(getClass)
 
-  val publicProperties: List[PublicProperty[_, _]] = queryExecutor.publicProperties
-  val filterQuery: FilterQuery                     = queryExecutor.filterQuery
-  val queryType: ru.Type                           = ctrl.initialQuery.toType(ru.typeOf[Graph])
+  val publicData: PublicData
+  val entrypoint: Entrypoint
+  val queryExecutor: QueryExecutor
+  val db: Database
 
-  val inputFilterParser: FieldsParser[InputQuery[Unk, Unk]] = queryExecutor
-    .filterQuery
+  val filterQuery: FilterQuery = queryExecutor.filterQuery
+  val queryType: ru.Type       = publicData.initialQuery.toType(ru.typeOf[Graph])
+
+  val inputFilterParser: FieldsParser[InputQuery[Unk, Unk]] = filterQuery
     .paramParser(queryType)
 
   val aggregationParser: FieldsParser[Aggregation] =
@@ -87,9 +88,9 @@ class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Databa
         filteredQuery =
           maybeInputFilter
             .map(inputFilter => filterQuery.toQuery(inputFilter))
-            .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
+            .fold(publicData.initialQuery)(publicData.initialQuery.andThen)
         aggs <- aggregationParser.sequence(field.get("stats"))
-      } yield aggs.map(a => filteredQuery andThen new AggregationQuery(db, publicProperties, queryExecutor.filterQuery).toQuery(a))
+      } yield aggs.map(a => filteredQuery andThen new AggregationQuery(db, queryExecutor.publicProperties, filterQuery).toQuery(a))
   }
 
   val searchParser: FieldsParser[Query] = FieldsParser[Query]("search") {
@@ -99,16 +100,16 @@ class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Databa
         filteredQuery =
           maybeInputFilter
             .map(inputFilter => filterQuery.toQuery(inputFilter))
-            .fold(ctrl.initialQuery)(ctrl.initialQuery.andThen)
+            .fold(publicData.initialQuery)(publicData.initialQuery.andThen)
         inputSort <- sortParser(field.get("sort"))
-        sortedQuery = filteredQuery andThen new SortQuery(db, publicProperties).toQuery(inputSort)
+        sortedQuery = filteredQuery andThen new SortQuery(db, queryExecutor.publicProperties).toQuery(inputSort)
         outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false, withParents = 0)))
-        outputQuery = ctrl.pageQuery.toQuery(outputParam)
+        outputQuery = publicData.pageQuery.toQuery(outputParam)
       } yield sortedQuery andThen outputQuery
   }
 
   def search: Action[AnyContent] =
-    entrypoint(s"search ${ctrl.entityName}")
+    entrypoint(s"search ${publicData.entityName}")
       .extract("query", searchParser)
       .auth { implicit request =>
         val query: Query = request.body("query")
@@ -116,7 +117,7 @@ class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Databa
       }
 
   def stats: Action[AnyContent] =
-    entrypoint(s"${ctrl.entityName} stats")
+    entrypoint(s"${publicData.entityName} stats")
       .extract("query", statsParser)
       .authRoTransaction(db) { implicit request => graph =>
         val queries: Seq[Query] = request.body("query")
@@ -132,11 +133,4 @@ class QueryCtrl(entrypoint: Entrypoint, @Named("with-thehive-schema") db: Databa
             Results.Ok(results)
           }
       }
-}
-
-@Singleton
-class QueryCtrlBuilder @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database) {
-
-  def apply(ctrl: QueryableCtrl, queryExecutor: QueryExecutor): QueryCtrl =
-    new QueryCtrl(entrypoint, db, ctrl, queryExecutor)
 }

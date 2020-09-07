@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -29,8 +29,8 @@ class TaskCtrl @Inject() (
 ) extends QueryableCtrl
     with TaskRenderer {
 
-  override val entityName: String                           = "task"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.task
+  override val entityName: String                 = "task"
+  override val publicProperties: PublicProperties = properties.task
   override val initialQuery: Query =
     Query.init[Traversal.V[Task]]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](

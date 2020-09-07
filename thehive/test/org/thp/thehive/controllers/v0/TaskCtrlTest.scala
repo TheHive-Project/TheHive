@@ -209,7 +209,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
                       }""".stripMargin
           )
         )
-      val result = app[Database].roTransaction(_ => app[TheHiveQueryExecutor].task.stats(request))
+      val result = app[Database].roTransaction(_ => app[TaskCtrl].stats(request))
 
       status(result) must equalTo(200)
 

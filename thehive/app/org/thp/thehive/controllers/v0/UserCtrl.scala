@@ -1,59 +1,37 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthSrv
-import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
+import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, InvalidFormatAttributeError, RichOptionTry}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class UserCtrl @Inject() (
-    entrypoint: Entrypoint,
-    properties: Properties,
+    override val entrypoint: Entrypoint,
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") implicit val db: Database
-) extends QueryableCtrl {
-  lazy val logger: Logger                                   = Logger(getClass)
-  override val entityName: String                           = "user"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.user
-
-  override val initialQuery: Query =
-    Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
-
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[User]](
-    "getUser",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
-  )
-
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
-    "page",
-    FieldsParser[OutputParam],
-    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true)
-  )
-  override val outputQuery: Query =
-    Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
-
-  override val extraQueries: Seq[ParamQuery[_]] = Seq()
-
+    @Named("with-thehive-schema") implicit override val db: Database,
+    override val queryExecutor: QueryExecutor,
+    override val publicData: PublicUser
+) extends QueryCtrl {
   def current: Action[AnyContent] =
     entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>
@@ -130,7 +108,7 @@ class UserCtrl @Inject() (
 
   def update(userId: String): Action[AnyContent] =
     entrypoint("update user")
-      .extract("user", FieldsParser.update("user", properties.user))
+      .extract("user", FieldsParser.update("user", publicData.publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("user")
         for {
@@ -246,4 +224,70 @@ class UserCtrl @Inject() (
           _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
         } yield Results.Ok(key)
       }
+}
+
+@Singleton
+class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, @Named("with-thehive-schema") db: Database) extends PublicData {
+  override val entityName: String = "user"
+  override val initialQuery: Query =
+    Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[User]](
+    "getUser",
+    FieldsParser[IdOrName],
+    (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
+  )
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
+    "page",
+    FieldsParser[OutputParam],
+    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true)
+  )
+  override val outputQuery: Query =
+    Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
+  override val extraQueries: Seq[ParamQuery[_]] = Seq()
+  override val publicProperties: PublicProperties = PublicPropertyListBuilder[User]
+    .property("login", UMapping.string)(_.field.readonly)
+    .property("name", UMapping.string)(_.field.custom { (_, value, vertex, db, graph, authContext) =>
+      def isCurrentUser: Try[Unit] =
+        userSrv
+          .current(graph, authContext)
+          .getByIds(vertex.id.toString)
+          .existsOrFail
+
+      def isUserAdmin: Try[Unit] =
+        userSrv
+          .current(graph, authContext)
+          .organisations(Permissions.manageUser)(db)
+          .users
+          .getByIds(vertex.id.toString)
+          .existsOrFail
+
+      isCurrentUser
+        .orElse(isUserAdmin)
+        .map { _ =>
+          UMapping.string.setProperty(vertex, "name", value)
+          Json.obj("name" -> value)
+        }
+    })
+    .property("status", UMapping.string)(
+      _.select(_.choose(predicate = _.value(_.locked).is(P.eq(true)), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
+        .custom { (_, value, vertex, _, graph, authContext) =>
+          userSrv
+            .current(graph, authContext)
+            .organisations(Permissions.manageUser)(db)
+            .users
+            .getByIds(vertex.id.toString)
+            .orFail(AuthorizationError("Operation not permitted"))
+            .flatMap {
+              case user if value == "Ok" =>
+                userSrv.unlock(user)(graph, authContext)
+                Success(Json.obj("status" -> value))
+              case user if value == "Locked" =>
+                userSrv.lock(user)(graph, authContext)
+                Success(Json.obj("status" -> value))
+              case _ => Failure(InvalidFormatAttributeError("status", "UserStatus", Set("Ok", "Locked"), FString(value)))
+            }
+        }
+    )
+    .build
+
 }

@@ -19,16 +19,15 @@ import scala.reflect.runtime.{universe => ru}
 
 @Singleton
 class CortexQueryExecutor @Inject() (
-    queryCtrlBuilder: QueryCtrlBuilder,
-    @Named("with-thehive-cortex-schema") implicit val db: Database,
-    jobCtrl: JobCtrl,
-    reportCtrl: AnalyzerTemplateCtrl,
-    actionCtrl: ActionCtrl,
-    analyzerTemplateCtrl: AnalyzerTemplateCtrl
+    @Named("with-thehive-cortex-schema") implicit override val db: Database,
+    job: PublicJob,
+    report: PublicAnalyzerTemplate,
+    action: PublicAction,
+    analyzerTemplate: PublicAnalyzerTemplate
 ) extends QueryExecutor {
-  lazy val controllers: List[QueryableCtrl] = actionCtrl :: reportCtrl :: jobCtrl :: analyzerTemplateCtrl :: Nil
+  lazy val controllers: List[PublicData] = action :: report :: job :: analyzerTemplate :: Nil
 
-  override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
+  override lazy val publicProperties: PublicProperties = controllers.map(_.publicProperties).reduce(_ ++ _)
 
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) :::
@@ -56,17 +55,12 @@ class CortexQueryExecutor @Inject() (
   }
 
   override val version: (Int, Int) = 0 -> 1
-
-  val job: QueryCtrl              = queryCtrlBuilder(jobCtrl, this)
-  val report: QueryCtrl           = queryCtrlBuilder(analyzerTemplateCtrl, this)
-  val action: QueryCtrl           = queryCtrlBuilder(actionCtrl, this)
-  val analyzerTemplate: QueryCtrl = queryCtrlBuilder(analyzerTemplateCtrl, this)
 }
 
 class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
@@ -84,7 +78,7 @@ class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.U
 class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk]) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
@@ -106,7 +100,7 @@ class CortexChildQueryInputFilter(childType: String, childFilter: InputQuery[Tra
     extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext

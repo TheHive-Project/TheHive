@@ -7,13 +7,13 @@ import java.util.{Calendar, Date, List => JList}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.scalactic.Accumulation._
 import org.scalactic._
-import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{Aggregation, PublicProperty}
+import org.thp.scalligraph.query.{Aggregation, PublicProperties}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
+import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
 import play.api.Logger
 import play.api.libs.json.{JsNull, JsNumber, JsObject, Json}
 
@@ -149,16 +149,19 @@ object TH3Aggregation {
 case class AggSum(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
   ): Traversal.Domain[Output[_]] = {
-    val property = PublicProperty.getProperty(publicProperties, traversalType, fieldName)
+    val fieldPath = FPath(fieldName)
+    val property = publicProperties
+      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
+      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     traversal.coalesce(
       t =>
         property
-          .select(FPath(fieldName), t)
+          .select(fieldPath, t)
           .sum
           .domainMap(sum => Output(Json.obj(name -> JsNumber(BigDecimal(sum.toString)))))
           .castDomain[Output[_]],
@@ -169,16 +172,19 @@ case class AggSum(aggName: Option[String], fieldName: String) extends Aggregatio
 case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
   ): Traversal.Domain[Output[_]] = {
-    val property = PublicProperty.getProperty(publicProperties, traversalType, fieldName)
+    val fieldPath = FPath(fieldName)
+    val property = publicProperties
+      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
+      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     traversal.coalesce(
       t =>
         property
-          .select(FPath(fieldName), t)
+          .select(fieldPath, t)
           .mean
           .domainMap(avg => Output(Json.obj(name -> avg.asInstanceOf[Double]))),
       _.constant2(Output(Json.obj(name -> JsNull)))
@@ -189,16 +195,19 @@ case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregatio
 case class AggMin(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"min_$fieldName")) {
   override def getTraversal(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
   ): Traversal.Domain[Output[_]] = {
-    val property = PublicProperty.getProperty(publicProperties, traversalType, fieldName)
+    val fieldPath = FPath(fieldName)
+    val property = publicProperties
+      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
+      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     traversal.coalesce(
       t =>
         property
-          .select(FPath(fieldName), t)
+          .select(fieldPath, t)
           .min
           .domainMap(min => Output(Json.obj(name -> property.mapping.selectRenderer.toJson(min)))),
       _.constant2(Output(Json.obj(name -> JsNull)))
@@ -209,16 +218,19 @@ case class AggMin(aggName: Option[String], fieldName: String) extends Aggregatio
 case class AggMax(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"max_$fieldName")) {
   override def getTraversal(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
   ): Traversal.Domain[Output[_]] = {
-    val property = PublicProperty.getProperty(publicProperties, traversalType, fieldName)
+    val fieldPath = FPath(fieldName)
+    val property = publicProperties
+      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
+      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     traversal.coalesce(
       t =>
         property
-          .select(FPath(fieldName), t)
+          .select(fieldPath, t)
           .max
           .domainMap(max => Output(Json.obj(name -> property.mapping.selectRenderer.toJson(max)))),
       _.constant2(Output(Json.obj(name -> JsNull)))
@@ -229,7 +241,7 @@ case class AggMax(aggName: Option[String], fieldName: String) extends Aggregatio
 case class AggCount(aggName: Option[String]) extends Aggregation(aggName.getOrElse("count")) {
   override def getTraversal(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
@@ -253,15 +265,17 @@ case class FieldAggregation(
 
   override def getTraversal(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
   ): Traversal.Domain[Output[_]] = {
-    val label           = StepLabel[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
-    val property        = PublicProperty.getProperty(publicProperties, traversalType, fieldName)
-    val groupedVertices = property.select(FPath(fieldName), traversal.as(label)).group(_.by, _.by(_.select(label).fold)).unfold
-    //    val groupedVertices = traversal.group(_.by(t => property.select(FPath(fieldName), t).cast[Any, Any])).unfold
+    val label     = StepLabel[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
+    val fieldPath = FPath(fieldName)
+    val property = publicProperties
+      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
+      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
+    val groupedVertices = property.select(fieldPath, traversal.as(label)).group(_.by, _.by(_.select(label).fold)).unfold
     val sortedAndGroupedVertex = orders
       .map {
         case order if order.headOption.contains('-') => order.tail -> Order.desc
@@ -352,15 +366,18 @@ case class TimeAggregation(
 
   override def getTraversal(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
+      publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
       authContext: AuthContext
   ): Traversal.Domain[Output[_]] = {
-    val property = PublicProperty.getProperty(publicProperties, traversalType, fieldName)
-    val label    = StepLabel[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
+    val fieldPath = FPath(fieldName)
+    val property = publicProperties
+      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
+      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
+    val label = StepLabel[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
     val groupedVertex = property
-      .select(FPath(fieldName), traversal.as(label))
+      .select(fieldPath, traversal.as(label))
       .cast[Date, Date]
       .graphMap[Long, JLong, Converter[Long, JLong]](dateToKey, Converter.long)
       .group(_.by, _.by(_.select(label).fold))

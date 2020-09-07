@@ -5,8 +5,8 @@ import java.util.zip.ZipFile
 import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperty, Query}
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
@@ -14,9 +14,8 @@ import org.thp.thehive.connector.cortex.dto.v0.InputAnalyzerTemplate
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
 import org.thp.thehive.connector.cortex.services.AnalyzerTemplateSrv
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, QueryableCtrl}
+import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, PublicData, QueryCtrl}
 import org.thp.thehive.models.Permissions
-import play.api.Logger
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -24,29 +23,12 @@ import scala.util.{Failure, Success}
 
 @Singleton
 class AnalyzerTemplateCtrl @Inject() (
-    entrypoint: Entrypoint,
-    @Named("with-thehive-cortex-schema") db: Database,
-    properties: Properties,
-    analyzerTemplateSrv: AnalyzerTemplateSrv
-) extends QueryableCtrl {
-
-  lazy val logger: Logger                                   = Logger(getClass)
-  override val entityName: String                           = "analyzerTemplate"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.analyzerTemplate
-  override val initialQuery: Query =
-    Query.init[Traversal.V[AnalyzerTemplate]]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.startTraversal(graph))
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[AnalyzerTemplate]](
-    "getReportTemplace",
-    FieldsParser[IdOrName],
-    (param, graph, _) => analyzerTemplateSrv.get(param.idOrName)(graph)
-  )
-  override val pageQuery: ParamQuery[OutputParam] =
-    Query.withParam[OutputParam, Traversal.V[AnalyzerTemplate], IteratorOutput](
-      "page",
-      FieldsParser[OutputParam],
-      (range, analyzerTemplateTraversal, _) => analyzerTemplateTraversal.page(range.from, range.to, withTotal = true)
-    )
-  override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]
+    override val entrypoint: Entrypoint,
+    @Named("with-thehive-cortex-schema") override val db: Database,
+    analyzerTemplateSrv: AnalyzerTemplateSrv,
+    override val queryExecutor: QueryExecutor,
+    override val publicData: PublicAnalyzerTemplate
+) extends QueryCtrl {
 
   def get(id: String): Action[AnyContent] =
     entrypoint("get content")
@@ -97,7 +79,7 @@ class AnalyzerTemplateCtrl @Inject() (
 
   def update(id: String): Action[AnyContent] =
     entrypoint("update template")
-      .extract("template", FieldsParser.update("template", properties.analyzerTemplate))
+      .extract("template", FieldsParser.update("template", publicData.publicProperties))
       .authPermittedTransaction(db, Permissions.manageAnalyzerTemplate) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("template")
 
@@ -107,4 +89,28 @@ class AnalyzerTemplateCtrl @Inject() (
         } yield Results.Ok(template.toJson)
 
       }
+}
+
+@Singleton
+class PublicAnalyzerTemplate @Inject() (analyzerTemplateSrv: AnalyzerTemplateSrv) extends PublicData {
+  override val entityName: String = "analyzerTemplate"
+  override val initialQuery: Query =
+    Query.init[Traversal.V[AnalyzerTemplate]]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.startTraversal(graph))
+  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[AnalyzerTemplate]](
+    "getReportTemplate",
+    FieldsParser[IdOrName],
+    (param, graph, _) => analyzerTemplateSrv.get(param.idOrName)(graph)
+  )
+  override val pageQuery: ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[AnalyzerTemplate], IteratorOutput](
+      "page",
+      FieldsParser[OutputParam],
+      (range, analyzerTemplateTraversal, _) => analyzerTemplateTraversal.page(range.from, range.to, withTotal = true)
+    )
+  override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]
+  override val publicProperties: PublicProperties = PublicPropertyListBuilder[AnalyzerTemplate]
+    .property("analyzerId", UMapping.string)(_.rename("workerId").readonly)
+    .property("reportType", UMapping.string)(_.field.readonly)
+    .property("content", UMapping.string)(_.field.updatable)
+    .build
 }
