@@ -2,6 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -163,6 +164,27 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
     }
 
+    "search tasks in case" in testApp { app =>
+      val request = FakeRequest("POST", "/api/case/task/_stats")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse(s"""{
+               "query":{
+                 "order": 1
+               }
+             }"""))
+      val result = app[TaskCtrl].search(request)
+      val t = TestTask(
+        title = "case 1 task 2",
+        group = Some("group1"),
+        description = Some("description task 2"),
+        status = "Waiting",
+        flag = true,
+        order = 1
+      )
+      val tasks = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputTask]]
+      tasks.map(TestTask.apply) should contain(t)
+    }
+
     "get tasks stats" in testApp { app =>
       val case1 = app[Database].roTransaction(graph => app[CaseSrv].startTraversal(graph).has("title", "case#1").getOrFail("Case"))
 
@@ -209,7 +231,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
                       }""".stripMargin
           )
         )
-      val result = app[Database].roTransaction(_ => app[TaskCtrl].stats(request))
+      val result = app[TaskCtrl].stats(request)
 
       status(result) must equalTo(200)
 

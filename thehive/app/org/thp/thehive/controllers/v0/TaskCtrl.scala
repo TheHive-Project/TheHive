@@ -78,13 +78,18 @@ class TaskCtrl @Inject() (
           }
       }
 
-//  def searchInCase(caseId: String): Action[AnyContent] =
-//    entrypoint("search task in case")
-//      .extract("query", searchParser)
-//      .auth { implicit request =>
-//        val query: Query = request.body("query")
-//        queryExecutor.execute(query, request)
-//      }
+  def searchInCase(caseId: String): Action[AnyContent] =
+    entrypoint("search task in case")
+      .extract(
+        "query",
+        searchParser(
+          Query.init[Traversal.V[Task]]("tasksInCase", (graph, authContext) => caseSrv.get(caseId)(graph).visible(authContext).tasks(authContext))
+        )
+      )
+      .auth { implicit request =>
+        val query: Query = request.body("query")
+        queryExecutor.execute(query, request)
+      }
 }
 
 @Singleton

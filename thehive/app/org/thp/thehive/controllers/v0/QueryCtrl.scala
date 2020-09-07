@@ -93,24 +93,25 @@ trait QueryCtrl {
       } yield aggs.map(a => filteredQuery andThen new AggregationQuery(db, queryExecutor.publicProperties, filterQuery).toQuery(a))
   }
 
-  val searchParser: FieldsParser[Query] = FieldsParser[Query]("search") {
-    case (_, field) =>
-      for {
-        maybeInputFilter <- inputFilterParser.optional(field.get("query"))
-        filteredQuery =
-          maybeInputFilter
-            .map(inputFilter => filterQuery.toQuery(inputFilter))
-            .fold(publicData.initialQuery)(publicData.initialQuery.andThen)
-        inputSort <- sortParser(field.get("sort"))
-        sortedQuery = filteredQuery andThen new SortQuery(db, queryExecutor.publicProperties).toQuery(inputSort)
-        outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false, withParents = 0)))
-        outputQuery = publicData.pageQuery.toQuery(outputParam)
-      } yield sortedQuery andThen outputQuery
-  }
+  def searchParser(initialQuery: Query = publicData.initialQuery): FieldsParser[Query] =
+    FieldsParser[Query]("search") {
+      case (_, field) =>
+        for {
+          maybeInputFilter <- inputFilterParser.optional(field.get("query"))
+          filteredQuery =
+            maybeInputFilter
+              .map(inputFilter => filterQuery.toQuery(inputFilter))
+              .fold(initialQuery)(initialQuery.andThen)
+          inputSort <- sortParser(field.get("sort"))
+          sortedQuery = filteredQuery andThen new SortQuery(db, queryExecutor.publicProperties).toQuery(inputSort)
+          outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false, withParents = 0)))
+          outputQuery = publicData.pageQuery.toQuery(outputParam)
+        } yield sortedQuery andThen outputQuery
+    }
 
   def search: Action[AnyContent] =
     entrypoint(s"search ${publicData.entityName}")
-      .extract("query", searchParser)
+      .extract("query", searchParser())
       .auth { implicit request =>
         val query: Query = request.body("query")
         queryExecutor.execute(query, request)
