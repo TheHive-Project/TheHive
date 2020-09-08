@@ -64,7 +64,8 @@ class AlertCtrl @Inject() (
           richObservables <- observables.toTry(createObservable).map(_.flatten)
           richAlert       <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
           _               <- auditSrv.mergeAudits(richObservables.toTry(o => alertSrv.addObservable(richAlert.alert, o)))(_ => Success(()))
-        } yield Results.Created((richAlert -> richObservables).toJson)
+          createdObservables = alertSrv.get(richAlert.alert).observables.richObservable.toSeq
+        } yield Results.Created((richAlert -> createdObservables).toJson)
       }
 
   def alertSimilarityRenderer(implicit

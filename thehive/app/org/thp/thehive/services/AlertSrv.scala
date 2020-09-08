@@ -23,7 +23,7 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import play.api.libs.json.{JsObject, Json}
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertSrv @Inject() (
@@ -148,19 +148,24 @@ class AlertSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val alreadyExistInThatCase = observableSrv
-      .get(richObservable.observable)
-      .similar
-      .alert
-      .hasId(alert._id)
-      .exists
-    if (alreadyExistInThatCase)
-      Failure(CreateError("Observable already exists"))
-    else
-      for {
-        _ <- alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
-        _ <- auditSrv.observableInAlert.create(richObservable.observable, alert, richObservable.toJson)
-      } yield ()
+    val maybeExistingObservable = richObservable.dataOrAttachment match {
+      case Left(data)        => get(alert).observables.filterOnData(data.data)
+      case Right(attachment) => get(alert).observables.has("attachmentId", attachment.attachmentId)
+    }
+    maybeExistingObservable
+      .richObservable
+      .headOption
+      .fold {
+        for {
+          _ <- alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
+          _ <- auditSrv.observableInAlert.create(richObservable.observable, alert, richObservable.toJson)
+        } yield ()
+      } { existingObservable =>
+        val tags = (existingObservable.tags ++ richObservable.tags).toSet
+        if ((tags -- existingObservable.tags).nonEmpty)
+          observableSrv.updateTags(existingObservable.observable, tags)
+        Success(())
+      }
   }
 
   def createCustomField(
