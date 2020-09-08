@@ -117,7 +117,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
           alert <- app[AlertSrv].getOrFail("testType;testSource;ref4")
           _     <- app[AlertSrv].addObservable(alert, similarObs)
         } yield ()
-      } must beAFailedTry.withThrowable[CreateError]
+      } must beASuccessfulTry()
 
       app[Database].tryTransaction { implicit graph =>
         for {
@@ -127,8 +127,8 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       } must beASuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get("testType;testSource;ref1").observables.filterOnData("perdu.com").filterOnType("domain").exists
-      } must beTrue
+        app[AlertSrv].get("testType;testSource;ref1").observables.filterOnData("perdu.com").filterOnType("domain").tags.toSeq.map(_.toString)
+      } must contain("tag10")
     }
 
     "update custom fields" in testApp { app =>
