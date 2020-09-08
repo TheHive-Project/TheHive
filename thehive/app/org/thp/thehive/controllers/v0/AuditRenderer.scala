@@ -60,43 +60,39 @@ trait AuditRenderer {
   )
   def jobToJson
       : Traversal[Vertex, Vertex, IdentityConverter[Vertex]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
-    _.project(
-      _.by.by
-    ).domainMap {
-      case (vertex, _) =>
-        JsObject(
-          UMapping.string.optional.getProperty(vertex, "workerId").map(v => "analyzerId"                   -> JsString(v)).toList :::
-            UMapping.string.optional.getProperty(vertex, "workerName").map(v => "analyzerName"             -> JsString(v)).toList :::
-            UMapping.string.optional.getProperty(vertex, "workerDefinition").map(v => "analyzerDefinition" -> JsString(v)).toList :::
-            UMapping.string.optional.getProperty(vertex, "status").map(v => "status"                       -> JsString(v)).toList :::
-            UMapping.date.optional.getProperty(vertex, "startDate").map(v => "startDate"                   -> JsNumber(v.getTime)).toList :::
-            UMapping.date.optional.getProperty(vertex, "endDate").map(v => "endDate"                       -> JsNumber(v.getTime)).toList :::
-            UMapping.string.optional.getProperty(vertex, "cortexId").map(v => "cortexId"                   -> JsString(v)).toList :::
-            UMapping.string.optional.getProperty(vertex, "cortexJobId").map(v => "cortexJobId"             -> JsString(v)).toList :::
-            UMapping.string.optional.getProperty(vertex, "_createdBy").map(v => "_createdBy"               -> JsString(v)).toList :::
-            UMapping.date.optional.getProperty(vertex, "_createdAt").map(v => "_createdAt"                 -> JsNumber(v.getTime)).toList :::
-            UMapping.string.optional.getProperty(vertex, "_updatedBy").map(v => "_updatedBy"               -> JsString(v)).toList :::
-            UMapping.date.optional.getProperty(vertex, "_updatedAt").map(v => "_updatedAt"                 -> JsNumber(v.getTime)).toList :::
-            UMapping.string.optional.getProperty(vertex, "_type").map(v => "_type"                         -> JsString(v)).toList :::
-            UMapping.string.optional.getProperty(vertex, "_id").map(v => "_id"                             -> JsString(v)).toList
-        )
-    }
+    _.project(_.by.by)
+      .domainMap {
+        case (vertex, _) =>
+          JsObject(
+            UMapping.string.optional.getProperty(vertex, "workerId").map(v => "analyzerId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "workerName").map(v => "analyzerName" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "workerDefinition").map(v => "analyzerDefinition" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "status").map(v => "status" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "startDate").map(v => "startDate" -> JsNumber(v.getTime)).toList :::
+              UMapping.date.optional.getProperty(vertex, "endDate").map(v => "endDate" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "cortexId").map(v => "cortexId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "cortexJobId").map(v => "cortexJobId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_createdBy").map(v => "_createdBy" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "_createdAt").map(v => "_createdAt" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_updatedBy").map(v => "_updatedBy" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "_updatedAt").map(v => "_updatedAt" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_type").map(v => "_type" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_id").map(v => "_id" -> JsString(v)).toList
+          )
+      }
 
   def auditRenderer: Traversal.V[Audit] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     (_: Traversal.V[Audit])
-      .coalesce(
-        _.`object` //.out[Audited]
-          .choose(
-            _.on(_.label)
-              .option("Case", t => caseToJson(t.v[Case]))
-              .option("Task", t => taskToJson(t.v[Task]))
-              .option("Log", t => logToJson(t.v[Log]))
-              .option("Observable", t => observableToJson(t.v[Observable]))
-              .option("Alert", t => alertToJson(t.v[Alert]))
-              .option("Job", jobToJson)
-              .none(_.constant2[JsObject, JMap[String, Any]](JsObject.empty))
-          ),
-        _.constant2[JsObject, JMap[String, Any]](JsObject.empty)
+      .coalesce(_.`object`, _.identity.setConverter[Vertex, IdentityConverter[Vertex]](Converter.identity[Vertex]))
+      .choose(
+        _.on(_.label)
+          .option("Case", t => caseToJson(t.v[Case]))
+          .option("Task", t => taskToJson(t.v[Task]))
+          .option("Log", t => logToJson(t.v[Log]))
+          .option("Observable", t => observableToJson(t.v[Observable]))
+          .option("Alert", t => alertToJson(t.v[Alert]))
+          .option("Job", jobToJson)
+          .none(_.constant2[JsObject, JMap[String, Any]](JsObject.empty))
       )
 
   def jsonSummary(auditSrv: AuditSrv, requestId: String)(implicit graph: Graph): JsObject =
