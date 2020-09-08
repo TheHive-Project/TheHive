@@ -54,7 +54,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "tlp":2,
                 "message":"love exciting and new",
                 "tags":["tagfile"],
-                "data":"multi\nline\ntest"
+                "data":["multi","line","test"]
               }
             """.stripMargin))
       val result = app[ObservableCtrl].create("#1")(request)
@@ -151,7 +151,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "tlp":2,
                 "message":"localhost",
                 "tags":["local", "host"],
-                "data":"127.0.0.1\n127.0.0.2"
+                "data":["127.0.0.1","127.0.0.2"]
               }
             """))
         val request = FakeRequest(
