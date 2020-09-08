@@ -92,7 +92,7 @@
                 promise.then(function(caze) {
                     $scope.caze = caze;
 
-                    NotificationSrv.log('The case #' + caze.caseId + ' has been closed', 'success');
+                    NotificationSrv.log('The case #' + caze.number + ' has been closed', 'success');
 
                     $uibModalInstance.close();
                 });
