@@ -74,10 +74,11 @@ do
   shift
 done
 
+echo "Waiting until Cassandra DB is up"
+sleep 30   # Sleep until cassandra Db is up 
+
 if test "${CONFIG}" = 1
 then
-  echo "Waiting until Cassandra DB is up"
-  sleep 30   # Sleep until cassandra Db is up 
   CONFIG_FILE=$(mktemp).conf
   if test "${CONFIG_SECRET}" = 1
   then
