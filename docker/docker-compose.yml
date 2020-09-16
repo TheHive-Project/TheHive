@@ -71,9 +71,8 @@ services:
     container_name: redis
     restart: unless-stopped    
 
-  mysql:
+  db:
     image: mysql:latest
-    container_name: mysql
     restart: unless-stopped     
     command: --default-authentication-plugin=mysql_native_password
     restart: always
@@ -90,7 +89,7 @@ services:
     restart: unless-stopped     
     depends_on:
       - redis
-      - mysql
+      - db
     ports:
       - "80:80"
       - "443:443"
