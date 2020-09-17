@@ -10,6 +10,16 @@ With this docker-compose.yml you will be able to run the following images:
 - Redis 6.0.8
 
 ## Some Hint
+
+### Mapping volumes
+If you take a look of docker-compose.yml you will see you need some local folder that needs to be mapped, so before do docker-compose up, ensure folders (and config files) exist:
+- ./elasticsearch/data:/usr/share/elasticsearch/data
+- ./elasticsearch/logs:/usr/share/elasticsearch/logs
+- ./cortex/application.conf:/etc/cortex/application.conf
+- ./thehive/application.conf:/etc/thehive/application.conf
+- ./mysql:/var/lib/mysql
+
+
 ### Cortex-Analyzers
 - In order to use Analyzers in docker version, set the application.conf of Cortex the online json url instead absolute path of analyzers:
   https://dl.bintray.com/thehive-project/cortexneurons/analyzers.json
