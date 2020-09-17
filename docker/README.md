@@ -21,7 +21,7 @@ If you take a look of docker-compose.yml you will see you need some local folder
 
 
 ### Cortex-Analyzers
-- In order to use Analyzers in docker version, set the application.conf of Cortex the online json url instead absolute path of analyzers:
+- In order to use Analyzers in docker version, set  the online json url instead absolute path of analyzers in the application.conf of Cortex:
   https://dl.bintray.com/thehive-project/cortexneurons/analyzers.json
 - In order to use Analyzers in docker version set the application.conf thejob: ```
   job {
