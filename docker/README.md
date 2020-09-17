@@ -37,7 +37,9 @@ If you take a look of docker-compose.yml you will see you need some local folder
 - First time an analyzer/responder is executed, it will take a while because docker image is being downloaded on the fly, from second run of analyzer/responder it runs normally
 - In order to let use socket both cortex image and analyzers images had to do
 
-
+### Cortex
+- login page on 9001 port, then click "update database" and create superadmin
+- as superadmin create org and other user (remember to set password) and create apikey to use for connect with the hive 
 
 ### The Hive
 - In order to let The Hive reads the external application.conf and configure Cortex had to pass in command of docker compose the following option:
@@ -45,7 +47,7 @@ If you take a look of docker-compose.yml you will see you need some local folder
 - In order to let The Hive reads the external application.conf and configure MISP for receive alerts had to pass in command of docker compose the following option:
  ```  --no-config-secret ```
 - Default credentials: admin@thehive.local // secret
-- The cortex key in application.conf must be generated  in Cortex
+- In order to connect The Hive with cortex take the cortex key generated in Cortex and set it in thehive/application.conf
 - MISP connection is https, in order to skip the verify of self signed certificate have do add this setting in the hive application.conf under MISP section:
   ``` wsConfig { ssl { loose { acceptAnyCertificate: true } } } ```
 
@@ -56,9 +58,6 @@ If you take a look of docker-compose.yml you will see you need some local folder
 - request change password
 - go in Automation page and grab the api key to use in the hive application.conf to receive alerts from MISP or to use in MISP analyzers inside Cortex.
 
-### Cortex
-- login page on 9001 port, then click "update database" and create superadmin
-- as superadmin create org and other user (remember to set password) and create apikey to use in the hive application.conf
 
 
 
