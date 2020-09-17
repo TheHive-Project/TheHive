@@ -35,7 +35,6 @@ If you take a look of docker-compose.yml you will see you need some local folder
 - Have to change permission on /var/run/docker.sock in order to let use socket by cortex docker and cortex-analyzers docker
   ```sudo chmod 666 /var/run/docker.sock```
 - First time an analyzer/responder is executed, it will take a while because docker image is being downloaded on the fly, from second run of analyzer/responder it runs normally
-- In order to let use socket both cortex image and analyzers images had to do
 
 ### Cortex
 - login page on 9001 port, then click "update database" and create superadmin
