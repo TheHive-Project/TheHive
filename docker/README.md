@@ -11,6 +11,19 @@ With this docker-compose.yml you will be able to run the following images:
 
 ## Some Hint
 
+### docker-compose version
+In docker-compose version is set 3.8, to run this version you need at least Docker Engine 19.03.0+ (check widh docker --version) and at least Docker Compose 1.25.5 (check with docker-compose --version)
+```
+Compose file format    Docker Engine release
+3.8                    19.03.0+
+3.7	               18.06.0+
+3.6	               18.02.0+
+3.5	               17.12.0+
+3.4	               17.09.0+
+```
+If for some reason you have a previous version of Docker Engine or a previous version of Docker Compose and can't upgrade those, you can use 3.7 or 3.6 in docker-compose.yml
+
+
 ### Mapping volumes
 If you take a look of docker-compose.yml you will see you need some local folder that needs to be mapped, so before do docker-compose up, ensure folders (and config files) exist:
 - ./elasticsearch/data:/usr/share/elasticsearch/data
@@ -27,12 +40,30 @@ Structure would look like:
 │   └── data
 │   └── logs
 ├── cortex
-│   └── application.conf   
+│   └── application.conf 
 └── thehive
    └── application.conf
 └── data
 └── mysql
 ```
+
+### ElasticSearch
+ElasticSearch container likes big mmap count (https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) so from shell you can cgange with
+```sysctl -w vm.max_map_count=262144```
+Due you would run all on same system and maybe you don't have a limited amount of RAM, better to set some size, for ElasticSearch, in docker-compose.yml I added those:
+
+```- bootstrap.memory_lock=true```
+```- "ES_JAVA_OPTS=-Xms512m -Xmx512m"```
+
+Adjust depending on your needs and your env. Without these settings in my environment ElasticSearch was using 1.5GB
+
+### Cassandra
+Like for ElasticSearch maybe you would run all on same system and maybe you don't have a limited amount of RAM, better to set some size, here for Cassandra, in docker-compose.yml I added those:
+
+```- MAX_HEAP_SIZE=1G```
+```- HEAP_NEWSIZE=1G```
+
+Adjust depending on your needs and your env. Without these settings in my environment Cassandra was using 4GB.
 
 ### Cortex-Analyzers
 - In order to use Analyzers in docker version, it is set  the online json url instead absolute path of analyzers in the application.conf of Cortex:
