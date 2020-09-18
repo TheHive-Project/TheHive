@@ -104,3 +104,67 @@ services:
       - "CRON_USER_ID=1"        # The MISP user ID to run cron jobs as
       - "DISIPV6=true" # Disable IPV6 in nginx
  
+
+#READY FOR AUTOMATION ?
+  frontend:
+    image: frikky/shuffle:frontend
+    container_name: shuffle-frontend
+    hostname: shuffle-frontend
+    ports:
+      - "3001:80"
+      - "3443:443"    
+    environment:
+      - BACKEND_HOSTNAME=shuffle-backend
+    restart: unless-stopped
+    depends_on:
+      - backend
+  backend:
+    image: frikky/shuffle:backend
+    container_name: shuffle-backend
+    hostname: shuffle-backend
+    ports:
+      - "5001:5001"
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock 
+      - ./shuffle-apps:/shuffle-apps     
+    environment:
+      - DATASTORE_EMULATOR_HOST=shuffle-database:8000
+      - SHUFFLE_APP_HOTLOAD_FOLDER=./shuffle-apps
+      - ORG_ID=Shuffle
+      - SHUFFLE_APP_DOWNLOAD_LOCATION=https://github.com/frikky/shuffle-apps
+      - SHUFFLE_DEFAULT_USERNAME=admin
+      - SHUFFLE_DEFAULT_PASSWORD=password
+      - SHUFFLE_DEFAULT_APIKEY=mysecretkey
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+    restart: unless-stopped
+    depends_on:
+      - database
+  orborus:
+    image: frikky/shuffle:orborus
+    container_name: shuffle-orborus
+    hostname: shuffle-orborus    
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - SHUFFLE_APP_SDK_VERSION=0.6.0
+      - SHUFFLE_WORKER_VERSION=0.6.0
+      - ORG_ID=Shuffle
+      - ENVIRONMENT_NAME=Shuffle
+      - BASE_URL=http://shuffle-backend:5001
+      - DOCKER_API_VERSION=1.40
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - SHUFFLE_PASS_WORKER_PROXY=False
+    restart: unless-stopped
+  database:
+    image: frikky/shuffle:database
+    container_name: shuffle-database
+    hostname: shuffle-database
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./shuffle-database:/etc/shuffle
+
+
