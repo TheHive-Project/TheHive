@@ -76,9 +76,7 @@ done
 
 if test "${CONFIG}" = 1
 then
-  echo "Waiting until Cassandra DB is up"
-  sleep 30   # Sleep until cassandra Db is up 
-  CONFIG_FILE=$(mktemp).conf
+  CONFIG_FILE=$(mktemp --tmpdir thehive-XXXXXX.conf)
   if test "${CONFIG_SECRET}" = 1
   then
     if test -z "${SECRET}"
@@ -106,18 +104,21 @@ then
       echo "storage.directory = \"${BDB_DIRECTORY}\"" >> ${CONFIG_FILE}
       echo "berkeleyje.freeDisk = 1"                  >> ${CONFIG_FILE}
     else
-      echo "Using cassanra address = ${CQL[@]}"
+      echo "Using cassandra address = ${CQL[@]}"
       echo "storage.backend = cql"            >> ${CONFIG_FILE}
-      if [[ -n $CQL_USERNAME && -n $CQL_PASSWORD ]];then
-           echo "storage.username = \"${CQL_USERNAME}\"" >> ${CONFIG_FILE}
-           echo "storage.password = \"${CQL_PASSWORD}\"" >> ${CONFIG_FILE}
-           printf "Using ${CQL_USERNAME} as cassandra username and ${CQL_PASSWORD} as its password\n"
+      if [[ -n $CQL_USERNAME && -n $CQL_PASSWORD ]]
+      then
+        echo "storage.username = \"${CQL_USERNAME}\"" >> ${CONFIG_FILE}
+        echo "storage.password = \"${CQL_PASSWORD}\"" >> ${CONFIG_FILE}
+        printf "Using ${CQL_USERNAME} as cassandra username and ${CQL_PASSWORD} as its password\n"
       fi
       echo "storage.cql.cluster-name = thp"   >> ${CONFIG_FILE}
       echo "storage.cql.keyspace = thehive"   >> ${CONFIG_FILE}
       echo "storage.hostname = ["             >> ${CONFIG_FILE}
       printf '%s\n' "${CQL_HOSTS[@]}"         >> ${CONFIG_FILE}
       echo "]"                                >> ${CONFIG_FILE}
+      echo "Waiting until Cassandra DB is up"
+      sleep 30   # Sleep until cassandra Db is up
     fi
     echo "}" >> ${CONFIG_FILE}
   fi
@@ -174,7 +175,7 @@ then
     fi
   fi
 
-  echo "include file(\"secret.conf\")" >> ${CONFIG_FILE}
+  echo "include file(\"/etc/thehive/application.conf\")" >> ${CONFIG_FILE}
 fi
 
 bin/thehive \
