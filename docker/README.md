@@ -103,5 +103,41 @@ Adjust depending on your needs and your env. Without these settings in my enviro
 - go in Automation page and grab the api key to use in the hive application.conf to receive alerts from MISP or to use in MISP analyzers inside Cortex.
 
 
+### SHUFFLE
+To test automation I choose SHUFFLE (https://shuffler.io/)
 
+In docker-compose.yml , after the comment "#READY FOR AUTOMATION ? " there is part dedicated to Shuffle (you can remove as the others if not needed)
+Here will not document how to use it, there is already documentation (https://shuffler.io/docs/about).
+
+Here just describe how to connect the things together.
+
+- After SHUFFLE starts, go at login page (the frontend port by default is 3001), put credentials choosen in docker-compose.yml , for your convenience I set admin // password , create your first workflow, can be anything you have in mind, then go in Triggers, place Webhook node on dashboard, select it and grab the Webhook URI. it will be something like http://192.168.29.1:3001/api/v1/hooks/webhook_0982214b-3b92-4a85-b6fa-771982c2b449
+- Go in applicaiton.conf of The Hive and modify the url under webhook notification part:
+```
+notification.webhook.endpoints = [
+  {
+    name: local
+    url: "http://192.168.29.1:3001/api/v1/hooks/webhook_0982214b-3b92-4a85-b6fa-771982c2b449"
+    version: 0
+    wsConfig: {}
+    includedTheHiveOrganisations: []
+    excludedTheHiveOrganisations: []
+  }
+]
+```
+- In The Hive webhooks are not enabled by default, you should enable it, there is a guide to do it: https://github.com/TheHive-Project/TheHiveDocs/blob/master/TheHive4/Administration/Webhook.md
+In my case I had to call this:
+```
+curl -XPUT -uuser@thehive.local:user@thehive.local -H 'Content-type: application/json' 127.0.0.1:9000/api/config/organisation/notification -d '
+{
+  "value": [
+    {
+      "delegate": false,
+      "trigger": { "name": "AnyEvent"},
+      "notifier": { "name": "webhook", "endpoint": "local" }
+    }
+  ]
+}'
+```
+- Now are able to play automation with The Hive, Cortex-Analyzers, MISP thanks to SHUFFLE!
 
