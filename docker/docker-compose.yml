@@ -15,6 +15,8 @@ services:
       - thread_pool.write.queue_size=10000
       - gateway.recover_after_nodes=1
       - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms256m -Xmx256m'      
     ulimits:
       nofile:
         soft: 65536
@@ -49,6 +51,8 @@ services:
     restart: unless-stopped    
     hostname: cassandra
     environment:
+      - MAX_HEAP_SIZE=1G
+      - HEAP_NEWSIZE=1G    
       - CASSANDRA_CLUSTER_NAME=thp
     volumes:
       - ./cassandra-data:/var/lib/cassandra/data     
