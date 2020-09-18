@@ -53,7 +53,7 @@ ElasticSearch container likes big mmap count (https://www.elastic.co/guide/en/el
 Due you would run all on same system and maybe you don't have a limited amount of RAM, better to set some size, for ElasticSearch, in docker-compose.yml I added those:
 
 ```- bootstrap.memory_lock=true```
-```- "ES_JAVA_OPTS=-Xms512m -Xmx512m"```
+```- "ES_JAVA_OPTS=-Xms256m -Xmx256m"```
 
 Adjust depending on your needs and your env. Without these settings in my environment ElasticSearch was using 1.5GB
 
