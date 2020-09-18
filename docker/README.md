@@ -17,8 +17,22 @@ If you take a look of docker-compose.yml you will see you need some local folder
 - ./elasticsearch/logs:/usr/share/elasticsearch/logs
 - ./cortex/application.conf:/etc/cortex/application.conf
 - ./thehive/application.conf:/etc/thehive/application.conf
+- ./data:/data
 - ./mysql:/var/lib/mysql
 
+Structure would look like:
+```
+├── docker-compose.yml
+├── elasticsearch
+│   └── data
+│   └── logs
+├── cortex
+│   └── application.conf   
+└── thehive
+   └── application.conf
+└── data
+└── mysql
+```
 
 ### Cortex-Analyzers
 - In order to use Analyzers in docker version, it is set  the online json url instead absolute path of analyzers in the application.conf of Cortex:
