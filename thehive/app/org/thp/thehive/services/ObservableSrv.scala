@@ -331,7 +331,7 @@ object ObservableOps {
     def similar: Traversal.V[Observable] = {
       val originLabel = StepLabel.v[Observable]
       traversal
-        .aggregate(originLabel)
+        .aggregateLocal(originLabel)
         .unionFlat(
           _.out[ObservableData]
             .in[ObservableData],
