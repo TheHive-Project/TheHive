@@ -165,7 +165,7 @@ case class AggSum(aggName: Option[String], fieldName: String) extends Aggregatio
           .sum
           .domainMap(sum => Output(Json.obj(name -> JsNumber(BigDecimal(sum.toString)))))
           .castDomain[Output[_]],
-      _.constant2(Output(Json.obj(name -> JsNull)))
+      Output(Json.obj(name -> JsNull))
     )
   }
 }
@@ -187,7 +187,7 @@ case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregatio
           .select(fieldPath, t)
           .mean
           .domainMap(avg => Output(Json.obj(name -> avg.asInstanceOf[Double]))),
-      _.constant2(Output(Json.obj(name -> JsNull)))
+      Output(Json.obj(name -> JsNull))
     )
   }
 }
@@ -210,7 +210,7 @@ case class AggMin(aggName: Option[String], fieldName: String) extends Aggregatio
           .select(fieldPath, t)
           .min
           .domainMap(min => Output(Json.obj(name -> property.mapping.selectRenderer.toJson(min)))),
-      _.constant2(Output(Json.obj(name -> JsNull)))
+      Output(Json.obj(name -> JsNull))
     )
   }
 }
@@ -233,7 +233,7 @@ case class AggMax(aggName: Option[String], fieldName: String) extends Aggregatio
           .select(fieldPath, t)
           .max
           .domainMap(max => Output(Json.obj(name -> property.mapping.selectRenderer.toJson(max)))),
-      _.constant2(Output(Json.obj(name -> JsNull)))
+      Output(Json.obj(name -> JsNull))
     )
   }
 }

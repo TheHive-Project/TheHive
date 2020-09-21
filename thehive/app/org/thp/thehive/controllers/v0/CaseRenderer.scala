@@ -58,8 +58,8 @@ trait CaseRenderer {
   def isOwnerStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[Boolean, String, Converter[Boolean, String]] =
     _.origin.value(_.name).domainMap(_ == authContext.organisation)
 
-  def caseStatsRenderer(
-      implicit authContext: AuthContext
+  def caseStatsRenderer(implicit
+      authContext: AuthContext
   ): Traversal.V[Case] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     _.project(
       _.by(
@@ -68,7 +68,7 @@ trait CaseRenderer {
             _.by(taskStats)
               .by(observableStats)
           ),
-          _.constant2[(JsObject, JsObject), JMap[String, Any]](JsObject.empty -> JsObject.empty)
+          JsObject.empty -> JsObject.empty
         )
       ).by(alertStats)
         .by(mergeFromStats)

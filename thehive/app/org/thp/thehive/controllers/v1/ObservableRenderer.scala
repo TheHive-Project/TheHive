@@ -43,7 +43,7 @@ trait ObservableRenderer {
     _.origin.has("name", authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
 
   def observableLinks: Traversal.V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
-    _.coalesce(
+    _.coalesceMulti(
       _.alert.richAlert.domainMap(a => Json.obj("alert" -> a.toJson)),
       _.`case`.richCaseWithoutPerms.domainMap(c => Json.obj("case" -> c.toJson))
     )

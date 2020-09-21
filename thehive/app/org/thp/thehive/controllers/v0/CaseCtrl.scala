@@ -345,7 +345,7 @@ class PublicCase @Inject() (
               .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
               .sack((_: Long) / (_: Long), _.by(_.constant(3600000L)))
               .sack[Long],
-            _.constant(0L)
+            0L
           )
         ).readonly
       )
