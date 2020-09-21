@@ -16,8 +16,8 @@ import play.api.libs.json.{JsObject, Json}
 
 trait ObservableRenderer {
 
-  def observableStatsRenderer(
-      implicit authContext: AuthContext
+  def observableStatsRenderer(implicit
+      authContext: AuthContext
   ): Traversal.V[Observable] => Traversal[JsObject, JMap[JBoolean, JLong], Converter[JsObject, JMap[JBoolean, JLong]]] =
     _.similar
       .visible
@@ -32,8 +32,8 @@ trait ObservableRenderer {
       }
 
   def observableLinkRenderer: V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
-    _.coalesce(
-      _.alert.richAlert.domainMap(a => Json.obj("alert"            -> a.toJson)),
+    _.coalesceMulti(
+      _.alert.richAlert.domainMap(a => Json.obj("alert" -> a.toJson)),
       _.`case`.richCaseWithoutPerms.domainMap(c => Json.obj("case" -> c.toJson))
     )
 }

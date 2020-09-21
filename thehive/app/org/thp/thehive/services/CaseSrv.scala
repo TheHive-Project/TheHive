@@ -75,9 +75,10 @@ class CaseSrv @Inject() (
         case (task, owner) => taskSrv.create(task, owner)
       }
       _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
-      caseTemplateCustomFields = caseTemplate
-        .fold[Seq[RichCustomField]](Nil)(_.customFields)
-        .map(cf => (cf.name, cf.value, cf.order))
+      caseTemplateCustomFields =
+        caseTemplate
+          .fold[Seq[RichCustomField]](Nil)(_.customFields)
+          .map(cf => (cf.name, cf.value, cf.order))
       cfs <- (caseTemplateCustomFields ++ customFields).toTry { case (name, value, order) => createCustomField(createdCase, name, value, order) }
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
@@ -152,8 +153,8 @@ class CaseSrv @Inject() (
     } yield ()
   }
 
-  def addObservable(`case`: Case with Entity, richObservable: RichObservable)(
-      implicit graph: Graph,
+  def addObservable(`case`: Case with Entity, richObservable: RichObservable)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val alreadyExistInThatCase = observableSrv
@@ -206,8 +207,8 @@ class CaseSrv @Inject() (
       .map(_ => ())
   }
 
-  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(
-      implicit graph: Graph,
+  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val cfv = get(`case`).customFields(customFieldName)
@@ -373,7 +374,7 @@ object CaseOps {
 
     def richCaseWithCustomRenderer[D, G, C <: Converter[D, G]](
         entityRenderer: Traversal.V[Case] => Traversal[D, G, C]
-    )(implicit authContext: AuthContext) =
+    )(implicit authContext: AuthContext): Traversal[(RichCase, D), JMap[String, Any], Converter[(RichCase, D), JMap[String, Any]]] =
       traversal
         .project(
           _.by

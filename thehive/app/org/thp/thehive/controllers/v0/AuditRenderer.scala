@@ -42,7 +42,7 @@ trait AuditRenderer {
   def observableToJson: Traversal.V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     _.project(
       _.by(_.richObservable.domainMap(_.toJson))
-        .by(_.coalesce(o => caseToJson(o.`case`), o => alertToJson(o.alert)))
+        .by(_.coalesceMulti(o => caseToJson(o.`case`), o => alertToJson(o.alert)))
     ).domainMap {
       case (obs, caseOrAlert) => obs.as[JsObject] + ((caseOrAlert \ "_type").asOpt[String].getOrElse("<unknwon>") -> caseOrAlert)
     }
@@ -83,7 +83,7 @@ trait AuditRenderer {
 
   def auditRenderer: Traversal.V[Audit] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     (_: Traversal.V[Audit])
-      .coalesce(_.`object`, _.identity.setConverter[Vertex, IdentityConverter[Vertex]](Converter.identity[Vertex]))
+      .coalesceIdent[Vertex](_.`object`, _.identity)
       .choose(
         _.on(_.label)
           .option("Case", t => caseToJson(t.v[Case]))

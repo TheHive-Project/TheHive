@@ -64,10 +64,11 @@ class WebhookProvider @Inject() (
   override def apply(config: Configuration): Try[Notifier] =
     for {
       name <- config.getOrFail[String]("endpoint")
-      config <- webhookConfigs
-        .get
-        .find(_.name == name)
-        .fold[Try[WebhookNotification]](Failure(BadConfigurationError(s"Webhook configuration `$name` not found`")))(Success.apply)
+      config <-
+        webhookConfigs
+          .get
+          .find(_.name == name)
+          .fold[Try[WebhookNotification]](Failure(BadConfigurationError(s"Webhook configuration `$name` not found`")))(Success.apply)
 
     } yield new Webhook(config, auditSrv, customFieldSrv, mat, ec)
 }
@@ -111,7 +112,7 @@ class Webhook(
     def observableToJson: Traversal.V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
       _.project(
         _.by(_.richObservable.domainMap(_.toJson))
-          .by(_.coalesce(o => caseToJson(o.`case`), o => alertToJson(o.alert)))
+          .by(_.coalesceMulti(o => caseToJson(o.`case`), o => alertToJson(o.alert)))
       ).domainMap {
         case (obs, caseOrAlert) => obs.as[JsObject] + ((caseOrAlert \ "_type").asOpt[String].getOrElse("<unknown>") -> caseOrAlert)
       }
@@ -134,20 +135,20 @@ class Webhook(
       ).domainMap {
         case (vertex, _) =>
           JsObject(
-            UMapping.string.optional.getProperty(vertex, "workerId").map(v => "analyzerId"                   -> JsString(v)).toList :::
-              UMapping.string.optional.getProperty(vertex, "workerName").map(v => "analyzerName"             -> JsString(v)).toList :::
+            UMapping.string.optional.getProperty(vertex, "workerId").map(v => "analyzerId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "workerName").map(v => "analyzerName" -> JsString(v)).toList :::
               UMapping.string.optional.getProperty(vertex, "workerDefinition").map(v => "analyzerDefinition" -> JsString(v)).toList :::
-              UMapping.string.optional.getProperty(vertex, "status").map(v => "status"                       -> JsString(v)).toList :::
-              UMapping.date.optional.getProperty(vertex, "startDate").map(v => "startDate"                   -> JsNumber(v.getTime)).toList :::
-              UMapping.date.optional.getProperty(vertex, "endDate").map(v => "endDate"                       -> JsNumber(v.getTime)).toList :::
-              UMapping.string.optional.getProperty(vertex, "cortexId").map(v => "cortexId"                   -> JsString(v)).toList :::
-              UMapping.string.optional.getProperty(vertex, "cortexJobId").map(v => "cortexJobId"             -> JsString(v)).toList :::
-              UMapping.string.optional.getProperty(vertex, "_createdBy").map(v => "_createdBy"               -> JsString(v)).toList :::
-              UMapping.date.optional.getProperty(vertex, "_createdAt").map(v => "_createdAt"                 -> JsNumber(v.getTime)).toList :::
-              UMapping.string.optional.getProperty(vertex, "_updatedBy").map(v => "_updatedBy"               -> JsString(v)).toList :::
-              UMapping.date.optional.getProperty(vertex, "_updatedAt").map(v => "_updatedAt"                 -> JsNumber(v.getTime)).toList :::
-              UMapping.string.optional.getProperty(vertex, "_type").map(v => "_type"                         -> JsString(v)).toList :::
-              UMapping.string.optional.getProperty(vertex, "_id").map(v => "_id"                             -> JsString(v)).toList
+              UMapping.string.optional.getProperty(vertex, "status").map(v => "status" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "startDate").map(v => "startDate" -> JsNumber(v.getTime)).toList :::
+              UMapping.date.optional.getProperty(vertex, "endDate").map(v => "endDate" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "cortexId").map(v => "cortexId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "cortexJobId").map(v => "cortexJobId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_createdBy").map(v => "_createdBy" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "_createdAt").map(v => "_createdAt" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_updatedBy").map(v => "_updatedBy" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "_updatedAt").map(v => "_updatedAt" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_type").map(v => "_type" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_id").map(v => "_id" -> JsString(v)).toList
           )
       }
 
@@ -165,7 +166,7 @@ class Webhook(
                 .option("Job", jobToJson)
                 .none(_.constant2[JsObject, JMap[String, Any]](JsObject.empty))
             ),
-          _.constant2[JsObject, JMap[String, Any]](JsObject.empty)
+          JsObject.empty
         )
 
   }

@@ -107,8 +107,8 @@ class AuditSrv @Inject() (
     }
   }
 
-  private def createFromPending(tx: AnyRef, audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(
-      implicit graph: Graph,
+  private def createFromPending(tx: AnyRef, audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     logger.debug(s"Store audit entity: $audit")
@@ -123,8 +123,8 @@ class AuditSrv @Inject() (
     }
   }
 
-  def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(
-      implicit graph: Graph,
+  def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     def setupCallbacks(tx: AnyRef): Try[Unit] = {
@@ -190,8 +190,8 @@ class AuditSrv @Inject() (
 
   class UserAudit extends SelfContextObjectAudit[User] {
 
-    def changeProfile(user: User with Entity, organisation: Organisation, profile: Profile)(
-        implicit graph: Graph,
+    def changeProfile(user: User with Entity, organisation: Organisation, profile: Profile)(implicit
+        graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
@@ -200,8 +200,8 @@ class AuditSrv @Inject() (
         Some(user)
       )
 
-    def delete(user: User with Entity, organisation: Organisation with Entity)(
-        implicit graph: Graph,
+    def delete(user: User with Entity, organisation: Organisation with Entity)(implicit
+        graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
@@ -213,8 +213,8 @@ class AuditSrv @Inject() (
 
   class ShareAudit {
 
-    def shareCase(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
-        implicit graph: Graph,
+    def shareCase(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(implicit
+        graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
@@ -223,8 +223,8 @@ class AuditSrv @Inject() (
         Some(`case`)
       )
 
-    def shareTask(task: Task with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
-        implicit graph: Graph,
+    def shareTask(task: Task with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(implicit
+        graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
@@ -233,8 +233,8 @@ class AuditSrv @Inject() (
         Some(`case`)
       )
 
-    def shareObservable(observable: Observable with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
-        implicit graph: Graph,
+    def shareObservable(observable: Observable with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(implicit
+        graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
@@ -250,8 +250,8 @@ class AuditSrv @Inject() (
         Some(`case`)
       )
 
-    def unshareTask(task: Task with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
-        implicit graph: Graph,
+    def unshareTask(task: Task with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(implicit
+        graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
@@ -260,8 +260,8 @@ class AuditSrv @Inject() (
         Some(`case`)
       )
 
-    def unshareObservable(observable: Observable with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(
-        implicit graph: Graph,
+    def unshareObservable(observable: Observable with Entity, `case`: Case with Entity, organisation: Organisation with Entity)(implicit
+        graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
@@ -329,14 +329,14 @@ object AuditOps {
     def `case`: Traversal.V[Case] =
       traversal
         .out[AuditContext]
-        .coalesce(_.in().hasLabel("Share"), _.hasLabel("Share"))
+        .coalesceIdent[Vertex](_.in().hasLabel("Share"), _.hasLabel("Share"))
         .out[ShareCase]
         .v[Case]
 
     def organisation: Traversal.V[Organisation] =
       traversal
         .out[AuditContext]
-        .coalesce(
+        .coalesceIdent[Vertex](
           _.hasLabel("Organisation"),
           _.in().hasLabel("Share").in[OrganisationShare],
           _.both().hasLabel("Organisation")
