@@ -80,9 +80,9 @@ class DescribeCtrl @Inject() (
     EntityDescription("case_task", "/case/task", taskCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case_task", _))),
     EntityDescription("alert", "/alert", alertCtrl.publicData.publicProperties.list.flatMap(propertyToJson("alert", _))),
     EntityDescription("case_artifact", "/case/artifact", observableCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
-    EntityDescription("user", "user", userCtrl.publicData.publicProperties.list.flatMap(propertyToJson("user", _))),
+    EntityDescription("user", "/user", userCtrl.publicData.publicProperties.list.flatMap(propertyToJson("user", _))),
     EntityDescription("case_task_log", "/case/task/log", logCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
-    EntityDescription("audit", "audit", auditCtrl.publicData.publicProperties.list.flatMap(propertyToJson("audit", _)))
+    EntityDescription("audit", "/audit", auditCtrl.publicData.publicProperties.list.flatMap(propertyToJson("audit", _)))
   ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
     describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
 

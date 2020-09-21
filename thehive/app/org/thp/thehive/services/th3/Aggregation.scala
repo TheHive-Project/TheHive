@@ -283,8 +283,8 @@ case class FieldAggregation(
         case order                                   => order      -> Order.asc
       }
       .foldLeft(groupedVertices) {
-        case (acc, (field, order)) if field == fieldName => acc.sort(_.by(_.selectKeys, order))
-        case (acc, (field, order)) if field == "count"   => acc.sort(_.by(_.selectValues.localCount, order))
+        case (acc, (field, order)) if field == fieldName                    => acc.sort(_.by(_.selectKeys, order))
+        case (acc, (field, order)) if field == "count" || field == "_count" => acc.sort(_.by(_.selectValues.localCount, order))
         case (acc, (field, _)) =>
           logger.warn(s"In field aggregation you can only sort by the field ($fieldName) or by count, not by $field")
           acc
