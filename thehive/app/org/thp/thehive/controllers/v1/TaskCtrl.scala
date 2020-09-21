@@ -10,6 +10,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv}
@@ -66,7 +67,7 @@ class TaskCtrl @Inject() (
         val inputTask: InputTask = request.body("task")
         val caseId: String       = request.body("caseId")
         for {
-          case0        <- caseSrv.getOrFail(caseId)
+          case0        <- caseSrv.get(caseId).can(Permissions.manageTask).getOrFail("Case")
           createdTask  <- taskSrv.create(inputTask.toTask, None)
           organisation <- organisationSrv.getOrFail(request.organisation)
           _            <- shareSrv.shareTask(createdTask, case0, organisation)

@@ -37,7 +37,7 @@ class TaskCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
         for {
-          case0        <- caseSrv.getOrFail(caseId)
+          case0        <- caseSrv.get(caseId).can(Permissions.manageTask).getOrFail("Case")
           owner        <- inputTask.owner.map(userSrv.getOrFail).flip
           createdTask  <- taskSrv.create(inputTask.toTask, owner)
           organisation <- organisationSrv.getOrFail(request.organisation)

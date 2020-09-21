@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList, Map => JMap}
+import java.util.{Map => JMap}
 
 import akka.actor.ActorRef
 import javax.inject.{Inject, Named, Singleton}
@@ -459,14 +459,6 @@ object CaseOps {
     def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
       val originCaseLabel = StepLabel.v[Case]
       val observableLabel = StepLabel.v[Observable]
-      val linkedCaseLabel = StepLabel.v[Case]
-
-      val richCaseLabel = StepLabel[RichCase, JMap[String, Any], Converter[RichCase, JMap[String, Any]]]
-      val richObservablesLabel =
-        StepLabel[Seq[RichObservable], JList[JMap[String, Any]], Converter.CList[RichObservable, JMap[String, Any], Converter[
-          RichObservable,
-          JMap[String, Any]
-        ]]]
       traversal
         .as(originCaseLabel)
         .observables
