@@ -468,33 +468,21 @@ object CaseOps {
           JMap[String, Any]
         ]]]
       traversal
-        .`match`(
-          _.as(originCaseLabel)(
-            _.in[ShareCase]
-              .filter(
-                _.in[OrganisationShare]
-                  .has("name", authContext.organisation)
-              )
-              .out[ShareObservable]
-              .v[Observable]
-          ).as(observableLabel),
-          _.as(observableLabel)(
-            _.out[ObservableData]
-              .in[ObservableData]
-              .in[ShareObservable]
-              .filter(
-                _.in[OrganisationShare]
-                  .has("name", authContext.organisation)
-              )
-              .out("ShareCase")
-              .where(P.neq(originCaseLabel.name))
-              .v[Case]
-          ).as(linkedCaseLabel),
-          _.as(linkedCaseLabel)(_.richCase).as(richCaseLabel),
-          _.as(observableLabel)(_.richObservable.fold).as(richObservablesLabel)
+        .as(originCaseLabel)
+        .observables
+        .as(observableLabel)
+        .out[ObservableData]
+        .in[ObservableData]
+        .in[ShareObservable]
+        .filter(
+          _.in[OrganisationShare]
+            .has("name", authContext.organisation)
         )
-        .dedup(richCaseLabel)
-        .select((richCaseLabel, richObservablesLabel))
+        .out[ShareCase]
+        .where(P.neq(originCaseLabel.name))
+        .group(_.by, _.by(_.select(observableLabel).richObservable.fold))
+        .unfold
+        .project(_.by(_.selectKeys.v[Case].richCase).by(_.selectValues))
         .toSeq
     }
 
