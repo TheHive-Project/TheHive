@@ -73,16 +73,19 @@ class DescribeCtrl @Inject() (
       )
     ).toOption
 
-  val entityDescriptions: Seq[EntityDescription] = Seq(
-    EntityDescription("case", caseCtrl.publicProperties.list.flatMap(propertyToJson("case", _))),
-    EntityDescription("case_task", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
-    EntityDescription("alert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
-    EntityDescription("case_artifact", observableCtrl.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
-    EntityDescription("user", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _))),
-//    EntityDescription("case_task_log", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
-    EntityDescription("audit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _)))
-  ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
-    describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
+  def entityDescriptions: Seq[EntityDescription] =
+    cacheApi.getOrElseUpdate(s"describe.v1", cacheExpire) {
+      Seq(
+        EntityDescription("case", caseCtrl.publicProperties.list.flatMap(propertyToJson("case", _))),
+        EntityDescription("case_task", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
+        EntityDescription("alert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
+        EntityDescription("case_artifact", observableCtrl.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
+        EntityDescription("user", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _))),
+        //    EntityDescription("case_task_log", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
+        EntityDescription("audit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _)))
+      ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
+        describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
+    }
 
   implicit val propertyDescriptionWrites: Writes[PropertyDescription] =
     Json.writes[PropertyDescription].transform((_: JsObject) + ("description" -> JsString("")))
@@ -187,7 +190,7 @@ class DescribeCtrl @Inject() (
       .auth { _ =>
         entityDescriptions
           .collectFirst {
-            case desc if desc.label == modelName => Success(Results.Ok(cacheApi.getOrElseUpdate(s"describe.v1.$modelName", cacheExpire)(desc.toJson)))
+            case desc if desc.label == modelName => Success(Results.Ok(desc.toJson))
           }
           .getOrElse(Failure(NotFoundError(s"Model $modelName not found")))
       }
@@ -195,9 +198,7 @@ class DescribeCtrl @Inject() (
   def describeAll: Action[AnyContent] =
     entrypoint("describe all models")
       .auth { _ =>
-        val descriptors = entityDescriptions.map { desc =>
-          desc.label -> cacheApi.getOrElseUpdate(s"describe.v1.${desc.label}", cacheExpire)(desc.toJson)
-        }
+        val descriptors = entityDescriptions.map(desc => desc.label -> desc.toJson)
         Success(Results.Ok(JsObject(descriptors)))
       }
 }
