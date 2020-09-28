@@ -49,12 +49,20 @@
                     });
                 };
 
+                self.merge = function(caseId) {
+                    this.onMergeIntoCase({
+                        caseId: caseId
+                    });
+                };
+
+
             },
             controllerAs: '$cmp',
             templateUrl: 'views/components/alert/similar-case-list.component.html',
             bindings: {
                 alertId: '<',
-                onListLoad: '&'
+                onListLoad: '&',
+                onMergeIntoCase: '&'
             }
         });
 })();
