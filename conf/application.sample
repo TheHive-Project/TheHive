@@ -27,8 +27,8 @@ search {
   #}
 
   ## Authentication configuration
-  #search.username = ""
-  #search.password = ""
+  #username = ""
+  #password = ""
 
   ## SSL configuration
   #keyStore {
