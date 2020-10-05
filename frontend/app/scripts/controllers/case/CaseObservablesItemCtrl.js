@@ -181,8 +181,8 @@
 
             $scope.openArtifact = function (a) {
                 $state.go('app.case.observables-item', {
-                    caseId: a['case'].id,
-                    itemId: a.id
+                    caseId: a.stats['case']._id,
+                    itemId: a._id
                 });
             };
 
