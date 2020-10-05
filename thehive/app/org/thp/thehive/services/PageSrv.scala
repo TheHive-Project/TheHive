@@ -9,6 +9,7 @@ import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Organisation, OrganisationPage, Page}
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PageOps._
 import play.api.libs.json.Json
 
@@ -20,9 +21,7 @@ class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, or
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 
-  override def get(idOrSlug: String)(implicit graph: Graph): Traversal.V[Page] =
-    if (db.isValidId(idOrSlug)) getByIds(idOrSlug)
-    else startTraversal.getBySlug(idOrSlug)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Page] = startTraversal.getBySlug(name)
 
   def create(page: Page)(implicit authContext: AuthContext, graph: Graph): Try[Page with Entity] =
     for {
@@ -50,14 +49,14 @@ object PageOps {
 
   implicit class PageOpsDefs(traversal: Traversal.V[Page]) {
 
-    def getByTitle(title: String): Traversal.V[Page] = traversal.has("title", title)
+    def getByTitle(title: String): Traversal.V[Page] = traversal.has(_.title, title)
 
-    def getBySlug(slug: String): Traversal.V[Page] = traversal.has("slug", slug)
+    def getBySlug(slug: String): Traversal.V[Page] = traversal.has(_.slug, slug)
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Page] = traversal.filter(
-      _.in[OrganisationPage]
-        .has("name", authContext.organisation)
-    )
+    def organisation: Traversal.V[Organisation] = traversal.in[OrganisationPage].v[Organisation]
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Page] =
+      traversal.filter(_.organisation.current)
   }
 
 }

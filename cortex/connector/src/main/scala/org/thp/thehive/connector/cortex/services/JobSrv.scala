@@ -14,13 +14,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, OutputJob => CortexJob}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.{EntityId, EntityIdOrName, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.Conversion._
@@ -30,6 +30,7 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableTypeSrv, ReportTagSrv}
 import play.api.libs.json.Json
 
@@ -65,24 +66,27 @@ class JobSrv @Inject() (
     * @param authContext auth context instance
     * @return
     */
-  def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(
-      implicit authContext: AuthContext
+  def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(implicit
+      authContext: AuthContext
   ): Future[RichJob] =
     for {
-      cortexClient <- serviceHelper
-        .availableCortexClients(connector.clients, authContext.organisation)
-        .find(_.name == cortexId)
-        .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
-      analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
+      cortexClient <-
+        serviceHelper
+          .availableCortexClients(connector.clients, authContext.organisation)
+          .find(_.name == cortexId)
+          .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
+      analyzer <- cortexClient.getAnalyzer(workerId).recoverWith {
+        case _ => cortexClient.getAnalyzerByName(workerId)
+      } // if get analyzer using cortex2 API fails, try using legacy API
       cortexArtifact <- (observable.attachment, observable.data) match {
         case (None, Some(data)) =>
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, Some(data.data), None)
+            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`.number.toString, Some(data.data), None)
           )
         case (Some(a), None) =>
           val attachment = CortexAttachment(a.name, a.size, a.contentType, attachmentSrv.source(a))
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, None, Some(attachment))
+            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`.number.toString, None, Some(attachment))
           )
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
@@ -135,14 +139,15 @@ class JobSrv @Inject() (
     * @param authContext  the auth context for db queries
     * @return the updated job
     */
-  def finished(cortexId: String, jobId: String, cortexJob: CortexJob)(
-      implicit authContext: AuthContext
+  def finished(cortexId: String, jobId: EntityId, cortexJob: CortexJob)(implicit
+      authContext: AuthContext
   ): Future[Job with Entity] =
     for {
-      cortexClient <- serviceHelper
-        .availableCortexClients(connector.clients, authContext.organisation)
-        .find(_.name == cortexId)
-        .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
+      cortexClient <-
+        serviceHelper
+          .availableCortexClients(connector.clients, authContext.organisation)
+          .find(_.name == cortexId)
+          .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       job <- Future.fromTry(updateJobStatus(jobId, cortexJob))
       _   <- importCortexArtifacts(job, cortexJob, cortexClient)
       _   <- Future.fromTry(importAnalyzerTags(job, cortexJob))
@@ -156,7 +161,7 @@ class JobSrv @Inject() (
     * @param authContext the authentication context
     * @return the updated job
     */
-  private def updateJobStatus(jobId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Job with Entity] =
+  private def updateJobStatus(jobId: EntityId, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
         val report  = cortexJob.report.flatMap(r => r.full orElse r.errorMessage.map(m => Json.obj("errorMessage" -> m)))
@@ -192,8 +197,8 @@ class JobSrv @Inject() (
     * @param authContext the authentication context
     * @return
     */
-  private def importCortexArtifacts(job: Job with Entity, cortexJob: CortexJob, cortexClient: CortexClient)(
-      implicit authContext: AuthContext
+  private def importCortexArtifacts(job: Job with Entity, cortexJob: CortexJob, cortexClient: CortexClient)(implicit
+      authContext: AuthContext
   ): Future[Done] = {
     val artifacts = cortexJob
       .report
@@ -201,7 +206,7 @@ class JobSrv @Inject() (
       .flatMap(_.artifacts)
     Future
       .traverse(artifacts) { artifact =>
-        db.tryTransaction(graph => observableTypeSrv.getOrFail(artifact.dataType)(graph)) match {
+        db.tryTransaction(graph => observableTypeSrv.getOrFail(EntityIdOrName(artifact.dataType))(graph)) match {
           case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, attachmentType, cortexClient)
           case Success(dataType) =>
             Future
@@ -239,8 +244,8 @@ class JobSrv @Inject() (
       artifact: OutputArtifact,
       attachmentType: ObservableType with Entity,
       cortexClient: CortexClient
-  )(
-      implicit authContext: AuthContext
+  )(implicit
+      authContext: AuthContext
   ): Future[Attachment with Entity] =
     artifact
       .attachment
@@ -277,12 +282,7 @@ object JobOps {
       * @return
       */
     def visible(implicit authContext: AuthContext): Traversal.V[Job] =
-      traversal.filter(
-        _.in[ObservableJob]
-          .in[ShareObservable]
-          .in[OrganisationShare]
-          .has("name", authContext.organisation)
-      )
+      traversal.filter(_.observable.organisations.visible)
 
     /**
       * Checks if a job is accessible if the user and
@@ -294,13 +294,7 @@ object JobOps {
       */
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Job] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(
-          _.in[ObservableJob]
-            .in[ShareObservable]
-            .filter(_.out[ShareProfile].has("permissions", permission))
-            .in[OrganisationShare]
-            .has("name", authContext.organisation)
-        )
+        traversal.filter(_.observable.can(permission))
       else traversal.limit(0)
 
     def observable: Traversal.V[Observable] = traversal.in[ObservableJob].v[Observable]
@@ -313,7 +307,7 @@ object JobOps {
       */
     def reportObservables: Traversal.V[Observable] = traversal.out[ReportObservable].v[Observable]
 
-    def richJob(implicit authContext: AuthContext) = {
+    def richJob(implicit authContext: AuthContext): Traversal[RichJob, JMap[String, Any], Converter[RichJob, JMap[String, Any]]] = {
       val thisJob = StepLabel.v[Job]
       traversal
         .as(thisJob)

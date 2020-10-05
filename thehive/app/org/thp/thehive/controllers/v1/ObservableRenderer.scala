@@ -12,13 +12,14 @@ import org.thp.thehive.models.Observable
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
 import play.api.libs.json._
 
 trait ObservableRenderer {
 
   def seenStats(implicit
       authContext: AuthContext
-  ): Traversal.V[Observable] => Traversal[JsObject, JMap[JBoolean, JLong], Converter[JsObject, JMap[JBoolean, JLong]]] =
+  ): Traversal.V[Observable] => Traversal[JsValue, JMap[JBoolean, JLong], Converter[JsValue, JMap[JBoolean, JLong]]] =
     _.similar
       .visible
       .groupCount(_.byValue(_.ioc))
@@ -39,10 +40,10 @@ trait ObservableRenderer {
 
   def isOwner(implicit
       authContext: AuthContext
-  ): Traversal.V[Observable] => Traversal[JsBoolean, JList[Vertex], Converter[JsBoolean, JList[Vertex]]] =
-    _.origin.has("name", authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
+  ): Traversal.V[Observable] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
+    _.origin.get(authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
 
-  def observableLinks: Traversal.V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+  def observableLinks: Traversal.V[Observable] => Traversal[JsValue, JMap[String, Any], Converter[JsValue, JMap[String, Any]]] =
     _.coalesceMulti(
       _.alert.richAlert.domainMap(a => Json.obj("alert" -> a.toJson)),
       _.`case`.richCaseWithoutPerms.domainMap(c => Json.obj("case" -> c.toJson))

@@ -5,6 +5,7 @@ import java.util.Date
 
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -13,6 +14,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.{TaskStatus, _}
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
@@ -34,8 +36,8 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)
       _    <- owner.map(taskUserSrv.create(TaskUser(), task, _)).flip
     } yield RichTask(task, owner)
 
-  def isAvailableFor(taskId: String)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    getByIds(taskId).visible(authContext).exists
+  def isAvailableFor(taskId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Boolean =
+    get(taskId).visible(authContext).exists
 
   def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     get(task).unassign()
@@ -117,23 +119,17 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)
 object TaskOps {
   implicit class TaskOpsDefs(traversal: Traversal.V[Task]) {
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Task] =
-      traversal.filter(
-        _.in[ShareTask]
-          .in[OrganisationShare]
-          .has("name", authContext.organisation)
-      )
+    def get(idOrName: EntityIdOrName): Traversal.V[Task] =
+      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
 
-    def active: Traversal.V[Task] = traversal.filterNot(_.has("status", "Cancel"))
+    def visible(implicit authContext: AuthContext): Traversal.V[Task] =
+      traversal.filter(_.organisations.current)
+
+    def active: Traversal.V[Task] = traversal.filterNot(_.has(_.status, TaskStatus.Cancel))
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Task] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(
-          _.in[ShareTask]
-            .filter(_.out[ShareProfile].has("permissions", permission))
-            .in[OrganisationShare]
-            .has("name", authContext.organisation)
-        )
+        traversal.filter(_.shares.filter(_.profile.has(_.permissions, permission)).organisation.current)
       else
         traversal.limit(0)
 
@@ -153,9 +149,9 @@ object TaskOps {
 
     def organisations: Traversal.V[Organisation] = traversal.in[ShareTask].in[OrganisationShare].v[Organisation]
     def organisations(permission: Permission): Traversal.V[Organisation] =
-      traversal.in[ShareTask].filter(_.out[ShareProfile].has("permissions", permission)).in[OrganisationShare].v[Organisation]
+      shares.filter(_.profile.has(_.permissions, permission)).organisation
 
-    def origin: Traversal.V[Organisation] = traversal.in[ShareTask].has("owner", true).in[OrganisationShare].v[Organisation]
+    def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
     def assignableUsers(implicit authContext: AuthContext): Traversal.V[User] =
       organisations(Permissions.manageTask)
@@ -179,7 +175,7 @@ object TaskOps {
       traversal
         .project(
           _.by
-            .by(_.out[TaskUser].v[User].fold)
+            .by(_.assignee.fold)
             .by(entityRenderer)
         )
         .domainMap {
@@ -193,7 +189,7 @@ object TaskOps {
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
 
-    def share(organistionName: String): Traversal.V[Share] =
-      traversal.in[ShareTask].filter(_.in[OrganisationShare].has("name", organistionName)).v[Share]
+    def share(organisation: EntityIdOrName): Traversal.V[Share] =
+      traversal.in[ShareTask].filter(_.in[OrganisationShare].v[Organisation].get(organisation)).v[Share]
   }
 }

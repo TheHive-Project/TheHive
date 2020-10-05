@@ -162,7 +162,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val request = FakeRequest("DELETE", s"/api/customField/${cf._id}")
         .withHeaders("user" -> "admin@thehive.local")
-      val result = app[CustomFieldCtrl].delete(cf._id)(request)
+      val result = app[CustomFieldCtrl].delete(cf._id.toString)(request)
 
       status(result) shouldEqual 204
 
@@ -192,7 +192,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
 
               }
             """.stripMargin))
-      val result = app[CustomFieldCtrl].update(cf.get._id)(request)
+      val result = app[CustomFieldCtrl].update(cf.get._id.toString)(request)
 
       status(result) shouldEqual 200
 
@@ -224,7 +224,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
 
               }
             """.stripMargin))
-      val result = app[CustomFieldCtrl].update(cf.get._id)(request)
+      val result = app[CustomFieldCtrl].update(cf.get._id.toString)(request)
 
       status(result) shouldEqual 200
 

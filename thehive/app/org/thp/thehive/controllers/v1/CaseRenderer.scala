@@ -9,13 +9,14 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.{Alert, AlertCase, Case}
 import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
 
 trait CaseRenderer {
 
-  def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsObject, JLong, Converter[JsObject, JLong]] =
+  def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
     _.share
       .observables
       .count
@@ -23,7 +24,7 @@ trait CaseRenderer {
 
   def taskStats(implicit
       authContext: AuthContext
-  ): Traversal.V[Case] => Traversal[JsObject, JMap[String, JLong], Converter[JsObject, JMap[String, JLong]]] =
+  ): Traversal.V[Case] => Traversal[JsValue, JMap[String, JLong], Converter[JsValue, JMap[String, JLong]]] =
     _.share
       .tasks
       .active
@@ -35,7 +36,7 @@ trait CaseRenderer {
         result + ("total" -> JsNumber(total))
       }
 
-  def alertStats: Traversal.V[Case] => Traversal[JsArray, JMap[String, JCollection[String]], Converter[JsArray, JMap[String, JCollection[String]]]] =
+  def alertStats: Traversal.V[Case] => Traversal[JsValue, JMap[String, JCollection[String]], Converter[JsValue, JMap[String, JCollection[String]]]] =
     _.in[AlertCase]
       .v[Alert]
       .group(_.byValue(_.`type`), _.byValue(_.source))
@@ -46,10 +47,10 @@ trait CaseRenderer {
         } yield Json.obj("type" -> tpe, "source" -> source)).toSeq)
       }
 
-  def isOwnerStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsBoolean, JList[Vertex], Converter[JsBoolean, JList[Vertex]]] =
-    _.origin.has("name", authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
+  def isOwnerStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
+    _.origin.get(authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
 
-  def shareCountStats: Traversal.V[Case] => Traversal[JsNumber, JLong, Converter[JsNumber, JLong]] =
+  def shareCountStats: Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
     _.organisations.count.domainMap(c => JsNumber(c - 1))
 
   def permissions(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Vertex, Converter[JsValue, Vertex]] =

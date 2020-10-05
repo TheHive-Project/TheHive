@@ -7,13 +7,13 @@ import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, ErrorHandler}
+import org.thp.scalligraph.{AuthorizationError, EntityIdOrName, ErrorHandler}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.{Job, RichJob}
 import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.connector.cortex.services.JobSrv
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.controllers.v0.{IdOrName, OutputParam, PublicData, QueryCtrl}
+import org.thp.thehive.controllers.v0.{OutputParam, PublicData, QueryCtrl}
 import org.thp.thehive.models.{Permissions, RichCase, RichObservable}
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.ObservableSrv
@@ -36,7 +36,7 @@ class JobCtrl @Inject() (
     entrypoint("get job")
       .authRoTransaction(db) { implicit request => implicit graph =>
         jobSrv
-          .getByIds(jobId)
+          .get(EntityIdOrName(jobId))
           .visible
           .richJob
           .getOrFail("Job")
@@ -55,8 +55,8 @@ class JobCtrl @Inject() (
           db.roTransaction { implicit graph =>
             val artifactId: String = request.body("artifactId")
             for {
-              o <- observableSrv.getByIds(artifactId).richObservable.getOrFail("Observable")
-              c <- observableSrv.getByIds(artifactId).`case`.getOrFail("Case")
+              o <- observableSrv.get(EntityIdOrName(artifactId)).richObservable.getOrFail("Observable")
+              c <- observableSrv.get(EntityIdOrName(artifactId)).`case`.getOrFail("Case")
             } yield (o, c)
           }.fold(
             error => errorHandler.onServerError(request, error),
@@ -76,10 +76,10 @@ class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
   override val entityName: String = "job"
   override val initialQuery: Query =
     Query.init[Traversal.V[Job]]("listJob", (graph, authContext) => jobSrv.startTraversal(graph).visible(authContext))
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Job]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Job]](
     "getJob",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => jobSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => jobSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Job], IteratorOutput](

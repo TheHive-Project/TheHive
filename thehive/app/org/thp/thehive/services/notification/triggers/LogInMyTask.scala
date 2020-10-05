@@ -2,6 +2,7 @@ package org.thp.thehive.services.notification.triggers
 
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Audit, Organisation, User}
@@ -31,8 +32,9 @@ class LogInMyTask(logSrv: LogSrv) extends Trigger {
       super.filter(audit, context, organisation, user) &&
       preFilter(audit, context, organisation) &&
       u.login != audit._createdBy &&
-      audit.objectId.fold(false)(taskAssignee(_).fold(false)(_ == u.login))
+      audit.objectEntityId.fold(false)(o => taskAssignee(o).fold(false)(_ == u.login))
     }
 
-  def taskAssignee(logId: String)(implicit graph: Graph): Option[String] = logSrv.getByIds(logId).task.assignee.value(_.login).headOption
+  def taskAssignee(logId: EntityId)(implicit graph: Graph): Option[String] =
+    logSrv.getByIds(logId).task.assignee.value(_.login).headOption
 }

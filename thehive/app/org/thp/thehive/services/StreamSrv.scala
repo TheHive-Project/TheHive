@@ -7,13 +7,13 @@ import akka.pattern.{ask, AskTimeoutException}
 import akka.serialization.Serializer
 import akka.util.Timeout
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.thehive.services.AuditOps._
 import play.api.Logger
 import play.api.libs.json.Json
@@ -29,7 +29,7 @@ object StreamTopic {
   def apply(streamId: String = ""): String = if (streamId.isEmpty) "stream" else s"stream-$streamId"
 }
 
-case class AuditStreamMessage(id: String*) extends StreamMessage
+case class AuditStreamMessage(id: EntityId*) extends StreamMessage
 /* Ask messages, wait if there is no ready messages */
 case object GetStreamMessages extends StreamMessage
 case object Commit            extends StreamMessage
@@ -56,7 +56,7 @@ class StreamActor(
     receive(Nil, keepAliveTimer)
   }
 
-  def receive(messages: Seq[String], keepAliveTimer: Cancellable): Receive = {
+  def receive(messages: Seq[EntityId], keepAliveTimer: Cancellable): Receive = {
     case GetStreamMessages =>
       logger.debug(s"[$self] GetStreamMessages")
       // rearm keepalive
@@ -82,7 +82,7 @@ class StreamActor(
   }
 
   def receive(
-      messages: Seq[String],
+      messages: Seq[EntityId],
       requestActor: ActorRef,
       keepAliveTimer: Cancellable,
       commitTimer: Cancellable,
@@ -178,7 +178,7 @@ class StreamSrv @Inject() (
     streamId
   }
 
-  def get(streamId: String): Future[Seq[String]] = {
+  def get(streamId: String): Future[Seq[EntityId]] = {
     implicit val timeout: Timeout = Timeout(refresh + 1.second)
     // Check if stream actor exists
     eventSrv
@@ -225,6 +225,6 @@ class StreamSerializer extends Serializer {
     new String(bytes) match {
       case "GetStreamMessages" => GetStreamMessages
       case "Commit"            => Commit
-      case s                   => Try(AuditStreamMessage(Json.parse(s).as[Seq[String]]: _*)).getOrElse(throw new NotSerializableException)
+      case s                   => Try(AuditStreamMessage(Json.parse(s).as[Seq[String]].map(EntityId.read): _*)).getOrElse(throw new NotSerializableException)
     }
 }

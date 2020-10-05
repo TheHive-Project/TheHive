@@ -46,7 +46,7 @@ case class OutputAlert(
     pap: Int,
     read: Boolean,
     follow: Boolean,
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: Seq[OutputCustomFieldValue] = Seq.empty,
     caseTemplate: Option[String] = None,
     observableCount: Long,
     caseId: Option[String],
@@ -75,7 +75,7 @@ object OutputAlert {
       pap             <- (json \ "pap").validate[Int]
       read            <- (json \ "read").validate[Boolean]
       follow          <- (json \ "follow").validate[Boolean]
-      customFields    <- (json \ "customFields").validate[Set[OutputCustomFieldValue]]
+      customFields    <- (json \ "customFields").validate[Seq[OutputCustomFieldValue]]
       caseTemplate    <- (json \ "caseTemplate").validateOpt[String]
       observableCount <- (json \ "observableCount").validate[Long]
       caseId          <- (json \ "caseId").validateOpt[String]

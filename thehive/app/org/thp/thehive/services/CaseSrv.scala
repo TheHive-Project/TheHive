@@ -13,11 +13,12 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
-import org.thp.scalligraph.{CreateError, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CustomFieldOps._
+import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
@@ -79,7 +80,9 @@ class CaseSrv @Inject() (
         caseTemplate
           .fold[Seq[RichCustomField]](Nil)(_.customFields)
           .map(cf => (cf.name, cf.value, cf.order))
-      cfs <- (caseTemplateCustomFields ++ customFields).toTry { case (name, value, order) => createCustomField(createdCase, name, value, order) }
+      cfs <- (caseTemplateCustomFields ++ customFields).toTry {
+        case (name, value, order) => createCustomField(createdCase, EntityIdOrName(name), value, order)
+      }
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
@@ -98,7 +101,7 @@ class CaseSrv @Inject() (
     val closeCase = PropertyUpdater(FPathElem("closeCase"), "") { (vertex, _, _, _) =>
       get(vertex)
         .tasks
-        .or(_.has("status", "Waiting"), _.has("status", "InProgress"))
+        .or(_.has(_.status, TaskStatus.Waiting), _.has(_.status, TaskStatus.InProgress))
         .toIterator
         .toTry {
           case task if task.status == TaskStatus.InProgress => taskSrv.updateStatus(task, null, TaskStatus.Completed)
@@ -163,7 +166,7 @@ class CaseSrv @Inject() (
       .visible
       .`case`
       .hasId(`case`._id)
-      .exists || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists
+      .exists || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists // FIXME
     if (alreadyExistInThatCase)
       Failure(CreateError("Observable already exists"))
     else
@@ -182,15 +185,11 @@ class CaseSrv @Inject() (
       get(`case`).remove()
     }
 
-  override def get(idOrNumber: String)(implicit graph: Graph): Traversal.V[Case] =
-    Success(idOrNumber)
-      .filter(_.headOption.contains('#'))
-      .map(_.tail.toInt)
-      .map(startTraversal.getByNumber(_))
-      .getOrElse(super.getByIds(idOrNumber))
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Case] =
+    Try(startTraversal.getByNumber(name.toInt)).getOrElse(startTraversal.limit(0))
 
-  def getCustomField(`case`: Case with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
-    get(`case`).customFields(customFieldName).richCustomField.headOption
+  def getCustomField(`case`: Case with Entity, customFieldIdOrName: EntityIdOrName)(implicit graph: Graph): Option[RichCustomField] =
+    get(`case`).customFields(customFieldIdOrName).richCustomField.headOption
 
   def updateCustomField(
       `case`: Case with Entity,
@@ -201,31 +200,31 @@ class CaseSrv @Inject() (
       .richCustomFields
       .toIterator
       .filterNot(rcf => customFieldNames.contains(rcf.name))
-      .foreach(rcf => get(`case`).customFields(rcf.name).remove())
+      .foreach(rcf => get(`case`).customFields(EntityName(rcf.name)).remove())
     customFieldValues
-      .toTry { case (cf, v, o) => setOrCreateCustomField(`case`, cf.name, Some(v), o) }
+      .toTry { case (cf, v, o) => setOrCreateCustomField(`case`, EntityName(cf.name), Some(v), o) }
       .map(_ => ())
   }
 
-  def setOrCreateCustomField(`case`: Case with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(implicit
+  def setOrCreateCustomField(`case`: Case with Entity, customFieldIdOrName: EntityIdOrName, value: Option[Any], order: Option[Int])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val cfv = get(`case`).customFields(customFieldName)
+    val cfv = get(`case`).customFields(customFieldIdOrName)
     if (cfv.clone().exists)
       cfv.setValue(value)
     else
-      createCustomField(`case`, customFieldName, value, order).map(_ => ())
+      createCustomField(`case`, customFieldIdOrName, value, order).map(_ => ())
   }
 
   def createCustomField(
       `case`: Case with Entity,
-      customFieldName: String,
+      customFieldIdOrName: EntityIdOrName,
       customFieldValue: Option[Any],
       order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(customFieldName)
+      cf   <- customFieldSrv.getOrFail(customFieldIdOrName)
       ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField(), customFieldValue).map(_.order_=(order))
       ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
     } yield RichCustomField(cf, ccfe)
@@ -234,7 +233,7 @@ class CaseSrv @Inject() (
       `case`: Case with Entity,
       impactStatus: String
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    impactStatusSrv.getOrFail(impactStatus).flatMap(setImpactStatus(`case`, _))
+    impactStatusSrv.getOrFail(EntityIdOrName(impactStatus)).flatMap(setImpactStatus(`case`, _))
 
   def setImpactStatus(
       `case`: Case with Entity,
@@ -254,7 +253,7 @@ class CaseSrv @Inject() (
       `case`: Case with Entity,
       resolutionStatus: String
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    resolutionStatusSrv.getOrFail(resolutionStatus).flatMap(setResolutionStatus(`case`, _))
+    resolutionStatusSrv.getOrFail(EntityIdOrName(resolutionStatus)).flatMap(setResolutionStatus(`case`, _))
 
   def setResolutionStatus(
       `case`: Case with Entity,
@@ -342,30 +341,21 @@ object CaseOps {
 
     def resolutionStatus: Traversal.V[ResolutionStatus] = traversal.out[CaseResolutionStatus].v[ResolutionStatus]
 
-    def get(id: String): Traversal.V[Case] =
-      Success(id)
-        .filter(_.headOption.contains('#'))
-        .map(_.tail.toInt)
-        .map(getByNumber)
-        .getOrElse(traversal.getByIds(id))
+    def get(idOrName: EntityIdOrName): Traversal.V[Case] =
+      idOrName.fold(traversal.getByIds(_), n => getByNumber(n.toInt))
 
-    def getByNumber(caseNumber: Int): Traversal.V[Case] = traversal.has("number", caseNumber)
+    def getByNumber(caseNumber: Int): Traversal.V[Case] = traversal.has(_.number, caseNumber)
 
     def visible(implicit authContext: AuthContext): Traversal.V[Case] = visible(authContext.organisation)
 
-    def visible(organisationName: String): Traversal.V[Case] =
-      traversal.filter(_.in[ShareCase].in[OrganisationShare].has("name", organisationName))
+    def visible(organisationIdOrName: EntityIdOrName): Traversal.V[Case] =
+      traversal.filter(_.organisations.get(organisationIdOrName))
 
     def assignee: Traversal.V[User] = traversal.out[CaseUser].v[User]
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Case] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(
-          _.in[ShareCase]
-            .filter(_.out[ShareProfile].has("permissions", permission))
-            .in[OrganisationShare]
-            .has("name", authContext.organisation)
-        )
+        traversal.filter(_.shares.filter(_.profile.has(_.permissions, permission)).organisation.current)
       else
         traversal.limit(0)
 
@@ -399,16 +389,18 @@ object CaseOps {
             ) -> renderedEntity
         }
 
-    def customFields(name: String): Traversal.E[CaseCustomField] =
-      traversal.outE[CaseCustomField].filter(_.inV.has("name", name)).e[CaseCustomField]
+    def customFields(idOrName: EntityIdOrName): Traversal.E[CaseCustomField] =
+      idOrName
+        .fold(
+          id => traversal.outE[CaseCustomField].filter(_.inV.getByIds(id)),
+          name => traversal.outE[CaseCustomField].filter(_.inV.v[CustomField].has(_.name, name))
+        )
 
-    def customFields: Traversal.E[CaseCustomField] =
-      traversal.outE[CaseCustomField].e[CaseCustomField]
+    def customFields: Traversal.E[CaseCustomField] = traversal.outE[CaseCustomField]
 
     def richCustomFields: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] =
       traversal
         .outE[CaseCustomField]
-        .e[CaseCustomField]
         .project(_.by.by(_.inV.v[CustomField]))
         .domainMap {
           case (cfv, cf) => RichCustomField(cf, cfv)
@@ -416,15 +408,15 @@ object CaseOps {
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
 
-    def share(organisationName: String): Traversal.V[Share] =
-      traversal.in[ShareCase].filter(_.in[OrganisationShare].has("name", organisationName)).v[Share]
+    def share(organisation: EntityIdOrName): Traversal.V[Share] =
+      shares.filter(_.organisation.get(organisation)).v[Share]
 
     def shares: Traversal.V[Share] = traversal.in[ShareCase].v[Share]
 
     def organisations: Traversal.V[Organisation] = traversal.in[ShareCase].in[OrganisationShare].v[Organisation]
 
     def organisations(permission: Permission): Traversal.V[Organisation] =
-      traversal.in[ShareCase].filter(_.out[ShareProfile].has("permissions", permission)).in[OrganisationShare].v[Organisation]
+      shares.filter(_.profile.has(_.permissions, permission)).organisation
 
     def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Vertex, Converter[Set[Permission], Vertex]] =
       traversal
@@ -432,13 +424,13 @@ object CaseOps {
         .profile
         .domainMap(profile => profile.permissions & authContext.permissions)
 
-    def origin: Traversal.V[Organisation] = traversal.in[ShareCase].has("owner", true).in[OrganisationShare].v[Organisation]
+    def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
     def audits(implicit authContext: AuthContext): Traversal.V[Audit] = audits(authContext.organisation)
 
-    def audits(organisationName: String): Traversal.V[Audit] =
+    def audits(organisationIdOrName: EntityIdOrName): Traversal.V[Audit] =
       traversal
-        .unionFlat(_.visible(organisationName), _.observables(organisationName), _.tasks(organisationName), _.share(organisationName))
+        .unionFlat(_.visible(organisationIdOrName), _.observables(organisationIdOrName), _.tasks(organisationIdOrName), _.share(organisationIdOrName))
         .in[AuditContext]
         .v[Audit]
 
@@ -463,18 +455,15 @@ object CaseOps {
         .as(originCaseLabel)
         .observables
         .as(observableLabel)
-        .out[ObservableData]
-        .in[ObservableData]
-        .in[ShareObservable]
-        .filter(
-          _.in[OrganisationShare]
-            .has("name", authContext.organisation)
-        )
-        .out[ShareCase]
+        .data
+        .observables
+        .shares
+        .filter(_.organisation.current)
+        .`case`
         .where(P.neq(originCaseLabel.name))
         .group(_.by, _.by(_.select(observableLabel).richObservable.fold))
         .unfold
-        .project(_.by(_.selectKeys.v[Case].richCase).by(_.selectValues))
+        .project(_.by(_.selectKeys.richCase).by(_.selectValues))
         .toSeq
     }
 
@@ -482,7 +471,7 @@ object CaseOps {
       traversal
         .project(
           _.by
-            .by(_.tags.v[Tag].fold)
+            .by(_.tags.fold)
             .by(_.impactStatus.value(_.value).fold)
             .by(_.resolutionStatus.value(_.value).fold)
             .by(_.assignee.value(_.login).fold)
@@ -533,13 +522,13 @@ object CaseOps {
 
     def tasks(implicit authContext: AuthContext): Traversal.V[Task] = tasks(authContext.organisation)
 
-    def tasks(organisationName: String): Traversal.V[Task] =
-      share(organisationName).tasks
+    def tasks(organisationIdOrName: EntityIdOrName): Traversal.V[Task] =
+      share(organisationIdOrName).tasks
 
     def observables(implicit authContext: AuthContext): Traversal.V[Observable] = observables(authContext.organisation)
 
-    def observables(organisationName: String): Traversal.V[Observable] =
-      share(organisationName).observables
+    def observables(organisationIdOrName: EntityIdOrName): Traversal.V[Observable] =
+      share(organisationIdOrName).observables
 
     def assignableUsers(implicit authContext: AuthContext): Traversal.V[User] =
       organisations(Permissions.manageCase)

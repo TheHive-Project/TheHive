@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
@@ -46,7 +47,7 @@ class CustomFieldCtrl @Inject() (
   def get(id: String): Action[AnyContent] =
     entrypoint("get custom field")
       .authRoTransaction(db) { _ => implicit graph =>
-        customFieldSrv.get(id).getOrFail("CustomField").map(cf => Results.Ok(cf.toJson))
+        customFieldSrv.get(EntityIdOrName(id)).getOrFail("CustomField").map(cf => Results.Ok(cf.toJson))
       }
 
   def delete(id: String): Action[AnyContent] =
@@ -55,7 +56,7 @@ class CustomFieldCtrl @Inject() (
       .authPermittedTransaction(db, Permissions.manageCustomField) { implicit request => implicit graph =>
         val force = request.body("force").getOrElse(false)
         for {
-          cf <- customFieldSrv.getOrFail(id)
+          cf <- customFieldSrv.getOrFail(EntityIdOrName(id))
           _  <- customFieldSrv.delete(cf, force)
         } yield Results.NoContent
       }
@@ -67,7 +68,7 @@ class CustomFieldCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("customField")
 
         for {
-          updated <- customFieldSrv.update(customFieldSrv.get(id), propertyUpdaters)
+          updated <- customFieldSrv.update(customFieldSrv.get(EntityIdOrName(id)), propertyUpdaters)
           cf      <- updated._1.getOrFail("CustomField")
         } yield Results.Ok(cf.toJson)
       }
@@ -75,7 +76,7 @@ class CustomFieldCtrl @Inject() (
   def useCount(id: String): Action[AnyContent] =
     entrypoint("get use count of custom field")
       .authPermittedTransaction(db, Permissions.manageCustomField) { _ => implicit graph =>
-        customFieldSrv.getOrFail(id).map(customFieldSrv.useCount).map { countMap =>
+        customFieldSrv.getOrFail(EntityIdOrName(id)).map(customFieldSrv.useCount).map { countMap =>
           val total = countMap.valuesIterator.sum
           val countStats = JsObject(countMap.map {
             case (k, v) => fromObjectType(k) -> JsNumber(v)
@@ -98,10 +99,10 @@ class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends Publi
     }
   )
   override val outputQuery: Query = Query.output[CustomField with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[CustomField]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[CustomField]](
     "getCustomField",
-    FieldsParser[IdOrName],
-    (param, graph, _) => customFieldSrv.get(param.idOrName)(graph)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, _) => customFieldSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[CustomField]

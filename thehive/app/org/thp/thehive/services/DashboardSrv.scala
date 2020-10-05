@@ -4,6 +4,7 @@ import java.util.{List => JList, Map => JMap}
 
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -12,14 +13,15 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.UserOps._
 import play.api.libs.json.{JsObject, Json}
 
 import scala.util.{Success, Try}
 
 @Singleton
-class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)(
-    implicit @Named("with-thehive-schema") db: Database
+class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)(implicit
+    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Dashboard] {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
   val dashboardUserSrv         = new EdgeSrv[DashboardUser, Dashboard, User]
@@ -44,30 +46,32 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
           .flatMap(auditSrv.dashboard.update(_, updatedFields))
     }
 
-  def share(dashboard: Dashboard with Entity, organisationName: String, writable: Boolean)(
-      implicit graph: Graph,
+  def share(dashboard: Dashboard with Entity, organisation: EntityIdOrName, writable: Boolean)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
-    get(dashboard)
-      .inE[OrganisationDashboard]
-      .e[OrganisationDashboard]
-      .filter(_.outV.has("name", organisationName))
-      .update(_.writable, writable)
-      .fold
-      .getOrFail("Dashboard")
-      .flatMap {
-        case d if d.isEmpty =>
-          organisationSrv
-            .getOrFail(organisationName)
-            .flatMap(organisation => organisationDashboardSrv.create(OrganisationDashboard(writable), organisation, dashboard))
-        case _ => Success(())
-      }
-      .flatMap { _ =>
-        auditSrv.dashboard.update(dashboard, Json.obj("share" -> Json.obj("organisation" -> organisationName, "writable" -> writable)))
-      }
+    organisationSrv.get(organisation).getOrFail("Organisation").flatMap { org =>
+      get(dashboard)
+        .inE[OrganisationDashboard]
+        .filter(_.outV.v[Organisation].getEntity(org))
+        .update(_.writable, writable)
+        .fold
+        .getOrFail("Dashboard")
+        .flatMap {
+          case d if d.isEmpty =>
+            organisationSrv
+              .get(organisation)
+              .getOrFail("Organisation")
+              .flatMap(organisation => organisationDashboardSrv.create(OrganisationDashboard(writable), organisation, dashboard))
+          case _ => Success(())
+        }
+        .flatMap { _ =>
+          auditSrv.dashboard.update(dashboard, Json.obj("share" -> Json.obj("organisation" -> org.name, "writable" -> writable)))
+        }
+    }
 
-  def unshare(dashboard: Dashboard with Entity, organisationName: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(dashboard).inE[OrganisationDashboard].filter(_.outV.has("name", organisationName)).remove()
+  def unshare(dashboard: Dashboard with Entity, organisation: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    get(dashboard).inE[OrganisationDashboard].filter(_.outV.v[Organisation].get(organisation)).remove()
     Success(()) // TODO add audit
   }
 
@@ -82,8 +86,11 @@ object DashboardOps {
 
   implicit class DashboardOpsDefs(traversal: Traversal.V[Dashboard]) {
 
+    def get(idOrName: EntityIdOrName): Traversal.V[Dashboard] =
+      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
+
     def visible(implicit authContext: AuthContext): Traversal.V[Dashboard] =
-      traversal.filter(_.or(_.user.current(authContext), _.in[OrganisationDashboard].has("name", authContext.organisation)))
+      traversal.filter(_.or(_.user.current, _.organisation.current))
 
     def organisation: Traversal.V[Organisation] = traversal.in[OrganisationDashboard].v[Organisation]
 
@@ -91,13 +98,12 @@ object DashboardOps {
 
     def canUpdate(implicit authContext: AuthContext): Traversal.V[Dashboard] =
       traversal.filter(
-        _.or(_.user.current(authContext), _.inE[OrganisationDashboard].has("writable", true).outV.has("name", authContext.organisation))
+        _.or(_.user.current, _.inE[OrganisationDashboard].has(_.writable, true).outV.v[Organisation].current)
       )
 
     def organisationShares: Traversal[Seq[(String, Boolean)], JList[JMap[String, Any]], Converter[Seq[(String, Boolean)], JList[JMap[String, Any]]]] =
       traversal
         .outE[OrganisationDashboard]
-        .e[OrganisationDashboard]
         .project(
           _.byValue(_.writable)
             .by(_.inV)

@@ -9,16 +9,17 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.GuiceAkkaExtension
 import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.CaseOps._
 import play.api.cache.SyncCacheApi
 
 object FlowActor {
-  case class FlowId(organisation: String, caseId: Option[String]) {
+  case class FlowId(organisation: EntityIdOrName, caseId: Option[EntityIdOrName]) {
     override def toString: String = s"$organisation;${caseId.getOrElse("-")}"
   }
-  case class AuditIds(ids: Seq[String])
+  case class AuditIds(ids: Seq[EntityId])
 }
 
 class FlowActor extends Actor {
@@ -37,7 +38,7 @@ class FlowActor extends Actor {
       val auditIds = cache.getOrElseUpdate(flowId.toString) {
         db.roTransaction { implicit graph =>
           caseId
-            .fold(auditSrv.startTraversal.has("mainAction", true).visible(organisation))(caseSrv.getByIds(_).audits(organisation))
+            .fold(auditSrv.startTraversal.has(_.mainAction, true).visible(organisation))(caseSrv.get(_).audits(organisation))
             .sort(_.by("_createdAt", Order.desc))
             .range(0, 10)
             ._id
@@ -49,10 +50,10 @@ class FlowActor extends Actor {
       db.roTransaction { implicit graph =>
         auditSrv
           .getByIds(ids: _*)
-          .has("mainAction", true)
+          .has(_.mainAction, true)
           .project(
             _.by(_._id)
-              .by(_.organisation.value(_.name).fold)
+              .by(_.organisation._id.fold)
               .by(_.`case`._id.fold)
           )
           .toIterator

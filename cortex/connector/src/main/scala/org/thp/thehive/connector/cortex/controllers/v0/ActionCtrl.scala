@@ -1,6 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -57,7 +58,7 @@ class ActionCtrl @Inject() (
       .asyncAuth { implicit request =>
         val action: InputAction = request.body("action")
         val tryEntity = db.roTransaction { implicit graph =>
-          entityHelper.get(toObjectType(action.objectType), action.objectId, Permissions.manageAction)
+          entityHelper.get(toObjectType(action.objectType), EntityIdOrName(action.objectId), Permissions.manageAction)
         }
         for {
           entity <- Future.fromTry(tryEntity)
@@ -69,21 +70,21 @@ class ActionCtrl @Inject() (
     entrypoint("get by entity")
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {
-          entity <- entityHelper.get(toObjectType(objectType), objectId, Permissions.manageAction)
+          entity <- entityHelper.get(toObjectType(objectType), EntityIdOrName(objectId), Permissions.manageAction)
         } yield Results.Ok(actionSrv.listForEntity(entity._id).toJson)
       }
 }
 
 @Singleton
-class PublicAction @Inject() (actionSrv: ActionSrv) extends PublicData {
+class PublicAction @Inject() (actionSrv: ActionSrv, @Named("with-thehive-schema") db: Database) extends PublicData {
 
   override val entityName: String = "action"
   override val initialQuery: Query =
     Query.init[Traversal.V[Action]]("listAction", (graph, authContext) => actionSrv.startTraversal(graph).visible(authContext))
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Action]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Action]](
     "getAction",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => actionSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => actionSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Action], IteratorOutput](
     "page",
@@ -111,7 +112,7 @@ class PublicAction @Inject() (actionSrv: ActionSrv) extends PublicData {
       .property("objectType", UMapping.string)(_.select(_.context.domainMap(o => fromObjectType(o._label))).readonly)
       .property("status", UMapping.string)(_.field.readonly)
       .property("startDate", UMapping.date)(_.field.readonly)
-      .property("objectId", UMapping.id)(_.select(_.out[ActionContext]._id).readonly)
+      .property("objectId", db.idMapping)(_.select(_.out[ActionContext]._id).readonly)
       .property("responderName", UMapping.string.optional)(_.field.readonly)
       .property("cortexId", UMapping.string.optional)(_.field.readonly)
       .property("tlp", UMapping.int.optional)(_.field.readonly)

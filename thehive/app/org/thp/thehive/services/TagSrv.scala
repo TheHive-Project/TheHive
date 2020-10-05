@@ -15,8 +15,8 @@ import org.thp.thehive.services.TagOps._
 import scala.util.{Success, Try}
 
 @Singleton
-class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
-    implicit @Named("with-thehive-schema") db: Database
+class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
+    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Tag] {
 
   val autoCreateConfig: ConfigItem[Boolean, Boolean] =
@@ -32,7 +32,8 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
   val defaultColourConfig: ConfigItem[String, Int] =
     appConfig.mapItem[String, Int](
       "tags.defaultColour",
-      "Default colour of the automatically created tags", {
+      "Default colour of the automatically created tags",
+      {
         case s if s(0) == '#' => Try(Integer.parseUnsignedInt(s.tail, 16)).getOrElse(defaultColour)
         case _                => defaultColour
       }
@@ -41,9 +42,6 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
 
   def parseString(tagName: String): Tag =
     Tag.fromString(tagName, defaultNamespace, defaultColour)
-
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[Tag] =
-    getByIds(idOrName)
 
   def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
@@ -71,10 +69,10 @@ object TagOps {
     def getTag(tag: Tag): Traversal.V[Tag] = getByName(tag.namespace, tag.predicate, tag.value)
 
     def getByName(namespace: String, predicate: String, value: Option[String]): Traversal.V[Tag] = {
-      val step = traversal
-        .has("namespace", namespace)
-        .has("predicate", predicate)
-      value.fold(step.hasNot("value"))(v => step.has("value", v))
+      val t = traversal
+        .has(_.namespace, namespace)
+        .has(_.predicate, predicate)
+      value.fold(t.hasNot(_.value))(v => t.has(_.value, v))
     }
 
     def displayName: Traversal[String, Vertex, Converter[String, Vertex]] = traversal.domainMap(_.toString)

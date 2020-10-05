@@ -1,8 +1,7 @@
 package org.thp.thehive.controllers.v1
 
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
-
-case class IdOrName(idOrName: String)
 
 trait QueryableCtrl {
   val entityName: String
@@ -10,6 +9,6 @@ trait QueryableCtrl {
   val initialQuery: Query
   val pageQuery: ParamQuery[OutputParam]
   val outputQuery: Query
-  val getQuery: ParamQuery[IdOrName]
+  val getQuery: ParamQuery[EntityIdOrName]
   val extraQueries: Seq[ParamQuery[_]] = Nil
 }

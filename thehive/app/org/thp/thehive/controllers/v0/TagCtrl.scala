@@ -4,12 +4,12 @@ import java.nio.file.Files
 
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser, Renderer}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
 import org.thp.thehive.services.TagOps._
@@ -98,7 +98,7 @@ class TagCtrl @Inject() (
     entrypoint("get tag")
       .authRoTransaction(db) { _ => implicit graph =>
         tagSrv
-          .getOrFail(tagId)
+          .getOrFail(EntityIdOrName(tagId))
           .map { tag =>
             Results.Ok(tag.toJson)
           }
@@ -115,10 +115,10 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
     (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Tag with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Tag]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Tag]](
     "getTag",
-    FieldsParser[IdOrName],
-    (param, graph, _) => tagSrv.get(param.idOrName)(graph)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, _) => tagSrv.get(idOrName)(graph)
   )
   implicit val stringRenderer: Renderer[String] = Renderer.toJson[String, String](identity)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

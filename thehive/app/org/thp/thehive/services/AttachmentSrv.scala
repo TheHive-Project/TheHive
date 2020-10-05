@@ -24,8 +24,8 @@ import scala.concurrent.Future
 import scala.util.Try
 
 @Singleton
-class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(
-    implicit @Named("with-thehive-schema") db: Database,
+class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit
+    @Named("with-thehive-schema") db: Database,
     mat: Materializer
 ) extends VertexSrv[Attachment] {
 
@@ -43,8 +43,8 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
     result
   }
 
-  def create(filename: String, contentType: String, data: Array[Byte])(
-      implicit graph: Graph,
+  def create(filename: String, contentType: String, data: Array[Byte])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Attachment with Entity] = {
     val hs = hashers.fromBinary(data)
@@ -52,8 +52,8 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
     storageSrv.saveBinary("attachment", id, data).flatMap(_ => createEntity(Attachment(filename, data.length.toLong, contentType, hs, id)))
   }
 
-  def create(filename: String, size: Long, contentType: String, data: Source[ByteString, NotUsed])(
-      implicit graph: Graph,
+  def create(filename: String, size: Long, contentType: String, data: Source[ByteString, NotUsed])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Attachment with Entity] = {
     val hs = hashers.fromBinary(data)
@@ -61,9 +61,8 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
     storageSrv.saveBinary("attachment", id, data).flatMap(_ => createEntity(Attachment(filename, size, contentType, hs, id)))
   }
 
-  override def get(idOrAttachmentId: String)(implicit graph: Graph): Traversal.V[Attachment] =
-    if (db.isValidId(idOrAttachmentId)) getByIds(idOrAttachmentId)
-    else startTraversal.getByAttachmentId(idOrAttachmentId)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Attachment] =
+    startTraversal.getByAttachmentId(name)
 
   def source(attachment: Attachment with Entity): Source[ByteString, Future[IOResult]] =
     StreamConverters.fromInputStream(() => stream(attachment))
@@ -80,7 +79,7 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
 
 object AttachmentOps {
   implicit class AttachmentOpsDefs(traversal: Traversal.V[Attachment]) {
-    def getByAttachmentId(attachmentId: String): Traversal.V[Attachment] = traversal.has("attachmentId", attachmentId)
+    def getByAttachmentId(attachmentId: String): Traversal.V[Attachment] = traversal.has(_.attachmentId, attachmentId)
 
     def visible(implicit authContext: AuthContext): Traversal.V[Attachment] = traversal // TODO
 

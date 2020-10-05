@@ -3,17 +3,18 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Good
-import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FieldsParser
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.thehive.connector.cortex.models.Job
 import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.controllers.v0._
 import org.thp.thehive.models.Observable
+import org.thp.thehive.services.ObservableOps._
 
 import scala.reflect.runtime.{universe => ru}
 
@@ -66,7 +67,7 @@ class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.U
       authContext: AuthContext
   ): Traversal.Unk =
     if (traversalType =:= ru.typeOf[Traversal.V[Job]])
-      traversal.asInstanceOf[Traversal.V[Job]].filter(_.observable.getByIds(parentId)).asInstanceOf[Traversal.Unk]
+      traversal.asInstanceOf[Traversal.V[Job]].filter(_.observable.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
     else throw BadRequestError(s"$traversalType hasn't parent")
 }
 

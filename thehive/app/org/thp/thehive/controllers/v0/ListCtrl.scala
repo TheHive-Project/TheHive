@@ -46,7 +46,7 @@ class ListCtrl @Inject() (
               .roTransaction { implicit grap =>
                 customFieldSrv.startTraversal.toSeq
               }
-              .map(cf => cf._id -> cf.toJson)
+              .map(cf => cf._id.toString -> cf.toJson)
             JsObject(cf)
           case _ => JsObject.empty
         }
@@ -61,24 +61,26 @@ class ListCtrl @Inject() (
         val value: JsObject = request.body("value")
         listName match {
           case "custom_fields" => {
-            for {
-              inputCustomField <- value.validate[InputCustomField]
-            } yield inputCustomField
-          } fold (
-            errors => Failure(new Exception(errors.mkString)),
-            _ => Success(Results.Ok)
-          )
+              for {
+                inputCustomField <- value.validate[InputCustomField]
+              } yield inputCustomField
+            } fold (
+              errors => Failure(new Exception(errors.mkString)),
+              _ => Success(Results.Ok)
+            )
           case _ => Success(Results.Locked(""))
         }
       }
 
-  def deleteItem(itemId: String): Action[AnyContent] = entrypoint("delete list item") { _ =>
-    Success(Results.Locked(""))
-  }
+  def deleteItem(itemId: String): Action[AnyContent] =
+    entrypoint("delete list item") { _ =>
+      Success(Results.Locked(""))
+    }
 
-  def updateItem(itemId: String): Action[AnyContent] = entrypoint("update list item") { _ =>
-    Success(Results.Locked(""))
-  }
+  def updateItem(itemId: String): Action[AnyContent] =
+    entrypoint("update list item") { _ =>
+      Success(Results.Locked(""))
+    }
 
   def itemExists(listName: String): Action[AnyContent] =
     entrypoint("check if item exist in list")

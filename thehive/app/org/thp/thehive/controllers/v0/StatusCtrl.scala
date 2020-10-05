@@ -1,11 +1,11 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.{EntityName, ScalligraphApplicationLoader}
 import org.thp.thehive.TheHiveModule
 import org.thp.thehive.models.{HealthStatus, User}
 import org.thp.thehive.services.{Connector, UserSrv}
@@ -59,14 +59,15 @@ class StatusCtrl @Inject() (
   def health: Action[AnyContent] =
     entrypoint("health") { _ =>
       val dbStatus = db
-        .roTransaction(graph => userSrv.getOrFail(User.system.login)(graph))
+        .roTransaction(graph => userSrv.getOrFail(EntityName(User.system.login))(graph))
         .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
       val connectorStatus = connectors.map(c => c.health)
       val distinctStatus  = connectorStatus + dbStatus
-      val globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
-        if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
-      } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
-      else HealthStatus.Warning
+      val globalStatus =
+        if (distinctStatus.contains(HealthStatus.Ok))
+          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+        else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+        else HealthStatus.Warning
 
       Success(Results.Ok(globalStatus.toString))
     }

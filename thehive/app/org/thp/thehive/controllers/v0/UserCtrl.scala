@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, InvalidFormatAttributeError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, EntityIdOrName, EntityName, InvalidFormatAttributeError, RichOptionTry}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
@@ -36,16 +36,16 @@ class UserCtrl @Inject() (
     entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
-          .get(request.userId)
-          .richUser(request.organisation)
+          .current
+          .richUser
           .getOrFail("User")
           .orElse(
             userSrv
-              .get(request.userId)
-              .richUser(Organisation.administration.name)
+              .current
+              .richUser(request, EntityName(Organisation.administration.name))
               .getOrFail("User")
           )
-          .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation))
+          .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation.toString))
       }
 
   def create: Action[AnyContent] =
@@ -54,22 +54,22 @@ class UserCtrl @Inject() (
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
         db.tryTransaction { implicit graph =>
-          val organisationName = inputUser.organisation.getOrElse(request.organisation)
+          val organisationIdOrName = inputUser.organisation.map(EntityIdOrName(_)).getOrElse(request.organisation)
           for {
-            _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail
-            organisation <- organisationSrv.getOrFail(organisationName)
+            _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationIdOrName).existsOrFail
+            organisation <- organisationSrv.getOrFail(organisationIdOrName)
             profile <-
-              if (inputUser.roles.contains("admin")) profileSrv.getOrFail(Profile.admin.name)
-              else if (inputUser.roles.contains("write")) profileSrv.getOrFail(Profile.analyst.name)
-              else if (inputUser.roles.contains("read")) profileSrv.getOrFail(Profile.readonly.name)
-              else profileSrv.getOrFail(Profile.readonly.name)
+              if (inputUser.roles.contains("admin")) profileSrv.getOrFail(EntityName(Profile.admin.name))
+              else if (inputUser.roles.contains("write")) profileSrv.getOrFail(EntityName(Profile.analyst.name))
+              else if (inputUser.roles.contains("read")) profileSrv.getOrFail(EntityName(Profile.readonly.name))
+              else profileSrv.getOrFail(EntityName(Profile.readonly.name))
             user <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
           } yield user -> userSrv.canSetPassword(user.user)
         }.flatMap {
           case (user, true) =>
             inputUser
               .password
-              .map(password => authSrv.setPassword(user._id, password))
+              .map(password => authSrv.setPassword(user.login, password))
               .flip
               .map(_ => Results.Created(user.toJson))
           case (user, _) => Success(Results.Created(user.toJson))
@@ -80,7 +80,7 @@ class UserCtrl @Inject() (
     entrypoint("lock user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail("User")
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(EntityIdOrName(userId)).getOrFail("User")
           _    <- userSrv.lock(user)
         } yield Results.NoContent
       }
@@ -89,8 +89,8 @@ class UserCtrl @Inject() (
     entrypoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          organisation <- userSrv.current.organisations(Permissions.manageUser).has("name", request.organisation).getOrFail("Organisation")
-          user         <- organisationSrv.get(organisation).users.get(userId).getOrFail("User")
+          organisation <- userSrv.current.organisations(Permissions.manageUser).get(request.organisation).getOrFail("Organisation")
+          user         <- organisationSrv.get(organisation).users.get(EntityIdOrName(userId)).getOrFail("User")
           _            <- userSrv.delete(user, organisation)
         } yield Results.NoContent
       }
@@ -99,9 +99,9 @@ class UserCtrl @Inject() (
     entrypoint("get user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
-          .get(userId)
+          .get(EntityIdOrName(userId))
           .visible
-          .richUser(request.organisation)
+          .richUser
           .getOrFail("User")
           .map(user => Results.Ok(user.toJson))
       }
@@ -114,8 +114,8 @@ class UserCtrl @Inject() (
         for {
           user <-
             userSrv
-              .update(userSrv.get(userId), propertyUpdaters) // Authorisation is managed in public properties
-              .flatMap { case (user, _) => user.richUser(request.organisation).getOrFail("User") }
+              .update(userSrv.get(EntityIdOrName(userId)), propertyUpdaters) // Authorisation is managed in public properties
+              .flatMap { case (user, _) => user.richUser.getOrFail("User") }
         } yield Results.Ok(user.toJson)
 
       }
@@ -127,14 +127,14 @@ class UserCtrl @Inject() (
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
-              .get(userId)
+              .get(EntityIdOrName(userId))
               .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .getByIds(u._id)
+                  .getEntity(u)
                   .getOrFail("User")
               }
           }
@@ -150,7 +150,7 @@ class UserCtrl @Inject() (
       .auth { implicit request =>
         if (userId == request.userId)
           for {
-            user <- db.roTransaction(implicit graph => userSrv.get(userId).getOrFail("User"))
+            user <- db.roTransaction(implicit graph => userSrv.get(EntityIdOrName(userId)).getOrFail("User"))
             _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
             _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
           } yield Results.NoContent
@@ -163,20 +163,20 @@ class UserCtrl @Inject() (
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
-              .get(userId)
+              .get(EntityIdOrName(userId))
               .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .getByIds(u._id)
+                  .getEntity(u)
                   .getOrFail("User")
               }
           }
           key <-
             authSrv
-              .getKey(user._id)
+              .getKey(user.login)
         } yield Results.Ok(key)
       }
 
@@ -186,14 +186,14 @@ class UserCtrl @Inject() (
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
-              .get(userId)
+              .get(EntityIdOrName(userId))
               .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .getByIds(u._id)
+                  .getEntity(u)
                   .getOrFail("User")
               }
           }
@@ -209,14 +209,14 @@ class UserCtrl @Inject() (
         for {
           user <- db.roTransaction { implicit graph =>
             userSrv
-              .get(userId)
+              .get(EntityIdOrName(userId))
               .getOrFail("User")
               .flatMap { u =>
                 userSrv
                   .current
                   .organisations(Permissions.manageUser)
                   .users
-                  .getByIds(u._id)
+                  .getEntity(u)
                   .getOrFail("User")
               }
           }
@@ -231,10 +231,10 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, 
   override val entityName: String = "user"
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[User]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[User]](
     "getUser",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
     "page",
@@ -248,17 +248,14 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, 
     .property("login", UMapping.string)(_.field.readonly)
     .property("name", UMapping.string)(_.field.custom { (_, value, vertex, db, graph, authContext) =>
       def isCurrentUser: Try[Unit] =
-        userSrv
-          .current(graph, authContext)
-          .getByIds(vertex.id.toString)
-          .existsOrFail
+        userSrv.get(vertex)(graph).current(authContext).existsOrFail
 
       def isUserAdmin: Try[Unit] =
         userSrv
           .current(graph, authContext)
           .organisations(Permissions.manageUser)(db)
           .users
-          .getByIds(vertex.id.toString)
+          .getElement(vertex)
           .existsOrFail
 
       isCurrentUser
@@ -269,13 +266,13 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, 
         }
     })
     .property("status", UMapping.string)(
-      _.select(_.choose(predicate = _.value(_.locked).is(P.eq(true)), onTrue = _.constant("Locked"), onFalse = _.constant("Ok")))
+      _.select(_.choose(predicate = _.value(_.locked).is(P.eq(true)), onTrue = "Locked", onFalse = "Ok"))
         .custom { (_, value, vertex, _, graph, authContext) =>
           userSrv
             .current(graph, authContext)
             .organisations(Permissions.manageUser)(db)
             .users
-            .getByIds(vertex.id.toString)
+            .getElement(vertex)
             .orFail(AuthorizationError("Operation not permitted"))
             .flatMap {
               case user if value == "Ok" =>

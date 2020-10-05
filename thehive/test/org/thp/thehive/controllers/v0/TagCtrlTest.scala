@@ -126,7 +126,7 @@ class TagCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val request = FakeRequest("GET", s"/api/tag/${tag._id}")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[TagCtrl].get(tag._id)(request)
+      val result = app[TagCtrl].get(tag._id.toString)(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
     }

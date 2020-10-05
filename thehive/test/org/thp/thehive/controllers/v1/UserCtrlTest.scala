@@ -126,9 +126,9 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
       val expected = TestUser(
         login = "socuser@thehive.local",
         name = "socuser",
-        profile = "",
-        permissions = Set.empty,
-        organisation = "cert"
+        profile = "analyst",
+        permissions = Profile.analyst.permissions.map(_.toString),
+        organisation = "soc"
       )
 
       TestUser(resultCase) must_=== expected

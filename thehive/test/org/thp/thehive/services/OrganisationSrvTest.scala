@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
@@ -18,7 +19,7 @@ class OrganisationSrvTest extends PlaySpecification with TestAppBuilder {
 
     "get an organisation by its name" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
-        app[OrganisationSrv].getOrFail("cert")
+        app[OrganisationSrv].getOrFail(EntityName("cert"))
       } must beSuccessfulTry
     }
   }

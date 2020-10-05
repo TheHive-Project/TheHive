@@ -4,8 +4,9 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, IdMapping, UMapping}
+import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
@@ -36,7 +37,7 @@ class AuditCtrl @Inject() (
   def flow(caseId: Option[String]): Action[AnyContent] =
     entrypoint("audit flow")
       .asyncAuth { implicit request =>
-        (flowActor ? FlowId(request.organisation, caseId.filterNot(_ == "any"))).map {
+        (flowActor ? FlowId(request.organisation, caseId.filterNot(_ == "any").map(EntityIdOrName(_)))).map {
           case AuditIds(auditIds) if auditIds.isEmpty => Results.Ok(JsArray.empty)
           case AuditIds(auditIds) =>
             val audits = db.roTransaction { implicit graph =>
@@ -64,11 +65,11 @@ class AuditCtrl @Inject() (
 }
 
 @Singleton
-class PublicAudit @Inject() (auditSrv: AuditSrv) extends PublicData {
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Audit]](
+class PublicAudit @Inject() (auditSrv: AuditSrv, @Named("with-thehive-schema") db: Database) extends PublicData {
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => auditSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(authContext)
   )
 
   override val entityName: String = "audit"
@@ -93,6 +94,6 @@ class PublicAudit @Inject() (auditSrv: AuditSrv) extends PublicData {
       .property("base", UMapping.boolean)(_.rename("mainAction").readonly)
       .property("startDate", UMapping.date)(_.rename("_createdAt").readonly)
       .property("requestId", UMapping.string)(_.field.readonly)
-      .property("rootId", IdMapping)(_.select(_.context._id).readonly)
+      .property("rootId", db.idMapping)(_.select(_.context._id).readonly)
       .build
 }

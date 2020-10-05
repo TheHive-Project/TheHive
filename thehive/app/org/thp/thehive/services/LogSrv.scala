@@ -1,7 +1,10 @@
 package org.thp.thehive.services
 
+import java.util
+
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
@@ -12,6 +15,7 @@ import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.{JsObject, Json}
 
 import scala.util.Try
@@ -51,7 +55,7 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implic
     for {
       _    <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
       task <- get(log).task.getOrFail("Task")
-      _ = get(log._id).remove()
+      _ = get(log).remove()
       _ <- auditSrv.log.delete(log, Some(task))
     } yield ()
 
@@ -72,42 +76,29 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implic
 object LogOps {
 
   implicit class LogOpsDefs(traversal: Traversal.V[Log]) {
-    def task = traversal.in("TaskLog").v[Task]
+    def task: Traversal.V[Task] = traversal.in("TaskLog").v[Task]
+
+    def get(idOrName: EntityIdOrName): Traversal.V[Log] =
+      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
 
     def visible(implicit authContext: AuthContext): Traversal.V[Log] =
-      traversal.filter(
-        _.in[TaskLog]
-          .in[ShareTask]
-          .in[OrganisationShare]
-          .has("name", authContext.organisation)
-      )
+      traversal.filter(_.task.visible)
 
-    def attachments = traversal.out[LogAttachment].v[Attachment]
+    def attachments: Traversal.V[Attachment] = traversal.out[LogAttachment].v[Attachment]
 
-    def `case` =
-      traversal
-        .in[TaskLog]
-        .in[ShareTask]
-        .out[ShareCase]
-        .v[Case]
+    def `case`: Traversal.V[Case] = task.`case`
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Log] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(
-          _.in[TaskLog]
-            .in[ShareTask]
-            .filter(_.out[ShareProfile].has("permissions", permission))
-            .in[OrganisationShare]
-            .has("name", authContext.organisation)
-        )
+        traversal.filter(_.task.can(permission))
       else
         traversal.limit(0)
 
-    def richLog =
+    def richLog: Traversal[RichLog, util.Map[String, Any], Converter[RichLog, util.Map[String, Any]]] =
       traversal
         .project(
           _.by
-            .by(_.attachments.v[Attachment].fold)
+            .by(_.attachments.fold)
         )
         .domainMap {
           case (log, attachments) =>
@@ -119,11 +110,11 @@ object LogOps {
 
     def richLogWithCustomRenderer[D, G, C <: Converter[D, G]](
         entityRenderer: Traversal.V[Log] => Traversal[D, G, C]
-    ) =
+    ): Traversal[(RichLog, D), util.Map[String, Any], Converter[(RichLog, D), util.Map[String, Any]]] =
       traversal
         .project(
           _.by
-            .by(_.attachments.v[Attachment].fold)
+            .by(_.attachments.fold)
             .by(entityRenderer)
         )
         .domainMap {

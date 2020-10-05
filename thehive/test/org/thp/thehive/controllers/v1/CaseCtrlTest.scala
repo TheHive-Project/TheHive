@@ -4,7 +4,7 @@ import java.util.Date
 
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
-import play.api.libs.json.{JsNull, JsString, Json}
+import play.api.libs.json.{JsNull, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestCase(
@@ -20,11 +20,10 @@ case class TestCase(
     status: String,
     summary: Option[String] = None,
     user: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty
+    customFields: Seq[TestCustomFieldValue] = Seq.empty
 )
 
 object TestCase {
-
   def apply(outputCase: OutputCase): TestCase =
     TestCase(
       outputCase.title,
@@ -39,7 +38,20 @@ object TestCase {
       outputCase.status,
       outputCase.summary,
       outputCase.assignee,
-      outputCase.customFields
+      outputCase.customFields.map(TestCustomFieldValue.apply).sortBy(_.order)
+    )
+}
+
+case class TestCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
+
+object TestCustomFieldValue {
+  def apply(outputCustomFieldValue: OutputCustomFieldValue): TestCustomFieldValue =
+    TestCustomFieldValue(
+      outputCustomFieldValue.name,
+      outputCustomFieldValue.description,
+      outputCustomFieldValue.`type`,
+      outputCustomFieldValue.value,
+      outputCustomFieldValue.order
     )
 }
 
@@ -79,7 +91,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         status = "Open",
         summary = None,
         user = Some("certuser@thehive.local"),
-        customFields = Set.empty
+        customFields = Seq.empty
       )
 
       TestCase(resultCase) must_=== expected
@@ -119,9 +131,9 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         status = "Open",
         summary = None,
         user = Some("certuser@thehive.local"),
-        customFields = Set(
-          OutputCustomFieldValue("boolean1", "boolean custom field", "boolean", JsNull, 0),
-          OutputCustomFieldValue("string1", "string custom field", "string", JsString("string1 custom field"), 0)
+        customFields = Seq(
+          TestCustomFieldValue("string1", "string custom field", "string", JsString("string1 custom field"), 1),
+          TestCustomFieldValue("boolean1", "boolean custom field", "boolean", JsNull, 2)
         )
       )
 
@@ -129,9 +141,9 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a case" in testApp { app =>
-      val request = FakeRequest("GET", s"/api/v1/case/#1")
+      val request = FakeRequest("GET", s"/api/v1/case/1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result     = app[CaseCtrl].get("#1")(request)
+      val result     = app[CaseCtrl].get("1")(request)
       val resultCase = contentAsJson(result).as[OutputCase]
       val expected = TestCase(
         title = "case#1",

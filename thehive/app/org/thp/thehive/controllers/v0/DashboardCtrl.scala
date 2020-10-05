@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.{EntityIdOrName, InvalidFormatAttributeError}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputDashboard
 import org.thp.thehive.models.{Dashboard, RichDashboard}
@@ -40,7 +40,7 @@ class DashboardCtrl @Inject() (
     entrypoint("get dashboard")
       .authRoTransaction(db) { implicit request => implicit graph =>
         dashboardSrv
-          .getByIds(dashboardId)
+          .get(EntityIdOrName(dashboardId))
           .visible
           .richDashboard
           .getOrFail("Dashboard")
@@ -53,7 +53,7 @@ class DashboardCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("dashboard")
         dashboardSrv
-          .update(_.getByIds(dashboardId).canUpdate, propertyUpdaters) // TODO check permission
+          .update(_.get(EntityIdOrName(dashboardId)).canUpdate, propertyUpdaters) // TODO check permission
           .flatMap { case (dashboardSteps, _) => dashboardSteps.richDashboard.getOrFail("Dashboard") }
           .map(dashboard => Results.Ok(dashboard.toJson))
       }
@@ -64,7 +64,7 @@ class DashboardCtrl @Inject() (
         userSrv
           .current
           .dashboards
-          .getByIds(dashboardId)
+          .get(EntityIdOrName(dashboardId))
           .getOrFail("Dashboard")
           .map { dashboard =>
             dashboardSrv.remove(dashboard)
@@ -77,8 +77,7 @@ class DashboardCtrl @Inject() (
 class PublicDashboard @Inject() (
     dashboardSrv: DashboardSrv,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database
+    userSrv: UserSrv
 ) extends PublicData {
   val entityName: String = "dashboard"
 
@@ -88,16 +87,16 @@ class PublicDashboard @Inject() (
       (graph, authContext) =>
         Traversal
           .union(
-            organisationSrv.filterTraversal(_).get(authContext.organisation)(db).dashboards,
-            userSrv.filterTraversal(_).get(authContext.userId)(db).dashboards
+            organisationSrv.filterTraversal(_).get(authContext.organisation).dashboards,
+            userSrv.filterTraversal(_).getByName(authContext.userId).dashboards
           )(graph)
           .dedup
     )
 
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Dashboard]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Dashboard]](
     "getDashboard",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => dashboardSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => dashboardSrv.get(idOrName)(graph).visible(authContext)
   )
 
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Dashboard], IteratorOutput](

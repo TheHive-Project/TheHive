@@ -3,12 +3,14 @@ package org.thp.thehive.controllers.v0
 import java.lang.{Long => JLong}
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.Converter.CList
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
@@ -55,8 +57,12 @@ trait CaseRenderer {
 
   def shareCountStats: Traversal.V[Case] => Traversal[Long, JLong, Converter[Long, JLong]] = _.organisations.count
 
-  def isOwnerStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[Boolean, String, Converter[Boolean, String]] =
-    _.origin.value(_.name).domainMap(_ == authContext.organisation)
+  def isOwnerStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
+    _.origin
+      .current
+      .fold
+      .count
+      .choose(_.is(P.gt(0)), onTrue = true, onFalse = false)
 
   def caseStatsRenderer(implicit
       authContext: AuthContext

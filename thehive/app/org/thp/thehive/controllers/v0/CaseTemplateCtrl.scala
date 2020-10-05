@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, RichSeq}
+import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, InputTask}
 import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate}
@@ -40,7 +40,7 @@ class CaseTemplateCtrl @Inject() (
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         val customFields                         = inputCaseTemplate.customFields.sortBy(_.order.getOrElse(0)).map(c => c.name -> c.value)
         for {
-          tasks            <- inputCaseTemplate.tasks.toTry(t => t.owner.map(userSrv.getOrFail).flip.map(t.toTask -> _))
+          tasks            <- inputCaseTemplate.tasks.toTry(t => t.owner.map(o => userSrv.getOrFail(EntityIdOrName(o))).flip.map(t.toTask -> _))
           organisation     <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail("CaseTemplate")
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
@@ -50,7 +50,7 @@ class CaseTemplateCtrl @Inject() (
     entrypoint("get case template")
       .authRoTransaction(db) { implicit request => implicit graph =>
         caseTemplateSrv
-          .get(caseTemplateNameOrId)
+          .get(EntityIdOrName(caseTemplateNameOrId))
           .visible
           .richCaseTemplate
           .getOrFail("CaseTemplate")
@@ -64,7 +64,7 @@ class CaseTemplateCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("caseTemplate")
         caseTemplateSrv
           .update(
-            _.get(caseTemplateNameOrId)
+            _.get(EntityIdOrName(caseTemplateNameOrId))
               .can(Permissions.manageCaseTemplate),
             propertyUpdaters
           )
@@ -76,7 +76,7 @@ class CaseTemplateCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           organisation <- organisationSrv.getOrFail(request.organisation)
-          template     <- caseTemplateSrv.get(caseTemplateNameOrId).can(Permissions.manageCaseTemplate).getOrFail("CaseTemplate")
+          template     <- caseTemplateSrv.get(EntityIdOrName(caseTemplateNameOrId)).can(Permissions.manageCaseTemplate).getOrFail("CaseTemplate")
           _ = caseTemplateSrv.get(template).remove()
           _ <- auditSrv.caseTemplate.delete(template, organisation)
         } yield Results.Ok
@@ -96,10 +96,10 @@ class PublicCaseTemplate @Inject() (
   override val initialQuery: Query =
     Query
       .init[Traversal.V[CaseTemplate]]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[CaseTemplate]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[CaseTemplate]](
     "getCaseTemplate",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => caseTemplateSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => caseTemplateSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CaseTemplate], IteratorOutput](
     "page",
@@ -134,13 +134,13 @@ class PublicCaseTemplate @Inject() (
     }.custom {
       case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
         for {
-          c <- caseTemplateSrv.getByIds(vertex.id.toString)(graph).getOrFail("CaseTemplate")
+          c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
           _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
         } yield Json.obj(s"customFields.$name" -> value)
       case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
         for {
           c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-          cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+          cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
           _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
         } yield Json.obj("customFields" -> values)
       case _ => Failure(BadRequestError("Invalid custom fields format"))
@@ -151,11 +151,16 @@ class PublicCaseTemplate @Inject() (
 
         caseTemplateSrv.get(vertex)(graph).tasks.remove()
         for {
-          caseTemplate <- caseTemplateSrv.getByIds(vertex.id.toString)(graph).getOrFail("CaseTemplate")
+          caseTemplate <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
           tasks        <- value.validatedBy(t => fp(Field(t))).badMap(AttributeCheckingError(_)).toTry
           createdTasks <-
             tasks
-              .toTry(t => t.owner.map(userSrv.getOrFail(_)(graph)).flip.flatMap(owner => taskSrv.create(t.toTask, owner)(graph, authContext)))
+              .toTry(t =>
+                t.owner
+                  .map(o => userSrv.getOrFail(EntityIdOrName(o))(graph))
+                  .flip
+                  .flatMap(owner => taskSrv.create(t.toTask, owner)(graph, authContext))
+              )
           _ <- createdTasks.toTry(t => caseTemplateSrv.addTask(caseTemplate, t.task)(graph, authContext))
         } yield Json.obj("tasks" -> createdTasks.map(_.toJson))
     })

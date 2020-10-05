@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.scalactic.Good
-import org.thp.scalligraph.{BadRequestError, GlobalQueryExecutor}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FObject, Field, FieldsParser}
 import org.thp.scalligraph.models._
@@ -10,6 +9,7 @@ import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.RichType
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, GlobalQueryExecutor}
 import org.thp.thehive.models.{Case, Log, Observable, Task}
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.LogOps._
@@ -119,10 +119,12 @@ class ParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Tr
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])
       .headOption
       .collect {
-        case t if t <:< ru.typeOf[Task] => traversal.asInstanceOf[Traversal.V[Task]].filter(_.`case`.getByIds(parentId)).asInstanceOf[Traversal.Unk]
+        case t if t <:< ru.typeOf[Task] =>
+          traversal.asInstanceOf[Traversal.V[Task]].filter(_.`case`.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Observable] =>
-          traversal.asInstanceOf[Traversal.V[Observable]].filter(_.`case`.getByIds(parentId)).asInstanceOf[Traversal.Unk]
-        case t if t <:< ru.typeOf[Log] => traversal.asInstanceOf[Traversal.V[Log]].filter(_.task.getByIds(parentId)).asInstanceOf[Traversal.Unk]
+          traversal.asInstanceOf[Traversal.V[Observable]].filter(_.`case`.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
+        case t if t <:< ru.typeOf[Log] =>
+          traversal.asInstanceOf[Traversal.V[Log]].filter(_.task.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't parent"))
 }

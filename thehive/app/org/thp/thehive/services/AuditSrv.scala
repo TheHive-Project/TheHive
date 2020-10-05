@@ -13,8 +13,10 @@ import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
+import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AuditOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.libs.json.{JsObject, JsValue, Json}
 
@@ -29,32 +31,32 @@ class AuditSrv @Inject() (
     eventSrv: EventSrv
 )(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Audit] { auditSrv =>
-  lazy val userSrv: UserSrv                               = userSrvProvider.get
-  val auditUserSrv                                        = new EdgeSrv[AuditUser, Audit, User]
-  val auditedSrv                                          = new EdgeSrv[Audited, Audit, Product]
-  val auditContextSrv                                     = new EdgeSrv[AuditContext, Audit, Product]
-  val `case`                                              = new SelfContextObjectAudit[Case]
-  val task                                                = new SelfContextObjectAudit[Task]
-  val observable                                          = new SelfContextObjectAudit[Observable]
-  val log                                                 = new ObjectAudit[Log, Task]
-  val caseTemplate                                        = new SelfContextObjectAudit[CaseTemplate]
-  val taskInTemplate                                      = new ObjectAudit[Task, CaseTemplate]
-  val alert                                               = new SelfContextObjectAudit[Alert]
-  val alertToCase                                         = new ObjectAudit[Alert, Case]
-  val share                                               = new ShareAudit
-  val observableInAlert                                   = new ObjectAudit[Observable, Alert]
-  val user                                                = new UserAudit
-  val dashboard                                           = new SelfContextObjectAudit[Dashboard]
-  val organisation                                        = new SelfContextObjectAudit[Organisation]
-  val profile                                             = new SelfContextObjectAudit[Profile]
-  val customField                                         = new SelfContextObjectAudit[CustomField]
-  val page                                                = new SelfContextObjectAudit[Page]
-  private val pendingAuditsLock                           = new Object
-  private val transactionAuditIdsLock                     = new Object
-  private val unauditedTransactionsLock                   = new Object
-  private var pendingAudits: Map[AnyRef, PendingAudit]    = Map.empty
-  private var transactionAuditIds: List[(AnyRef, String)] = Nil
-  private var unauditedTransactions: Set[AnyRef]          = Set.empty
+  lazy val userSrv: UserSrv                                 = userSrvProvider.get
+  val auditUserSrv                                          = new EdgeSrv[AuditUser, Audit, User]
+  val auditedSrv                                            = new EdgeSrv[Audited, Audit, Product]
+  val auditContextSrv                                       = new EdgeSrv[AuditContext, Audit, Product]
+  val `case`                                                = new SelfContextObjectAudit[Case]
+  val task                                                  = new SelfContextObjectAudit[Task]
+  val observable                                            = new SelfContextObjectAudit[Observable]
+  val log                                                   = new ObjectAudit[Log, Task]
+  val caseTemplate                                          = new SelfContextObjectAudit[CaseTemplate]
+  val taskInTemplate                                        = new ObjectAudit[Task, CaseTemplate]
+  val alert                                                 = new SelfContextObjectAudit[Alert]
+  val alertToCase                                           = new ObjectAudit[Alert, Case]
+  val share                                                 = new ShareAudit
+  val observableInAlert                                     = new ObjectAudit[Observable, Alert]
+  val user                                                  = new UserAudit
+  val dashboard                                             = new SelfContextObjectAudit[Dashboard]
+  val organisation                                          = new SelfContextObjectAudit[Organisation]
+  val profile                                               = new SelfContextObjectAudit[Profile]
+  val customField                                           = new SelfContextObjectAudit[CustomField]
+  val page                                                  = new SelfContextObjectAudit[Page]
+  private val pendingAuditsLock                             = new Object
+  private val transactionAuditIdsLock                       = new Object
+  private val unauditedTransactionsLock                     = new Object
+  private var pendingAudits: Map[AnyRef, PendingAudit]      = Map.empty
+  private var transactionAuditIds: List[(AnyRef, EntityId)] = Nil
+  private var unauditedTransactions: Set[AnyRef]            = Set.empty
 
   /**
     * Gets the main action Audits by ids sorted by date
@@ -63,7 +65,7 @@ class AuditSrv @Inject() (
     * @param graph db
     * @return
     */
-  def getMainByIds(order: Order, ids: String*)(implicit graph: Graph): Traversal.V[Audit] =
+  def getMainByIds(order: Order, ids: EntityId*)(implicit graph: Graph): Traversal.V[Audit] =
     getByIds(ids: _*)
       .has(_.mainAction, true)
       .sort(_.by("_createdAt", order))
@@ -324,7 +326,7 @@ object AuditOps {
           // case otherwise // FIXME
         }
 
-    def forCase(caseId: String): Traversal.V[Audit] = traversal.filter(_.`case`.hasId(caseId))
+//    def forCase(caseId: String): Traversal.V[Audit] = traversal.filter(_.`case`.hasId(caseId))
 
     def `case`: Traversal.V[Case] =
       traversal
@@ -345,7 +347,7 @@ object AuditOps {
 
     def visible(implicit authContext: AuthContext): Traversal.V[Audit] = visible(authContext.organisation)
 
-    def visible(organisationName: String): Traversal.V[Audit] = traversal.filter(_.organisation.has("name", organisationName))
+    def visible(organisation: EntityIdOrName): Traversal.V[Audit] = traversal.filter(_.organisation.get(organisation))
 
     def `object`: Traversal[Vertex, Vertex, IdentityConverter[Vertex]] = traversal.out[Audited]
 

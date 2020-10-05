@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -13,7 +14,7 @@ class DataSrvTest extends PlaySpecification with TestAppBuilder {
 
   "data service" should {
     "create not existing data" in testApp { app =>
-      val existingData = app[Database].roTransaction(implicit graph => app[DataSrv].startTraversal.has("data", "h.fr").getOrFail("Data")).get
+      val existingData = app[Database].roTransaction(implicit graph => app[DataSrv].startTraversal.getByData("h.fr").getOrFail("Data")).get
       val newData      = app[Database].tryTransaction(implicit graph => app[DataSrv].create(existingData))
       newData must beSuccessfulTry.which(data => data._id shouldEqual existingData._id)
     }
@@ -22,7 +23,7 @@ class DataSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         app[ObservableSrv].create(
           Observable(Some("love"), 1, ioc = false, sighted = true),
-          app[ObservableTypeSrv].get("domain").getOrFail("Observable").get,
+          app[ObservableTypeSrv].get(EntityName("domain")).getOrFail("Observable").get,
           "love.com",
           Set("tagX"),
           Nil

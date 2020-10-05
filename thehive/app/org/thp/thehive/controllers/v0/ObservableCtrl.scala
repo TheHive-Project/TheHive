@@ -40,10 +40,10 @@ class ObservableCtrl @Inject() (
         for {
           case0 <-
             caseSrv
-              .get(caseId)
+              .get(EntityIdOrName(caseId))
               .can(Permissions.manageObservable)
               .orFail(AuthorizationError("Operation not permitted"))
-          observableType <- observableTypeSrv.getOrFail(inputObservable.dataType)
+          observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
           observablesWithData <-
             inputObservable
               .data
@@ -65,7 +65,7 @@ class ObservableCtrl @Inject() (
     entrypoint("get observable")
       .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
-          .getByIds(observableId)
+          .get(EntityIdOrName(observableId))
           .visible
           .richObservable
           .getOrFail("Observable")
@@ -81,17 +81,17 @@ class ObservableCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.getByIds(observableId).can(Permissions.manageObservable),
+            _.get(EntityIdOrName(observableId)).can(Permissions.manageObservable),
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
       }
 
-  def findSimilar(obsId: String): Action[AnyContent] =
+  def findSimilar(observableId: String): Action[AnyContent] =
     entrypoint("find similar")
       .authRoTransaction(db) { implicit request => implicit graph =>
         val observables = observableSrv
-          .getByIds(obsId)
+          .get(EntityIdOrName(observableId))
           .visible
           .similar
           .visible
@@ -111,18 +111,18 @@ class ObservableCtrl @Inject() (
         ids
           .toTry { id =>
             observableSrv
-              .update(_.getByIds(id).can(Permissions.manageObservable), properties)
+              .update(_.get(EntityIdOrName(id)).can(Permissions.manageObservable), properties)
           }
           .map(_ => Results.NoContent)
       }
 
-  def delete(obsId: String): Action[AnyContent] =
+  def delete(observableId: String): Action[AnyContent] =
     entrypoint("delete")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           observable <-
             observableSrv
-              .getByIds(obsId)
+              .get(EntityIdOrName(observableId))
               .can(Permissions.manageObservable)
               .getOrFail("Observable")
           _ <- observableSrv.remove(observable)
@@ -142,10 +142,10 @@ class PublicObservable @Inject() (
       "listObservable",
       (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables
     )
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Observable]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => observableSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
@@ -182,7 +182,7 @@ class PublicObservable @Inject() (
       _.select(_.tags.displayName)
         .custom { (_, value, vertex, _, graph, authContext) =>
           observableSrv
-            .getByIds(vertex.id.toString)(graph)
+            .get(vertex)(graph)
             .getOrFail("Observable")
             .flatMap(observable => observableSrv.updateTagNames(observable, value)(graph, authContext))
             .map(_ => Json.obj("tags" -> value))

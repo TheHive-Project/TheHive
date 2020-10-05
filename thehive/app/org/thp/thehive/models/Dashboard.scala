@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityIdOrName}
 import play.api.libs.json.JsObject
 
 @BuildVertexEntity
@@ -19,7 +19,7 @@ case class RichDashboard(
     dashboard: Dashboard with Entity,
     organisationShares: Map[String, Boolean]
 ) {
-  def _id: String                = dashboard._id
+  def _id: EntityIdOrName        = dashboard._id
   def _createdBy: String         = dashboard._createdBy
   def _updatedBy: Option[String] = dashboard._updatedBy
   def _createdAt: Date           = dashboard._createdAt

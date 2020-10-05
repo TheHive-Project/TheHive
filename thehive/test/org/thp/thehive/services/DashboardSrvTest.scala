@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -15,7 +16,8 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
   s" dashboard service" should {
     "create dashboards" in testApp { app =>
       val definition =
-        Json.parse("""{
+        Json
+          .parse("""{
              "period":"custom",
              "items":[
                 {
@@ -49,7 +51,8 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
                 "fromDate":"2019-07-08T22:00:00.000Z",
                 "toDate":"2019-11-27T23:00:00.000Z"
              }
-          }""").as[JsObject]
+          }""")
+          .as[JsObject]
       app[Database].tryTransaction { implicit graph =>
         app[DashboardSrv].create(Dashboard("dashboard test 1", "desc dashboard test 1", definition))
       } must beASuccessfulTry.which { d =>
@@ -62,9 +65,9 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
     "share a dashboard" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].startTraversal.has("title", "dashboard soc").getOrFail("Dashboard")
+          dashboard <- app[DashboardSrv].startTraversal.has(_.title, "dashboard soc").getOrFail("Dashboard")
           _ = app[DashboardSrv].get(dashboard).visible.headOption must beNone
-          _ <- app[DashboardSrv].share(dashboard, "cert", writable = false)
+          _ <- app[DashboardSrv].share(dashboard, EntityName("cert"), writable = false)
           _ = app[DashboardSrv].get(dashboard).visible.headOption must beSome
         } yield ()
       } must beASuccessfulTry
@@ -81,9 +84,9 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
     "remove a dashboard" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].startTraversal.has("title", "dashboard soc").getOrFail("Dashboard")
+          dashboard <- app[DashboardSrv].startTraversal.has(_.title, "dashboard soc").getOrFail("Dashboard")
           _         <- app[DashboardSrv].remove(dashboard)
-        } yield app[DashboardSrv].startTraversal.has("title", "dashboard soc").exists
+        } yield app[DashboardSrv].startTraversal.has(_.title, "dashboard soc").exists
       } must beASuccessfulTry(false)
     }
   }

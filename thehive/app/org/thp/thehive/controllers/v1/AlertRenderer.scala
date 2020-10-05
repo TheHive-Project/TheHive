@@ -21,9 +21,9 @@ trait AlertRenderer {
         "iocCount"               -> similarStats.ioc._2
       )
   }
-  def similarCasesStats(
-      implicit authContext: AuthContext
-  ): Traversal.V[Alert] => Traversal[JsArray, JList[JMap[String, Any]], Converter[JsArray, JList[JMap[String, Any]]]] = {
+  def similarCasesStats(implicit
+      authContext: AuthContext
+  ): Traversal.V[Alert] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] = {
     implicit val similarCaseOrdering: Ordering[(RichCase, SimilarStats)] = (x: (RichCase, SimilarStats), y: (RichCase, SimilarStats)) =>
       //negative if x < y
       if (x._1._createdAt after y._1._createdAt) -1
@@ -38,8 +38,8 @@ trait AlertRenderer {
     _.similarCases.fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
-  def alertStatsRenderer[D, G, C <: Converter[D, G]](extraData: Set[String])(
-      implicit authContext: AuthContext
+  def alertStatsRenderer[D, G, C <: Converter[D, G]](extraData: Set[String])(implicit
+      authContext: AuthContext
   ): Traversal.V[Alert] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
     def addData[T](
         name: String

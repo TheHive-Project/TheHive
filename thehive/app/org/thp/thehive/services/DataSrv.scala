@@ -37,7 +37,7 @@ class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: Ac
 object DataOps {
 
   implicit class DataOpsDefs(traversal: Traversal.V[Data]) {
-    def observables = traversal.in[ObservableData].v[Observable]
+    def observables: Traversal.V[Observable] = traversal.in[ObservableData].v[Observable]
 
     def notShared(caseId: String): Traversal.V[Data] =
       traversal.filter(
@@ -49,7 +49,7 @@ object DataOps {
           .is(P.eq(0))
       )
 
-    def getByData(data: String): Traversal.V[Data] = traversal.has("data", data)
+    def getByData(data: String): Traversal.V[Data] = traversal.has(_.data, data)
 
     def useCount: Traversal[Long, JLong, Converter[Long, JLong]] = traversal.in[ObservableData].count
   }
@@ -57,11 +57,12 @@ object DataOps {
 }
 
 class DataIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
-  override def resolve(entities: Seq[Data with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head))
-      service.getByIds(tail.map(_._id): _*).remove()
-      Success(())
-    case _ => Success(())
-  }
+  override def resolve(entities: Seq[Data with Entity])(implicit graph: Graph): Try[Unit] =
+    entities match {
+      case head :: tail =>
+        tail.foreach(copyEdge(_, head))
+        service.getByIds(tail.map(_._id): _*).remove()
+        Success(())
+      case _ => Success(())
+    }
 }

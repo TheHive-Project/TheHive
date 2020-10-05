@@ -12,7 +12,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
-import org.thp.scalligraph.{CreateError, RichSeq}
+import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseTemplateOps._
@@ -38,9 +38,8 @@ class CaseTemplateSrv @Inject() (
   val caseTemplateOrganisationSrv = new EdgeSrv[CaseTemplateOrganisation, CaseTemplate, Organisation]
   val caseTemplateTaskSrv         = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
 
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[CaseTemplate] =
-    if (db.isValidId(idOrName)) super.getByIds(idOrName)
-    else startTraversal.getByName(idOrName)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[CaseTemplate] =
+    startTraversal.getByName(name)
 
   override def createEntity(e: CaseTemplate)(implicit graph: Graph, authContext: AuthContext): Try[CaseTemplate with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("CaseTemplate")
@@ -53,8 +52,8 @@ class CaseTemplateSrv @Inject() (
       tagNames: Set[String],
       tasks: Seq[(Task, Option[User with Entity])],
       customFields: Seq[(String, Option[Any])]
-  )(
-      implicit graph: Graph,
+  )(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichCaseTemplate] = tagNames.toTry(tagSrv.getOrCreate).flatMap(tags => create(caseTemplate, organisation, tags, tasks, customFields))
 
@@ -64,11 +63,11 @@ class CaseTemplateSrv @Inject() (
       tags: Seq[Tag with Entity],
       tasks: Seq[(Task, Option[User with Entity])],
       customFields: Seq[(String, Option[Any])]
-  )(
-      implicit graph: Graph,
+  )(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichCaseTemplate] =
-    if (organisationSrv.get(organisation).caseTemplates.has("name", P.eq[String](caseTemplate.name)).exists)
+    if (organisationSrv.get(organisation).caseTemplates.get(EntityName(caseTemplate.name)).exists)
       Failure(CreateError(s"""The case template "${caseTemplate.name}" already exists"""))
     else
       for {
@@ -82,8 +81,8 @@ class CaseTemplateSrv @Inject() (
         _ <- auditSrv.caseTemplate.create(createdCaseTemplate, richCaseTemplate.toJson)
       } yield richCaseTemplate
 
-  def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(
-      implicit graph: Graph,
+  def addTask(caseTemplate: CaseTemplate with Entity, task: Task with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
@@ -154,8 +153,8 @@ class CaseTemplateSrv @Inject() (
       .map(_ => ())
   }
 
-  def setOrCreateCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(
-      implicit graph: Graph,
+  def setOrCreateCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val cfv = get(caseTemplate).customFields(customFieldName)
@@ -172,7 +171,7 @@ class CaseTemplateSrv @Inject() (
       order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(customFieldName)
+      cf   <- customFieldSrv.getOrFail(EntityIdOrName(customFieldName))
       ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), customFieldValue)
       ccfe <- caseTemplateCustomFieldSrv.create(ccf, caseTemplate, cf)
     } yield RichCustomField(cf, ccfe)
@@ -181,21 +180,17 @@ class CaseTemplateSrv @Inject() (
 object CaseTemplateOps {
   implicit class CaseTemplateOpsDefs(traversal: Traversal.V[CaseTemplate]) {
 
-    def get(idOrName: String)(implicit db: Database): Traversal.V[CaseTemplate] =
-      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
-      else getByName(idOrName)
+    def get(idOrName: EntityIdOrName): Traversal.V[CaseTemplate] =
+      idOrName.fold(traversal.getByIds(_), getByName)
 
-    def getByName(name: String): Traversal.V[CaseTemplate] = traversal.has("name", name)
+    def getByName(name: String): Traversal.V[CaseTemplate] = traversal.has(_.name, name)
 
     def visible(implicit authContext: AuthContext): Traversal.V[CaseTemplate] =
-      traversal.filter(_.out[CaseTemplateOrganisation].has("name", authContext.organisation))
+      traversal.filter(_.organisation.current)
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[CaseTemplate] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(
-          _.out[CaseTemplateOrganisation]
-            .has("name", authContext.organisation)
-        )
+        traversal.filter(_.organisation.current)
       else
         traversal.limit(0)
 
@@ -205,12 +200,11 @@ object CaseTemplateOps {
       traversal
         .project(
           _.by
-            .by(_.out[CaseTemplateOrganisation].v[Organisation].value(_.name))
-            .by(_.out[CaseTemplateTag].v[Tag].fold)
-            .by(_.out[CaseTemplateTask].v[Task].richTask.fold)
+            .by(_.organisation.value(_.name))
+            .by(_.tags.fold)
+            .by(_.tasks.richTask.fold)
             .by(
               _.outE[CaseTemplateCustomField]
-                .e[CaseTemplateCustomField]
                 .as(caseTemplateCustomFieldLabel)
                 .inV
                 .v[CustomField]
@@ -231,9 +225,9 @@ object CaseTemplateOps {
         }
     }
 
-    def organisation = traversal.out[CaseTemplateOrganisation].v[Organisation]
+    def organisation: Traversal.V[Organisation] = traversal.out[CaseTemplateOrganisation].v[Organisation]
 
-    def tasks = traversal.out[CaseTemplateTask].v[Task]
+    def tasks: Traversal.V[Task] = traversal.out[CaseTemplateTask].v[Task]
 
     def tags: Traversal.V[Tag] = traversal.out[CaseTemplateTag].v[Tag]
 
@@ -242,10 +236,10 @@ object CaseTemplateOps {
         traversal.outE[CaseTemplateTag].filter(_.inV.hasId(tags.map(_._id).toSeq: _*)).remove()
 
     def customFields(name: String): Traversal.E[CaseTemplateCustomField] =
-      traversal.outE[CaseTemplateCustomField].filter(_.inV.has("name", name)).e[CaseTemplateCustomField]
+      traversal.outE[CaseTemplateCustomField].filter(_.inV.v[CustomField].has(_.name, name))
 
     def customFields: Traversal.E[CaseTemplateCustomField] =
-      traversal.outE[CaseTemplateCustomField].e[CaseTemplateCustomField]
+      traversal.outE[CaseTemplateCustomField]
   }
 
   implicit class CaseTemplateCustomFieldsOpsDefs(traversal: Traversal.E[CaseTemplateCustomField]) extends CustomFieldValueOpsDefs(traversal)
@@ -273,11 +267,12 @@ class CaseTemplateIntegrityCheckOps @Inject() (
         .toSeq
     }
 
-  override def resolve(entities: Seq[CaseTemplate with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head, e => e.label() == "CaseCaseTemplate" || e.label() == "AlertCaseTemplate"))
-      service.getByIds(tail.map(_._id): _*).remove()
-      Success(())
-    case _ => Success(())
-  }
+  override def resolve(entities: Seq[CaseTemplate with Entity])(implicit graph: Graph): Try[Unit] =
+    entities match {
+      case head :: tail =>
+        tail.foreach(copyEdge(_, head, e => e.label() == "CaseCaseTemplate" || e.label() == "AlertCaseTemplate"))
+        service.getByIds(tail.map(_._id): _*).remove()
+        Success(())
+      case _ => Success(())
+    }
 }

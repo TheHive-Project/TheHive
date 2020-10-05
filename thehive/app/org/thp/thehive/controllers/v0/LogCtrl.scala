@@ -1,8 +1,9 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, IdMapping, UMapping}
+import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
@@ -34,7 +35,7 @@ class LogCtrl @Inject() (
         for {
           task <-
             taskSrv
-              .getByIds(taskId)
+              .get(EntityIdOrName(taskId))
               .can(Permissions.manageTask)
               .getOrFail("Task")
           createdLog <- logSrv.create(inputLog.toLog, task)
@@ -50,7 +51,7 @@ class LogCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("log")
         logSrv
           .update(
-            _.getByIds(logId)
+            _.get(EntityIdOrName(logId))
               .can(Permissions.manageTask),
             propertyUpdaters
           )
@@ -61,7 +62,7 @@ class LogCtrl @Inject() (
     entrypoint("delete log")
       .authTransaction(db) { implicit req => implicit graph =>
         for {
-          log <- logSrv.get(logId).can(Permissions.manageTask).getOrFail("Log")
+          log <- logSrv.get(EntityIdOrName(logId)).can(Permissions.manageTask).getOrFail("Log")
           _   <- logSrv.cascadeRemove(log)
         } yield Results.NoContent
       }
@@ -72,10 +73,10 @@ class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) ext
   override val entityName: String = "log"
   override val initialQuery: Query =
     Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks.logs)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Log]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Log]](
     "getLog",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => logSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",
@@ -89,6 +90,6 @@ class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) ext
       .property("deleted", UMapping.boolean)(_.field.updatable)
       .property("startDate", UMapping.date)(_.rename("date").readonly)
       .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
-      .property("attachment", IdMapping)(_.select(_.attachments._id).readonly)
+      .property("attachment", UMapping.string)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
 }

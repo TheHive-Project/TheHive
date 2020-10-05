@@ -7,11 +7,11 @@ import javax.inject.{Inject, Named, Singleton}
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
 import org.thp.thehive.controllers.HttpHeaderParameterEncoding
 import org.thp.thehive.services.AttachmentOps._
 import org.thp.thehive.services.AttachmentSrv
@@ -38,7 +38,7 @@ class AttachmentCtrl @Inject() (
           Success(Results.BadRequest("File name is invalid"))
         else
           attachmentSrv
-            .get(id)
+            .get(EntityIdOrName(id))
             .visible
             .getOrFail("Attachment")
             .filter(attachmentSrv.exists)
@@ -66,7 +66,7 @@ class AttachmentCtrl @Inject() (
           Success(Results.BadRequest("File name is invalid"))
         else
           attachmentSrv
-            .get(id)
+            .get(EntityIdOrName(id))
             .visible
             .getOrFail("Attachment")
             .filter(attachmentSrv.exists)

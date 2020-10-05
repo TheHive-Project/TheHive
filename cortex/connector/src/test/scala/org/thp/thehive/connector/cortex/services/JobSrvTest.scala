@@ -4,10 +4,10 @@ import java.util.Date
 
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputJob
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{AppBuilder, EntityName}
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.models.Permissions
@@ -86,10 +86,10 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
     "submit a job" in testApp { app =>
       val x = for {
         observable <- app[Database].roTransaction { implicit graph =>
-          app[ObservableSrv].startTraversal.has("message", "Some weird domain").richObservable.getOrFail("Observable")
+          app[ObservableSrv].startTraversal.has(_.message, "Some weird domain").richObservable.getOrFail("Observable")
         }
         case0 <- app[Database].roTransaction { implicit graph =>
-          app[CaseSrv].getOrFail("#1")
+          app[CaseSrv].getOrFail(EntityName("1"))
         }
       } yield await(app[JobSrv].submit("test", "anaTest1", observable, case0))
 
