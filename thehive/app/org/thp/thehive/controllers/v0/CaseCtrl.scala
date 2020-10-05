@@ -337,7 +337,7 @@ class PublicCase @Inject() (
       .property("computed.handlingDurationInHours", UMapping.long)(
         _.select(
           _.coalesce(
-            _.has("endDate")
+            _.has(_.endDate)
               .sack(
                 (_: JLong, endDate: JLong) => endDate,
                 _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))

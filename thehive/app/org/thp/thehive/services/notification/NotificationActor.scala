@@ -180,7 +180,7 @@ class NotificationActor @Inject() (
                       organisationSrv
                         .get(organisation)
                         .config
-                        .has("name", "notification")
+                        .has(_.name, "notification")
                         .value(_.value)
                         .toIterator
                         .foreach { notificationConfig: JsValue =>
@@ -191,7 +191,7 @@ class NotificationActor @Inject() (
                           organisationSrv
                             .get(organisation)
                             .users
-                            .filter(_.config.hasNot("name", "notification"))
+                            .filter(_.config.hasNot(_.name, "notification"))
                             .toIterator
                             .foreach { user =>
                               executeNotification(Some(user), userConfig, audit, context, obj, organisation)

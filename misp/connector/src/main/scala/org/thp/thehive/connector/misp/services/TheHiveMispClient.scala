@@ -114,22 +114,23 @@ class TheHiveMispClient(
       whitelistTags
     ) {
 
-  @Inject() def this(config: TheHiveMispClientConfig, mat: Materializer) = this(
-    config.name,
-    config.url,
-    config.auth,
-    new ProxyWS(config.wsConfig, mat),
-    config.maxAge,
-    config.excludedOrganisations,
-    config.excludedTags,
-    config.whitelistTags,
-    config.purpose,
-    config.caseTemplate,
-    config.artifactTags,
-    config.exportCaseTags,
-    config.includedTheHiveOrganisations,
-    config.excludedTheHiveOrganisations
-  )
+  @Inject() def this(config: TheHiveMispClientConfig, mat: Materializer) =
+    this(
+      config.name,
+      config.url,
+      config.auth,
+      new ProxyWS(config.wsConfig, mat),
+      config.maxAge,
+      config.excludedOrganisations,
+      config.excludedTags,
+      config.whitelistTags,
+      config.purpose,
+      config.caseTemplate,
+      config.artifactTags,
+      config.exportCaseTags,
+      config.includedTheHiveOrganisations,
+      config.excludedTheHiveOrganisations
+    )
 
   val (canImport, canExport) = purpose match {
     case MispPurpose.ImportAndExport => (true, true)
@@ -140,9 +141,9 @@ class TheHiveMispClient(
   def organisationFilter(organisationSteps: Traversal.V[Organisation]): Traversal.V[Organisation] = {
     val includedOrgs =
       if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
-      else organisationSteps.has("name", P.within(includedTheHiveOrganisations))
+      else organisationSteps.has(_.name, P.within(includedTheHiveOrganisations: _*))
     if (excludedTheHiveOrganisations.isEmpty) includedOrgs
-    else includedOrgs.has("name", P.without(excludedTheHiveOrganisations))
+    else includedOrgs.has(_.name, P.without(excludedTheHiveOrganisations: _*))
   }
 
   override def getStatus(implicit ec: ExecutionContext): Future[JsObject] =

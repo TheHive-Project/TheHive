@@ -57,7 +57,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
 
       val createdJobTry = app[Database].tryTransaction { implicit graph =>
         for {
-          observable <- app[ObservableSrv].startTraversal.has("message", "hello world").getOrFail("Observable")
+          observable <- app[ObservableSrv].startTraversal.has(_.message, "hello world").getOrFail("Observable")
           createdJob <- app[JobSrv].create(job, observable)
         } yield createdJob
       }
@@ -69,14 +69,14 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
         (updatedJob.report.get \ "data").as[String] shouldEqual "imageedit_2_3904987689.jpg"
 
         app[Database].roTransaction { implicit graph =>
-          app[JobSrv].get(updatedJob).observable.has("message", "hello world").exists must beTrue
+          app[JobSrv].get(updatedJob).observable.has(_.message, "hello world").exists must beTrue
           app[JobSrv].get(updatedJob).reportObservables.toList.length must equalTo(2).updateMessage { s =>
             s"$s\nreport observables are : ${app[JobSrv].get(updatedJob).reportObservables.richObservable.toList.mkString("\n")}"
           }
 
           for {
-            audit        <- app[AuditSrv].startTraversal.has("objectId", updatedJob._id).getOrFail("Audit")
-            organisation <- app[OrganisationSrv].get("cert").getOrFail("Organisation")
+            audit        <- app[AuditSrv].startTraversal.has(_.objectId, updatedJob._id.toString).getOrFail("Audit")
+            organisation <- app[OrganisationSrv].getByName("cert").getOrFail("Organisation")
             user         <- app[UserSrv].startTraversal.getByName("certuser@thehive.local").getOrFail("User")
           } yield new JobFinished().filter(audit, Some(updatedJob), organisation, Some(user))
         } must beASuccessfulTry(true)

@@ -14,7 +14,7 @@ class LogCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "be able to create a log" in testApp { app =>
       val task = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].startTraversal.has("title", "case 1 task 1").headOption.get
+        app[TaskSrv].startTraversal.has(_.title, "case 1 task 1").getOrFail("Task").get
       }
 
       val request = FakeRequest("POST", s"/api/case/task/${task._id}/log")
@@ -22,27 +22,27 @@ class LogCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(Json.parse("""
               {"message":"log 1\n\n### yeahyeahyeahs", "deleted":false}
             """.stripMargin))
-      val result = app[LogCtrl].create(task._id)(request)
+      val result = app[LogCtrl].create(task._id.toString)(request)
 
       status(result) shouldEqual 201
 
       app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].get(task).logs.has("message", "log 1\n\n### yeahyeahyeahs").exists
+        app[TaskSrv].get(task).logs.has(_.message, "log 1\n\n### yeahyeahyeahs").exists
       } must beTrue
     }
 
     "be able to create and remove a log" in testApp { app =>
       val log = app[Database].roTransaction { implicit graph =>
-        app[LogSrv].startTraversal.has("message", "log for action test").getOrFail("Log").get
+        app[LogSrv].startTraversal.has(_.message, "log for action test").getOrFail("Log").get
       }
 
       val requestDelete = FakeRequest("DELETE", s"/api/case/task/log/${log._id}").withHeaders("user" -> "certuser@thehive.local")
-      val resultDelete  = app[LogCtrl].delete(log._id)(requestDelete)
+      val resultDelete  = app[LogCtrl].delete(log._id.toString)(requestDelete)
 
       status(resultDelete) shouldEqual 204
 
       val deletedLog = app[Database].roTransaction { implicit graph =>
-        app[LogSrv].startTraversal.has("message", "log for action test").headOption
+        app[LogSrv].startTraversal.has(_.message, "log for action test").headOption
       }
       deletedLog should beNone
     }

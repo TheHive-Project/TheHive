@@ -136,7 +136,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     "get an alert" in testApp { app =>
       val alertSrv = app.apply[AlertSrv]
       app.apply[Database].roTransaction { implicit graph =>
-        alertSrv.startTraversal.has("sourceRef", "ref1").getOrFail("Alert")
+        alertSrv.startTraversal.has(_.sourceRef, "ref1").getOrFail("Alert")
       } must beSuccessfulTry.which { alert: Alert with Entity =>
         val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "socuser@thehive.local")
         val result  = app[AlertCtrl].get(alert._id)(request)

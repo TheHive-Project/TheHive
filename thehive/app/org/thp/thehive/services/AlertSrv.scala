@@ -150,7 +150,7 @@ class AlertSrv @Inject() (
   ): Try[Unit] = {
     val maybeExistingObservable = richObservable.dataOrAttachment match {
       case Left(data)        => get(alert).observables.filterOnData(data.data)
-      case Right(attachment) => get(alert).observables.has("attachmentId", attachment.attachmentId)
+      case Right(attachment) => get(alert).observables.filterOnAttachmentId(attachment.attachmentId)
     }
     maybeExistingObservable
       .richObservable
@@ -334,9 +334,13 @@ object AlertOps {
 
     def getBySourceId(`type`: String, source: String, sourceRef: String): Traversal.V[Alert] =
       traversal
-        .has("type", `type`)
-        .has("source", source)
-        .has("sourceRef", sourceRef)
+        .has(_.`type`, `type`)
+        .has(_.source, source)
+        .has(_.sourceRef, sourceRef)
+
+    def filterByType(`type`: String): Traversal.V[Alert] = traversal.has(_.`type`, `type`)
+
+    def filterBySource(source: String): Traversal.V[Alert] = traversal.has(_.source, source)
 
     def organisation: Traversal.V[Organisation] = traversal.out[AlertOrganisation].v[Organisation]
 
@@ -454,7 +458,7 @@ object AlertOps {
     }
 
     def customFields(name: String): Traversal.E[AlertCustomField] =
-      traversal.outE[AlertCustomField].filter(_.inV.has("name", name)).e[AlertCustomField]
+      traversal.outE[AlertCustomField].filter(_.inV.v[CustomField].has(_.name, name))
 
     def customFields: Traversal.E[AlertCustomField] =
       traversal.outE[AlertCustomField].e[AlertCustomField]

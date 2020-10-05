@@ -32,7 +32,7 @@ class ResponderSrvTest extends PlaySpecification with TestAppBuilder {
   "responder service" should {
     "fetch responders by type" in testApp { app =>
       val task = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].startTraversal.has("title", "case 1 task 1").head
+        app[TaskSrv].startTraversal.has(_.title, "case 1 task 1").head
       }
 
       val r = await(app[ResponderSrv].getRespondersByType("case_task", task._id))
