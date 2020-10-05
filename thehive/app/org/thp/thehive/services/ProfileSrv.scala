@@ -3,13 +3,13 @@ package org.thp.thehive.services
 import akka.actor.ActorRef
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, EntityName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.ProfileOps._
@@ -22,11 +22,11 @@ class ProfileSrv @Inject() (
     auditSrv: AuditSrv,
     organisationSrvProvider: Provider[OrganisationSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
-)(
-    implicit @Named("with-thehive-schema") val db: Database
+)(implicit
+    @Named("with-thehive-schema") val db: Database
 ) extends VertexSrv[Profile] {
   lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
-  lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(Profile.orgAdmin.name)(graph)).get
+  lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("Profile")
@@ -39,9 +39,8 @@ class ProfileSrv @Inject() (
       _              <- auditSrv.profile.create(createdProfile, createdProfile.toJson)
     } yield createdProfile
 
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[Profile] =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else startTraversal.getByName(idOrName)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Profile] =
+    startTraversal.getByName(name)
 
   override def exists(e: Profile)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
@@ -73,25 +72,25 @@ object ProfileOps {
 
     def shares: Traversal.V[Share] = traversal.in[ShareProfile].v[Share]
 
-    def get(idOrName: String)(implicit db: Database): Traversal.V[Profile] =
-      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
-      else getByName(idOrName)
+    def get(idOrName: EntityIdOrName): Traversal.V[Profile] =
+      idOrName.fold(traversal.getByIds(_), getByName)
 
-    def getByName(name: String): Traversal.V[Profile] = traversal.has("name", name)
+    def getByName(name: String): Traversal.V[Profile] = traversal.has(_.name, name)
 
     def contains(permission: Permission): Traversal.V[Profile] =
-      traversal.has("permissions", permission)
+      traversal.has(_.permissions, permission)
   }
 
 }
 
 class ProfileIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ProfileSrv)
     extends IntegrityCheckOps[Profile] {
-  override def resolve(entities: Seq[Profile with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head))
-      service.getByIds(tail.map(_._id): _*).remove()
-      Success(())
-    case _ => Success(())
-  }
+  override def resolve(entities: Seq[Profile with Entity])(implicit graph: Graph): Try[Unit] =
+    entities match {
+      case head :: tail =>
+        tail.foreach(copyEdge(_, head))
+        service.getByIds(tail.map(_._id): _*).remove()
+        Success(())
+      case _ => Success(())
+    }
 }

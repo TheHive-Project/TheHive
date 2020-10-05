@@ -5,10 +5,10 @@ import java.util.{Date, UUID}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{AppBuilder, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.AlertOps._
@@ -98,7 +98,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
       val observables = app[Database]
         .roTransaction { implicit graph =>
           app[OrganisationSrv]
-            .get("admin")
+            .get(EntityName("admin"))
             .alerts
             .getBySourceId("misp", "ORGNAME", "1")
             .observables

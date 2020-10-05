@@ -2,6 +2,7 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
@@ -24,7 +25,7 @@ class ResponderCtrl @Inject() (
     entrypoint("get responders")
       .asyncAuth { implicit req =>
         responderSrv
-          .getRespondersByType(entityType, entityId)
+          .getRespondersByType(entityType, EntityIdOrName(entityId))
           .map(l => Results.Ok(l.toSeq.toJson))
       }
 

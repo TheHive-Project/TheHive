@@ -2,9 +2,9 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
+import org.thp.scalligraph.{AppBuilder, EntityIdOrName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Case, CaseStatus, Permissions}
 import org.thp.thehive.services.{CaseSrv, FlowActor, OrganisationSrv}
@@ -29,14 +29,14 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     // Check for no parasite audit
-    getFlow("#1") must beEmpty
+    getFlow("1") must beEmpty
 
     // Create an event first
     val `case` = app[Database].tryTransaction { implicit graph =>
       app[CaseSrv].create(
         Case(0, "case audit", "desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None),
         None,
-        app[OrganisationSrv].getOrFail("admin").get,
+        app[OrganisationSrv].getOrFail(EntityIdOrName("admin")).get,
         Set.empty,
         Seq.empty,
         None,
@@ -45,7 +45,7 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
     }.get
 
     // Get the actual data
-    val l = getFlow(`case`._id)
+    val l = getFlow(`case`._id.toString)
 
 //    l must not(beEmpty)
     pending

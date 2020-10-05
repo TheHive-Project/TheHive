@@ -1,12 +1,14 @@
 package org.thp.thehive.controllers.v0
 
 import com.typesafe.config.{Config, ConfigRenderOptions}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.{AuthorizationError, NotFoundError}
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{OrganisationConfigContext, UserConfigContext}
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.{OrganisationConfigContext, OrganisationSrv, UserConfigContext}
 import play.api.libs.json.{JsNull, JsValue, Json, Writes}
 import play.api.mvc.{Action, AnyContent, Results}
 import play.api.{ConfigLoader, Logger}
@@ -18,7 +20,9 @@ class ConfigCtrl @Inject() (
     appConfig: ApplicationConfig,
     userConfigContext: UserConfigContext,
     organisationConfigContext: OrganisationConfigContext,
-    entrypoint: Entrypoint
+    organisationSrv: OrganisationSrv,
+    entrypoint: Entrypoint,
+    @Named("with-thehive-schema") db: Database
 ) {
 
   lazy val logger: Logger = Logger(getClass)
@@ -37,8 +41,8 @@ class ConfigCtrl @Inject() (
 
   def list: Action[AnyContent] =
     entrypoint("list configuration items")
-      .authPermitted(Permissions.manageConfig) { request =>
-        if (request.organisation != "admin")
+      .authPermittedTransaction(db, Permissions.manageConfig) { implicit request => implicit graph =>
+        if (!organisationSrv.current.isAdmin)
           Failure(AuthorizationError("You must be in `admin` organisation to view global configuration"))
         else
           Success(Results.Ok(Json.toJson(appConfig.list)))
@@ -47,8 +51,8 @@ class ConfigCtrl @Inject() (
   def set(path: String): Action[AnyContent] =
     entrypoint("set configuration item")
       .extract("value", FieldsParser.json.on("value"))
-      .authPermitted(Permissions.manageConfig) { request =>
-        if (request.organisation != "admin")
+      .authPermittedTransaction(db, Permissions.manageConfig) { implicit request => implicit graph =>
+        if (!organisationSrv.current.isAdmin)
           Failure(AuthorizationError("You must be in `admin` organisation to change global configuration"))
         else {
           logger.info(s"app config value set: $path ${request.body("value")}")
@@ -58,8 +62,8 @@ class ConfigCtrl @Inject() (
 
   def get(path: String): Action[AnyContent] =
     entrypoint("get configuration item")
-      .authPermitted(Permissions.manageConfig) { request =>
-        if (request.organisation != "admin")
+      .authPermittedTransaction(db, Permissions.manageConfig) { implicit request => implicit graph =>
+        if (!organisationSrv.current.isAdmin)
           Failure(AuthorizationError("You must be in `admin` organisation to change global configuration"))
         else
           appConfig.get(path) match {

@@ -3,6 +3,7 @@ package org.thp.thehive.controllers.v1
 import java.util.{Map => JMap}
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -35,10 +36,10 @@ class AlertCtrl @Inject() (
   override val publicProperties: PublicProperties = properties.alert
   override val initialQuery: Query =
     Query.init[Traversal.V[Alert]]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Alert]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Alert]](
     "getAlert",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => alertSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => alertSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
     "page",
@@ -66,7 +67,7 @@ class AlertCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputAlert: InputAlert           = request.body("alert")
-        val caseTemplate                     = caseTemplateName.flatMap(ct => caseTemplateSrv.get(ct).visible.headOption)
+        val caseTemplate                     = caseTemplateName.flatMap(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.headOption)
         for {
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail("Organisation")
           customFields = inputAlert.customFieldValue.map(cf => cf.name -> cf.value).toMap
@@ -74,25 +75,25 @@ class AlertCtrl @Inject() (
         } yield Results.Created(richAlert.toJson)
       }
 
-  def get(alertId: String): Action[AnyContent] =
+  def get(alertIdOrName: String): Action[AnyContent] =
     entrypoint("get alert")
       .authRoTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertIdOrName))
           .visible
           .richAlert
           .getOrFail("Alert")
           .map(alert => Results.Ok(alert.toJson))
       }
 
-  def update(alertId: String): Action[AnyContent] =
+  def update(alertIdOrName: String): Action[AnyContent] =
     entrypoint("update alert")
       .extract("alert", FieldsParser.update("alertUpdate", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv
           .update(
-            _.get(alertId)
+            _.get(EntityIdOrName(alertIdOrName))
               .can(Permissions.manageAlert),
             propertyUpdaters
           )
@@ -101,11 +102,11 @@ class AlertCtrl @Inject() (
 
 //  def mergeWithCase(alertId: String, caseId: String) = ???
 
-  def markAsRead(alertId: String): Action[AnyContent] =
+  def markAsRead(alertIdOrName: String): Action[AnyContent] =
     entrypoint("mark alert as read")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertIdOrName))
           .can(Permissions.manageAlert)
           .getOrFail("Alert")
           .map { alert =>
@@ -114,11 +115,11 @@ class AlertCtrl @Inject() (
           }
       }
 
-  def markAsUnread(alertId: String): Action[AnyContent] =
+  def markAsUnread(alertIdOrName: String): Action[AnyContent] =
     entrypoint("mark alert as unread")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertIdOrName))
           .can(Permissions.manageAlert)
           .getOrFail("Alert")
           .map { alert =>
@@ -127,20 +128,20 @@ class AlertCtrl @Inject() (
           }
       }
 
-  def createCase(alertId: String): Action[AnyContent] =
+  def createCase(alertIdOrName: String): Action[AnyContent] =
     entrypoint("create case from alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          (alert, organisation) <- alertSrv.get(alertId).alertUserOrganisation(Permissions.manageCase).getOrFail("Alert")
+          (alert, organisation) <- alertSrv.get(EntityIdOrName(alertIdOrName)).alertUserOrganisation(Permissions.manageCase).getOrFail("Alert")
           richCase              <- alertSrv.createCase(alert, None, organisation)
         } yield Results.Created(richCase.toJson)
       }
 
-  def followAlert(alertId: String): Action[AnyContent] =
+  def followAlert(alertIdOrName: String): Action[AnyContent] =
     entrypoint("follow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertIdOrName))
           .can(Permissions.manageAlert)
           .getOrFail("Alert")
           .map { alert =>
@@ -149,11 +150,11 @@ class AlertCtrl @Inject() (
           }
       }
 
-  def unfollowAlert(alertId: String): Action[AnyContent] =
+  def unfollowAlert(alertIdOrName: String): Action[AnyContent] =
     entrypoint("unfollow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertIdOrName))
           .can(Permissions.manageAlert)
           .getOrFail("Alert")
           .map { alert =>

@@ -18,7 +18,9 @@ object Conversion {
   implicit val alertOutput: Renderer.Aux[RichAlert, OutputAlert] = Renderer.toJson[RichAlert, OutputAlert](
     _.into[OutputAlert]
       .withFieldConst(_._type, "Alert")
-      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+      .withFieldComputed(_._id, _._id.toString)
+      .withFieldComputed(_.caseId, _.caseId.map(_.toString))
+      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldConst(_.extraData, JsObject.empty)
       .transform
@@ -30,7 +32,9 @@ object Conversion {
         ._1
         .into[OutputAlert]
         .withFieldConst(_._type, "Alert")
-        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldComputed(_.caseId, _.caseId.map(_.toString))
+        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
         .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldConst(_.extraData, alertWithExtraData._2)
         .transform
@@ -39,7 +43,7 @@ object Conversion {
   implicit val auditOutput: Renderer.Aux[RichAudit, OutputAudit] = Renderer.toJson[RichAudit, OutputAudit](
     _.into[OutputAudit]
       .withFieldComputed(_.operation, _.action)
-      .withFieldComputed(_._id, _._id)
+      .withFieldComputed(_._id, _._id.toString)
       .withFieldConst(_._type, "Audit")
       .withFieldComputed(_._createdAt, _._createdAt)
       .withFieldComputed(_._createdBy, _._createdBy)
@@ -77,7 +81,8 @@ object Conversion {
   implicit val caseOutput: Renderer.Aux[RichCase, OutputCase] = Renderer.toJson[RichCase, OutputCase](
     _.into[OutputCase]
       .withFieldConst(_._type, "Case")
-      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+      .withFieldComputed(_._id, _._id.toString)
+      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_.extraData, JsObject.empty)
@@ -90,7 +95,8 @@ object Conversion {
         ._1
         .into[OutputCase]
         .withFieldConst(_._type, "Case")
-        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
         .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
         .withFieldComputed(_.status, _.status.toString)
         .withFieldConst(_.extraData, caseWithExtraData._2)
@@ -142,7 +148,8 @@ object Conversion {
   implicit val caseTemplateOutput: Renderer.Aux[RichCaseTemplate, OutputCaseTemplate] = Renderer.toJson[RichCaseTemplate, OutputCaseTemplate](
     _.into[OutputCaseTemplate]
       .withFieldConst(_._type, "CaseTemplate")
-      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).toSet)
+      .withFieldComputed(_._id, _._id.toString)
+      .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
       .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
       .withFieldComputed(_.tasks, _.tasks.map(_.toOutput))
       .transform
@@ -151,6 +158,7 @@ object Conversion {
   implicit val richCustomFieldOutput: Renderer.Aux[RichCustomField, OutputCustomFieldValue] =
     Renderer.toJson[RichCustomField, OutputCustomFieldValue](
       _.into[OutputCustomFieldValue]
+        .withFieldComputed(_._id, _.customFieldValue._id.toString)
         .withFieldComputed(_.value, _.jsValue)
         .withFieldComputed(_.`type`, _.typeName)
         .withFieldComputed(_.order, _.order.getOrElse(0))
@@ -178,6 +186,7 @@ object Conversion {
     Renderer.toJson[RichOrganisation, OutputOrganisation](organisation =>
       organisation
         .into[OutputOrganisation]
+        .withFieldComputed(_._id, _._id.toString)
         .withFieldConst(_._type, "Organisation")
         .withFieldConst(_.name, organisation.name)
         .withFieldConst(_.description, organisation.description)
@@ -188,7 +197,7 @@ object Conversion {
   implicit val organiastionRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
     Renderer.toJson[Organisation with Entity, OutputOrganisation](organisation =>
       OutputOrganisation(
-        organisation._id,
+        organisation._id.toString,
         "organisation",
         organisation._createdBy,
         organisation._updatedBy,
@@ -215,6 +224,7 @@ object Conversion {
   implicit val taskOutput: Renderer.Aux[RichTask, OutputTask] = Renderer.toJson[RichTask, OutputTask](
     _.into[OutputTask]
       .withFieldConst(_._type, "Task")
+      .withFieldComputed(_._id, _._id.toString)
       .withFieldComputed(_.status, _.status.toString)
       .withFieldComputed(_.assignee, _.assignee.map(_.login))
       .withFieldConst(_.extraData, JsObject.empty)
@@ -227,6 +237,7 @@ object Conversion {
         ._1
         .into[OutputTask]
         .withFieldConst(_._type, "Task")
+        .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.status, _.status.toString)
         .withFieldComputed(_.assignee, _.assignee.map(_.login))
         .withFieldConst(_.extraData, taskWithExtraData._2)
@@ -251,6 +262,7 @@ object Conversion {
     _.into[OutputUser]
       .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
       .withFieldComputed(_.hasKey, _.apikey.isDefined)
+      .withFieldComputed(_._id, _._id.toString)
       .withFieldConst(_.organisations, Nil)
       .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
       .transform
@@ -261,6 +273,7 @@ object Conversion {
       val (user, organisations) = userWithOrganisations
       user
         .into[OutputUser]
+        .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
         .withFieldComputed(_.hasKey, _.apikey.isDefined)
         .withFieldConst(_.organisations, organisations.map { case (org, role) => OutputOrganisationProfile(org, role) })
@@ -272,7 +285,7 @@ object Conversion {
     profile
       .asInstanceOf[Profile]
       .into[OutputProfile]
-      .withFieldConst(_._id, profile._id)
+      .withFieldConst(_._id, profile._id.toString)
       .withFieldConst(_._updatedAt, profile._updatedAt)
       .withFieldConst(_._updatedBy, profile._updatedBy)
       .withFieldConst(_._createdAt, profile._createdAt)
@@ -287,7 +300,7 @@ object Conversion {
   implicit val dashboardOutput: Renderer.Aux[RichDashboard, OutputDashboard] = Renderer.toJson[RichDashboard, OutputDashboard](dashboard =>
     dashboard
       .into[OutputDashboard]
-      .withFieldConst(_._id, dashboard._id)
+      .withFieldConst(_._id, dashboard._id.toString)
       .withFieldComputed(_.status, d => if (d.organisationShares.nonEmpty) "Shared" else "Private")
       .withFieldConst(_._type, "Dashboard")
       .withFieldConst(_._updatedAt, dashboard._updatedAt)
@@ -319,7 +332,7 @@ object Conversion {
     richObservable
       .into[OutputObservable]
       .withFieldConst(_._type, "Observable")
-      .withFieldComputed(_._id, _.observable._id)
+      .withFieldComputed(_._id, _.observable._id.toString)
       .withFieldComputed(_._updatedAt, _.observable._updatedAt)
       .withFieldComputed(_._updatedBy, _.observable._updatedBy)
       .withFieldComputed(_._createdAt, _.observable._createdAt)
@@ -350,6 +363,7 @@ object Conversion {
         richObservable
           .into[OutputObservable]
           .withFieldConst(_._type, "case_artifact")
+          .withFieldComputed(_._id, _._id.toString)
           .withFieldComputed(_.dataType, _.`type`.name)
           .withFieldComputed(_.startDate, _.observable._createdAt)
           .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
@@ -374,6 +388,7 @@ object Conversion {
     richLog
       .into[OutputLog]
       .withFieldConst(_._type, "Log")
+      .withFieldComputed(_._id, _._id.toString)
       .withFieldRenamed(_._createdAt, _.date)
       .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
       .withFieldRenamed(_._createdBy, _.owner)
@@ -387,6 +402,7 @@ object Conversion {
         ._1
         .into[OutputLog]
         .withFieldConst(_._type, "Log")
+        .withFieldComputed(_._id, _._id.toString)
         .withFieldRenamed(_._createdAt, _.date)
         .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
         .withFieldRenamed(_._createdBy, _.owner)

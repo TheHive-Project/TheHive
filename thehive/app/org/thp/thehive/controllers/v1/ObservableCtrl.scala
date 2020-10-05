@@ -38,10 +38,10 @@ class ObservableCtrl @Inject() (
       "listObservable",
       (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables
     )
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Observable]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => observableSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
     "page",
@@ -75,10 +75,10 @@ class ObservableCtrl @Inject() (
         for {
           case0 <-
             caseSrv
-              .get(caseId)
+              .get(EntityIdOrName(caseId))
               .can(Permissions.manageObservable)
               .getOrFail("Case")
-          observableType <- observableTypeSrv.getOrFail(inputObservable.dataType)
+          observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
           observablesWithData <-
             inputObservable
               .data
@@ -100,7 +100,7 @@ class ObservableCtrl @Inject() (
     entryPoint("get observable")
       .authRoTransaction(db) { _ => implicit graph =>
         observableSrv
-          .getByIds(observableId)
+          .get(EntityIdOrName(observableId))
           //            .availableFor(request.organisation)
           .richObservable
           .getOrFail("Observable")
@@ -116,7 +116,7 @@ class ObservableCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.getByIds(observableId).can(Permissions.manageObservable),
+            _.get(EntityIdOrName(observableId)).can(Permissions.manageObservable),
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
@@ -132,7 +132,7 @@ class ObservableCtrl @Inject() (
         ids
           .toTry { id =>
             observableSrv
-              .update(_.getByIds(id).can(Permissions.manageObservable), properties)
+              .update(_.get(EntityIdOrName(id)).can(Permissions.manageObservable), properties)
           }
           .map(_ => Results.NoContent)
       }
@@ -143,7 +143,7 @@ class ObservableCtrl @Inject() (
         for {
           observable <-
             observableSrv
-              .getByIds(obsId)
+              .get(EntityIdOrName(obsId))
               .can(Permissions.manageObservable)
               .getOrFail("Observable")
           _ <- observableSrv.remove(observable)

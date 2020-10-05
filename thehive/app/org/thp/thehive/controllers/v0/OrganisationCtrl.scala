@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.{EntityIdOrName, EntityName, NotFoundError}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.{CaseTemplate, Organisation, Permissions, User}
@@ -32,7 +32,7 @@ class OrganisationCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
-          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(Organisation.administration.name).existsOrFail
+          _   <- userSrv.current.organisations(Permissions.manageOrganisation).get(EntityName(Organisation.administration.name)).existsOrFail
           org <- organisationSrv.create(inputOrganisation.toOrganisation)
 
         } yield Results.Created(org.toJson)
@@ -42,7 +42,7 @@ class OrganisationCtrl @Inject() (
     entrypoint("get an organisation")
       .authRoTransaction(db) { implicit request => implicit graph =>
         organisationSrv
-          .get(organisationId)
+          .get(EntityIdOrName(organisationId))
           .visible
           .richOrganisation
           .getOrFail("Organisation")
@@ -68,7 +68,7 @@ class OrganisationCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
 
         for {
-          organisation <- organisationSrv.getOrFail(organisationId)
+          organisation <- organisationSrv.getOrFail(EntityIdOrName(organisationId))
           _            <- organisationSrv.update(organisationSrv.get(organisation), propertyUpdaters)
         } yield Results.NoContent
       }
@@ -77,8 +77,8 @@ class OrganisationCtrl @Inject() (
     entrypoint("link organisations")
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         for {
-          fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
-          toOrg   <- organisationSrv.getOrFail(toOrganisationId)
+          fromOrg <- organisationSrv.getOrFail(EntityIdOrName(fromOrganisationId))
+          toOrg   <- organisationSrv.getOrFail(EntityIdOrName(toOrganisationId))
           _       <- organisationSrv.doubleLink(fromOrg, toOrg)
         } yield Results.Created
       }
@@ -90,8 +90,8 @@ class OrganisationCtrl @Inject() (
         val organisations: Seq[String] = request.body("organisations")
 
         for {
-          fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
-          _       <- organisationSrv.updateLink(fromOrg, organisations)
+          fromOrg <- organisationSrv.getOrFail(EntityIdOrName(fromOrganisationId))
+          _       <- organisationSrv.updateLink(fromOrg, organisations.map(EntityIdOrName(_)))
         } yield Results.Created
       }
 
@@ -99,8 +99,8 @@ class OrganisationCtrl @Inject() (
     entrypoint("unlink organisations")
       .authPermittedTransaction(db, Permissions.manageOrganisation) { _ => implicit graph =>
         for {
-          fromOrg <- organisationSrv.getOrFail(fromOrganisationId)
-          toOrg   <- organisationSrv.getOrFail(toOrganisationId)
+          fromOrg <- organisationSrv.getOrFail(EntityIdOrName(fromOrganisationId))
+          toOrg   <- organisationSrv.getOrFail(EntityIdOrName(toOrganisationId))
           _ <-
             if (organisationSrv.linkExists(fromOrg, toOrg)) Success(organisationSrv.doubleUnlink(fromOrg, toOrg))
             else Failure(NotFoundError(s"Organisation $fromOrganisationId is not linked to $toOrganisationId"))
@@ -110,15 +110,15 @@ class OrganisationCtrl @Inject() (
   def listLinks(organisationId: String): Action[AnyContent] =
     entrypoint("list organisation links")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val isInDefaultOrganisation = userSrv.current.organisations.get(Organisation.administration.name).exists
+        val isInDefaultOrganisation = userSrv.current.organisations.get(EntityName(Organisation.administration.name)).exists
         val organisation =
           if (isInDefaultOrganisation)
-            organisationSrv.get(organisationId)
+            organisationSrv.get(EntityIdOrName(organisationId))
           else
             userSrv
               .current
               .organisations
-              .get(organisationId)
+              .get(EntityIdOrName(organisationId))
         val organisations = organisation.links.toSeq
 
         Success(Results.Ok(organisations.toJson))
@@ -137,10 +137,10 @@ class PublicOrganisation @Inject() (organisationSrv: OrganisationSrv) extends Pu
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Organisation with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Organisation]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => organisationSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),

@@ -4,10 +4,10 @@ import java.util.Date
 
 import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.InternalError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityIdOrName, InternalError}
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
@@ -41,8 +41,8 @@ class ActionOperationSrv @Inject() (
     * @param authContext auth for access check
     * @return
     */
-  def execute(entity: Entity, operation: ActionOperation, relatedCase: Option[Case with Entity], relatedTask: Option[Task with Entity])(
-      implicit graph: Graph,
+  def execute(entity: Entity, operation: ActionOperation, relatedCase: Option[Case with Entity], relatedTask: Option[Task with Entity])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[ActionOperationStatus] = {
 
@@ -72,7 +72,7 @@ class ActionOperationSrv @Inject() (
       case AddCustomFields(name, _, value) =>
         for {
           c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddCustomFields without case")))(Success(_))
-          _ <- caseSrv.setOrCreateCustomField(c, name, Some(value), None)
+          _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)
         } yield updateOperation(operation)
 
       case CloseTask() =>
@@ -96,7 +96,7 @@ class ActionOperationSrv @Inject() (
       case AddArtifactToCase(_, dataType, dataMessage) =>
         for {
           c       <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddArtifactToCase without case")))(Success(_))
-          obsType <- observableTypeSrv.getOrFail(dataType)
+          obsType <- observableTypeSrv.getOrFail(EntityIdOrName(dataType))
           richObservable <- observableSrv.create(
             Observable(Some(dataMessage), 2, ioc = false, sighted = false),
             obsType,
@@ -110,8 +110,8 @@ class ActionOperationSrv @Inject() (
       case AssignCase(owner) =>
         for {
           c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AssignCase without case")))(Success(_))
-          u <- userSrv.get(owner).getOrFail("User")
-          _ <- Try(caseSrv.startTraversal.getByIds(c._id).unassign())
+          u <- userSrv.get(EntityIdOrName(owner)).getOrFail("User")
+          _ <- Try(caseSrv.startTraversal.getEntity(c).unassign())
           _ <- caseSrv.assign(c, u)
         } yield updateOperation(operation)
 

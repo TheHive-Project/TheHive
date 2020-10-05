@@ -61,11 +61,11 @@ case class RichAlert(
     organisation: String,
     tags: Seq[Tag with Entity],
     customFields: Seq[RichCustomField],
-    caseId: Option[String],
+    caseId: Option[EntityId],
     caseTemplate: Option[String],
     observableCount: Long
 ) {
-  def _id: String                  = alert._id
+  def _id: EntityId                = alert._id
   def _createdAt: Date             = alert._createdAt
   def _createdBy: String           = alert._createdBy
   def _updatedAt: Option[Date]     = alert._updatedAt
@@ -92,7 +92,7 @@ object RichAlert {
       organisation: String,
       tags: Seq[Tag with Entity],
       customFields: Seq[RichCustomField],
-      caseId: Option[String],
+      caseId: Option[EntityId],
       caseTemplate: Option[String],
       observableCount: Long
   ): RichAlert =

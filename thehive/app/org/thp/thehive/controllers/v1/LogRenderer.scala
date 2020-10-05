@@ -18,9 +18,9 @@ trait LogRenderer {
     _.task.richTask.fold.domainMap(_.headOption.fold[JsValue](JsNull)(_.toJson))
 
   def taskParentId: Traversal.V[Log] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
-    _.task.fold.domainMap(_.headOption.fold[JsValue](JsNull)(c => JsString(c._id)))
+    _.task.fold.domainMap(_.headOption.fold[JsValue](JsNull)(c => JsString(c._id.toString)))
 
-  def actionCount: Traversal.V[Log] => Traversal[JsNumber, JLong, Converter[JsNumber, JLong]] =
+  def actionCount: Traversal.V[Log] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
     _.in("ActionContext").count.domainMap(JsNumber(_))
 
   def logStatsRenderer(extraData: Set[String]): Traversal.V[Log] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = {

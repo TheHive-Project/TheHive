@@ -10,7 +10,6 @@ class Router @Inject() (
     val jobCtrl: JobCtrl,
     analyzerCtrl: AnalyzerCtrl,
     val actionCtrl: ActionCtrl,
-    cortexQueryExecutor: CortexQueryExecutor,
     val reportCtrl: AnalyzerTemplateCtrl,
     responderCtrl: ResponderCtrl
 ) extends SimpleRouter {

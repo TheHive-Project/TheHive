@@ -15,7 +15,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.CList
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, InternalError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, InternalError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
@@ -65,7 +65,7 @@ class UserSrv @Inject() (
      else
        Success(())).flatMap { _ =>
       for {
-        richUser <- get(user).richUser(organisation.name).getOrFail("User")
+        richUser <- get(user).richUser(authContext, organisation._id).getOrFail("User")
         _        <- auditSrv.user.create(user, richUser.toJson)
       } yield richUser
     }
@@ -74,7 +74,7 @@ class UserSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    get(user.login)
+    getByName(user.login)
       .getOrFail("User")
       .orElse {
         for {
@@ -92,8 +92,8 @@ class UserSrv @Inject() (
   }
 
   def delete(user: User with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    if (get(user).organisations.hasNot("name", organisation.name).exists)
-      get(user).role.filter(_.organisation.has("name", organisation.name)).remove()
+    if (get(user).organisations.filterNot(_.get(organisation._id)).exists)
+      get(user).role.filterNot(_.organisation.get(organisation._id)).remove()
     else {
       get(user).role.remove()
       get(user).remove()
@@ -118,15 +118,13 @@ class UserSrv @Inject() (
       _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> false))
     } yield updatedUser
 
-  def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[User] = get(authContext.userId)
+  def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[User] = get(EntityName(authContext.userId))
 
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[User] =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else
-      defaultUserDomain.fold(startTraversal.getByName(idOrName)) {
-        case d if !idOrName.contains('@') => startTraversal.getByName(s"$idOrName@$d")
-        case _                            => startTraversal.getByName(idOrName)
-      }
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[User] =
+    defaultUserDomain.fold(startTraversal.getByName(name)) {
+      case d if !name.contains('@') => startTraversal.getByName(s"$name@$d")
+      case _                        => startTraversal.getByName(name)
+    }
 
   override def update(
       traversal: Traversal.V[User],
@@ -156,7 +154,7 @@ class UserSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      role <- get(user).role.filter(_.organisation.getByIds(organisation._id)).getOrFail("User")
+      role <- get(user).role.filter(_.organisation.getEntity(organisation)).getOrFail("User")
       _ = roleSrv.updateProfile(role, profile)
       _ <- auditSrv.user.changeProfile(user, organisation, profile)
     } yield ()
@@ -165,34 +163,31 @@ class UserSrv @Inject() (
 object UserOps {
 
   implicit class UserOpsDefs(traversal: Traversal.V[User]) {
-    def current(authContext: AuthContext): Traversal.V[User] = getByName(authContext.userId)
+    def get(idOrName: EntityIdOrName): Traversal.V[User] =
+      idOrName.fold(traversal.getByIds(_), getByName)
 
-    def get(idOrName: String)(implicit db: Database): Traversal.V[User] =
-      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
-      else getByName(idOrName)
+    def current(implicit authContext: AuthContext): Traversal.V[User] = getByName(authContext.userId)
 
-    def getByName(login: String): Traversal.V[User] = traversal.has("login", login.toLowerCase)
+    def getByName(login: String): Traversal.V[User] = traversal.has(_.login, login.toLowerCase)
 
     def visible(implicit authContext: AuthContext): Traversal.V[User] =
       if (authContext.isPermitted(Permissions.manageOrganisation.permission)) traversal
       else
-        traversal.filter(_.or(_.organisations.visibleOrganisationsTo.getByName(authContext.organisation), _.systemUser))
+        traversal.filter(_.or(_.organisations.visibleOrganisationsTo.get(authContext.organisation), _.systemUser))
+
+    def isNotLocked: Traversal.V[User] = traversal.has(_.locked, false)
 
     def can(requiredPermission: Permission)(implicit authContext: AuthContext, db: Database): Traversal.V[User] =
-      traversal.filter(_.organisations(requiredPermission).getByName(authContext.organisation))
+      traversal.filter(_.organisations(requiredPermission).get(authContext.organisation))
 
-    def getByAPIKey(key: String): Traversal.V[User] = traversal.has("apikey", key).v[User]
+    def getByAPIKey(key: String): Traversal.V[User] = traversal.has(_.apikey, key).v[User]
 
     def organisations: Traversal.V[Organisation] = traversal.out[UserRole].out[RoleOrganisation].v[Organisation]
 
-    protected def organisations0(requiredPermission: String): Traversal.V[Organisation] =
-      traversal
-        .out[UserRole]
-        .filter(_.out[RoleProfile].has("permissions", requiredPermission))
-        .out[RoleOrganisation]
-        .v[Organisation]
+    protected def organisations0(requiredPermission: Permission): Traversal.V[Organisation] =
+      role.filter(_.profile.has(_.permissions, requiredPermission)).organisation
 
-    def organisations(requiredPermission: String)(implicit db: Database): Traversal.V[Organisation] = {
+    def organisations(requiredPermission: Permission)(implicit db: Database): Traversal.V[Organisation] = {
       val isInAdminOrganisation = traversal.clone().organisations0(requiredPermission).getByName(Organisation.administration.name).exists
       if (isInAdminOrganisation) db.labelFilter("Organisation")(traversal.V()).v[Organisation]
       else organisations0(requiredPermission)
@@ -202,11 +197,10 @@ object UserOps {
       (String, String),
       JMap[String, Any]
     ]]] =
-      traversal
-        .out[UserRole]
+      role
         .project(
-          _.by(_.out[RoleOrganisation].v[Organisation].value(_.name))
-            .by(_.out[RoleProfile].v[Profile].value(_.name))
+          _.by(_.organisation.value(_.name))
+            .by(_.profile.value(_.name))
         )
         .fold
 
@@ -214,67 +208,73 @@ object UserOps {
 
     def getAuthContext(
         requestId: String,
-        organisation: Option[String]
+        organisation: Option[EntityIdOrName]
     ): Traversal[AuthContext, JMap[String, Any], Converter[AuthContext, JMap[String, Any]]] = {
       val organisationName = organisation
         .orElse(
           traversal
             .clone()
-            .out[UserRole]
+            .role
             .sort(_.by("_createdAt", Order.asc))
-            .out[RoleOrganisation]
-            .v[Organisation]
-            .value(_.name)
+            .organisation
+            ._id
             .headOption
         )
-        .getOrElse(Organisation.administration.name)
+        .getOrElse(EntityName(Organisation.administration.name))
       getAuthContext(requestId, organisationName)
     }
 
     def getAuthContext(
         requestId: String,
-        organisationName: String
+        organisationName: EntityIdOrName
     ): Traversal[AuthContext, JMap[String, Any], Converter[AuthContext, JMap[String, Any]]] =
       traversal
-        .filter(_.organisations.getByName(organisationName))
-        .has("locked", false)
+        .isNotLocked
         .project(
           _.byValue(_.login)
             .byValue(_.name)
-            .by(_.out[UserRole].filter(_.out[RoleOrganisation].has("name", organisationName)).out[RoleProfile].v[Profile])
+            .by(_.role.filter(_.organisation.get(organisationName)).profile)
+            .by(_.organisations.get(organisationName).value(_.name).limit(1).fold)
         )
         .domainMap {
-          case (userId, userName, profile) =>
+          case (userId, userName, profile, org) =>
             val scope =
-              if (organisationName == Organisation.administration.name) "admin"
+              if (org.contains(Organisation.administration.name)) "admin"
               else "organisation"
             val permissions = Permissions.forScope(scope) & profile.permissions
             AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }
 
-    def profile(organisation: String): Traversal.V[Profile] =
-      traversal.out[UserRole].filter(_.out[RoleOrganisation].has("name", organisation)).out[RoleProfile].v[Profile]
+    def profile(organisation: EntityIdOrName): Traversal.V[Profile] =
+      role.filter(_.organisation.get(organisation)).profile
 
     def richUser(implicit authContext: AuthContext): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
+      richUser(authContext, authContext.organisation)
+
+    def richUser(
+        authContext: AuthContext,
+        organisation: EntityIdOrName
+    ): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
       traversal
         .project(
           _.by
             .by(_.avatar.fold)
-            .by(_.role.project(_.by(_.profile).by(_.organisation.visible.value(_.name).fold)).fold)
+            .by(_.role.project(_.by(_.profile).by(_.organisation.visible(authContext).project(_.by(_._id).byValue(_.name)).fold)).fold)
         )
         .domainMap {
           case (user, attachment, profileOrganisations) =>
-            profileOrganisations
-              .find(_._2.contains(authContext.organisation))
+            organisation
+              .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
               .orElse(profileOrganisations.headOption)
               .fold(throw InternalError(s"")) { // FIXME
-                case (profile, organisationName) =>
+                case (profile, organisationIdAndName) =>
                   val avatar = attachment.headOption.map(_.attachmentId)
-                  RichUser(user, avatar, profile.name, profile.permissions, organisationName.headOption.getOrElse("***"))
+                  RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("***")(_._2))
               }
         }
 
-    def richUser(organisation: String): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
+    /*
+    def richUser(organisationId: EntityId): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
       traversal
         .project(
           _.by
@@ -292,36 +292,39 @@ object UserOps {
             )
         }
 
+     */
+
     def richUserWithCustomRenderer[D, G, C <: Converter[D, G]](
-        organisation: String,
+        organisation: EntityIdOrName,
         entityRenderer: Traversal.V[User] => Traversal[D, G, C]
-    ): Traversal[(RichUser, D), JMap[String, Any], Converter[(RichUser, D), JMap[String, Any]]] =
+    )(implicit authContext: AuthContext): Traversal[(RichUser, D), JMap[String, Any], Converter[(RichUser, D), JMap[String, Any]]] =
       traversal
         .project(
           _.by
-            .by(_.profile(organisation).fold)
             .by(_.avatar.fold)
+            .by(_.role.project(_.by(_.profile).by(_.organisation.visible.project(_.by(_._id).byValue(_.name)).fold)).fold)
             .by(entityRenderer)
         )
         .domainMap {
-          case (user, profiles, attachment, renderedEntity) =>
-            RichUser(
-              user,
-              attachment.headOption.map(_.attachmentId),
-              profiles.headOption.fold("")(_.name),
-              profiles.headOption.fold(Set.empty[Permission])(_.permissions),
-              organisation
-            ) -> renderedEntity
+          case (user, attachment, profileOrganisations, renderedEntity) =>
+            organisation
+              .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
+              .orElse(profileOrganisations.headOption)
+              .fold(throw InternalError(s"")) { // FIXME
+                case (profile, organisationIdAndName) =>
+                  val avatar = attachment.headOption.map(_.attachmentId)
+                  RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("***")(_._2)) -> renderedEntity
+              }
         }
 
     def config(configName: String): Traversal.V[Config] =
-      traversal.out[UserConfig].has("name", configName).v[Config]
+      traversal.out[UserConfig].v[Config].has(_.name, configName)
 
     def role: Traversal.V[Role] = traversal.out[UserRole].v[Role]
 
     def avatar: Traversal.V[Attachment] = traversal.out[UserAttachment].v[Attachment]
 
-    def systemUser: Traversal.V[User] = traversal.has("login", User.system.login)
+    def systemUser: Traversal.V[User] = traversal.has(_.login, User.system.login)
 
     def dashboards: Traversal.V[Dashboard] = traversal.in[DashboardUser].v[Dashboard]
 
@@ -343,7 +346,7 @@ class UserIntegrityCheckOps @Inject() (
   override def initialCheck()(implicit graph: Graph, authContext: AuthContext): Unit = {
     super.initialCheck()
     val adminUserIsCreated = service
-      .get(User.init.login)
+      .getByName(User.init.login)
       .role
       .filter(_.profile.getByName(Profile.admin.name))
       .organisation
@@ -351,9 +354,9 @@ class UserIntegrityCheckOps @Inject() (
       .exists
     if (!adminUserIsCreated)
       for {
-        adminUser         <- service.getOrFail(User.init.login)
-        adminProfile      <- profileSrv.getOrFail(Profile.admin.name)
-        adminOrganisation <- organisationSrv.getOrFail(Organisation.administration.name)
+        adminUser         <- service.getByName(User.init.login).getOrFail("User")
+        adminProfile      <- profileSrv.getByName(Profile.admin.name).getOrFail("Profile")
+        adminOrganisation <- organisationSrv.getByName(Organisation.administration.name).getOrFail("Organisation")
         _                 <- roleSrv.create(adminUser, adminOrganisation, adminProfile)
       } yield ()
     ()

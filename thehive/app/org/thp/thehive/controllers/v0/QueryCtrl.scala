@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.scalactic.Accumulation._
 import org.scalactic.Good
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
@@ -16,15 +17,13 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.reflect.runtime.{universe => ru}
 import scala.util.Try
 
-case class IdOrName(idOrName: String)
-
 trait PublicData {
   val entityName: String
   val publicProperties: PublicProperties
   val initialQuery: Query
   val pageQuery: ParamQuery[OutputParam]
   val outputQuery: Query
-  val getQuery: ParamQuery[IdOrName]
+  val getQuery: ParamQuery[EntityIdOrName]
   val extraQueries: Seq[ParamQuery[_]] = Nil
 }
 trait QueryCtrl {

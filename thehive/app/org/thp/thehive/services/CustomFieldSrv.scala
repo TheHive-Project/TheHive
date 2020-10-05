@@ -5,13 +5,13 @@ import java.util.{Map => JMap}
 import akka.actor.ActorRef
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.{Edge, Graph}
-import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
+import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldOps._
@@ -63,19 +63,17 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
           .flatMap(auditSrv.customField.update(_, updatedFields))
     }
 
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[CustomField] =
-    if (db.isValidId(idOrName)) super.getByIds(idOrName)
-    else startTraversal.getByName(idOrName)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[CustomField] =
+    startTraversal.getByName(name)
 }
 
 object CustomFieldOps {
 
   implicit class CustomFieldOpsDefs(traversal: Traversal.V[CustomField]) {
-    def get(idOrName: String)(implicit db: Database): Traversal.V[CustomField] =
-      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
-      else getByName(idOrName)
+    def get(idOrName: EntityIdOrName): Traversal.V[CustomField] =
+      idOrName.fold(traversal.getByIds(_), getByName)
 
-    def getByName(name: String): Traversal.V[CustomField] = traversal.has("name", name)
+    def getByName(name: String): Traversal.V[CustomField] = traversal.has(_.name, name)
   }
 
   implicit class CustomFieldValueOpsDefs[C <: CustomFieldValue[_]](traversal: Traversal.E[C]) {
@@ -178,11 +176,12 @@ object CustomFieldOps {
 
 class CustomFieldIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CustomFieldSrv)
     extends IntegrityCheckOps[CustomField] {
-  override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head))
-      service.getByIds(tail.map(_._id): _*).remove()
-      Success(())
-    case _ => Success(())
-  }
+  override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] =
+    entities match {
+      case head :: tail =>
+        tail.foreach(copyEdge(_, head))
+        service.getByIds(tail.map(_._id): _*).remove()
+        Success(())
+      case _ => Success(())
+    }
 }

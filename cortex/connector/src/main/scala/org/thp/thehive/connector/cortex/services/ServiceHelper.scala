@@ -5,10 +5,12 @@ import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputWorker
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.Organisation
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
@@ -26,23 +28,22 @@ class ServiceHelper @Inject() (
     * @param organisationName the concerned organisation to get available clients for
     * @return
     */
-  def availableCortexClients(clients: Seq[CortexClient], organisationName: String): Iterable[CortexClient] = db.roTransaction { implicit graph =>
-    val l = clients
-      .filter(c =>
-        organisationFilter(
-          organisationSrv.startTraversal,
-          c.includedTheHiveOrganisations,
-          c.excludedTheHiveOrganisations
-        ).toList
-          .exists(_.name == organisationName)
-      )
+  def availableCortexClients(clients: Seq[CortexClient], organisationName: EntityIdOrName): Iterable[CortexClient] =
+    db.roTransaction { implicit graph =>
+      val l = clients
+        .filter(c =>
+          organisationFilter(
+            organisationSrv.startTraversal,
+            c.includedTheHiveOrganisations,
+            c.excludedTheHiveOrganisations
+          ).get(organisationName).exists
+        )
 
-    if (l.isEmpty) {
-      logger.warn(s"No CortexClient found for organisation $organisationName in list ${clients.map(_.name)}")
+      if (l.isEmpty)
+        logger.warn(s"No CortexClient found for organisation $organisationName in list ${clients.map(_.name)}")
+
+      l
     }
-
-    l
-  }
 
   /**
     * Returns the filtered organisations according to the supplied lists (mainly conf based)
@@ -59,9 +60,9 @@ class ServiceHelper @Inject() (
   ): Traversal.V[Organisation] = {
     val includedOrgs =
       if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
-      else organisationSteps.has("name", P.within(includedTheHiveOrganisations))
+      else organisationSteps.has(_.name, P.within(includedTheHiveOrganisations: _*))
     if (excludedTheHiveOrganisations.isEmpty) includedOrgs
-    else includedOrgs.has("name", P.without(excludedTheHiveOrganisations))
+    else includedOrgs.has(_.name, P.without(excludedTheHiveOrganisations: _*))
   }
 
   /**
@@ -75,7 +76,7 @@ class ServiceHelper @Inject() (
 //      f: ((OutputWorker, Seq[String])) => Boolean
   ): Map[OutputWorker, Seq[String]] =
     l                     // Iterable[Seq[(worker, cortexId)]]
-    .flatten              // Seq[(worker, cortexId)]
+      .flatten            // Seq[(worker, cortexId)]
       .groupBy(_._1.name) // Map[workerName, Seq[(worker, cortexId)]]
       .values             // Seq[Seq[(worker, cortexId)]]
       .map(a => a.head._1 -> a.map(_._2).toSeq) // Map[worker, Seq[CortexId] ]

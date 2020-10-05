@@ -75,7 +75,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         pap = 2,
         read = false,
         follow = true,
-        customFields = Set.empty,
+        customFields = Seq.empty,
         caseTemplate = None,
         observableCount = 0L,
         caseId = None,
@@ -123,7 +123,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         pap = 2,
         read = false,
         follow = true,
-        customFields = Set.empty,
+        customFields = Seq.empty,
         caseTemplate = Some("spam"),
         observableCount = 0L,
         caseId = None,
@@ -139,7 +139,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         alertSrv.startTraversal.has(_.sourceRef, "ref1").getOrFail("Alert")
       } must beSuccessfulTry.which { alert: Alert with Entity =>
         val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "socuser@thehive.local")
-        val result  = app[AlertCtrl].get(alert._id)(request)
+        val result  = app[AlertCtrl].get(alert._id.toString)(request)
         status(result) must_=== 200
         val resultAlert = contentAsJson(result).as[OutputAlert]
         val expected = TestAlert(

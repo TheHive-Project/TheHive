@@ -42,7 +42,7 @@ case class OutputCaseTemplate(
     tlp: Option[Int],
     pap: Option[Int],
     summary: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: Seq[OutputCustomFieldValue] = Seq.empty,
     tasks: Seq[OutputTask]
 )
 

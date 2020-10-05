@@ -106,7 +106,7 @@ case class RichCase(
     customFields: Seq[RichCustomField],
     userPermissions: Set[Permission]
 ) {
-  def _id: String                = `case`._id
+  def _id: EntityId              = `case`._id
   def _createdBy: String         = `case`._createdBy
   def _updatedBy: Option[String] = `case`._updatedBy
   def _createdAt: Date           = `case`._createdAt
@@ -127,7 +127,7 @@ case class RichCase(
 object RichCase {
 
   def apply(
-      __id: String,
+      __id: EntityId,
       __createdBy: String,
       __updatedBy: Option[String],
       __createdAt: Date,
@@ -151,7 +151,7 @@ object RichCase {
       userPermissions: Set[Permission]
   ): RichCase = {
     val `case`: Case with Entity = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
-      override val _id: String                = __id
+      override val _id: EntityId              = __id
       override val _label: String             = "Case"
       override val _createdBy: String         = __createdBy
       override val _updatedBy: Option[String] = __updatedBy

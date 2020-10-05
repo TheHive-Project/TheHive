@@ -1,9 +1,9 @@
 package org.thp.thehive.connector.cortex.services
 
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{AppBuilder, EntityName}
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Organisation
 import org.thp.thehive.services._
@@ -51,7 +51,7 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
 
     "return the correct filtered CortexClient list" in testApp { app =>
       val client = app[CortexClient]
-      val r      = app[ServiceHelper].availableCortexClients(Seq(client), Organisation.administration.name)
+      val r      = app[ServiceHelper].availableCortexClients(Seq(client), EntityName(Organisation.administration.name))
 
       r must contain(client)
     }

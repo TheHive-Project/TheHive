@@ -18,7 +18,7 @@ object Conversion {
       .withFieldRenamed(_.workerName, _.responderName)
       .withFieldRenamed(_.workerDefinition, _.responderDefinition)
       .withFieldComputed(_.status, _.status.toString)
-      .withFieldComputed(_.objectId, _.context._id)
+      .withFieldComputed(_.objectId, _.context._id.toString)
       .withFieldComputed(_.objectType, _.context._label)
       .withFieldComputed(_.operations, a => JsArray(a.operations).toString)
       .withFieldComputed(_.report, _.report.map(_.toString).getOrElse("{}"))
@@ -43,7 +43,7 @@ object Conversion {
             case r                                  => r + ("success" -> JsFalse)
           }
       )
-      .withFieldRenamed(_._id, _.id)
+      .withFieldComputed(_.id, _._id.toString)
       .withFieldConst(_._type, "case_artifact_job")
       .withFieldConst(_.case_artifact, None)
       .transform
@@ -69,7 +69,7 @@ object Conversion {
               case r                                  => r + ("success" -> JsFalse)
             }
         )
-        .withFieldRenamed(_._id, _.id)
+        .withFieldComputed(_.id, _._id.toString)
         .withFieldConst(_._type, "case_artifact_job")
         .withFieldConst(
           _.case_artifact,
@@ -86,7 +86,7 @@ object Conversion {
       at.asInstanceOf[AnalyzerTemplate]
         .into[OutputAnalyzerTemplate]
         .withFieldComputed(_.analyzerId, _.workerId)
-        .withFieldConst(_.id, at._id)
+        .withFieldConst(_.id, at._id.toString)
         .withFieldComputed(_.content, _.content)
         .transform
     )

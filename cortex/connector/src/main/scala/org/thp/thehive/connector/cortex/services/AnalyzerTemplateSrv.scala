@@ -5,13 +5,13 @@ import java.util.zip.{ZipEntry, ZipFile}
 import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
 import org.thp.thehive.connector.cortex.services.AnalyzerTemplateOps._
@@ -24,15 +24,14 @@ import scala.io.Source
 import scala.util.{Failure, Try}
 
 @Singleton
-class AnalyzerTemplateSrv @Inject() (
-    implicit @Named("with-thehive-cortex-schema") db: Database,
+class AnalyzerTemplateSrv @Inject() (implicit
+    @Named("with-thehive-cortex-schema") db: Database,
     auditSrv: CortexAuditSrv,
     organisationSrv: OrganisationSrv
 ) extends VertexSrv[AnalyzerTemplate] {
 
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[AnalyzerTemplate] =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else startTraversal.getByAnalyzerId(idOrName)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[AnalyzerTemplate] =
+    startTraversal.getByAnalyzerId(name)
 
   def readZipEntry(file: ZipFile, entry: ZipEntry): Try[String] =
     Try {
@@ -84,7 +83,7 @@ class AnalyzerTemplateSrv @Inject() (
       .toSeq
       .groupBy(_.getName.takeWhile(c => c != '/' && c != '.'))
       .flatMap {
-        case (name, entries) if entries.lengthCompare(1) == 0 => List(name                                                               -> entries.head)
+        case (name, entries) if entries.lengthCompare(1) == 0 => List(name -> entries.head)
         case (name, entries)                                  => entries.filterNot(_.getName.endsWith("short.html")).headOption.map(name -> _)
       }
       .foldLeft(Map.empty[String, Try[AnalyzerTemplate with Entity]]) {
@@ -94,7 +93,7 @@ class AnalyzerTemplateSrv @Inject() (
             .flatMap { content =>
               db.tryTransaction { implicit graph =>
                 (for {
-                  updated <- get(analyzerId).update(_.content, content).getOrFail("AnalyzerTemplate")
+                  updated <- get(EntityName(analyzerId)).update(_.content, content).getOrFail("AnalyzerTemplate")
                   _       <- auditSrv.analyzerTemplate.update(updated, Json.obj("content" -> content))
                 } yield updated).recoverWith {
                   case _ =>
@@ -112,9 +111,8 @@ class AnalyzerTemplateSrv @Inject() (
 object AnalyzerTemplateOps {
   implicit class AnalyzerTemplateOpsDefs(traversal: Traversal.V[AnalyzerTemplate]) {
 
-    def get(idOrAnalyzerId: String)(implicit db: Database): Traversal.V[AnalyzerTemplate] =
-      if (db.isValidId(idOrAnalyzerId)) traversal.getByIds(idOrAnalyzerId)
-      else getByAnalyzerId(idOrAnalyzerId)
+    def get(idOrAnalyzerId: EntityIdOrName): Traversal.V[AnalyzerTemplate] =
+      idOrAnalyzerId.fold(traversal.getByIds(_), getByAnalyzerId)
 
     /**
       * Looks for a template that has the workerId supplied
@@ -122,6 +120,6 @@ object AnalyzerTemplateOps {
       * @param workerId the id to look for
       * @return
       */
-    def getByAnalyzerId(workerId: String): Traversal.V[AnalyzerTemplate] = traversal.has("workerId", workerId).v[AnalyzerTemplate]
+    def getByAnalyzerId(workerId: String): Traversal.V[AnalyzerTemplate] = traversal.has(_.workerId, workerId)
   }
 }

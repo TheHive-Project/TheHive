@@ -4,7 +4,7 @@ import java.util.Date
 
 import org.thp.scalligraph.auth.{Permission, User => ScalligraphUser}
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 import org.thp.thehive.services.LocalPasswordAuthSrv
 
 @BuildEdgeEntity[User, Role]
@@ -45,7 +45,7 @@ object User {
 //    preference: JsObject)
 
 case class RichUser(user: User with Entity, avatar: Option[String], profile: String, permissions: Set[Permission], organisation: String) {
-  def _id: String                = user._id
+  def _id: EntityId              = user._id
   def _createdBy: String         = user._createdBy
   def _updatedBy: Option[String] = user._updatedBy
   def _createdAt: Date           = user._createdAt

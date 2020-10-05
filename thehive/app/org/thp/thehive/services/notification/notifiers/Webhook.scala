@@ -6,11 +6,11 @@ import akka.stream.Materializer
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.client.{ProxyWS, ProxyWSConfig}
-import org.thp.scalligraph.BadConfigurationError
-import org.thp.scalligraph.models.{Entity, Schema, UMapping}
+import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
+import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
 import org.thp.thehive.models._
@@ -52,7 +52,6 @@ class WebhookProvider @Inject() (
     appConfig: ApplicationConfig,
     auditSrv: AuditSrv,
     customFieldSrv: CustomFieldSrv,
-    schema: Schema,
     ec: ExecutionContext,
     mat: Materializer
 ) extends NotifierProvider {
@@ -182,7 +181,7 @@ class Webhook(
             case keyValue @ (key, value) if key.startsWith("customField.") =>
               val fieldName = key.drop(12)
               customFieldSrv
-                .getOrFail(fieldName)
+                .getOrFail(EntityIdOrName(fieldName))
                 .fold(_ => keyValue, cf => "customFields" -> Json.obj(fieldName -> Json.obj(cf.`type`.toString -> value)))
             case keyValue => keyValue
           })

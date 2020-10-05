@@ -7,11 +7,11 @@ import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, IdMapping, UMapping}
+import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, InvalidFormatAttributeError, RichSeq}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityId, EntityIdOrName, EntityName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.models._
@@ -53,7 +53,7 @@ class AlertCtrl @Inject() (
         val inputAlert: InputAlert            = request.body("alert")
         val observables: Seq[InputObservable] = request.body("observables")
         val customFields                      = inputAlert.customFields.map(c => c.name -> c.value).toMap
-        val caseTemplate                      = caseTemplateName.flatMap(caseTemplateSrv.get(_).visible.headOption)
+        val caseTemplate                      = caseTemplateName.flatMap(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.headOption)
         for {
           organisation <-
             userSrv
@@ -83,7 +83,8 @@ class AlertCtrl @Inject() (
                 .withFieldConst(_.iocCount, similarStats.ioc._2)
                 .withFieldConst(_.similarArtifactCount, similarStats.observable._1)
                 .withFieldConst(_.similarIocCount, similarStats.ioc._1)
-                .withFieldRenamed(_._id, _.id)
+                .withFieldComputed(_._id, _._id.toString)
+                .withFieldComputed(_.id, _._id.toString)
                 .withFieldRenamed(_.number, _.caseId)
                 .withFieldComputed(_.status, _.status.toString)
                 .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
@@ -100,7 +101,7 @@ class AlertCtrl @Inject() (
         val similarity: Option[Boolean] = request.body("similarity")
         val alert =
           alertSrv
-            .get(alertId)
+            .get(EntityIdOrName(alertId))
             .visible
         if (similarity.contains(true))
           alert
@@ -125,13 +126,13 @@ class AlertCtrl @Inject() (
 
       }
 
-  def update(alertId: String): Action[AnyContent] =
+  def update(alertIdOrName: String): Action[AnyContent] =
     entrypoint("update alert")
       .extract("alert", FieldsParser.update("alert", publicData.publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("alert")
         alertSrv
-          .update(_.get(alertId).can(Permissions.manageAlert), propertyUpdaters)
+          .update(_.get(EntityIdOrName(alertIdOrName)).can(Permissions.manageAlert), propertyUpdaters)
           .flatMap { case (alertSteps, _) => alertSteps.richAlert.getOrFail("Alert") }
           .map { richAlert =>
             val alertWithObservables: (RichAlert, Seq[RichObservable]) = richAlert -> alertSrv.get(richAlert.alert).observables.richObservable.toSeq
@@ -139,13 +140,13 @@ class AlertCtrl @Inject() (
           }
       }
 
-  def delete(alertId: String): Action[AnyContent] =
+  def delete(alertIdOrName: String): Action[AnyContent] =
     entrypoint("delete alert")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           alert <-
             alertSrv
-              .get(alertId)
+              .get(EntityIdOrName(alertIdOrName))
               .can(Permissions.manageAlert)
               .getOrFail("Alert")
           _ <- alertSrv.remove(alert)
@@ -162,7 +163,7 @@ class AlertCtrl @Inject() (
             for {
               alert <-
                 alertSrv
-                  .get(alertId)
+                  .get(EntityIdOrName(alertId))
                   .can(Permissions.manageAlert)
                   .getOrFail("Alert")
               _ <- alertSrv.remove(alert)
@@ -171,14 +172,14 @@ class AlertCtrl @Inject() (
           .map(_ => Results.NoContent)
       }
 
-  def mergeWithCase(alertId: String, caseId: String): Action[AnyContent] =
+  def mergeWithCase(alertIdOrName: String, caseIdOrName: String): Action[AnyContent] =
     entrypoint("merge alert with case")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          alert    <- alertSrv.get(alertId).can(Permissions.manageAlert).getOrFail("Alert")
-          case0    <- caseSrv.get(caseId).can(Permissions.manageCase).getOrFail("Case")
+          alert    <- alertSrv.get(EntityIdOrName(alertIdOrName)).can(Permissions.manageAlert).getOrFail("Alert")
+          case0    <- caseSrv.get(EntityIdOrName(caseIdOrName)).can(Permissions.manageCase).getOrFail("Case")
           _        <- alertSrv.mergeInCase(alert, case0)
-          richCase <- caseSrv.get(caseId).richCase.getOrFail("Case")
+          richCase <- caseSrv.get(EntityIdOrName(caseIdOrName)).richCase.getOrFail("Case")
         } yield Results.Ok(richCase.toJson)
       }
 
@@ -190,15 +191,15 @@ class AlertCtrl @Inject() (
         val alertIds: Seq[String] = request.body("alertIds")
         val caseId: String        = request.body("caseId")
         for {
-          case0 <- caseSrv.get(caseId).can(Permissions.manageCase).getOrFail("Case")
+          case0 <- caseSrv.get(EntityIdOrName(caseId)).can(Permissions.manageCase).getOrFail("Case")
           _ <- alertIds.toTry { alertId =>
             alertSrv
-              .get(alertId)
+              .get(EntityIdOrName(alertId))
               .can(Permissions.manageAlert)
               .getOrFail("Alert")
               .flatMap(alertSrv.mergeInCase(_, case0))
           }
-          richCase <- caseSrv.get(caseId).richCase.getOrFail("Case")
+          richCase <- caseSrv.get(EntityIdOrName(caseId)).richCase.getOrFail("Case")
         } yield Results.Ok(richCase.toJson)
       }
 
@@ -206,11 +207,11 @@ class AlertCtrl @Inject() (
     entrypoint("mark alert as read")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertId))
           .can(Permissions.manageAlert)
           .existsOrFail
           .map { _ =>
-            alertSrv.markAsRead(alertId)
+            alertSrv.markAsRead(EntityIdOrName(alertId))
             Results.NoContent
           }
       }
@@ -219,11 +220,11 @@ class AlertCtrl @Inject() (
     entrypoint("mark alert as unread")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertId))
           .can(Permissions.manageAlert)
           .existsOrFail
           .map { _ =>
-            alertSrv.markAsUnread(alertId)
+            alertSrv.markAsUnread(EntityIdOrName(alertId))
             Results.NoContent
           }
       }
@@ -236,7 +237,7 @@ class AlertCtrl @Inject() (
         for {
           (alert, organisation) <-
             alertSrv
-              .get(alertId)
+              .get(EntityIdOrName(alertId))
               .can(Permissions.manageAlert)
               .alertUserOrganisation(Permissions.manageCase)
               .getOrFail("Alert")
@@ -249,11 +250,11 @@ class AlertCtrl @Inject() (
     entrypoint("follow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertId))
           .can(Permissions.manageAlert)
           .existsOrFail
           .map { _ =>
-            alertSrv.followAlert(alertId)
+            alertSrv.followAlert(EntityIdOrName(alertId))
             Results.NoContent
           }
       }
@@ -262,11 +263,11 @@ class AlertCtrl @Inject() (
     entrypoint("unfollow alert")
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
-          .get(alertId)
+          .get(EntityIdOrName(alertId))
           .can(Permissions.manageAlert)
           .existsOrFail
           .map { _ =>
-            alertSrv.unfollowAlert(alertId)
+            alertSrv.unfollowAlert(EntityIdOrName(alertId))
             Results.NoContent
           }
       }
@@ -276,7 +277,7 @@ class AlertCtrl @Inject() (
       authContext: AuthContext
   ): Try[Seq[RichObservable]] =
     observableTypeSrv
-      .getOrFail(observable.dataType)
+      .getOrFail(EntityName(observable.dataType))
       .flatMap {
         case attachmentType if attachmentType.isAttachment =>
           observable.data.map(_.split(';')).toTry {
@@ -296,16 +297,17 @@ class AlertCtrl @Inject() (
 class PublicAlert @Inject() (
     alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
-    customFieldSrv: CustomFieldSrv
+    customFieldSrv: CustomFieldSrv,
+    @Named("with-thehive-schema") db: Database
 ) extends PublicData {
   override val entityName: String = "alert"
   override val initialQuery: Query =
     Query
       .init[Traversal.V[Alert]]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Alert]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Alert]](
     "getAlert",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => alertSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => alertSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
@@ -382,18 +384,18 @@ class PublicAlert @Inject() (
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
-            c <- alertSrv.getByIds(vertex.id.toString)(graph).getOrFail("Alert")
+            c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
             _ <- alertSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {
             c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
-            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(n)(graph).map(_ -> v) }
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
             _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
           } yield Json.obj("customFields" -> values)
 
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })
-      .property("case", IdMapping)(_.select(_.`case`._id).readonly)
+      .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
       .build
 }

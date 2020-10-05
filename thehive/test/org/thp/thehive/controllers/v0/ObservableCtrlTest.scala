@@ -44,7 +44,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
   "observable controller" should {
 
     "be able to create an observable with string data" in testApp { app =>
-      val request = FakeRequest("POST", s"/api/case/#1/artifact")
+      val request = FakeRequest("POST", s"/api/case/1/artifact")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.parse("""
               {
@@ -57,7 +57,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":["multi","line","test"]
               }
             """.stripMargin))
-      val result = app[ObservableCtrl].create("#1")(request)
+      val result = app[ObservableCtrl].create("1")(request)
 
       status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
       val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
@@ -71,7 +71,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "be able to create and search 2 observables with data array" in testApp { app =>
-      val request = FakeRequest("POST", s"/api/case/#1/artifact")
+      val request = FakeRequest("POST", s"/api/case/1/artifact")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.parse("""
               {
@@ -84,7 +84,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":["observable", "in", "array"]
               }
             """.stripMargin))
-      val result = app[ObservableCtrl].create("#1")(request)
+      val result = app[ObservableCtrl].create("1")(request)
 
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
@@ -98,8 +98,8 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
       createdObservables.map(_.tags) must contain(be_==(Set("lol", "tagfile"))).forall
 
       val requestCase =
-        FakeRequest("GET", s"/api/v0/case/#1").withHeaders("user" -> "certuser@thehive.local")
-      val resultCaseGet = app[CaseCtrl].get("#1")(requestCase)
+        FakeRequest("GET", s"/api/v0/case/1").withHeaders("user" -> "certuser@thehive.local")
+      val resultCaseGet = app[CaseCtrl].get("1")(requestCase)
 
       status(resultCaseGet) shouldEqual 200
 
@@ -160,7 +160,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
           Headers("user" -> "certuser@thehive.local"),
           body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
         )
-        val result = app[ObservableCtrl].create("#1")(request)
+        val result = app[ObservableCtrl].create("1")(request)
         status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
@@ -210,7 +210,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "create 2 observables with the same data" in testApp { app =>
-      val request1 = FakeRequest("POST", s"/api/case/#1/artifact")
+      val request1 = FakeRequest("POST", s"/api/case/1/artifact")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.parse("""
               {
@@ -219,12 +219,12 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":"localhost"
               }
             """))
-      val result1 = app[ObservableCtrl].create("#1")(request1)
+      val result1 = app[ObservableCtrl].create("1")(request1)
       status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
       getData("localhost", app) must have size 1
 
-      val request2 = FakeRequest("POST", s"/api/case/#2/artifact")
+      val request2 = FakeRequest("POST", s"/api/case/2/artifact")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.parse("""
               {
@@ -233,7 +233,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":"localhost"
               }
             """))
-      val result2 = app[ObservableCtrl].create("#2")(request2)
+      val result2 = app[ObservableCtrl].create("2")(request2)
       status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       getData("localhost", app) must have size 1
@@ -260,7 +260,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
   }
 
   def createDummyObservable(observableCtrl: ObservableCtrl): Seq[OutputObservable] = {
-    val request = FakeRequest("POST", s"/api/case/#1/artifact")
+    val request = FakeRequest("POST", s"/api/case/1/artifact")
       .withHeaders("user" -> "certuser@thehive.local")
       .withJsonBody(Json.parse(s"""
               {
@@ -273,7 +273,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":"${UUID.randomUUID()}\\n${UUID.randomUUID()}"
               }
             """))
-    val result = observableCtrl.create("#1")(request)
+    val result = observableCtrl.create("1")(request)
 
     status(result) shouldEqual 201
     contentAsJson(result).as[Seq[OutputObservable]]

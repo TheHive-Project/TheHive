@@ -5,7 +5,6 @@ import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
-import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
@@ -13,8 +12,11 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.utils.Hash
+import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import play.api.libs.json.JsObject
 
@@ -191,36 +193,39 @@ class ObservableSrv @Inject() (
 object ObservableOps {
 
   implicit class ObservableOpsDefs(traversal: Traversal.V[Observable]) {
+    def get(idOrName: EntityIdOrName): Traversal.V[Observable] =
+      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
 
     def filterOnType(`type`: String): Traversal.V[Observable] =
-      traversal.filter(_.out[ObservableObservableType].has("name", `type`))
+      traversal.filter(_.observableType.has(_.name, `type`))
 
     def filterOnData(data: String): Traversal.V[Observable] =
-      traversal.filter(_.out[ObservableData].has("data", data))
+      traversal.filter(_.data.has(_.data, data))
 
     def filterOnAttachmentName(name: String): Traversal.V[Observable] =
-      traversal.filter(_.out[ObservableAttachment].has("name", name))
+      traversal.filter(_.attachments.has(_.name, name))
 
     def filterOnAttachmentSize(size: Long): Traversal.V[Observable] =
-      traversal.filter(_.out[ObservableAttachment].has("size", size))
+      traversal.filter(_.attachments.has(_.size, size))
 
     def filterOnAttachmentContentType(contentType: String): Traversal.V[Observable] =
-      traversal.filter(_.out[ObservableAttachment].has("contentType", contentType))
+      traversal.filter(_.attachments.has(_.contentType, contentType))
 
     def filterOnAttachmentHash(hash: String): Traversal.V[Observable] =
-      traversal.filter(_.out[ObservableAttachment].has("hashes", hash))
+      traversal.filter(_.attachments.has(_.hashes, Hash(hash)))
+
+    def filterOnAttachmentId(attachmentId: String): Traversal.V[Observable] =
+      traversal.filter(_.attachments.has(_.attachmentId, attachmentId))
+
+    def isIoc: Traversal.V[Observable] =
+      traversal.has(_.ioc, true)
 
     def visible(implicit authContext: AuthContext): Traversal.V[Observable] =
-      traversal.filter(_.in[ShareObservable].in[OrganisationShare].has("name", authContext.organisation))
+      traversal.filter(_.organisations.get(authContext.organisation))
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Observable] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(
-          _.in[ShareObservable]
-            .filter(_.out[ShareProfile].has("permissions", permission))
-            .in[OrganisationShare]
-            .has("name", authContext.organisation)
-        )
+        traversal.filter(_.shares.filter(_.filter(_.profile.has(_.permissions, permission))).organisation.current)
       else
         traversal.limit(0)
 
@@ -232,18 +237,18 @@ object ObservableOps {
 
     def organisations: Traversal.V[Organisation] = traversal.in[ShareObservable].in[OrganisationShare].v[Organisation]
 
-    def origin: Traversal.V[Organisation] = traversal.in[ShareObservable].has("owner", true).in[OrganisationShare].v[Organisation]
+    def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
     def richObservable: Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
       traversal
         .project(
           _.by
-            .by(_.out[ObservableObservableType].v[ObservableType].fold)
-            .by(_.out[ObservableData].v[Data].fold)
-            .by(_.out[ObservableAttachment].v[Attachment].fold)
-            .by(_.out[ObservableTag].v[Tag].fold)
-            .by(_.out[ObservableKeyValue].v[KeyValue].fold)
-            .by(_.out[ObservableReportTag].v[ReportTag].fold)
+            .by(_.observableType.fold)
+            .by(_.data.fold)
+            .by(_.attachments.fold)
+            .by(_.tags.fold)
+            .by(_.keyValues.fold)
+            .by(_.reportTags.fold)
         )
         .domainMap {
           case (observable, tpe, data, attachment, tags, extensions, reportTags) =>
@@ -265,13 +270,13 @@ object ObservableOps {
       traversal
         .project(
           _.by
-            .by(_.out[ObservableObservableType].v[ObservableType].fold)
-            .by(_.out[ObservableData].v[Data].fold)
-            .by(_.out[ObservableAttachment].v[Attachment].fold)
-            .by(_.out[ObservableTag].v[Tag].fold)
+            .by(_.observableType.fold)
+            .by(_.data.fold)
+            .by(_.attachments.fold)
+            .by(_.tags.fold)
             .by(_.similar.visible.limit(1).count)
-            .by(_.out[ObservableKeyValue].v[KeyValue].fold)
-            .by(_.out[ObservableReportTag].v[ReportTag].fold)
+            .by(_.keyValues.fold)
+            .by(_.reportTags.fold)
         )
         .domainMap {
           case (observable, tpe, data, attachment, tags, count, extensions, reportTags) =>
@@ -293,13 +298,13 @@ object ObservableOps {
       traversal
         .project(
           _.by
-            .by(_.out[ObservableObservableType].v[ObservableType].fold)
-            .by(_.out[ObservableData].v[Data].fold)
-            .by(_.out[ObservableAttachment].v[Attachment].fold)
-            .by(_.out[ObservableTag].v[Tag].fold)
+            .by(_.observableType.fold)
+            .by(_.data.fold)
+            .by(_.attachments.fold)
+            .by(_.tags.fold)
             .by(_.similar.visible.limit(1).count)
-            .by(_.out[ObservableKeyValue].v[KeyValue].fold)
-            .by(_.out[ObservableReportTag].v[ReportTag].fold)
+            .by(_.keyValues.fold)
+            .by(_.reportTags.fold)
             .by(entityRenderer)
         )
         .domainMap {
@@ -355,11 +360,7 @@ object ObservableOps {
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
 
-    def share(organistionName: String): Traversal.V[Share] =
-      traversal
-        .in[ShareObservable]
-        .filter(_.in[OrganisationShare].has("name", organistionName))
-        .v[Share]
+    def share(organisationName: EntityIdOrName): Traversal.V[Share] =
+      shares.filter(_.byOrganisation(organisationName))
   }
-
 }

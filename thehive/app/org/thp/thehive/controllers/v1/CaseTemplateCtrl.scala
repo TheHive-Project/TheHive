@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -30,10 +31,10 @@ class CaseTemplateCtrl @Inject() (
   override val initialQuery: Query =
     Query
       .init[Traversal.V[CaseTemplate]]("listCaseTemplate", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).caseTemplates)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[CaseTemplate]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[CaseTemplate]](
     "getCaseTemplate",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => caseTemplateSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => caseTemplateSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CaseTemplate], IteratorOutput](
     "page",
@@ -49,7 +50,7 @@ class CaseTemplateCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         for {
-          organisation <- organisationSrv.getOrFail(request.organisation)
+          organisation <- organisationSrv.current.getOrFail("Organisation")
           tasks        = inputCaseTemplate.tasks.map(_.toTask -> None)
           customFields = inputCaseTemplate.customFieldValue.map(cf => cf.name -> cf.value)
           richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
@@ -60,7 +61,7 @@ class CaseTemplateCtrl @Inject() (
     entrypoint("get case template")
       .authRoTransaction(db) { implicit request => implicit graph =>
         caseTemplateSrv
-          .get(caseTemplateNameOrId)
+          .get(EntityIdOrName(caseTemplateNameOrId))
           .visible
           .richCaseTemplate
           .getOrFail("CaseTemplate")
@@ -85,7 +86,7 @@ class CaseTemplateCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("caseTemplate")
         caseTemplateSrv
           .update(
-            _.get(caseTemplateNameOrId)
+            _.get(EntityIdOrName(caseTemplateNameOrId))
               .can(Permissions.manageCaseTemplate),
             propertyUpdaters
           )

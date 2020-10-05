@@ -3,25 +3,24 @@ package org.thp.thehive.services
 import akka.actor.ActorRef
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.CreateError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{CreateError, EntityIdOrName}
 import org.thp.thehive.models.ResolutionStatus
 import org.thp.thehive.services.ResolutionStatusOps._
 
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(
-    implicit @Named("with-thehive-schema") db: Database
+class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
+    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[ResolutionStatus] {
 
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[ResolutionStatus] =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else startTraversal.getByName(idOrName)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[ResolutionStatus] =
+    startTraversal.getByName(name)
 
   override def createEntity(e: ResolutionStatus)(implicit graph: Graph, authContext: AuthContext): Try[ResolutionStatus with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("Resolution")
@@ -39,21 +38,21 @@ class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCh
 
 object ResolutionStatusOps {
   implicit class ResolutionStatusOpsDefs(traversal: Traversal.V[ResolutionStatus]) {
-    def get(idOrName: String)(implicit db: Database): Traversal.V[ResolutionStatus] =
-      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
-      else getByName(idOrName)
+    def get(idOrName: EntityIdOrName): Traversal.V[ResolutionStatus] =
+      idOrName.fold(traversal.getByIds(_), getByName)
 
-    def getByName(name: String): Traversal.V[ResolutionStatus] = traversal.has("value", name).v[ResolutionStatus]
+    def getByName(name: String): Traversal.V[ResolutionStatus] = traversal.has(_.value, name)
   }
 }
 
 class ResolutionStatusIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ResolutionStatusSrv)
     extends IntegrityCheckOps[ResolutionStatus] {
-  override def resolve(entities: Seq[ResolutionStatus with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head))
-      service.getByIds(tail.map(_._id): _*).remove()
-      Success(())
-    case _ => Success(())
-  }
+  override def resolve(entities: Seq[ResolutionStatus with Entity])(implicit graph: Graph): Try[Unit] =
+    entities match {
+      case head :: tail =>
+        tail.foreach(copyEdge(_, head))
+        service.getByIds(tail.map(_._id): _*).remove()
+        Success(())
+      case _ => Success(())
+    }
 }

@@ -4,6 +4,7 @@ import java.io.{File, InputStream}
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -59,7 +60,7 @@ class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {
       allAttachments must not(beEmpty)
 
       app[Database].roTransaction { implicit graph =>
-        app[AttachmentSrv].get(allAttachments.head.attachmentId).exists must beTrue
+        app[AttachmentSrv].get(EntityName(allAttachments.head.attachmentId)).exists must beTrue
       }
     }
   }

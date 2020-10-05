@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{RichOptionTry, RichSeq}
+import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
 import org.thp.thehive.models._
@@ -37,10 +37,10 @@ class CaseCtrl @Inject() (
   override val publicProperties: PublicProperties = properties.`case`
   override val initialQuery: Query =
     Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Case]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
     "getCase",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => caseSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
     "page",
@@ -71,10 +71,10 @@ class CaseCtrl @Inject() (
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
         for {
-          caseTemplate <- caseTemplateName.map(caseTemplateSrv.get(_).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
+          caseTemplate <- caseTemplateName.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
           customFields = inputCase.customFieldValue.map(cf => (cf.name, cf.value, cf.order))
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail("Organisation")
-          user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(u).map(Some.apply))
+          user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(EntityIdOrName(u)).map(Some.apply))
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
@@ -83,7 +83,7 @@ class CaseCtrl @Inject() (
             tags.toSet,
             customFields,
             caseTemplate,
-            inputTasks.map(t => t.toTask -> t.assignee.flatMap(userSrv.get(_).headOption))
+            inputTasks.map(t => t.toTask -> t.assignee.flatMap(u => userSrv.get(EntityIdOrName(u)).headOption))
           )
         } yield Results.Created(richCase.toJson)
       }
@@ -92,7 +92,7 @@ class CaseCtrl @Inject() (
     entrypoint("get case")
       .authRoTransaction(db) { implicit request => implicit graph =>
         caseSrv
-          .get(caseIdOrNumber)
+          .get(EntityIdOrName(caseIdOrNumber))
           .visible
           .richCase
           .getOrFail("Case")
@@ -105,7 +105,7 @@ class CaseCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("case")
         caseSrv
-          .update(_.get(caseIdOrNumber).can(Permissions.manageCase), propertyUpdaters)
+          .update(_.get(EntityIdOrName(caseIdOrNumber)).can(Permissions.manageCase), propertyUpdaters)
           .map(_ => Results.NoContent)
       }
 
@@ -113,7 +113,7 @@ class CaseCtrl @Inject() (
     entrypoint("delete case")
       .authTransaction(db) { implicit request => implicit graph =>
         caseSrv
-          .get(caseIdOrNumber)
+          .get(EntityIdOrName(caseIdOrNumber))
           .can(Permissions.manageCase)
           .update(_.status, CaseStatus.Deleted)
           .getOrFail("Case")
@@ -126,9 +126,9 @@ class CaseCtrl @Inject() (
         caseIdsOrNumbers
           .split(',')
           .toSeq
-          .toTry(
+          .toTry(c =>
             caseSrv
-              .get(_)
+              .get(EntityIdOrName(c))
               .visible
               .getOrFail("Case")
           )

@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -9,8 +10,8 @@ import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv}
@@ -42,16 +43,16 @@ class TaskCtrl @Inject() (
         _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))
       )
   )
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Task]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
     "getTask",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => taskSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
   override val outputQuery: Query = Query.output[RichTask, Traversal.V[Task]](_.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[Task]](
       "waitingTask",
-      (graph, authContext) => taskSrv.startTraversal(graph).has("status", TaskStatus.Waiting).visible(authContext)
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(authContext)
     ),
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
@@ -67,7 +68,7 @@ class TaskCtrl @Inject() (
         val inputTask: InputTask = request.body("task")
         val caseId: String       = request.body("caseId")
         for {
-          case0        <- caseSrv.get(caseId).can(Permissions.manageTask).getOrFail("Case")
+          case0        <- caseSrv.get(EntityIdOrName(caseId)).can(Permissions.manageTask).getOrFail("Case")
           createdTask  <- taskSrv.create(inputTask.toTask, None)
           organisation <- organisationSrv.getOrFail(request.organisation)
           _            <- shareSrv.shareTask(createdTask, case0, organisation)
@@ -78,7 +79,7 @@ class TaskCtrl @Inject() (
     entrypoint("get task")
       .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
-          .getByIds(taskId)
+          .get(EntityIdOrName(taskId))
           .visible
           .richTask
           .getOrFail("Task")
@@ -103,7 +104,7 @@ class TaskCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("task")
         taskSrv
           .update(
-            _.getByIds(taskId)
+            _.get(EntityIdOrName(taskId))
               .can(Permissions.manageTask),
             propertyUpdaters
           )

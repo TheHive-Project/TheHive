@@ -3,7 +3,7 @@ package org.thp.thehive.connector.cortex.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 import org.thp.thehive.models.{Observable, RichObservable}
 import play.api.libs.json.{Format, JsObject, Json}
 
@@ -36,7 +36,7 @@ case class RichJob(
     job: Job with Entity,
     observables: Seq[(RichObservable, JsObject)]
 ) {
-  def _id: String                = job._id
+  def _id: EntityId              = job._id
   def _createdBy: String         = job._createdBy
   def _updatedBy: Option[String] = job._updatedBy
   def _createdAt: Date           = job._createdAt

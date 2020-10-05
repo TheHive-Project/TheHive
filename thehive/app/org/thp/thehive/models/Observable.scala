@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
-import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 
 @BuildEdgeEntity[Observable, KeyValue]
 case class ObservableKeyValue()
@@ -30,7 +30,7 @@ case class RichObservable(
     extensions: Seq[KeyValue with Entity],
     reportTags: Seq[ReportTag with Entity]
 ) {
-  def _id: String                                                        = observable._id
+  def _id: EntityId                                                      = observable._id
   def _createdBy: String                                                 = observable._createdBy
   def _updatedBy: Option[String]                                         = observable._updatedBy
   def _createdAt: Date                                                   = observable._createdAt

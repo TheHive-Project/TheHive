@@ -3,6 +3,7 @@ package org.thp.thehive.services
 import java.util.Date
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -17,7 +18,7 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
     "get main audits by ids and sorted" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         // Create 3 case events first
-        val orgAdmin = app[OrganisationSrv].getOrFail("admin").get
+        val orgAdmin = app[OrganisationSrv].getOrFail(EntityName("admin")).get
         val c1 = app[Database]
           .tryTransaction(implicit graph =>
             app[CaseSrv].create(

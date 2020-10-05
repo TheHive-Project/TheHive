@@ -3,6 +3,7 @@ package org.thp.thehive.connector.misp.controllers.v0
 import akka.actor.ActorRef
 import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -40,7 +41,7 @@ class MispCtrl @Inject() (
         for {
           c <- Future.fromTry(db.roTransaction { implicit graph =>
             caseSrv
-              .get(caseIdOrNumber)
+              .get(EntityIdOrName(caseIdOrNumber))
               .can(Permissions.manageShare)
               .getOrFail("Case")
           })
@@ -53,7 +54,7 @@ class MispCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         alertSrv
           .startTraversal
-          .has("type", "misp")
+          .filterByType("misp")
           .visible
           .toIterator
           .toTry(alertSrv.remove(_))

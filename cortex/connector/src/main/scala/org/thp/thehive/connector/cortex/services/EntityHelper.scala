@@ -2,10 +2,10 @@ package org.thp.thehive.connector.cortex.services
 
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -38,13 +38,16 @@ class EntityHelper @Inject() (
     * @param authContext auth for permission check
     * @return
     */
-  def get(objectType: String, objectId: String, permission: Permission)(implicit graph: Graph, authContext: AuthContext): Try[Product with Entity] =
+  def get(objectType: String, objectId: EntityIdOrName, permission: Permission)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Product with Entity] =
     objectType match {
-      case "Task"       => taskSrv.getByIds(objectId).can(permission).getOrFail("Task")
+      case "Task"       => taskSrv.get(objectId).can(permission).getOrFail("Task")
       case "Case"       => caseSrv.get(objectId).can(permission).getOrFail("Case")
-      case "Observable" => observableSrv.getByIds(objectId).can(permission).getOrFail("Observable")
-      case "Log"        => logSrv.getByIds(objectId).can(permission).getOrFail("Log")
-      case "Alert"      => alertSrv.getByIds(objectId).can(permission).getOrFail("Alert")
+      case "Observable" => observableSrv.get(objectId).can(permission).getOrFail("Observable")
+      case "Log"        => logSrv.get(objectId).can(permission).getOrFail("Log")
+      case "Alert"      => alertSrv.get(objectId).can(permission).getOrFail("Alert")
       case _            => Failure(BadRequestError(s"objectType $objectType is not recognised"))
     }
 

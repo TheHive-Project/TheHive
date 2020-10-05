@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -33,10 +34,10 @@ class OrganisationCtrl @Inject() (
     (range, organisationSteps, _) => organisationSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richOrganisation)
   )
   override val outputQuery: Query = Query.output[RichOrganisation, Traversal.V[Organisation]](_.richOrganisation)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Organisation]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => organisationSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => organisationSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
@@ -59,14 +60,14 @@ class OrganisationCtrl @Inject() (
   def get(organisationId: String): Action[AnyContent] =
     entrypoint("get organisation")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        (if (request.organisation == "admin")
-           organisationSrv.get(organisationId)
+        (if (organisationSrv.current.isAdmin)
+           organisationSrv.get(EntityIdOrName(organisationId))
          else
            userSrv
              .current
              .organisations
              .visibleOrganisationsFrom
-             .get(organisationId))
+             .get(EntityIdOrName(organisationId)))
           .richOrganisation
           .getOrFail("Organisation")
           .map(organisation => Results.Ok(organisation.toJson))
@@ -78,7 +79,7 @@ class OrganisationCtrl @Inject() (
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("organisation")
         for {
-          organisation <- organisationSrv.getOrFail(organisationId)
+          organisation <- organisationSrv.getOrFail(EntityIdOrName(organisationId))
           _            <- organisationSrv.update(organisationSrv.get(organisation), propertyUpdaters)
         } yield Results.NoContent
       }

@@ -1,5 +1,6 @@
 package org.thp.thehive.migration
 
+import org.thp.scalligraph.EntityId
 import org.thp.thehive.migration.dto._
 
 import scala.util.Try
@@ -23,17 +24,17 @@ trait Output {
   def createResolutionStatus(inputResolutionStatus: InputResolutionStatus): Try[IdMapping]
   def caseTemplateExists(inputCaseTemplate: InputCaseTemplate): Boolean
   def createCaseTemplate(inputCaseTemplate: InputCaseTemplate): Try[IdMapping]
-  def createCaseTemplateTask(caseTemplateId: String, inputTask: InputTask): Try[IdMapping]
+  def createCaseTemplateTask(caseTemplateId: EntityId, inputTask: InputTask): Try[IdMapping]
   def caseExists(inputCase: InputCase): Boolean
   def createCase(inputCase: InputCase): Try[IdMapping]
-  def createCaseObservable(caseId: String, inputObservable: InputObservable): Try[IdMapping]
-  def createJob(observableId: String, inputJob: InputJob): Try[IdMapping]
-  def createJobObservable(jobId: String, inputObservable: InputObservable): Try[IdMapping]
-  def createCaseTask(caseId: String, inputTask: InputTask): Try[IdMapping]
-  def createCaseTaskLog(taskId: String, inputLog: InputLog): Try[IdMapping]
+  def createCaseObservable(caseId: EntityId, inputObservable: InputObservable): Try[IdMapping]
+  def createJob(observableId: EntityId, inputJob: InputJob): Try[IdMapping]
+  def createJobObservable(jobId: EntityId, inputObservable: InputObservable): Try[IdMapping]
+  def createCaseTask(caseId: EntityId, inputTask: InputTask): Try[IdMapping]
+  def createCaseTaskLog(taskId: EntityId, inputLog: InputLog): Try[IdMapping]
   def alertExists(inputAlert: InputAlert): Boolean
   def createAlert(inputAlert: InputAlert): Try[IdMapping]
-  def createAlertObservable(alertId: String, inputObservable: InputObservable): Try[IdMapping]
-  def createAction(objectId: String, inputAction: InputAction): Try[IdMapping]
-  def createAudit(contextId: String, inputAudit: InputAudit): Try[Unit]
+  def createAlertObservable(alertId: EntityId, inputObservable: InputObservable): Try[IdMapping]
+  def createAction(objectId: EntityId, inputAction: InputAction): Try[IdMapping]
+  def createAudit(contextId: EntityId, inputAudit: InputAudit): Try[Unit]
 }

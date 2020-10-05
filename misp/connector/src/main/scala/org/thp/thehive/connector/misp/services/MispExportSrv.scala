@@ -10,6 +10,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
@@ -72,12 +73,12 @@ class MispExportSrv @Inject() (
     caseSrv
       .get(`case`)
       .alert
-      .has("type", "misp")
-      .has("source", orgName)
+      .filterBySource(orgName)
+      .filterByType("misp")
       .headOption
 
   def getAttributes(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
-    caseSrv.get(`case`).observables.has("ioc", true).richObservable.toIterator.flatMap(observableToAttribute)
+    caseSrv.get(`case`).observables.isIoc.richObservable.toIterator.flatMap(observableToAttribute)
 
   def removeDuplicateAttributes(attributes: Iterator[Attribute]): Seq[Attribute] = {
     var attrSet = Set.empty[(String, String, String)]
@@ -92,8 +93,8 @@ class MispExportSrv @Inject() (
     builder.result()
   }
 
-  def createEvent(client: TheHiveMispClient, `case`: Case, attributes: Seq[Attribute], extendsEvent: Option[String])(
-      implicit ec: ExecutionContext
+  def createEvent(client: TheHiveMispClient, `case`: Case, attributes: Seq[Attribute], extendsEvent: Option[String])(implicit
+      ec: ExecutionContext
   ): Future[String] =
     client.createEvent(
       info = `case`.title,
@@ -106,8 +107,8 @@ class MispExportSrv @Inject() (
       extendsEvent = extendsEvent
     )
 
-  def createAlert(client: TheHiveMispClient, `case`: Case with Entity, eventId: String)(
-      implicit graph: Graph,
+  def createAlert(client: TheHiveMispClient, `case`: Case with Entity, eventId: String)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] =
     for {

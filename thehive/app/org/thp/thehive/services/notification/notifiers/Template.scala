@@ -29,14 +29,14 @@ trait Template {
           .flatMap { f =>
             cc.getClass.getSuperclass.getDeclaredMethod(f).invoke(cc) match {
               case option: Option[_] => option.map(f -> _.toString)
-              case list: Seq[_]      => Some(f       -> list.mkString("[", ",", "]"))
-              case set: Set[_]       => Some(f       -> set.mkString("[", ",", "]"))
-              case other             => Some(f       -> other.toString)
+              case list: Seq[_]      => Some(f -> list.mkString("[", ",", "]"))
+              case set: Set[_]       => Some(f -> set.mkString("[", ",", "]"))
+              case other             => Some(f -> other.toString)
             }
           }
           .toMap
       } +
-      ("_id"        -> cc._id) +
+      ("_id"        -> cc._id.toString) +
       ("_type"      -> cc._label) +
       ("_createdAt" -> cc._createdAt.toString) +
       ("_createdBy" -> cc._createdBy) +

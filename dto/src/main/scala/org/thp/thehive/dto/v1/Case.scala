@@ -48,7 +48,7 @@ case class OutputCase(
     impactStatus: Option[String] = None,
     resolutionStatus: Option[String] = None,
     assignee: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: Seq[OutputCustomFieldValue] = Seq.empty,
     extraData: JsObject
 )
 
@@ -77,7 +77,7 @@ object OutputCase {
       impactStatus     <- (json \ "impactStatus").validateOpt[String]
       resolutionStatus <- (json \ "resolutionStatus").validateOpt[String]
       assignee         <- (json \ "assignee").validateOpt[String]
-      customFields     <- (json \ "customFields").validate[Set[OutputCustomFieldValue]]
+      customFields     <- (json \ "customFields").validate[Seq[OutputCustomFieldValue]]
       extraData        <- (json \ "extraData").validate[JsObject]
     } yield OutputCase(
       _id,

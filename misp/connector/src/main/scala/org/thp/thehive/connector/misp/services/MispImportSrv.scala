@@ -9,11 +9,11 @@ import akka.util.ByteString
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
-import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
@@ -82,8 +82,8 @@ class MispImportSrv @Inject() (
       }
     db.roTransaction { implicit graph =>
       obsTypeFromConfig
-        .orElse(observableTypeSrv.get(attributeType).headOption.map(_ -> Nil))
-        .fold(observableTypeSrv.getOrFail("other").map(_ -> Seq.empty[String]))(Success(_))
+        .orElse(observableTypeSrv.get(EntityName(attributeType)).headOption.map(_ -> Nil))
+        .fold(observableTypeSrv.getOrFail(EntityName("other")).map(_ -> Seq.empty[String]))(Success(_))
     }
   }
 
@@ -159,11 +159,10 @@ class MispImportSrv @Inject() (
         .group(
           _.by,
           _.by(
-            _.in[AlertOrganisation]
-              .v[Alert]
-              .has("source", mispOrganisation)
-              .has("type", "misp")
-              .value(_.lastSyncDate)
+            _.alerts
+              .filterBySource(mispOrganisation)
+              .filterByType("misp")
+              .value(a => a.lastSyncDate)
               .max
           )
         )
@@ -199,13 +198,14 @@ class MispImportSrv @Inject() (
         case Some(richObservable) =>
           logger.debug(s"Observable ${observableType.name}:$data exists, update it")
           for {
-            updatedObservable <- Some(observableSrv.get(richObservable.observable))
-              .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
-              .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
-              .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
-              .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
-              .get
-              .getOrFail("Observable")
+            updatedObservable <-
+              Some(observableSrv.get(richObservable.observable))
+                .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
+                .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
+                .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
+                .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
+                .get
+                .getOrFail("Observable")
             _ <- observableSrv.updateTagNames(updatedObservable, tags)
           } yield updatedObservable
       }
@@ -252,21 +252,22 @@ class MispImportSrv @Inject() (
         Future.fromTry {
           db.tryTransaction { implicit graph =>
             for {
-              updatedObservable <- Some(observableSrv.get(richObservable.observable))
-                .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
-                .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
-                .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
-                .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
-                .get
-                .getOrFail("Observable")
+              updatedObservable <-
+                Some(observableSrv.get(richObservable.observable))
+                  .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
+                  .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
+                  .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
+                  .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
+                  .get
+                  .getOrFail("Observable")
               _ <- observableSrv.updateTagNames(updatedObservable, tags)
             } yield updatedObservable
           }
         }
     }
 
-  def importAttibutes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(
-      implicit authContext: AuthContext
+  def importAttibutes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(implicit
+      authContext: AuthContext
   ): Future[Unit] = {
     logger.debug(s"importAttibutes ${client.name}#${event.id}")
     val startSyncDate = new Date
@@ -288,10 +289,13 @@ class MispImportSrv @Inject() (
       .runWith(Sink.foreachAsync(1) {
         case (observable, observableType, tags, Left(data)) =>
           updateOrCreateObservable(alert, observable, observableType, data, tags)
-            .fold(error => {
-              logger.error(s"Unable to create observable $observable ${observableType.name}:$data", error)
-              Future.failed(error)
-            }, _ => Future.successful(()))
+            .fold(
+              error => {
+                logger.error(s"Unable to create observable $observable ${observableType.name}:$data", error)
+                Future.failed(error)
+              },
+              _ => Future.successful(())
+            )
         case (observable, observableType, tags, Right((filename, contentType, src))) =>
           updateOrCreateObservable(alert, observable, observableType, filename, contentType, src, tags)
             .transform {
@@ -335,8 +339,8 @@ class MispImportSrv @Inject() (
       mispOrganisation: String,
       event: Event,
       caseTemplate: Option[CaseTemplate with Entity]
-  )(
-      implicit authContext: AuthContext
+  )(implicit
+      authContext: AuthContext
   ): Try[Alert with Entity] = {
     logger.debug(s"updateOrCreateAlert ${client.name}#${event.id} for organisation ${organisation.name}")
     eventToAlert(client, event).flatMap { alert =>
@@ -352,20 +356,21 @@ class MispImportSrv @Inject() (
             alertSrv
               .create(alert, organisation, event.tags.map(_.name).toSet, Map.empty[String, Option[Any]], caseTemplate)
               .map(_.alert)
-          case someAlert @ Some(richAlert) =>
+          case Some(richAlert) =>
             logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
             for {
-              updatedAlert <- Some(alertSrv.get(richAlert.alert))
-                .map(t => if (richAlert.title != alert.title) t.update(_.title, alert.title) else t)
-                .map(t => if (richAlert.lastSyncDate != alert.lastSyncDate) t.update(_.lastSyncDate, alert.lastSyncDate) else t)
-                .map(t => if (richAlert.description != alert.description) t.update(_.description, alert.description) else t)
-                .map(t => if (richAlert.severity != alert.severity) t.update(_.severity, alert.severity) else t)
-                .map(t => if (richAlert.date != alert.date) t.update(_.date, alert.date) else t)
-                .map(t => if (richAlert.tlp != alert.tlp) t.update(_.tlp, alert.tlp) else t)
-                .map(t => if (richAlert.pap != alert.pap) t.update(_.pap, alert.pap) else t)
-                .map(t => if (richAlert.externalLink != alert.externalLink) t.update(_.externalLink, alert.externalLink) else t)
-                .get
-                .getOrFail("Alert")
+              updatedAlert <-
+                Some(alertSrv.get(richAlert.alert))
+                  .map(t => if (richAlert.title != alert.title) t.update(_.title, alert.title) else t)
+                  .map(t => if (richAlert.lastSyncDate != alert.lastSyncDate) t.update(_.lastSyncDate, alert.lastSyncDate) else t)
+                  .map(t => if (richAlert.description != alert.description) t.update(_.description, alert.description) else t)
+                  .map(t => if (richAlert.severity != alert.severity) t.update(_.severity, alert.severity) else t)
+                  .map(t => if (richAlert.date != alert.date) t.update(_.date, alert.date) else t)
+                  .map(t => if (richAlert.tlp != alert.tlp) t.update(_.tlp, alert.tlp) else t)
+                  .map(t => if (richAlert.pap != alert.pap) t.update(_.pap, alert.pap) else t)
+                  .map(t => if (richAlert.externalLink != alert.externalLink) t.update(_.externalLink, alert.externalLink) else t)
+                  .get
+                  .getOrFail("Alert")
               _ <- alertSrv.updateTagNames(updatedAlert, event.tags.map(_.name).toSet)
             } yield updatedAlert
         }
@@ -377,7 +382,7 @@ class MispImportSrv @Inject() (
     Future.fromTry(client.currentOrganisationName).flatMap { mispOrganisation =>
       lazy val caseTemplate = client.caseTemplate.flatMap { caseTemplateName =>
         db.roTransaction { implicit graph =>
-          caseTemplateSrv.get(caseTemplateName).headOption
+          caseTemplateSrv.get(EntityName(caseTemplateName)).headOption
         }
       }
       logger.debug(s"Get eligible organisations")

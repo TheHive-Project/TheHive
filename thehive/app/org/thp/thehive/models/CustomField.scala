@@ -61,7 +61,7 @@ class CustomFieldValueEdge(edge: Edge) extends CustomFieldValue[CustomFieldValue
   override def productArity: Int            = 0
   override def canEqual(that: Any): Boolean = that.isInstanceOf[CustomFieldValueEdge]
 
-  override def _id: String                = edge.id().toString
+  override def _id: EntityId              = EntityId(edge.id())
   override def _label: String             = edge.label()
   override def _createdBy: String         = UMapping.string.getProperty(edge, "_createdBy")
   override def _updatedBy: Option[String] = UMapping.string.optional.getProperty(edge, "_updatedBy")
@@ -105,16 +105,17 @@ object CustomFieldString extends CustomFieldType[String] {
   override val name: String           = "string"
   override val writes: Writes[String] = Writes.StringWrites
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] = value.getOrElse(JsNull) match {
-    case v: String     => Success(customFieldValue.stringValue = Some(v))
-    case JsString(v)   => Success(customFieldValue.stringValue = Some(v))
-    case JsNull | null => Success(customFieldValue.stringValue = None)
-    case obj: JsObject =>
-      val stringValue = (obj \ "string").asOpt[String]
-      val order       = (obj \ "order").asOpt[Int]
-      Success((customFieldValue.stringValue = stringValue).order = order)
-    case _ => setValueFailure(value)
-  }
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
+    value.getOrElse(JsNull) match {
+      case v: String     => Success(customFieldValue.stringValue = Some(v))
+      case JsString(v)   => Success(customFieldValue.stringValue = Some(v))
+      case JsNull | null => Success(customFieldValue.stringValue = None)
+      case obj: JsObject =>
+        val stringValue = (obj \ "string").asOpt[String]
+        val order       = (obj \ "order").asOpt[Int]
+        Success((customFieldValue.stringValue = stringValue).order = order)
+      case _ => setValueFailure(value)
+    }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[String] = ccf.stringValue
 }
@@ -123,17 +124,18 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] {
   override val name: String            = "boolean"
   override val writes: Writes[Boolean] = Writes.BooleanWrites
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] = value.getOrElse(JsNull) match {
-    case v: Boolean    => Success(customFieldValue.booleanValue = Some(v))
-    case JsBoolean(v)  => Success(customFieldValue.booleanValue = Some(v))
-    case JsNull | null => Success(customFieldValue.booleanValue = None)
-    case obj: JsObject =>
-      val booleanValue = (obj \ "boolean").asOpt[Boolean]
-      val order        = (obj \ "order").asOpt[Int]
-      Success((customFieldValue.booleanValue = booleanValue).order = order)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
+    value.getOrElse(JsNull) match {
+      case v: Boolean    => Success(customFieldValue.booleanValue = Some(v))
+      case JsBoolean(v)  => Success(customFieldValue.booleanValue = Some(v))
+      case JsNull | null => Success(customFieldValue.booleanValue = None)
+      case obj: JsObject =>
+        val booleanValue = (obj \ "boolean").asOpt[Boolean]
+        val order        = (obj \ "order").asOpt[Int]
+        Success((customFieldValue.booleanValue = booleanValue).order = order)
 
-    case _ => setValueFailure(value)
-  }
+      case _ => setValueFailure(value)
+    }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Boolean] = ccf.booleanValue
 }
@@ -142,17 +144,18 @@ object CustomFieldInteger extends CustomFieldType[Int] {
   override val name: String        = "integer"
   override val writes: Writes[Int] = Writes.IntWrites
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] = value.getOrElse(JsNull) match {
-    case v: Int        => Success(customFieldValue.integerValue = Some(v))
-    case JsNumber(n)   => Success(customFieldValue.integerValue = Some(n.toInt))
-    case JsNull | null => Success(customFieldValue.integerValue = None)
-    case obj: JsObject =>
-      val integerValue = (obj \ "integer").asOpt[Int]
-      val order        = (obj \ "order").asOpt[Int]
-      Success((customFieldValue.integerValue = integerValue).order = order)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
+    value.getOrElse(JsNull) match {
+      case v: Int        => Success(customFieldValue.integerValue = Some(v))
+      case JsNumber(n)   => Success(customFieldValue.integerValue = Some(n.toInt))
+      case JsNull | null => Success(customFieldValue.integerValue = None)
+      case obj: JsObject =>
+        val integerValue = (obj \ "integer").asOpt[Int]
+        val order        = (obj \ "order").asOpt[Int]
+        Success((customFieldValue.integerValue = integerValue).order = order)
 
-    case _ => setValueFailure(value)
-  }
+      case _ => setValueFailure(value)
+    }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Int] = ccf.integerValue
 }
@@ -161,17 +164,18 @@ object CustomFieldFloat extends CustomFieldType[Double] {
   override val name: String           = "float"
   override val writes: Writes[Double] = Writes.DoubleWrites
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] = value.getOrElse(JsNull) match {
-    case n: Number     => Success(customFieldValue.floatValue = Some(n.doubleValue()))
-    case JsNumber(n)   => Success(customFieldValue.floatValue = Some(n.toDouble))
-    case JsNull | null => Success(customFieldValue.floatValue = None)
-    case obj: JsObject =>
-      val floatValue = (obj \ "float").asOpt[Double]
-      val order      = (obj \ "order").asOpt[Int]
-      Success((customFieldValue.floatValue = floatValue).order = order)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
+    value.getOrElse(JsNull) match {
+      case n: Number     => Success(customFieldValue.floatValue = Some(n.doubleValue()))
+      case JsNumber(n)   => Success(customFieldValue.floatValue = Some(n.toDouble))
+      case JsNull | null => Success(customFieldValue.floatValue = None)
+      case obj: JsObject =>
+        val floatValue = (obj \ "float").asOpt[Double]
+        val order      = (obj \ "order").asOpt[Int]
+        Success((customFieldValue.floatValue = floatValue).order = order)
 
-    case _ => setValueFailure(value)
-  }
+      case _ => setValueFailure(value)
+    }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Double] = ccf.floatValue
 }
@@ -180,18 +184,19 @@ object CustomFieldDate extends CustomFieldType[Date] {
   override val name: String         = "date"
   override val writes: Writes[Date] = Writes[Date](d => JsNumber(d.getTime))
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] = value.getOrElse(JsNull) match {
-    case n: Number     => Success(customFieldValue.dateValue = Some(new Date(n.longValue())))
-    case JsNumber(n)   => Success(customFieldValue.dateValue = Some(new Date(n.toLong)))
-    case v: Date       => Success(customFieldValue.dateValue = Some(v))
-    case JsNull | null => Success(customFieldValue.dateValue = None)
-    case obj: JsObject =>
-      val dateValue = (obj \ "date").asOpt[Long].map(new Date(_))
-      val order     = (obj \ "order").asOpt[Int]
-      Success((customFieldValue.dateValue = dateValue).order = order)
+  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
+    value.getOrElse(JsNull) match {
+      case n: Number     => Success(customFieldValue.dateValue = Some(new Date(n.longValue())))
+      case JsNumber(n)   => Success(customFieldValue.dateValue = Some(new Date(n.toLong)))
+      case v: Date       => Success(customFieldValue.dateValue = Some(v))
+      case JsNull | null => Success(customFieldValue.dateValue = None)
+      case obj: JsObject =>
+        val dateValue = (obj \ "date").asOpt[Long].map(new Date(_))
+        val order     = (obj \ "order").asOpt[Int]
+        Success((customFieldValue.dateValue = dateValue).order = order)
 
-    case _ => setValueFailure(value)
-  }
+      case _ => setValueFailure(value)
+    }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue
 }

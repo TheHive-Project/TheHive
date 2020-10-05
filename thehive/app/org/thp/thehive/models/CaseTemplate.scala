@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 
 @BuildEdgeEntity[CaseTemplate, Organisation]
 case class CaseTemplateOrganisation()
@@ -51,7 +51,7 @@ case class RichCaseTemplate(
     tasks: Seq[RichTask],
     customFields: Seq[RichCustomField]
 ) {
-  def _id: String                 = caseTemplate._id
+  def _id: EntityId               = caseTemplate._id
   def _createdBy: String          = caseTemplate._createdBy
   def _updatedBy: Option[String]  = caseTemplate._updatedBy
   def _createdAt: Date            = caseTemplate._createdAt

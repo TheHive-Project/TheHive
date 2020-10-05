@@ -9,7 +9,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, NotFoundError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
@@ -43,10 +43,10 @@ class UserCtrl @Inject() (
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
 
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[User]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[User]](
     "getUser",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => userSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
 
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
@@ -72,7 +72,7 @@ class UserCtrl @Inject() (
           .map(user =>
             Results
               .Ok(user.toJson)
-              .withHeaders("X-Organisation" -> request.organisation)
+              .withHeaders("X-Organisation" -> request.organisation.toString)
               .withHeaders("X-Permissions" -> user._1.permissions.mkString(","))
           )
       }
@@ -83,55 +83,55 @@ class UserCtrl @Inject() (
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
         db.tryTransaction { implicit graph =>
-          val organisationName = inputUser.organisation.getOrElse(request.organisation)
+          val organisationName = inputUser.organisation.map(EntityIdOrName(_)).getOrElse(request.organisation)
           for {
-            _            <- userSrv.current.organisations(Permissions.manageUser).getByName(organisationName).existsOrFail
+            _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail
             organisation <- organisationSrv.getOrFail(organisationName)
-            profile      <- profileSrv.getOrFail(inputUser.profile)
+            profile      <- profileSrv.getOrFail(EntityIdOrName(inputUser.profile))
             user         <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
           } yield user -> userSrv.canSetPassword(user.user)
         }.flatMap {
           case (user, true) =>
             inputUser
               .password
-              .map(password => authSrv.setPassword(user._id, password))
+              .map(password => authSrv.setPassword(user.login, password))
               .flip
               .map(_ => Results.Created(user.toJson))
           case (user, _) => Success(Results.Created(user.toJson))
         }
       }
 
-  def lock(userId: String): Action[AnyContent] =
+  def lock(userIdOrName: String): Action[AnyContent] =
     entrypoint("lock user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail("User")
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(EntityIdOrName(userIdOrName)).getOrFail("User")
           _    <- userSrv.lock(user)
         } yield Results.NoContent
       }
 
-  def delete(userId: String, organisation: Option[String]): Action[AnyContent] =
+  def delete(userIdOrName: String, organisation: Option[String]): Action[AnyContent] =
     entrypoint("delete user")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          org  <- organisationSrv.getOrFail(organisation.getOrElse(request.organisation))
-          user <- userSrv.current.organisations(Permissions.manageUser).users.get(userId).getOrFail("User")
+          org  <- organisationSrv.getOrFail(organisation.map(EntityIdOrName(_)).getOrElse(request.organisation))
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(EntityIdOrName(userIdOrName)).getOrFail("User")
           _    <- userSrv.delete(user, org)
         } yield Results.NoContent
       }
 
-  def get(userId: String): Action[AnyContent] =
+  def get(userIdOrName: String): Action[AnyContent] =
     entrypoint("get user")
       .authRoTransaction(db) { implicit request => implicit graph =>
         userSrv
-          .get(userId)
+          .get(EntityIdOrName(userIdOrName))
           .visible
-          .richUser(request.organisation)
+          .richUser
           .getOrFail("User")
           .map(user => Results.Ok(user.toJson))
       }
 
-  def update(userId: String): Action[AnyContent] =
+  def update(userIdOrName: String): Action[AnyContent] =
     entrypoint("update user")
       .extract("name", FieldsParser.string.optional.on("name"))
       .extract("organisation", FieldsParser.string.optional.on("organisation"))
@@ -147,7 +147,7 @@ class UserCtrl @Inject() (
         val isCurrentUser: Boolean =
           userSrv
             .current
-            .get(userId)
+            .get(EntityIdOrName(userIdOrName))
             .exists
 
         val isUserAdmin: Boolean =
@@ -155,13 +155,13 @@ class UserCtrl @Inject() (
             .current
             .organisations(Permissions.manageUser)
             .users
-            .get(userId)
+            .get(EntityIdOrName(userIdOrName))
             .exists
 
         def requireAdmin[A](body: => Try[A]): Try[A] =
           if (isUserAdmin) body else Failure(AuthorizationError("You are not permitted to update this user"))
 
-        userSrv.get(userId).visible.getOrFail("User").flatMap {
+        userSrv.get(EntityIdOrName(userIdOrName)).visible.getOrFail("User").flatMap {
           case _ if !isCurrentUser && !isUserAdmin => Failure(AuthorizationError("You are not permitted to update this user"))
           case user =>
             auditSrv
@@ -180,8 +180,8 @@ class UserCtrl @Inject() (
                       maybeOrganisation.fold[Try[JsObject]](Failure(BadRequestError("Organisation information is required to update user profile"))) {
                         organisationName =>
                           for {
-                            profile      <- profileSrv.getOrFail(profileName)
-                            organisation <- organisationSrv.getOrFail(organisationName)
+                            profile      <- profileSrv.getOrFail(EntityIdOrName(profileName))
+                            organisation <- organisationSrv.getOrFail(EntityIdOrName(organisationName))
                             _            <- userSrv.setProfile(user, organisation, profile)
                           } yield Json.obj("organisation" -> organisation.name, "profile" -> profile.name)
                       }
@@ -193,7 +193,7 @@ class UserCtrl @Inject() (
                       Success(Json.obj("avatar" -> JsNull))
                     case avatar =>
                       attachmentSrv
-                        .create(s"$userId.avatar", "image/jpeg", Base64.getDecoder.decode(avatar))
+                        .create(s"${user.login}.avatar", "image/jpeg", Base64.getDecoder.decode(avatar))
                         .flatMap(userSrv.setAvatar(user, _))
                         .map(_ => Json.obj("avatar" -> "[binary data]"))
                   }.flip
@@ -206,7 +206,7 @@ class UserCtrl @Inject() (
         }
       }
 
-  def setPassword(userId: String): Action[AnyContent] =
+  def setPassword(userIdOrName: String): Action[AnyContent] =
     entrypoint("set password")
       .extract("password", FieldsParser[String].on("password"))
       .auth { implicit request =>
@@ -216,27 +216,27 @@ class UserCtrl @Inject() (
               .current
               .organisations(Permissions.manageUser)
               .users
-              .get(userId)
+              .get(EntityIdOrName(userIdOrName))
               .getOrFail("User")
           }
-          _ <- authSrv.setPassword(userId, request.body("password"))
+          _ <- authSrv.setPassword(user.login, request.body("password"))
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
         } yield Results.NoContent
       }
 
-  def changePassword(userId: String): Action[AnyContent] =
+  def changePassword(userIdOrName: String): Action[AnyContent] =
     entrypoint("change password")
       .extract("password", FieldsParser[String].on("password"))
       .extract("currentPassword", FieldsParser[String].on("currentPassword"))
       .auth { implicit request =>
         for {
-          user <- db.roTransaction(implicit graph => userSrv.current.get(userId).getOrFail("User"))
-          _    <- authSrv.changePassword(userId, request.body("currentPassword"), request.body("password"))
+          user <- db.roTransaction(implicit graph => userSrv.current.get(EntityIdOrName(userIdOrName)).getOrFail("User"))
+          _    <- authSrv.changePassword(user.login, request.body("currentPassword"), request.body("password"))
           _    <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))
         } yield Results.NoContent
       }
 
-  def getKey(userId: String): Action[AnyContent] =
+  def getKey(userIdOrName: String): Action[AnyContent] =
     entrypoint("get key")
       .auth { implicit request =>
         for {
@@ -245,14 +245,14 @@ class UserCtrl @Inject() (
               .current
               .organisations(Permissions.manageUser)
               .users
-              .get(userId)
+              .get(EntityIdOrName(userIdOrName))
               .getOrFail("User")
           }
-          key <- authSrv.getKey(user._id)
+          key <- authSrv.getKey(user.login)
         } yield Results.Ok(key)
       }
 
-  def removeKey(userId: String): Action[AnyContent] =
+  def removeKey(userIdOrName: String): Action[AnyContent] =
     entrypoint("remove key")
       .auth { implicit request =>
         for {
@@ -261,16 +261,16 @@ class UserCtrl @Inject() (
               .current
               .organisations(Permissions.manageUser)
               .users
-              .get(userId)
+              .get(EntityIdOrName(userIdOrName))
               .getOrFail("User")
           }
-          _ <- authSrv.removeKey(userId)
+          _ <- authSrv.removeKey(user.login)
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
         } yield Results.NoContent
       //          Failure(AuthorizationError(s"User $userId doesn't exist or permission is insufficient"))
       }
 
-  def renewKey(userId: String): Action[AnyContent] =
+  def renewKey(userIdOrName: String): Action[AnyContent] =
     entrypoint("renew key")
       .auth { implicit request =>
         for {
@@ -279,18 +279,18 @@ class UserCtrl @Inject() (
               .current
               .organisations(Permissions.manageUser)
               .users
-              .get(userId)
+              .get(EntityIdOrName(userIdOrName))
               .getOrFail("User")
           }
-          key <- authSrv.renewKey(userId)
+          key <- authSrv.renewKey(user.login)
           _   <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("key" -> "<hidden>")))
         } yield Results.Ok(key)
       }
 
-  def avatar(userId: String): Action[AnyContent] =
+  def avatar(userIdOrName: String): Action[AnyContent] =
     entrypoint("get user avatar")
       .authTransaction(db) { implicit request => implicit graph =>
-        userSrv.get(userId).visible.avatar.headOption match {
+        userSrv.get(EntityIdOrName(userIdOrName)).visible.avatar.headOption match {
           case Some(avatar) if attachmentSrv.exists(avatar) =>
             Success(
               Result(
@@ -302,7 +302,7 @@ class UserCtrl @Inject() (
                 )
               )
             )
-          case _ => Failure(NotFoundError(s"user $userId has no avatar"))
+          case _ => Failure(NotFoundError(s"user $userIdOrName has no avatar"))
         }
       }
 }

@@ -4,10 +4,10 @@ import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
 import javax.inject.{Inject, Named}
 import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadConfigurationError, EntityId}
 import org.thp.thehive.models.{Audit, Organisation, User}
 import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.OrganisationOps._
@@ -29,12 +29,12 @@ object NotificationTopic {
 }
 
 sealed trait NotificationMessage
-case class NotificationExecution(userId: Option[String], auditId: String, notificationConfig: NotificationConfig) extends NotificationMessage
+case class NotificationExecution(userId: Option[EntityId], auditId: EntityId, notificationConfig: NotificationConfig) extends NotificationMessage
 
 object NotificationExecution {
   implicit val format: Format[NotificationExecution] = Json.format[NotificationExecution]
 }
-case class AuditNotificationMessage(id: String*) extends NotificationMessage
+case class AuditNotificationMessage(id: EntityId*) extends NotificationMessage
 
 object AuditNotificationMessage {
   implicit val format: Format[AuditNotificationMessage] = Json.format[AuditNotificationMessage]
@@ -90,7 +90,7 @@ class NotificationActor @Inject() (
   val roles: Set[String]  = configuration.get[Seq[String]]("roles").toSet
 
   // Map of OrganisationId -> Trigger -> (present in org, list of UserId) */
-  def triggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] =
+  def triggerMap: Map[EntityId, Map[Trigger, (Boolean, Seq[EntityId])]] =
     cache.getOrElseUpdate("notification-triggers", 5.minutes)(db.roTransaction(graph => configSrv.triggerMap(notificationSrv)(graph)))
 
   override def preStart(): Unit = {
@@ -117,8 +117,8 @@ class NotificationActor @Inject() (
       context: Option[Entity],
       `object`: Option[Entity],
       organisation: Organisation with Entity
-  )(
-      implicit graph: Graph
+  )(implicit
+      graph: Graph
   ): Unit =
     notificationConfigs
       .foreach {
@@ -176,7 +176,7 @@ class NotificationActor @Inject() (
                             val config = notificationConfig.flatMap(_.asOpt[NotificationConfig])
                             executeNotification(Some(user), config, audit, context, obj, organisation)
                         }
-                    if (inOrg) {
+                    if (inOrg)
                       organisationSrv
                         .get(organisation)
                         .config
@@ -198,7 +198,6 @@ class NotificationActor @Inject() (
                             }
                           executeNotification(None, orgConfig, audit, context, obj, organisation)
                         }
-                    }
                   case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable")
                 }
             case _ =>

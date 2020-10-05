@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
@@ -26,7 +27,7 @@ class PageCtrl @Inject() (
     entrypoint("get a page")
       .authRoTransaction(db) { implicit request => implicit graph =>
         pageSrv
-          .get(idOrTitle)
+          .get(EntityIdOrName(idOrTitle))
           .visible
           .getOrFail("Page")
           .map(p => Results.Ok(p.toJson))
@@ -50,7 +51,7 @@ class PageCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("page")
 
         for {
-          page    <- pageSrv.get(idOrTitle).visible.getOrFail("Page")
+          page    <- pageSrv.get(EntityIdOrName(idOrTitle)).visible.getOrFail("Page")
           updated <- pageSrv.update(page, propertyUpdaters)
         } yield Results.Ok(updated.toJson)
       }
@@ -59,7 +60,7 @@ class PageCtrl @Inject() (
     entrypoint("delete a page")
       .authPermittedTransaction(db, Permissions.managePage) { implicit request => implicit graph =>
         for {
-          page <- pageSrv.get(idOrTitle).visible.getOrFail("Page")
+          page <- pageSrv.get(EntityIdOrName(idOrTitle)).visible.getOrFail("Page")
           _    <- pageSrv.delete(page)
         } yield Results.NoContent
       }
@@ -70,10 +71,10 @@ class PublicPage @Inject() (pageSrv: PageSrv, organisationSrv: OrganisationSrv) 
   override val entityName: String = "page"
   override val initialQuery: Query =
     Query.init[Traversal.V[Page]]("listPage", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).pages)
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Page]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Page]](
     "getPage",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => pageSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => pageSrv.get(idOrName)(graph).visible(authContext)
   )
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Page], IteratorOutput](
     "page",

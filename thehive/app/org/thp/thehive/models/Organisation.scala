@@ -3,7 +3,7 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
-import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "name")
@@ -23,7 +23,7 @@ case class OrganisationOrganisation()
 case class RichOrganisation(organisation: Organisation with Entity, links: Seq[Organisation with Entity]) {
   def name: String               = organisation.name
   def description: String        = organisation.description
-  def _id: String                = organisation._id
+  def _id: EntityId              = organisation._id
   def _createdAt: Date           = organisation._createdAt
   def _createdBy: String         = organisation._createdBy
   def _updatedAt: Option[Date]   = organisation._updatedAt

@@ -3,9 +3,9 @@ package org.thp.thehive.connector.cortex.models
 import java.util.Date
 
 import org.apache.tinkerpop.gremlin.structure.{Edge, Graph, Vertex}
-import org.thp.scalligraph.BuildVertexEntity
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.Converter
+import org.thp.scalligraph.{BuildVertexEntity, EntityId}
 import play.api.libs.json.JsObject
 
 @BuildVertexEntity
@@ -24,7 +24,7 @@ case class Action(
 )
 
 case class RichAction(action: Action with Entity, context: Product with Entity) {
-  def _id: String               = action._id
+  def _id: EntityId             = action._id
   def _createdAt: Date          = action._createdAt
   def _createdBy: String        = action._createdBy
   def workerId: String          = action.workerId
@@ -51,7 +51,7 @@ object ActionContext extends HasModel {
     override val fields: Map[String, Mapping[_, _, _]] = Map.empty
     override val converter: Converter[EEntity, Edge] = (element: Edge) =>
       new ActionContext with Entity {
-        override val _id: String                = element.id().toString
+        override val _id: EntityId              = EntityId(element.id())
         override val _label: String             = "ActionContext"
         override val _createdBy: String         = UMapping.string.getProperty(element, "_createdBy")
         override val _updatedBy: Option[String] = UMapping.string.optional.getProperty(element, "_updatedBy")
@@ -60,7 +60,7 @@ object ActionContext extends HasModel {
       }
     override def addEntity(a: ActionContext, entity: Entity): EEntity =
       new ActionContext with Entity {
-        override def _id: String                = entity._id
+        override def _id: EntityId              = entity._id
         override def _label: String             = entity._label
         override def _createdBy: String         = entity._createdBy
         override def _updatedBy: Option[String] = entity._updatedBy

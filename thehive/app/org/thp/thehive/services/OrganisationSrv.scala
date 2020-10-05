@@ -1,5 +1,7 @@
 package org.thp.thehive.services
 
+import java.util.{Map => JMap}
+
 import akka.actor.ActorRef
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
@@ -9,12 +11,12 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
-import org.thp.scalligraph.{BadRequestError, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services.RoleOps._
+import org.thp.thehive.services.UserOps._
 import play.api.libs.json.JsObject
 
 import scala.util.{Failure, Success, Try}
@@ -38,6 +40,8 @@ class OrganisationSrv @Inject() (
     super.createEntity(e)
   }
 
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Organisation] = startTraversal.getByName(name)
+
   def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
       createdOrganisation <- create(organisation)
@@ -55,17 +59,13 @@ class OrganisationSrv @Inject() (
   def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
     userSrv.current.organisations.visibleOrganisationsFrom
 
-  override def get(idOrName: String)(implicit graph: Graph): Traversal.V[Organisation] =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else startTraversal.getByName(idOrName)
-
   override def exists(e: Organisation)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
   override def update(
       traversal: Traversal.V[Organisation],
       propertyUpdaters: Seq[PropertyUpdater]
   )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Organisation], JsObject)] =
-    if (traversal.clone().has("name", Organisation.administration.name).exists)
+    if (traversal.clone().getByName(Organisation.administration.name).exists)
       Failure(BadRequestError("Admin organisation is unmodifiable"))
     else
       auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
@@ -77,7 +77,7 @@ class OrganisationSrv @Inject() (
       }
 
   def linkExists(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Boolean =
-    fromOrg._id == toOrg._id || get(fromOrg).links.hasId(toOrg._id).exists
+    fromOrg._id == toOrg._id || get(fromOrg).links.getEntity(toOrg).exists
 
   def link(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
     if (linkExists(fromOrg, toOrg)) Success(())
@@ -104,12 +104,15 @@ class OrganisationSrv @Inject() (
     unlink(org2, org1)
   }
 
-  def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[String])(implicit authContext: AuthContext, graph: Graph): Try[Unit] = {
+  def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[EntityIdOrName])(implicit
+      authContext: AuthContext,
+      graph: Graph
+  ): Try[Unit] = {
     val (orgToAdd, orgToRemove) = get(fromOrg)
       .links
-      .property[String, String]("name", identity[String])
+      ._id
       .toIterator
-      .foldLeft((toOrganisations.toSet, Set.empty[String])) {
+      .foldLeft((toOrganisations.toSet, Set.empty[EntityId])) {
         case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
         case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
       }
@@ -124,6 +127,11 @@ object OrganisationOps {
 
   implicit class OrganisationOpsDefs(traversal: Traversal.V[Organisation]) {
 
+    def get(idOrName: EntityIdOrName): Traversal.V[Organisation] =
+      idOrName.fold(traversal.getByIds(_), traversal.getByName(_))
+
+    def current(implicit authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
+
     def links: Traversal.V[Organisation] = traversal.out[OrganisationOrganisation].v[Organisation]
 
     def cases: Traversal.V[Case] = traversal.out[OrganisationShare].out[ShareCase].v[Case]
@@ -133,16 +141,12 @@ object OrganisationOps {
     def caseTemplates: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateOrganisation].v[CaseTemplate]
 
     def users(requiredPermission: Permission): Traversal.V[User] =
-      traversal
-        .in[RoleOrganisation]
-        .filter(_.out[RoleProfile].has("permissions", requiredPermission))
-        .in[UserRole]
-        .v[User]
+      traversal.roles.filter(_.profile.has(_.permissions, requiredPermission)).user
 
-    def userPermissions(userId: String): Traversal[Permission, String, Converter[Permission, String]] =
+    def userPermissions(userId: EntityIdOrName): Traversal[Permission, String, Converter[Permission, String]] =
       traversal
         .roles
-        .filter(_.user.has("login", userId))
+        .filter(_.user.get(userId))
         .profile
         .property("permissions", Permission(_: String))
 
@@ -157,9 +161,9 @@ object OrganisationOps {
     def visible(implicit authContext: AuthContext): Traversal.V[Organisation] =
       if (authContext.isPermitted(Permissions.manageOrganisation)) traversal
       else
-        traversal.filter(_.visibleOrganisationsTo.users.has("login", authContext.userId))
+        traversal.filter(_.visibleOrganisationsTo.users.current)
 
-    def richOrganisation =
+    def richOrganisation: Traversal[RichOrganisation, JMap[String, Any], Converter[RichOrganisation, JMap[String, Any]]] =
       traversal
         .project(
           _.by
@@ -170,14 +174,12 @@ object OrganisationOps {
             RichOrganisation(organisation, linkedOrganisations)
         }
 
+    def isAdmin: Boolean = traversal.has(_.name, Organisation.administration.name).exists
+
     def users: Traversal.V[User] = traversal.in[RoleOrganisation].in[UserRole].v[User]
 
     def userProfile(login: String): Traversal.V[Profile] =
-      traversal
-        .in[RoleOrganisation]
-        .filter(_.in[UserRole].has("login", login))
-        .out[RoleProfile]
-        .v[Profile]
+      roles.filter(_.user.has(_.login, login)).profile
 
     def visibleOrganisationsTo: Traversal.V[Organisation] =
       traversal.unionFlat(identity, _.in[OrganisationOrganisation]).dedup().v[Organisation]
@@ -187,11 +189,7 @@ object OrganisationOps {
 
     def config: Traversal.V[Config] = traversal.out[OrganisationConfig].v[Config]
 
-    def get(idOrName: String)(implicit db: Database): Traversal.V[Organisation] =
-      if (db.isValidId(idOrName)) traversal.getByIds(idOrName)
-      else getByName(idOrName)
-
-    def getByName(name: String): Traversal.V[Organisation] = traversal.has("name", name)
+    def getByName(name: String): Traversal.V[Organisation] = traversal.has(_.name, name)
   }
 
 }

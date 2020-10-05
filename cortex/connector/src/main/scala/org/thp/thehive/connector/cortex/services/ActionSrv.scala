@@ -8,12 +8,12 @@ import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.structure.{Element, Graph}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.ActionOps._
@@ -137,7 +137,7 @@ class ActionSrv @Inject() (
     * @param authContext context for db queries
     * @return
     */
-  def finished(actionId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Action with Entity] =
+  def finished(actionId: EntityId, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Action with Entity] =
     db.tryTransaction { implicit graph =>
       getByIds(actionId).richAction.getOrFail("Action").flatMap { action =>
         val operations: Seq[ActionOperationStatus] = cortexJob
@@ -189,20 +189,20 @@ class ActionSrv @Inject() (
     * @param graph db graph
     * @return
     */
-  def relatedCase(id: String)(implicit graph: Graph): Option[Case with Entity] =
+  def relatedCase(id: EntityId)(implicit graph: Graph): Option[Case with Entity] =
     for {
       richAction  <- startTraversal.getByIds(id).richAction.getOrFail("Action").toOption
       relatedCase <- entityHelper.parentCase(richAction.context)
     } yield relatedCase
 
-  def relatedTask(id: String)(implicit graph: Graph): Option[Task with Entity] =
+  def relatedTask(id: EntityId)(implicit graph: Graph): Option[Task with Entity] =
     for {
       richAction  <- startTraversal.getByIds(id).richAction.getOrFail("Action").toOption
       relatedTask <- entityHelper.parentTask(richAction.context)
     } yield relatedTask
 
   // TODO to be tested
-  def listForEntity(id: String)(implicit graph: Graph): Seq[RichAction] = startTraversal.forEntity(id).richAction.toSeq
+  def listForEntity(id: EntityId)(implicit graph: Graph): Seq[RichAction] = startTraversal.forEntity(id).richAction.toSeq
 }
 
 object ActionOps {
@@ -225,7 +225,7 @@ object ActionOps {
             RichAction(action, context)
         }
 
-    def forEntity(entityId: String): Traversal.V[Action] =
+    def forEntity(entityId: EntityId): Traversal.V[Action] =
       traversal.filter(_.out[ActionContext].hasId(entityId))
 
     def context: Traversal[Product with Entity, Element, Converter[Product with Entity, Element]] = traversal.out[ActionContext].entity

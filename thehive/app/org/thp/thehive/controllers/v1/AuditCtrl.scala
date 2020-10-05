@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
@@ -28,10 +29,10 @@ class AuditCtrl @Inject() (
   val initialQuery: Query =
     Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(authContext))
   val publicProperties: PublicProperties = properties.audit
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Audit]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
-    FieldsParser[IdOrName],
-    (param, graph, authContext) => auditSrv.get(param.idOrName)(graph).visible(authContext)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(authContext)
   )
 
   val pageQuery: ParamQuery[OutputParam] =

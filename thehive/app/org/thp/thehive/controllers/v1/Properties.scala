@@ -1,23 +1,27 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
-import org.thp.scalligraph.BadRequestError
-import org.thp.scalligraph.controllers.FPathElem
-import org.thp.scalligraph.models.{IdMapping, UMapping}
+import java.util.Date
+
+import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty}
+import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
+import org.thp.scalligraph.traversal.Converter
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 import scala.util.Failure
 
@@ -28,7 +32,9 @@ class Properties @Inject() (
     taskSrv: TaskSrv,
     userSrv: UserSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    observableSrv: ObservableSrv
+    observableSrv: ObservableSrv,
+    customFieldSrv: CustomFieldSrv,
+    @Named("with-thehive-schema") db: Database
 ) {
 
   lazy val alert: PublicProperties =
@@ -82,7 +88,7 @@ class Properties @Inject() (
       .property("base", UMapping.boolean)(_.rename("mainAction").readonly)
       .property("startDate", UMapping.date)(_.rename("_createdAt").readonly)
       .property("requestId", UMapping.string)(_.field.readonly)
-      .property("rootId", IdMapping)(_.select(_.context._id).readonly)
+      .property("rootId", db.idMapping)(_.select(_.context._id).readonly)
       .build
 
   lazy val `case`: PublicProperties =
@@ -110,7 +116,7 @@ class Properties @Inject() (
       .property("assignee", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, _, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
-          user <- login.map(userSrv.get(_)(graph).getOrFail("User")).flip
+          user <- login.map(u => userSrv.get(EntityIdOrName(u))(graph).getOrFail("User")).flip
           _ <- user match {
             case Some(u) => caseSrv.assign(c, u)(graph, authContext)
             case None    => caseSrv.unassign(c)(graph, authContext)
@@ -137,6 +143,57 @@ class Properties @Inject() (
             }
             .map(_ => Json.obj("resolutionStatus" -> value))
       })
+      .property("customFields", UMapping.jsonNative)(_.subSelect {
+        case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
+          caseSteps
+            .customFields(EntityIdOrName(idOrName))
+            .jsonValue
+        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+      }
+        .filter {
+          case (FPathElem(_, FPathElem(idOrName, _)), caseTraversal) =>
+            db
+              .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(idOrName)).value(_.`type`).getOrFail("CustomField"))
+              .map {
+                case CustomFieldType.boolean => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.booleanValue)
+                case CustomFieldType.date    => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.dateValue)
+                case CustomFieldType.float   => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.floatValue)
+                case CustomFieldType.integer => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.integerValue)
+                case CustomFieldType.string  => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.stringValue)
+              }
+              .getOrElse(caseTraversal.constant2(null))
+          case (_, caseTraversal) => caseTraversal.constant2(null)
+        }
+        .converter {
+          case FPathElem(_, FPathElem(idOrName, _)) =>
+            db
+              .roTransaction { implicit graph =>
+                customFieldSrv.get(EntityIdOrName(idOrName)).value(_.`type`).getOrFail("CustomField")
+              }
+              .map {
+                case CustomFieldType.boolean => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Boolean] }
+                case CustomFieldType.date    => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Date] }
+                case CustomFieldType.float   => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Double] }
+                case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
+                case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
+              }
+              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
+          case _ => (x: JsValue) => x
+        }
+        .custom {
+          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, _, graph, authContext) =>
+            for {
+              c <- caseSrv.get(vertex)(graph).getOrFail("Case")
+              _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
+            } yield Json.obj(s"customField.$idOrName" -> value)
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+            for {
+              c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
+              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
+              _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
+            } yield Json.obj("customFields" -> values)
+          case _ => Failure(BadRequestError("Invalid custom fields format"))
+        })
       .build
 
   lazy val caseTemplate: PublicProperties =
@@ -204,7 +261,7 @@ class Properties @Inject() (
             .flatMap { task =>
               value.fold(taskSrv.unassign(task)(graph, authContext)) { user =>
                 userSrv
-                  .get(user)(graph)
+                  .get(EntityIdOrName(user))(graph)
                   .getOrFail("User")
                   .flatMap(taskSrv.assign(task, _)(graph, authContext))
               }
@@ -218,7 +275,7 @@ class Properties @Inject() (
       .property("message", UMapping.string)(_.field.updatable)
       .property("deleted", UMapping.boolean)(_.field.updatable)
       .property("date", UMapping.date)(_.field.readonly)
-      .property("attachment", IdMapping)(_.select(_.attachments._id).readonly)
+      .property("attachment", UMapping.string)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
 
   lazy val user: PublicProperties =

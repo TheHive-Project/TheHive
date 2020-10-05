@@ -28,7 +28,7 @@ class Connector @Inject() (appConfig: ApplicationConfig, system: ActorSystem, ma
     attributeConvertersConfig.get.reverseIterator.find(a => a.mispCategory == attributeCategory && a.mispType == attributeType)
 
   def attributeConverter(`type`: ObservableType): Option[(String, String)] =
-    attributeConvertersConfig.get.reverseIterator.find(_.`type` == `type`.name).map(a => a.mispCategory -> a.mispType)
+    attributeConvertersConfig.get.reverseIterator.find(_.`type`.value == `type`.name).map(a => a.mispCategory -> a.mispType)
 
   val syncIntervalConfig: ConfigItem[FiniteDuration, FiniteDuration] = appConfig.item[FiniteDuration]("misp.syncInterval", "")
   def syncInterval: FiniteDuration                                   = syncIntervalConfig.get
@@ -47,9 +47,10 @@ class Connector @Inject() (appConfig: ApplicationConfig, system: ActorSystem, ma
       .traverse(clients)(client => client.getStatus)
       .foreach { statusDetails =>
         val distinctStatus = statusDetails.map(s => (s \ "status").as[String]).toSet
-        val healthStatus = if (distinctStatus.contains("OK")) {
-          if (distinctStatus.size > 1) "WARNING" else "OK"
-        } else "ERROR"
+        val healthStatus =
+          if (distinctStatus.contains("OK"))
+            if (distinctStatus.size > 1) "WARNING" else "OK"
+          else "ERROR"
         cachedStatus = Json.obj("enabled" -> true, "servers" -> statusDetails, "status" -> healthStatus)
         system.scheduler.scheduleOnce(statusCheckInterval)(updateStatus())
       }
@@ -62,10 +63,11 @@ class Connector @Inject() (appConfig: ApplicationConfig, system: ActorSystem, ma
       .traverse(clients)(_.getHealth)
       .foreach { healthStatus =>
         val distinctStatus = healthStatus.toSet
-        cachedHealth = if (distinctStatus.contains(HealthStatus.Ok)) {
-          if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
-        } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
-        else HealthStatus.Warning
+        cachedHealth =
+          if (distinctStatus.contains(HealthStatus.Ok))
+            if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
+          else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
+          else HealthStatus.Warning
 
         system.scheduler.scheduleOnce(statusCheckInterval)(updateHealth())
       }

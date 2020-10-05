@@ -3,6 +3,7 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
@@ -274,8 +275,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       summary = None,
       owner = Some("certuser@thehive.local"),
       customFields = Json.obj(
-        "boolean1" -> Json.obj("boolean" -> JsNull, "order" -> JsNull),
-        "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> JsNull)
+        "boolean1" -> Json.obj("boolean" -> JsNull, "order" -> 2),
+        "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 1)
       ),
       stats = Json.obj()
     )
@@ -283,7 +284,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     TestCase(resultCaseOutput) must_=== expected
     val observables = app[Database].roTransaction { implicit graph =>
       val authContext = DummyUserSrv(organisation = "cert").authContext
-      app[CaseSrv].get(resultCaseOutput._id).observables(authContext).richObservable.toList
+      app[CaseSrv].get(EntityIdOrName(resultCaseOutput._id)).observables(authContext).richObservable.toList
     }
     observables must contain(
       exactly(
@@ -300,7 +301,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
   "merge an alert with a case" in testApp { app =>
     val request1 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref5/merge/#1")
       .withHeaders("user" -> "certuser@thehive.local")
-    val result1 = app[AlertCtrl].mergeWithCase("testType;testSource;ref5", "#1")(request1)
+    val result1 = app[AlertCtrl].mergeWithCase("testType;testSource;ref5", "1")(request1)
     status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
     val resultCase       = contentAsJson(result1)
@@ -311,7 +312,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     app[Database].roTransaction { implicit graph =>
       val observables = app
         .apply[CaseSrv]
-        .get("#1")
+        .get(EntityIdOrName("1"))
         .observables(DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").getSystemAuthContext)
         .toList
 

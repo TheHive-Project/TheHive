@@ -5,7 +5,7 @@ import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, User => Scalligra
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Instance
-import org.thp.scalligraph.{AuthenticationError, CreateError, NotFoundError}
+import org.thp.scalligraph.{AuthenticationError, CreateError, EntityIdOrName, EntityName, NotFoundError}
 import org.thp.thehive.models.{Organisation, Permissions, Profile, User}
 import org.thp.thehive.services.UserOps._
 import play.api.Configuration
@@ -23,20 +23,20 @@ class LocalUserSrv @Inject() (
     configuration: Configuration
 ) extends ScalligraphUserSrv {
 
-  override def getAuthContext(request: RequestHeader, userId: String, organisationName: Option[String]): Try[AuthContext] =
+  override def getAuthContext(request: RequestHeader, userId: String, organisationName: Option[EntityIdOrName]): Try[AuthContext] =
     db.roTransaction { implicit graph =>
       val requestId = Instance.getRequestId(request)
-      val userSteps = userSrv.get(userId)
+      val users     = userSrv.get(EntityIdOrName(userId))
 
-      if (userSteps.clone().exists)
-        userSteps
+      if (users.clone().exists)
+        users
           .clone()
           .getAuthContext(requestId, organisationName)
           .headOption
           .orElse {
             organisationName.flatMap { org =>
-              userSteps
-                .getAuthContext(requestId, Organisation.administration.name)
+              users
+                .getAuthContext(requestId, EntityIdOrName(Organisation.administration.name))
                 .headOption
                 .map(authContext => authContext.changeOrganisation(org, authContext.permissions))
             }
@@ -59,10 +59,10 @@ class LocalUserSrv @Inject() (
         implicit val defaultAuthContext: AuthContext = getSystemAuthContext
         for {
           profileStr <- readData(userInfo, profileFieldName, defaultProfile)
-          profile    <- profileSrv.getOrFail(profileStr)
+          profile    <- profileSrv.getOrFail(EntityName(profileStr))
           orgaStr    <- readData(userInfo, organisationFieldName, defaultOrg)
           if orgaStr != Organisation.administration.name || profile.name == Profile.admin.name
-          organisation <- organisationSrv.getOrFail(orgaStr)
+          organisation <- organisationSrv.getOrFail(EntityName(orgaStr))
           richUser <- userSrv.addOrCreateUser(
             User(userId, userId, None, locked = false, None, None),
             None,
@@ -82,7 +82,7 @@ object LocalUserSrv {
     AuthContextImpl(
       User.system.login,
       User.system.name,
-      Organisation.administration.name,
+      EntityIdOrName(Organisation.administration.name),
       Instance.getInternalId,
       Permissions.all
     )

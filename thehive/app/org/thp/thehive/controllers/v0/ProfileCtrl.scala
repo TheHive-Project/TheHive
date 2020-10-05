@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v0
 
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.AuthorizationError
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.{AuthorizationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputProfile
 import org.thp.thehive.models.{Permissions, Profile}
@@ -39,7 +39,7 @@ class ProfileCtrl @Inject() (
     entrypoint("get profile")
       .authRoTransaction(db) { _ => implicit graph =>
         profileSrv
-          .getOrFail(profileId)
+          .getOrFail(EntityIdOrName(profileId))
           .map { profile =>
             Results.Ok(profile.toJson)
           }
@@ -52,7 +52,7 @@ class ProfileCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("profile")
         if (request.isPermitted(Permissions.manageProfile))
           profileSrv
-            .update(_.get(profileId), propertyUpdaters)
+            .update(_.get(EntityIdOrName(profileId)), propertyUpdaters)
             .flatMap { case (profileSteps, _) => profileSteps.getOrFail("Profile") }
             .map(profile => Results.Ok(profile.toJson))
         else
@@ -63,7 +63,7 @@ class ProfileCtrl @Inject() (
     entrypoint("delete profile")
       .authPermittedTransaction(db, Permissions.manageProfile) { implicit request => implicit graph =>
         profileSrv
-          .getOrFail(profileId)
+          .getOrFail(EntityIdOrName(profileId))
           .flatMap(profileSrv.remove)
           .map(_ => Results.NoContent)
       }
@@ -73,10 +73,10 @@ class ProfileCtrl @Inject() (
 class PublicProfile @Inject() (profileSrv: ProfileSrv) extends PublicData {
   val entityName: String = "profile"
 
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, Traversal.V[Profile]](
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](
     "getProfile",
-    FieldsParser[IdOrName],
-    (param, graph, _) => profileSrv.get(param.idOrName)(graph)
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, _) => profileSrv.get(idOrName)(graph)
   )
   val initialQuery: Query =
     Query.init[Traversal.V[Profile]]("listProfile", (graph, _) => profileSrv.startTraversal(graph))

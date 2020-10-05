@@ -29,31 +29,31 @@ class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "get a dashboard if visible" in testApp { app =>
       val dashboard = app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].startTraversal.has("title", "dashboard cert").getOrFail("Dashboard").get
+        app[DashboardSrv].startTraversal.has(_.title, "dashboard cert").getOrFail("Dashboard").get
       }
 
       val request = FakeRequest("GET", s"/api/dashboard/${dashboard._id}")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[DashboardCtrl].get(dashboard._id)(request)
+      val result = app[DashboardCtrl].get(dashboard._id.toString)(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val requestFailed = FakeRequest("GET", s"/api/dashboard/${dashboard._id}")
         .withHeaders("user" -> "socuser@thehive.local")
-      val resultFailed = app[DashboardCtrl].get(dashboard._id)(requestFailed)
+      val resultFailed = app[DashboardCtrl].get(dashboard._id.toString)(requestFailed)
 
       status(resultFailed) must equalTo(404).updateMessage(s => s"$s\n${contentAsString(resultFailed)}")
     }
 
     "update a dashboard" in testApp { app =>
       val dashboard = app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].startTraversal.has("title", "dashboard cert").getOrFail("Dashboard").get
+        app[DashboardSrv].startTraversal.has(_.title, "dashboard cert").getOrFail("Dashboard").get
       }
 
       val request = FakeRequest("PATCH", s"/api/dashboard/${dashboard._id}")
         .withHeaders("user" -> "certadmin@thehive.local")
         .withJsonBody(Json.parse("""{"title": "updated", "description": "updated", "status": "Private", "definition": "{}"}"""))
-      val result = app[DashboardCtrl].update(dashboard._id)(request)
+      val result = app[DashboardCtrl].update(dashboard._id.toString)(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
@@ -67,17 +67,17 @@ class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "delete a dashboard" in testApp { app =>
       val dashboard = app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].startTraversal.has("title", "dashboard cert").getOrFail("Dashboard").get
+        app[DashboardSrv].startTraversal.has(_.title, "dashboard cert").getOrFail("Dashboard").get
       }
 
       val request = FakeRequest("DELETE", s"/api/dashboard/${dashboard._id}")
         .withHeaders("user" -> "certadmin@thehive.local")
-      val result = app[DashboardCtrl].delete(dashboard._id)(request)
+      val result = app[DashboardCtrl].delete(dashboard._id.toString)(request)
 
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       app[Database].roTransaction { implicit graph =>
-        app[DashboardSrv].startTraversal.has("title", "dashboard cert").exists must beFalse
+        app[DashboardSrv].startTraversal.has(_.title, "dashboard cert").exists must beFalse
       }
     }
   }

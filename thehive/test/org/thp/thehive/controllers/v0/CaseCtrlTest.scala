@@ -4,6 +4,7 @@ import java.util.Date
 
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
@@ -90,7 +91,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         owner = Some("certuser@thehive.local"),
         customFields = Json.obj(
           "boolean1" -> Json.obj("boolean" -> true, "order" -> JsNull),
-          "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> JsNull),
+          "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 1),
           "date1"    -> Json.obj("date" -> now.getTime, "order" -> JsNull)
         ),
         stats = Json.obj()
@@ -152,7 +153,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val tasksList = contentAsJson(resultList)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputTask]]
       tasksList.find(_.title == "task x") must beSome
 
-      val assignee = app[Database].roTransaction(implicit graph => app[CaseSrv].get(outputCase._id).assignee.getOrFail("Case"))
+      val assignee = app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityIdOrName(outputCase._id)).assignee.getOrFail("Case"))
 
       assignee must beSuccessfulTry
       assignee.get.login shouldEqual "certuser@thehive.local"
@@ -161,11 +162,11 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     "try to get a case" in testApp { app =>
       val request = FakeRequest("GET", s"/api/v0/case/#2")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[CaseCtrl].get("#145")(request)
+      val result = app[CaseCtrl].get("145")(request)
 
       status(result) shouldEqual 404
 
-      val result2 = app[CaseCtrl].get("#2")(request)
+      val result2 = app[CaseCtrl].get("2")(request)
       status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
       val resultCase       = contentAsJson(result2)
       val resultCaseOutput = resultCase.as[OutputCase]
@@ -192,7 +193,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a case properly" in testApp { app =>
-      val request = FakeRequest("PATCH", s"/api/v0/case/#1")
+      val request = FakeRequest("PATCH", s"/api/v0/case/1")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(
           Json.obj(
@@ -200,7 +201,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
             "flag"  -> true
           )
         )
-      val result = app[CaseCtrl].update("#1")(request)
+      val result = app[CaseCtrl].update("1")(request)
       status(result) must_=== 200
       val resultCase = contentAsJson(result).as[OutputCase]
 
@@ -213,7 +214,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(
           Json.obj(
-            "ids"         -> List("#1", "#2"),
+            "ids"         -> List("1", "2"),
             "description" -> "new description",
             "tlp"         -> 1,
             "pap"         -> 1
@@ -228,15 +229,15 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       resultCases.map(_.tlp) must contain(be_==(1)).forall
       resultCases.map(_.pap) must contain(be_==(1)).forall
 
-      val requestGet1 = FakeRequest("GET", s"/api/v0/case/#1")
+      val requestGet1 = FakeRequest("GET", s"/api/v0/case/1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val resultGet1 = app[CaseCtrl].get("#1")(requestGet1)
+      val resultGet1 = app[CaseCtrl].get("1")(requestGet1)
       status(resultGet1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet1)}")
       val case1 = contentAsJson(resultGet1).as[OutputCase]
 
-      val requestGet2 = FakeRequest("GET", s"/api/v0/case/#2")
+      val requestGet2 = FakeRequest("GET", s"/api/v0/case/2")
         .withHeaders("user" -> "certuser@thehive.local")
-      val resultGet2 = app[CaseCtrl].get("#2")(requestGet2)
+      val resultGet2 = app[CaseCtrl].get("2")(requestGet2)
       status(resultGet2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet2)}")
       val case3 = contentAsJson(resultGet2).as[OutputCase]
 
@@ -333,10 +334,10 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "assign a case to an user" in testApp { app =>
-      val request = FakeRequest("PATCH", s"/api/v0/case/#4")
+      val request = FakeRequest("PATCH", s"/api/v0/case/4")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.obj("owner" -> "certro@thehive.local"))
-      val result = app[CaseCtrl].update("#1")(request)
+      val result = app[CaseCtrl].update("1")(request)
       status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultCase       = contentAsJson(result)
       val resultCaseOutput = resultCase.as[OutputCase]
@@ -347,17 +348,17 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     "force delete a case" in testApp { app =>
       val tasks = app[Database].roTransaction { implicit graph =>
         val authContext = DummyUserSrv(organisation = "cert").authContext
-        app[CaseSrv].get("#1").tasks(authContext).toSeq
+        app[CaseSrv].get(EntityIdOrName("1")).tasks(authContext).toSeq
       }
       tasks must have size 2
 
       val requestDel = FakeRequest("DELETE", s"/api/v0/case/#1/force")
         .withHeaders("user" -> "certuser@thehive.local")
-      val resultDel = app[CaseCtrl].realDelete("#1")(requestDel)
+      val resultDel = app[CaseCtrl].realDelete("1")(requestDel)
       status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].get("#1").headOption must beNone
+        app[CaseSrv].get(EntityIdOrName("1")).headOption must beNone
 //        tasks.flatMap(task => app[TaskSrv].get(task).headOption) must beEmpty
       }
     }
