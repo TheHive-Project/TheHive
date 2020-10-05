@@ -18,8 +18,8 @@ import scala.util.Try
 class ReportTagSrv @Inject() (observableSrv: ObservableSrv)(implicit @Named("with-thehive-schema") db: Database) extends VertexSrv[ReportTag] {
   val observableReportTagSrv = new EdgeSrv[ObservableReportTag, Observable, ReportTag]
 
-  def updateTags(observable: Observable with Entity, origin: String, reportTags: Seq[ReportTag])(
-      implicit graph: Graph,
+  def updateTags(observable: Observable with Entity, origin: String, reportTags: Seq[ReportTag])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     observableSrv.get(observable).reportTags.fromOrigin(origin).remove()
@@ -35,6 +35,6 @@ object ReportTagOps {
   implicit class ReportTagOpsDefs(traversal: Traversal.V[ReportTag]) {
     def observable: Traversal.V[Observable] = traversal.in[ObservableReportTag].v[Observable]
 
-    def fromOrigin(origin: String): Traversal.V[ReportTag] = traversal.has("origin", origin)
+    def fromOrigin(origin: String): Traversal.V[ReportTag] = traversal.has(_.origin, origin)
   }
 }

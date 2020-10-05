@@ -14,14 +14,13 @@ import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
 import play.api.Logger
-import play.api.inject.Injector
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Success, Try}
 
 @Singleton
-class TheHiveSchemaDefinition @Inject() (injector: Injector) extends Schema with UpdatableSchema {
+class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
 
   // Make sure TypeDefinitionCategory has been initialised before ModifierType to prevent ExceptionInInitializerError
   TypeDefinitionCategory.BACKING_INDEX
@@ -30,7 +29,7 @@ class TheHiveSchemaDefinition @Inject() (injector: Injector) extends Schema with
   val operations: Operations = Operations(name)
     .addProperty[Option[Boolean]]("Observable", "seen")
     .updateGraph("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
-      Try(traversal.has("name", "org-admin").raw.property("permissions", "manageConfig").iterate())
+      Try(traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageConfig").iterate())
       Success(())
     }
     .updateGraph("Remove duplicate custom fields", "CustomField") { traversal =>

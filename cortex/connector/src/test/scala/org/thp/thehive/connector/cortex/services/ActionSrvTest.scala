@@ -2,10 +2,10 @@ package org.thp.thehive.connector.cortex.services
 
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputJob
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{AppBuilder, EntityName}
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models._
@@ -35,23 +35,24 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
       )
       .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
-  def testAppBuilder[A](body: AppBuilder => A): A = testApp { app =>
-    body(
-      app
-        .`override`(
-          _.bindActor[CortexActor]("cortex-actor")
-            .bindToProvider[CortexClient, TestCortexClientProvider]
-            .bind[Connector, TestConnector]
-            .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-        )
-    )
-  }
+  def testAppBuilder[A](body: AppBuilder => A): A =
+    testApp { app =>
+      body(
+        app
+          .`override`(
+            _.bindActor[CortexActor]("cortex-actor")
+              .bindToProvider[CortexClient, TestCortexClientProvider]
+              .bind[Connector, TestConnector]
+              .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+          )
+      )
+    }
 
   "action service" should {
     "execute, create and handle finished action operations" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         implicit val entityWrites: OWrites[Entity] = app[ActionCtrl].entityWrites
-        val task1: Task with Entity                = app[TaskSrv].startTraversal.has("title", "case 1 task 1").head
+        val task1: Task with Entity                = app[TaskSrv].startTraversal.has(_.title, "case 1 task 1").head
 
         val richAction = await(app[ActionSrv].execute(task1, None, "respTest1", JsObject.empty))
         richAction.workerId shouldEqual "respTest1"
@@ -77,7 +78,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
     "handle action related to Task and Log" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         implicit val entityWrites: OWrites[Entity] = app[ActionCtrl].entityWrites
-        val log1                                   = app[LogSrv].startTraversal.has("message", "log for action test").head
+        val log1                                   = app[LogSrv].startTraversal.has(_.message, "log for action test").head
 
         val richAction = await(app[ActionSrv].execute(log1, None, "respTest1", JsObject.empty))
         richAction.workerId shouldEqual "respTest1"
@@ -101,15 +102,15 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
       }
 
       app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].startTraversal.has("title", "case 2 task 2").has("status", "Completed").exists must beTrue
-        app[TaskSrv].startTraversal.has("title", "case 2 task 2").logs.has("message", "test log from action").exists must beTrue
+        app[TaskSrv].startTraversal.has(_.title, "case 2 task 2").has(_.status, TaskStatus.Completed).exists must beTrue
+        app[TaskSrv].startTraversal.has(_.title, "case 2 task 2").logs.has(_.message, "test log from action").exists must beTrue
       }
     }
 
     "handle action related to an Alert" in testApp { app =>
       implicit val entityWrites: OWrites[Entity] = app[ActionCtrl].entityWrites
       val alert = app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get("testType;testSource;ref2").visible.head
+        app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible.head
       }
       alert.read must beFalse
       val richAction = await(app[ActionSrv].execute(alert, None, "respTest1", JsObject.empty))
@@ -122,7 +123,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
       updatedActionTry must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        val updatedAlert = app[AlertSrv].get("testType;testSource;ref2").visible.richAlert.head // FIXME
+        val updatedAlert = app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible.richAlert.head // FIXME
         updatedAlert.read must beTrue
         updatedAlert.tags.map(_.toString) must contain("test tag from action") // TODO
       }

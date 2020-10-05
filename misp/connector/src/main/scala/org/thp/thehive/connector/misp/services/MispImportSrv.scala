@@ -308,22 +308,21 @@ class MispImportSrv @Inject() (
         Future.fromTry {
           logger.info("Removing old observables")
           db.tryTransaction { implicit graph =>
-              alertSrv
-                .get(alert)
-                .observables
-                .filter(
-                  _.or(
-                    _.has("_updatedAt", P.lt(startSyncDate)),
-                    _.and(_.hasNot("_updatedAt"), _.has("_createdAt", P.lt(startSyncDate)))
-                  )
+            alertSrv
+              .get(alert)
+              .observables
+              .filter(
+                _.or(
+                  _.has(_._updatedAt, P.lt(startSyncDate)),
+                  _.and(_.hasNot(_._updatedAt), _.has(_._createdAt, P.lt(startSyncDate)))
                 )
-                .toIterator
-                .toTry { obs =>
-                  logger.info(s"Remove $obs")
-                  observableSrv.remove(obs)
-                }
-            }
-            .map(_ => ())
+              )
+              .toIterator
+              .toTry { obs =>
+                logger.info(s"Remove $obs")
+                observableSrv.remove(obs)
+              }
+          }.map(_ => ())
         }
       }
   }

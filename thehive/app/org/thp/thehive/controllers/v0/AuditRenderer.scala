@@ -98,8 +98,8 @@ trait AuditRenderer {
   def jsonSummary(auditSrv: AuditSrv, requestId: String)(implicit graph: Graph): JsObject =
     auditSrv
       .startTraversal
-      .has("requestId", requestId)
-      .has("mainAction", false)
+      .has(_.requestId, requestId)
+      .has(_.mainAction, false)
       .group(
         _.byValue(_.objectType),
         _.by(_.groupCount(_.byValue(_.action)))

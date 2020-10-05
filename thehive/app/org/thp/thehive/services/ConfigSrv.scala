@@ -68,7 +68,7 @@ class ConfigSrv @Inject() (
       userSrv
         .get(userName)
         .config
-        .has("name", name)
+        .has(_.name, name)
         .headOption
   }
 }
@@ -82,7 +82,7 @@ object ConfigOps {
       def notificationRaw: Traversal[Config with Entity, Vertex, Converter[Config with Entity, Vertex]] =
         traversal
           .clone()
-          .has("name", P.eq[String]("notification"))
+          .has(_.name, "notification")
 
       // Retrieve triggers configured for each organisation
       val organisationTriggers: Iterator[(String, Trigger, Option[String])] = {
@@ -137,6 +137,6 @@ object ConfigOps {
         }
     }
 
-    def getValue[A: Reads](name: String): Traversal[JsValue, String, Converter[JsValue, String]] = traversal.has("name", name).value(_.value)
+    def getValue[A: Reads](name: String): Traversal[JsValue, String, Converter[JsValue, String]] = traversal.has(_.name, name).value(_.value)
   }
 }

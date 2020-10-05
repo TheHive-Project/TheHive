@@ -48,7 +48,7 @@ class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
 
         alert must beSuccessfulTry
 
-        val audit = app[AuditSrv].startTraversal.has("objectId", alert.get._id).getOrFail("Audit")
+        val audit = app[AuditSrv].startTraversal.has(_.objectId, alert.get._id.toString).getOrFail("Audit")
 
         audit must beSuccessfulTry
 

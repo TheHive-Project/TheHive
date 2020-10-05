@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.cortex.services
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -17,7 +18,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
     "return task info" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         for {
-          task              <- app[TaskSrv].startTraversal.has("title", "case 1 task 1").getOrFail("Task")
+          task              <- app[TaskSrv].startTraversal.has(_.title, "case 1 task 1").getOrFail("Task")
           (title, tlp, pap) <- app[EntityHelper].entityInfo(task)
         } yield (title, tlp, pap)
       } must beASuccessfulTry.which {
@@ -31,7 +32,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
     "return observable info" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         for {
-          observable        <- app[ObservableSrv].startTraversal.has("message", "Some weird domain").getOrFail("Observable")
+          observable        <- app[ObservableSrv].startTraversal.has(_.message, "Some weird domain").getOrFail("Observable")
           (title, tlp, pap) <- app[EntityHelper].entityInfo(observable)
         } yield (title, tlp, pap)
       } must beASuccessfulTry.which {
@@ -45,7 +46,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
     "find a manageable entity only (task)" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         for {
-          task <- app[TaskSrv].startTraversal.has("title", "case 1 task 1").getOrFail("Task")
+          task <- app[TaskSrv].startTraversal.has(_.title, "case 1 task 1").getOrFail("Task")
           t    <- app[EntityHelper].get("Task", task._id, Permissions.manageAction)
         } yield t
       } must beSuccessfulTry
@@ -54,7 +55,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
     "find a manageable entity only (alert)" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         for {
-          alert <- app[AlertSrv].get("testType;testSource;ref2").visible.getOrFail("Alert")
+          alert <- app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible.getOrFail("Alert")
           t     <- app[EntityHelper].get("Alert", alert._id, Permissions.manageAction)
         } yield t
       } must beSuccessfulTry

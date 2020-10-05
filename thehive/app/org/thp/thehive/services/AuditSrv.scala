@@ -65,7 +65,7 @@ class AuditSrv @Inject() (
     */
   def getMainByIds(order: Order, ids: String*)(implicit graph: Graph): Traversal.V[Audit] =
     getByIds(ids: _*)
-      .has("mainAction", true)
+      .has(_.mainAction, true)
       .sort(_.by("_createdAt", order))
 
   def mergeAudits[R](body: => Try[R])(auditCreator: R => Try[Unit])(implicit graph: Graph): Try[R] = {
