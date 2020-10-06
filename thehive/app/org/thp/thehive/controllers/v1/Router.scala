@@ -36,16 +36,16 @@ class Router @Inject() (
     case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)
     case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds)
     case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId)
-//    case PATCH(p"api/case/_bulk") ⇒                          caseCtrl.bulkUpdate()
-//    case POST(p"/case/_stats") ⇒                        caseCtrl.stats()
-//    case DELETE(p"/case/$caseId/force") ⇒                  caseCtrl.realDelete(caseId)
-//    case GET(p"/case/$caseId/links") ⇒                  caseCtrl.linkedCases(caseId)
+//    case PATCH(p"api/case/_bulk") =>                          caseCtrl.bulkUpdate()
+//    case POST(p"/case/_stats") =>                        caseCtrl.stats()
+//    case DELETE(p"/case/$caseId/force") =>                  caseCtrl.realDelete(caseId)
+//    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
 
     case GET(p"/caseTemplate")                   => caseTemplateCtrl.list
     case POST(p"/caseTemplate")                  => caseTemplateCtrl.create
     case GET(p"/caseTemplate/$caseTemplateId")   => caseTemplateCtrl.get(caseTemplateId)
     case PATCH(p"/caseTemplate/$caseTemplateId") => caseTemplateCtrl.update(caseTemplateId)
-    //case DELETE(p"/caseTemplate/$caseTemplateId") ⇒ caseTemplateCtrl.delete(caseTemplateId)
+    //case DELETE(p"/caseTemplate/$caseTemplateId") => caseTemplateCtrl.delete(caseTemplateId)
 
     case POST(p"/user")                                                   => userCtrl.create
     case GET(p"/user/current")                                            => userCtrl.current
@@ -64,10 +64,10 @@ class Router @Inject() (
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
 
-//    case GET(p"/share")            ⇒ shareCtrl.list
-//    case POST(p"/share")           ⇒ shareCtrl.create
-//    case GET(p"/share/$shareId")   ⇒ shareCtrl.get(shareId)
-//    case PATCH(p"/share/$shareId") ⇒ shareCtrl.update(shareId)
+//    case GET(p"/share")            => shareCtrl.list
+//    case POST(p"/share")           => shareCtrl.create
+//    case GET(p"/share/$shareId")   => shareCtrl.get(shareId)
+//    case PATCH(p"/share/$shareId") => shareCtrl.update(shareId)
 
     case GET(p"/task")           => taskCtrl.list
     case POST(p"/task")          => taskCtrl.create

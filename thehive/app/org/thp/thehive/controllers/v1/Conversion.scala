@@ -48,13 +48,13 @@ object Conversion {
       .withFieldComputed(_._createdAt, _._createdAt)
       .withFieldComputed(_._createdBy, _._createdBy)
       .withFieldComputed(_.obj, a => a.`object`.map(OutputEntity.apply))
-      //        .withFieldComputed(_.obj, a ⇒ OutputEntity(a.obj))
+      //        .withFieldComputed(_.obj, a => OutputEntity(a.obj))
       //        .withFieldComputed(
       //          _.summary,
       //          _.summary.mapValues(
-      //            opCount ⇒
+      //            opCount =>
       //              opCount.map {
-      //                case (op, count) ⇒ op.toString → count
+      //                case (op, count) => op.toString → count
       //              }
       //          )
       .withFieldConst(_.attributeName, None) // FIXME
