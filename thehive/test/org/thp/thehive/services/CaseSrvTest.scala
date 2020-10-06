@@ -143,7 +143,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     "merge two cases" in testApp { app =>
       pending
     //      app[Database].transaction { implicit graph =>
-    //        Seq("#2", "#3").toTry(app[CaseSrv].getOrFail) must beSuccessfulTry.which { cases: Seq[Case with Entity] ⇒
+    //        Seq("#2", "#3").toTry(app[CaseSrv].getOrFail) must beSuccessfulTry.which { cases: Seq[Case with Entity] =>
     //          val mergedCase = app[CaseSrv].merge(cases)(graph, dummyUserSrv.getSystemAuthContext)
     //
     //          mergedCase.title must_=== "case#2 / case#3"
@@ -159,7 +159,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     //          mergedCase.summary must beNone
     //          mergedCase.impactStatus must beNone
     //          mergedCase.user must beSome("test")
-    //          mergedCase.customFields.map(f ⇒ (f.name, f.typeName, f.value)) must contain(
+    //          mergedCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
     //            allOf[(String, String, Option[Any])](
     //              ("boolean1", "boolean", Some(true)),
     //              ("string1", "string", Some("string1 custom field"))

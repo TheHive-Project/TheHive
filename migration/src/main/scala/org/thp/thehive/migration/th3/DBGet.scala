@@ -19,19 +19,18 @@ class DBGet @Inject() (db: DBConfiguration, implicit val ec: ExecutionContext) {
     */
   def apply(modelName: String, id: String): Future[JsObject] =
     db.execute {
-        // Search by id is not possible on child entity without routing information ⇒ id query
-        search(db.indexName)
-          .query(idsQuery(id) /*.types(modelName)*/ )
-          .size(1)
-          .version(true)
-      }
-      .map { searchResponse =>
-        searchResponse
-          .hits
-          .hits
-          .headOption
-          .fold[JsObject](throw NotFoundError(s"$modelName $id not found")) { hit =>
-            DBUtils.hit2json(hit)
-          }
-      }
+      // Search by id is not possible on child entity without routing information => id query
+      search(db.indexName)
+        .query(idsQuery(id) /*.types(modelName)*/ )
+        .size(1)
+        .version(true)
+    }.map { searchResponse =>
+      searchResponse
+        .hits
+        .hits
+        .headOption
+        .fold[JsObject](throw NotFoundError(s"$modelName $id not found")) { hit =>
+          DBUtils.hit2json(hit)
+        }
+    }
 }

@@ -75,7 +75,7 @@ class Router @Inject() (
     //    case GET(p"/case/task/log/$logId") => logCtrl.get(logId)
 
     case POST(p"/case/artifact/_search") => observableCtrl.search
-    //    case POST(p"/case/:caseId/artifact/_search")    ⇒ observableCtrl.findInCase(caseId)
+    //    case POST(p"/case/:caseId/artifact/_search")    => observableCtrl.findInCase(caseId)
     case POST(p"/case/artifact/_stats")               => observableCtrl.stats
     case POST(p"/case/$caseId/artifact")              => observableCtrl.create(caseId)       // Audit ok
     case GET(p"/case/artifact/$observableId")         => observableCtrl.get(observableId)

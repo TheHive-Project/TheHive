@@ -310,8 +310,8 @@ class CaseSrv @Inject() (
 //      .flatMap(_.customFields().toList
 //      .groupBy(_.name)
 //      .foreach {
-//        case (name, l) ⇒
-//          val values = l.collect { case cfwv: CustomFieldWithValue if cfwv.value.isDefined ⇒ cfwv.value.get }
+//        case (name, l) =>
+//          val values = l.collect { case cfwv: CustomFieldWithValue if cfwv.value.isDefined => cfwv.value.get }
 //          val cf     = customFieldSrv.getOrFail(name)
 //          val caseCustomField =
 //            if (values.size == 1) cf.`type`.setValue(CaseCustomField(), values.head)
@@ -324,12 +324,12 @@ class CaseSrv @Inject() (
 //    cases
 //      .map(get)
 //      .flatMap(_.tasks.toList
-//      .foreach(task ⇒ caseTaskSrv.create(CaseTask(), task, mergedCase))
+//      .foreach(task => caseTaskSrv.create(CaseTask(), task, mergedCase))
 //
 //    cases
 //      .map(get)
 //      .flatMap(_.observables.toList
-//      .foreach(observable ⇒ observableCaseSrv.create(ObservableCase(), observable, mergedCase))
+//      .foreach(observable => observableCaseSrv.create(ObservableCase(), observable, mergedCase))
 //
 //    get(mergedCase).richCase.head
 //  }
