@@ -134,7 +134,7 @@ class CaseMergeSrv @Inject()(
   }
 
   private[services] def baseFields(entity: BaseEntity): Fields =
-    Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
+    Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "_seqNo" - "_primaryTerm"  - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
 
   private[services] def mergeLogs(oldTask: Task, newTask: Task)(implicit authContext: AuthContext): Future[Done] =
     logSrv

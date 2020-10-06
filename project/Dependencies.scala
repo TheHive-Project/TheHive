@@ -19,7 +19,7 @@ object Dependencies {
 
     val reflections      = "org.reflections"     % "reflections"         % "0.9.11"
     val zip4j            = "net.lingala.zip4j"   % "zip4j"               % "2.6.0"
-    val elastic4play     = "org.thehive-project" %% "elastic4play"       % "1.12.1"
+    val elastic4play     = "org.thehive-project" %% "elastic4play"       % "1.12.2-SNAPSHOT"
     val akkaCluster      = "com.typesafe.akka"   %% "akka-cluster"       % play.core.PlayVersion.akkaVersion
     val akkaClusterTyped = "com.typesafe.akka"   %% "akka-cluster-typed" % play.core.PlayVersion.akkaVersion
     val akkaClusterTools = "com.typesafe.akka"   %% "akka-cluster-tools" % play.core.PlayVersion.akkaVersion

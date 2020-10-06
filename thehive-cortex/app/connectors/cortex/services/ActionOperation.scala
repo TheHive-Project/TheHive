@@ -239,7 +239,7 @@ class ActionOperationSrv @Inject()(
               _ ← caseSrv.update(
                 caze,
                 Fields.empty.set("tags", Json.toJson((caze.tags() :+ tag).distinct)),
-                ModifyConfig(retryOnConflict = 0, version = Some(caze.version))
+                ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(caze.seqNo -> caze.primaryTerm))
               )
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case AddTagToArtifact(tag, _, _) ⇒
@@ -250,7 +250,7 @@ class ActionOperationSrv @Inject()(
                   _ ← artifactSrv.update(
                     artifact.artifactId(),
                     Fields.empty.set("tags", Json.toJson((artifact.tags() :+ tag).distinct)),
-                    ModifyConfig(retryOnConflict = 0, version = Some(artifact.version))
+                    ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(artifact.seqNo -> artifact.primaryTerm))
                   )
                 } yield operation.updateStatus(ActionOperationStatus.Success, "")
               case _ ⇒ Future.failed(BadRequestError("Artifact not found"))
@@ -268,7 +268,7 @@ class ActionOperationSrv @Inject()(
               _ ← caseSrv.update(
                 caze,
                 Fields.empty.set("customFields", customFields),
-                ModifyConfig(retryOnConflict = 0, version = Some(caze.version))
+                ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(caze.seqNo -> caze.primaryTerm))
               )
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case CloseTask(_, _) ⇒
@@ -278,7 +278,7 @@ class ActionOperationSrv @Inject()(
               _ ← taskSrv.update(
                 task,
                 Fields.empty.set("status", TaskStatus.Completed.toString).set("flag", JsFalse),
-                ModifyConfig(retryOnConflict = 0, version = Some(task.version))
+                ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(task.seqNo -> task.primaryTerm))
               )
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case MarkAlertAsRead(_, _) ⇒
@@ -300,7 +300,7 @@ class ActionOperationSrv @Inject()(
             for {
               initialCase ← findCaseEntity(entity)
               caze        ← caseSrv.get(initialCase.id)
-              _           ← caseSrv.update(caze, Fields.empty.set("owner", owner), ModifyConfig(retryOnConflict = 0, version = Some(caze.version)))
+              _           ← caseSrv.update(caze, Fields.empty.set("owner", owner), ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(caze.seqNo -> caze.primaryTerm)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
           case AddTagToAlert(tag, _, _) ⇒
             entity match {
@@ -310,7 +310,7 @@ class ActionOperationSrv @Inject()(
                   _ ← alertSrv.update(
                     alert.id,
                     Fields.empty.set("tags", Json.toJson((alert.tags() :+ tag).distinct)),
-                    ModifyConfig(retryOnConflict = 0, version = Some(alert.version))
+                    ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(alert.seqNo -> alert.primaryTerm))
                   )
                 } yield operation.updateStatus(ActionOperationStatus.Success, "")
               case _ ⇒ Future.failed(BadRequestError("Alert not found"))
