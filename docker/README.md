@@ -49,9 +49,9 @@ Structure would look like:
 ```
 
 ### ElasticSearch
-ElasticSearch container likes big mmap count (https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) so from shell you can cgange with
+ElasticSearch container likes big mmap count (https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) so from shell you can change with
 ```sysctl -w vm.max_map_count=262144```
-Due you would run all on same system and maybe you don't have a limited amount of RAM, better to set some size, for ElasticSearch, in docker-compose.yml I added those:
+Due you would run all on same system and maybe you have a limited amount of RAM, better to set some size, for ElasticSearch, in docker-compose.yml I added those:
 
 ```- bootstrap.memory_lock=true```
 ```- "ES_JAVA_OPTS=-Xms256m -Xmx256m"```
