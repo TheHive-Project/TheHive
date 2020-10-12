@@ -33,7 +33,8 @@ object Common {
     javaOptions += "-Xmx1G",
     // Redirect logs from ElasticSearch (which uses log4j2) to slf4j
     libraryDependencies += "org.apache.logging.log4j" % "log4j-to-slf4j" % "2.9.1",
-    excludeDependencies += "org.apache.logging.log4j" % "log4j-core"
+    excludeDependencies += "org.apache.logging.log4j" % "log4j-core",
+    dependencyOverrides += "com.typesafe.akka"        %% "akka-actor" % play.core.PlayVersion.akkaVersion
   )
 
   val stableVersion: Regex = "(\\d+\\.\\d+\\.\\d+)-(\\d+)".r
