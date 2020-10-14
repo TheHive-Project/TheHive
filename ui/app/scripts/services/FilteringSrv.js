@@ -21,9 +21,9 @@
                     sort: this.defaults.sort || []
                 };
 
-                this.useAndFiltering = UiSettingsSrv.useAndFiltering();
+                this.useAndForAlertTagsFilter = UiSettingsSrv.useAndForAlertTagsFilter();
 
-                this.filterString = self.useAndFiltering ? ' AND ' : ' OR ';
+                this.filterString = self.useAndForAlertTagsFilter ? ' AND ' : ' OR ';
 
                 this.initContext = function(state) {
                     var storedContext = localStorageService.get(self.sectionName);
@@ -102,7 +102,7 @@
                     } else if (angular.isArray(value) && value.length > 0) {
                         query = _.map(value, function(val) {
                             return field + ':"' + convertFn(val.text) + '"';
-                        }).join(self.filterString);
+                        }).join(filterDef.type === 'tags' ? self.filterString : ' OR ');
                         query = '(' + query + ')';
                     } else if (filterDef.type === 'date') {
                         var fromDate = value.from ? moment(value.from).hour(0).minutes(0).seconds(0).valueOf() : '*',

@@ -6,7 +6,8 @@
 
         var keys = [
             'hideEmptyCaseButton',
-            'useAndFiltering'
+            'useAndForCaseTagsFilter',
+            'useAndForAlertTagsFilter'
         ];
 
         var factory = {
