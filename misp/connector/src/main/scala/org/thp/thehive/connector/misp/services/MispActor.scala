@@ -51,7 +51,7 @@ class MispActor @Inject() (
       context.become(running)
       logger.info(s"Synchronising MISP events for ${connector.clients.map(_.name).mkString(",")}")
       Future
-        .traverse(connector.clients)(mispImportSrv.syncMispEvents(_)(userSrv.getSystemAuthContext))
+        .traverse(connector.clients.filter(_.canImport))(mispImportSrv.syncMispEvents(_)(userSrv.getSystemAuthContext))
         .map(_ => ())
         .onComplete(status => self ! EndOfSynchro(status))
     case other => logger.warn(s"Unknown message $other (${other.getClass})")
