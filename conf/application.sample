@@ -27,16 +27,16 @@ search {
   #}
 
   ## Authentication configuration
-  #search.username = ""
-  #search.password = ""
+  #username = ""
+  #password = ""
 
   ## SSL configuration
-  #search.keyStore {
+  #keyStore {
   #  path = "/path/to/keystore"
   #  type = "JKS" # or PKCS12
   #  password = "keystore-password"
   #}
-  #search.trustStore {
+  #trustStore {
   #  path = "/path/to/trustStore"
   #  type = "JKS" # or PKCS12
   #  password = "trustStore-password"
