@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('FilteringSrv', function($q, localStorageService, Severity) {
+        .service('FilteringSrv', function($q, localStorageService, Severity, UiSettingsSrv) {
             return function(sectionName, config) {
                 var self = this;
 
@@ -20,6 +20,10 @@
                     pageSize: this.defaults.pageSize || 15,
                     sort: this.defaults.sort || []
                 };
+
+                this.useAndFiltering = UiSettingsSrv.useAndFiltering();
+
+                this.filterString = self.useAndFiltering ? ' AND ' : ' OR ';
 
                 this.initContext = function(state) {
                     var storedContext = localStorageService.get(self.sectionName);
@@ -98,7 +102,7 @@
                     } else if (angular.isArray(value) && value.length > 0) {
                         query = _.map(value, function(val) {
                             return field + ':"' + convertFn(val.text) + '"';
-                        }).join(' OR ');
+                        }).join(self.filterString);
                         query = '(' + query + ')';
                     } else if (filterDef.type === 'date') {
                         var fromDate = value.from ? moment(value.from).hour(0).minutes(0).seconds(0).valueOf() : '*',

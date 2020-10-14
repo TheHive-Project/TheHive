@@ -5,7 +5,8 @@
         var settings = null;
 
         var keys = [
-            'hideEmptyCaseButton'
+            'hideEmptyCaseButton',
+            'useAndFiltering'
         ];
 
         var factory = {
