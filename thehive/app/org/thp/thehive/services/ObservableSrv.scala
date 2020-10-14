@@ -356,6 +356,8 @@ object ObservableOps {
 
     def observableType: Traversal.V[ObservableType] = traversal.out[ObservableObservableType].v[ObservableType]
 
+    def typeName: Traversal[String, String, Converter[String, String]] = observableType.value(_.name)
+
     def shares: Traversal.V[Share] = traversal.in[ShareObservable].v[Share]
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)

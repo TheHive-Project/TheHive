@@ -369,12 +369,14 @@ object AlertOps {
         .count
         .choose(_.is(P.gt(0)), onTrue = true, onFalse = false)
 
-    def similarCases(implicit
+    def similarCases(maybeCaseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
         authContext: AuthContext
-    ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] =
-      observables
+    ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] = {
+      val similarObservables = observables
         .similar
         .visible
+      maybeCaseFilter
+        .fold(similarObservables)(caseFilter => similarObservables.filter(o => caseFilter(o.`case`)))
         .group(_.by(_.`case`))
         .unfold
         .project(
@@ -384,17 +386,27 @@ object AlertOps {
                 _.by(_.richCaseWithoutPerms)
                   .by((_: Traversal.V[Case]).observables.groupCount(_.byValue(_.ioc)))
               )
-          ).by(_.selectValues.unfold.groupCount(_.byValue(_.ioc)))
+          )
+            .by(
+              _.selectValues
+                .unfold
+                .project(
+                  _.by(_.groupCount(_.byValue(_.ioc)))
+                    .by(_.groupCount(_.by(_.typeName)))
+                )
+            )
         )
         .domainMap {
-          case ((richCase, obsStats), similarStats) =>
+          case ((richCase, obsStats), (iocStats, observableTypeStats)) =>
             val obsStatsMap     = obsStats.mapValues(_.toInt)
-            val similarStatsMap = similarStats.mapValues(_.toInt)
+            val similarStatsMap = iocStats.mapValues(_.toInt)
             richCase -> SimilarStats(
               similarStatsMap.values.sum         -> obsStatsMap.values.sum,
-              similarStatsMap.getOrElse(true, 0) -> obsStatsMap.getOrElse(true, 0)
+              similarStatsMap.getOrElse(true, 0) -> obsStatsMap.getOrElse(true, 0),
+              observableTypeStats
             )
         }
+    }
 
     def alertUserOrganisation(
         permission: Permission
