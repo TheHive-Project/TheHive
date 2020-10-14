@@ -162,4 +162,4 @@ object RichCase {
   }
 }
 
-case class SimilarStats(observable: (Int, Int), ioc: (Int, Int))
+case class SimilarStats(observable: (Int, Int), ioc: (Int, Int), types: Map[String, Long])

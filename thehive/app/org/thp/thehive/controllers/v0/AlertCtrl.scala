@@ -71,7 +71,7 @@ class AlertCtrl @Inject() (
   def alertSimilarityRenderer(implicit
       authContext: AuthContext
   ): Traversal.V[Alert] => Traversal[JsArray, JList[JMap[String, Any]], Converter[JsArray, JList[JMap[String, Any]]]] =
-    _.similarCases
+    _.similarCases(None)
       .fold
       .domainMap { similarCases =>
         JsArray {

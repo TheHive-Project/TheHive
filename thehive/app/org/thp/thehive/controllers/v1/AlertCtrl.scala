@@ -6,7 +6,7 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
+import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -20,6 +20,9 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import scala.reflect.runtime.{universe => ru}
+
+case class SimilarCaseFilter()
 @Singleton
 class AlertCtrl @Inject() (
     entrypoint: Entrypoint,
@@ -51,12 +54,23 @@ class AlertCtrl @Inject() (
         )
   )
   override val outputQuery: Query = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
+  val caseFilterParser: FieldsParser[Option[InputQuery[Traversal.Unk, Traversal.Unk]]] =
+    FilterQuery.default(db, properties.`case`).paramParser(ru.typeOf[Traversal.V[Case]]).optional.on("caseFilter")
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
     Query[Traversal.V[Alert], Traversal.V[Case]]("case", (alertSteps, _) => alertSteps.`case`),
-    Query[Traversal.V[Alert], Traversal[JsValue, JMap[String, Any], Converter[JsValue, JMap[String, Any]]]](
+    Query.withParam[Option[InputQuery[Traversal.Unk, Traversal.Unk]], Traversal.V[Alert], Traversal[
+      JsValue,
+      JMap[String, Any],
+      Converter[JsValue, JMap[String, Any]]
+    ]](
       "similarCases",
-      (alertSteps, authContext) => alertSteps.similarCases(authContext).domainMap(Json.toJson(_))
+      caseFilterParser,
+      { (maybeCaseFilterQuery, alertSteps, authContext) =>
+        val maybeCaseFilter: Option[Traversal.V[Case] => Traversal.V[Case]] =
+          maybeCaseFilterQuery.map(f => cases => f(db, properties.`case`, ru.typeOf[Traversal.V[Case]], cases.cast, authContext).cast)
+        alertSteps.similarCases(maybeCaseFilter)(authContext).domainMap(Json.toJson(_))
+      }
     )
   )
 

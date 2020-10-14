@@ -18,7 +18,8 @@ trait AlertRenderer {
         "similarObservableCount" -> similarStats.observable._1,
         "observableCount"        -> similarStats.observable._2,
         "similarIocCount"        -> similarStats.ioc._1,
-        "iocCount"               -> similarStats.ioc._2
+        "iocCount"               -> similarStats.ioc._2,
+        "observableTypes"        -> similarStats.types
       )
   }
   def similarCasesStats(implicit
@@ -35,7 +36,7 @@ trait AlertRenderer {
       else if (x._2.ioc._2 > y._2.ioc._2) -1
       else if (x._2.ioc._2 < y._2.ioc._2) 1
       else 0
-    _.similarCases.fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
+    _.similarCases(None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
   def alertStatsRenderer[D, G, C <: Converter[D, G]](extraData: Set[String])(implicit
