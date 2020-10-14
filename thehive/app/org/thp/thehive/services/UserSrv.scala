@@ -263,13 +263,13 @@ object UserOps {
         )
         .domainMap {
           case (user, attachment, profileOrganisations) =>
+            val avatar = attachment.headOption.map(_.attachmentId)
             organisation
               .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
               .orElse(profileOrganisations.headOption)
-              .fold(throw InternalError(s"")) { // FIXME
+              .fold(RichUser(user, avatar, Profile.admin.name, Set.empty, "no org")) { // fake user (probably "system")
                 case (profile, organisationIdAndName) =>
-                  val avatar = attachment.headOption.map(_.attachmentId)
-                  RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("***")(_._2))
+                  RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("no org")(_._2))
               }
         }
 
