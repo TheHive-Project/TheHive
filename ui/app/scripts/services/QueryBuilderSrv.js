@@ -69,10 +69,23 @@
         };
 
         this._buildQueryFromDateFilter = function(fieldDef, filter) {
-            var value = filter.value;
+            var value = filter.value,
+                start,
+                end;
 
-            var start = value.from && value.from !== null ? value.from.getTime() : null;
-            var end = value.to && value.to !== null ? value.to.setHours(23, 59, 59, 999) : null;
+            // var start = value.from && value.from !== null ? value.from.getTime() : null;
+            // var end = value.to && value.to !== null ? value.to.setHours(23, 59, 59, 999) : null;
+            if(value.from && value.from !== null) {
+                start = _.isString(value.from) ? (new Date(value.from)).getTime() : value.from.getTime();
+            } else {
+                start = null;
+            }
+
+            if(value.to && value.to !== null) {
+                end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.getTime();
+            } else {
+                end = null;
+            }
 
             if (start !== null && end !== null) {
                 return {
