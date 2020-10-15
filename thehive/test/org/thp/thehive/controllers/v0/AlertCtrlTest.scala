@@ -196,7 +196,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request2 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/markAsRead")
       .withHeaders("user" -> "certuser@thehive.local")
     val result2 = app[AlertCtrl].markAsRead("testType;testSource;ref3")(request2)
-    status(result2) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
+    status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
     val request3 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -207,7 +207,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request4 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/markAsUnread")
       .withHeaders("user" -> "certuser@thehive.local")
     val result4 = app[AlertCtrl].markAsUnread("testType;testSource;ref3")(request4)
-    status(result4) should equalTo(204).updateMessage(s => s"$s\n${contentAsString(result4)}")
+    status(result4) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(result4)}")
 
     val request5 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -226,7 +226,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request2 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/unfollow")
       .withHeaders("user" -> "certuser@thehive.local")
     val result2 = app[AlertCtrl].unfollowAlert("testType;testSource;ref3")(request2)
-    status(result2) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
+    status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
     val request3 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -237,7 +237,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request4 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/follow")
       .withHeaders("user" -> "certuser@thehive.local")
     val result4 = app[AlertCtrl].followAlert("testType;testSource;ref3")(request4)
-    status(result4) should equalTo(204).updateMessage(s => s"$s\n${contentAsString(result4)}")
+    status(result4) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(result4)}")
 
     val request5 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
