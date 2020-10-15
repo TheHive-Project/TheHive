@@ -49,41 +49,45 @@ class ObservableCtrl @Inject() (
               observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
             } yield (case0, observableType)
           }
-          .flatMap {
+          .map {
             case (case0, observableType) =>
-              db
-                .tryTransaction { implicit graph =>
-                  inputObservable
-                    .attachment
-                    .map { a =>
+              val initialSuccessesAndFailures: (Seq[JsValue], Seq[JsValue]) = inputObservable
+                .attachment
+                .map { attachmentFile =>
+                  db
+                    .tryTransaction { implicit graph =>
                       observableSrv
-                        .create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil)
+                        .create(inputObservable.toObservable, observableType, attachmentFile, inputObservable.tags, Nil)
                         .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
                     }
-                    .flip
+                    .fold(
+                      e =>
+                        Nil -> Seq(
+                          errorHandler.toErrorResult(e)._2 ++ Json
+                            .obj("object" -> Json.obj("attachment" -> Json.obj("name" -> attachmentFile.filename)))
+                        ),
+                      s => Seq(s) -> Nil
+                    )
                 }
-                .map {
-                  case None =>
-                    val (successes, failures) = inputObservable
-                      .data
-                      .foldLeft(Seq.empty[JsValue] -> Seq.empty[JsValue]) {
-                        case ((successes, failures), data) =>
-                          db
-                            .tryTransaction { implicit graph =>
-                              observableSrv
-                                .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
-                                .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
-                            }
-                            .fold(
-                              failure =>
-                                (successes, failures :+ errorHandler.toErrorResult(failure)._2 ++ Json.obj("object" -> Json.obj("data" -> data))),
-                              success => (successes :+ success, failures)
-                            )
+                .getOrElse(Nil -> Nil)
+
+              val (successes, failures) = inputObservable
+                .data
+                .foldLeft(initialSuccessesAndFailures) {
+                  case ((successes, failures), data) =>
+                    db
+                      .tryTransaction { implicit graph =>
+                        observableSrv
+                          .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
+                          .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
                       }
-                    if (failures.isEmpty) Results.Created(JsArray(successes))
-                    else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
-                  case Some(output) => Results.Created(output)
+                      .fold(
+                        failure => (successes, failures :+ errorHandler.toErrorResult(failure)._2 ++ Json.obj("object" -> Json.obj("data" -> data))),
+                        success => (successes :+ success, failures)
+                      )
                 }
+              if (failures.isEmpty) Results.Created(JsArray(successes))
+              else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
           }
       }
 
