@@ -52,7 +52,7 @@
                         templates: function() {
                             return CaseTemplateSrv.list();
                         },
-                        readonly: true,
+                        readonly: false,
                         isAdmin: false
                     }
                 }).result.then(function(/*response*/) {
