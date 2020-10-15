@@ -16,7 +16,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -28,6 +28,7 @@ class ObservableCtrl @Inject() (
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
+    errorHandler: ErrorHandler,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservable
 ) extends ObservableRenderer
@@ -35,30 +36,55 @@ class ObservableCtrl @Inject() (
   def create(caseId: String): Action[AnyContent] =
     entrypoint("create artifact")
       .extract("artifact", FieldsParser[InputObservable])
-      .authTransaction(db) { implicit request => implicit graph =>
+      .auth { implicit request =>
         val inputObservable: InputObservable = request.body("artifact")
-        for {
-          case0 <-
-            caseSrv
-              .get(EntityIdOrName(caseId))
-              .can(Permissions.manageObservable)
-              .orFail(AuthorizationError("Operation not permitted"))
-          observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
-          observablesWithData <-
-            inputObservable
-              .data
-              .toTry(d => observableSrv.create(inputObservable.toObservable, observableType, d, inputObservable.tags, Nil))
-          observableWithAttachment <-
-            inputObservable
-              .attachment
-              .map(a => observableSrv.create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil))
-              .flip
-          createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
-            caseSrv
-              .addObservable(case0, richObservables)
-              .map(_ => richObservables)
+        db
+          .roTransaction { implicit graph =>
+            for {
+              case0 <-
+                caseSrv
+                  .get(EntityIdOrName(caseId))
+                  .can(Permissions.manageObservable)
+                  .orFail(AuthorizationError("Operation not permitted"))
+              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
+            } yield (case0, observableType)
           }
-        } yield Results.Created(createdObservables.toJson)
+          .flatMap {
+            case (case0, observableType) =>
+              db
+                .tryTransaction { implicit graph =>
+                  inputObservable
+                    .attachment
+                    .map { a =>
+                      observableSrv
+                        .create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil)
+                        .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
+                    }
+                    .flip
+                }
+                .map {
+                  case None =>
+                    val (successes, failures) = inputObservable
+                      .data
+                      .foldLeft(Seq.empty[JsValue] -> Seq.empty[JsValue]) {
+                        case ((successes, failures), data) =>
+                          db
+                            .tryTransaction { implicit graph =>
+                              observableSrv
+                                .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
+                                .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
+                            }
+                            .fold(
+                              failure =>
+                                (successes, failures :+ errorHandler.toErrorResult(failure)._2 ++ Json.obj("object" -> Json.obj("data" -> data))),
+                              success => (successes :+ success, failures)
+                            )
+                      }
+                    if (failures.isEmpty) Results.Created(JsArray(successes))
+                    else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
+                  case Some(output) => Results.Created(output)
+                }
+          }
       }
 
   def get(observableId: String): Action[AnyContent] =
