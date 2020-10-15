@@ -206,27 +206,37 @@ class AlertCtrl @Inject() (
   def markAsRead(alertId: String): Action[AnyContent] =
     entrypoint("mark alert as read")
       .authTransaction(db) { implicit request => implicit graph =>
-        alertSrv
-          .get(EntityIdOrName(alertId))
-          .can(Permissions.manageAlert)
-          .existsOrFail
-          .map { _ =>
-            alertSrv.markAsRead(EntityIdOrName(alertId))
-            Results.NoContent
-          }
+        for {
+          alert <-
+            alertSrv
+              .get(EntityIdOrName(alertId))
+              .can(Permissions.manageAlert)
+              .getOrFail("Alert")
+          _ <- alertSrv.markAsRead(alert._id)
+          alertWithObservables <-
+            alertSrv
+              .get(alert)
+              .project(_.by(_.richAlert).by(_.observables.richObservable.fold))
+              .getOrFail("Alert")
+        } yield Results.Ok(alertWithObservables.toJson)
       }
 
   def markAsUnread(alertId: String): Action[AnyContent] =
     entrypoint("mark alert as unread")
       .authTransaction(db) { implicit request => implicit graph =>
-        alertSrv
-          .get(EntityIdOrName(alertId))
-          .can(Permissions.manageAlert)
-          .existsOrFail
-          .map { _ =>
-            alertSrv.markAsUnread(EntityIdOrName(alertId))
-            Results.NoContent
-          }
+        for {
+          alert <-
+            alertSrv
+              .get(EntityIdOrName(alertId))
+              .can(Permissions.manageAlert)
+              .getOrFail("Alert")
+          _ <- alertSrv.markAsUnread(alert._id)
+          alertWithObservables <-
+            alertSrv
+              .get(alert)
+              .project(_.by(_.richAlert).by(_.observables.richObservable.fold))
+              .getOrFail("Alert")
+        } yield Results.Ok(alertWithObservables.toJson)
       }
 
   def createCase(alertId: String): Action[AnyContent] =
@@ -249,27 +259,37 @@ class AlertCtrl @Inject() (
   def followAlert(alertId: String): Action[AnyContent] =
     entrypoint("follow alert")
       .authTransaction(db) { implicit request => implicit graph =>
-        alertSrv
-          .get(EntityIdOrName(alertId))
-          .can(Permissions.manageAlert)
-          .existsOrFail
-          .map { _ =>
-            alertSrv.followAlert(EntityIdOrName(alertId))
-            Results.NoContent
-          }
+        for {
+          alert <-
+            alertSrv
+              .get(EntityIdOrName(alertId))
+              .can(Permissions.manageAlert)
+              .getOrFail("Alert")
+          _ <- alertSrv.followAlert(alert._id)
+          alertWithObservables <-
+            alertSrv
+              .get(alert)
+              .project(_.by(_.richAlert).by(_.observables.richObservable.fold))
+              .getOrFail("Alert")
+        } yield Results.Ok(alertWithObservables.toJson)
       }
 
   def unfollowAlert(alertId: String): Action[AnyContent] =
     entrypoint("unfollow alert")
       .authTransaction(db) { implicit request => implicit graph =>
-        alertSrv
-          .get(EntityIdOrName(alertId))
-          .can(Permissions.manageAlert)
-          .existsOrFail
-          .map { _ =>
-            alertSrv.unfollowAlert(EntityIdOrName(alertId))
-            Results.NoContent
-          }
+        for {
+          alert <-
+            alertSrv
+              .get(EntityIdOrName(alertId))
+              .can(Permissions.manageAlert)
+              .getOrFail("Alert")
+          _ <- alertSrv.unfollowAlert(alert._id)
+          alertWithObservables <-
+            alertSrv
+              .get(alert)
+              .project(_.by(_.richAlert).by(_.observables.richObservable.fold))
+              .getOrFail("Alert")
+        } yield Results.Ok(alertWithObservables.toJson)
       }
 
   private def createObservable(observable: InputObservable)(implicit
