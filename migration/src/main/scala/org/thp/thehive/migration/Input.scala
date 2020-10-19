@@ -29,9 +29,16 @@ object Filter {
       new SimpleDateFormat("MMdd")
     )
     def parseDate(s: String): Try[Date] =
-      dateFormats.foldLeft[Try[Date]](Failure(new ParseException(s"Unparseable date: $s", 0))) { (acc, format) =>
-        acc.recoverWith { case _ => Try(format.parse(s)) }
-      }
+      dateFormats
+        .foldLeft[Try[Date]](Failure(new ParseException(s"Unparseable date: $s", 0))) { (acc, format) =>
+          acc.recoverWith { case _ => Try(format.parse(s)) }
+        }
+        .recoverWith {
+          case _ =>
+            Failure(
+              new ParseException(s"Unparseable date: $s\nExpected format is ${dateFormats.map(_.toPattern).mkString("\"", "\" or \"", "\"")}", 0)
+            )
+        }
     def readDate(dateConfigName: String, ageConfigName: String) =
       Try(config.getString(dateConfigName))
         .flatMap(parseDate)
