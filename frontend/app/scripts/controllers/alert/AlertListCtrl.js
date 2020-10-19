@@ -381,7 +381,7 @@
                 });
 
                 caseModal.result.then(function(selectedCase) {
-                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, '_id'), selectedCase.id);
+                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, '_id'), selectedCase._id);
                 })
                 .then(function(response) {
                     $rootScope.$broadcast('alert:event-imported');
