@@ -132,7 +132,7 @@
                 });
 
                 caseModal.result.then(function(selectedCase) {
-                    self.mergeIntoCase(selectedCase.id);
+                    self.mergeIntoCase(selectedCase._id);
                 }).catch(function(err) {
                     if(err && !_.isString(err)) {
                         NotificationSrv.error('AlertEventCtrl', err.data, err.status);
