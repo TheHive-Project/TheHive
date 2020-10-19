@@ -44,8 +44,9 @@ trait QueryCtrl {
     TH3Aggregation.fieldsParser
 
   val sortParser: FieldsParser[InputSort] = FieldsParser("sort") {
-    case (_, FAny(s))    => Good(s)
+    case (_, FAny(s))    => Good(s.flatMap(_.split(',')))
     case (_, FSeq(s))    => s.validatedBy(FieldsParser.string.apply)
+    case (_, FString(s)) => Good(s.split(',').toSeq)
     case (_, FUndefined) => Good(Nil)
   }.map("sort") { a =>
     val fields = a.collect {
