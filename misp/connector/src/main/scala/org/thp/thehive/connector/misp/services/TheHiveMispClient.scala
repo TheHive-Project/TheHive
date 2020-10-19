@@ -29,6 +29,7 @@ case class TheHiveMispClientConfig(
     caseTemplate: Option[String],
     artifactTags: Seq[String] = Nil,
     exportCaseTags: Boolean = false,
+    exportObservableTags: Boolean = false,
     includedTheHiveOrganisations: Seq[String] = Seq("*"),
     excludedTheHiveOrganisations: Seq[String] = Nil
 )
@@ -49,6 +50,7 @@ object TheHiveMispClientConfig {
       caseTemplate                 <- (JsPath \ "caseTemplate").readNullable[String]
       artifactTags                 <- (JsPath \ "tags").readWithDefault[Seq[String]](Nil)
       exportCaseTags               <- (JsPath \ "exportCaseTags").readWithDefault[Boolean](false)
+      exportObservableTags         <- (JsPath \ "exportObservableTags").readWithDefault[Boolean](false)
       includedTheHiveOrganisations <- (JsPath \ "includedTheHiveOrganisations").readWithDefault[Seq[String]](Seq("*"))
       excludedTheHiveOrganisations <- (JsPath \ "excludedTheHiveOrganisations").readWithDefault[Seq[String]](Nil)
     } yield TheHiveMispClientConfig(
@@ -64,6 +66,7 @@ object TheHiveMispClientConfig {
       caseTemplate,
       artifactTags,
       exportCaseTags,
+      exportObservableTags,
       includedTheHiveOrganisations,
       excludedTheHiveOrganisations
     )
@@ -100,7 +103,8 @@ class TheHiveMispClient(
     purpose: MispPurpose.Value,
     val caseTemplate: Option[String],
     artifactTags: Seq[String], // FIXME use artifactTags
-    exportCaseTags: Boolean,   //  FIXME use exportCaseTags
+    val exportCaseTags: Boolean,
+    val exportObservableTags: Boolean,
     includedTheHiveOrganisations: Seq[String],
     excludedTheHiveOrganisations: Seq[String]
 ) extends MispClient(
@@ -128,6 +132,7 @@ class TheHiveMispClient(
       config.caseTemplate,
       config.artifactTags,
       config.exportCaseTags,
+      config.exportObservableTags,
       config.includedTheHiveOrganisations,
       config.excludedTheHiveOrganisations
     )

@@ -20,8 +20,5 @@ object Tag {
       } and
       (JsPath \ "exportable").readNullable[Boolean])(Tag.apply _)
 
-  implicit val writes: Writes[Tag] = Writes[Tag] {
-    case Tag(Some(id), name, colour, _) => Json.obj("id" -> id, "name" -> name, "colour" -> colour.map(c => f"#$c%06X"))
-    case Tag(_, name, _, _)             => JsString(name)
-  }
+  implicit val writes: Writes[Tag] = Json.writes[Tag]
 }
