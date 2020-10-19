@@ -14,7 +14,7 @@
         <input type="{{dialog.search.type === 'number' ? 'number' : 'text'}}"
             placeholder="{{dialog.search.placeholder}}"
             ng-model="dialog.search.input"
-            uib-typeahead="caze as dialog.format(caze) for caze in dialog.getCaseByTitle(dialog.search.type, $viewValue)"
+            uib-typeahead="caze as dialog.format(caze) for caze in dialog.getCaseList(dialog.search.type, $viewValue)"
             typeahead-wait-ms="500"
             typeahead-min-length="dialog.search.minInputLength"
             typeahead-on-select="dialog.onSelect($item)"
