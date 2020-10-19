@@ -98,6 +98,7 @@ class Properties @Inject() (
       .property("severity", UMapping.int)(_.field.updatable)
       .property("startDate", UMapping.date)(_.field.updatable)
       .property("endDate", UMapping.date.optional)(_.field.updatable)
+      .property("number", UMapping.int)(_.field.readonly)
       .property("tags", UMapping.string.set)(
         _.select(_.tags.displayName)
           .custom { (_, value, vertex, _, graph, authContext) =>
