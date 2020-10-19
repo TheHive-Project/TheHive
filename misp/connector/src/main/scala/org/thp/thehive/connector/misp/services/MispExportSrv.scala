@@ -31,7 +31,12 @@ class MispExportSrv @Inject() (
 
   lazy val logger: Logger = Logger(getClass)
 
-  def observableToAttribute(observable: RichObservable): Option[Attribute] =
+  def observableToAttribute(observable: RichObservable, exportTags: Boolean): Option[Attribute] = {
+    lazy val mispTags =
+      if (exportTags)
+        observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(observable.tlp)
+      else
+        tlpTags.get(observable.tlp).toSeq
     connector
       .attributeConverter(observable.`type`)
       .map {
@@ -50,7 +55,7 @@ class MispExportSrv @Inject() (
             value = observable.data.fold(observable.attachment.get.name)(_.data),
             firstSeen = None,
             lastSeen = None,
-            tags = observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None))
+            tags = mispTags
           )
       }
       .orElse {
@@ -59,6 +64,7 @@ class MispExportSrv @Inject() (
         )
         None
       }
+  }
 
   def getMispClient(mispId: String): Future[TheHiveMispClient] =
     connector
@@ -77,8 +83,8 @@ class MispExportSrv @Inject() (
       .filterByType("misp")
       .headOption
 
-  def getAttributes(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
-    caseSrv.get(`case`).observables.isIoc.richObservable.toIterator.flatMap(observableToAttribute)
+  def getAttributes(`case`: Case with Entity, exportTags: Boolean)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
+    caseSrv.get(`case`).observables.isIoc.richObservable.toIterator.flatMap(observableToAttribute(_, exportTags))
 
   def removeDuplicateAttributes(attributes: Iterator[Attribute]): Seq[Attribute] = {
     var attrSet = Set.empty[(String, String, String)]
@@ -93,9 +99,21 @@ class MispExportSrv @Inject() (
     builder.result()
   }
 
-  def createEvent(client: TheHiveMispClient, `case`: Case, attributes: Seq[Attribute], extendsEvent: Option[String])(implicit
+  val tlpTags = Map(
+    0 -> MispTag(None, "tlp:white", None, None),
+    1 -> MispTag(None, "tlp:green", None, None),
+    2 -> MispTag(None, "tlp:amber", None, None),
+    3 -> MispTag(None, "tlp:red", None, None)
+  )
+  def createEvent(client: TheHiveMispClient, `case`: Case with Entity, attributes: Seq[Attribute], extendsEvent: Option[String])(implicit
       ec: ExecutionContext
-  ): Future[String] =
+  ): Future[String] = {
+    val mispTags =
+      if (client.exportCaseTags)
+        db.roTransaction { implicit graph =>
+          caseSrv.get(`case`._id).tags.toSeq.map(t => MispTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(`case`.tlp)
+        }
+      else tlpTags.get(`case`.tlp).toSeq
     client.createEvent(
       info = `case`.title,
       date = `case`.startDate,
@@ -104,8 +122,10 @@ class MispExportSrv @Inject() (
       analysis = 0,
       distribution = 0,
       attributes = attributes,
+      tags = mispTags,
       extendsEvent = extendsEvent
     )
+  }
 
   def createAlert(client: TheHiveMispClient, `case`: Case with Entity, eventId: String)(implicit
       graph: Graph,
@@ -147,7 +167,7 @@ class MispExportSrv @Inject() (
       orgName <- Future.fromTry(client.currentOrganisationName)
       maybeAlert = db.roTransaction(implicit graph => getAlert(`case`, orgName))
       _          = logger.debug(maybeAlert.fold("Related MISP event doesn't exist")(a => s"Related MISP event found : ${a.sourceRef}"))
-      attributes = db.roTransaction(implicit graph => removeDuplicateAttributes(getAttributes(`case`)))
+      attributes = db.roTransaction(implicit graph => removeDuplicateAttributes(getAttributes(`case`, client.exportObservableTags)))
       eventId <- createEvent(client, `case`, attributes, maybeAlert.map(_.sourceRef))
       _       <- Future.fromTry(db.tryTransaction(implicit graph => createAlert(client, `case`, eventId)))
     } yield eventId

@@ -51,20 +51,22 @@ class TestMispClientProvider @Inject() (Action: DefaultActionBuilder, implicit v
     Json.parse(data)
   }
 
-  override def get(): TheHiveMispClient = new TheHiveMispClient(
-    name = "test",
-    baseUrl = baseUrl,
-    auth = NoAuthentication,
-    ws = ws,
-    maxAge = None,
-    excludedOrganisations = Nil,
-    excludedTags = Set.empty,
-    whitelistTags = Set.empty,
-    purpose = MispPurpose.ImportAndExport,
-    caseTemplate = None,
-    artifactTags = Seq("TEST"),
-    exportCaseTags = true,
-    includedTheHiveOrganisations = Seq("*"),
-    excludedTheHiveOrganisations = Nil
-  )
+  override def get(): TheHiveMispClient =
+    new TheHiveMispClient(
+      name = "test",
+      baseUrl = baseUrl,
+      auth = NoAuthentication,
+      ws = ws,
+      maxAge = None,
+      excludedOrganisations = Nil,
+      excludedTags = Set.empty,
+      whitelistTags = Set.empty,
+      purpose = MispPurpose.ImportAndExport,
+      caseTemplate = None,
+      artifactTags = Seq("TEST"),
+      exportCaseTags = true,
+      exportObservableTags = true,
+      includedTheHiveOrganisations = Seq("*"),
+      excludedTheHiveOrganisations = Nil
+    )
 }

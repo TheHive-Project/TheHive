@@ -7,7 +7,7 @@ import akka.stream.alpakka.json.scaladsl.JsonReader
 import akka.stream.scaladsl.{JsonFraming, Source}
 import akka.util.ByteString
 import org.thp.client.{ApplicationError, Authentication, ProxyWS}
-import org.thp.misp.dto.{Attribute, Event, Organisation, User}
+import org.thp.misp.dto.{Attribute, Event, Organisation, Tag, User}
 import org.thp.scalligraph.InternalError
 import play.api.Logger
 import play.api.http.Status
@@ -45,10 +45,11 @@ class MispClient(
         Failure(InternalError(s"MISP server $name is inaccessible", t))
     }
 
-  private def configuredProxy: Option[String] = ws match {
-    case c: ProxyWS => c.proxy.map(p => s"http://${p.host}:${p.port}")
-    case _          => None
-  }
+  private def configuredProxy: Option[String] =
+    ws match {
+      case c: ProxyWS => c.proxy.map(p => s"http://${p.host}:${p.port}")
+      case _          => None
+    }
   logger.info(s"""Add MISP connection $name
                  |  url:              $baseUrl
                  |  proxy:            ${configuredProxy.getOrElse("<not set>")}
@@ -62,27 +63,52 @@ class MispClient(
   private def request(url: String): WSRequest =
     auth(ws.url(s"$strippedUrl/$url").withHttpHeaders("Accept" -> "application/json"))
 
-  private def get(url: String)(implicit ec: ExecutionContext): Future[JsValue] =
+  private def get(url: String)(implicit ec: ExecutionContext): Future[JsValue] = {
+    logger.trace(s"MISP request: GET $url")
     request(url).get().transform {
-      case Success(r) if r.status == Status.OK => Success(r.json)
-      case Success(r)                          => Try(r.json)
-      case Failure(t)                          => throw t
+      case Success(r) if r.status == Status.OK =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText}\n${r.body}")
+        Success(r.json)
+      case Success(r) =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText}\n${r.body}")
+        Try(r.json)
+      case Failure(t) =>
+        logger.trace(s"MISP error: $t")
+        throw t
     }
+  }
 
-  private def post(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[JsValue] =
+  private def post(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[JsValue] = {
+    logger.trace(s"MISP request: POST $url\n$body")
     request(url).post(body).transform {
-      case Success(r) if r.status == Status.OK => Success(r.json)
-      case Success(r)                          => Try(r.json)
-      case Failure(t)                          => throw t
+      case Success(r) if r.status == Status.OK =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText}\n${r.body}")
+        Success(r.json)
+      case Success(r) =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText}\n${r.body}")
+        Try(r.json)
+      case Failure(t) =>
+        logger.trace(s"MISP error: $t")
+        throw t
     }
+  }
 
-  private def post(url: String, body: Source[ByteString, _])(implicit ec: ExecutionContext): Future[JsValue] =
+  private def post(url: String, body: Source[ByteString, _])(implicit ec: ExecutionContext): Future[JsValue] = {
+    logger.trace(s"MISP request: POST $url (stream body)")
     request(url).post(body).transform {
-      case Success(r) if r.status == Status.OK => Success(r.json)
-      case Success(r)                          => Try(r.json)
-      case Failure(t)                          => throw t
+      case Success(r) if r.status == Status.OK =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText}\n${r.body}")
+        Success(r.json)
+      case Success(r) =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText}\n${r.body}")
+        Try(r.json)
+      case Failure(t) =>
+        logger.trace(s"MISP error: $t")
+        throw t
     }
-//
+  }
+
+  //
 //  private def getStream(url: String)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
 //    request(url).withMethod("GET").stream().transform {
 //      case Success(r) if r.status == Status.OK => Success(r.bodyAsSource)
@@ -90,12 +116,20 @@ class MispClient(
 //      case Failure(t)                          => throw t
 //    }
 
-  private def postStream(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] =
+  private def postStream(url: String, body: JsValue)(implicit ec: ExecutionContext): Future[Source[ByteString, Any]] = {
+    logger.trace(s"MISP request: POST $url\n$body")
     request(url).withMethod("POST").withBody(body).stream().transform {
-      case Success(r) if r.status == Status.OK => Success(r.bodyAsSource)
-      case Success(r)                          => Try(r.bodyAsSource)
-      case Failure(t)                          => throw t
+      case Success(r) if r.status == Status.OK =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText} (stream body)")
+        Success(r.bodyAsSource)
+      case Success(r) =>
+        logger.trace(s"MISP response: ${r.status} ${r.statusText} (stream body)")
+        Try(r.bodyAsSource)
+      case Failure(t) =>
+        logger.trace(s"MISP error: $t")
+        throw t
     }
+  }
 
   def getCurrentUser(implicit ec: ExecutionContext): Future[User] = {
     logger.debug("Get current user")
@@ -177,7 +211,8 @@ class MispClient(
         maybeAttribute.fold(error => { logger.warn(s"Attribute has invalid format: ${data.decodeString("UTF-8")}", error); Nil }, List(_))
       }
       .mapAsyncUnordered(2) {
-        case attribute @ Attribute(id, "malware-sample" | "attachment", _, _, _, _, _, _, _, None, _, _, _, _) => // TODO need to unzip malware samples ?
+        case attribute @ Attribute(id, "malware-sample" | "attachment", _, _, _, _, _, _, _, None, _, _, _, _) =>
+          // TODO need to unzip malware samples ?
           downloadAttachment(id).map {
             case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
           }
@@ -204,14 +239,16 @@ class MispClient(
       case Failure(t) => throw t
     }
 
-  def uploadAttachment(eventId: String, comment: String, filename: String, data: Source[ByteString, _])(
-      implicit ec: ExecutionContext
+  def uploadAttachment(eventId: String, comment: String, filename: String, data: Source[ByteString, _])(implicit
+      ec: ExecutionContext
   ): Future[JsValue] = {
     val stream = data
       .via(Base64Flow.encode())
       .intersperse(
         ByteString(
-          s"""{"request":{"category":"Payload delivery","type":"malware-sample","comment":${JsString(comment).toString},"files":[{"filename":${JsString(
+          s"""{"request":{"category":"Payload delivery","type":"malware-sample","comment":${JsString(
+            comment
+          ).toString},"files":[{"filename":${JsString(
             filename
           ).toString},"data":""""
         ),
@@ -229,6 +266,7 @@ class MispClient(
       analysis: Int,
       distribution: Int,
       attributes: Seq[Attribute],
+      tags: Seq[Tag],
       extendsEvent: Option[String] = None
   )(implicit ec: ExecutionContext): Future[String] = {
     logger.debug(s"Create MISP event $info, with ${attributes.size} attributes")
@@ -243,6 +281,7 @@ class MispClient(
         "analysis"        -> analysis.toString,
         "distribution"    -> distribution,
         "Attribute"       -> stringAttributes,
+        "Tag"             -> tags,
         "extends_uuid"    -> extendsEvent
       )
     )

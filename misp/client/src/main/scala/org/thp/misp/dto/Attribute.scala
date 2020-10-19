@@ -55,8 +55,8 @@ object Attribute {
       "category" -> attribute.category,
       "type"     -> attribute.`type`,
       "value"    -> attribute.value,
-      "comment"  -> attribute.comment
-//      "Tag"      -> attribute.tags
+      "comment"  -> attribute.comment,
+      "Tag"      -> attribute.tags
     )
   }
 }
