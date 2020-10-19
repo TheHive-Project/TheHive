@@ -110,28 +110,29 @@ class PublicDashboard @Inject() (
     .property("description", UMapping.string)(_.field.updatable)
     .property("definition", UMapping.string)(_.field.updatable)
     .property("status", UMapping.string)(
-      _.select(_.organisation.fold.domainMap(d => if (d.isEmpty) "Private" else "Shared")).custom { // TODO replace by choose step
-        case (_, "Shared", vertex, _, graph, authContext) =>
-          for {
-            dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
-            _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
-          } yield Json.obj("status" -> "Shared")
+      _.select(_.choose(_.organisation, "Shared", "Private"))
+        .custom {
+          case (_, "Shared", vertex, _, graph, authContext) =>
+            for {
+              dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
+              _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
+            } yield Json.obj("status" -> "Shared")
 
-        case (_, "Private", vertex, _, graph, authContext) =>
-          for {
-            d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
-            _ <- dashboardSrv.unshare(d, authContext.organisation)(graph, authContext)
-          } yield Json.obj("status" -> "Private")
+          case (_, "Private", vertex, _, graph, authContext) =>
+            for {
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
+              _ <- dashboardSrv.unshare(d, authContext.organisation)(graph, authContext)
+            } yield Json.obj("status" -> "Private")
 
-        case (_, "Deleted", vertex, _, graph, authContext) =>
-          for {
-            d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
-            _ <- dashboardSrv.remove(d)(graph, authContext)
-          } yield Json.obj("status" -> "Deleted")
+          case (_, "Deleted", vertex, _, graph, authContext) =>
+            for {
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
+              _ <- dashboardSrv.remove(d)(graph, authContext)
+            } yield Json.obj("status" -> "Deleted")
 
-        case (_, status, _, _, _, _) =>
-          Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))
-      }
+          case (_, status, _, _, _, _) =>
+            Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))
+        }
     )
     .build
 }

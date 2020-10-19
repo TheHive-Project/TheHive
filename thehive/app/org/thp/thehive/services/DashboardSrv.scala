@@ -103,10 +103,10 @@ object DashboardOps {
 
     def organisationShares: Traversal[Seq[(String, Boolean)], JList[JMap[String, Any]], Converter[Seq[(String, Boolean)], JList[JMap[String, Any]]]] =
       traversal
-        .outE[OrganisationDashboard]
+        .inE[OrganisationDashboard]
         .project(
           _.byValue(_.writable)
-            .by(_.inV)
+            .by(_.outV)
         )
         .fold
         .domainMap(_.map { case (writable, orgs) => (orgs.value[String]("name"), writable) })
