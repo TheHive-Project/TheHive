@@ -233,7 +233,7 @@ object UserOps {
         .project(
           _.byValue(_.login)
             .byValue(_.name)
-            .by(_.role.filter(_.organisation.get(organisationName)).profile)
+            .by(_.role.filter(_.organisation.get(organisationName)).profile.fold)
             .by(_.organisations.get(organisationName).value(_.name).limit(1).fold)
         )
         .domainMap {
@@ -241,7 +241,7 @@ object UserOps {
             val scope =
               if (org.contains(Organisation.administration.name)) "admin"
               else "organisation"
-            val permissions = Permissions.forScope(scope) & profile.permissions
+            val permissions = Permissions.forScope(scope) & profile.headOption.fold(Set.empty[Permission])(_.permissions)
             AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }
 
