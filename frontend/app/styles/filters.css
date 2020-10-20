@@ -51,3 +51,23 @@
     background: #f5f5f5;
 }
 */
+
+
+.similar-case-list .progress {
+    height: 2px;
+    opacity: 1;
+}
+
+.similar-case-list .has-feedback .form-control {
+    padding-right: 25px;
+}
+
+.similar-case-list .case-item.filter-panel {
+    padding: 5px 0;
+    margin-bottom: 5px !important;
+    border: none !important;
+}
+
+.similar-case-list .case-item.filter-panel .form-group {
+    margin-bottom: 0 !important;
+}

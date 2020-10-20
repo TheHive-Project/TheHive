@@ -1,4 +1,18 @@
 <div class="similar-case-list">
+
+    <div ng-include="'views/components/alert/similarity/toolbar.html'"></div>
+
+    <div class="mt-s filter-panel" ng-include="'views/components/alert/similarity/filters.html'" ng-show="$cmp.filtering.context.showFilters"></div>
+
+    <div class="row mt-s">
+        <div class="col-md-12 clearfix">
+
+            <filters-preview filters="$cmp.filtering.context.filters"
+                on-clear-item="$cmp.removeFilter(field)"
+                on-clear-all="$cmp.clearFilters()"></filters-preview>
+        </div>
+    </div>
+
     <div class="row">
 
         <div class="col-md-12" ng-show="$cmp.list.total === 0">
@@ -6,11 +20,11 @@
         </div>
 
         <div class="col-md-12" ng-show="$cmp.list.total > 0">
-            <div class="btn-toolbar" role="toolbar">
+            <!-- <div class="btn-toolbar" role="toolbar">
                 <div class="btn-group pull-right" role="group">
                     <page-sizer collection="$cmp.list" sizes="[10, 15, 30, 100]"></page-sizer>
                 </div>
-            </div>
+            </div> -->
 
             <psearch control="$cmp.list"></psearch>
 
@@ -19,11 +33,48 @@
                 <div class="case-date text-bold">Date</div>
                 <div class="case-similarity text-bold">Observables</div>
                 <div class="case-similarity text-bold">IOCs</div>
+                <div class="case-similarity-match text-bold">Matches</div>
                 <div class="case-similarity-merge text-bold">Action</div>
             </div>
 
+            <div class="case-item filter-panel">
+                <div class="case-details text-bold">
+                    <div class="form-group has-feedback has-clear">
+                        <input type="text" class="form-control input-sm" ng-model="$cmp.similarityFilters.fTitle">
+                        <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.similarityFilters.fTitle = undefined" style="pointer-events: auto;cursor: pointer;"></a>
+                    </div>
+                </div>
+                <div class="case-date text-bold"></div>
+                <div class="case-similarity text-bold">
+                    <div class="form-group has-feedback has-clear">
+                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fObservables">
+                        <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.rateFilters.fObservables = undefined" style="pointer-events: auto;cursor: pointer;"></a>
+                    </div>
+                </div>
+                <div class="case-similarity text-bold">
+                    <div class="form-group has-feedback has-clear">
+                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fIocs">
+                        <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.rateFilters.fIocs = undefined" style="pointer-events: auto;cursor: pointer;"></a>
+                    </div>
+                </div>
+                <div class="case-similarity-match text-bold">
+                    <div>
+                        <select class="form-control input-sm" ng-model="$cmp.similarityFilters.fMatches"
+                            ng-options="item for item in $cmp.matches">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="case-similarity-merge text-bold">
+                    <div class="text-center">
+                        <a class="btn btn-link btn-clear btn-sm" ng-click="$cmp.clearLocalFilters()"><i class="fa fa-times"></i> Clear Filters</a>
+                    </div>
+                </div>
+            </div>
 
-            <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.values | filter:$cmp.similarityFilters)">
+
+            <!-- <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.allValues | filter:$cmp.filterSimilarities)"> -->
+            <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs'))">
                 <div class="case-item" >
                     <!-- case severity -->
                     <div class="case-tlp bg-tlp-{{item.case.tlp}}"></div>
@@ -74,6 +125,11 @@
                         </div>
                         <div ng-if="item.iocCount === 0">
                             <em>N/A</em>
+                        </div>
+                    </div>
+                    <div class="case-similarity-match">
+                        <div>
+                            <div ng-repeat="(match, count) in item.observableTypes track by $index">{{match}} ({{count}})</div>
                         </div>
                     </div>
 
