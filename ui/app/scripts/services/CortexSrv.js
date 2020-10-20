@@ -97,10 +97,9 @@
         };
 
         this.getResponders = function(type, id) {
-            //return $http.get(baseUrl + '/responder')
             return $http.get(baseUrl + '/responder/' + type + '/' + id)
               .then(function(response) {
-                  return $q.resolve(response.data);
+                  return $q.resolve(_.sortBy(response.data, 'name'));
               })
               .catch(function(err) {
                   return $q.reject(err);
