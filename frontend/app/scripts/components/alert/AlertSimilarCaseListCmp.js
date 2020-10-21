@@ -9,8 +9,11 @@
                 self.CaseResolutionStatus = CaseResolutionStatus;
 
                 self.similarityFilters = {
-                    fTitle: undefined,
-                    fMatches: undefined
+                    fTitle: undefined
+                };
+
+                self.matchFilters = {
+                    fMatches: []
                 };
 
                 self.rateFilters = {
@@ -89,8 +92,11 @@
                 // Frontend filter methods
                 this.clearLocalFilters = function() {
                     self.similarityFilters = {
-                        fTitle: undefined,
-                        fMatches: undefined
+                        fTitle: undefined
+                    };
+
+                    self.matchFilters = {
+                        fMatches: []
                     };
 
                     self.rateFilters = {
@@ -101,8 +107,15 @@
 
                 this.greaterThan = function(prop){
                     return function(item){
-                      return !self.rateFilters[prop] || item[prop] >= self.rateFilters[prop];
-                  };
+                        return !self.rateFilters[prop] || item[prop] >= self.rateFilters[prop];
+                    };
+                };
+
+                this.matchFilter = function() {
+                    return function(item){
+                        return !self.matchFilters.fMatches || self.matchFilters.fMatches.length === 0 ||
+                            _.intersection(self.matchFilters.fMatches, item.fMatches).length > 0;
+                    };
                 };
 
                 // Filtering methods
