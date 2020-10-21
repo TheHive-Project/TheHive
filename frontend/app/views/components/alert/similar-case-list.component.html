@@ -21,9 +21,9 @@
 
         <div class="col-md-12" ng-show="$cmp.list.total > 0">
             <!-- Client side pagination -->
-            <div class="text-center" ng-show="$cmp.list.allValues.length > $cmp.pagination.pageSize">
+            <div class="text-center" ng-show="$cmp.filteredCases.length > $cmp.pagination.pageSize">
                 <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
-                    total-items="$cmp.list.allValues.length"
+                    total-items="$cmp.filteredCases.length"
                     items-per-page="$cmp.pagination.pageSize"
                     ng-model="$cmp.pagination.currentPage"></ul>
             </div>
@@ -103,7 +103,7 @@
             </div>
 
             <!-- Table data -->
-            <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs') | orderBy:$cmp.sortField | limitTo:$cmp.pagination.pageSize:($cmp.pagination.currentPage-1)*$cmp.pagination.pageSize)">
+            <div class="case-collection" ng-repeat="item in ($cmp.filteredCases = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs')) | orderBy:$cmp.sortField | limitTo:$cmp.pagination.pageSize:($cmp.pagination.currentPage-1)*$cmp.pagination.pageSize)">
                 <div class="case-item" >
                     <!-- case tlp -->
                     <div class="case-tlp bg-tlp-{{item.case.tlp}} clickable" ng-click="$cmp.addFilterValue('tlp', item.case.tlp)"></div>
