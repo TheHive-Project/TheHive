@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import java.util
-
+import scala.util.Success
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
@@ -21,8 +21,9 @@ import play.api.libs.json.{JsObject, Json}
 import scala.util.Try
 
 @Singleton
-class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Log] {
+class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSrv: TaskSrv, userSrv: UserSrv)(implicit
+    @Named("with-thehive-schema") db: Database
+) extends VertexSrv[Log] {
   val taskLogSrv       = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv = new EdgeSrv[LogAttachment, Log, Attachment]
 
@@ -30,6 +31,8 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv)(implic
     for {
       createdLog <- createEntity(log)
       _          <- taskLogSrv.create(TaskLog(), task, createdLog)
+      user       <- userSrv.current.getOrFail("User") // user is used only if task status is waiting but the code is cleaner
+      _          <- if (task.status == TaskStatus.Waiting) taskSrv.updateStatus(task, user, TaskStatus.InProgress) else Success(())
       _          <- auditSrv.log.create(createdLog, task, RichLog(createdLog, Nil).toJson)
     } yield createdLog
 
