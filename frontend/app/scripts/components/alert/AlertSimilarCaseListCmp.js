@@ -20,6 +20,7 @@
 
                 self.sortField = '-sCreatedAt';
                 self.matches = [];
+                self.filteredCases = [];
 
                 self.pagination = {
                     pageSize: 10,
