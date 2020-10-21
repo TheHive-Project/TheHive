@@ -89,10 +89,8 @@
                 </div>
                 <div class="case-similarity-match text-bold">
                     <div>
-                        <select class="form-control input-sm" ng-model="$cmp.similarityFilters.fMatches"
-                            ng-options="item for item in $cmp.matches">
-                            <option value=""></option>
-                        </select>
+                        <multiselect ng-model="$cmp.matchFilters.fMatches" options="$cmp.matches" show-select-all="true" show-unselect-all="true"
+                            classes-btn="'btn-default btn-block btn-sm'"></multiselect>
                     </div>
                 </div>
                 <div class="case-similarity-merge text-bold">
@@ -103,7 +101,7 @@
             </div>
 
             <!-- Table data -->
-            <div class="case-collection" ng-repeat="item in ($cmp.filteredCases = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs')) | orderBy:$cmp.sortField | limitTo:$cmp.pagination.pageSize:($cmp.pagination.currentPage-1)*$cmp.pagination.pageSize)">
+            <div class="case-collection" ng-repeat="item in ($cmp.filteredCases = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.matchFilter() | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs')) | orderBy:$cmp.sortField | limitTo:$cmp.pagination.pageSize:($cmp.pagination.currentPage-1)*$cmp.pagination.pageSize)">
                 <div class="case-item" >
                     <!-- case tlp -->
                     <div class="case-tlp bg-tlp-{{item.case.tlp}} clickable" ng-click="$cmp.addFilterValue('tlp', item.case.tlp)"></div>
