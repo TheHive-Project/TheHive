@@ -26,7 +26,13 @@
             </div>
 
             <div class="btn-group pull-right" role="group">
-                <page-sizer collection="$cmp.list" sizes="[1, 2, 3, 10, 15, 30, 100]"></page-sizer>
+                <!-- <page-sizer collection="$cmp.list" sizes="[1, 2, 3, 10, 15, 30, 100]"></page-sizer> -->
+                <div class="page-sizer">
+                    <select class="form-control input-sm"
+                        ng-model="$cmp.pagination.pageSize"
+                        ng-options="v for v in [1,2,5,10,15,30,50]"></select>
+                    <span class="page-sizer-label nowrap ml-xxs">per page</span>
+                </div>
             </div>
 
             <div class="btn-group pull-right" role="group">

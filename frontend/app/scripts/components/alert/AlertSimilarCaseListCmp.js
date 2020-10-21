@@ -11,7 +11,6 @@
                 self.similarityFilters = {
                     fTitle: undefined,
                     fMatches: undefined
-
                 };
 
                 self.rateFilters = {
@@ -19,7 +18,13 @@
                     fIoc: undefined
                 };
 
+                self.sortField = '-sCreatedAt';
                 self.matches = [];
+
+                self.pagination = {
+                    pageSize: 10,
+                    currentPage: 1
+                };
 
                 self.$onInit = function() {
                     this.filtering = new FilteringSrv('case', 'alert.dialog.similar-cases', {
@@ -53,7 +58,7 @@
                         skipStream: true,
                         version: 'v1',
                         loadAll: true,
-                        pageSize: self.filtering.context.pageSize,
+                        //pageSize: self.filtering.context.pageSize,
                         operations: [
                             {'_name': 'getAlert', 'idOrName': this.alertId},
                             {'_name': 'similarCases', 'caseFilter': this.filtering.buildQuery()}
@@ -64,6 +69,7 @@
                                 item.fMatches = _.keys(item.observableTypes);
                                 item.fObservables = Math.floor((item.similarObservableCount / item.observableCount) * 100);
                                 item.fIocs = Math.floor((item.similarIocCount / item.iocCount) * 100);
+                                item.sCreatedAt = item.case._createdAt;
                             });
 
                             self.matches = _.uniq(_.flatten(_.map(data, function(item){
@@ -134,6 +140,18 @@
 
                 this.filterSimilarities = function(data) {
                     return data;
+                };
+
+                this.sortByField = function(field) {
+                    var sort = null;
+
+                    if(this.sortField.substr(1) !== field) {
+                        sort = '+' + field;
+                    } else {
+                        sort = (this.sortField === '+' + field) ? '-'+field : '+'+field;
+                    }
+
+                    this.sortField = sort;
                 };
 
 

@@ -20,23 +20,53 @@
         </div>
 
         <div class="col-md-12" ng-show="$cmp.list.total > 0">
-            <!-- <div class="btn-toolbar" role="toolbar">
-                <div class="btn-group pull-right" role="group">
-                    <page-sizer collection="$cmp.list" sizes="[10, 15, 30, 100]"></page-sizer>
-                </div>
-            </div> -->
+            <!-- Client side pagination -->
+            <div class="text-center" ng-show="$cmp.list.allValues.length > $cmp.pagination.pageSize">
+                <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
+                    total-items="$cmp.list.allValues.length"
+                    items-per-page="$cmp.pagination.pageSize"
+                    ng-model="$cmp.pagination.currentPage"></ul>
+            </div>
 
-            <psearch control="$cmp.list"></psearch>
-
+            <!-- Table header -->
             <div class="case-item">
-                <div class="case-details text-bold">Title</div>
-                <div class="case-date text-bold">Date</div>
-                <div class="case-similarity text-bold">Observables</div>
-                <div class="case-similarity text-bold">IOCs</div>
+                <div class="case-details text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('fTitle')">
+                        Title
+                        <i ng-show="$cmp.sortField !== '+fTitle' && $cmp.sortField !== '-fTitle'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+fTitle'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-fTitle'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
+                <div class="case-date text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('sCreatedAt')">
+                        Created At
+                        <i ng-show="$cmp.sortField !== '+sCreatedAt' && $cmp.sortField !== '-sCreatedAt'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+sCreatedAt'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-sCreatedAt'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
+                <div class="case-similarity text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('fObservables')">
+                        Observables
+                        <i ng-show="$cmp.sortField !== '+fObservables' && $cmp.sortField !== '-fObservables'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+fObservables'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-fObservables'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
+                <div class="case-similarity text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('fIocs')">
+                        IOCs
+                        <i ng-show="$cmp.sortField !== '+fIocs' && $cmp.sortField !== '-fIocs'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+fIocs'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-fIocs'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
                 <div class="case-similarity-match text-bold">Matches</div>
                 <div class="case-similarity-merge text-bold">Action</div>
             </div>
 
+            <!-- Table filter -->
             <div class="case-item filter-panel">
                 <div class="case-details text-bold">
                     <div class="form-group has-feedback has-clear">
@@ -72,12 +102,11 @@
                 </div>
             </div>
 
-
-            <!-- <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.allValues | filter:$cmp.filterSimilarities)"> -->
-            <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs'))">
+            <!-- Table data -->
+            <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs') | orderBy:$cmp.sortField | limitTo:$cmp.pagination.pageSize:($cmp.pagination.currentPage-1)*$cmp.pagination.pageSize)">
                 <div class="case-item" >
-                    <!-- case severity -->
-                    <div class="case-tlp bg-tlp-{{item.case.tlp}}"></div>
+                    <!-- case tlp -->
+                    <div class="case-tlp bg-tlp-{{item.case.tlp}} clickable" ng-click="$cmp.addFilterValue('tlp', item.case.tlp)"></div>
 
                     <!-- case title and main details -->
                     <div class="case-details">
@@ -87,7 +116,7 @@
                         <div class="case-tags flexwrap mt-xxs">
                             <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
                             <strong class="text-muted mr-xxxs" ng-if="!item.case.tags || item.case.tags.length === 0">None</strong>
-                            <span ng-repeat="tag in item.case.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                            <span ng-repeat="tag in item.case.tags track by $index" ng-click="$cmp.addFilterValue('tags', tag)" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
                         </div>
                         <div class="text-success" ng-show="item.case.status !== 'Open'">
                             <small>
@@ -103,13 +132,13 @@
                     </div>
 
                     <div class="case-severity">
-                        <div class="clickable">
+                        <div class="clickable" ng-click="$cmp.addFilterValue('severity', item.case.severity)">
                             <severity active="false" value="item.case.severity"></severity>
                         </div>
                     </div>
 
                     <div class="case-date">
-                        <span uib-tooltip="{{item.case.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case.startDate | shortDate}}</span>
+                        <span uib-tooltip="{{item.case._createdAt | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
                     </div>
 
                     <div class="case-similarity">
