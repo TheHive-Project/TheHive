@@ -85,7 +85,7 @@ class AlertCtrl @Inject() (
         for {
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail("Organisation")
           customFields = inputAlert.customFieldValue.map(cf => cf.name -> cf.value).toMap
-          richAlert <- alertSrv.create(request.body("alert").toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
+          richAlert <- alertSrv.create(inputAlert.toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }
 
