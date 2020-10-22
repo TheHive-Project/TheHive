@@ -240,6 +240,20 @@ class PublicCase @Inject() (
       .property("endDate", UMapping.date.optional)(_.field.updatable)
       .property("tags", UMapping.string.set)(
         _.select(_.tags.displayName)
+          .filter((_, cases) =>
+            cases
+              .tags
+              .graphMap[String, String, Converter.Identity[String]](
+                { v =>
+                  val namespace = UMapping.string.getProperty(v, "namespace")
+                  val predicate = UMapping.string.getProperty(v, "predicate")
+                  val value     = UMapping.string.optional.getProperty(v, "value")
+                  Tag(namespace, predicate, value, None, 0).toString
+                },
+                Converter.identity[String]
+              )
+          )
+          .converter(_ => Converter.identity[String])
           .custom { (_, value, vertex, _, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)

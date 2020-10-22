@@ -6,11 +6,11 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, InputTask}
-import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate}
+import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate, Tag}
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
@@ -115,6 +115,20 @@ class PublicCaseTemplate @Inject() (
     .property("severity", UMapping.int.optional)(_.field.updatable)
     .property("tags", UMapping.string.set)(
       _.select(_.tags.displayName)
+        .filter((_, cases) =>
+          cases
+            .tags
+            .graphMap[String, String, Converter.Identity[String]](
+              { v =>
+                val namespace = UMapping.string.getProperty(v, "namespace")
+                val predicate = UMapping.string.getProperty(v, "predicate")
+                val value     = UMapping.string.optional.getProperty(v, "value")
+                Tag(namespace, predicate, value, None, 0).toString
+              },
+              Converter.identity[String]
+            )
+        )
+        .converter(_ => Converter.identity[String])
         .custom { (_, value, vertex, _, graph, authContext) =>
           caseTemplateSrv
             .get(vertex)(graph)
