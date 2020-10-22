@@ -277,6 +277,7 @@ class AlertSrv @Inject() (
       description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
       c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
       _ <- importObservables(alert, `case`)
+      _ <- importCustomFields(alert, `case`)
       _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
       _ <- markAsRead(alert._id)
       _ <- auditSrv.alertToCase.merge(alert, c)
@@ -311,6 +312,22 @@ class AlertSrv @Inject() (
                   observableSrv.updateTags(observable, newTags)
                 }
           }
+      }
+      .map(_ => ())
+
+  def importCustomFields(alert: Alert with Entity, `case`: Case with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    get(alert)
+      .richCustomFields
+      .toIterator
+      .toTry { richCustomField =>
+        caseSrv
+          .setOrCreateCustomField(`case`,
+            richCustomField.customField._id,
+            richCustomField.value,
+            richCustomField.customFieldValue.order)
       }
       .map(_ => ())
 
