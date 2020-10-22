@@ -18,7 +18,7 @@
 
                 self.rateFilters = {
                     fObservables: undefined,
-                    fIoc: undefined
+                    fIocs: undefined
                 };
 
                 self.sortField = '-sCreatedAt';
@@ -72,7 +72,8 @@
                                 item.fTitle = item.case.title;
                                 item.fMatches = _.keys(item.observableTypes);
                                 item.fObservables = Math.floor((item.similarObservableCount / item.observableCount) * 100);
-                                item.fIocs = Math.floor((item.similarIocCount / item.iocCount) * 100);
+                                item.fIocs = Math.floor((item.similarIocCount / item.iocCount) * 100) || 0;
+
                                 item.sCreatedAt = item.case._createdAt;
                             });
 
@@ -101,7 +102,7 @@
 
                     self.rateFilters = {
                         fObservables: undefined,
-                        fIoc: undefined
+                        fIocs: undefined
                     };
                 };
 

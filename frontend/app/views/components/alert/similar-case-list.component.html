@@ -70,20 +70,20 @@
             <div class="case-item filter-panel">
                 <div class="case-details text-bold">
                     <div class="form-group has-feedback has-clear">
-                        <input type="text" class="form-control input-sm" ng-model="$cmp.similarityFilters.fTitle">
+                        <input type="text" class="form-control input-sm" ng-model="$cmp.similarityFilters.fTitle" placeholder="Filter by title">
                         <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.similarityFilters.fTitle = undefined" style="pointer-events: auto;cursor: pointer;"></a>
                     </div>
                 </div>
                 <div class="case-date text-bold"></div>
                 <div class="case-similarity text-bold">
                     <div class="form-group has-feedback has-clear">
-                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fObservables">
+                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fObservables" placeholder="% min.">
                         <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.rateFilters.fObservables = undefined" style="pointer-events: auto;cursor: pointer;"></a>
                     </div>
                 </div>
                 <div class="case-similarity text-bold">
                     <div class="form-group has-feedback has-clear">
-                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fIocs">
+                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fIocs" placeholder="% min." step="1" min="0">
                         <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.rateFilters.fIocs = undefined" style="pointer-events: auto;cursor: pointer;"></a>
                     </div>
                 </div>
@@ -141,13 +141,13 @@
 
                     <div class="case-similarity">
                         <div>
-                            <strong>{{(item.similarObservableCount / item.observableCount) | percentage:0}}</strong> ({{item.similarObservableCount}} / {{item.observableCount}})
+                            <a href ng-click="$cmp.rateFilters.fObservables = item.fObservables"><strong>{{item.fObservables | number:0}} %</strong></a> ({{item.similarObservableCount}} / {{item.observableCount}})
                             <uib-progressbar class="progress progress-sm" max="item.observableCount" value="item.similarObservableCount" type="primary"></uib-progressbar>
                         </div>
                     </div>
                     <div class="case-similarity">
                         <div ng-if="item.iocCount > 0">
-                            <strong>{{(item.similarIocCount / item.iocCount) | percentage:0}}</strong> ({{item.similarIocCount}} / {{item.iocCount}})
+                            <a href ng-click="$cmp.rateFilters.fIocs = item.fIocs"><strong>{{item.fIocs | number:0}} %</strong></a> ({{item.similarIocCount}} / {{item.iocCount}})
                             <uib-progressbar class="progress progress-sm" max="item.iocCount" value="item.similarIocCount" type="danger"></uib-progressbar>
                         </div>
                         <div ng-if="item.iocCount === 0">
