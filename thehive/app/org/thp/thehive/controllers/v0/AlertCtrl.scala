@@ -191,13 +191,17 @@ class AlertCtrl @Inject() (
         val alertIds: Seq[String] = request.body("alertIds")
         val caseId: String        = request.body("caseId")
         for {
-          case0 <- caseSrv.get(EntityIdOrName(caseId)).can(Permissions.manageCase).getOrFail("Case")
           _ <- alertIds.toTry { alertId =>
-            alertSrv
-              .get(EntityIdOrName(alertId))
-              .can(Permissions.manageAlert)
-              .getOrFail("Alert")
-              .flatMap(alertSrv.mergeInCase(_, case0))
+            caseSrv.get(EntityIdOrName(caseId))
+              .can(Permissions.manageCase)
+              .getOrFail("Case")
+              .flatMap(`case` =>
+              alertSrv
+                .get(EntityIdOrName(alertId))
+                .can(Permissions.manageAlert)
+                .getOrFail("Alert")
+                .flatMap(alertSrv.mergeInCase(_, `case`))
+            )
           }
           richCase <- caseSrv.get(EntityIdOrName(caseId)).richCase.getOrFail("Case")
         } yield Results.Ok(richCase.toJson)
