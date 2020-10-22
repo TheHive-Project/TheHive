@@ -1,0 +1,45 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-toolbar" role="toolbar">
+
+            <div class="btn-group" uib-dropdown>
+                <button class="btn btn-primary btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
+                    <i class="fa fa-filter"></i>
+                    Quick Filters
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" uib-dropdown-menu>
+                    <li>
+                        <a ng-click="$cmp.filterBy('status', 'Open')"><i class="fa fa-folder-open-o"></i> Open cases</a>
+                    </li>
+                    <li>
+                        <a ng-click="$cmp.filterBy('status', 'Resolved')"><i class="fa fa-folder-o"></i> Closed cases</a>
+                    </li>
+                    <li class="divider"></li>
+                    <li>
+                        <a ng-click="$cmp.filterBy('resolutionStatus', 'TruePositive')"><i class="fa fa-exclamation-circle"></i> Closed - True Positive</a>
+                    </li>
+                    <li>
+                        <a ng-click="$cmp.filterBy('resolutionStatus', 'Indeterminate')"><i class="fa fa-question-circle-o "></i> Closed - Indeterminate</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="btn-group pull-right" role="group">
+                <!-- <page-sizer collection="$cmp.list" sizes="[1, 2, 3, 10, 15, 30, 100]"></page-sizer> -->
+                <div class="page-sizer">
+                    <select class="form-control input-sm"
+                        ng-model="$cmp.pagination.pageSize"
+                        ng-options="v for v in [10,15,30,50]"></select>
+                    <span class="page-sizer-label nowrap ml-xxs">per page</span>
+                </div>
+            </div>
+
+            <div class="btn-group pull-right" role="group">
+                <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[$cmp.filtering.context.showFilters]" type="button" ng-click="$cmp.toggleFilters()">
+                    <i class="fa fa-search"></i> Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
