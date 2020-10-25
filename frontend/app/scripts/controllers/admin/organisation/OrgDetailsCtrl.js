@@ -55,11 +55,6 @@
                             '_name': 'users'
                         }
                     ],
-                    config: {
-                        headers: {
-                            'X-Organisation': self.org.name
-                        }
-                    },
                     onFailure: function(err) {
                         if(err && err.status === 400) {
                             self.filtering.resetContext();

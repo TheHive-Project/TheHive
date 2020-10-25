@@ -54,11 +54,7 @@
                     {
                         '_name': 'users'
                     }
-                ], {
-                    headers: {
-                        'X-Organisation': orgId
-                    }
-                }).then(function(response) {
+                ]).then(function(response) {
                     return $q.resolve(response.data);
                 });
             };
