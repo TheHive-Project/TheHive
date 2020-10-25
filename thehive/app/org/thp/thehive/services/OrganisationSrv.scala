@@ -159,7 +159,8 @@ object OrganisationOps {
     def dashboards: Traversal.V[Dashboard] = traversal.out[OrganisationDashboard].v[Dashboard]
 
     def visible(implicit authContext: AuthContext): Traversal.V[Organisation] =
-      if (authContext.isPermitted(Permissions.manageOrganisation)) traversal
+      if (authContext.isPermitted(Permissions.manageOrganisation))
+        traversal
       else
         traversal.filter(_.visibleOrganisationsTo.users.current)
 
