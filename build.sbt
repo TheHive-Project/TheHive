@@ -105,6 +105,9 @@ rpmReleaseFile := {
   rpmFile
 }
 
+import org.thp.ghcl.Milestone
+milestoneFilter := ((milestone: Milestone) => milestone.title.matches("(?:[12].*|3\\.[01234].*)")) // < 3.5
+
 bintrayOrganization := Some("thehive-project")
 
 // Front-end //

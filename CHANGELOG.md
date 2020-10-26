@@ -1,5 +1,11 @@
 # Change Log
 
+## [3.4.3](https://github.com/TheHive-Project/TheHive/milestone/62) (2020-10-26)
+
+**Fixed bugs:**
+
+- [Bug] TheHive is stalled while importing Alerts with a large number of observables [\#1416](https://github.com/TheHive-Project/TheHive/issues/1416)
+
 ## [3.4.2](https://github.com/TheHive-Project/TheHive/milestone/57) (2020-04-25)
 
 **Implemented enhancements:**
