@@ -29,7 +29,6 @@ object TheHiveAuthSrv {
 class TheHiveAuthSrv @Inject()(
     configuration: Configuration,
     authModules: immutable.Set[AuthSrv],
-    userSrv: UserSrv,
     implicit override val ec: ExecutionContext
 ) extends MultiAuthSrv(
       TheHiveAuthSrv.getAuthSrv(configuration.getDeprecated[Option[Seq[String]]]("auth.provider", "auth.type").getOrElse(Seq("local")), authModules),

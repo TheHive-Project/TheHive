@@ -2,21 +2,12 @@ package services
 
 import java.nio.file.Files
 
-import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try}
-
-import play.api.libs.json._
-import play.api.{Configuration, Logger}
-
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import connectors.ConnectorRouter
 import javax.inject.{Inject, Singleton}
 import models._
-
 import org.elastic4play.controllers.{Fields, FileInputValue}
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.services.JsonFormat.attachmentFormat
@@ -24,11 +15,18 @@ import org.elastic4play.services.QueryDSL.{groupByField, parent, selectCount, wi
 import org.elastic4play.services._
 import org.elastic4play.utils.Collection
 import org.elastic4play.{ConflictError, InternalError}
+import play.api.Logger
+import play.api.libs.json._
+
+import scala.collection.immutable
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 trait AlertTransformer {
-  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case]
+  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case]
 
-  def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case]
+  def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case]
 }
 
 case class CaseSimilarity(caze: Case, similarIOCCount: Int, iocCount: Int, similarArtifactCount: Int, artifactCount: Int)
@@ -38,8 +36,7 @@ object AlertSrv {
 }
 
 @Singleton
-class AlertSrv(
-    templates: Map[String, String],
+class AlertSrv @Inject()(
     alertModel: AlertModel,
     createSrv: CreateSrv,
     getSrv: GetSrv,
@@ -51,50 +48,14 @@ class AlertSrv(
     caseTemplateSrv: CaseTemplateSrv,
     attachmentSrv: AttachmentSrv,
     connectors: ConnectorRouter,
-    hashAlg: Seq[String],
-    implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) extends AlertTransformer {
-
-  @Inject() def this(
-      configuration: Configuration,
-      alertModel: AlertModel,
-      createSrv: CreateSrv,
-      getSrv: GetSrv,
-      updateSrv: UpdateSrv,
-      deleteSrv: DeleteSrv,
-      findSrv: FindSrv,
-      caseSrv: CaseSrv,
-      artifactSrv: ArtifactSrv,
-      caseTemplateSrv: CaseTemplateSrv,
-      attachmentSrv: AttachmentSrv,
-      connectors: ConnectorRouter,
-      ec: ExecutionContext,
-      mat: Materializer
-  ) =
-    this(
-      Map.empty[String, String],
-      alertModel: AlertModel,
-      createSrv,
-      getSrv,
-      updateSrv,
-      deleteSrv,
-      findSrv,
-      caseSrv,
-      artifactSrv,
-      caseTemplateSrv,
-      attachmentSrv,
-      connectors,
-      (configuration.get[String]("datastore.hash.main") +: configuration.get[Seq[String]]("datastore.hash.extra")).distinct,
-      ec,
-      mat
-    )
 
   private[AlertSrv] lazy val logger = Logger(getClass)
 
   import AlertSrv._
 
-  def create(fields: Fields)(implicit authContext: AuthContext): Future[Alert] = {
+  def create(fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] = {
 
     val artifactsFields =
       Future.traverse(fields.getValues("artifacts")) {
@@ -139,32 +100,32 @@ class AlertSrv(
     }
   }
 
-  def bulkCreate(fieldSet: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+  def bulkCreate(fieldSet: Seq[Fields])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Alert]]] =
     createSrv[AlertModel, Alert](alertModel, fieldSet)
 
-  def get(id: String): Future[Alert] =
+  def get(id: String)(implicit ec: ExecutionContext): Future[Alert] =
     getSrv[AlertModel, Alert](alertModel, id)
 
-  def get(tpe: String, source: String, sourceRef: String): Future[Option[Alert]] = {
+  def get(tpe: String, source: String, sourceRef: String)(implicit ec: ExecutionContext): Future[Option[Alert]] = {
     import org.elastic4play.services.QueryDSL._
     findSrv[AlertModel, Alert](alertModel, and("type" ~= tpe, "source" ~= source, "sourceRef" ~= sourceRef), Some("0-1"), Nil)
       ._1
       .runWith(Sink.headOption)
   }
 
-  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
+  def update(id: String, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     update(id, fields, ModifyConfig.default)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] =
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     for {
       alert        ← get(id)
       updatedAlert ← update(alert, fields, modifyConfig)
     } yield updatedAlert
 
-  def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext): Future[Alert] =
+  def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     update(alert, fields, ModifyConfig.default)
 
-  def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Alert] = {
+  def update(alert: Alert, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] = {
     val follow       = fields.getBoolean("follow").getOrElse(alert.follow())
     val newStatus    = if (follow && alert.status() != AlertStatus.New) AlertStatus.Updated else alert.status()
     val updatedAlert = updateSrv(alert, fields.set("status", Json.toJson(newStatus)), modifyConfig)
@@ -180,31 +141,43 @@ class AlertSrv(
     }
   }
 
-  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+  def bulkUpdate(ids: Seq[String], fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Alert]]] =
     bulkUpdate(ids, fields, ModifyConfig.default)
 
-  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+  def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig)(
+      implicit authContext: AuthContext,
+      ec: ExecutionContext
+  ): Future[Seq[Try[Alert]]] =
     updateSrv[AlertModel, Alert](alertModel, ids, fields, modifyConfig)
 
-  def bulkUpdate(updates: Seq[(Alert, Fields)])(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+  def bulkUpdate(updates: Seq[(Alert, Fields)])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Alert]]] =
     bulkUpdate(updates, ModifyConfig.default)
 
-  def bulkUpdate(updates: Seq[(Alert, Fields)], modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Seq[Try[Alert]]] =
+  def bulkUpdate(
+      updates: Seq[(Alert, Fields)],
+      modifyConfig: ModifyConfig
+  )(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Alert]]] =
     updateSrv[Alert](updates, modifyConfig)
 
-  def markAsRead(alert: Alert, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] =
+  def markAsRead(
+      alert: Alert,
+      modifyConfig: ModifyConfig = ModifyConfig.default
+  )(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     alert.caze() match {
       case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Imported"), modifyConfig)
       case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignored"), modifyConfig)
     }
 
-  def markAsUnread(alert: Alert, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] =
+  def markAsUnread(
+      alert: Alert,
+      modifyConfig: ModifyConfig = ModifyConfig.default
+  )(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     alert.caze() match {
       case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Updated"), modifyConfig)
       case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"), modifyConfig)
     }
 
-  def getCaseTemplate(alert: Alert, customCaseTemplate: Option[String]): Future[Option[CaseTemplate]] =
+  def getCaseTemplate(alert: Alert, customCaseTemplate: Option[String])(implicit ec: ExecutionContext): Future[Option[CaseTemplate]] =
     customCaseTemplate.fold[Future[Option[CaseTemplate]]](Future.successful(None)) { templateName ⇒
       caseTemplateSrv
         .getByName(templateName)
@@ -214,7 +187,7 @@ class AlertSrv(
         .recover { case _ ⇒ None }
     }
 
-  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] =
+  def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     alert.caze() match {
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
@@ -246,7 +219,7 @@ class AlertSrv(
         }
     }
 
-  override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] =
+  override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     alert.caze() match {
       case Some(id) ⇒ caseSrv.get(id)
       case None ⇒
@@ -274,7 +247,7 @@ class AlertSrv(
         }
     }
 
-  def bulkMergeWithCase(alerts: Seq[Alert], caze: Case)(implicit authContext: AuthContext): Future[Case] =
+  def bulkMergeWithCase(alerts: Seq[Alert], caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     Future
       .traverse(alerts) { alert ⇒
         for {
@@ -296,7 +269,7 @@ class AlertSrv(
         )
       }
 
-  def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] = {
+  def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] = {
     val artifactsFields = alert
       .artifacts()
       .flatMap { artifact ⇒
@@ -386,10 +359,16 @@ class AlertSrv(
     updatedCase
   }
 
-  def setCase(alert: Alert, caze: Case, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] =
+  def setCase(alert: Alert, caze: Case, modifyConfig: ModifyConfig = ModifyConfig.default)(
+      implicit authContext: AuthContext,
+      ec: ExecutionContext
+  ): Future[Alert] =
     updateSrv(alert, Fields(Json.obj("case" → caze.id, "status" → AlertStatus.Imported)), modifyConfig)
 
-  def unsetCase(alert: Alert, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Alert] = {
+  def unsetCase(
+      alert: Alert,
+      modifyConfig: ModifyConfig = ModifyConfig.default
+  )(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] = {
     val status = alert.status match {
       case AlertStatus.New      ⇒ AlertStatus.New
       case AlertStatus.Updated  ⇒ AlertStatus.New
@@ -400,21 +379,22 @@ class AlertSrv(
     updateSrv(alert, Fields(Json.obj("case" → JsNull, "status" → status)), modifyConfig)
   }
 
-  def delete(id: String, force: Boolean)(implicit authContext: AuthContext): Future[Unit] =
+  def delete(id: String, force: Boolean)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] =
     if (force) deleteSrv.realDelete[AlertModel, Alert](alertModel, id)
     else get(id).flatMap(alert ⇒ markAsUnread(alert)).map(_ ⇒ ())
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Alert, NotUsed], Future[Long]) =
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Alert, NotUsed], Future[Long]) =
     findSrv[AlertModel, Alert](alertModel, queryDef, range, sortBy)
 
-  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(alertModel, queryDef, aggs: _*)
+  def stats(queryDef: QueryDef, aggs: Seq[Agg])(implicit ec: ExecutionContext): Future[JsObject] = findSrv(alertModel, queryDef, aggs: _*)
 
   def setFollowAlert(alertId: String, follow: Boolean, modifyConfig: ModifyConfig = ModifyConfig.default)(
-      implicit authContext: AuthContext
+      implicit authContext: AuthContext,
+      ec: ExecutionContext
   ): Future[Alert] =
     updateSrv[AlertModel, Alert](alertModel, alertId, Fields(Json.obj("follow" → follow)), modifyConfig)
 
-  def similarCases(alert: Alert): Future[Seq[CaseSimilarity]] = {
+  def similarCases(alert: Alert)(implicit ec: ExecutionContext): Future[Seq[CaseSimilarity]] = {
     def similarArtifacts(artifact: JsObject): Option[Source[Artifact, NotUsed]] =
       for {
         dataType ← (artifact \ "dataType").asOpt[String]
@@ -457,7 +437,7 @@ class AlertSrv(
       .runWith(Sink.seq)
   }
 
-  def getArtifactSeen(artifact: JsObject): Future[Long] = {
+  def getArtifactSeen(artifact: JsObject)(implicit ec: ExecutionContext): Future[Long] = {
     val maybeArtifactSeen = for {
       dataType ← (artifact \ "dataType").asOpt[String]
       data ← dataType match {
@@ -469,12 +449,12 @@ class AlertSrv(
     maybeArtifactSeen.getOrElse(Future.successful(0L))
   }
 
-  def alertArtifactsWithSeen(alert: Alert): Future[Seq[JsObject]] =
+  def alertArtifactsWithSeen(alert: Alert)(implicit ec: ExecutionContext): Future[Seq[JsObject]] =
     Future.traverse(alert.artifacts()) { artifact ⇒
       getArtifactSeen(artifact).map(seen ⇒ artifact + ("seen" → JsNumber(seen)))
     }
 
-  def fixStatus()(implicit authContext: AuthContext): Future[Unit] = {
+  def fixStatus()(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] = {
     import org.elastic4play.services.QueryDSL._
 
     val updatedStatusFields              = Fields.empty.set("status", "Updated")

@@ -1,23 +1,21 @@
 package controllers
 
 import java.nio.file.Files
-import javax.inject.{Inject, Singleton}
 
+import akka.stream.scaladsl.FileIO
+import javax.inject.{Inject, Singleton}
+import models.Roles
+import net.lingala.zip4j.core.ZipFile
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.util.Zip4jConstants
+import org.elastic4play.Timed
+import org.elastic4play.controllers.Authenticated
+import org.elastic4play.models.AttachmentAttributeFormat
+import org.elastic4play.services.{AttachmentSrv, ExecutionContextSrv}
 import play.api.http.HttpEntity
 import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.mvc._
 import play.api.{mvc, Configuration}
-
-import akka.stream.scaladsl.FileIO
-import net.lingala.zip4j.core.ZipFile
-import net.lingala.zip4j.model.ZipParameters
-import net.lingala.zip4j.util.Zip4jConstants
-import models.Roles
-
-import org.elastic4play.Timed
-import org.elastic4play.controllers.{Authenticated, Renderer}
-import org.elastic4play.models.AttachmentAttributeFormat
-import org.elastic4play.services.AttachmentSrv
 
 /**
   * Controller used to access stored attachments (plain or zipped)
@@ -29,7 +27,7 @@ class AttachmentCtrl(
     attachmentSrv: AttachmentSrv,
     authenticated: Authenticated,
     components: ControllerComponents,
-    renderer: Renderer
+    executionContextSrv: ExecutionContextSrv
 ) extends AbstractController(components) {
 
   @Inject() def this(
@@ -38,9 +36,16 @@ class AttachmentCtrl(
       attachmentSrv: AttachmentSrv,
       authenticated: Authenticated,
       components: ControllerComponents,
-      renderer: Renderer
+      executionContextSrv: ExecutionContextSrv
   ) =
-    this(configuration.get[String]("datastore.attachment.password"), tempFileCreator, attachmentSrv, authenticated, components, renderer)
+    this(
+      configuration.get[String]("datastore.attachment.password"),
+      tempFileCreator,
+      attachmentSrv,
+      authenticated,
+      components,
+      executionContextSrv
+    )
 
   /**
     * Download an attachment, identified by its hash, in plain format
@@ -49,18 +54,20 @@ class AttachmentCtrl(
     */
   @Timed("controllers.AttachmentCtrl.download")
   def download(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
-    if (hash.startsWith("{{")) // angularjs hack
-      NoContent
-    else if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
-      mvc.Results.BadRequest("File name is invalid")
-    else
-      Result(
-        header = ResponseHeader(
-          200,
-          Map("Content-Disposition" → s"""attachment; filename="${name.getOrElse(hash)}"""", "Content-Transfer-Encoding" → "binary")
-        ),
-        body = HttpEntity.Streamed(attachmentSrv.source(hash), None, None)
-      )
+    executionContextSrv.withDefault { implicit ec ⇒
+      if (hash.startsWith("{{")) // angularjs hack
+        NoContent
+      else if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
+        mvc.Results.BadRequest("File name is invalid")
+      else
+        Result(
+          header = ResponseHeader(
+            200,
+            Map("Content-Disposition" → s"""attachment; filename="${name.getOrElse(hash)}"""", "Content-Transfer-Encoding" → "binary")
+          ),
+          body = HttpEntity.Streamed(attachmentSrv.source(hash), None, None)
+        )
+    }
   }
 
   /**
@@ -70,33 +77,35 @@ class AttachmentCtrl(
     */
   @Timed("controllers.AttachmentCtrl.downloadZip")
   def downloadZip(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Roles.read) { implicit request ⇒
-    if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
-      BadRequest("File name is invalid")
-    else {
-      val f = tempFileCreator.create("zip", hash).path
-      Files.delete(f)
-      val zipFile   = new ZipFile(f.toFile)
-      val zipParams = new ZipParameters
-      zipParams.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_FASTEST)
-      zipParams.setEncryptFiles(true)
-      zipParams.setEncryptionMethod(Zip4jConstants.ENC_METHOD_STANDARD)
-      zipParams.setPassword(password)
-      zipParams.setFileNameInZip(name.getOrElse(hash))
-      zipParams.setSourceExternalStream(true)
-      zipFile.addStream(attachmentSrv.stream(hash), zipParams)
+    executionContextSrv.withDefault { implicit ec ⇒
+      if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
+        BadRequest("File name is invalid")
+      else {
+        val f = tempFileCreator.create("zip", hash).path
+        Files.delete(f)
+        val zipFile   = new ZipFile(f.toFile)
+        val zipParams = new ZipParameters
+        zipParams.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_FASTEST)
+        zipParams.setEncryptFiles(true)
+        zipParams.setEncryptionMethod(Zip4jConstants.ENC_METHOD_STANDARD)
+        zipParams.setPassword(password)
+        zipParams.setFileNameInZip(name.getOrElse(hash))
+        zipParams.setSourceExternalStream(true)
+        zipFile.addStream(attachmentSrv.stream(hash), zipParams)
 
-      Result(
-        header = ResponseHeader(
-          200,
-          Map(
-            "Content-Disposition"       → s"""attachment; filename="${name.getOrElse(hash)}.zip"""",
-            "Content-Type"              → "application/zip",
-            "Content-Transfer-Encoding" → "binary",
-            "Content-Length"            → Files.size(f).toString
-          )
-        ),
-        body = HttpEntity.Streamed(FileIO.fromPath(f), Some(Files.size(f)), Some("application/zip"))
-      )
+        Result(
+          header = ResponseHeader(
+            200,
+            Map(
+              "Content-Disposition"       → s"""attachment; filename="${name.getOrElse(hash)}.zip"""",
+              "Content-Type"              → "application/zip",
+              "Content-Transfer-Encoding" → "binary",
+              "Content-Length"            → Files.size(f).toString
+            )
+          ),
+          body = HttpEntity.Streamed(FileIO.fromPath(f), Some(Files.size(f)), Some("application/zip"))
+        )
+      }
     }
   }
 }

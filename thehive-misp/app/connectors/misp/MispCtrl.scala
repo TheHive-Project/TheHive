@@ -161,9 +161,9 @@ class MispCtrl(
       }
   }
 
-  override def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext): Future[Case] =
+  override def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     mispSrv.createCase(alert, customCaseTemplate)
 
-  override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext): Future[Case] =
+  override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     mispSrv.mergeWithCase(alert, caze)
 }
