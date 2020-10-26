@@ -136,7 +136,9 @@
                     </div>
 
                     <div class="case-date">
-                        <span uib-tooltip="{{item.case._createdAt | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
+                        <a href ng-click="$cmp.addFilterValue('_createdAt', item.case._createdAt)">
+                            <span uib-tooltip="{{item.case._createdAt | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
+                        </a>
                     </div>
 
                     <div class="case-similarity">

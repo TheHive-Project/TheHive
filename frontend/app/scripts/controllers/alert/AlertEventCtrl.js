@@ -14,18 +14,6 @@
 
             self.loading = true;
 
-            self.pagination = {
-                pageSize: 10,
-                currentPage: 1,
-                filter: '',
-                data: []
-            };
-
-            self.similarityFilters = {};
-            self.similaritySorts = ['-startDate', '-similarArtifactCount', '-similarIocCount', '-iocCount'];
-            self.currentSimilarFilter = '';
-            self.similarCasesStats = [];
-
             self.customFieldsCache = CustomFieldsSrv;
 
             self.counts = {
@@ -51,7 +39,6 @@
                 AlertingSrv.get(eventId).then(function(data) {
                     self.event = data;
                     self.loading = false;
-                    self.initSimilarCasesFilter(self.event.similarCases);
 
                     self.dataTypes = _.countBy(self.event.artifacts, function(attr) {
                         return attr.dataType;
@@ -194,50 +181,6 @@
 
             self.cancel = function() {
                 $uibModalInstance.dismiss();
-            };
-
-            self.initSimilarCasesFilter = function(data) {
-                var stats = {
-                    'Open': 0
-                };
-
-                // Init the stats object
-                _.each(_.without(_.keys(CaseResolutionStatus), 'Duplicated'), function(key) {
-                    stats[key] = 0;
-                });
-
-                _.each(data, function(item) {
-                    if(item.status === 'Open') {
-                        stats[item.status] = stats[item.status] + 1;
-                    } else {
-                        stats[item.resolutionStatus] = stats[item.resolutionStatus] + 1;
-                    }
-                });
-
-                var result = [];
-                _.each(_.keys(stats), function(key) {
-                    result.push({
-                        key: key,
-                        value: stats[key]
-                    });
-                });
-
-                self.similarCasesStats = result;
-            };
-
-            self.filterSimilarCases = function(filter) {
-                self.currentSimilarFilter = filter;
-                if(filter === '') {
-                    self.similarityFilters = {};
-                } else if(filter === 'Open') {
-                    self.similarityFilters = {
-                        status: filter
-                    };
-                } else {
-                    self.similarityFilters = {
-                        resolutionStatus: filter
-                    };
-                }
             };
 
             self.copyId = function(id) {

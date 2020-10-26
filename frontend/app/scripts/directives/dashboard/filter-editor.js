@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, UserSrv) {
+    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, UserSrv, UtilsSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -10,6 +10,37 @@
             },
             templateUrl: 'views/directives/dashboard/filter-editor.html',
             link: function(scope) {
+                scope.dateOperator = {
+                    custom: 'Custom',
+                    today: 'Today',
+                    last7days: 'Last 7 days',
+                    last30days: 'Last 30 days',
+                    last3months: 'Last 3 months',
+                    last6months: 'Last 6 months',
+                    lastyear: 'Last year'
+                };
+
+                scope.setDateFilterOperator = function(filter, operator) {
+                    operator = operator || 'custom';
+
+                    var dateRange = UtilsSrv.getDateRange(operator);
+
+                    if(operator === 'custom') {
+                        filter.value = {
+                            operator: operator,
+                            from: dateRange.from,
+                            to: dateRange.to
+                        };
+                    } else {
+                        filter.value = {
+                            operator: operator,
+                            from: null,
+                            to: null
+                        };
+                    }
+
+                };
+
                 scope.editorFor = function(filter) {
                     if (filter.type === null) {
                         return;
