@@ -28,7 +28,6 @@ object Conversion {
 
   def fromObjectType(objectType: String): String =
     objectType match {
-      //    case "Case" =>"case"
       case "Task"       => "case_task"
       case "Log"        => "case_task_log"
       case "Observable" => "case_artifact"

@@ -13,6 +13,7 @@ import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
 import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
+import org.thp.thehive.models.Audit._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
@@ -197,7 +198,7 @@ class Webhook(
           case (audit, obj) =>
             val objectType = audit.objectType.getOrElse(audit.context._label)
             Json.obj(
-              "operation"  -> audit.action,
+              "operation"  -> v0Action(audit.action),
               "details"    -> audit.details.fold[JsValue](JsObject.empty)(fixCustomFieldDetails(objectType, _)),
               "objectType" -> fromObjectType(objectType),
               "objectId"   -> audit.objectId,
@@ -225,6 +226,12 @@ class Webhook(
             )
         }
       case _ => Failure(BadConfigurationError(s"Message version $version in webhook is not supported"))
+    }
+
+  def v0Action(action: String): String =
+    action match {
+      case Audit.merge => Audit.update
+      case action      => action
     }
 
   override def execute(
