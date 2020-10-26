@@ -173,8 +173,8 @@ class AuditSrv @Inject() (
     def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
 
-    def merge(entity: E with Entity, destination: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.merge, entity), Some(destination), None)
+    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), Some(destination), None)
   }
 
   class SelfContextObjectAudit[E <: Product] {
