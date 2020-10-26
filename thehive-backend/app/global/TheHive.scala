@@ -79,7 +79,7 @@ class TheHive(environment: Environment, val configuration: Configuration) extend
     bind[AuthSrv].to[TheHiveAuthSrv]
     bind[UserMapper].to[MultiUserMapperSrv]
 
-    bindActor[AuditActor]("AuditActor")
+    bindActor[AuditActor]("AuditActor", props = _.withDispatcher("auditTask"))
     bindActor[LocalStreamActor]("localStreamActor")
 
     if (environment.mode == Mode.Prod)

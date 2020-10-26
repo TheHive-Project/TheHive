@@ -43,12 +43,11 @@ class AuditSrv @Inject()(
     auxSrv: AuxSrv,
     dBRemove: DBRemove,
     findSrv: FindSrv,
-    implicit val ec: ExecutionContext
 ) {
 
   private[AuditSrv] lazy val logger = Logger(getClass)
 
-  def apply(rootId: Option[String], count: Int): (Source[JsObject, NotUsed], Future[Long]) = {
+  def apply(rootId: Option[String], count: Int)(implicit ec: ExecutionContext): (Source[JsObject, NotUsed], Future[Long]) = {
     import org.elastic4play.services.QueryDSL._
 
     val streamableEntities = modelSrv.list.collect {
@@ -83,26 +82,25 @@ class AuditSrv @Inject()(
     (entities, total)
   }
 
-  def realDelete(audit: Audit): Future[Unit] =
+  def realDelete(audit: Audit)(implicit ec: ExecutionContext): Future[Unit] =
     dBRemove(audit).map(_ ⇒ ())
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Audit, NotUsed], Future[Long]) =
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Audit, NotUsed], Future[Long]) =
     findSrv[AuditModel, Audit](auditModel, queryDef, range, sortBy)
 
-  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(auditModel, queryDef, aggs: _*)
+  def stats(queryDef: QueryDef, aggs: Seq[Agg])(implicit ec: ExecutionContext): Future[JsObject] = findSrv(auditModel, queryDef, aggs: _*)
 
-  def findFor(entity: BaseEntity, range: Option[String], sortBy: Seq[String]): (Source[Audit, NotUsed], Future[Long]) = {
+  def findFor(entity: BaseEntity, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Audit, NotUsed], Future[Long]) = {
     import org.elastic4play.services.QueryDSL._
     findSrv[AuditModel, Audit](auditModel, and("objectId" ~= entity.id, "objectType" ~= entity.model.modelName), range, sortBy)
   }
 }
 
 @Singleton
-class AuditActor @Inject()(auditModel: AuditModel, createSrv: CreateSrv, eventSrv: EventSrv, webHooks: WebHooks, implicit val ec: ExecutionContext)
-    extends Actor {
+class AuditActor @Inject()(auditModel: AuditModel, createSrv: CreateSrv, eventSrv: EventSrv, webHooks: WebHooks) extends Actor {
 
   object EntityExtractor {
-    def unapply(e: BaseEntity): Some[(BaseModelDef, String, String)] = Some((e.model, e.id, e.routing))
+    def unapply(e: BaseEntity): Option[(BaseModelDef, String, String)] = Some((e.model, e.id, e.routing))
   }
   var currentRequestIds               = Set.empty[String]
   private[AuditActor] lazy val logger = Logger(getClass)
@@ -133,9 +131,9 @@ class AuditActor @Inject()(auditModel: AuditModel, createSrv: CreateSrv, eventSr
         "requestId"  → requestId
       )
 
-      createSrv[AuditModel, Audit](auditModel, Fields(audit))(authContext)
+      createSrv[AuditModel, Audit](auditModel, Fields(audit))(authContext, context.dispatcher)
         .failed
-        .foreach(t ⇒ logger.error("Audit error", t))
+        .foreach(t ⇒ logger.error("Audit error", t))(context.dispatcher)
       currentRequestIds = currentRequestIds + requestId
 
       webHooks.send(audit)

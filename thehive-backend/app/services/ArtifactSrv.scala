@@ -35,26 +35,25 @@ class ArtifactSrv @Inject()(
     findSrv: FindSrv,
     fieldsSrv: FieldsSrv,
     dbRemove: DBRemove,
-    implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
   private[ArtifactSrv] lazy val logger = Logger(getClass)
 
-  def create(caseId: String, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
+  def create(caseId: String, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Artifact] =
     getSrv[CaseModel, Case](caseModel, caseId)
       .flatMap { caze ⇒
         create(caze, fields)
       }
 
-  def create(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Artifact] =
+  def create(caze: Case, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Artifact] =
     createSrv[ArtifactModel, Artifact, Case](artifactModel, caze, fields)
       .recoverWith {
         case _: ConflictError ⇒ updateIfDeleted(caze, fields) // if the artifact already exists, search it and update it
       }
 
   private def updateIfDeleted(caze: Case, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
-      implicit authContext: AuthContext
+      implicit authContext: AuthContext, ec: ExecutionContext
   ): Future[Artifact] =
     fieldsSrv.parse(fields, artifactModel).toFuture.flatMap { attrs ⇒
       val updatedArtifact = for {
@@ -76,13 +75,13 @@ class ArtifactSrv @Inject()(
       }
     }
 
-  def create(caseId: String, fieldSet: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] =
+  def create(caseId: String, fieldSet: Seq[Fields])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Artifact]]] =
     getSrv[CaseModel, Case](caseModel, caseId)
       .flatMap { caze ⇒
         create(caze, fieldSet)
       }
 
-  def create(caze: Case, fieldSet: Seq[Fields])(implicit authContext: AuthContext): Future[Seq[Try[Artifact]]] =
+  def create(caze: Case, fieldSet: Seq[Fields])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Artifact]]] =
     createSrv[ArtifactModel, Artifact, Case](artifactModel, fieldSet.map(caze → _))
       .flatMap {
         // if there is failure
@@ -94,21 +93,21 @@ class ArtifactSrv @Inject()(
         case t ⇒ Future.successful(t)
       }
 
-  def get(id: String): Future[Artifact] =
+  def get(id: String)(implicit ec: ExecutionContext): Future[Artifact] =
     getSrv[ArtifactModel, Artifact](artifactModel, id)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext): Future[Artifact] =
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Artifact] =
     updateSrv[ArtifactModel, Artifact](artifactModel, id, fields, modifyConfig)
 
   def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
-      implicit authContext: AuthContext
+      implicit authContext: AuthContext, ec: ExecutionContext
   ): Future[Seq[Try[Artifact]]] =
     updateSrv.apply[ArtifactModel, Artifact](artifactModel, ids, fields, modifyConfig)
 
-  def delete(id: String)(implicit authContext: AuthContext): Future[Artifact] =
+  def delete(id: String)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Artifact] =
     deleteSrv[ArtifactModel, Artifact](artifactModel, id)
 
-  def realDelete(artifact: Artifact): Future[Unit] =
+  def realDelete(artifact: Artifact)(implicit ec: ExecutionContext): Future[Unit] =
     for {
       _ ← auditSrv
         .findFor(artifact, Some("all"), Nil)
@@ -119,19 +118,19 @@ class ArtifactSrv @Inject()(
       _ ← dbRemove(artifact)
     } yield ()
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) =
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Artifact, NotUsed], Future[Long]) =
     findSrv[ArtifactModel, Artifact](artifactModel, queryDef, range, sortBy)
 
-  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(artifactModel, queryDef, aggs: _*)
+  def stats(queryDef: QueryDef, aggs: Seq[Agg])(implicit ec: ExecutionContext): Future[JsObject] = findSrv(artifactModel, queryDef, aggs: _*)
 
-  def isSeen(artifact: Artifact): Future[Long] = {
+  def isSeen(artifact: Artifact)(implicit ec: ExecutionContext): Future[Long] = {
     import org.elastic4play.services.QueryDSL._
     findSrv(artifactModel, similarArtifactFilter(artifact), selectCount).map { stats ⇒
       (stats \ "count").asOpt[Long].getOrElse(1L)
     }
   }
 
-  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String]): (Source[Artifact, NotUsed], Future[Long]) =
+  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Artifact, NotUsed], Future[Long]) =
     find(similarArtifactFilter(artifact), range, sortBy)
 
   def findSimilar(
@@ -140,7 +139,7 @@ class ArtifactSrv @Inject()(
       filter: Option[QueryDef],
       range: Option[String],
       sortBy: Seq[String]
-  ): (Source[Artifact, NotUsed], Future[Long]) =
+  )(implicit ec: ExecutionContext): (Source[Artifact, NotUsed], Future[Long]) =
     find(similarArtifactFilter(dataType, data, filter.getOrElse(org.elastic4play.services.QueryDSL.any)), range, sortBy)
 
   private[services] def similarArtifactFilter(artifact: Artifact): QueryDef = {
