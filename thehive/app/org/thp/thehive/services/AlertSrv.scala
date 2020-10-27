@@ -283,15 +283,15 @@ class AlertSrv @Inject() (
         _ <- caseSrv.addTags(`case`, get(alert).tags.toSeq.map(_.toString).toSet)
         // No audit for markAsRead and observables
         // Audits for customFields, description and tags
-        newDescription <- Try(caseSrv.get(`case`).richCase.head.description)
+        c <- caseSrv.getOrFail(`case`._id)
         details <- Success(Json.obj(
           "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),
-          "description" -> newDescription,
+          "description" -> c.description,
           "tags" -> caseSrv.get(`case`).tags.toSeq.map(_.toString))
         )
       } yield details
     } (details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
-      .flatMap(_ => caseSrv.get(`case`).getOrFail("Case"))
+      .flatMap(_ => caseSrv.getOrFail(`case`._id))
   }
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(implicit
