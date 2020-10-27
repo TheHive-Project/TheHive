@@ -174,7 +174,7 @@ class AuditSrv @Inject() (
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
 
     def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), Some(destination), None)
+      auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), Some(destination), Some(destination))
   }
 
   class SelfContextObjectAudit[E <: Product] {
