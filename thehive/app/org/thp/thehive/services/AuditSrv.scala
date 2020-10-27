@@ -296,6 +296,7 @@ object AuditOps {
 
     def richAudit: Traversal[RichAudit, JMap[String, Any], Converter[RichAudit, JMap[String, Any]]] =
       traversal
+        .filter(_.context)
         .project(
           _.by
             .by(_.`case`.entity.fold)
@@ -312,6 +313,7 @@ object AuditOps {
         entityRenderer: Traversal.V[Audit] => Traversal[D, G, C]
     ): Traversal[(RichAudit, D), JMap[String, Any], Converter[(RichAudit, D), JMap[String, Any]]] =
       traversal
+        .filter(_.context)
         .project(
           _.by
             .by(_.`case`.entity.fold)
@@ -320,10 +322,9 @@ object AuditOps {
             .by(entityRenderer)
         )
         .domainMap {
-          case (audit, context, visibilityContext, obj, renderedObject) if context.nonEmpty || visibilityContext.nonEmpty =>
+          case (audit, context, visibilityContext, obj, renderedObject) =>
             val ctx = if (context.isEmpty) visibilityContext.head else context.head
             RichAudit(audit, ctx, visibilityContext.head, obj.headOption) -> renderedObject
-          // case otherwise // FIXME
         }
 
 //    def forCase(caseId: String): Traversal.V[Audit] = traversal.filter(_.`case`.hasId(caseId))
