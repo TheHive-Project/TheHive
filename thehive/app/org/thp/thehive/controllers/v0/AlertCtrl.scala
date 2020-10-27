@@ -190,21 +190,26 @@ class AlertCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val alertIds: Seq[String] = request.body("alertIds")
         val caseId: String        = request.body("caseId")
-        for {
-          _ <- alertIds.toTry { alertId =>
-            caseSrv.get(EntityIdOrName(caseId))
-              .can(Permissions.manageCase)
-              .getOrFail("Case")
-              .flatMap(`case` =>
-              alertSrv
-                .get(EntityIdOrName(alertId))
-                .can(Permissions.manageAlert)
-                .getOrFail("Alert")
-                .flatMap(alertSrv.mergeInCase(_, `case`))
-            )
+
+        val destinationCase = caseSrv
+          .get(EntityIdOrName(caseId))
+          .can(Permissions.manageCase)
+          .getOrFail("Case")
+
+        alertIds
+          .foldLeft(destinationCase) { (caseTry, alertId) =>
+            for {
+              case0 <- caseTry
+              alert <-
+                alertSrv
+                  .get(EntityIdOrName(alertId))
+                  .can(Permissions.manageAlert)
+                  .getOrFail("Alert")
+              updatedCase <- alertSrv.mergeInCase(alert, case0)
+            } yield updatedCase
           }
-          richCase <- caseSrv.get(EntityIdOrName(caseId)).richCase.getOrFail("Case")
-        } yield Results.Ok(richCase.toJson)
+          .flatMap(c => caseSrv.get(c._id).richCase.getOrFail("Case"))
+          .map(rc => Results.Ok(rc.toJson))
       }
 
   def markAsRead(alertId: String): Action[AnyContent] =
