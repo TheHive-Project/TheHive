@@ -184,6 +184,17 @@ class Webhook(
               customFieldSrv
                 .getOrFail(EntityIdOrName(fieldName))
                 .fold(_ => keyValue, cf => "customFields" -> Json.obj(fieldName -> Json.obj(cf.`type`.toString -> value)))
+            case ("customFields", JsArray(cfs)) =>
+              "customFields" -> cfs
+                .flatMap { cf =>
+                  for {
+                    name <- (cf \ "name").asOpt[String]
+                    tpe  <- (cf \ "type").asOpt[String]
+                    value = (cf \ "value").asOpt[JsValue]
+                    order = (cf \ "order").asOpt[Int]
+                  } yield Json.obj(name -> Json.obj(tpe -> value, "order" -> order))
+                }
+                .foldLeft(JsObject.empty)(_ ++ _)
             case keyValue => keyValue
           })
         }
