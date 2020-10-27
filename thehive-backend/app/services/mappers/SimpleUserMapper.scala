@@ -34,7 +34,7 @@ class SimpleUserMapper(
       login ← (jsValue \ loginAttrName).validate[String]
       name  ← (jsValue \ nameAttrName).validate[String]
       roles = rolesAttrName.fold(defaultRoles)(r ⇒ (jsValue \ r).asOpt[Seq[String]].getOrElse(defaultRoles))
-    } yield Fields(Json.obj("login" → login, "name" → name, "roles" → roles))
+    } yield Fields(Json.obj("login" → login.toLowerCase, "name" → name, "roles" → roles))
     fields match {
       case JsSuccess(f, _) ⇒ Future.successful(f)
       case JsError(errors) ⇒

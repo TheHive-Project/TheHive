@@ -678,3 +678,22 @@ table tr td.task-actions span.action-button {
   max-height: 300px;
   overflow-y: auto;
 }
+
+.or-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #afafaf;
+}
+.or-separator::before,
+.or-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #cfcfcf;
+}
+.or-separator::before {
+    margin-right: .25em;
+}
+.or-separator::after {
+    margin-left: .25em;
+}

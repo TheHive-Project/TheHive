@@ -105,7 +105,7 @@ class GroupUserMapper(
       val fields = for {
         login ← (jsValue \ loginAttrName).validate[String]
         name  ← (jsValue \ nameAttrName).validate[String]
-      } yield Fields(Json.obj("login" → login, "name" → name, "roles" → roles))
+      } yield Fields(Json.obj("login" → login.toLowerCase, "name" → name, "roles" → roles))
       fields match {
         case JsSuccess(f, _) ⇒ Future.successful(f)
         case JsError(errors) ⇒
