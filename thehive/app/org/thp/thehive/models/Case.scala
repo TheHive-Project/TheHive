@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import play.api.libs.json.{Format, Json}
 
 object CaseStatus extends Enumeration {
-  val Open, Resolved, Deleted, Duplicated = Value
+  val Open, Resolved, Duplicated = Value
 
   implicit val format: Format[CaseStatus.Value] = Json.formatEnum(CaseStatus)
 }
