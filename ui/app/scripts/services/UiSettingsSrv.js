@@ -1,77 +1,74 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').factory('UiSettingsSrv', function(ListSrv, $q) {
+    angular.module('theHiveServices').service('UiSettingsSrv', function(ListSrv, $q) {
 
-        var settings = null;
+        var self = this;
 
-        var keys = [
+        this.settings = null;
+        this.keys = [
             'hideEmptyCaseButton',
             'useAndForCaseTagsFilter',
             'useAndForAlertTagsFilter'
         ];
 
-        var factory = {
-            keys: keys,
-            clearCache: function() {
-                settings = null;
-            },
-
-            get: function(name) {
-                return settings[name];
-            },
-
-            create: function(name, value) {
-                return ListSrv.save({listId: 'ui_settings'}, {
-                    value: {
-                        name: name,
-                        value: value
-                    }
-                }).$promise;
-            },
-
-            update: function(id, name, value) {
-                return ListSrv.update({itemId: id}, {
-                    value: {
-                        name: name,
-                        value: value
-                    }
-                }).$promise;
-            },
-
-            all: function(force) {
-                var deferred = $q.defer();
-
-                if(settings === null || force) {
-                    ListSrv.query({listId: 'ui_settings'}, {}, function(response) {
-                        var json = response.toJSON();
-
-                        settings = {};
-
-                        _.each(_.keys(json), function(key) {
-                            var setting = json[key];
-
-                            settings[setting.name] = setting;
-                            settings[setting.name].id = key;
-                        });
-
-                        deferred.resolve(settings);
-                    }, function(response) {
-                        deferred.reject(response);
-                    });
-                } else {
-                    deferred.resolve(settings);
-                }
-
-                return deferred.promise;
-            }
+        this.clearCache = function() {
+            self.settings = null;
         };
 
-        keys.forEach(function(key) {
-            factory[key] = function() {
-                return (settings[key] || {}).value;
+        this.get = function(name) {
+            return self.settings[name];
+        };
+
+        this.create = function(name, value) {
+            return ListSrv.save({listId: 'ui_settings'}, {
+                value: {
+                    name: name,
+                    value: value
+                }
+            }).$promise;
+        };
+
+        this.update = function(id, name, value) {
+            return ListSrv.update({itemId: id}, {
+                value: {
+                    name: name,
+                    value: value
+                }
+            }).$promise;
+        };
+
+        this.all = function(force) {
+            var deferred = $q.defer();
+
+            if(self.settings === null || force) {
+                ListSrv.query({listId: 'ui_settings'}, {}, function(response) {
+                    var json = response.toJSON();
+
+                    self.settings = {};
+
+                    _.each(_.keys(json), function(key) {
+                        var setting = json[key];
+
+                        self.settings[setting.name] = setting;
+                        self.settings[setting.name].id = key;
+                    });
+
+                    deferred.resolve(self.settings);
+                }, function(response) {
+                    deferred.reject(response);
+                });
+            } else {
+                deferred.resolve(self.settings);
+            }
+
+            return deferred.promise;
+        };
+
+        this.keys.forEach(function(key) {
+            self[key] = function() {
+                return ((self.settings|| {})[key] || {}).value;
             };
         });
 
-        return factory;
     });
 })();
