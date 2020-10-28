@@ -293,7 +293,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val requestSearch = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
         .withHeaders("user" -> "socuser@thehive.local")
         .withJsonBody(
-          Json.parse("""{"query":{"_and":[{"_field":"customFields.boolean1","_value":true},{"_not":{"status":"Deleted"}}]}}""")
+          Json.parse("""{"query":{"_and":[{"_field":"customFields.boolean1","_value":true}]}}""")
         )
       val resultSearch = app[CaseCtrl].search()(requestSearch)
       status(resultSearch) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
