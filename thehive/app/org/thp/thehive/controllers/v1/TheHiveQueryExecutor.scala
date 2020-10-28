@@ -20,21 +20,40 @@ object OutputParam {
 
 @Singleton
 class TheHiveQueryExecutor @Inject() (
+    alertCtrl: AlertCtrl,
+    auditCtrl: AuditCtrl,
     caseCtrl: CaseCtrl,
-    taskCtrl: TaskCtrl,
+    caseTemplateCtrl: CaseTemplateCtrl,
+    customFieldCtrl: CustomFieldCtrl,
     logCtrl: LogCtrl,
     observableCtrl: ObservableCtrl,
-    alertCtrl: AlertCtrl,
-    userCtrl: UserCtrl,
-    caseTemplateCtrl: CaseTemplateCtrl,
-//    dashboardCtrl: DashboardCtrl,
     organisationCtrl: OrganisationCtrl,
-    auditCtrl: AuditCtrl,
+    profileCtrl: ProfileCtrl,
+    taskCtrl: TaskCtrl,
+    userCtrl: UserCtrl,
+    //    dashboardCtrl: DashboardCtrl,
     @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryExecutor {
 
-  lazy val controllers: List[QueryableCtrl] =
-    caseCtrl :: taskCtrl :: alertCtrl :: userCtrl :: caseTemplateCtrl :: organisationCtrl :: auditCtrl :: observableCtrl :: logCtrl :: Nil
+  lazy val controllers: Seq[QueryableCtrl] =
+    Seq(
+      alertCtrl,
+      auditCtrl,
+      caseCtrl,
+      caseTemplateCtrl,
+      customFieldCtrl,
+      //      dashboardCtrl,
+      logCtrl,
+      observableCtrl,
+//      observableTypeCtrl,
+      organisationCtrl,
+//      pageCtrl,
+      profileCtrl,
+//      tagCtrl,
+      taskCtrl,
+      userCtrl
+    )
+
   override val version: (Int, Int) = 1 -> 1
 
   def metaProperties: PublicProperties =
@@ -48,9 +67,9 @@ class TheHiveQueryExecutor @Inject() (
   override lazy val publicProperties: PublicProperties = controllers.foldLeft(metaProperties)(_ ++ _.publicProperties)
 
   override lazy val queries: Seq[ParamQuery[_]] =
-    controllers.map(_.initialQuery) :::
-      controllers.map(_.getQuery) :::
-      controllers.map(_.pageQuery) :::
-      controllers.map(_.outputQuery) :::
+    controllers.map(_.initialQuery) ++
+      controllers.map(_.getQuery) ++
+      controllers.map(_.pageQuery) ++
+      controllers.map(_.outputQuery) ++
       controllers.flatMap(_.extraQueries)
 }
