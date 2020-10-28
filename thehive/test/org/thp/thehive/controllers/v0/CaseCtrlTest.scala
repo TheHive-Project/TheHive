@@ -354,7 +354,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val requestDel = FakeRequest("DELETE", s"/api/v0/case/#1/force")
         .withHeaders("user" -> "certuser@thehive.local")
-      val resultDel = app[CaseCtrl].realDelete("1")(requestDel)
+      val resultDel = app[CaseCtrl].delete("1")(requestDel)
       status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 
       app[Database].roTransaction { implicit graph =>

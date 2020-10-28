@@ -137,17 +137,6 @@ class CaseCtrl @Inject() (
   def delete(caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("delete case")
       .authTransaction(db) { implicit request => implicit graph =>
-        caseSrv
-          .get(EntityIdOrName(caseIdOrNumber))
-          .can(Permissions.manageCase)
-          .update(_.status, CaseStatus.Deleted)
-          .getOrFail("Case")
-          .map(_ => Results.NoContent)
-      }
-
-  def realDelete(caseIdOrNumber: String): Action[AnyContent] =
-    entrypoint("delete case")
-      .authTransaction(db) { implicit request => implicit graph =>
         for {
           c <-
             caseSrv
