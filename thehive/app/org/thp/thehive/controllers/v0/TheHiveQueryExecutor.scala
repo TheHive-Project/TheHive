@@ -35,25 +35,25 @@ object OutputParam {
 @Singleton
 class TheHiveQueryExecutor @Inject() (
     @Named("with-thehive-schema") override val db: Database,
+    alert: PublicAlert,
+    audit: PublicAudit,
     `case`: PublicCase,
-    task: PublicTask,
+    caseTemplate: PublicCaseTemplate,
+    customField: PublicCustomField,
+    observableType: PublicObservableType,
+    dashboard: PublicDashboard,
     log: PublicLog,
     observable: PublicObservable,
-    alert: PublicAlert,
-    user: PublicUser,
-    caseTemplate: PublicCaseTemplate,
-    dashboard: PublicDashboard,
     organisation: PublicOrganisation,
-    audit: PublicAudit,
+    page: PublicPage,
     profile: PublicProfile,
     tag: PublicTag,
-    page: PublicPage,
-    observableType: PublicObservableType,
-    customField: PublicCustomField
+    task: PublicTask,
+    user: PublicUser
 ) extends QueryExecutor {
 
-  lazy val publicDatas: List[PublicData] =
-    `case` :: task :: log :: observable :: alert :: user :: caseTemplate :: dashboard :: organisation :: audit :: profile :: tag :: page :: observableType :: customField :: Nil
+  lazy val publicDatas: Seq[PublicData] =
+    Seq(alert, audit, `case`, caseTemplate, customField, dashboard, log, observable, observableType, organisation, page, profile, tag, task, user)
 
   def metaProperties: PublicProperties =
     PublicPropertyListBuilder
@@ -88,10 +88,10 @@ class TheHiveQueryExecutor @Inject() (
   }
 
   override lazy val queries: Seq[ParamQuery[_]] =
-    publicDatas.map(_.initialQuery) :::
-      publicDatas.map(_.getQuery) :::
-      publicDatas.map(_.pageQuery) :::
-      publicDatas.map(_.outputQuery) :::
+    publicDatas.map(_.initialQuery) ++
+      publicDatas.map(_.getQuery) ++
+      publicDatas.map(_.pageQuery) ++
+      publicDatas.map(_.outputQuery) ++
       publicDatas.flatMap(_.extraQueries)
   override val version: (Int, Int) = 0 -> 0
 }
