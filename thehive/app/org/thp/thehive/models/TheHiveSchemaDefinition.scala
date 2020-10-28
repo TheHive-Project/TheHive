@@ -68,6 +68,10 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .noop // .addIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
     .noop // .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
     .rebuildIndexes
+    .updateGraph("Remove cases with a Deleted status", "Case") { traversal =>
+      traversal.unsafeHas("status", "Deleted").remove()
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
