@@ -176,14 +176,16 @@ class CaseSrv @Inject() (
       } yield ()
   }
 
-  def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val details = Json.obj("number" -> `case`.number, "title" -> `case`.title)
     for {
       organisation <- organisationSrv.getOrFail(authContext.organisation)
-      _            <- auditSrv.`case`.delete(`case`, organisation)
+      _            <- auditSrv.`case`.delete(`case`, organisation, Some(details))
     } yield {
       get(`case`).share.remove()
       get(`case`).remove()
     }
+  }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Case] =
     Try(startTraversal.getByNumber(name.toInt)).getOrElse(startTraversal.limit(0))

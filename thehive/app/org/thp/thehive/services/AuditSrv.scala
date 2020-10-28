@@ -186,8 +186,8 @@ class AuditSrv @Inject() (
       if (details == JsObject.empty) Success(())
       else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity, context: Product with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.delete, entity, None), Some(context), None)
+    def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+      auditSrv.create(Audit(Audit.delete, entity, details.map(_.toString())), Some(context), None)
   }
 
   class UserAudit extends SelfContextObjectAudit[User] {
