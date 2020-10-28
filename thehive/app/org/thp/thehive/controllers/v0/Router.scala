@@ -181,13 +181,15 @@ class Router @Inject() (
     case GET(p"/describe/_all")                      => describeCtrl.describeAll
     case GET(p"/describe/$modelName")                => describeCtrl.describe(modelName)
 
+    case GET(p"/config/user")               => configCtrl.userList
+    case GET(p"/config/user/$path")         => configCtrl.userGet(path)
+    case PUT(p"/config/user/$path")         => configCtrl.userSet(path)
+    case GET(p"/config/organisation")       => configCtrl.organisationList
+    case GET(p"/config/organisation/$path") => configCtrl.organisationGet(path)
+    case PUT(p"/config/organisation/$path") => configCtrl.organisationSet(path)
     case GET(p"/config")                    => configCtrl.list
     case GET(p"/config/$path")              => configCtrl.get(path)
     case PUT(p"/config/$path")              => configCtrl.set(path)
-    case GET(p"/config/user/$path")         => configCtrl.userGet(path)
-    case PUT(p"/config/user/$path")         => configCtrl.userSet(path)
-    case GET(p"/config/organisation/$path") => configCtrl.organisationGet(path)
-    case PUT(p"/config/organisation/$path") => configCtrl.organisationSet(path)
 
     case GET(p"/profile")               => profileCtrl.search
     case POST(p"/profile/_search")      => profileCtrl.search
