@@ -38,7 +38,6 @@ class Router @Inject() (
     case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId)
 //    case PATCH(p"api/case/_bulk") =>                          caseCtrl.bulkUpdate()
 //    case POST(p"/case/_stats") =>                        caseCtrl.stats()
-//    case DELETE(p"/case/$caseId/force") =>                  caseCtrl.realDelete(caseId)
 //    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
 
     case GET(p"/caseTemplate")                   => caseTemplateCtrl.list

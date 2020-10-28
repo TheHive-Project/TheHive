@@ -13,7 +13,6 @@ import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
 import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
-import org.thp.thehive.models.Audit._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._

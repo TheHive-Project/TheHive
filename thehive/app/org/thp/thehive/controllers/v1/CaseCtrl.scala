@@ -112,12 +112,14 @@ class CaseCtrl @Inject() (
   def delete(caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("delete case")
       .authTransaction(db) { implicit request => implicit graph =>
-        caseSrv
-          .get(EntityIdOrName(caseIdOrNumber))
-          .can(Permissions.manageCase)
-          .update(_.status, CaseStatus.Deleted)
-          .getOrFail("Case")
-          .map(_ => Results.NoContent)
+        for {
+          c <-
+            caseSrv
+              .get(EntityIdOrName(caseIdOrNumber))
+              .can(Permissions.manageCase)
+              .getOrFail("Case")
+          _ <- caseSrv.remove(c)
+        } yield Results.NoContent
       }
 
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =
