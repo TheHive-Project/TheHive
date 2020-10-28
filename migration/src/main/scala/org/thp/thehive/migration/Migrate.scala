@@ -1,8 +1,6 @@
 package org.thp.thehive.migration
 
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -76,11 +74,11 @@ object Migrate extends App with MigrationOps {
       opt[String]("case-from-date")
         .valueName("<date>")
         .text("migrate only cases created from <date>")
-        .action((v, c) => addConfig(c, "input.filter.caseFromDate" -> v.toString)),
+        .action((v, c) => addConfig(c, "input.filter.caseFromDate" -> v)),
       opt[String]("case-until-date")
         .valueName("<date>")
         .text("migrate only cases created until <date>")
-        .action((v, c) => addConfig(c, "input.filter.caseUntilDate" -> v.toString)),
+        .action((v, c) => addConfig(c, "input.filter.caseUntilDate" -> v)),
       /* case number */
       opt[Duration]("case-from-number")
         .valueName("<number>")
@@ -102,11 +100,11 @@ object Migrate extends App with MigrationOps {
       opt[String]("alert-from-date")
         .valueName("<date>")
         .text("migrate only alerts created from <date>")
-        .action((v, c) => addConfig(c, "input.filter.alertFromDate" -> v.toString)),
+        .action((v, c) => addConfig(c, "input.filter.alertFromDate" -> v)),
       opt[String]("alert-until-date")
         .valueName("<date>")
         .text("migrate only alerts created until <date>")
-        .action((v, c) => addConfig(c, "input.filter.alertUntilDate" -> v.toString)),
+        .action((v, c) => addConfig(c, "input.filter.alertUntilDate" -> v)),
       /* audit age */
       opt[Duration]("max-audit-age")
         .valueName("<duration>")
@@ -119,11 +117,11 @@ object Migrate extends App with MigrationOps {
       opt[String]("audit-from-date")
         .valueName("<date>")
         .text("migrate only audits created from <date>")
-        .action((v, c) => addConfig(c, "input.filter.auditFromDate" -> v.toString)),
+        .action((v, c) => addConfig(c, "input.filter.auditFromDate" -> v)),
       opt[String]("audit-until-date")
         .valueName("<date>")
         .text("migrate only audits created until <date>")
-        .action((v, c) => addConfig(c, "input.filter.auditUntilDate" -> v.toString)),
+        .action((v, c) => addConfig(c, "input.filter.auditUntilDate" -> v)),
       note("Accepted date formats are \"yyyyMMdd[HH[mm[ss]]]\" and \"MMdd\""),
       note(
         "The Format for duration is: <length> <unit>.\n" +
