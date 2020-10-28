@@ -27,7 +27,13 @@ class OrganisationCtrl @Inject() (
   override val entityName: String                 = "organisation"
   override val publicProperties: PublicProperties = properties.organisation
   override val initialQuery: Query =
-    Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.visibleOrganisation(graph, authContext))
+    Query.init[Traversal.V[Organisation]](
+      "listOrganisation",
+      (graph, authContext) =>
+        organisationSrv
+          .startTraversal(graph)
+          .visible(authContext)
+    )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
