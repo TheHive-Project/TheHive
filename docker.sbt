@@ -13,10 +13,7 @@ version in Docker := {
 defaultLinuxInstallLocation in Docker := "/opt/thehive"
 dockerRepository := Some("thehiveproject")
 dockerUpdateLatest := !version.value.toUpperCase.contains("RC") && !version.value.contains("SNAPSHOT")
-dockerEntrypoint := Seq("/opt/thehive/entrypoint")
 dockerExposedPorts := Seq(9000)
-daemonUser in Docker := "thehive"
-daemonGroup in Docker := "thehive"
 mappings in Docker ++= Seq(
   file("package/docker/entrypoint")     -> "/opt/thehive/entrypoint",
   file("package/logback.xml")           -> "/etc/thehive/logback.xml",
