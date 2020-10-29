@@ -3,7 +3,7 @@ import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
 val thehiveVersion         = "4.0.1-1-SNAPSHOT"
-val scala212               = "2.12.11"
+val scala212               = "2.12.12"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
 
@@ -344,8 +344,7 @@ lazy val thehiveMigration = (project in file("migration"))
       specs % Test
     ),
     fork := true,
-    normalizedName := "migrate",
-    mainClass := None
+    normalizedName := "migrate"
   )
 
 lazy val rpmPackageRelease = (project in file("package/rpm-release"))

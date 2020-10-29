@@ -21,6 +21,7 @@ RUNNING_PID
 .cache-main
 .cache-tests
 sbt-launch.jar
+.bsp/
 
 # Eclipse
 .project
@@ -36,5 +37,3 @@ tmp
 /.idea/**
 !/.idea/runConfigurations/
 !/.idea/runConfigurations/*
-
-dev
