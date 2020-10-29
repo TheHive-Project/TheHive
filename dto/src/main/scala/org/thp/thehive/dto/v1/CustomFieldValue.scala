@@ -14,7 +14,7 @@ object InputCustomField {
   implicit val writes: Writes[InputCustomField] = Json.writes[InputCustomField]
 }
 
-case class OutputCustomField(name: String, description: String, `type`: String, mandatory: Boolean)
+case class OutputCustomField(name: String, description: String, `type`: String, options: Seq[JsValue], mandatory: Boolean)
 
 object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]
