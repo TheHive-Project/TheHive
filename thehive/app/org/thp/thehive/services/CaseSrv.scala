@@ -198,6 +198,14 @@ class CaseSrv @Inject() (
       } yield ()
   }
 
+  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    // We let ShareSrv handle all cascade deletions (Case, Tasks, Logs and Observables)
+    for {
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      share        <- shareSrv.get(`case`, organisation._id).getOrFail("Case")
+    } yield shareSrv.cascadeRemove(share._id)
+  }
+
   def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val details = Json.obj("number" -> `case`.number, "title" -> `case`.title)
     for {

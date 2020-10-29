@@ -21,11 +21,15 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)(implicit
-    @Named("with-thehive-schema") db: Database
+class TaskSrv @Inject() (
+    @Named("with-thehive-schema") implicit val db: Database,
+    caseSrvProvider: Provider[CaseSrv],
+    logSrvProvider: Provider[LogSrv],
+    auditSrv: AuditSrv
 ) extends VertexSrv[Task] {
 
   lazy val caseSrv: CaseSrv = caseSrvProvider.get
+  lazy val logSrv: LogSrv   = logSrvProvider.get
   val caseTemplateTaskSrv   = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
   val taskUserSrv           = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
@@ -63,6 +67,13 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)
           .update(caseTemplate, JsObject.empty)
           .map(_ => get(task).remove())
     }
+
+  def cascadeRemove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      task        <- getOrFail(task._id)
+      logs        <- Try(get(task).logs.toSeq)
+      _           <- logs.toTry(l => logSrv.cascadeRemove(l))
+    } yield remove(task)
 
   override def update(
       traversal: Traversal.V[Task],
