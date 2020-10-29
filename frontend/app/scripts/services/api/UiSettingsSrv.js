@@ -1,64 +1,58 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').factory('UiSettingsSrv', function($http, $q) {
-
-        var settings = null;
+    angular.module('theHiveServices').service('UiSettingsSrv', function($http, $q) {
         var baseUrl = './api/config/organisation/';
+        var self = this;
 
-        var keys = [
-            'ui.hideEmptyCaseButton'
+        this.settings = null;
+
+        this.keys = [
+            'hideEmptyCaseButton',
+            'disallowMergeAlertInResolvedSimilarCases',
+            'defaultAlertSimilarCaseFilter'
         ];
 
-        var factory = {
-            keys: keys,
-            clearCache: function() {
-                settings = null;
-            },
-
-            get: function(name) {
-                return settings[name];
-            },
-
-            save: function(name, value) {
-                return $http.put(baseUrl + name, {value: value});
-            },
-
-            all: function(force) {
-                var deferred = $q.defer();
-
-                if(settings === null || force) {
-
-                    settings = {};
-
-                    $q.all(_.map(keys, function(key) {
-                        return $http.get(baseUrl + key);
-                    })).then(function(responses) {
-                        _.each(responses, function(response) {
-                            var data = response.data;
-
-                            settings[data.path] = data;
-                            settings[data.path].id = data.path;
-                        });
-
-                        deferred.resolve(settings);
-                    }).catch(function(responses) {
-                        deferred.reject(responses);
-                    });
-                } else {
-                    deferred.resolve(settings);
-                }
-
-                return deferred.promise;
-            }
+        this.clearCache = function() {
+            self.settings = null;
         };
 
-        keys.forEach(function(key) {
+        this.get = function(name) {
+            return self.settings[name];
+        };
+
+        this.save = function(name, value) {
+            return $http.put(baseUrl + 'ui.' + name, {value: value});
+        };
+
+        this.all = function(force) {
+            var deferred = $q.defer();
+
+            if(self.settings === null || force) {
+
+                self.settings = {};
+
+                $http.get('./api/config/organisation?path=ui')
+                    .then(function(response) {
+                        var data = response.data;
+
+                        self.settings = data;
+                        deferred.resolve(data);
+                    })
+                    .catch(function(response) {
+                        deferred.reject(response);
+                    });
+            } else {
+                deferred.resolve(self.settings);
+            }
+
+            return deferred.promise;
+        };
+
+        this.keys.forEach(function(key) {
             var camelcased = s.camelize(key.replace(/\./gi, '_'));
-            factory[camelcased] = function() {
-                return (settings[key] || {}).value;
+            self[camelcased] = function() {
+                return (self.settings || {})[key];
             };
         });
-
-        return factory;
     });
 })();

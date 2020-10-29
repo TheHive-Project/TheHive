@@ -6,9 +6,29 @@
                 <div class="col-md-9">
                     <div class="checkbox">
                         <label>
-                          <input name="ui.hideEmptyCaseButton" type="checkbox" ng-model="$ctrl.configs['ui.hideEmptyCaseButton']"> Check this to disallow creating empty cases
+                          <input name="hideEmptyCaseButton" type="checkbox" ng-model="$ctrl.configs['hideEmptyCaseButton']"> Check this to disallow creating empty cases
                         </label>
                     </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="col-md-3 control-label">Merge alerts into closed cases</label>
+                <div class="col-md-9">
+                    <div class="checkbox">
+                        <label>
+                          <input name="disallowMergeAlertInResolvedSimilarCases" type="checkbox"
+                              ng-model="$ctrl.configs['disallowMergeAlertInResolvedSimilarCases']"> Check this to disallow merging alerts into closed cases
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="col-md-3 control-label">Hide <em>Empty Case</em> button</label>
+                <div class="col-md-3">
+                    <select class="form-control" name="defaultAlertSimilarCaseFilter" ng-options="o for o in ['open-cases', 'resolved-cases']" ng-model="$ctrl.configs['defaultAlertSimilarCaseFilter']">
+                    </select>
                 </div>
             </div>
 

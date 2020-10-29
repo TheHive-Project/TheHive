@@ -21,7 +21,7 @@
                 similarCases: 0
             };
 
-            self.hideEmptyCaseButton = UiSettingsSrv.uiHideEmptyCaseButton();
+            self.hideEmptyCaseButton = UiSettingsSrv.hideEmptyCaseButton();
 
             self.updateObservableCount = function(count) {
                 self.counts.observables = count;

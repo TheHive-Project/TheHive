@@ -7,7 +7,7 @@
             this.state = {
                 filter: '',
                 selected: null,
-                hideEmptyCaseButton: UiSettingsSrv.uiHideEmptyCaseButton()
+                hideEmptyCaseButton: UiSettingsSrv.hideEmptyCaseButton()
             };
 
             this.selectTemplate = function(template) {
