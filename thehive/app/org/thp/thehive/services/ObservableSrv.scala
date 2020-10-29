@@ -177,6 +177,13 @@ class ObservableSrv @Inject() (
       case Some(alert) => alertSrv.removeObservable(alert, observable)
     }
 
+  // Same as remove but with no Audit creation
+  def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(observable).alert.headOption match {
+      case None        => Try(get(observable).remove())
+      case Some(alert) => alertSrv.removeObservable(alert, observable)
+    }
+
   override def update(
       traversal: Traversal.V[Observable],
       propertyUpdaters: Seq[PropertyUpdater]

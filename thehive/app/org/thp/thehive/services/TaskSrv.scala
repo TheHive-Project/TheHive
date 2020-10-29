@@ -50,17 +50,7 @@ class TaskSrv @Inject() (
 
   def remove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(task).caseTemplate.headOption match {
-      case None =>
-        get(task)
-          .shares
-          .toIterator
-          .toTry { share =>
-            auditSrv
-              .task
-              .delete(task, share)
-              .map(_ => get(task).remove())
-          }
-          .map(_ => ())
+      case None               => Try(get(task).remove())
       case Some(caseTemplate) =>
         auditSrv
           .caseTemplate
