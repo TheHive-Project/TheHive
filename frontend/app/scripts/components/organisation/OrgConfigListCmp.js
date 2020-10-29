@@ -7,9 +7,7 @@
                 var self = this;
 
                 self.isDirtySetting = function(key, newValue) {
-                    var currentValue = (self.currentSettings[key] || {}).value;
-
-                    return newValue !== currentValue;
+                    return newValue !== self.currentSettings[key];
                 };
 
                 self.save = function(/*form*/) {
@@ -36,6 +34,7 @@
                 };
 
                 self.loadSettings = function(configurations) {
+
                     var notifyRoot = false;
                     var promise;
 
@@ -52,7 +51,7 @@
 
                         self.configs = {};
                         self.settingsKeys.forEach(function(key) {
-                            self.configs[key] = (configs[key] || {}).value;
+                            self.configs[key] = configs[key];
                         });
 
                         if(notifyRoot) {

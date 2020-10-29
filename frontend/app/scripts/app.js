@@ -313,18 +313,6 @@ angular.module('thehive', [
                     permissions: ['manageObservableTemplate']
                 }
             })
-            // .state('app.administration.ui-settings', {
-            //     url: '/ui-settings',
-            //     templateUrl: 'views/partials/admin/ui-settings.html',
-            //     controller: 'AdminUiSettingsCtrl',
-            //     controllerAs: '$vm',
-            //     title: 'UI settings',
-            //     resolve: {
-            //         uiConfig: function(UiSettingsSrv) {
-            //             return UiSettingsSrv.all();
-            //         }
-            //     }
-            // })
             .state('app.case', {
                 abstract: true,
                 url: 'case/{caseId}',

@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('alertSimilarCaseList', {
-            controller: function($scope, FilteringSrv, PaginatedQuerySrv, CaseResolutionStatus) {
+            controller: function($scope, FilteringSrv, PaginatedQuerySrv, CaseResolutionStatus, UiSettingsSrv) {
                 var self = this;
 
                 self.CaseResolutionStatus = CaseResolutionStatus;
@@ -30,6 +30,11 @@
                     currentPage: 1
                 };
 
+                self.state = {
+                    disallowMerge: UiSettingsSrv.disallowMergeAlertInResolvedSimilarCases() === true,
+                    defaultAlertSimilarCaseFilter: UiSettingsSrv.defaultAlertSimilarCaseFilter()
+                };
+
                 self.$onInit = function() {
                     this.filtering = new FilteringSrv('case', 'alert.dialog.similar-cases', {
                         version: 'v1',
@@ -42,8 +47,23 @@
                         defaultFilter: []
                     });
 
-                    self.filtering.initContext(this.alertId)
+                    self.filtering.initContext('alert.dialog.similar-cases')
                         .then(function() {
+                            var defaultFilter = {
+                                field: 'status',
+                                type: 'enumeration',
+                                value: {
+                                    list: [{
+                                        text: 'Open',
+                                        label: 'Open'
+                                    }]
+                                }
+                            };
+
+                            if(_.isEmpty(self.filtering.context.filters)) {
+                                self.filtering.addFilter(defaultFilter);
+                            }
+
                             self.load();
 
                             $scope.$watch('$cmp.list.pageSize', function (newValue) {
