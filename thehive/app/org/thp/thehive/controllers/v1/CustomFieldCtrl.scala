@@ -39,7 +39,7 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-sc
     .property("description", UMapping.string)(_.field.updatable)
     .property("reference", UMapping.string)(_.rename("name").readonly)
     .property("mandatory", UMapping.boolean)(_.field.updatable)
-    .property("type", UMapping.string)(_.field.readonly)
+    .property("type", UMapping.string)(_.field.updatable)
     .property("options", UMapping.json.sequence)(_.field.updatable)
     .build
 
