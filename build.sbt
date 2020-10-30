@@ -17,7 +17,8 @@ lazy val thehiveBackend = (project in file("thehive-backend"))
       Library.zip4j,
       Library.reflections,
       Library.akkaCluster,
-      Library.akkaClusterTools
+      Library.akkaClusterTools,
+      Library.akkaClusterTyped
     ),
     play.sbt.routes.RoutesKeys.routesImport -= "controllers.Assets.Asset"
   )
@@ -83,9 +84,9 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
         |GPG key as well as configuration for yum.""".stripMargin,
     linuxPackageMappings in Rpm := Seq(
       packageMapping(
-        file("PGP-PUBLIC-KEY")                       → "etc/pki/rpm-gpg/GPG-TheHive-Project",
-        file("package/rpm-release/thehive-rpm.repo") → "/etc/yum.repos.d/thehive-rpm.repo",
-        file("LICENSE")                              → "/usr/share/doc/thehive-project-release/LICENSE"
+        file("PGP-PUBLIC-KEY")                       -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
+        file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
+        file("LICENSE")                              -> "/usr/share/doc/thehive-project-release/LICENSE"
       )
     )
   )
