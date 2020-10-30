@@ -9,7 +9,7 @@ import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 case class LogAttachment()
 
 @BuildVertexEntity
-case class Log(message: String, date: Date, deleted: Boolean)
+case class Log(message: String, date: Date)
 
 case class RichLog(log: Log with Entity, attachments: Seq[Attachment with Entity]) {
   def _id: EntityId              = log._id
@@ -19,5 +19,4 @@ case class RichLog(log: Log with Entity, attachments: Seq[Attachment with Entity
   def _updatedAt: Option[Date]   = log._updatedAt
   def date: Date                 = log.date
   def message: String            = log.message
-  def deleted: Boolean           = log.deleted
 }

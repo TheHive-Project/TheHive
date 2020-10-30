@@ -90,7 +90,7 @@ class ActionOperationSrv @Inject() (
       case AddLogToTask(content, _) =>
         for {
           t <- relatedTask.fold[Try[Task with Entity]](Failure(InternalError("Unable to apply action AddLogToTask without task")))(Success(_))
-          _ <- logSrv.create(Log(content, new Date(), deleted = false), t)
+          _ <- logSrv.create(Log(content, new Date()), t)
         } yield updateOperation(operation)
 
       case AddArtifactToCase(_, dataType, dataMessage) =>

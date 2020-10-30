@@ -315,7 +315,7 @@ object Conversion {
       .withFieldComputed(_.message, _.message)
       .withFieldComputed(_.startDate, _._createdAt)
       .withFieldComputed(_.owner, _._createdBy)
-      .withFieldComputed(_.status, l => if (l.deleted) "Deleted" else "Ok")
+      .withFieldComputed(_.status, _ => "Ok")
       .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toValue))
       .transform
   )
@@ -326,7 +326,6 @@ object Conversion {
       inputLog
         .into[Log]
         .withFieldConst(_.date, new Date)
-        .withFieldConst(_.deleted, false)
         .transform
   }
 

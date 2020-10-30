@@ -152,12 +152,11 @@ trait Conversion {
       metaData <- json.validate[MetaData]
       message  <- (json \ "message").validate[String]
       date     <- (json \ "startDate").validate[Date]
-      deleted = (json \ "status").asOpt[String].contains("Deleted")
       attachment =
         (json \ "attachment")
           .asOpt[Attachment]
           .map(a => InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id)))
-    } yield InputLog(metaData, Log(message, date, deleted), attachment.toSeq)
+    } yield InputLog(metaData, Log(message, date), attachment.toSeq)
   }
 
   implicit val alertReads: Reads[InputAlert] = Reads[InputAlert] { json =>
