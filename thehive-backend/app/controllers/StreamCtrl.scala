@@ -92,44 +92,44 @@ class StreamCtrl(
     * This call waits up to "refresh", if there is no event, return empty response
     */
   @Timed("controllers.StreamCtrl.get")
-  def get(id: String): Action[AnyContent] = Action.async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = Action.async { implicit request =>
     implicit val timeout: Timeout = Timeout(refresh + 1.second)
 
     if (!isValidStreamId(id)) {
       Future.successful(BadRequest("Invalid stream id"))
     } else {
       val futureStatus = authenticated.expirationStatus(request) match {
-        case ExpirationError if !migrationSrv.isMigrating ⇒
-          userSrv.getInitialUser(request).recoverWith { case _ ⇒ authenticated.getFromApiKey(request) }.map(_ ⇒ OK)
-        case _: ExpirationWarning ⇒ Future.successful(220)
-        case _                    ⇒ Future.successful(OK)
+        case ExpirationError if !migrationSrv.isMigrating =>
+          userSrv.getInitialUser(request).recoverWith { case _ => authenticated.getFromApiKey(request) }.map(_ => OK)
+        case _: ExpirationWarning => Future.successful(220)
+        case _                    => Future.successful(OK)
       }
 
       // Check if stream actor exists
       mediator
         .ask(Send(s"/user/stream-$id", Identify(1), localAffinity = false))(Timeout(2.seconds))
         .flatMap {
-          case ActorIdentity(1, Some(_)) ⇒
-            futureStatus.flatMap { status ⇒
+          case ActorIdentity(1, Some(_)) =>
+            futureStatus.flatMap { status =>
               (mediator ? Send(s"/user/stream-$id", StreamActor.GetOperations, localAffinity = false)) map {
-                case StreamMessages(operations) ⇒ renderer.toOutput(status, operations)
-                case m                          ⇒ InternalServerError(s"Unexpected message : $m (${m.getClass})")
+                case StreamMessages(operations) => renderer.toOutput(status, operations)
+                case m                          => InternalServerError(s"Unexpected message : $m (${m.getClass})")
               }
             }
-          case _ ⇒ Future.successful(renderer.toOutput(NOT_FOUND, Json.obj("type" → "StreamNotFound", "message" → s"Stream $id doesn't exist")))
+          case _ => Future.successful(renderer.toOutput(NOT_FOUND, Json.obj("type" -> "StreamNotFound", "message" -> s"Stream $id doesn't exist")))
         }
         .recover {
-          case _: AskTimeoutException ⇒ renderer.toOutput(NOT_FOUND, Json.obj("type" → "StreamNotFound", "message" → s"Stream $id doesn't exist"))
+          case _: AskTimeoutException => renderer.toOutput(NOT_FOUND, Json.obj("type" -> "StreamNotFound", "message" -> s"Stream $id doesn't exist"))
         }
     }
   }
 
   @Timed("controllers.StreamCtrl.status")
-  def status = Action { implicit request ⇒
+  def status = Action { implicit request =>
     val status = authenticated.expirationStatus(request) match {
-      case ExpirationWarning(duration) ⇒ Json.obj("remaining" → duration.toSeconds, "warning" → true)
-      case ExpirationError             ⇒ Json.obj("remaining" → 0, "warning"                  → true)
-      case ExpirationOk(duration)      ⇒ Json.obj("remaining" → duration.toSeconds, "warning" → false)
+      case ExpirationWarning(duration) => Json.obj("remaining" -> duration.toSeconds, "warning" -> true)
+      case ExpirationError             => Json.obj("remaining" -> 0, "warning"                  -> true)
+      case ExpirationOk(duration)      => Json.obj("remaining" -> duration.toSeconds, "warning" -> false)
     }
     Ok(status)
   }

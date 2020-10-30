@@ -8,15 +8,15 @@ import play.api.libs.json._
 import models.JsonFormat.userStatusFormat
 import services.AuditedModel
 
-import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O}
-import org.elastic4play.services.{User ⇒ EUser}
+import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat => F, AttributeOption => O}
+import org.elastic4play.services.{User => EUser}
 
 object UserStatus extends Enumeration with HiveEnumeration {
   type Type = Value
   val Ok, Locked = Value
 }
 
-trait UserAttributes { _: AttributeDef ⇒
+trait UserAttributes { _: AttributeDef =>
   val login       = attribute("login", F.userFmt, "Login of the user", O.form)
   val userId      = attribute("_id", F.stringFmt, "User id (login)", O.model)
   val key         = optionalAttribute("key", F.stringFmt, "API key", O.sensitive, O.unaudited)
@@ -30,10 +30,10 @@ trait UserAttributes { _: AttributeDef ⇒
 
 class UserModel extends ModelDef[UserModel, User]("user", "User", "/user") with UserAttributes with AuditedModel {
 
-  override def removeAttribute: JsObject = Json.obj("status" → UserStatus.Locked)
+  override def removeAttribute: JsObject = Json.obj("status" -> UserStatus.Locked)
 
-  private def setUserId(attrs: JsObject) = (attrs \ "login").asOpt[JsString].fold(attrs) { login ⇒
-    attrs - "login" + ("_id" → login)
+  private def setUserId(attrs: JsObject) = (attrs \ "login").asOpt[JsString].fold(attrs) { login =>
+    attrs - "login" + ("_id" -> login)
   }
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = Future.successful(setUserId(attrs))
@@ -45,6 +45,6 @@ class User(model: UserModel, attributes: JsObject) extends EntityDef[UserModel, 
 
   override def toJson: JsObject =
     super.toJson +
-      ("roles"  → JsArray(roles().map(r ⇒ JsString(r.name.toLowerCase())))) +
-      ("hasKey" → JsBoolean(key().isDefined))
+      ("roles"  -> JsArray(roles().map(r => JsString(r.name.toLowerCase())))) +
+      ("hasKey" -> JsBoolean(key().isDefined))
 }

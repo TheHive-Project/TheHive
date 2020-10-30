@@ -15,7 +15,7 @@ object TheHiveAuthSrv {
 
   def getAuthSrv(authTypes: Seq[String], authModules: immutable.Set[AuthSrv]): Seq[AuthSrv] =
     ("key" +: authTypes.filterNot(_ == "key"))
-      .flatMap { authType ⇒
+      .flatMap { authType =>
         authModules
           .find(_.name == authType)
           .orElse {
@@ -39,8 +39,8 @@ class TheHiveAuthSrv @Inject()(
   //  override def authenticate(username: String, password: String)(implicit request: RequestHeader): Future[AuthContext] =
   //    userSrv.get(username)
   //      .transformWith {
-  //        case Success(user) if user.key().isDefined ⇒ Future.failed(AuthenticationError("Authentication by password is not permitted for user with key"))
-  //        case _: Success[_]                         ⇒ super.authenticate(username, password)
-  //        case _: Failure[_]                         ⇒ Future.failed(AuthenticationError("Authentication failure"))
+  //        case Success(user) if user.key().isDefined => Future.failed(AuthenticationError("Authentication by password is not permitted for user with key"))
+  //        case _: Success[_]                         => super.authenticate(username, password)
+  //        case _: Failure[_]                         => Future.failed(AuthenticationError("Authentication failure"))
   //      }
 }

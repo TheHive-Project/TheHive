@@ -59,28 +59,28 @@ class AlertSrv @Inject()(
 
     val artifactsFields =
       Future.traverse(fields.getValues("artifacts")) {
-        case a: JsObject if (a \ "dataType").asOpt[String].contains("file") ⇒
+        case a: JsObject if (a \ "dataType").asOpt[String].contains("file") =>
           (a \ "data").asOpt[String] match {
-            case Some(dataExtractor(filename, contentType, data)) ⇒
+            case Some(dataExtractor(filename, contentType, data)) =>
               attachmentSrv
                 .save(filename, contentType, java.util.Base64.getDecoder.decode(data))
-                .map(attachment ⇒ a - "data" + ("attachment" → Json.toJson(attachment)))
-            case _ ⇒ Future.successful(a)
+                .map(attachment => a - "data" + ("attachment" -> Json.toJson(attachment)))
+            case _ => Future.successful(a)
           }
-        case a ⇒ Future.successful(a)
+        case a => Future.successful(a)
       }
-    artifactsFields.flatMap { af ⇒
-      val validArtifacts = af.filter { a ⇒
+    artifactsFields.flatMap { af =>
+      val validArtifacts = af.filter { a =>
         val hasAttachment = (a \ "attachment").asOpt[JsObject].isDefined
         val hasData       = (a \ "data").asOpt[String].isDefined
         val dataType      = (a \ "dataType").asOpt[String]
         val isValid = dataType match {
-          case None         ⇒ false
-          case Some("file") ⇒ hasAttachment && !hasData
-          case _            ⇒ !hasAttachment && hasData
+          case None         => false
+          case Some("file") => hasAttachment && !hasData
+          case _            => !hasAttachment && hasData
         }
         if (!isValid) {
-          val dataTypeStr   = dataType.fold("DataType is not set!")(d ⇒ s"DataType is $d")
+          val dataTypeStr   = dataType.fold("DataType is not set!")(d => s"DataType is $d")
           val dataStr       = if (hasData) "data is set" else "data is not set"
           val attachmentStr = if (hasAttachment) "attachment is set" else "attachment is not set"
           logger.warn(
@@ -90,11 +90,11 @@ class AlertSrv @Inject()(
         isValid
       }
       /* remove duplicate artifacts */
-      val distinctArtifacts = Collection.distinctBy(validArtifacts) { a ⇒
+      val distinctArtifacts = Collection.distinctBy(validArtifacts) { a =>
         val data       = (a \ "data").asOpt[String]
         val attachment = (a \ "attachment" \ "id").asOpt[String]
         val dataType   = (a \ "dataType").asOpt[String]
-        data.orElse(attachment).map(_ → dataType).getOrElse(a)
+        data.orElse(attachment).map(_ -> dataType).getOrElse(a)
       }
       createSrv[AlertModel, Alert](alertModel, fields.set("artifacts", JsArray(distinctArtifacts)))
     }
@@ -118,8 +118,8 @@ class AlertSrv @Inject()(
 
   def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     for {
-      alert        ← get(id)
-      updatedAlert ← update(alert, fields, modifyConfig)
+      alert        <- get(id)
+      updatedAlert <- update(alert, fields, modifyConfig)
     } yield updatedAlert
 
   def update(alert: Alert, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
@@ -130,14 +130,14 @@ class AlertSrv @Inject()(
     val newStatus    = if (follow && alert.status() != AlertStatus.New) AlertStatus.Updated else alert.status()
     val updatedAlert = updateSrv(alert, fields.set("status", Json.toJson(newStatus)), modifyConfig)
     alert.caze() match {
-      case Some(caseId) if follow ⇒
+      case Some(caseId) if follow =>
         for {
-          caze ← caseSrv.get(caseId)
-          a    ← updatedAlert
-          _    ← importArtifacts(a, caze)
-          _    ← caseSrv.update(caze, Fields.empty.set("status", CaseStatus.Open.toString))
+          caze <- caseSrv.get(caseId)
+          a    <- updatedAlert
+          _    <- importArtifacts(a, caze)
+          _    <- caseSrv.update(caze, Fields.empty.set("status", CaseStatus.Open.toString))
         } yield a
-      case _ ⇒ updatedAlert
+      case _ => updatedAlert
     }
   }
 
@@ -164,8 +164,8 @@ class AlertSrv @Inject()(
       modifyConfig: ModifyConfig = ModifyConfig.default
   )(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     alert.caze() match {
-      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Imported"), modifyConfig)
-      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignored"), modifyConfig)
+      case Some(_) => updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Imported"), modifyConfig)
+      case None    => updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Ignored"), modifyConfig)
     }
 
   def markAsUnread(
@@ -173,34 +173,34 @@ class AlertSrv @Inject()(
       modifyConfig: ModifyConfig = ModifyConfig.default
   )(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] =
     alert.caze() match {
-      case Some(_) ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Updated"), modifyConfig)
-      case None    ⇒ updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"), modifyConfig)
+      case Some(_) => updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "Updated"), modifyConfig)
+      case None    => updateSrv[AlertModel, Alert](alertModel, alert.id, Fields.empty.set("status", "New"), modifyConfig)
     }
 
   def getCaseTemplate(alert: Alert, customCaseTemplate: Option[String])(implicit ec: ExecutionContext): Future[Option[CaseTemplate]] =
-    customCaseTemplate.fold[Future[Option[CaseTemplate]]](Future.successful(None)) { templateName ⇒
+    customCaseTemplate.fold[Future[Option[CaseTemplate]]](Future.successful(None)) { templateName =>
       caseTemplateSrv
         .getByName(templateName)
-        .map { ct ⇒
+        .map { ct =>
           Some(ct)
         }
-        .recover { case _ ⇒ None }
+        .recover { case _ => None }
     }
 
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     alert.caze() match {
-      case Some(id) ⇒ caseSrv.get(id)
-      case None ⇒
+      case Some(id) => caseSrv.get(id)
+      case None =>
         connectors.get(alert.tpe()) match {
-          case Some(connector: AlertTransformer) ⇒
+          case Some(connector: AlertTransformer) =>
             for {
-              caze ← connector.createCase(alert, customCaseTemplate)
-              _    ← setCase(alert, caze)
+              caze <- connector.createCase(alert, customCaseTemplate)
+              _    <- setCase(alert, caze)
             } yield caze
-          case _ ⇒
+          case _ =>
             for {
-              caseTemplate ← getCaseTemplate(alert, customCaseTemplate)
-              caze ← caseSrv.create(
+              caseTemplate <- getCaseTemplate(alert, customCaseTemplate)
+              caze <- caseSrv.create(
                 Fields
                   .empty
                   .set("title", alert.title())
@@ -213,52 +213,52 @@ class AlertSrv @Inject()(
                   .set("customFields", alert.customFields()),
                 caseTemplate
               )
-              _ ← importArtifacts(alert, caze)
-              _ ← setCase(alert, caze)
+              _ <- importArtifacts(alert, caze)
+              _ <- setCase(alert, caze)
             } yield caze
         }
     }
 
   override def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     alert.caze() match {
-      case Some(id) ⇒ caseSrv.get(id)
-      case None ⇒
+      case Some(id) => caseSrv.get(id)
+      case None =>
         connectors.get(alert.tpe()) match {
-          case Some(connector: AlertTransformer) ⇒
+          case Some(connector: AlertTransformer) =>
             for {
-              updatedCase ← connector.mergeWithCase(alert, caze)
-              _           ← setCase(alert, updatedCase)
+              updatedCase <- connector.mergeWithCase(alert, caze)
+              _           <- setCase(alert, updatedCase)
             } yield updatedCase
-          case _ ⇒
+          case _ =>
             for {
-              _ ← importArtifacts(alert, caze)
+              _ <- importArtifacts(alert, caze)
               newDescription = caze
                 .description() + s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}"
               newTags = (caze.tags() ++ alert.tags()).distinct.map(JsString.apply)
-              updatedCase ← caseSrv.update(
+              updatedCase <- caseSrv.update(
                 caze,
                 Fields
                   .empty
                   .set("description", newDescription)
                   .set("tags", JsArray(newTags))
               )
-              _ ← setCase(alert, caze)
+              _ <- setCase(alert, caze)
             } yield updatedCase
         }
     }
 
   def bulkMergeWithCase(alerts: Seq[Alert], caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     Future
-      .traverse(alerts) { alert ⇒
+      .traverse(alerts) { alert =>
         for {
-          _ ← importArtifacts(alert, caze)
-          _ ← setCase(alert, caze)
+          _ <- importArtifacts(alert, caze)
+          _ <- setCase(alert, caze)
         } yield ()
       }
-      .flatMap { _ ⇒ // then merge all tags
+      .flatMap { _ => // then merge all tags
         val newTags = (caze.tags() ++ alerts.flatMap(_.tags())).distinct.map(JsString.apply)
         val newDescription = caze.description() + alerts
-          .map(alert ⇒ s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}")
+          .map(alert => s"\n  \n#### Merged with alert #${alert.sourceRef()} ${alert.title()}\n\n${alert.description().trim}")
           .mkString("")
         caseSrv.update(
           caze,
@@ -272,41 +272,41 @@ class AlertSrv @Inject()(
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] = {
     val artifactsFields = alert
       .artifacts()
-      .flatMap { artifact ⇒
+      .flatMap { artifact =>
         val tags    = (artifact \ "tags").asOpt[Seq[JsString]].getOrElse(Nil) :+ JsString("src:" + alert.tpe())
         val message = (artifact \ "message").asOpt[JsString].getOrElse(JsString(""))
         (artifact \ "dataType")
           .asOpt[String]
           .flatMap {
-            case "file" if !artifact.value.contains("attachment") ⇒
+            case "file" if !artifact.value.contains("attachment") =>
               (artifact \ "data").asOpt[String].collect {
-                case dataExtractor(filename, contentType, data) ⇒
+                case dataExtractor(filename, contentType, data) =>
                   val f = Files.createTempFile("alert-", "-attachment")
                   Files.write(f, java.util.Base64.getDecoder.decode(data))
                   Fields(
                     artifact +
-                      ("tags"    → JsArray(tags)) +
-                      ("message" → message)
+                      ("tags"    -> JsArray(tags)) +
+                      ("message" -> message)
                   ).set("attachment", FileInputValue(filename, f, contentType))
                     .unset("data")
               }
-            case "file" ⇒
+            case "file" =>
               Some(
                 Fields(
                   artifact +
-                    ("tags"    → JsArray(tags)) +
-                    ("message" → message)
+                    ("tags"    -> JsArray(tags)) +
+                    ("message" -> message)
                 )
               )
-            case _ if artifact.value.contains("data") ⇒
+            case _ if artifact.value.contains("data") =>
               Some(
                 Fields(
                   artifact +
-                    ("tags"    → JsArray(tags)) +
-                    ("message" → message)
+                    ("tags"    -> JsArray(tags)) +
+                    ("message" -> message)
                 )
               )
-            case _ ⇒ None
+            case _ => None
           }
           .orElse {
             logger.warn(s"Invalid artifact format: $artifact")
@@ -316,44 +316,44 @@ class AlertSrv @Inject()(
 
     val updatedCase = artifactSrv
       .create(caze, artifactsFields)
-      .flatMap { artifacts ⇒
+      .flatMap { artifacts =>
         Future.traverse(artifacts) {
-          case Success(_) ⇒ Future.successful(())
-          case Failure(ConflictError(_, attributes)) ⇒ // if it already exists, add tags from alert
+          case Success(_) => Future.successful(())
+          case Failure(ConflictError(_, attributes)) => // if it already exists, add tags from alert
             import org.elastic4play.services.QueryDSL._
             (for {
-              dataType ← (attributes \ "dataType").asOpt[String]
+              dataType <- (attributes \ "dataType").asOpt[String]
               data       = (attributes \ "data").asOpt[String]
               attachment = (attributes \ "attachment").asOpt[Attachment]
-              tags ← (attributes \ "tags").asOpt[Seq[String]]
-              _    ← data orElse attachment
+              tags <- (attributes \ "tags").asOpt[Seq[String]]
+              _    <- data orElse attachment
               dataOrAttachment = data.toLeft(attachment.get)
             } yield artifactSrv
               .find(artifactSrv.similarArtifactFilter(dataType, dataOrAttachment, withParent(caze)), None, Nil)
               ._1
-              .mapAsyncUnordered(1) { artifact ⇒
+              .mapAsyncUnordered(1) { artifact =>
                 artifactSrv.update(artifact.id, Fields.empty.set("tags", JsArray((artifact.tags() ++ tags).distinct.map(JsString.apply))))
               }
-              .map(_ ⇒ caze)
+              .map(_ => caze)
               .runWith(Sink.ignore)
-              .map(_ ⇒ caze))
+              .map(_ => caze))
               .getOrElse {
                 logger.warn(s"A conflict error occurs when creating the artifact $attributes but it doesn't exist")
                 Future.successful(())
               }
-          case Failure(e) ⇒
+          case Failure(e) =>
             logger.warn("Create artifact error", e)
             Future.successful(())
         }
       }
-      .map(_ ⇒ caze)
-    updatedCase.onComplete { _ ⇒
+      .map(_ => caze)
+    updatedCase.onComplete { _ =>
       // remove temporary files
       artifactsFields
         .flatMap(_.get("Attachment"))
         .foreach {
-          case FileInputValue(_, file, _) ⇒ Files.delete(file)
-          case _                          ⇒
+          case FileInputValue(_, file, _) => Files.delete(file)
+          case _                          =>
         }
     }
     updatedCase
@@ -363,25 +363,25 @@ class AlertSrv @Inject()(
       implicit authContext: AuthContext,
       ec: ExecutionContext
   ): Future[Alert] =
-    updateSrv(alert, Fields(Json.obj("case" → caze.id, "status" → AlertStatus.Imported)), modifyConfig)
+    updateSrv(alert, Fields(Json.obj("case" -> caze.id, "status" -> AlertStatus.Imported)), modifyConfig)
 
   def unsetCase(
       alert: Alert,
       modifyConfig: ModifyConfig = ModifyConfig.default
   )(implicit authContext: AuthContext, ec: ExecutionContext): Future[Alert] = {
     val status = alert.status match {
-      case AlertStatus.New      ⇒ AlertStatus.New
-      case AlertStatus.Updated  ⇒ AlertStatus.New
-      case AlertStatus.Ignored  ⇒ AlertStatus.Ignored
-      case AlertStatus.Imported ⇒ AlertStatus.Ignored
+      case AlertStatus.New      => AlertStatus.New
+      case AlertStatus.Updated  => AlertStatus.New
+      case AlertStatus.Ignored  => AlertStatus.Ignored
+      case AlertStatus.Imported => AlertStatus.Ignored
     }
     logger.debug(s"Remove case association in alert ${alert.id} (${alert.title}")
-    updateSrv(alert, Fields(Json.obj("case" → JsNull, "status" → status)), modifyConfig)
+    updateSrv(alert, Fields(Json.obj("case" -> JsNull, "status" -> status)), modifyConfig)
   }
 
   def delete(id: String, force: Boolean)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] =
     if (force) deleteSrv.realDelete[AlertModel, Alert](alertModel, id)
-    else get(id).flatMap(alert ⇒ markAsUnread(alert)).map(_ ⇒ ())
+    else get(id).flatMap(alert => markAsUnread(alert)).map(_ => ())
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Alert, NotUsed], Future[Long]) =
     findSrv[AlertModel, Alert](alertModel, queryDef, range, sortBy)
@@ -392,57 +392,57 @@ class AlertSrv @Inject()(
       implicit authContext: AuthContext,
       ec: ExecutionContext
   ): Future[Alert] =
-    updateSrv[AlertModel, Alert](alertModel, alertId, Fields(Json.obj("follow" → follow)), modifyConfig)
+    updateSrv[AlertModel, Alert](alertModel, alertId, Fields(Json.obj("follow" -> follow)), modifyConfig)
 
   def similarCases(alert: Alert)(implicit ec: ExecutionContext): Future[Seq[CaseSimilarity]] = {
     def similarArtifacts(artifact: JsObject): Option[Source[Artifact, NotUsed]] =
       for {
-        dataType ← (artifact \ "dataType").asOpt[String]
-        data ← if (dataType == "file")
+        dataType <- (artifact \ "dataType").asOpt[String]
+        data <- if (dataType == "file")
           (artifact \ "attachment").asOpt[Attachment].map(Right.apply)
         else
           (artifact \ "data").asOpt[String].map(Left.apply)
       } yield artifactSrv.findSimilar(dataType, data, None, Some("all"), Nil)._1
 
     Source(alert.artifacts().to[immutable.Iterable])
-      .flatMapConcat { artifact ⇒
+      .flatMapConcat { artifact =>
         similarArtifacts(artifact)
           .getOrElse(Source.empty)
       }
-      .fold(Map.empty[String, (Int, Int)]) { (similarCases, artifact) ⇒
+      .fold(Map.empty[String, (Int, Int)]) { (similarCases, artifact) =>
         val caseId                    = artifact.parentId.getOrElse(sys.error(s"Artifact ${artifact.id} has no case !"))
         val (iocCount, artifactCount) = similarCases.getOrElse(caseId, (0, 0))
         if (artifact.ioc())
-          similarCases + (caseId → ((iocCount + 1, artifactCount)))
+          similarCases + (caseId -> ((iocCount + 1, artifactCount)))
         else
-          similarCases + (caseId → ((iocCount, artifactCount + 1)))
+          similarCases + (caseId -> ((iocCount, artifactCount + 1)))
       }
       .mapConcat(identity)
       .mapAsyncUnordered(5) {
-        case (caseId, (similarIOCCount, similarArtifactCount)) ⇒
+        case (caseId, (similarIOCCount, similarArtifactCount)) =>
           caseSrv.get(caseId).map((_, similarIOCCount, similarArtifactCount))
       }
       .filter {
-        case (caze, _, _) ⇒ caze.status() != CaseStatus.Deleted && !caze.resolutionStatus().contains(CaseResolutionStatus.Duplicated)
+        case (caze, _, _) => caze.status() != CaseStatus.Deleted && !caze.resolutionStatus().contains(CaseResolutionStatus.Duplicated)
       }
       .mapAsyncUnordered(5) {
-        case (caze, similarIOCCount, similarArtifactCount) ⇒
+        case (caze, similarIOCCount, similarArtifactCount) =>
           for {
-            artifactCountJs ← artifactSrv.stats(parent("case", withId(caze.id)), Seq(groupByField("ioc", selectCount)))
+            artifactCountJs <- artifactSrv.stats(parent("case", withId(caze.id)), Seq(groupByField("ioc", selectCount)))
             iocCount      = (artifactCountJs \ "1" \ "count").asOpt[Int].getOrElse(0)
             artifactCount = (artifactCountJs \\ "count").map(_.as[Int]).sum
           } yield CaseSimilarity(caze, similarIOCCount, iocCount, similarArtifactCount, artifactCount)
-        case _ ⇒ Future.failed(InternalError("Case not found"))
+        case _ => Future.failed(InternalError("Case not found"))
       }
       .runWith(Sink.seq)
   }
 
   def getArtifactSeen(artifact: JsObject)(implicit ec: ExecutionContext): Future[Long] = {
     val maybeArtifactSeen = for {
-      dataType ← (artifact \ "dataType").asOpt[String]
-      data ← dataType match {
-        case "file" ⇒ (artifact \ "attachment").asOpt[Attachment].map(Right.apply)
-        case _      ⇒ (artifact \ "data").asOpt[String].map(Left.apply)
+      dataType <- (artifact \ "dataType").asOpt[String]
+      data <- dataType match {
+        case "file" => (artifact \ "attachment").asOpt[Attachment].map(Right.apply)
+        case _      => (artifact \ "data").asOpt[String].map(Left.apply)
       }
       numberOfSimilarArtifacts = artifactSrv.findSimilar(dataType, data, None, None, Nil)._2
     } yield numberOfSimilarArtifacts
@@ -450,8 +450,8 @@ class AlertSrv @Inject()(
   }
 
   def alertArtifactsWithSeen(alert: Alert)(implicit ec: ExecutionContext): Future[Seq[JsObject]] =
-    Future.traverse(alert.artifacts()) { artifact ⇒
-      getArtifactSeen(artifact).map(seen ⇒ artifact + ("seen" → JsNumber(seen)))
+    Future.traverse(alert.artifacts()) { artifact =>
+      getArtifactSeen(artifact).map(seen => artifact + ("seen" -> JsNumber(seen)))
     }
 
   def fixStatus()(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] = {
@@ -459,30 +459,30 @@ class AlertSrv @Inject()(
 
     val updatedStatusFields              = Fields.empty.set("status", "Updated")
     val (updateAlerts, updateAlertCount) = find("status" ~= "Update", Some("all"), Nil)
-    updateAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Update status"))
+    updateAlertCount.foreach(c => logger.info(s"Updating $c alert with Update status"))
     val updateAlertProcess = updateAlerts
-      .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Update → Updated)")
+      .mapAsyncUnordered(3) { alert =>
+        logger.debug(s"Updating alert ${alert.id} (status: Update -> Updated)")
         update(alert, updatedStatusFields)
           .andThen {
-            case Failure(error) ⇒ logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
+            case Failure(error) => logger.warn(s"""Fail to set "Updated" status to alert ${alert.id}""", error)
           }
       }
 
     val ignoredStatusFields              = Fields.empty.set("status", "Ignored")
     val (ignoreAlerts, ignoreAlertCount) = find("status" ~= "Ignore", Some("all"), Nil)
-    ignoreAlertCount.foreach(c ⇒ logger.info(s"Updating $c alert with Ignore status"))
+    ignoreAlertCount.foreach(c => logger.info(s"Updating $c alert with Ignore status"))
     val ignoreAlertProcess = ignoreAlerts
-      .mapAsyncUnordered(3) { alert ⇒
-        logger.debug(s"Updating alert ${alert.id} (status: Ignore → Ignored)")
+      .mapAsyncUnordered(3) { alert =>
+        logger.debug(s"Updating alert ${alert.id} (status: Ignore -> Ignored)")
         update(alert, ignoredStatusFields)
           .andThen {
-            case Failure(error) ⇒ logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)
+            case Failure(error) => logger.warn(s"""Fail to set "Ignored" status to alert ${alert.id}""", error)
           }
       }
 
     (updateAlertProcess ++ ignoreAlertProcess)
       .runWith(Sink.ignore)
-      .map(_ ⇒ ())
+      .map(_ => ())
   }
 }

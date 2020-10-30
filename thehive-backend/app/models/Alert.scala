@@ -22,8 +22,8 @@ import org.elastic4play.models.{
   ModelDef,
   MultiAttributeFormat,
   OptionalAttributeFormat,
-  AttributeFormat ⇒ F,
-  AttributeOption ⇒ O
+  AttributeFormat => F,
+  AttributeOption => O
 }
 import org.elastic4play.services.DBLists
 import org.elastic4play.utils.Hasher
@@ -35,7 +35,7 @@ object AlertStatus extends Enumeration with HiveEnumeration {
 }
 
 trait AlertAttributes {
-  _: AttributeDef ⇒
+  _: AttributeDef =>
 
   val artifactAttributes: Seq[Attribute[_]] = {
     val remoteAttachmentAttributes = Seq(
@@ -60,7 +60,7 @@ trait AlertAttributes {
       Attribute("alert", "ioc", OptionalAttributeFormat(F.booleanFmt), Nil, None, "")
     )
   }
-  
+
   val alertId: A[String]              = attribute("_id", F.stringFmt, "Alert id", O.readonly)
   val tpe: A[String]                  = attribute("type", F.stringFmt, "Type of the alert", O.readonly)
   val source: A[String]               = attribute("source", F.stringFmt, "Source of the alert", O.readonly)
@@ -85,12 +85,12 @@ class AlertModel @Inject()(dblists: DBLists) extends ModelDef[AlertModel, Alert]
 
   private[AlertModel] lazy val logger     = Logger(getClass)
   override val defaultSortBy: Seq[String] = Seq("-date")
-  override val removeAttribute: JsObject  = Json.obj("status" → AlertStatus.Ignored)
+  override val removeAttribute: JsObject  = Json.obj("status" -> AlertStatus.Ignored)
   override val computedMetrics: Map[String, String] = Map(
-    "observableCount"           → "if (params._source.containsKey('artifacts')) { params._source['artifacts'].size() } else 0",
-    "handlingDurationInSeconds" → "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / 1000",
-    "handlingDurationInHours"   → "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / 3600000",
-    "handlingDurationInDays"    → "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / (3600000 * 24)"
+    "observableCount"           -> "if (params._source.containsKey('artifacts')) { params._source['artifacts'].size() } else 0",
+    "handlingDurationInSeconds" -> "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / 1000",
+    "handlingDurationInHours"   -> "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / 3600000",
+    "handlingDurationInDays"    -> "(doc['updatedAt'].date.getMillis() - doc['createdAt'].date.getMillis()) / (3600000 * 24)"
   )
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] = {
@@ -98,11 +98,11 @@ class AlertModel @Inject()(dblists: DBLists) extends ModelDef[AlertModel, Alert]
     val missingDataErrors = (attrs \ "artifacts")
       .asOpt[Seq[JsValue]]
       .getOrElse(Nil)
-      .filter { a ⇒
+      .filter { a =>
         ((a \ "data").toOption.isEmpty && (a \ "attachment").toOption.isEmpty && (a \ "remoteAttachment").toOption.isEmpty) ||
         ((a \ "tags").toOption.isEmpty && (a \ "message").toOption.isEmpty)
       }
-      .map(v ⇒ InvalidFormatAttributeError("artifacts", "artifact", JsonInputValue(v)))
+      .map(v => InvalidFormatAttributeError("artifacts", "artifact", JsonInputValue(v)))
     if (missingDataErrors.nonEmpty)
       Future.failed(AttributeCheckingError("alert", missingDataErrors))
     else
@@ -115,7 +115,7 @@ class AlertModel @Inject()(dblists: DBLists) extends ModelDef[AlertModel, Alert]
           val source    = (attrs \ "source").asOpt[String].getOrElse("<null>")
           val sourceRef = (attrs \ "sourceRef").asOpt[String].getOrElse("<null>")
           val _id       = hasher.fromString(s"$tpe|$source|$sourceRef").head.toString()
-          attrs + ("_id" → JsString(_id))
+          attrs + ("_id" -> JsString(_id))
         }
       }
   }
@@ -125,23 +125,23 @@ class Alert(model: AlertModel, attributes: JsObject) extends EntityDef[AlertMode
 
   override def toJson: JsObject =
     super.toJson +
-      ("artifacts" → JsArray(artifacts().map {
+      ("artifacts" -> JsArray(artifacts().map {
         // for file artifact, parse data as Json
-        case a if (a \ "dataType").asOpt[String].contains("file") ⇒
-          Try(a + ("data" → Json.parse((a \ "data").as[String]))).getOrElse(a)
-        case a ⇒ a
+        case a if (a \ "dataType").asOpt[String].contains("file") =>
+          Try(a + ("data" -> Json.parse((a \ "data").as[String]))).getOrElse(a)
+        case a => a
       }))
 
   def toCaseJson: JsObject =
     Json.obj(
-      //"caseId" → caseId,
-      "title"       → title(),
-      "description" → description(),
-      "severity"    → severity(),
-      //"owner" → owner,
-      "startDate" → date(),
-      "tags"      → tags(),
-      "tlp"       → tlp(),
-      "status"    → CaseStatus.Open
+      //"caseId" -> caseId,
+      "title"       -> title(),
+      "description" -> description(),
+      "severity"    -> severity(),
+      //"owner" -> owner,
+      "startDate" -> date(),
+      "tags"      -> tags(),
+      "tlp"       -> tlp(),
+      "status"    -> CaseStatus.Open
     )
 }

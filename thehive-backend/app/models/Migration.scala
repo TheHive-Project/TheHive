@@ -81,38 +81,38 @@ class Migration(
   private def addDataTypes(dataTypes: Seq[String]): Future[Unit] = {
     val dataTypeList = dblists.apply("list_artifactDataType")
     Future
-      .traverse(dataTypes) { dt ⇒
+      .traverse(dataTypes) { dt =>
         dataTypeList
           .addItem(dt)
-          .map(_ ⇒ ())
+          .map(_ => ())
           .recover {
-            case _: ConflictError ⇒
-            case error            ⇒ logger.error(s"Failed to add dataType $dt during migration", error)
+            case _: ConflictError =>
+            case error            => logger.error(s"Failed to add dataType $dt during migration", error)
           }
       }
-      .map(_ ⇒ ())
+      .map(_ => ())
   }
 
   private def addDashboards(version: Int): Future[Unit] =
     dashboardSrv.find(QueryDSL.any, Some("0-0"), Nil)._2.flatMap {
-      case 0 ⇒
-        userSrv.inInitAuthContext { implicit authContext ⇒
+      case 0 =>
+        userSrv.inInitAuthContext { implicit authContext =>
           val dashboardsPath = environment.rootPath.toPath.resolve("migration").resolve("12").resolve("dashboards")
           val dashboards = for {
-            dashboardFile ← Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
+            dashboardFile <- Try(Files.newDirectoryStream(dashboardsPath, "*.json").asScala).getOrElse(Nil)
             if Files.isReadable(dashboardFile)
-            dashboardJson ← Try(readJsonFile(dashboardFile).as[JsObject]).toOption
+            dashboardJson <- Try(readJsonFile(dashboardFile).as[JsObject]).toOption
             dashboardDefinition = (dashboardJson \ "definition").as[JsValue].toString
             dash = dashboardSrv
-              .create(Fields(dashboardJson + ("definition" → JsString(dashboardDefinition))))
-              .map(_ ⇒ ())
+              .create(Fields(dashboardJson + ("definition" -> JsString(dashboardDefinition))))
+              .map(_ => ())
               .recover {
-                case error ⇒ logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
+                case error => logger.error(s"Failed to create dashboard $dashboardFile during migration", error)
               }
           } yield dash
-          Future.sequence(dashboards).map(_ ⇒ ())
+          Future.sequence(dashboards).map(_ => ())
         }
-      case _ ⇒ Future.successful(())
+      case _ => Future.successful(())
     }
 
   override def endMigration(version: Int): Future[Unit] = {
@@ -139,42 +139,42 @@ class Migration(
         "file",
         "autonomous-system"
       )
-    ).andThen { case _ ⇒ addDashboards(version + 1) }
+    ).andThen { case _ => addDashboards(version + 1) }
 
   }
 
   override def indexType(version: Int): IndexType.Value = if (version > 14) IndexType.indexWithoutMappingTypes else IndexType.indexWithMappingTypes
 
   override val operations: PartialFunction[DatabaseState, Seq[Operation]] = {
-    case DatabaseState(version) if version < 7 ⇒ Nil
-    case DatabaseState(7) ⇒
+    case DatabaseState(version) if version < 7 => Nil
+    case DatabaseState(7) =>
       Seq(
         renameAttribute("reportTemplate", "analyzerId", "analyzers"), // reportTemplate refers only one analyzer
         renameAttribute("reportTemplate", "reportType", "flavor"),    // rename flavor into reportType
         removeAttribute("case", "isIncident"),                        // this information is now stored in resolutionStatus
-        mapEntity("case") { c ⇒                                       // add case owner
+        mapEntity("case") { c =>                                      // add case owner
           val owner = (c \ "createdBy")
             .asOpt[JsString]
             .getOrElse(JsString("init"))
-          c + ("owner" → owner)
+          c + ("owner" -> owner)
         },
-        removeEntity("analyzer")(_ ⇒ true), // analyzer is now stored in cortex
-        addAttribute("case_artifact", "reports" → JsString("{}")), // add short reports in artifact
-        addAttribute("case_task", "order"       → JsNumber(0)),    // add task order
-        addAttribute("user", "preferences"      → JsString("{}")), // add user preferences, default empty (Json object)
+        removeEntity("analyzer")(_ => true), // analyzer is now stored in cortex
+        addAttribute("case_artifact", "reports" -> JsString("{}")), // add short reports in artifact
+        addAttribute("case_task", "order"       -> JsNumber(0)),    // add task order
+        addAttribute("user", "preferences"      -> JsString("{}")), // add user preferences, default empty (Json object)
         mapAttribute(Seq("case", "case_task", "case_task_log", "case_artifact", "audit", "case_artifact_job"), "startDate")(convertDate),
         mapAttribute(Seq("case", "case_task", "case_artifact_job"), "endDate")(convertDate),
         mapAttribute("misp", "date")(convertDate),
         mapAttribute("misp", "publishDate")(convertDate),
-        mapAttribute(_ ⇒ true, "createdAt", convertDate),
-        mapAttribute(_ ⇒ true, "updatedAt", convertDate)
+        mapAttribute(_ => true, "createdAt", convertDate),
+        mapAttribute(_ => true, "updatedAt", convertDate)
       )
-    case DatabaseState(8) ⇒
+    case DatabaseState(8) =>
       requireUpdateMispAlertArtifact = true
       val hasher = Hasher("MD5")
       Seq(
         renameEntity("misp", "alert"),
-        mapEntity("alert") { misp ⇒
+        mapEntity("alert") { misp =>
           val eventId  = (misp \ "eventId").as[Long].toString
           val date     = (misp \ "date").as[Date]
           val mispTags = (misp \ "tags").asOpt[Seq[String]].getOrElse(Nil)
@@ -182,37 +182,37 @@ class Migration(
           val tlp = mispTags
             .map(_.toLowerCase)
             .collectFirst {
-              case "tlp:white" ⇒ 0L
-              case "tlp:green" ⇒ 1L
-              case "tlp:amber" ⇒ 2L
-              case "tlp:red"   ⇒ 3L
+              case "tlp:white" => 0L
+              case "tlp:green" => 1L
+              case "tlp:amber" => 2L
+              case "tlp:red"   => 3L
             }
             .getOrElse(2L)
           val source = (misp \ "serverId").asOpt[String].getOrElse("<null>")
           val _id    = hasher.fromString(s"misp|$source|$eventId").head.toString()
-          (misp \ "caze").asOpt[JsString].fold(JsObject.empty)(c ⇒ Json.obj("caze" → c)) ++
+          (misp \ "caze").asOpt[JsString].fold(JsObject.empty)(c => Json.obj("caze" -> c)) ++
             Json.obj(
-              "_type"        → "alert",
-              "_id"          → _id,
-              "type"         → "misp",
-              "source"       → source,
-              "sourceRef"    → eventId,
-              "date"         → date,
-              "lastSyncDate" → (misp \ "publishDate").as[Date],
-              "title"        → ("#" + eventId + " " + (misp \ "info").as[String]).trim,
-              "description"  → s"Imported from MISP Event #$eventId, created at $date",
-              "severity"     → (misp \ "threatLevel").as[JsNumber],
-              "tags"         → tags,
-              "tlp"          → tlp,
-              "artifacts"    → JsArray(),
-              "caseTemplate" → mispCaseTemplate,
-              "status"       → (misp \ "eventStatus").as[JsString],
-              "follow"       → (misp \ "follow").as[JsBoolean]
+              "_type"        -> "alert",
+              "_id"          -> _id,
+              "type"         -> "misp",
+              "source"       -> source,
+              "sourceRef"    -> eventId,
+              "date"         -> date,
+              "lastSyncDate" -> (misp \ "publishDate").as[Date],
+              "title"        -> ("#" + eventId + " " + (misp \ "info").as[String]).trim,
+              "description"  -> s"Imported from MISP Event #$eventId, created at $date",
+              "severity"     -> (misp \ "threatLevel").as[JsNumber],
+              "tags"         -> tags,
+              "tlp"          -> tlp,
+              "artifacts"    -> JsArray(),
+              "caseTemplate" -> mispCaseTemplate,
+              "status"       -> (misp \ "eventStatus").as[JsString],
+              "follow"       -> (misp \ "follow").as[JsBoolean]
             )
         },
-        removeEntity("audit")(o ⇒ (o \ "objectType").asOpt[String].contains("alert"))
+        removeEntity("audit")(o => (o \ "objectType").asOpt[String].contains("alert"))
       )
-    case ds @ DatabaseState(9) ⇒
+    case ds @ DatabaseState(9) =>
       object Base64 {
         def unapply(data: String): Option[Array[Byte]] = Try(java.util.Base64.getDecoder.decode(data)).toOption
       }
@@ -233,149 +233,149 @@ class Migration(
       val extraHashers = Hasher(mainHash +: extraHashes: _*)
       Seq(
         // store alert attachment in datastore
-        Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
-          case "alert" ⇒
+        Operation((f: String => Source[JsObject, NotUsed]) => {
+          case "alert" =>
             f("alert").flatMapConcat {
-              alert ⇒
+              alert =>
                 val artifactsAndData = Future.traverse((alert \ "artifacts").asOpt[List[JsObject]].getOrElse(Nil)) {
-                  artifact ⇒
+                  artifact =>
                     val isFile = (artifact \ "dataType").asOpt[String].contains("file")
                     // get MISP attachment
                     if (!isFile)
-                      Future.successful(artifact → Nil)
+                      Future.successful(artifact -> Nil)
                     else {
                       (for {
-                        dataStr       ← (artifact \ "data").asOpt[String]
-                        dataJson      ← Try(Json.parse(dataStr)).toOption
-                        dataObj       ← dataJson.asOpt[JsObject]
-                        filename      ← (dataObj \ "filename").asOpt[String].map(_.split("|").head)
-                        attributeId   ← (dataObj \ "attributeId").asOpt[String]
-                        attributeType ← (dataObj \ "attributeType").asOpt[String]
+                        dataStr       <- (artifact \ "data").asOpt[String]
+                        dataJson      <- Try(Json.parse(dataStr)).toOption
+                        dataObj       <- dataJson.asOpt[JsObject]
+                        filename      <- (dataObj \ "filename").asOpt[String].map(_.split("|").head)
+                        attributeId   <- (dataObj \ "attributeId").asOpt[String]
+                        attributeType <- (dataObj \ "attributeType").asOpt[String]
                       } yield Future.successful(
-                        (artifact - "data" + ("remoteAttachment" → Json
-                          .obj("reference" → attributeId, "filename" → filename, "type" → attributeType))) → Nil
+                        (artifact - "data" + ("remoteAttachment" -> Json
+                          .obj("reference" -> attributeId, "filename" -> filename, "type" -> attributeType))) -> Nil
                       )).orElse {
                           (artifact \ "data")
                             .asOpt[String]
                             .collect {
                               // get attachment encoded in data field
-                              case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) ⇒
+                              case AlertSrv.dataExtractor(filename, contentType, data @ Base64(rawData)) =>
                                 val attachmentId = mainHasher.fromByteArray(rawData).head.toString()
                                 ds.getEntity(datastoreName, s"${attachmentId}_0")
-                                  .map(_ ⇒ Nil)
+                                  .map(_ => Nil)
                                   .recover {
-                                    case _ if containsOrAdd(attachmentId) ⇒ Nil
-                                    case _ ⇒
-                                      Seq(Json.obj("_type" → datastoreName, "_id" → s"${attachmentId}_0", "data" → data))
+                                    case _ if containsOrAdd(attachmentId) => Nil
+                                    case _ =>
+                                      Seq(Json.obj("_type" -> datastoreName, "_id" -> s"${attachmentId}_0", "data" -> data))
                                   }
-                                  .map { dataEntity ⇒
+                                  .map { dataEntity =>
                                     val attachment =
                                       Attachment(filename, extraHashers.fromByteArray(rawData), rawData.length.toLong, contentType, attachmentId)
-                                    (artifact - "data" + ("attachment" → Json.toJson(attachment))) → dataEntity
+                                    (artifact - "data" + ("attachment" -> Json.toJson(attachment))) -> dataEntity
                                   }
                             }
 
                         }
-                        .getOrElse(Future.successful(artifact → Nil))
+                        .getOrElse(Future.successful(artifact -> Nil))
                     }
                 }
                 Source
                   .fromFuture(artifactsAndData)
-                  .mapConcat { ad ⇒
-                    val updatedAlert = alert + ("artifacts" → JsArray(ad.map(_._1)))
+                  .mapConcat { ad =>
+                    val updatedAlert = alert + ("artifacts" -> JsArray(ad.map(_._1)))
                     updatedAlert :: ad.flatMap(_._2)
                   }
             }
-          case other ⇒ f(other)
+          case other => f(other)
         }),
         // Fix alert status
         mapAttribute("alert", "status") {
-          case JsString("Update") ⇒ JsString("Updated")
-          case JsString("Ignore") ⇒ JsString("Ignored")
-          case other              ⇒ other
+          case JsString("Update") => JsString("Updated")
+          case JsString("Ignore") => JsString("Ignored")
+          case other              => other
         },
         // Fix double encode of metrics
         mapEntity("dblist") {
-          case dblist if (dblist \ "dblist").asOpt[String].contains("case_metrics") ⇒
-            (dblist \ "value").asOpt[String].map(Json.parse).fold(dblist) { value ⇒
-              dblist + ("value" → value)
+          case dblist if (dblist \ "dblist").asOpt[String].contains("case_metrics") =>
+            (dblist \ "value").asOpt[String].map(Json.parse).fold(dblist) { value =>
+              dblist + ("value" -> value)
             }
-          case other ⇒ other
+          case other => other
         },
         // Add empty metrics and custom fields in cases
-        mapEntity("case") { caze ⇒
+        mapEntity("case") { caze =>
           val metrics      = (caze \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
           val customFields = (caze \ "customFields").asOpt[JsObject].getOrElse(JsObject.empty)
-          caze + ("metrics" → metrics) + ("customFields" → customFields)
+          caze + ("metrics" -> metrics) + ("customFields" -> customFields)
         }
       )
-    case DatabaseState(10) ⇒ Nil
-    case DatabaseState(11) ⇒
+    case DatabaseState(10) => Nil
+    case DatabaseState(11) =>
       Seq(
-        mapEntity("case_task_log") { log ⇒
+        mapEntity("case_task_log") { log =>
           val owner = (log \ "createdBy").asOpt[JsString].getOrElse(JsString("init"))
-          log + ("owner" → owner)
+          log + ("owner" -> owner)
         },
-        mapEntity(_ ⇒ true, entity ⇒ entity - "user"),
-        mapEntity("caseTemplate") { caseTemplate ⇒
+        mapEntity(_ => true, entity => entity - "user"),
+        mapEntity("caseTemplate") { caseTemplate =>
           val metricsName = (caseTemplate \ "metricNames").asOpt[Seq[String]].getOrElse(Nil)
-          val metrics     = JsObject(metricsName.map(_ → JsNull))
-          caseTemplate - "metricNames" + ("metrics" → metrics)
+          val metrics     = JsObject(metricsName.map(_ -> JsNull))
+          caseTemplate - "metricNames" + ("metrics" -> metrics)
         },
-        addAttribute("case_artifact", "sighted" → JsFalse)
+        addAttribute("case_artifact", "sighted" -> JsFalse)
       )
-    case ds @ DatabaseState(12) ⇒
+    case ds @ DatabaseState(12) =>
       Seq(
         // Remove alert artifacts in audit trail
         mapEntity("audit") {
-          case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
-            (audit \ "details").asOpt[JsObject].fold(audit) { details ⇒
-              audit + ("details" → (details - "artifacts"))
+          case audit if (audit \ "objectType").asOpt[String].contains("alert") =>
+            (audit \ "details").asOpt[JsObject].fold(audit) { details =>
+              audit + ("details" -> (details - "artifacts"))
             }
-          case audit ⇒ audit
+          case audit => audit
         },
         // Regenerate all alert ID
-        mapEntity("alert") { alert ⇒
+        mapEntity("alert") { alert =>
           val alertId = JsString(generateAlertId(alert))
-          alert + ("_id" → alertId) + ("_routing" → alertId)
+          alert + ("_id" -> alertId) + ("_routing" -> alertId)
         },
         // and overwrite alert id in audit trail
-        Operation((f: String ⇒ Source[JsObject, NotUsed]) ⇒ {
-          case "audit" ⇒
+        Operation((f: String => Source[JsObject, NotUsed]) => {
+          case "audit" =>
             f("audit").flatMapConcat {
-              case audit if (audit \ "objectType").asOpt[String].contains("alert") ⇒
-                val updatedAudit = (audit \ "objectId").asOpt[String].fold(Future.successful(audit)) { alertId ⇒
+              case audit if (audit \ "objectType").asOpt[String].contains("alert") =>
+                val updatedAudit = (audit \ "objectId").asOpt[String].fold(Future.successful(audit)) { alertId =>
                   ds.getEntity("alert", alertId)
-                    .map { alert ⇒
-                      audit + ("objectId" → JsString(generateAlertId(alert)))
+                    .map { alert =>
+                      audit + ("objectId" -> JsString(generateAlertId(alert)))
                     }
                     .recover {
-                      case e ⇒
+                      case e =>
                         logger.error(s"Get alert $alertId", e)
                         audit
                     }
                 }
                 Source.fromFuture(updatedAudit)
-              case audit ⇒ Source.single(audit)
+              case audit => Source.single(audit)
             }
-          case other ⇒ f(other)
+          case other => f(other)
         })
       )
 
-    case DatabaseState(13) ⇒
+    case DatabaseState(13) =>
       Seq(
-        addAttribute("alert", "customFields" → JsObject.empty),
-        addAttribute("case_task", "group"    → JsString("default")),
-        addAttribute("case", "pap"           → JsNumber(2))
+        addAttribute("alert", "customFields" -> JsObject.empty),
+        addAttribute("case_task", "group"    -> JsString("default")),
+        addAttribute("case", "pap"           -> JsNumber(2))
       )
-    case DatabaseState(14) ⇒
+    case DatabaseState(14) =>
       Seq(
-        mapEntity("sequence") { seq ⇒
+        mapEntity("sequence") { seq =>
           val oldId   = (seq \ "_id").as[String]
           val counter = (seq \ "counter").as[JsNumber]
           seq - "counter" - "_routing" +
-            ("_id"             → JsString("sequence_" + oldId)) +
-            ("sequenceCounter" → counter)
+            ("_id"             -> JsString("sequence_" + oldId)) +
+            ("sequenceCounter" -> counter)
         }
       )
   }

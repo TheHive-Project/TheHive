@@ -25,13 +25,13 @@ class AuthenticationCtrl @Inject()(
 ) extends AbstractController(components) {
 
   @Timed
-  def login: Action[Fields] = Action.async(fieldsBodyParser) { implicit request ⇒
+  def login: Action[Fields] = Action.async(fieldsBodyParser) { implicit request =>
     dbIndex.getIndexStatus.flatMap {
-      case false ⇒ Future.successful(Results.Status(520))
-      case _ ⇒
+      case false => Future.successful(Results.Status(520))
+      case _ =>
         for {
-          authContext ← authSrv.authenticate(request.body.getString("user").getOrElse("TODO"), request.body.getString("password").getOrElse("TODO"))
-          user        ← userSrv.get(authContext.userId)
+          authContext <- authSrv.authenticate(request.body.getString("user").getOrElse("TODO"), request.body.getString("password").getOrElse("TODO"))
+          user        <- userSrv.get(authContext.userId)
         } yield {
           if (user.status() == UserStatus.Ok)
             authenticated.setSessingUser(Ok, authContext)
@@ -42,13 +42,13 @@ class AuthenticationCtrl @Inject()(
   }
 
   @Timed
-  def ssoLogin: Action[AnyContent] = Action.async { implicit request ⇒
+  def ssoLogin: Action[AnyContent] = Action.async { implicit request =>
     dbIndex.getIndexStatus.flatMap {
-      case false ⇒ Future.successful(Results.Status(520))
-      case _ ⇒
+      case false => Future.successful(Results.Status(520))
+      case _ =>
         (for {
-          authContext ← authSrv.authenticate()
-          user        ← userSrv.get(authContext.userId)
+          authContext <- authSrv.authenticate()
+          user        <- userSrv.get(authContext.userId)
         } yield {
           if (user.status() == UserStatus.Ok)
             authenticated.setSessingUser(Ok, authContext)
@@ -56,8 +56,8 @@ class AuthenticationCtrl @Inject()(
             throw AuthorizationError("Your account is locked")
         }) recover {
           // A bit of a hack with the status code, so that Angular doesn't reject the origin
-          case OAuth2Redirect(redirectUrl, qp) ⇒ Redirect(redirectUrl, qp, status = OK)
-          case e                               ⇒ throw e
+          case OAuth2Redirect(redirectUrl, qp) => Redirect(redirectUrl, qp, status = OK)
+          case e                               => throw e
         }
     }
   }

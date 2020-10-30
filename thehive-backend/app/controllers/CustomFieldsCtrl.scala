@@ -36,21 +36,21 @@ class CustomFieldsCtrl @Inject()(
           .getItems[JsObject]
           ._1
           .collect {
-            case (_, value) if (value \ "reference").asOpt[String].contains(customField) ⇒ (value \ "type").as[String]
+            case (_, value) if (value \ "reference").asOpt[String].contains(customField) => (value \ "type").as[String]
           }
           .runWith(Sink.head)
-          .recoverWith { case _ ⇒ Future.failed(NotFoundError(s"CustomField $customField not found")) }
-          .flatMap { customFieldType ⇒
+          .recoverWith { case _ => Future.failed(NotFoundError(s"CustomField $customField not found")) }
+          .flatMap { customFieldType =>
             val filter = and("relations" in ("case", "alert", "caseTemplate"), contains(s"customFields.$customField.$customFieldType"))
             dbfind(
-              indexName ⇒ search(indexName).query(filter.query).aggregations(termsAggregation("t").field("relations"))
-            ).map { searchResponse ⇒
+              indexName => search(indexName).query(filter.query).aggregations(termsAggregation("t").field("relations"))
+            ).map { searchResponse =>
                 val buckets = searchResponse.aggregations.terms("t").buckets
                 val total   = buckets.map(_.docCount).sum
-                val result  = buckets.map(b ⇒ b.key → JsNumber(b.docCount)) :+ ("total" → JsNumber(total))
+                val result  = buckets.map(b => b.key -> JsNumber(b.docCount)) :+ ("total" -> JsNumber(total))
                 Ok(JsObject(result))
               }
-              .recover { case _ ⇒ Ok(Json.obj("total" → 0)) }
+              .recover { case _ => Ok(Json.obj("total" -> 0)) }
           }
       }
 }

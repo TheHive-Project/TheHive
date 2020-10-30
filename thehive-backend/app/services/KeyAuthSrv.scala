@@ -37,19 +37,19 @@ class KeyAuthSrv @Inject()(userSrv: UserSrv, implicit val ec: ExecutionContext, 
       .filter(_.key().contains(key))
       .runWith(Sink.headOption)
       .flatMap {
-        case Some(user) ⇒ userSrv.getFromUser(request, user, name)
-        case None       ⇒ Future.failed(AuthenticationError("Authentication failure"))
+        case Some(user) => userSrv.getFromUser(request, user, name)
+        case None       => Future.failed(AuthenticationError("Authentication failure"))
       }
   }
 
   override def renewKey(username: String)(implicit authContext: AuthContext): Future[String] = {
     val newKey = generateKey()
-    userSrv.update(username, Fields.empty.set("key", newKey)).map(_ ⇒ newKey)
+    userSrv.update(username, Fields.empty.set("key", newKey)).map(_ => newKey)
   }
 
   override def getKey(username: String)(implicit authContext: AuthContext): Future[String] =
     userSrv.get(username).map(_.key().getOrElse(throw BadRequestError(s"User $username hasn't key")))
 
   override def removeKey(username: String)(implicit authContext: AuthContext): Future[Unit] =
-    userSrv.update(username, Fields.empty.set("key", JsArray())).map(_ ⇒ ())
+    userSrv.update(username, Fields.empty.set("key", JsArray())).map(_ => ())
 }

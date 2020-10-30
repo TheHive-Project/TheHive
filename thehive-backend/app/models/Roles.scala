@@ -31,8 +31,8 @@ object Roles {
 object RoleAttributeFormat extends AttributeFormat[Role]("role") {
 
   override def checkJson(subNames: Seq[String], value: JsValue): Or[JsValue, One[InvalidFormatAttributeError]] = value match {
-    case JsString(v) if subNames.isEmpty && Roles.isValid(v) ⇒ Good(value)
-    case _                                                   ⇒ formatError(JsonInputValue(value))
+    case JsString(v) if subNames.isEmpty && Roles.isValid(v) => Good(value)
+    case _                                                   => formatError(JsonInputValue(value))
   }
 
   override def fromInputValue(subNames: Seq[String], value: InputValue): Role Or Every[AttributeError] =
@@ -40,10 +40,10 @@ object RoleAttributeFormat extends AttributeFormat[Role]("role") {
       formatError(value)
     else
       (value match {
-        case StringInputValue(Seq(v))    ⇒ Good(v)
-        case JsonInputValue(JsString(v)) ⇒ Good(v)
-        case _                           ⇒ formatError(value)
-      }).flatMap(v ⇒ Roles.withName(v).fold[Role Or Every[AttributeError]](formatError(value))(role ⇒ Good(role)))
+        case StringInputValue(Seq(v))    => Good(v)
+        case JsonInputValue(JsString(v)) => Good(v)
+        case _                           => formatError(value)
+      }).flatMap(v => Roles.withName(v).fold[Role Or Every[AttributeError]](formatError(value))(role => Good(role)))
 
   override def elasticType(attributeName: String): KeywordField = keywordField(attributeName)
 }

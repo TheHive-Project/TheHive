@@ -46,26 +46,26 @@ class StatusCtrl @Inject()(
   def get: Action[AnyContent] = Action {
     Ok(
       Json.obj(
-        "versions" → Json.obj(
-          "TheHive"       → getVersion(classOf[models.Case]),
-          "Elastic4Play"  → getVersion(classOf[Timed]),
-          "Play"          → getVersion(classOf[AbstractController]),
-          "Elastic4s"     → getVersion(classOf[ElasticDsl]),
-          "ElasticSearch" → getVersion(classOf[Node])
+        "versions" -> Json.obj(
+          "TheHive"       -> getVersion(classOf[models.Case]),
+          "Elastic4Play"  -> getVersion(classOf[Timed]),
+          "Play"          -> getVersion(classOf[AbstractController]),
+          "Elastic4s"     -> getVersion(classOf[ElasticDsl]),
+          "ElasticSearch" -> getVersion(classOf[Node])
         ),
-        "connectors" → JsObject(connectors.map(c ⇒ c.name → c.status).toSeq),
-        "health"     → Json.obj("elasticsearch" → clusterStatusName),
-        "config" → Json.obj(
-          "protectDownloadsWith" → configuration.get[String]("datastore.attachment.password"),
-          "authType" → (authSrv match {
-            case multiAuthSrv: MultiAuthSrv ⇒
-              multiAuthSrv.authProviders.map { a ⇒
+        "connectors" -> JsObject(connectors.map(c => c.name -> c.status).toSeq),
+        "health"     -> Json.obj("elasticsearch" -> clusterStatusName),
+        "config" -> Json.obj(
+          "protectDownloadsWith" -> configuration.get[String]("datastore.attachment.password"),
+          "authType" -> (authSrv match {
+            case multiAuthSrv: MultiAuthSrv =>
+              multiAuthSrv.authProviders.map { a =>
                 JsString(a.name)
               }
-            case _ ⇒ JsString(authSrv.name)
+            case _ => JsString(authSrv.name)
           }),
-          "capabilities" → authSrv.capabilities.map(c ⇒ JsString(c.toString)),
-          "ssoAutoLogin" → JsBoolean(configuration.getOptional[Boolean]("auth.sso.autologin").getOrElse(false))
+          "capabilities" -> authSrv.capabilities.map(c => JsString(c.toString)),
+          "ssoAutoLogin" -> JsBoolean(configuration.getOptional[Boolean]("auth.sso.autologin").getOrElse(false))
         )
       )
     )
@@ -74,13 +74,13 @@ class StatusCtrl @Inject()(
   @Timed("controllers.StatusCtrl.health")
   def health: Action[AnyContent] = Action.async {
     for {
-      dbStatusInt ← dbIndex.getClusterStatus
+      dbStatusInt <- dbIndex.getClusterStatus
       dbStatus = dbStatusInt match {
-        case 0 ⇒ HealthStatus.Ok
-        case 1 ⇒ HealthStatus.Warning
-        case _ ⇒ HealthStatus.Error
+        case 0 => HealthStatus.Ok
+        case 1 => HealthStatus.Warning
+        case _ => HealthStatus.Error
       }
-      distinctStatus = connectors.map(c ⇒ c.health) + dbStatus
+      distinctStatus = connectors.map(c => c.health) + dbStatus
       globalStatus = if (distinctStatus.contains(HealthStatus.Ok)) {
         if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
       } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error

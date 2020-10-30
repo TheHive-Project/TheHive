@@ -43,7 +43,7 @@ class MispSrv @Inject()(
     mispConfig
       .connections
       .find(_.name == name)
-      .fold(Future.failed[MispConnection](NotFoundError(s"""Configuration of MISP server "$name" not found"""))) { instanceConfig ⇒
+      .fold(Future.failed[MispConnection](NotFoundError(s"""Configuration of MISP server "$name" not found"""))) { instanceConfig =>
         Future.successful(instanceConfig)
       }
 
@@ -52,7 +52,7 @@ class MispSrv @Inject()(
     require(!eventId.isEmpty)
     mispConnection(s"events/$eventId")
       .get()
-      .map { e ⇒
+      .map { e =>
         (e.json \ "Event")
           .as[MispAlert]
           .copy(source = mispConnection.name)
@@ -65,9 +65,9 @@ class MispSrv @Inject()(
     Source
       .fromFuture {
         mispConnection("events/index")
-          .post(Json.obj("searchpublish_timestamp" → date))
+          .post(Json.obj("searchpublish_timestamp" -> date))
       }
-      .mapConcat { response ⇒
+      .mapConcat { response =>
         val eventJson = Try {
           response
             .body[JsValue]
@@ -77,7 +77,7 @@ class MispSrv @Inject()(
           Nil
         }
         val events = eventJson
-          .flatMap { j ⇒
+          .flatMap { j =>
             j.asOpt[MispAlert]
               .orElse {
                 logger.warn(s"MISP event can't be parsed\n$j")
@@ -100,12 +100,12 @@ class MispSrv @Inject()(
     artifactSrv
       .find(and(withParent(caze), "status" ~= "Ok", "ioc" ~= true), Some("all"), Nil)
       ._1
-      .map { artifact ⇒
+      .map { artifact =>
         val (category, tpe) = fromArtifact(artifact.dataType(), artifact.data())
         val value = (artifact.data(), artifact.attachment()) match {
-          case (Some(data), None)       ⇒ Left(data)
-          case (None, Some(attachment)) ⇒ Right(attachment)
-          case _ ⇒
+          case (Some(data), None)       => Left(data)
+          case (None, Some(attachment)) => Right(attachment)
+          case _ =>
             logger.error(s"Artifact $artifact has neither data nor attachment")
             sys.error("???")
         }
@@ -121,17 +121,17 @@ class MispSrv @Inject()(
     val date = fromDate.fold(0L)(_.getTime / 1000)
 
     mispConnection(s"attributes/restSearch/json")
-      .post(Json.obj("request" → Json.obj("timestamp" → date, "eventid" → eventId)))
-      // add ("deleted" → 1) to see also deleted attributes
-      // add ("deleted" → "only") to see only deleted attributes
+      .post(Json.obj("request" -> Json.obj("timestamp" -> date, "eventid" -> eventId)))
+      // add ("deleted" -> 1) to see also deleted attributes
+      // add ("deleted" -> "only") to see only deleted attributes
       .map(_.body)
       .map {
-        case body if mispConnection.maxSize.fold(false)(body.length > _) ⇒
+        case body if mispConnection.maxSize.fold(false)(body.length > _) =>
           logger.debug(s"Size of event exceeds (${body.length}) the configured limit")
           JsObject.empty
-        case body ⇒ Json.parse(body)
+        case body => Json.parse(body)
       }
-      .map { jsBody ⇒
+      .map { jsBody =>
         val refDate      = fromDate.getOrElse(new Date(0))
         val artifactTags = s"src:${mispConnection.name}" +: mispConnection.artifactTags
         (jsBody \ "response" \\ "Attribute")
@@ -139,12 +139,12 @@ class MispSrv @Inject()(
           .filter(_.date after refDate)
           .flatMap(convertAttribute)
           .groupBy {
-            case MispArtifact(SimpleArtifactData(data), dataType, _, _, _, _, _)                             ⇒ dataType → Right(data)
-            case MispArtifact(RemoteAttachmentArtifact(filename, _, _), dataType, _, _, _, _, _)             ⇒ dataType → Left(filename)
-            case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), dataType, _, _, _, _, _) ⇒ dataType → Left(filename)
+            case MispArtifact(SimpleArtifactData(data), dataType, _, _, _, _, _)                             => dataType -> Right(data)
+            case MispArtifact(RemoteAttachmentArtifact(filename, _, _), dataType, _, _, _, _, _)             => dataType -> Left(filename)
+            case MispArtifact(AttachmentArtifact(Attachment(filename, _, _, _, _)), dataType, _, _, _, _, _) => dataType -> Left(filename)
           }
           .values
-          .map { mispArtifact ⇒
+          .map { mispArtifact =>
             mispArtifact.head.copy(tags = (mispArtifact.head.tags ++ artifactTags).distinct, tlp = 2L)
           }
           .toSeq
@@ -156,29 +156,29 @@ class MispSrv @Inject()(
       ec: ExecutionContext
   ): Option[Future[Fields]] =
     (for {
-      dataType            ← (attr \ "dataType").validate[String]
-      data                ← (attr \ "data").validateOpt[String]
-      message             ← (attr \ "message").validate[String]
-      startDate           ← (attr \ "startDate").validate[Date]
-      attachmentReference ← (attr \ "remoteAttachment" \ "reference").validateOpt[String]
-      attachmentType      ← (attr \ "remoteAttachment" \ "type").validateOpt[String]
+      dataType            <- (attr \ "dataType").validate[String]
+      data                <- (attr \ "data").validateOpt[String]
+      message             <- (attr \ "message").validate[String]
+      startDate           <- (attr \ "startDate").validate[Date]
+      attachmentReference <- (attr \ "remoteAttachment" \ "reference").validateOpt[String]
+      attachmentType      <- (attr \ "remoteAttachment" \ "type").validateOpt[String]
       attachment = attachmentReference
         .flatMap {
-          case ref if dataType == "file" ⇒ Some(downloadAttachment(mispConnection, ref))
-          case _                         ⇒ None
+          case ref if dataType == "file" => Some(downloadAttachment(mispConnection, ref))
+          case _                         => None
         }
         .map {
-          case f if attachmentType.contains("malware-sample") ⇒ f.map(extractMalwareAttachment)
-          case f                                              ⇒ f
+          case f if attachmentType.contains("malware-sample") => f.map(extractMalwareAttachment)
+          case f                                              => f
         }
       tags = (attr \ "tags").asOpt[Seq[String]].getOrElse(Nil)
       tlp = tags
         .map(_.toLowerCase)
         .collectFirst {
-          case "tlp:white" ⇒ JsNumber(0)
-          case "tlp:green" ⇒ JsNumber(1)
-          case "tlp:amber" ⇒ JsNumber(2)
-          case "tlp:red"   ⇒ JsNumber(3)
+          case "tlp:white" => JsNumber(0)
+          case "tlp:green" => JsNumber(1)
+          case "tlp:amber" => JsNumber(2)
+          case "tlp:red"   => JsNumber(3)
         }
         .getOrElse(JsNumber(defaultTlp))
       fields = Fields
@@ -196,38 +196,38 @@ class MispSrv @Inject()(
         )
         .set("tlp", tlp)
       if (attachment.isDefined && data.isEmpty) || (dataType != "file" && data.isDefined)
-    } yield attachment.fold(Future.successful(fields.set("data", data.get)))(_.map { fiv ⇒
+    } yield attachment.fold(Future.successful(fields.set("data", data.get)))(_.map { fiv =>
       fields.set("attachment", fiv)
     })) match {
-      case JsSuccess(r, _) ⇒ Some(r)
-      case e: JsError ⇒
+      case JsSuccess(r, _) => Some(r)
+      case e: JsError =>
         logger.warn(s"Invalid attribute format: $e\n$attr")
         None
     }
 
   def createCase(alert: Alert, customCaseTemplate: Option[String])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     alert.caze() match {
-      case Some(id) ⇒ caseSrv.get(id)
-      case None ⇒
+      case Some(id) => caseSrv.get(id)
+      case None =>
         for {
-          caseTemplate ← alertSrv.getCaseTemplate(alert, customCaseTemplate)
-          caze         ← caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
-          _            ← importArtifacts(alert, caze)
+          caseTemplate <- alertSrv.getCaseTemplate(alert, customCaseTemplate)
+          caze         <- caseSrv.create(Fields(alert.toCaseJson), caseTemplate)
+          _            <- importArtifacts(alert, caze)
         } yield caze
     }
 
   def importArtifacts(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     for {
-      instanceConfig ← getInstanceConfig(alert.source())
-      artifacts      ← Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, _, alert.tlp())))
-      _              ← artifactSrv.create(caze, artifacts)
+      instanceConfig <- getInstanceConfig(alert.source())
+      artifacts      <- Future.sequence(alert.artifacts().flatMap(attributeToArtifact(instanceConfig, _, alert.tlp())))
+      _              <- artifactSrv.create(caze, artifacts)
     } yield caze
 
   def mergeWithCase(alert: Alert, caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     for {
-      _ ← importArtifacts(alert, caze)
+      _ <- importArtifacts(alert, caze)
       description = caze.description() + s"\n  \n#### Merged with MISP event ${alert.title()}\n\n${alert.description().trim}"
-      updatedCase ← caseSrv.update(caze, Fields.empty.set("description", description))
+      updatedCase <- caseSrv.update(caze, Fields.empty.set("description", description))
     } yield updatedCase
 
   def updateMispAlertArtifact()(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] = {
@@ -235,38 +235,38 @@ class MispSrv @Inject()(
     logger.info("Update MISP attributes in alerts")
     val (alerts, _) = alertSrv.find("type" ~= "misp", Some("all"), Nil)
     alerts
-      .mapAsyncUnordered(5) { alert ⇒
+      .mapAsyncUnordered(5) { alert =>
         if (alert.artifacts().nonEmpty) {
           logger.info(s"alert ${alert.id} has artifacts, ignore it")
-          Future.successful(alert → Nil)
+          Future.successful(alert -> Nil)
         } else {
           getInstanceConfig(alert.source())
-            .flatMap { mcfg ⇒
+            .flatMap { mcfg =>
               getAttributesFromMisp(mcfg, alert.sourceRef(), None)
             }
-            .map(alert → _)
+            .map(alert -> _)
             .recover {
-              case NotFoundError(m) ⇒
+              case NotFoundError(m) =>
                 logger.error(s"Retrieve MISP attribute of event ${alert.id} error: $m")
-                alert → Nil
-              case error ⇒
+                alert -> Nil
+              case error =>
                 logger.error(s"Retrieve MISP attribute of event ${alert.id} error", error)
-                alert → Nil
+                alert -> Nil
             }
         }
       }
       .filterNot(_._2.isEmpty)
       .mapAsyncUnordered(5) {
-        case (alert, artifacts) ⇒
+        case (alert, artifacts) =>
           logger.info(s"Updating alert ${alert.id}")
           alertSrv
             .update(alert.id, Fields.empty.set("artifacts", Json.toJson(artifacts)))
             .recover {
-              case t ⇒ logger.error(s"Update alert ${alert.id} fail", t)
+              case t => logger.error(s"Update alert ${alert.id} fail", t)
             }
       }
       .runWith(Sink.ignore)
-      .map(_ ⇒ ())
+      .map(_ => ())
   }
 
   def extractMalwareAttachment(file: FileInputValue)(implicit authContext: AuthContext): FileInputValue = {
@@ -279,11 +279,11 @@ class MispSrv @Inject()(
 
       // Get the list of file headers from the zip file
       val fileHeaders = zipFile.getFileHeaders.asScala.toList.asInstanceOf[List[FileHeader]]
-      val (fileNameHeaders, contentFileHeaders) = fileHeaders.partition { fileHeader ⇒
+      val (fileNameHeaders, contentFileHeaders) = fileHeaders.partition { fileHeader =>
         fileHeader.getFileName.endsWith(".filename.txt")
       }
       (for {
-        fileNameHeader ← fileNameHeaders
+        fileNameHeader <- fileNameHeaders
           .headOption
           .orElse {
             logger.warn(s"Format of malware attribute ${file.name} is invalid : file containing filename not found")
@@ -293,7 +293,7 @@ class MispSrv @Inject()(
         len      = zipFile.getInputStream(fileNameHeader).read(buffer)
         filename = new String(buffer, 0, len)
 
-        contentFileHeader ← contentFileHeaders
+        contentFileHeader <- contentFileHeaders
           .headOption
           .orElse {
             logger.warn(s"Format of malware attribute ${file.name} is invalid : content file not found")
@@ -305,7 +305,7 @@ class MispSrv @Inject()(
         _        = zipFile.extractFile(contentFileHeader, tempFile.getParent.toString, null, tempFile.getFileName.toString)
       } yield FileInputValue(filename, tempFile, "application/octet-stream")).getOrElse(file)
     } catch {
-      case e: ZipException ⇒
+      case e: ZipException =>
         logger.warn(s"Format of malware attribute ${file.name} is invalid : zip file is unreadable", e)
         file
     }
@@ -321,22 +321,22 @@ class MispSrv @Inject()(
       .withMethod("GET")
       .stream()
       .flatMap {
-        case response if response.status != 200 ⇒
+        case response if response.status != 200 =>
           val status = response.status
           logger.warn(s"MISP attachment $attachmentId can't be downloaded (status $status) : ${response.body}")
           Future.failed(InternalError(s"MISP attachment $attachmentId can't be downloaded (status $status)"))
-        case response ⇒
+        case response =>
           val tempFile = tempSrv.newTemporaryFile("misp_attachment", attachmentId)
           response
             .bodyAsSource
             .runWith(FileIO.toPath(tempFile))
-            .map { ioResult ⇒
+            .map { ioResult =>
               ioResult.status.failed.foreach(throw _) // throw an exception if transfer failed
               val contentType = response.headers.getOrElse("Content-Type", Seq("application/octet-stream")).head
               val filename = response
                 .headers
                 .get("Content-Disposition")
-                .flatMap(_.collectFirst { case fileNameExtractor(name) ⇒ name })
+                .flatMap(_.collectFirst { case fileNameExtractor(name) => name })
                 .getOrElse("noname")
               FileInputValue(filename, tempFile, contentType)
             }

@@ -34,23 +34,23 @@ class UserCtrl @Inject()(
   private[UserCtrl] lazy val logger = Logger(getClass)
 
   @Timed
-  def create: Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+  def create: Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request =>
     userSrv
       .create(request.body)
-      .map(user ⇒ renderer.toOutput(CREATED, user))
+      .map(user => renderer.toOutput(CREATED, user))
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request =>
     userSrv
       .get(id)
-      .map { user ⇒
+      .map { user =>
         renderer.toOutput(OK, user)
       }
   }
 
   @Timed
-  def update(id: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     if (id == request.authContext.userId || request.authContext.roles.contains(Roles.admin)) {
       if (request.body.contains("password")) {
         Future.failed(AuthorizationError("You must use dedicated API (setPassword, changePassword) to update password"))
@@ -61,7 +61,7 @@ class UserCtrl @Inject()(
       } else if (request.body.contains("status") && !request.authContext.roles.contains(Roles.admin)) {
         Future.failed(AuthorizationError("You are not permitted to change user status"))
       } else {
-        userSrv.update(id, request.body.unset("password").unset("key")).map { user ⇒
+        userSrv.update(id, request.body.unset("password").unset("key")).map { user =>
           renderer.toOutput(OK, user)
         }
       }
@@ -71,24 +71,24 @@ class UserCtrl @Inject()(
   }
 
   @Timed
-  def setPassword(login: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+  def setPassword(login: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request =>
     request
       .body
       .getString("password")
-      .fold(Future.failed[Result](MissingAttributeError("password"))) { password ⇒
-        authSrv.setPassword(login, password).map(_ ⇒ NoContent)
+      .fold(Future.failed[Result](MissingAttributeError("password"))) { password =>
+        authSrv.setPassword(login, password).map(_ => NoContent)
       }
   }
 
   @Timed
-  def changePassword(login: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def changePassword(login: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     if (login == request.authContext.userId) {
       val fields = request.body
-      fields.getString("password").fold(Future.failed[Result](MissingAttributeError("password"))) { password ⇒
-        fields.getString("currentPassword").fold(Future.failed[Result](MissingAttributeError("currentPassword"))) { currentPassword ⇒
+      fields.getString("password").fold(Future.failed[Result](MissingAttributeError("password"))) { password =>
+        fields.getString("currentPassword").fold(Future.failed[Result](MissingAttributeError("currentPassword"))) { currentPassword =>
           authSrv
             .changePassword(request.authContext.userId, currentPassword, password)
-            .map(_ ⇒ NoContent)
+            .map(_ => NoContent)
         }
       }
     } else
@@ -96,28 +96,28 @@ class UserCtrl @Inject()(
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
     userSrv
       .delete(id)
-      .map(_ ⇒ NoContent)
+      .map(_ => NoContent)
   }
 
   @Timed
-  def currentUser: Action[AnyContent] = Action.async { implicit request ⇒
+  def currentUser: Action[AnyContent] = Action.async { implicit request =>
     for {
-      authContext ← authenticated.getContext(request)
-      user        ← userSrv.get(authContext.userId)
+      authContext <- authenticated.getContext(request)
+      user        <- userSrv.get(authContext.userId)
       preferences = Try(Json.parse(user.preferences())).recover {
-        case _ ⇒
+        case _ =>
           logger.warn(s"User ${authContext.userId} has invalid preference format: ${user.preferences()}")
           JsObject.empty
       }.get
-      json = user.toJson + ("preferences" → preferences)
+      json = user.toJson + ("preferences" -> preferences)
     } yield renderer.toOutput(OK, json)
   }
 
   @Timed
-  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query          = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range          = request.body.getString("range")
     val sort           = request.body.getStrings("sort").getOrElse(Nil)
@@ -126,17 +126,17 @@ class UserCtrl @Inject()(
   }
 
   @Timed
-  def getKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+  def getKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
     authSrv.getKey(id).map(Ok(_))
   }
 
   @Timed
-  def removeKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
-    authSrv.removeKey(id).map(_ ⇒ Ok)
+  def removeKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
+    authSrv.removeKey(id).map(_ => Ok)
   }
 
   @Timed
-  def renewKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+  def renewKey(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
     authSrv.renewKey(id).map(Ok(_))
   }
 }

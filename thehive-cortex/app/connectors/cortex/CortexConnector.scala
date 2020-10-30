@@ -15,7 +15,7 @@ class CortexConnector(environment: Environment, configuration: Configuration) ex
       registerController[CortexCtrl]
       bindActor[JobReplicateActor]("JobReplicateActor")
     } catch {
-      case t: Throwable ⇒ logger.error("Cortex connector is disabled because its configuration is invalid", t)
+      case t: Throwable => logger.error("Cortex connector is disabled because its configuration is invalid", t)
     }
   }
 }

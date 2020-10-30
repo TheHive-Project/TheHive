@@ -29,7 +29,7 @@ class SearchCtrl @Inject()(
     with Status {
 
   @Timed
-  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     import org.elastic4play.services.QueryDSL._
     val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range     = request.body.getString("range")
@@ -48,7 +48,7 @@ class SearchCtrl @Inject()(
   }
 
   @Timed
-  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     import org.elastic4play.services.QueryDSL._
     val globalQuery = request.body.getValue("query").flatMap(_.asOpt[QueryDef]).toList
     Future
@@ -58,14 +58,14 @@ class SearchCtrl @Inject()(
           .getValue("stats")
           .getOrElse(throw BadRequestError("Parameter \"stats\" is missing"))
           .as[Seq[JsObject]]
-      ) { statsJson ⇒
+      ) { statsJson =>
         val query     = (statsJson \ "query").asOpt[QueryDef].toList
         val agg       = (statsJson \ "stats").getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
         val modelName = (statsJson \ "model").getOrElse(throw BadRequestError("Parameter \"model\" is missing")).as[String]
         val model     = modelSrv.apply(modelName).getOrElse(throw BadRequestError(s"Model $modelName doesn't exist"))
         findSrv.apply(model, and(globalQuery ::: query), agg: _*)
       }
-      .map { statsResults ⇒
+      .map { statsResults =>
         renderer.toOutput(OK, statsResults.reduceOption(_ deepMerge _).getOrElse(JsObject.empty))
       }
   }

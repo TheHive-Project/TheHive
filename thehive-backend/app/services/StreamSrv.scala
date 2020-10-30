@@ -53,88 +53,88 @@ class LocalStreamActor @Inject()(eventSrv: EventSrv, auxSrv: AuxSrv) extends Act
 
     def unapply(msg: Any): Option[AuditOperation] =
       msg match {
-        case ao: AuditOperation ⇒
+        case ao: AuditOperation =>
           ao.entity.model match {
-            case am: AuditedModel ⇒ Some(ao.copy(details = am.selectAuditedAttributes(ao.details)))
-            case _                ⇒ None
+            case am: AuditedModel => Some(ao.copy(details = am.selectAuditedAttributes(ao.details)))
+            case _                => None
           }
-        case _ ⇒ None
+        case _ => None
       }
   }
 
   object RequestStart {
 
     def unapply(msg: Any): Option[String] = msg match {
-      case RequestProcessStart(request)           ⇒ Some(Instance.getRequestId(request))
-      case InternalRequestProcessStart(requestId) ⇒ Some(requestId)
-      case _                                      ⇒ None
+      case RequestProcessStart(request)           => Some(Instance.getRequestId(request))
+      case InternalRequestProcessStart(requestId) => Some(requestId)
+      case _                                      => None
     }
   }
 
   object RequestEnd {
 
     def unapply(msg: Any): Option[String] = msg match {
-      case RequestProcessEnd(request, _)        ⇒ Some(Instance.getRequestId(request))
-      case InternalRequestProcessEnd(requestId) ⇒ Some(requestId)
-      case _                                    ⇒ None
+      case RequestProcessEnd(request, _)        => Some(Instance.getRequestId(request))
+      case InternalRequestProcessEnd(requestId) => Some(requestId)
+      case _                                    => None
     }
   }
 
   override def receive: Receive = receive(Map.empty, None)
 
   def receive(messages: Map[String, Option[AggregatedMessage[_]]], flushScheduler: Option[Cancellable]): Receive = {
-    case RequestStart(requestId) ⇒
+    case RequestStart(requestId) =>
       logger.trace(s"Start of request $requestId")
-      context.become(receive(messages + (requestId → None), None))
+      context.become(receive(messages + (requestId -> None), None))
 
-    case RequestEnd(requestId) ⇒
+    case RequestEnd(requestId) =>
       logger.trace(s"End of request $requestId")
       messages.get(requestId).collect {
-        case Some(message) ⇒
+        case Some(message) =>
           logger.trace(s"Sending $message to mediator")
-          message.toJson.foreach(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
+          message.toJson.foreach(msg => mediator ! Publish("stream", StreamMessages(Seq(msg))))
       }
       context.become(receive(messages - requestId, None))
 
-    case NormalizedOperation(operation) ⇒
+    case NormalizedOperation(operation) =>
       val requestId = operation.authContext.requestId
       logger.trace(s"Receiving audit operation from request $requestId: $operation")
       messages.get(requestId) match {
-        case None ⇒
+        case None =>
           logger.debug("Operation that comes after the end of request, send it to stream actor")
-          AggregatedAuditMessage(auxSrv, operation).toJson.foreach(msg ⇒ mediator ! Publish("stream", StreamMessages(Seq(msg))))
-        case Some(None) ⇒
+          AggregatedAuditMessage(auxSrv, operation).toJson.foreach(msg => mediator ! Publish("stream", StreamMessages(Seq(msg))))
+        case Some(None) =>
           logger.debug("First operation of the request, creating operation group")
-          context.become(receive(messages + (requestId → Some(AggregatedAuditMessage(auxSrv, operation))), None))
-        case Some(Some(aam: AggregatedAuditMessage)) ⇒
+          context.become(receive(messages + (requestId -> Some(AggregatedAuditMessage(auxSrv, operation))), None))
+        case Some(Some(aam: AggregatedAuditMessage)) =>
           logger.debug("Operation included in existing group")
-          context.become(receive(messages + (requestId → Some(aam.add(operation))), None))
-        case _ ⇒
+          context.become(receive(messages + (requestId -> Some(aam.add(operation))), None))
+        case _ =>
           logger.debug("Impossible")
           sys.error("")
       }
 
     /* Migration process event */
-    case event: MigrationEvent ⇒
+    case event: MigrationEvent =>
       val newMessage = messages.get(event.modelName).flatten match {
-        case Some(m: AggregatedMigrationMessage) ⇒ m.add(event)
-        case None                                ⇒ AggregatedMigrationMessage(event)
-        case _                                   ⇒ sys.error("impossible")
+        case Some(m: AggregatedMigrationMessage) => m.add(event)
+        case None                                => AggregatedMigrationMessage(event)
+        case _                                   => sys.error("impossible")
       }
       // automatically flush messages after 1s
       val newFlushScheduler = flushScheduler.getOrElse(context.system.scheduler.scheduleOnce(1.second, self, Submit))
-      context.become(receive(messages + (event.modelName → Some(newMessage)), Some(newFlushScheduler)))
+      context.become(receive(messages + (event.modelName -> Some(newMessage)), Some(newFlushScheduler)))
 
     /* Database migration has just finished */
-    case EndOfMigrationEvent ⇒
+    case EndOfMigrationEvent =>
       flushScheduler.foreach(_.cancel())
       self ! Submit
-      context.become(receive(messages + ("end" → Some(AggregatedMigrationMessage.endOfMigration)), None))
+      context.become(receive(messages + ("end" -> Some(AggregatedMigrationMessage.endOfMigration)), None))
 
-    case Submit ⇒
+    case Submit =>
       Future
         .traverse(messages.values.flatten)(_.toJson)
-        .foreach(message ⇒ mediator ! Publish("stream", StreamMessages(message.toSeq)))
+        .foreach(message => mediator ! Publish("stream", StreamMessages(message.toSeq)))
       context.become(receive(Map.empty, None))
   }
 }
@@ -174,16 +174,16 @@ class StreamActor(cacheExpiration: FiniteDuration, refresh: FiniteDuration) exte
     val timeout = context.system.scheduler.scheduleOnce(refresh, self, Submit)
 
     {
-      case sm: StreamMessages ⇒
+      case sm: StreamMessages =>
         logger.debug(s"receive stream message $sm")
         waitingRequest ! sm
         timeout.cancel()
         context.become(receive)
-      case Submit ⇒
+      case Submit =>
         waitingRequest ! StreamMessages.empty
         timeout.cancel()
         context.become(receive)
-      case GetOperations ⇒
+      case GetOperations =>
         waitingRequest ! StreamMessages.empty
         timeout.cancel()
         context.become(receive(sender))
@@ -191,16 +191,16 @@ class StreamActor(cacheExpiration: FiniteDuration, refresh: FiniteDuration) exte
   }
 
   private def receive(waitingMessages: Seq[JsObject]): Receive = {
-    case GetOperations ⇒
+    case GetOperations =>
       sender ! StreamMessages(waitingMessages)
       renewExpiration()
       context.become(receive)
-    case StreamMessages(msg) ⇒
+    case StreamMessages(msg) =>
       context.become(receive(waitingMessages ++ msg))
   }
 
   def receive: Receive = {
-    case StreamMessages(msg) ⇒ context.become(receive(msg))
-    case GetOperations       ⇒ context.become(receive(sender))
+    case StreamMessages(msg) => context.become(receive(msg))
+    case GetOperations       => context.become(receive(sender))
   }
 }

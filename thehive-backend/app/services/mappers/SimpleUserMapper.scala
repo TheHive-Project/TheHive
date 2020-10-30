@@ -31,13 +31,14 @@ class SimpleUserMapper(
 
   override def getUserFields(jsValue: JsValue, authHeader: Option[(String, String)]): Future[Fields] = {
     val fields = for {
-      login ← (jsValue \ loginAttrName).validate[String]
-      name  ← (jsValue \ nameAttrName).validate[String]
-      roles = rolesAttrName.fold(defaultRoles)(r ⇒ (jsValue \ r).asOpt[Seq[String]].getOrElse(defaultRoles))
-    } yield Fields(Json.obj("login" → login, "name" → name, "roles" → roles))
+      login <- (jsValue \ loginAttrName).validate[String]
+      name  <- (jsValue \ nameAttrName).validate[String]
+      roles = rolesAttrName.fold(defaultRoles)(r => (jsValue \ r).asOpt[Seq[String]].getOrElse(defaultRoles))
+    } yield Fields(Json.obj("login" -> login, "name" -> name, "roles" -> roles))
     fields match {
-      case JsSuccess(f, _) ⇒ Future.successful(f)
-      case JsError(errors) ⇒ Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._2).map(_.map(_.messages.mkString(", ")).mkString("; ")).mkString}"))
+      case JsSuccess(f, _) => Future.successful(f)
+      case JsError(errors) =>
+        Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._2).map(_.map(_.messages.mkString(", ")).mkString("; ")).mkString}"))
     }
   }
 }

@@ -30,13 +30,13 @@ class AuditCtrl @Inject()(
     * Return audit logs. For each item, include ancestor entities
     */
   @Timed
-  def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
+  def flow(rootId: Option[String], count: Option[Int]): Action[AnyContent] = authenticated(Roles.read).async { implicit request =>
     val (audits, total) = auditSrv(rootId.filterNot(_ == "any"), count.getOrElse(10))
     renderer.toOutput(OK, audits, total)
   }
 
   @Timed
-  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range     = request.body.getString("range")
     val sort      = request.body.getStrings("sort").getOrElse(Nil)
@@ -49,7 +49,7 @@ class AuditCtrl @Inject()(
   }
 
   @Timed
-  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query = request
       .body
       .getValue("query")
@@ -59,7 +59,7 @@ class AuditCtrl @Inject()(
       .getValue("stats")
       .getOrElse(throw BadRequestError("Parameter \"stats\" is missing"))
       .as[Seq[Agg]]
-    auditSrv.stats(query, aggs).map(s ⇒ Ok(s))
+    auditSrv.stats(query, aggs).map(s => Ok(s))
   }
 
 }

@@ -15,7 +15,7 @@ import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 trait Connector {
   val name: String
   val router: Router
-  def status: JsObject          = Json.obj("enabled" → true)
+  def status: JsObject          = Json.obj("enabled" -> true)
   def health: HealthStatus.Type = HealthStatus.Ok
 }
 
@@ -24,10 +24,10 @@ class ConnectorRouter @Inject()(connectors: immutable.Set[Connector], actionBuil
   def get(connectorName: String): Option[Connector] = connectors.find(_.name == connectorName)
 
   def routes: PartialFunction[RequestHeader, Handler] = {
-    case request @ p"/$connector/$path<.*>" ⇒
+    case request @ p"/$connector/$path<.*>" =>
       get(connector)
         .flatMap(_.router.withPrefix(s"/$connector/").handlerFor(request))
-        .getOrElse(actionBuilder { _ ⇒
+        .getOrElse(actionBuilder { _ =>
           Results.NotFound(s"connector $connector not found")
         })
   }

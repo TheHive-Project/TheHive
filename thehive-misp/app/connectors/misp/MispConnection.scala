@@ -51,16 +51,16 @@ case class MispConnection(
 
   private[misp] def apply(url: String): WSRequest =
     ws.url(s"$baseUrl/$url")
-      .withHttpHeaders("Authorization" → key, "Accept" → "application/json")
+      .withHttpHeaders("Authorization" -> key, "Accept" -> "application/json")
 
   val (canImport, canExport) = purpose match {
-    case MispPurpose.ImportAndExport ⇒ (true, true)
-    case MispPurpose.ImportOnly      ⇒ (true, false)
-    case MispPurpose.ExportOnly      ⇒ (false, true)
+    case MispPurpose.ImportAndExport => (true, true)
+    case MispPurpose.ImportOnly      => (true, false)
+    case MispPurpose.ExportOnly      => (false, true)
   }
 
   def syncFrom(date: Date): Date =
-    maxAge.fold(date) { age ⇒
+    maxAge.fold(date) { age =>
       val now           = new Date
       val dateThreshold = new Date(now.getTime - age.toMillis)
 
@@ -87,22 +87,22 @@ case class MispConnection(
     apply("servers/getVersion")
       .get
       .map {
-        case resp if resp.status / 100 == 2 ⇒ (resp.json \ "version").asOpt[String]
-        case _                              ⇒ None
+        case resp if resp.status / 100 == 2 => (resp.json \ "version").asOpt[String]
+        case _                              => None
       }
-      .recover { case _ ⇒ None }
+      .recover { case _ => None }
 
   def status()(implicit ec: ExecutionContext): Future[JsObject] =
     getVersion()
       .map {
-        case Some(version) ⇒ Json.obj("name" → name, "version" → version, "status" → "OK", "url"    → baseUrl, "purpose" → purpose.toString)
-        case None          ⇒ Json.obj("name" → name, "version" → "", "status"      → "ERROR", "url" → baseUrl, "purpose" → purpose.toString)
+        case Some(version) => Json.obj("name" -> name, "version" -> version, "status" -> "OK", "url"    -> baseUrl, "purpose" -> purpose.toString)
+        case None          => Json.obj("name" -> name, "version" -> "", "status"      -> "ERROR", "url" -> baseUrl, "purpose" -> purpose.toString)
       }
 
   def healthStatus()(implicit ec: ExecutionContext): Future[HealthStatus.Type] =
     getVersion()
       .map {
-        case None ⇒ HealthStatus.Error
-        case _    ⇒ HealthStatus.Ok
+        case None => HealthStatus.Error
+        case _    => HealthStatus.Ok
       }
 }

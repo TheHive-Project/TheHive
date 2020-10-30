@@ -9,14 +9,14 @@ import play.api.libs.json.{JsObject, Json}
 import models.JsonFormat.logStatusFormat
 import services.AuditedModel
 
-import org.elastic4play.models.{AttributeDef, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O}
+import org.elastic4play.models.{AttributeDef, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat => F, AttributeOption => O}
 
 object LogStatus extends Enumeration with HiveEnumeration {
   type Type = Value
   val Ok, Deleted = Value
 }
 
-trait LogAttributes { _: AttributeDef ⇒
+trait LogAttributes { _: AttributeDef =>
   val message   = attribute("message", F.textFmt, "Message")
   val startDate = attribute("startDate", F.dateFmt, "Timestamp of the comment", new Date)
   // attachment is stored as JsObject containing :
@@ -36,6 +36,6 @@ class LogModel @Inject()(taskModel: TaskModel)
     with LogAttributes
     with AuditedModel {
   override val defaultSortBy   = Seq("-startDate")
-  override val removeAttribute = Json.obj("status" → LogStatus.Deleted)
+  override val removeAttribute = Json.obj("status" -> LogStatus.Deleted)
 }
 class Log(model: LogModel, attributes: JsObject) extends EntityDef[LogModel, Log](model, attributes) with LogAttributes
