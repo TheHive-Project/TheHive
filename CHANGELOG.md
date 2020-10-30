@@ -1,5 +1,30 @@
 # Change Log
 
+## [3.5.0](https://github.com/TheHive-Project/TheHive/milestone/61) (2020-10-29)
+
+**Implemented enhancements:**
+
+- Not possible to import new alerts to cases when drilling down from dashboard [\#1218](https://github.com/TheHive-Project/TheHive/issues/1218)
+- Bug: Responder-list is unordered [\#1564](https://github.com/TheHive-Project/TheHive/issues/1564)
+
+**Closed issues:**
+
+- [Bug] Click on short report resolves outdated long report [\#1350](https://github.com/TheHive-Project/TheHive/issues/1350)
+
+**Fixed bugs:**
+
+- [Bug] Can't tag observable as IOC in Alert [\#1335](https://github.com/TheHive-Project/TheHive/issues/1335)
+- [Bug] Concurrent access fails [\#1570](https://github.com/TheHive-Project/TheHive/issues/1570)
+- [Bug] Pivoting from dashboard to search page is loosing the date filter [\#1581](https://github.com/TheHive-Project/TheHive/issues/1581)
+- [Bug] Report template admin page [\#1591](https://github.com/TheHive-Project/TheHive/issues/1591)
+- [Security] Update Playframework [\#1603](https://github.com/TheHive-Project/TheHive/issues/1603)
+
+## [3.4.3](https://github.com/TheHive-Project/TheHive/milestone/62) (2020-10-26)
+
+**Fixed bugs:**
+
+- [Bug] TheHive is stalled while importing Alerts with a large number of observables [\#1416](https://github.com/TheHive-Project/TheHive/issues/1416)
+
 ## [3.5.0-RC1](https://github.com/TheHive-Project/TheHive/milestone/44) (2020-08-12)
 
 **Implemented enhancements:**
@@ -16,7 +41,6 @@
 - [Bug] OAuth2/OpenIDC Authentication failure [\#1291](https://github.com/TheHive-Project/TheHive/issues/1291)
 - [Feature Request] OAuth support for Basic authentication to authorization server's tokenUrl [\#1294](https://github.com/TheHive-Project/TheHive/issues/1294)
 - [Bug] Can't auth with SSO/OAuth with FusionAuth [\#1342](https://github.com/TheHive-Project/TheHive/issues/1342)
-- [Bug] TheHive is stalled while importing Alerts with a large number of observables [\#1416](https://github.com/TheHive-Project/TheHive/issues/1416)
 
 ## [3.4.2](https://github.com/TheHive-Project/TheHive/milestone/57) (2020-04-25)
 
