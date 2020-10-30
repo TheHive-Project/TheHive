@@ -1,5 +1,11 @@
 # Change Log
 
+## [3.4.4](https://github.com/TheHive-Project/TheHive/milestone/63) (2020-10-30)
+
+**Fixed bugs:**
+
+- [Security] Update Playframework [\#1604](https://github.com/TheHive-Project/TheHive/issues/1604)
+
 ## [3.4.3](https://github.com/TheHive-Project/TheHive/milestone/62) (2020-10-26)
 
 **Fixed bugs:**
