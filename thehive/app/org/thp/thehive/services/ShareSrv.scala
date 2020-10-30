@@ -97,18 +97,15 @@ class ShareSrv @Inject() (
     for {
       organisation <- organisationSrv.getOrFail(authContext.organisation)
       share        <- getOrFail(shareId)
-      // Create deletion Audit, remove ShareTask, then remove task. All that for each task
+      // Create deletion Audit, then remove task. All that for each task
       tasks        <- Try(get(share).tasks.toSeq)
       _            <- tasks.toTry(t => auditSrv.task.delete(t, share)
-                        .flatMap(_ => removeShareTasks(t, organisation)
-                          .flatMap(_ => taskSrv.cascadeRemove(t))))
-      // Create deletion Audit, remove ShareObservable, then remove observable. All that for each observable
+                        .flatMap(_ => taskSrv.cascadeRemove(t)))
+      // Create deletion Audit, then remove observable. All that for each observable
       observables  <- Try(get(share).observables.toSeq)
       _            <- observables.toTry(o => auditSrv.observable.delete(o, share)
-                        .flatMap(_ => removeShareObservable(o, organisation)
-                          .flatMap(_ => observableSrv.cascadeRemove(o))))
-      // Unshare then remove the case
-      _            <- unshareCase(shareId)
+                        .flatMap(_ => observableSrv.cascadeRemove(o)))
+      // Remove the case
       caze         <- get(share).`case`.getOrFail("Case")
       _            <- caseSrv.remove(caze)
     } yield Try(get(shareId).remove())
