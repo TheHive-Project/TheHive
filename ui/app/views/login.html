@@ -6,27 +6,27 @@
         <p class="login-box-msg">Sign in to start your session</p>
         <form name="loginForm">
             <div class="form-group has-feedback has-feedback-left">
-                 <input type="text" class="form-control" placeholder="Login" ng-model="params.username" autocomplete="off" required ng-disabled="ssoLogingIn">
+                 <input type="text" class="form-control" placeholder="Login" ng-model="params.username" autocomplete="off" required>
                  <i class="form-control-feedback glyphicon glyphicon-user"></i>
             </div>
             <div class="form-group has-feedback has-feedback-left">
-                <input type="password" class="input form-control" placeholder="Password" ng-model="params.password" autocomplete="off" required ng-disabled="ssoLogingIn">
+                <input type="password" class="input form-control" placeholder="Password" ng-model="params.password" autocomplete="off" required>
                 <i class="form-control-feedback glyphicon glyphicon-lock "></i>
             </div>
 
             <div class="row">
-                <div class="col-xs-offset-8 col-xs-4">
-                    <button type="submit" ng-click="login()" class="btn btn-primary btn-sm btn-block btn-flat" ng-disabled="loginForm.$invalid || ssoLogingIn">Sign In</button>
+                <div class="col-xs-12">
+                    <button type="submit" ng-click="login()" class="btn btn-primary btn-m btn-block" ng-disabled="loginForm.$invalid">Sign In</button>
+                </div>
+            </div>
+
+            <div class="sso-login-box" ng-if="::ssoEnabled()">
+                <div class="mt-s or-separator">OR</div>
+
+                <div class="mv-xs">
+                    <a class="btn btn-success btn-m btn-block" href="./api/ssoLogin">Sign In with SSO</a>
                 </div>
             </div>
         </form>
     </div>
-    <div class="sso-login-box" ng-if="::ssoEnabled()">
-        <div class="mt-s or-separator">OR</div>
-
-        <div class="mv-xs">
-            <a class="btn btn-success btn-m btn-block" href="./api/ssoLogin">Sign In with SSO</a>
-        </div>
-    </div>
-
 </div>

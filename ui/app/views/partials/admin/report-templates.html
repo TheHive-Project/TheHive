@@ -33,24 +33,24 @@
                     <tbody>
                         <tr ng-repeat="analyzerId in vm.analyzerIds | orderBy:'toString()'" ng-init="analyzer=vm.analyzers[analyzerId]">
                             <td>
-                                {{::analyzer.name || analyzer.id}}<br>
-                                <small class="text-muted">{{::analyzer.description}}</small>
+                                {{::vm.analyzers[analyzerId].name || vm.analyzers[analyzerId].id}}<br>
+                                <small class="text-muted">{{::vm.analyzers[analyzerId].description}}</small>
                             </td>
                             <td class="vmiddle">
-                                <div class="btn-group btn-group-sm" ng-if="analyzer.shortReport">
-                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer.shortReport, analyzer)">View Template</button>
-                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.shortReport)"><i class="fa fa-times"></i></button>
+                                <div class="btn-group btn-group-sm" ng-if="vm.analyzers[analyzerId].shortReport">
+                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(vm.analyzers[analyzerId].shortReport, analyzer)">View Template</button>
+                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(vm.analyzers[analyzerId].shortReport)"><i class="fa fa-times"></i></button>
                                 </div>
-                                <div class="btn-group btn-group-sm" ng-if="!analyzer.shortReport">
+                                <div class="btn-group btn-group-sm" ng-if="!vm.analyzers[analyzerId].shortReport">
                                     <button type="button" class="btn btn-default" ng-click="vm.showTemplate({reportType: 'short'}, analyzer)">Default template</button>
                                 </div>
                             </td>
                             <td class="vmiddle">
-                                <div class="btn-group btn-group-sm" ng-if="analyzer.longReport">
-                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(analyzer.longReport, analyzer)">View Template</button>
-                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(analyzer.longReport)"><i class="fa fa-times"></i></button>
+                                <div class="btn-group btn-group-sm" ng-if="vm.analyzers[analyzerId].longReport">
+                                    <button type="button" class="btn btn-default" ng-click="vm.showTemplate(vm.analyzers[analyzerId].longReport, analyzer)">View Template</button>
+                                    <button type="button" class="btn btn-danger" ng-click="vm.deleteTemplate(vm.analyzers[analyzerId].longReport)"><i class="fa fa-times"></i></button>
                                 </div>
-                                <div class="btn-group btn-group-sm" ng-if="!analyzer.longReport">
+                                <div class="btn-group btn-group-sm" ng-if="!vm.analyzers[analyzerId].longReport">
                                     <button type="button" class="btn btn-default" ng-click="vm.showTemplate({reportType: 'long'}, analyzer)">Default template</button>
                                 </div>
                             </td>

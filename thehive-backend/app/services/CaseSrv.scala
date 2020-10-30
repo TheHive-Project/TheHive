@@ -31,7 +31,6 @@ class CaseSrv @Inject()(
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
     findSrv: FindSrv,
-    implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
@@ -59,7 +58,7 @@ class CaseSrv @Inject()(
       .set("customFields", customFields)
   }
 
-  def create(fields: Fields, template: Option[CaseTemplate] = None)(implicit authContext: AuthContext): Future[Case] = {
+  def create(fields: Fields, template: Option[CaseTemplate] = None)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] = {
     val fieldsWithOwner = fields.getString("owner") match {
       case None    ⇒ fields.set("owner", authContext.userId)
       case Some(_) ⇒ fields
@@ -79,33 +78,33 @@ class CaseSrv @Inject()(
       }
   }
 
-  def get(id: String): Future[Case] =
+  def get(id: String)(implicit ec: ExecutionContext): Future[Case] =
     getSrv[CaseModel, Case](caseModel, id)
 
-  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Case] =
+  def update(id: String, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     update(id, fields, ModifyConfig.default)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Case] =
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     updateSrv[CaseModel, Case](caseModel, id, fields, modifyConfig)
 
-  def update(caze: Case, fields: Fields)(implicit authContext: AuthContext): Future[Case] =
+  def update(caze: Case, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     update(caze, fields, ModifyConfig.default)
 
-  def update(caze: Case, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Case] =
+  def update(caze: Case, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     updateSrv(caze, fields, modifyConfig)
 
   def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
-      implicit authContext: AuthContext
+      implicit authContext: AuthContext, ec: ExecutionContext
   ): Future[Seq[Try[Case]]] =
     updateSrv[CaseModel, Case](caseModel, ids, fields, modifyConfig)
 
-  def delete(id: String)(implicit authContext: AuthContext): Future[Case] =
+  def delete(id: String)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     deleteSrv[CaseModel, Case](caseModel, id)
 
-  def realDelete(id: String)(implicit authContext: AuthContext): Future[Unit] =
+  def realDelete(id: String)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] =
     get(id).flatMap(realDelete)
 
-  def realDelete(caze: Case)(implicit authContext: AuthContext): Future[Unit] = {
+  def realDelete(caze: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] = {
     import org.elastic4play.services.QueryDSL._
     for {
       _ ← taskSrv
@@ -131,12 +130,12 @@ class CaseSrv @Inject()(
     } yield ()
   }
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Case, NotUsed], Future[Long]) =
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Case, NotUsed], Future[Long]) =
     findSrv[CaseModel, Case](caseModel, queryDef, range, sortBy)
 
-  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(caseModel, queryDef, aggs: _*)
+  def stats(queryDef: QueryDef, aggs: Seq[Agg])(implicit ec: ExecutionContext): Future[JsObject] = findSrv(caseModel, queryDef, aggs: _*)
 
-  def getStats(id: String): Future[JsObject] = {
+  def getStats(id: String)(implicit ec: ExecutionContext): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     for {
       taskStats ← taskSrv.stats(
@@ -147,7 +146,7 @@ class CaseSrv @Inject()(
     } yield Json.obj(("tasks", taskStats), ("artifacts", artifactStats))
   }
 
-  def linkedCases(id: String): Source[(Case, Seq[Artifact]), NotUsed] = {
+  def linkedCases(id: String)(implicit ec: ExecutionContext): Source[(Case, Seq[Artifact]), NotUsed] = {
     import org.elastic4play.services.QueryDSL._
     findSrv[ArtifactModel, Artifact](
       artifactModel,

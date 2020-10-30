@@ -4,11 +4,10 @@
     angular.module('theHiveControllers')
         .controller('AdminReportTemplatesCtrl', AdminReportTemplatesCtrl)
         .controller('AdminReportTemplateDialogCtrl', AdminReportTemplateDialogCtrl)
-        .controller('AdminReportTemplateImportCtrl', AdminReportTemplateImportCtrl)
-        .controller('AdminReportTemplateDeleteCtrl', AdminReportTemplateDeleteCtrl);
+        .controller('AdminReportTemplateImportCtrl', AdminReportTemplateImportCtrl);
 
 
-    function AdminReportTemplatesCtrl($q, $uibModal, AnalyzerSrv, ReportTemplateSrv, NotificationSrv) {
+    function AdminReportTemplatesCtrl($q, $uibModal, ModalUtilsSrv, AnalyzerSrv, ReportTemplateSrv, NotificationSrv) {
         var self = this;
 
         this.templates = [];
@@ -75,25 +74,32 @@
             });
 
             modalInstance.result.then(function() {
+                NotificationSrv.log('Report template has been saved successfully', 'success');
+
                 self.load();
+            }).catch(function(err) {
+                if(err && !_.isString(err)) {
+                    NotificationSrv.error('AdminReportTemplateDialogCtrl', err.data, err.status);
+                }
             });
         };
 
         this.deleteTemplate = function(template) {
-            var modalInstance = $uibModal.open({
-                templateUrl: 'views/partials/admin/report-template-delete.html',
-                controller: 'AdminReportTemplateDeleteCtrl',
-                controllerAs: 'vm',
-                size: '',
-                resolve: {
-                    template: function() {
-                        return template;
-                    }
-                }
-            });
 
-            modalInstance.result.then(function() {
-                self.load();
+            ModalUtilsSrv.confirm('Remove report template', 'Are you sure you want to delete the ' + template.reportType + ' report template for analyzer ' + template.analyzerId + '?', {
+                okText: 'Yes, remove it',
+                flavor: 'danger'
+            }).then(function() {
+                ReportTemplateSrv.delete(template.id)
+                .then(function() {
+                    self.load();
+                    NotificationSrv.log('Report template has been permanently deleted', 'success');
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('AdminReportTemplateDialogCtrl', err.data, err.status);
+                    }
+                });
             });
         };
 
@@ -107,7 +113,13 @@
             });
 
             modalInstance.result.then(function() {
+                NotificationSrv.log('Report templates have been imported successfully', 'success');
+
                 self.load();
+            }).catch(function(err) {
+                if(err && !_.isString(err)) {
+                    NotificationSrv.error('AdminReportTemplateDialogCtrl', err.data, err.status);
+                }
             });
         };
 
@@ -139,22 +151,6 @@
                 }, function(response) {
                     NotificationSrv.error('AdminReportTemplateDialogCtrl', response.data, response.status);
                 });
-        };
-    }
-
-    function AdminReportTemplateDeleteCtrl($uibModalInstance, ReportTemplateSrv, NotificationSrv, template) {
-        this.template = template;
-
-        this.ok = function () {
-            ReportTemplateSrv.delete(template.id)
-                .then(function() {
-                    $uibModalInstance.close();
-                }, function(response) {
-                    NotificationSrv.error('AdminReportTemplateDeleteCtrl', response.data, response.status);
-                });
-        };
-        this.cancel = function () {
-            $uibModalInstance.dismiss('cancel');
         };
     }
 

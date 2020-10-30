@@ -24,7 +24,7 @@ case class OAuth2Config(
     authorizationUrl: String,
     tokenUrl: String,
     userUrl: String,
-    scope: String,
+    scope: Seq[String],
     authorizationHeader: String,
     autoupdate: Boolean,
     autocreate: Boolean
@@ -42,7 +42,7 @@ object OAuth2Config {
       authorizationUrl ← configuration.getOptional[String]("auth.oauth2.authorizationUrl")
       tokenUrl         ← configuration.getOptional[String]("auth.oauth2.tokenUrl")
       userUrl          ← configuration.getOptional[String]("auth.oauth2.userUrl")
-      scope            ← configuration.getOptional[String]("auth.oauth2.scope")
+      scope            ← configuration.getOptional[Seq[String]]("auth.oauth2.scope")
       authorizationHeader = configuration.getOptional[String]("auth.oauth2.authorizationHeader").getOrElse("Bearer")
       autocreate          = configuration.getOptional[Boolean]("auth.sso.autocreate").getOrElse(false)
       autoupdate          = configuration.getOptional[Boolean]("auth.sso.autoupdate").getOrElse(false)
@@ -110,7 +110,7 @@ class OAuth2Srv(
   private def authRedirect(oauth2Config: OAuth2Config): Result = {
     val state = UUID.randomUUID().toString
     val queryStringParams = Map[String, Seq[String]](
-      "scope"         → Seq(oauth2Config.scope),
+      "scope"         → Seq(oauth2Config.scope.mkString(" ")),
       "response_type" → Seq(oauth2Config.responseType),
       "redirect_uri"  → Seq(oauth2Config.redirectUri),
       "client_id"     → Seq(oauth2Config.clientId),

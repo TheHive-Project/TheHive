@@ -29,7 +29,6 @@ class CaseMergeSrv @Inject()(
     logSrv: LogSrv,
     artifactSrv: ArtifactSrv,
     eventSrv: EventSrv,
-    implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
@@ -134,9 +133,9 @@ class CaseMergeSrv @Inject()(
   }
 
   private[services] def baseFields(entity: BaseEntity): Fields =
-    Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
+    Fields(entity.attributes - "_id" - "_routing" - "_parent" - "_type" - "_seqNo" - "_primaryTerm"  - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user")
 
-  private[services] def mergeLogs(oldTask: Task, newTask: Task)(implicit authContext: AuthContext): Future[Done] =
+  private[services] def mergeLogs(oldTask: Task, newTask: Task)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Done] =
     logSrv
       .find(withParent("case_task", oldTask.id), Some("all"), Nil)
       ._1
@@ -145,7 +144,7 @@ class CaseMergeSrv @Inject()(
       }
       .runWith(Sink.ignore)
 
-  private[services] def mergeTasksAndLogs(newCase: Case, cases: Seq[Case])(implicit authContext: AuthContext): Future[Done] = {
+  private[services] def mergeTasksAndLogs(newCase: Case, cases: Seq[Case])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Done] = {
     val (tasks, futureTaskCount) = taskSrv.find(
       and(parent("case", withId(cases.map(_.id): _*)), "status" ~!= TaskStatus.Cancel, "status" ~!= TaskStatus.Waiting),
       Some("all"),
@@ -209,7 +208,7 @@ class CaseMergeSrv @Inject()(
     JsString(status)
   }
 
-  private[services] def mergeArtifactsAndJobs(newCase: Case, cases: Seq[Case])(implicit authContext: AuthContext): Future[Done] = {
+  private[services] def mergeArtifactsAndJobs(newCase: Case, cases: Seq[Case])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Done] = {
     val caseMap    = cases.map(c ⇒ c.id → c).toMap
     val caseFilter = and(parent("case", withId(cases.map(_.id): _*)), "status" ~= "Ok")
     // Find artifacts hold by cases
@@ -268,7 +267,7 @@ class CaseMergeSrv @Inject()(
       }
   }
 
-  private[services] def mergeCases(cases: Seq[Case])(implicit authContext: AuthContext): Future[Case] = {
+  private[services] def mergeCases(cases: Seq[Case])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] = {
     logger.info("Merging cases: " + cases.map(c ⇒ s"#${c.caseId()}:${c.title()}").mkString(" / "))
     val fields = Fields
       .empty
@@ -289,7 +288,7 @@ class CaseMergeSrv @Inject()(
     caseSrv.create(fields)
   }
 
-  def markCaseAsDuplicated(cases: Seq[Case], mergeCase: Case)(implicit authContext: AuthContext): Future[Done] =
+  def markCaseAsDuplicated(cases: Seq[Case], mergeCase: Case)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Done] =
     Future
       .traverse(cases) { caze ⇒
         val s       = s"Merge into : ${mergeCase.title()} ([#${mergeCase.caseId()}](#/case/${mergeCase.id}/details))"
@@ -311,7 +310,7 @@ class CaseMergeSrv @Inject()(
           Done
       }
 
-  def merge(caseIds: String*)(implicit authContext: AuthContext): Future[Case] =
+  def merge(caseIds: String*)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Case] =
     for {
       cases   ← Future.sequence(caseIds.map(caseSrv.get))
       newCase ← mergeCases(cases)

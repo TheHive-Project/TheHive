@@ -22,35 +22,34 @@ class DashboardSrv @Inject()(
     getSrv: GetSrv,
     updateSrv: UpdateSrv,
     deleteSrv: DeleteSrv,
-    findSrv: FindSrv,
-    implicit val ec: ExecutionContext
+    findSrv: FindSrv
 ) {
 
   private[DashboardSrv] lazy val logger = Logger(getClass)
 
-  def create(fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
+  def create(fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     createSrv[DashboardModel, Dashboard](dashboardModel, fields)
 
-  def get(id: String): Future[Dashboard] =
+  def get(id: String)(implicit ec: ExecutionContext): Future[Dashboard] =
     getSrv[DashboardModel, Dashboard](dashboardModel, id)
 
-  def update(id: String, fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
+  def update(id: String, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     update(id, fields, ModifyConfig.default)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Dashboard] =
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     updateSrv[DashboardModel, Dashboard](dashboardModel, id, fields, modifyConfig)
 
-  def update(dashboard: Dashboard, fields: Fields)(implicit authContext: AuthContext): Future[Dashboard] =
+  def update(dashboard: Dashboard, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     update(dashboard, fields, ModifyConfig.default)
 
-  def update(dashboard: Dashboard, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Dashboard] =
+  def update(dashboard: Dashboard, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     updateSrv(dashboard, fields, modifyConfig)
 
-  def delete(id: String)(implicit authContext: AuthContext): Future[Dashboard] =
+  def delete(id: String)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     deleteSrv[DashboardModel, Dashboard](dashboardModel, id)
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Dashboard, NotUsed], Future[Long]) =
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Dashboard, NotUsed], Future[Long]) =
     findSrv[DashboardModel, Dashboard](dashboardModel, queryDef, range, sortBy)
 
-  def stats(queryDef: QueryDef, aggs: Seq[Agg]): Future[JsObject] = findSrv(dashboardModel, queryDef, aggs: _*)
+  def stats(queryDef: QueryDef, aggs: Seq[Agg])(implicit ec: ExecutionContext): Future[JsObject] = findSrv(dashboardModel, queryDef, aggs: _*)
 }

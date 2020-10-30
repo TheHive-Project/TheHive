@@ -27,12 +27,6 @@
     </div>
 </div>
 
-<div class="row mv-s" ng-show="tasks.total === 0">
-    <div class="col-md-12">
-        <div class="empty-message">No task found for this case.</div>
-    </div>
-</div>
-
 <div class="row mt-l" ng-show="state.isNewTask">
     <div class="col-md-12">
         <form name="form" ng-submit="addTask(); state.isNewTask = false;">
@@ -59,6 +53,12 @@
                 </div>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="row mv-s" ng-show="tasks.total === 0">
+    <div class="col-md-12">
+        <div class="empty-message">No task found for this case.</div>
     </div>
 </div>
 

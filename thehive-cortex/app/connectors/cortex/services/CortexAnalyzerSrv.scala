@@ -51,7 +51,7 @@ class JobReplicateActor @Inject()(cortexSrv: CortexAnalyzerSrv, eventSrv: EventS
         ._1
         .mapAsyncUnordered(5) { job ⇒
           val baseFields = Fields(
-            job.attributes - "_id" - "_routing" - "_parent" - "_type" - "_version" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user"
+            job.attributes - "_id" - "_routing" - "_parent" - "_type" -  "_seqNo" - "_primaryTerm" - "createdBy" - "createdAt" - "updatedBy" - "updatedAt" - "user"
           )
           val createdJob = cortexSrv.create(newArtifact, baseFields)(authContext)
           createdJob
@@ -244,7 +244,7 @@ class CortexAnalyzerSrv @Inject()(
               _ ← artifactSrv.update(
                 job.artifactId(),
                 Fields.empty.set("reports", newReports.toString),
-                ModifyConfig(retryOnConflict = 0, version = Some(artifact.version))
+                ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(artifact.seqNo -> artifact.primaryTerm))
               )
             } yield ()
           }.recover {
