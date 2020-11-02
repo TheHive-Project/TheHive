@@ -201,8 +201,7 @@ class CaseSrv @Inject() (
   def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     // We let ShareSrv handle all cascade deletions (Case, Tasks, Logs and Observables)
     for {
-      organisation <- organisationSrv.getOrFail(authContext.organisation)
-      share        <- shareSrv.get(`case`, organisation._id).getOrFail("Case")
+      share <- shareSrv.get(`case`, authContext.organisation).getOrFail("Case")
     } yield shareSrv.cascadeRemove(share._id)
   }
 

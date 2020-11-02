@@ -315,7 +315,7 @@ object Conversion {
       .withFieldComputed(_.message, _.message)
       .withFieldComputed(_.startDate, _._createdAt)
       .withFieldComputed(_.owner, _._createdBy)
-      .withFieldComputed(_.status, _ => "Ok")
+      .withFieldConst(_.status, "Ok")
       .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toValue))
       .transform
   )

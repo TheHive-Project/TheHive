@@ -89,6 +89,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.removeProperty("deleted")
       Success(())
     }
+    .removeProperty(model = "Log", propertyName = "deleted", usedOnlyByThisModel = true)
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
