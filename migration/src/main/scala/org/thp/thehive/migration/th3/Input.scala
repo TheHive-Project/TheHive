@@ -9,8 +9,8 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.RangeQuery
 import com.sksamuel.elastic4s.searches.queries.term.TermsQuery
+import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
@@ -23,7 +23,7 @@ import play.api.{Configuration, Logger}
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.{classTag, ClassTag}
+import scala.reflect.{ClassTag, classTag}
 import scala.util.{Failure, Success, Try}
 
 object Input {
@@ -223,44 +223,18 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     )._2
 
   override def listCaseTaskLogs(filter: Filter): Source[Try[(String, InputLog)], NotUsed] =
-    dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(
-        bool(
-          Seq(
-            termQuery("relations", "case_task_log"),
-            hasParentQuery(
-              "case_task",
-              hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false),
-              score = false
-            )
-          ),
-          Nil,
-          Nil
-        )
-      )
-    )._1
-      .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
+    listCaseTaskLogs(bool(caseFilter(filter), Nil, Nil))
 
   override def countCaseTaskLogs(filter: Filter): Future[Long] =
-    dbFind(Some("0-0"), Nil)(indexName =>
-      search(indexName)
-        .query(
-          bool(
-            Seq(
-              termQuery("relations", "case_task_log"),
-              hasParentQuery(
-                "case_task",
-                hasParentQuery("case", bool(caseFilter(filter), Nil, Nil), score = false),
-                score = false
-              )
-            ),
-            Nil,
-            Nil
-          )
-        )
-    )._2
+    countCaseTaskLogs(bool(caseFilter(filter), Nil, Nil))
 
   override def listCaseTaskLogs(caseId: String): Source[Try[(String, InputLog)], NotUsed] =
+    listCaseTaskLogs(idsQuery(caseId))
+
+  override def countCaseTaskLogs(caseId: String): Future[Long] =
+    countCaseTaskLogs(idsQuery(caseId))
+
+  private def listCaseTaskLogs(query: Query): Source[Try[(String, InputLog)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
       search(indexName).query(
         bool(
@@ -268,18 +242,18 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
             termQuery("relations", "case_task_log"),
             hasParentQuery(
               "case_task",
-              hasParentQuery("case", idsQuery(caseId), score = false),
+              hasParentQuery("case", query, score = false),
               score = false
             )
           ),
           Nil,
-          Nil
+          Seq(termQuery("status", "deleted"))
         )
       )
     )._1
       .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
 
-  override def countCaseTaskLogs(caseId: String): Future[Long] =
+  private def countCaseTaskLogs(query: Query): Future[Long] =
     dbFind(Some("0-0"), Nil)(indexName =>
       search(indexName)
         .query(
@@ -288,7 +262,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
               termQuery("relations", "case_task_log"),
               hasParentQuery(
                 "case_task",
-                hasParentQuery("case", idsQuery(caseId), score = false),
+                hasParentQuery("case", query, score = false),
                 score = false
               )
             ),
