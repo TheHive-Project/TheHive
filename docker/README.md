@@ -2,12 +2,12 @@
 With this docker-compose.yml you will be able to run the following images:
 - The Hive 4
 - Cassandra 3.11
-- Cortex 3.1.0-0.2RC1
-- Elasticsearch 7.9.0
-- Kibana 7.9.0
-- MISP 2.4.131
-- Mysql 8.0.21
-- Redis 6.0.8
+- Cortex 3.1.0-1
+- Elasticsearch 7.9.3
+- Kibana 7.9.3
+- MISP 2.4.133
+- Mysql 8.0.22
+- Redis 6.0.9
 - Shuffle 0.7.1
 
 ## Some Hint
