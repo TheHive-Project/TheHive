@@ -420,4 +420,26 @@ object Conversion {
         .transform
   }
 
+  implicit val observableTypeOutput: Renderer.Aux[ObservableType with Entity, OutputObservableType] =
+    Renderer.toJson[ObservableType with Entity, OutputObservableType](observableType =>
+      observableType
+        .asInstanceOf[ObservableType]
+        .into[OutputObservableType]
+        .withFieldConst(_._id, observableType._id.toString)
+        .withFieldConst(_._updatedAt, observableType._updatedAt)
+        .withFieldConst(_._updatedBy, observableType._updatedBy)
+        .withFieldConst(_._createdAt, observableType._createdAt)
+        .withFieldConst(_._createdBy, observableType._createdBy)
+        .withFieldConst(_._type, "ObservableType")
+        .transform
+    )
+
+  implicit class InputObservableTypeOps(inputObservableType: InputObservableType) {
+    def toObservableType: ObservableType =
+      inputObservableType
+        .into[ObservableType]
+        .withFieldComputed(_.isAttachment, _.isAttachment.getOrElse(false))
+        .transform
+  }
+
 }
