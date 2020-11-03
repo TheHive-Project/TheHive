@@ -166,9 +166,16 @@ object Conversion {
     )
 
   implicit val customFieldOutput: Renderer.Aux[CustomField with Entity, OutputCustomField] =
-    Renderer.toJson[CustomField with Entity, OutputCustomField](
-      _.asInstanceOf[CustomField]
+    Renderer.toJson[CustomField with Entity, OutputCustomField](customField =>
+      customField
+        .asInstanceOf[CustomField]
         .into[OutputCustomField]
+        .withFieldConst(_._id, customField._id.toString)
+        .withFieldConst(_._type, "CustomField")
+        .withFieldConst(_._createdAt, customField._createdAt)
+        .withFieldConst(_._createdBy, customField._createdBy)
+        .withFieldConst(_._updatedAt, customField._updatedAt)
+        .withFieldConst(_._updatedBy, customField._updatedBy)
         .withFieldComputed(_.`type`, _.`type`.toString)
         .withFieldComputed(_.mandatory, _.mandatory)
         .transform
