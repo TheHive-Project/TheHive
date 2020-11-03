@@ -180,13 +180,15 @@ class JobSrv @Inject() (
     }
 
   private def importAnalyzerTags(job: Job with Entity, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Unit] =
-    db.tryTransaction { implicit graph =>
-      val tags = cortexJob.report.fold[Seq[ReportTag]](Nil)(_.summary.map(_.toAnalyzerTag(job.workerName)))
-      for {
-        observable <- get(job).observable.getOrFail("Observable")
-        _          <- reportTagSrv.updateTags(observable, job.workerName, tags)
-      } yield ()
-    }
+    if (cortexJob.status == JobStatus.Success)
+      db.tryTransaction { implicit graph =>
+        val tags = cortexJob.report.fold[Seq[ReportTag]](Nil)(_.summary.map(_.toAnalyzerTag(job.workerName)))
+        for {
+          observable <- get(job).observable.getOrFail("Observable")
+          _          <- reportTagSrv.updateTags(observable, job.workerName, tags)
+        } yield ()
+      }
+    else Success(())
 
   /**
     * Create observable for each artifact of the job report
