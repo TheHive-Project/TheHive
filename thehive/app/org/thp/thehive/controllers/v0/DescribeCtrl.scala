@@ -26,13 +26,20 @@ import scala.util.{Failure, Success, Try}
 class DescribeCtrl @Inject() (
     cacheApi: SyncCacheApi,
     entrypoint: Entrypoint,
-    caseCtrl: CaseCtrl,
-    taskCtrl: TaskCtrl,
     alertCtrl: AlertCtrl,
-    observableCtrl: ObservableCtrl,
-    userCtrl: UserCtrl,
-    logCtrl: LogCtrl,
     auditCtrl: AuditCtrl,
+    caseCtrl: CaseCtrl,
+    caseTemplateCtrl: CaseTemplateCtrl,
+    customFieldCtrl: CustomFieldCtrl,
+    dashboardCtrl: DashboardCtrl,
+    logCtrl: LogCtrl,
+    observableCtrl: ObservableCtrl,
+    observableTypeCtrl: ObservableTypeCtrl,
+    organisationCtrl: OrganisationCtrl,
+    pageCtrl: PageCtrl,
+    profileCtrl: ProfileCtrl,
+    taskCtrl: TaskCtrl,
+    userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     injector: Injector,
     @Named("with-thehive-schema") db: Database,
@@ -40,12 +47,18 @@ class DescribeCtrl @Inject() (
 ) {
 
   case class PropertyDescription(name: String, `type`: String, values: Seq[JsValue] = Nil, labels: Seq[String] = Nil)
+  val metadata = Seq(
+    PropertyDescription("createdBy", "user"),
+    PropertyDescription("createdAt", "date"),
+    PropertyDescription("updatedBy", "user"),
+    PropertyDescription("updatedAt", "date")
+  )
   case class EntityDescription(label: String, path: String, attributes: Seq[PropertyDescription]) {
     def toJson: JsObject =
       Json.obj(
         "label"      -> label,
         "path"       -> path,
-        "attributes" -> attributes
+        "attributes" -> (attributes ++ metadata)
       )
   }
 
@@ -88,7 +101,26 @@ class DescribeCtrl @Inject() (
         ),
         EntityDescription("user", "/user", userCtrl.publicData.publicProperties.list.flatMap(propertyToJson("user", _))),
         EntityDescription("case_task_log", "/case/task/log", logCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
-        EntityDescription("audit", "/audit", auditCtrl.publicData.publicProperties.list.flatMap(propertyToJson("audit", _)))
+        EntityDescription("audit", "/audit", auditCtrl.publicData.publicProperties.list.flatMap(propertyToJson("audit", _))),
+        EntityDescription(
+          "caseTemplate",
+          "/caseTemplate",
+          caseTemplateCtrl.publicData.publicProperties.list.flatMap(propertyToJson("caseTemplate", _))
+        ),
+        EntityDescription("customField", "/customField", customFieldCtrl.publicData.publicProperties.list.flatMap(propertyToJson("customField", _))),
+        EntityDescription(
+          "observableType",
+          "/observableType",
+          observableTypeCtrl.publicData.publicProperties.list.flatMap(propertyToJson("observableType", _))
+        ),
+        EntityDescription(
+          "organisation",
+          "/organisation",
+          organisationCtrl.publicData.publicProperties.list.flatMap(propertyToJson("organisation", _))
+        ),
+        EntityDescription("profile", "/profile", profileCtrl.publicData.publicProperties.list.flatMap(propertyToJson("profile", _))),
+        EntityDescription("dashboard", "/dashboard", dashboardCtrl.publicData.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
+        EntityDescription("page", "/page", pageCtrl.publicData.publicProperties.list.flatMap(propertyToJson("page", _)))
       ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
         describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
     }
