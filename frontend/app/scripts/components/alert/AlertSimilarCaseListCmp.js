@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('alertSimilarCaseList', {
-            controller: function($scope, FilteringSrv, PaginatedQuerySrv, CaseResolutionStatus, UiSettingsSrv) {
+            controller: function($scope, AlertingSrv, FilteringSrv, PaginatedQuerySrv, CaseResolutionStatus, UiSettingsSrv) {
                 var self = this;
 
                 self.CaseResolutionStatus = CaseResolutionStatus;
@@ -49,19 +49,12 @@
 
                     self.filtering.initContext('alert.dialog.similar-cases')
                         .then(function() {
-                            var defaultFilter = {
-                                field: 'status',
-                                type: 'enumeration',
-                                value: {
-                                    list: [{
-                                        text: 'Open',
-                                        label: 'Open'
-                                    }]
-                                }
-                            };
+                            var defaultFilter = AlertingSrv.getSimilarityFilter(self.state.defaultAlertSimilarCaseFilter);
 
-                            if(_.isEmpty(self.filtering.context.filters)) {
-                                self.filtering.addFilter(defaultFilter);
+                            if(_.isEmpty(self.filtering.context.filters) && defaultFilter && defaultFilter.length > 0) {
+                                _.each(defaultFilter, function(item) {
+                                    self.filtering.addFilter(item);
+                                });
                             }
 
                             self.load();
@@ -170,6 +163,21 @@
                     self.filtering.clearFilters()
                         .then(function(){
                             self.addFilterValue(field, value);
+                        });
+                };
+
+                this.applyDefaultFilter = function() {
+                    self.filtering.clearFilters()
+                        .then(function(){
+                            var defaultFilter = AlertingSrv.getSimilarityFilter(self.state.defaultAlertSimilarCaseFilter);
+
+                            if(defaultFilter && defaultFilter.length > 0) {
+                                _.each(defaultFilter, function(item) {
+                                    self.filtering.addFilter(item);
+                                });
+
+                                self.search();
+                            }
                         });
                 };
 

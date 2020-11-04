@@ -10,6 +10,10 @@
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
+                        <a ng-click="$cmp.applyDefaultFilter()"><i class="fa fa-filter"></i> Default filter</a>
+                    </li>
+                    <li class="divider"></li>
+                    <li>
                         <a ng-click="$cmp.filterBy('status', 'Open')"><i class="fa fa-folder-open-o"></i> Open cases</a>
                     </li>
                     <li>
