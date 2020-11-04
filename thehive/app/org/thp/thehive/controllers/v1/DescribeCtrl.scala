@@ -26,13 +26,20 @@ import scala.util.{Failure, Success, Try}
 class DescribeCtrl @Inject() (
     cacheApi: SyncCacheApi,
     entrypoint: Entrypoint,
-    caseCtrl: CaseCtrl,
-    taskCtrl: TaskCtrl,
     alertCtrl: AlertCtrl,
-    observableCtrl: ObservableCtrl,
-    userCtrl: UserCtrl,
-//    logCtrl: LogCtrl,
     auditCtrl: AuditCtrl,
+    caseCtrl: CaseCtrl,
+    caseTemplateCtrl: CaseTemplateCtrl,
+    customFieldCtrl: CustomFieldCtrl,
+//    dashboardCtrl: DashboardCtrl,
+    logCtrl: LogCtrl,
+    observableCtrl: ObservableCtrl,
+    observableTypeCtrl: ObservableTypeCtrl,
+    organisationCtrl: OrganisationCtrl,
+//    pageCtrl: PageCtrl,
+    profileCtrl: ProfileCtrl,
+    taskCtrl: TaskCtrl,
+    userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     impactStatusSrv: ImpactStatusSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
@@ -42,11 +49,17 @@ class DescribeCtrl @Inject() (
 ) {
 
   case class PropertyDescription(name: String, `type`: String, values: Seq[JsValue] = Nil, labels: Seq[String] = Nil)
+  val metadata = Seq(
+    PropertyDescription("_createdBy", "user"),
+    PropertyDescription("_createdAt", "date"),
+    PropertyDescription("_updatedBy", "user"),
+    PropertyDescription("_updatedAt", "date")
+  )
   case class EntityDescription(label: String, attributes: Seq[PropertyDescription]) {
     def toJson: JsObject =
       Json.obj(
         "label"      -> label,
-        "attributes" -> attributes
+        "attributes" -> (attributes ++ metadata)
       )
   }
 
@@ -81,8 +94,15 @@ class DescribeCtrl @Inject() (
         EntityDescription("alert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
         EntityDescription("case_artifact", observableCtrl.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
         EntityDescription("user", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _))),
-        //    EntityDescription("case_task_log", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
-        EntityDescription("audit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _)))
+        EntityDescription("case_task_log", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
+        EntityDescription("audit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _))),
+        EntityDescription("caseTemplate", caseTemplateCtrl.publicProperties.list.flatMap(propertyToJson("caseTemplate", _))),
+        EntityDescription("customField", customFieldCtrl.publicProperties.list.flatMap(propertyToJson("customField", _))),
+        EntityDescription("observableType", observableTypeCtrl.publicProperties.list.flatMap(propertyToJson("observableType", _))),
+        EntityDescription("organisation", organisationCtrl.publicProperties.list.flatMap(propertyToJson("organisation", _))),
+        EntityDescription("profile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _)))
+//        EntityDescription("dashboard", dashboardCtrl.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
+//        EntityDescription("page", pageCtrl.publicProperties.list.flatMap(propertyToJson("page", _)))
       ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
         describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
     }
