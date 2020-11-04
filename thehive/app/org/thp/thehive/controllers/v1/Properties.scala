@@ -37,6 +37,15 @@ class Properties @Inject() (
     @Named("with-thehive-schema") db: Database
 ) {
 
+  lazy val metaProperties: PublicProperties =
+    PublicPropertyListBuilder
+      .forType[Product](_ => true)
+      .property("_createdBy", UMapping.string)(_.field.readonly)
+      .property("_createdAt", UMapping.date)(_.field.readonly)
+      .property("_updatedBy", UMapping.string.optional)(_.field.readonly)
+      .property("_updatedAt", UMapping.date.optional)(_.field.readonly)
+      .build
+
   lazy val alert: PublicProperties =
     PublicPropertyListBuilder[Alert]
       .property("type", UMapping.string)(_.field.updatable)
