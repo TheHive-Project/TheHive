@@ -147,6 +147,7 @@ object CustomFieldInteger extends CustomFieldType[Int] {
   override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
     value.getOrElse(JsNull) match {
       case v: Int        => Success(customFieldValue.integerValue = Some(v))
+      case v: Double     => Success(customFieldValue.integerValue = Some(v.toInt))
       case JsNumber(n)   => Success(customFieldValue.integerValue = Some(n.toInt))
       case JsNull | null => Success(customFieldValue.integerValue = None)
       case obj: JsObject =>
