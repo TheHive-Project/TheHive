@@ -25,9 +25,11 @@
             </div>
 
             <div class="form-group">
-                <label class="col-md-3 control-label">Hide <em>Empty Case</em> button</label>
+                <label class="col-md-3 control-label">Select the default filter of alert case similarity panel</label>
                 <div class="col-md-3">
-                    <select class="form-control" name="defaultAlertSimilarCaseFilter" ng-options="o for o in ['open-cases', 'resolved-cases']" ng-model="$ctrl.configs['defaultAlertSimilarCaseFilter']">
+                    <select class="form-control" name="defaultAlertSimilarCaseFilter"
+                        ng-options="k as o.label for (k, o) in $ctrl.alertSimilarityFilters"
+                        ng-model="$ctrl.configs['defaultAlertSimilarCaseFilter']">
                     </select>
                 </div>
             </div>

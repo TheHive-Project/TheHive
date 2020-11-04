@@ -3,8 +3,10 @@
 
     angular.module('theHiveComponents')
         .component('orgConfigList', {
-            controller: function($scope, $q, NotificationSrv, UiSettingsSrv) {
+            controller: function($scope, $q, NotificationSrv, AlertingSrv, UiSettingsSrv) {
                 var self = this;
+
+                self.alertSimilarityFilters = [];
 
                 self.isDirtySetting = function(key, newValue) {
                     return newValue !== self.currentSettings[key];
@@ -62,6 +64,8 @@
 
                 self.$onInit = function() {
                     self.loadSettings(this.uiConfig);
+
+                    self.alertSimilarityFilters = AlertingSrv.getSimilarityFilters();
                 };
             },
             controllerAs: '$ctrl',
