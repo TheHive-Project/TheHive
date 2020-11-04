@@ -53,9 +53,10 @@ class AlertCtrl @Inject() (
           _.richAlertWithCustomRenderer(alertStatsRenderer(range.extraData)(authContext))
         )
   )
-  override val outputQuery: Query = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
+  override val outputQuery: Query      = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
+  val caseProperties: PublicProperties = properties.`case` ++ properties.metaProperties
   val caseFilterParser: FieldsParser[Option[InputQuery[Traversal.Unk, Traversal.Unk]]] =
-    FilterQuery.default(db, properties.`case`).paramParser(ru.typeOf[Traversal.V[Case]]).optional.on("caseFilter")
+    FilterQuery.default(db, caseProperties).paramParser(ru.typeOf[Traversal.V[Case]]).optional.on("caseFilter")
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
     Query[Traversal.V[Alert], Traversal.V[Case]]("case", (alertSteps, _) => alertSteps.`case`),
@@ -68,7 +69,7 @@ class AlertCtrl @Inject() (
       caseFilterParser,
       { (maybeCaseFilterQuery, alertSteps, authContext) =>
         val maybeCaseFilter: Option[Traversal.V[Case] => Traversal.V[Case]] =
-          maybeCaseFilterQuery.map(f => cases => f(db, properties.`case`, ru.typeOf[Traversal.V[Case]], cases.cast, authContext).cast)
+          maybeCaseFilterQuery.map(f => cases => f(db, caseProperties, ru.typeOf[Traversal.V[Case]], cases.cast, authContext).cast)
         alertSteps.similarCases(maybeCaseFilter)(authContext).domainMap(Json.toJson(_))
       }
     )

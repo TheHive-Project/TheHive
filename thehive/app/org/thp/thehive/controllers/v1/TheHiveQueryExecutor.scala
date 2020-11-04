@@ -33,6 +33,7 @@ class TheHiveQueryExecutor @Inject() (
     taskCtrl: TaskCtrl,
     userCtrl: UserCtrl,
     //    dashboardCtrl: DashboardCtrl,
+    properties: Properties,
     @Named("with-thehive-schema") implicit val db: Database
 ) extends QueryExecutor {
 
@@ -57,15 +58,7 @@ class TheHiveQueryExecutor @Inject() (
 
   override val version: (Int, Int) = 1 -> 1
 
-  def metaProperties: PublicProperties =
-    PublicPropertyListBuilder[Product]
-      .property("_createdBy", UMapping.string)(_.field.readonly)
-      .property("_createdAt", UMapping.date)(_.field.readonly)
-      .property("_updatedBy", UMapping.string.optional)(_.field.readonly)
-      .property("_updatedAt", UMapping.date.optional)(_.field.readonly)
-      .build
-
-  override lazy val publicProperties: PublicProperties = controllers.foldLeft(metaProperties)(_ ++ _.publicProperties)
+  override lazy val publicProperties: PublicProperties = controllers.foldLeft(properties.metaProperties)(_ ++ _.publicProperties)
 
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) ++
