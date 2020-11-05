@@ -52,7 +52,7 @@ class AlertCtrl @Inject() (
         val caseTemplateName: Option[String]  = request.body("caseTemplate")
         val inputAlert: InputAlert            = request.body("alert")
         val observables: Seq[InputObservable] = request.body("observables")
-        val customFields                      = inputAlert.customFields.map(c => c.name -> c.value).toMap
+        val customFields                      = inputAlert.customFields.map(c => (c.name, c.value, c.order))
         val caseTemplate                      = caseTemplateName.flatMap(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.headOption)
         for {
           organisation <-
@@ -428,7 +428,7 @@ class PublicAlert @Inject() (
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
             c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
-            _ <- alertSrv.setOrCreateCustomField(c, name, Some(value))(graph, authContext)
+            _ <- alertSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {

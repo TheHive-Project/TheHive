@@ -354,7 +354,7 @@ class MispImportSrv @Inject() (
           case None => // if the related alert doesn't exist, create it
             logger.debug(s"Event ${client.name}#${event.id} has no related alert for organisation ${organisation.name}")
             alertSrv
-              .create(alert, organisation, event.tags.map(_.name).toSet, Map.empty[String, Option[Any]], caseTemplate)
+              .create(alert, organisation, event.tags.map(_.name).toSet, Seq(), caseTemplate)
               .map(_.alert)
           case Some(richAlert) =>
             logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
