@@ -85,7 +85,7 @@ class AlertCtrl @Inject() (
         val caseTemplate                     = caseTemplateName.flatMap(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.headOption)
         for {
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail("Organisation")
-          customFields = inputAlert.customFieldValue.map(cf => cf.name -> cf.value).toMap
+          customFields = inputAlert.customFieldValue.map(cf => (cf.name, cf.value, cf.order))
           richAlert <- alertSrv.create(inputAlert.toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }

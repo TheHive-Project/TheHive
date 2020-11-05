@@ -48,12 +48,15 @@ object InputCustomFieldValue {
     case (_, FObject(fields)) =>
       fields
         .toSeq
+        .zipWithIndex
         .validatedBy {
-          case (name, valueField) => valueParser(valueField).map(v => InputCustomFieldValue(name, v, None))
+          case ((name, valueField), i) => valueParser(valueField).map(v => InputCustomFieldValue(name, v, Some(i)))
         }
         .map(_.toSeq)
     case (_, FSeq(list)) =>
-      list.zipWithIndex.validatedBy {
+      list
+        .zipWithIndex
+        .validatedBy {
         case (cf: FObject, i) =>
           val order = FieldsParser.int(cf.get("order")).getOrElse(i)
           for {
@@ -63,7 +66,7 @@ object InputCustomFieldValue {
         case (other, i) =>
           Bad(
             One(
-              InvalidFormatAttributeError(s"customFild[$i]", "CustomFieldValue", Set.empty, other)
+              InvalidFormatAttributeError(s"customField[$i]", "CustomFieldValue", Set.empty, other)
             )
           )
       }

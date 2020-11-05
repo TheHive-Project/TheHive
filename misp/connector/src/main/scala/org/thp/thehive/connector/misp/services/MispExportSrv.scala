@@ -150,7 +150,7 @@ class MispExportSrv @Inject() (
         )
       }
       org          <- organisationSrv.getOrFail(authContext.organisation)
-      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Map.empty[String, Option[Any]], None)
+      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Seq(), None)
       _            <- alertSrv.alertCaseSrv.create(AlertCase(), createdAlert.alert, `case`)
     } yield createdAlert
 

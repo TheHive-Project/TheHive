@@ -678,7 +678,7 @@ class Output @Inject() (
         _     <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), alert, organisation)
         _     <- caseTemplate.map(ct => alertSrv.alertCaseTemplateSrv.create(AlertCaseTemplate(), alert, ct)).flip
         _     <- tags.toTry(t => alertSrv.alertTagSrv.create(AlertTag(), alert, t))
-        _     <- inputAlert.customFields.toTry { case (name, value) => alertSrv.createCustomField(alert, name, value) }
+        _     <- inputAlert.customFields.toTry { case (name, value) => alertSrv.createCustomField(alert, name, value, None) }
         _ = updateMetaData(alert, inputAlert.metaData)
         _ = inputAlert.caseId.flatMap(c => getCase(EntityId.read(c)).toOption).foreach(alertSrv.alertCaseSrv.create(AlertCase(), alert, _))
       } yield IdMapping(inputAlert.metaData.id, alert._id)
