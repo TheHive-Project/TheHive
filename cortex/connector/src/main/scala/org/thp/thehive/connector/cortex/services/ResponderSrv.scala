@@ -9,7 +9,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
 import org.thp.thehive.models.Permissions
 import play.api.Logger
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -56,15 +56,21 @@ class ResponderSrv @Inject() (
           )
     } yield serviceHelper.flattenList(responders).filter { case (w, _) => w.maxTlp >= tlp && w.maxPap >= pap }
 
+  def getRespondersByName(responderName: String, organisation: EntityIdOrName): Future[Map[OutputWorker, Seq[String]]] =
+    searchResponders(Json.obj("query" -> Json.obj("_field" -> "name", "_value" -> responderName)), organisation)
+
   /**
-    * Search responders, not used as of 08/19
+    * Search responders
     * @param query the raw query from frontend
     * @param authContext auth context for organisation filter
     * @return
     */
   def searchResponders(query: JsObject)(implicit authContext: AuthContext): Future[Map[OutputWorker, Seq[String]]] =
+    searchResponders(query, authContext.organisation)
+
+  def searchResponders(query: JsObject, organisation: EntityIdOrName): Future[Map[OutputWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
+      .traverse(serviceHelper.availableCortexClients(connector.clients, organisation)) { client =>
         client
           .searchResponders(query)
           .transform {

@@ -162,7 +162,7 @@ class NotificationActor @Inject() (
                 .getOrElse(organisation._id, Map.empty)
                 .foreach {
                   case (trigger, (inOrg, userIds)) if trigger.preFilter(audit, context, organisation) =>
-                    logger.debug(s"Notification trigger ${trigger.name} is applicable")
+                    logger.debug(s"Notification trigger ${trigger.name} is applicable for $audit")
                     if (userIds.nonEmpty)
                       userSrv
                         .getByIds(userIds: _*)
@@ -198,7 +198,7 @@ class NotificationActor @Inject() (
                             }
                           executeNotification(None, orgConfig, audit, context, obj, organisation)
                         }
-                  case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable")
+                  case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable for $audit")
                 }
             case _ =>
           }

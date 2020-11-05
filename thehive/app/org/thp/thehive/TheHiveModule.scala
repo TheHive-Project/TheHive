@@ -54,6 +54,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     triggerBindings.addBinding.to[JobFinishedProvider]
     triggerBindings.addBinding.to[LogInMyTaskProvider]
     triggerBindings.addBinding.to[TaskAssignedProvider]
+    triggerBindings.addBinding.to[CaseShareProvider]
 
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
