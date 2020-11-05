@@ -55,7 +55,7 @@ class AlertSrv @Inject() (
       alert: Alert,
       organisation: Organisation with Entity,
       tagNames: Set[String],
-      customFields: Map[String, Option[Any]],
+      customFields: Seq[(String, Option[Any], Option[Int])],
       caseTemplate: Option[CaseTemplate with Entity]
   )(implicit
       graph: Graph,
@@ -67,7 +67,7 @@ class AlertSrv @Inject() (
       alert: Alert,
       organisation: Organisation with Entity,
       tags: Seq[Tag with Entity],
-      customFields: Map[String, Option[Any]],
+      customFields: Seq[(String, Option[Any], Option[Int])],
       caseTemplate: Option[CaseTemplate with Entity]
   )(implicit
       graph: Graph,
@@ -82,7 +82,7 @@ class AlertSrv @Inject() (
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
-        cfs          <- customFields.toTry { case (name, value) => createCustomField(createdAlert, name, value) }
+        cfs          <- customFields.toTry { case (name, value, order) => createCustomField(createdAlert, name, value, order) }
         richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name), 0)
         _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
       } yield richAlert
@@ -170,16 +170,17 @@ class AlertSrv @Inject() (
 
   def createCustomField(
       alert: Alert with Entity,
-      customFieldName: String,
-      customFieldValue: Option[Any]
+      name: String,
+      value: Option[Any],
+      order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(EntityIdOrName(customFieldName))
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), customFieldValue)
+      cf   <- customFieldSrv.getOrFail(EntityIdOrName(name))
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), value).map(_.order_=(order))
       ccfe <- alertCustomFieldSrv.create(ccf, alert, cf)
     } yield RichCustomField(cf, ccfe)
 
-  def setOrCreateCustomField(alert: Alert with Entity, customFieldName: String, value: Option[Any])(implicit
+  def setOrCreateCustomField(alert: Alert with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
@@ -187,7 +188,7 @@ class AlertSrv @Inject() (
     if (cfv.clone().exists)
       cfv.setValue(value)
     else
-      createCustomField(alert, customFieldName, value).map(_ => ())
+      createCustomField(alert, customFieldName, value, order).map(_ => ())
   }
 
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
@@ -205,7 +206,7 @@ class AlertSrv @Inject() (
       .filterNot(rcf => customFieldNames.contains(rcf.name))
       .foreach(rcf => get(alert).customFields(rcf.name).remove())
     customFieldValues
-      .toTry { case (cf, v) => setOrCreateCustomField(alert, cf.name, Some(v)) }
+      .toTry { case (cf, v) => setOrCreateCustomField(alert, cf.name, Some(v), None) }
       .map(_ => ())
   }
 

@@ -39,7 +39,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
           ),
           app[OrganisationSrv].getOrFail(EntityName("cert")).get,
           Set("tag1", "tag2"),
-          Map("string1" -> Some("lol")),
+          Seq(("string1", Some("lol"), None)),
           Some(app[CaseTemplateSrv].getOrFail(EntityName("spam")).get)
         )
       }
