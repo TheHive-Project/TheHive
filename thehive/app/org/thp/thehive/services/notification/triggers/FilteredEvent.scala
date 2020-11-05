@@ -68,12 +68,13 @@ case class ContainsEventFilter(field: String, value: String) extends EventFilter
 case class LikeEventFilter(field: String, value: String) extends EventFilter {
   lazy val s: Boolean = value.headOption.contains('*')
   lazy val e: Boolean = value.lastOption.contains('*')
-  override def apply(event: JsObject): Boolean = getField[String](event, field).fold(false) {
-    case v if s && e => v.contains(value.tail.dropRight(1))
-    case v if s      => v.endsWith(value)
-    case v if e      => v.startsWith(value)
-    case v           => v == value
-  }
+  override def apply(event: JsObject): Boolean =
+    getField[String](event, field).fold(false) {
+      case v if s && e => v.contains(value.tail.dropRight(1))
+      case v if s      => v.endsWith(value)
+      case v if e      => v.startsWith(value)
+      case v           => v == value
+    }
 
 }
 
@@ -111,9 +112,9 @@ object EventFilter {
 
   implicit lazy val reads: Reads[EventFilter] =
     (JsPath \ "_any").read[JsValue].map(_ => AnyEventFilter.asInstanceOf[EventFilter]) orElse
-      (JsPath \ "_and").read[Seq[EventFilter]].map(AndEventFilter) orElse
-      (JsPath \ "_or").read[Seq[EventFilter]].map(OrEventFilter) orElse
-      (JsPath \ "_not").read[EventFilter](reads).map(NotEventFilter) orElse
+      (JsPath \ "_and").lazyRead[Seq[EventFilter]](Reads.seq(reads)).map(AndEventFilter) orElse
+      (JsPath \ "_or").lazyRead[Seq[EventFilter]](Reads.seq(reads)).map(OrEventFilter) orElse
+      (JsPath \ "_not").lazyRead[EventFilter](reads).map(NotEventFilter) orElse
       (JsPath \ "_lt").read[(String, BigDecimal)].map(fv => LtEventFilter(fv._1, fv._2)) orElse
       (JsPath \ "_gt").read[(String, BigDecimal)].map(fv => GtEventFilter(fv._1, fv._2)) orElse
       (JsPath \ "_lte").read[(String, BigDecimal)].map(fv => LteEventFilter(fv._1, fv._2)) orElse
@@ -140,45 +141,43 @@ class FilteredEvent(eventFilter: EventFilter) extends Trigger {
   override val name: String = "FilteredEvent"
 
   override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =
-    try {
-      eventFilter(
-        Json.obj(
-          "requestId"  -> audit.requestId,
-          "action"     -> audit.action,
-          "mainAction" -> audit.mainAction,
-          "objectId"   -> audit.objectId,
-          "objectType" -> audit.objectType,
-          "details"    -> audit.details,
-          "_createdBy" -> audit._createdBy,
-          "_updatedBy" -> audit._updatedBy,
-          "_createdAt" -> audit._createdAt,
-          "_updatedAt" -> audit._updatedAt
-        )
+    try eventFilter(
+      Json.obj(
+        "requestId"  -> audit.requestId,
+        "action"     -> audit.action,
+        "mainAction" -> audit.mainAction,
+        "objectId"   -> audit.objectId,
+        "objectType" -> audit.objectType,
+        "details"    -> audit.details,
+        "_createdBy" -> audit._createdBy,
+        "_updatedBy" -> audit._updatedBy,
+        "_createdAt" -> audit._createdAt,
+        "_updatedAt" -> audit._updatedAt
       )
-    } catch {
+    )
+    catch {
       case EventFilterOnMissingUser => true
     }
 
   override def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: Option[User with Entity])(
       implicit graph: Graph
   ): Boolean =
-    try {
-      super.filter(audit, context, organisation, user) && eventFilter(
-        Json.obj(
-          "requestId"  -> audit.requestId,
-          "action"     -> audit.action,
-          "mainAction" -> audit.mainAction,
-          "objectId"   -> audit.objectId,
-          "objectType" -> audit.objectType,
-          "details"    -> audit.details,
-          "_createdBy" -> audit._createdBy,
-          "_updatedBy" -> audit._updatedBy,
-          "_createdAt" -> audit._createdAt,
-          "_updatedAt" -> audit._updatedAt,
-          "user"       -> user.map(_.login)
-        )
+    try super.filter(audit, context, organisation, user) && eventFilter(
+      Json.obj(
+        "requestId"  -> audit.requestId,
+        "action"     -> audit.action,
+        "mainAction" -> audit.mainAction,
+        "objectId"   -> audit.objectId,
+        "objectType" -> audit.objectType,
+        "details"    -> audit.details,
+        "_createdBy" -> audit._createdBy,
+        "_updatedBy" -> audit._updatedBy,
+        "_createdAt" -> audit._createdAt,
+        "_updatedAt" -> audit._updatedAt,
+        "user"       -> user.map(_.login)
       )
-    } catch {
+    )
+    catch {
       case EventFilterOnMissingUser => false
     }
 }
