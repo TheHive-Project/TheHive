@@ -80,7 +80,10 @@ class CaseSrv @Inject() (
         caseTemplate
           .fold[Seq[RichCustomField]](Nil)(_.customFields)
           .map(cf => (cf.name, cf.value, cf.order))
-      cfs <- (caseTemplateCustomFields ++ customFields).toTry {
+      uniqueFields = caseTemplateCustomFields.filter {
+        case (name, _, _) => !customFields.map(c => c._1).contains(name)
+      }
+      cfs <- (uniqueFields ++ customFields).toTry {
         case (name, value, order) => createCustomField(createdCase, EntityIdOrName(name), value, order)
       }
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
