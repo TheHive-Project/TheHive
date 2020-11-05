@@ -6,7 +6,9 @@ import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.thehive.connector.cortex.controllers.v0.{CortexQueryExecutor => CortexQueryExecutorV0}
 import org.thp.thehive.connector.cortex.models.{CortexSchemaDefinition, DatabaseProvider}
+import org.thp.thehive.connector.cortex.services.notification.notifiers.{RunAnalyzerProvider, RunResponderProvider}
 import org.thp.thehive.connector.cortex.services.{Connector, CortexActor}
+import org.thp.thehive.services.notification.notifiers.NotifierProvider
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 import play.api.libs.concurrent.AkkaGuiceSupport
 import play.api.routing.{Router => PlayRouter}
@@ -24,6 +26,10 @@ class CortexModule(environment: Environment, configuration: Configuration) exten
     connectorBindings.addBinding.to[Connector]
     val schemaBindings = ScalaMultibinder.newSetBinder[Schema](binder)
     schemaBindings.addBinding.to[CortexSchemaDefinition]
+
+    val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
+    notifierBindings.addBinding.to[RunResponderProvider]
+    notifierBindings.addBinding.to[RunAnalyzerProvider]
 
     bind[Database].annotatedWithName("with-thehive-cortex-schema").toProvider[DatabaseProvider]
     bindActor[CortexActor]("cortex-actor")
