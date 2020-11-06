@@ -279,7 +279,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
         val newObs = app[Database].tryTransaction { implicit graph =>
           app[ObservableSrv].create(
-            Observable(Some("if you feel lost"), 1, ioc = false, sighted = true),
+            Observable(Some("if you feel lost"), 1, ioc = false, sighted = true, ignoreSimilarity = None),
             app[ObservableTypeSrv].get(EntityName("domain")).getOrFail("Case").get,
             "lost.com",
             Set[String](),

@@ -123,7 +123,7 @@ class ObservableCtrl @Inject() (
         val observables = observableSrv
           .get(EntityIdOrName(observableId))
           .visible
-          .similar
+          .filteredSimilar
           .visible
           .richObservableWithCustomRenderer(observableLinkRenderer)
           .toSeq

@@ -22,7 +22,7 @@ class DataSrvTest extends PlaySpecification with TestAppBuilder {
     "get related observables" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         app[ObservableSrv].create(
-          Observable(Some("love"), 1, ioc = false, sighted = true),
+          Observable(Some("love"), 1, ioc = false, sighted = true, ignoreSimilarity = None),
           app[ObservableTypeSrv].get(EntityName("domain")).getOrFail("Observable").get,
           "love.com",
           Set("tagX"),

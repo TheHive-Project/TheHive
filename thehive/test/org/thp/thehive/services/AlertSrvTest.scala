@@ -103,7 +103,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         for {
           observableType <- app[ObservableTypeSrv].getOrFail(EntityName("domain"))
           observable <- app[ObservableSrv].create(
-            observable = Observable(Some("if you are lost"), 1, ioc = false, sighted = true),
+            observable = Observable(Some("if you are lost"), 1, ioc = false, sighted = true, ignoreSimilarity = None),
             `type` = observableType,
             dataValue = "perdu.com",
             tagNames = Set("tag10"),

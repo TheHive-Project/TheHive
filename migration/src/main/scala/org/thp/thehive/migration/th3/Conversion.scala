@@ -107,7 +107,7 @@ trait Conversion {
           )
     } yield InputObservable(
       metaData,
-      Observable(message, tlp, ioc, sighted),
+      Observable(message, tlp, ioc, sighted, None),
       Seq(mainOrganisation),
       dataType,
       tags,
@@ -228,7 +228,7 @@ trait Conversion {
             )
       } yield InputObservable(
         metaData,
-        Observable(message, tlp.getOrElse(2), ioc.getOrElse(false), sighted = false),
+        Observable(message, tlp.getOrElse(2), ioc.getOrElse(false), sighted = false, ignoreSimilarity = None),
         Nil,
         dataType,
         tags,
@@ -448,7 +448,7 @@ trait Conversion {
           )
       } yield InputObservable(
         metaData,
-        Observable(message, tlp, ioc, sighted),
+        Observable(message, tlp, ioc, sighted, ignoreSimilarity = None),
         Seq(mainOrganisation),
         dataType,
         tags,

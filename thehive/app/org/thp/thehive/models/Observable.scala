@@ -18,7 +18,7 @@ case class ObservableData()
 case class ObservableTag()
 
 @BuildVertexEntity
-case class Observable(message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
+case class Observable(message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean, ignoreSimilarity: Option[Boolean])
 
 case class RichObservable(
     observable: Observable with Entity,
@@ -39,6 +39,7 @@ case class RichObservable(
   def tlp: Int                                                           = observable.tlp
   def ioc: Boolean                                                       = observable.ioc
   def sighted: Boolean                                                   = observable.sighted
+  def ignoreSimilarity: Option[Boolean]                                  = observable.ignoreSimilarity
   def dataOrAttachment: Either[Data with Entity, Attachment with Entity] = data.toLeft(attachment.get)
 }
 

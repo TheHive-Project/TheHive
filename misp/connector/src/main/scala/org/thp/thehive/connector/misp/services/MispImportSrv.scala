@@ -110,7 +110,7 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false),
+              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
               observableType,
               attribute.tags.map(_.name).toSet ++ additionalTags,
               Right(attribute.data.get)
@@ -122,7 +122,7 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false),
+              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
               observableType,
               attribute.tags.map(_.name).toSet ++ additionalTags,
               Left(attribute.value)
@@ -140,7 +140,7 @@ class MispImportSrv @Inject() (
                   s"attribute ${attribute.category}:${attribute.`type`} (${attribute.tags}) is converted to observable $observableType with tags $additionalTags"
                 )
                 (
-                  Observable(attribute.comment, 0, ioc = false, sighted = false),
+                  Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
                   observableType,
                   attribute.tags.map(_.name).toSet ++ additionalTags,
                   Left(value)

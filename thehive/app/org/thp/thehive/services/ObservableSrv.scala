@@ -274,7 +274,7 @@ object ObservableOps {
             .by(_.data.fold)
             .by(_.attachments.fold)
             .by(_.tags.fold)
-            .by(_.similar.visible.limit(1).count)
+            .by(_.filteredSimilar.visible.limit(1).count)
             .by(_.keyValues.fold)
             .by(_.reportTags.fold)
         )
@@ -302,7 +302,7 @@ object ObservableOps {
             .by(_.data.fold)
             .by(_.attachments.fold)
             .by(_.tags.fold)
-            .by(_.similar.visible.limit(1).count)
+            .by(_.filteredSimilar.visible.limit(1).count)
             .by(_.keyValues.fold)
             .by(_.reportTags.fold)
             .by(entityRenderer)
@@ -333,6 +333,12 @@ object ObservableOps {
       if (tags.nonEmpty)
         traversal.outE[ObservableTag].filter(_.otherV.hasId(tags.map(_._id).toSeq: _*)).remove()
 
+    def filteredSimilar: Traversal.V[Observable] =
+      traversal
+        .hasNot(_.ignoreSimilarity, true)
+        .similar
+        .hasNot(_.ignoreSimilarity, true)
+
     def similar: Traversal.V[Observable] = {
       val originLabel = StepLabel.v[Observable]
       traversal
@@ -341,7 +347,7 @@ object ObservableOps {
           _.out[ObservableData]
             .in[ObservableData],
           _.out[ObservableAttachment]
-            .in[ObservableAttachment]
+            .in[ObservableAttachment] // FIXME this doesn't work. Link must be done with attachmentId
         )
         .where(JP.without(originLabel.name))
         .dedup

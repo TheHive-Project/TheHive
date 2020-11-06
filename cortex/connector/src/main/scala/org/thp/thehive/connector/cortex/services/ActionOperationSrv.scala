@@ -98,7 +98,7 @@ class ActionOperationSrv @Inject() (
           c       <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddArtifactToCase without case")))(Success(_))
           obsType <- observableTypeSrv.getOrFail(EntityIdOrName(dataType))
           richObservable <- observableSrv.create(
-            Observable(Some(dataMessage), 2, ioc = false, sighted = false),
+            Observable(Some(dataMessage), 2, ioc = false, sighted = false, ignoreSimilarity = None),
             obsType,
             dataMessage,
             Set.empty[String],
