@@ -90,9 +90,9 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         summary = None,
         owner = Some("certuser@thehive.local"),
         customFields = Json.obj(
-          "boolean1" -> Json.obj("boolean" -> true, "order" -> JsNull),
-          "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 1),
-          "date1"    -> Json.obj("date" -> now.getTime, "order" -> JsNull)
+          "boolean1" -> Json.obj("boolean" -> true, "order" -> 2),
+          "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 0),
+          "date1"    -> Json.obj("date" -> now.getTime, "order" -> 1)
         ),
         stats = Json.obj()
       )

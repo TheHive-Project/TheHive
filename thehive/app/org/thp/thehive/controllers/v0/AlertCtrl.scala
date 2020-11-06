@@ -14,6 +14,7 @@ import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityId, EntityIdOrName, EntityName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -52,7 +53,7 @@ class AlertCtrl @Inject() (
         val caseTemplateName: Option[String]  = request.body("caseTemplate")
         val inputAlert: InputAlert            = request.body("alert")
         val observables: Seq[InputObservable] = request.body("observables")
-        val customFields                      = inputAlert.customFields.map(c => (c.name, c.value, c.order))
+        val customFields                      = inputAlert.customFields.map(c => InputCustomFieldValue(c.name, c.value, c.order))
         val caseTemplate                      = caseTemplateName.flatMap(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.headOption)
         for {
           organisation <-
@@ -428,7 +429,7 @@ class PublicAlert @Inject() (
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
             c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
-            _ <- alertSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
+            _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
         case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
           for {

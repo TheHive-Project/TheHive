@@ -275,8 +275,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       summary = None,
       owner = Some("certuser@thehive.local"),
       customFields = Json.obj(
-        "boolean1" -> Json.obj("boolean" -> JsNull, "order" -> 2),
-        "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 1)
+        "boolean1" -> Json.obj("boolean" -> JsNull, "order" -> 1),
+        "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 0)
       ),
       stats = Json.obj()
     )
