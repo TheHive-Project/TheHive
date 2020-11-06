@@ -24,6 +24,8 @@
                 passwordConfirm: ''
             };
 
+            $scope.keyData = {};
+
             $scope.mfaData = {
                 enabled: $scope.currentUser.hasMFA,
                 secret: null,
@@ -32,6 +34,7 @@
             };
 
             $scope.canChangePass = appConfig.config.capabilities.indexOf('changePassword') !== -1;
+            $scope.canChangeKey = appConfig.config.capabilities.indexOf('authByKey') !== -1;
             $scope.canChangeMfa = appConfig.config.capabilities.indexOf('mfa') !== -1;
 
 
@@ -93,6 +96,43 @@
                 } else {
                     $state.go('app.cases');
                 }
+            };
+
+            $scope.createKey = function(){
+                    var modalInstance = ModalSrv.confirm(
+                        'Renew API Key',
+                        'Are you sure you want to renew your API Key?', {
+                            flavor: 'danger',
+                            okText: 'Yes, renew it'
+                        }
+                    );
+
+                    modalInstance.result
+                        .then(function() {
+                            UserSrv.setKey($scope.currentUser.login);
+                        })
+                        .then(function() {
+                            delete $scope.keyData.key;
+                            NotificationSrv.success('API key has been successfully renewed.');
+                        })
+                        .catch(function(err) {
+                            if (!_.isString(err)) {
+                                NotificationSrv.error('SettingsCtrl', err.data, err.status);
+                            }
+                        });
+            };
+
+            $scope.getKey = function() {
+                UserSrv.getKey($scope.currentUser.login)
+                    .then(function(key) {
+                        $scope.keyData.key = key;
+                    });
+            };
+
+            $scope.copyKey = function() {
+                clipboard.copyText($scope.keyData.key);
+                delete $scope.keyData.key;
+                NotificationSrv.success('API key has been successfully copied to clipboard.');
             };
 
             $scope.copySecret = function(secret) {
