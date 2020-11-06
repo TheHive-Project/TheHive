@@ -83,7 +83,7 @@ class AlertSrv @Inject() (
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
-        cfs          <- customFields.toTry { simpleCf: InputCustomFieldValue => createCustomField(createdAlert, simpleCf) }
+        cfs          <- customFields.toTry { cf: InputCustomFieldValue => createCustomField(createdAlert, cf) }
         richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name), 0)
         _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
       } yield richAlert
@@ -171,23 +171,23 @@ class AlertSrv @Inject() (
 
   def createCustomField(
       alert: Alert with Entity,
-      simpleCf: InputCustomFieldValue
+      inputCf: InputCustomFieldValue
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(EntityIdOrName(simpleCf.name))
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), simpleCf.value).map(_.order_=(simpleCf.order))
+      cf   <- customFieldSrv.getOrFail(EntityIdOrName(inputCf.name))
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), inputCf.value).map(_.order_=(inputCf.order))
       ccfe <- alertCustomFieldSrv.create(ccf, alert, cf)
     } yield RichCustomField(cf, ccfe)
 
-  def setOrCreateCustomField(alert: Alert with Entity, simpleCf: InputCustomFieldValue)(implicit
+  def setOrCreateCustomField(alert: Alert with Entity, cf: InputCustomFieldValue)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val cfv = get(alert).customFields(simpleCf.name)
+    val cfv = get(alert).customFields(cf.name)
     if (cfv.clone().exists)
-      cfv.setValue(simpleCf.value)
+      cfv.setValue(cf.value)
     else
-      createCustomField(alert, simpleCf).map(_ => ())
+      createCustomField(alert, cf).map(_ => ())
   }
 
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
