@@ -96,7 +96,7 @@ class CaseSrv @Inject() (
 
   private def cleanCustomFields(caseTemplateCf: Seq[InputCustomFieldValue], caseCf: Seq[InputCustomFieldValue]): Seq[InputCustomFieldValue] = {
     val uniqueFields = caseTemplateCf.filter {
-      case InputCustomFieldValue(name, _, _) => !caseCf.map(c => c.name).contains(name)
+      case InputCustomFieldValue(name, _, _) => !caseCf.exists(_.name == name)
     }
     (caseCf ++ uniqueFields)
       .sortBy(cf => (cf.order.isEmpty, cf.order))
