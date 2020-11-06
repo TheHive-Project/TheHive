@@ -37,3 +37,9 @@ tmp
 /.idea/**
 !/.idea/runConfigurations/
 !/.idea/runConfigurations/*
+
+# VSCode
+.vscode/
+.bloop/
+.metals/
+metals.sbt
