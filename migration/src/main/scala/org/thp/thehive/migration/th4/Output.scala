@@ -16,6 +16,7 @@ import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.models.{CortexSchemaDefinition, TheHiveCortexSchemaProvider}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
@@ -467,7 +468,7 @@ class Output @Inject() (
         richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.caseTemplate, organisation, tags, Nil, Nil)
         _ = updateMetaData(richCaseTemplate.caseTemplate, inputCaseTemplate.metaData)
         _ = inputCaseTemplate.customFields.foreach {
-          case (name, value, order) =>
+          case InputCustomFieldValue(name, value, order) =>
             (for {
               cf  <- getCustomField(name)
               ccf <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), value)
@@ -678,7 +679,7 @@ class Output @Inject() (
         _     <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), alert, organisation)
         _     <- caseTemplate.map(ct => alertSrv.alertCaseTemplateSrv.create(AlertCaseTemplate(), alert, ct)).flip
         _     <- tags.toTry(t => alertSrv.alertTagSrv.create(AlertTag(), alert, t))
-        _     <- inputAlert.customFields.toTry { case (name, value) => alertSrv.createCustomField(alert, name, value, None) }
+        _     <- inputAlert.customFields.toTry { case (name, value) => alertSrv.createCustomField(alert, InputCustomFieldValue(name, value, None)) }
         _ = updateMetaData(alert, inputAlert.metaData)
         _ = inputAlert.caseId.flatMap(c => getCase(EntityId.read(c)).toOption).foreach(alertSrv.alertCaseSrv.create(AlertCase(), alert, _))
       } yield IdMapping(inputAlert.metaData.id, alert._id)

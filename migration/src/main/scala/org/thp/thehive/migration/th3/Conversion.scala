@@ -8,6 +8,7 @@ import akka.util.ByteString
 import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.connector.cortex.models.{Action, Job, JobStatus}
 import org.thp.thehive.controllers.v0
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import play.api.libs.functional.syntax._
@@ -338,12 +339,12 @@ trait Conversion {
       tags    = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
       metrics = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       metricsValue = metrics.value.map {
-        case (name, value) => (name, Some(value), None)
+        case (name, value) => InputCustomFieldValue(name, Some(value), None)
       }
       customFields <- (json \ "customFields").validateOpt[JsObject]
       customFieldsValue = customFields.getOrElse(JsObject.empty).value.map {
         case (name, value) =>
-          (
+          InputCustomFieldValue(
             name,
             Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull),
             (value \ "order").asOpt[Int]

@@ -7,6 +7,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -39,7 +40,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
           ),
           app[OrganisationSrv].getOrFail(EntityName("cert")).get,
           Set("tag1", "tag2"),
-          Seq(("string1", Some("lol"), None)),
+          Seq(InputCustomFieldValue("string1", Some("lol"), None)),
           Some(app[CaseTemplateSrv].getOrFail(EntityName("spam")).get)
         )
       }

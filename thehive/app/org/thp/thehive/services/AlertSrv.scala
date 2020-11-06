@@ -14,6 +14,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IdentityConverter, StepLabel, Traversal}
 import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -55,7 +56,7 @@ class AlertSrv @Inject() (
       alert: Alert,
       organisation: Organisation with Entity,
       tagNames: Set[String],
-      customFields: Seq[(String, Option[Any], Option[Int])],
+      customFields: Seq[InputCustomFieldValue],
       caseTemplate: Option[CaseTemplate with Entity]
   )(implicit
       graph: Graph,
@@ -67,7 +68,7 @@ class AlertSrv @Inject() (
       alert: Alert,
       organisation: Organisation with Entity,
       tags: Seq[Tag with Entity],
-      customFields: Seq[(String, Option[Any], Option[Int])],
+      customFields: Seq[InputCustomFieldValue],
       caseTemplate: Option[CaseTemplate with Entity]
   )(implicit
       graph: Graph,
@@ -82,7 +83,7 @@ class AlertSrv @Inject() (
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
-        cfs          <- customFields.toTry { case (name, value, order) => createCustomField(createdAlert, name, value, order) }
+        cfs          <- customFields.toTry { simpleCf: InputCustomFieldValue => createCustomField(createdAlert, simpleCf) }
         richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name), 0)
         _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
       } yield richAlert
@@ -170,25 +171,23 @@ class AlertSrv @Inject() (
 
   def createCustomField(
       alert: Alert with Entity,
-      name: String,
-      value: Option[Any],
-      order: Option[Int]
+      simpleCf: InputCustomFieldValue
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(EntityIdOrName(name))
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), value).map(_.order_=(order))
+      cf   <- customFieldSrv.getOrFail(EntityIdOrName(simpleCf.name))
+      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), simpleCf.value).map(_.order_=(simpleCf.order))
       ccfe <- alertCustomFieldSrv.create(ccf, alert, cf)
     } yield RichCustomField(cf, ccfe)
 
-  def setOrCreateCustomField(alert: Alert with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(implicit
+  def setOrCreateCustomField(alert: Alert with Entity, simpleCf: InputCustomFieldValue)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val cfv = get(alert).customFields(customFieldName)
+    val cfv = get(alert).customFields(simpleCf.name)
     if (cfv.clone().exists)
-      cfv.setValue(value)
+      cfv.setValue(simpleCf.value)
     else
-      createCustomField(alert, customFieldName, value, order).map(_ => ())
+      createCustomField(alert, simpleCf).map(_ => ())
   }
 
   def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
@@ -206,7 +205,7 @@ class AlertSrv @Inject() (
       .filterNot(rcf => customFieldNames.contains(rcf.name))
       .foreach(rcf => get(alert).customFields(rcf.name).remove())
     customFieldValues
-      .toTry { case (cf, v) => setOrCreateCustomField(alert, cf.name, Some(v), None) }
+      .toTry { case (cf, v) => setOrCreateCustomField(alert, InputCustomFieldValue(cf.name, Some(v), None)) }
       .map(_ => ())
   }
 
@@ -244,7 +243,7 @@ class AlertSrv @Inject() (
           .caseTemplate
           .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
           .flip
-      customField = alert.customFields.map(f => (f.name, f.value, f.order))
+      customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
       case0 = Case(
         number = 0,
         title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,

@@ -12,6 +12,7 @@ import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{RichSeq, _}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
@@ -46,7 +47,7 @@ class CaseCtrl @Inject() (
         val caseTemplateName: Option[String] = request.body("caseTemplate")
         val inputCase: InputCase             = request.body("case")
         val inputTasks: Seq[InputTask]       = request.body("tasks")
-        val customFields                     = inputCase.customFields.map(c => (c.name, c.value, c.order))
+        val customFields                     = inputCase.customFields.map(c => InputCustomFieldValue(c.name, c.value, c.order))
         for {
           organisation <-
             userSrv

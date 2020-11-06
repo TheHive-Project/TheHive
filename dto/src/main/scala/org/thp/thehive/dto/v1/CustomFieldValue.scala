@@ -48,25 +48,23 @@ object InputCustomFieldValue {
     case (_, FObject(fields)) =>
       fields
         .toSeq
-        .zipWithIndex
         .validatedBy {
-          case ((name, valueField), i) => valueParser(valueField).map(v => InputCustomFieldValue(name, v, Some(i)))
+          case (name, valueField) => valueParser(valueField).map(v => InputCustomFieldValue(name, v, None))
         }
         .map(_.toSeq)
     case (_, FSeq(list)) =>
       list
-        .zipWithIndex
         .validatedBy {
-        case (cf: FObject, i) =>
-          val order = FieldsParser.int(cf.get("order")).getOrElse(i)
+        case cf: FObject =>
+          val order = FieldsParser.int(cf.get("order")).toOption
           for {
             name  <- FieldsParser.string(cf.get("name"))
             value <- valueParser(cf.get("value"))
-          } yield InputCustomFieldValue(name, value, Some(order))
-        case (other, i) =>
+          } yield InputCustomFieldValue(name, value, order)
+        case other =>
           Bad(
             One(
-              InvalidFormatAttributeError(s"customField[$i]", "CustomFieldValue", Set.empty, other)
+              InvalidFormatAttributeError(s"customField", "CustomFieldValue", Set.empty, other)
             )
           )
       }
@@ -82,6 +80,7 @@ object InputCustomFieldValue {
       case InputCustomFieldValue(name, None, _)             => name -> JsNull
       case InputCustomFieldValue(name, other, _)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
     }
+    // TODO Change JsObject to JsArray ?
     JsObject(fields)
   }
 }
