@@ -131,7 +131,7 @@ object Conversion {
         status = inputCase.status,
         summary = inputCase.summary orElse caseTemplate.summary,
         user = inputCase.user,
-        customFieldValue = inputCase.customFieldValue
+        customFieldValues = inputCase.customFieldValues
       )
   }
 

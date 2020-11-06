@@ -9,6 +9,7 @@ import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.Converter
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
@@ -96,7 +97,7 @@ class Properties @Inject() (
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
           for {
             c <- alertSrv.getOrFail(vertex)(graph)
-            _ <- alertSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
+            _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })

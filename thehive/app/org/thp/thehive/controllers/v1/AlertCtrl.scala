@@ -10,7 +10,7 @@ import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.InputAlert
+import org.thp.thehive.dto.v1.{InputAlert, InputCustomFieldValue}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseTemplateOps._
@@ -85,7 +85,7 @@ class AlertCtrl @Inject() (
         val caseTemplate                     = caseTemplateName.flatMap(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.headOption)
         for {
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail("Organisation")
-          customFields = inputAlert.customFieldValue.map(cf => (cf.name, cf.value, cf.order))
+          customFields = inputAlert.customFieldValue.map(cf => InputCustomFieldValue(cf.name, cf.value, cf.order))
           richAlert <- alertSrv.create(inputAlert.toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }

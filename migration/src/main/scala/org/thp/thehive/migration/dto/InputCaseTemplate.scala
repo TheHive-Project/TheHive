@@ -1,5 +1,6 @@
 package org.thp.thehive.migration.dto
 
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models.CaseTemplate
 
 case class InputCaseTemplate(
@@ -7,5 +8,5 @@ case class InputCaseTemplate(
     caseTemplate: CaseTemplate,
     organisation: String,
     tags: Set[String],
-    customFields: Seq[(String, Option[Any], Option[Int])]
+    customFields: Seq[InputCustomFieldValue]
 )

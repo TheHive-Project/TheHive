@@ -15,6 +15,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CustomFieldOps._
@@ -62,7 +63,7 @@ class CaseSrv @Inject() (
       user: Option[User with Entity],
       organisation: Organisation with Entity,
       tags: Set[Tag with Entity],
-      customFields: Seq[(String, Option[Any], Option[Int])],
+      customFields: Seq[InputCustomFieldValue],
       caseTemplate: Option[RichCaseTemplate],
       additionalTasks: Seq[(Task, Option[User with Entity])]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
@@ -72,26 +73,36 @@ class CaseSrv @Inject() (
       _           <- caseUserSrv.create(CaseUser(), createdCase, assignee)
       _           <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
       _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
+
       createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.assignee)).toTry {
         case (task, owner) => taskSrv.create(task, owner)
       }
       _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
-      caseTemplateCustomFields =
-        caseTemplate
-          .fold[Seq[RichCustomField]](Nil)(_.customFields)
-          .map(cf => (cf.name, cf.value, cf.order))
-      uniqueFields = caseTemplateCustomFields.filter {
-        case (name, _, _) => !customFields.map(c => c._1).contains(name)
+
+      caseTemplateCf = caseTemplate
+        .fold[Seq[RichCustomField]](Seq())(_.customFields)
+        .map(cf => InputCustomFieldValue(cf.name, cf.value, cf.order))
+      cfs <- cleanCustomFields(caseTemplateCf, customFields).toTry {
+        case InputCustomFieldValue(name, value, order) => createCustomField(createdCase, EntityIdOrName(name), value, order)
       }
-      cfs <- (uniqueFields ++ customFields).toTry {
-        case (name, value, order) => createCustomField(createdCase, EntityIdOrName(name), value, order)
-      }
+
       caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
       allTags          = tags ++ caseTemplateTags
       _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
+
       richCase = RichCase(createdCase, allTags.toSeq, None, None, Some(assignee.login), cfs, authContext.permissions)
       _ <- auditSrv.`case`.create(createdCase, richCase.toJson)
     } yield richCase
+
+  private def cleanCustomFields(caseTemplateCf: Seq[InputCustomFieldValue], caseCf: Seq[InputCustomFieldValue]): Seq[InputCustomFieldValue] = {
+    val uniqueFields = caseTemplateCf.filter {
+      case InputCustomFieldValue(name, _, _) => !caseCf.map(c => c.name).contains(name)
+    }
+    (caseCf ++ uniqueFields)
+      .sortBy(cf => (cf.order.isEmpty, cf.order))
+      .zipWithIndex
+      .map { case (InputCustomFieldValue(name, value, _), i) => InputCustomFieldValue(name, value, Some(i)) }
+  }
 
   def nextCaseNumber(implicit graph: Graph): Int = startTraversal.getLast.headOption.fold(0)(_.number) + 1
 
