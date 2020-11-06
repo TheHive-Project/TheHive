@@ -352,5 +352,11 @@ class PublicCase @Inject() (
           )
         ).readonly
       )
+      .property("viewingOrganisation", UMapping.string)(
+        _.authSelect((cases, authContext) => cases.organisations.visible(authContext).value(_.name)).readonly
+      )
+      .property("owningOrganisation", UMapping.string)(
+        _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
+      )
       .build
 }
