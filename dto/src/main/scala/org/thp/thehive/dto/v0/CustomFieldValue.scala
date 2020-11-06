@@ -70,21 +70,20 @@ object InputCustomFieldValue {
     case (_, FObject(fields)) =>
       fields
         .toSeq
-        .zipWithIndex
         .validatedBy {
-          case ((name, FString(value)), i)   => Good(InputCustomFieldValue(name, Some(value), Some(i)))
-          case ((name, FNumber(value)), i)   => Good(InputCustomFieldValue(name, Some(value), Some(i)))
-          case ((name, FBoolean(value)), i)  => Good(InputCustomFieldValue(name, Some(value), Some(i)))
-          case ((name, FAny(value :: _)), i) => Good(InputCustomFieldValue(name, Some(value), Some(i)))
-          case ((name, FNull), i)            => Good(InputCustomFieldValue(name, None, Some(i)))
-          case ((name, obj: FObject), i) =>
+          case (name, FString(value))   => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FNumber(value))   => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FBoolean(value))  => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(name, Some(value), None))
+          case (name, FNull)            => Good(InputCustomFieldValue(name, None, None))
+          case (name, obj: FObject) =>
             getStringCustomField(name, obj) orElse
               getIntegerCustomField(name, obj) orElse
               getFloatCustomField(name, obj) orElse
               getDateCustomField(name, obj) orElse
               getBooleanCustomField(name, obj) getOrElse
               Good(InputCustomFieldValue(name, None, None))
-          case ((name, other), i) =>
+          case (name, other) =>
             Bad(
               One(
                 InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: date"), other)
