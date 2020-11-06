@@ -58,16 +58,10 @@ angular.module('theHiveControllers').controller('RootCtrl',
             {_name: 'currentUser'},
             {_name: 'tasks'},
             {_name: 'filter',
-                _or: [
-                    {
-                        _field: 'status',
-                        _value: 'Waiting'
-                    },
-                    {
-                        _field: 'status',
-                        _value: 'InProgress'
-                    }
-                ]
+                _in: {
+                    _field: 'status',
+                    _values: ['Waiting', 'InProgress']
+                }
             },
             {_name: 'count'}
         ], {

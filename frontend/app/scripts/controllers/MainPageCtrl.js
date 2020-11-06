@@ -9,16 +9,10 @@
                 self.view = {};
 
                 self.defaultFilter = {
-                    _or: [
-                        {
-                            _field: 'status',
-                            _value: 'Waiting'
-                        },
-                        {
-                            _field: 'status',
-                            _value: 'InProgress'
-                        }
-                    ]
+                    _in: {
+                        _field: 'status',
+                        _values: ['Waiting', 'InProgress']
+                    }
                 };
 
                 self.queryOperations = view === 'mytasks' ? [
