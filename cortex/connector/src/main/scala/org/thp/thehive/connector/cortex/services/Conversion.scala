@@ -28,6 +28,7 @@ object Conversion {
         .withFieldComputed(_.tlp, _.tlp)
         .withFieldConst(_.ioc, false)
         .withFieldConst(_.sighted, false)
+        .withFieldConst(_.ignoreSimilarity, None)
         .transform
   }
 

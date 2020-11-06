@@ -17,7 +17,8 @@ case class InputObservable(
     tlp: Option[Int] = None,
     tags: Set[String] = Set.empty,
     ioc: Option[Boolean] = None,
-    sighted: Option[Boolean] = None
+    sighted: Option[Boolean] = None,
+    ignoreSimilarity: Option[Boolean] = None
 )
 
 object InputObservable {
@@ -51,7 +52,8 @@ case class OutputObservable(
     reports: JsObject,
     stats: JsObject,
     seen: Option[Boolean],
-    `case`: Option[OutputCase]
+    `case`: Option[OutputCase],
+    ignoreSimilarity: Option[Boolean]
 )
 
 object OutputObservable {

@@ -162,7 +162,7 @@ class CaseSrv @Inject() (
   ): Try[Unit] = {
     val alreadyExistInThatCase = observableSrv
       .get(richObservable.observable)
-      .similar
+      .filteredSimilar
       .visible
       .`case`
       .hasId(`case`._id)

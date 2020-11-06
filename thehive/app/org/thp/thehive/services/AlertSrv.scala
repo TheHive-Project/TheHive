@@ -271,28 +271,30 @@ class AlertSrv @Inject() (
       updatedCase <- mergeInCase(alert, case0)
     } yield updatedCase
 
-  def mergeInCase(alert: Alert with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] = {
-    auditSrv.mergeAudits {
-      val description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
+  def mergeInCase(alert: Alert with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
+    auditSrv
+      .mergeAudits {
+        val description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
 
-      for {
-        _ <- markAsRead(alert._id)
-        _ <- importObservables(alert, `case`)
-        _ <- importCustomFields(alert, `case`)
-        _ <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
-        _ <- caseSrv.addTags(`case`, get(alert).tags.toSeq.map(_.toString).toSet)
-        // No audit for markAsRead and observables
-        // Audits for customFields, description and tags
-        c <- caseSrv.getOrFail(`case`._id)
-        details <- Success(Json.obj(
-          "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),
-          "description" -> c.description,
-          "tags" -> caseSrv.get(`case`).tags.toSeq.map(_.toString))
-        )
-      } yield details
-    } (details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
+        for {
+          _ <- markAsRead(alert._id)
+          _ <- importObservables(alert, `case`)
+          _ <- importCustomFields(alert, `case`)
+          _ <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
+          _ <- caseSrv.addTags(`case`, get(alert).tags.toSeq.map(_.toString).toSet)
+          // No audit for markAsRead and observables
+          // Audits for customFields, description and tags
+          c <- caseSrv.getOrFail(`case`._id)
+          details <- Success(
+            Json.obj(
+              "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),
+              "description"  -> c.description,
+              "tags"         -> caseSrv.get(`case`).tags.toSeq.map(_.toString)
+            )
+          )
+        } yield details
+      }(details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
       .flatMap(_ => caseSrv.getOrFail(`case`._id))
-  }
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(implicit
       graph: Graph,
@@ -335,10 +337,7 @@ class AlertSrv @Inject() (
       .toIterator
       .toTry { richCustomField =>
         caseSrv
-          .setOrCreateCustomField(`case`,
-            richCustomField.customField._id,
-            richCustomField.value,
-            richCustomField.customFieldValue.order)
+          .setOrCreateCustomField(`case`, richCustomField.customField._id, richCustomField.value, richCustomField.customFieldValue.order)
       }
       .map(_ => ())
 
@@ -401,7 +400,7 @@ object AlertOps {
         authContext: AuthContext
     ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] = {
       val similarObservables = observables
-        .similar
+        .filteredSimilar
         .visible
       maybeCaseFilter
         .fold(similarObservables)(caseFilter => similarObservables.filter(o => caseFilter(o.`case`)))

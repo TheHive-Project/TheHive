@@ -62,7 +62,7 @@ class ObservableCtrl @Inject() (
     ),
     Query[Traversal.V[Observable], Traversal.V[Observable]](
       "similar",
-      (observableSteps, authContext) => observableSteps.similar.visible(authContext)
+      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
     ),
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`)
   )

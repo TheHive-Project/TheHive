@@ -19,7 +19,7 @@ trait ObservableRenderer {
   def observableStatsRenderer(implicit
       authContext: AuthContext
   ): Traversal.V[Observable] => Traversal[JsObject, JMap[JBoolean, JLong], Converter[JsObject, JMap[JBoolean, JLong]]] =
-    _.similar
+    _.filteredSimilar
       .visible
       .groupCount(_.byValue(_.ioc))
       .domainMap { stats =>
