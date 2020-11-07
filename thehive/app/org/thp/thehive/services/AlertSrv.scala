@@ -411,7 +411,7 @@ object AlertOps {
             _.selectKeys
               .project(
                 _.by(_.richCaseWithoutPerms)
-                  .by((_: Traversal.V[Case]).observables.groupCount(_.byValue(_.ioc)))
+                  .by((_: Traversal.V[Case]).observables.hasNot(_.ignoreSimilarity, true).groupCount(_.byValue(_.ioc)))
               )
           )
             .by(

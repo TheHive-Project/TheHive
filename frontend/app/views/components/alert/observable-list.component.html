@@ -23,7 +23,7 @@
                 <thead>
                     <tr>
                         <th style="width: 10px;" class="p-0"></th>
-                        <th style="width:40px;"></th>
+                        <th style="width:50px;"></th>
                         <th style="width:100px;">Type</th>
                         <th>Data</th>
                         <th style="width: 120px">Date Added</th>
@@ -36,6 +36,7 @@
                             <span ng-if="observable.ioc" class="mr-xxs fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                             <span ng-if="observable.sighted" class="mr-xxs fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                             <span ng-if="observable.extraData.seen.seen > 0" class="mr-xxs glyphicon glyphicon-eye-open" ng-class="{'text-danger': observable.extraData.seen.ioc}" uib-tooltip="Seen on {{observable.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                            <span ng-if="observable.ignoreSimilarity" class="mr-xxs fa fa-chain-broken" uib-tooltip="Ignored for similarity" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                         </td>
                         <td>
                             <a href ng-click="$cmp.filterBy('dataType', observable.dataType)">{{observable.dataType}}</a>
