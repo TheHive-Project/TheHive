@@ -10,6 +10,7 @@
                 enableTlp: false,
                 enableIoc: false,
                 enableSighted: false,
+                enableIgnoreSimilarity: false,
                 enableAddTags: false,
                 enableRemoveTags: false
             };
@@ -18,6 +19,7 @@
             this.params = {
                 ioc: false,
                 sighted: false,
+                ignoreSimilarity: false,
                 tlp: 2,
                 addTagNames: '',
                 removeTagNames: ''
@@ -30,6 +32,7 @@
                 this.state.enableTlp = this.state.all;
                 this.state.enableIoc = this.state.all;
                 this.state.enableSighted = this.state.all;
+                this.state.enableIgnoreSimilarity = this.state.all;
                 this.state.enableAddTags = this.state.all;
                 this.state.enableRemoveTags = this.state.all;
             };
@@ -52,7 +55,7 @@
             };
 
             this.buildOperations = function(postData) {
-                var flags = _.pick(postData, 'ioc', 'sighted', 'tlp');
+                var flags = _.pick(postData, 'ioc', 'sighted', 'ignoreSimilarity', 'tlp');
 
                 // Handle updates without tag changes
                 if(!postData.addTags && !postData.removeTags) {
@@ -110,6 +113,10 @@
                     postData.sighted = this.params.sighted;
                 }
 
+                if(this.state.enableIgnoreSimilarity) {
+                    postData.ignoreSimilarity = this.params.ignoreSimilarity;
+                }
+
                 if(this.state.enableTlp) {
                     postData.tlp = this.params.tlp;
                 }
@@ -141,6 +148,11 @@
             this.toogleSighted = function() {
                 this.params.sighted = !this.params.sighted;
                 this.state.enableSighted = true;
+            };
+
+            this.toogleIgnoreSimilarity = function() {
+                this.params.ignoreSimilarity = !this.params.ignoreSimilarity;
+                this.state.enableIgnoreSimilarity = true;
             };
 
             this.toggleTlp = function(value) {
