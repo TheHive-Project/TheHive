@@ -380,6 +380,10 @@ ul.observable-reports-summary li {
     background: #f5f5f5;
 }
 
+.text-disabled {
+    color: #dfdfdf;
+}
+
 .text-yellow {
     color: rgb(231, 147, 0);
 }
