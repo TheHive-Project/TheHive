@@ -5,6 +5,8 @@
     'use strict';
     angular.module('theHiveControllers')
         .controller('AuthenticationCtrl', function($rootScope, $scope, $state, $location, $uibModalStack, $stateParams, AuthenticationSrv, NotificationSrv, UtilsSrv, UrlParser, appConfig) {
+            $scope.version = appConfig.versions.TheHive;
+
             $scope.params = {
                 requireMfa: false
             };
