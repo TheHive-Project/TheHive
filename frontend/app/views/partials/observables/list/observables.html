@@ -73,7 +73,7 @@
                     <span ng-click="addFilterValue('sighted', artifact.sighted)" ng-if="artifact.sighted" class="clickable fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                 </td>
                 <td>
-                    <span ng-if="artifact.ignoreSimilarity" class="fa fa-chain-broken" uib-tooltip="ignored from similarity" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                    <span ng-click="addFilterValue('ignoreSimilarity', artifact.ignoreSimilarity)" ng-if="artifact.ignoreSimilarity" class="clickable fa fa-chain-broken" uib-tooltip="ignored from similarity" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
                 </td>
                 <td>
                     <span
