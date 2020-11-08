@@ -208,6 +208,7 @@ class PublicObservable @Inject() (
     .property("startDate", UMapping.date)(_.select(_._createdAt).readonly)
     .property("ioc", UMapping.boolean)(_.field.updatable)
     .property("sighted", UMapping.boolean)(_.field.updatable)
+    .property("ignoreSimilarity", UMapping.boolean)(_.field.updatable)
     .property("tags", UMapping.string.set)(
       _.select(_.tags.displayName)
         .filter((_, cases) =>
