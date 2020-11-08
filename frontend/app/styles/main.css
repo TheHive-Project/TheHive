@@ -727,3 +727,13 @@ table tr td.task-actions span.action-button {
 .observable-flags.inline div {
     display: inline;
 }
+
+@media (max-width: 991px) {
+    .main-header .navbar-right a {
+        color: #777;
+    }
+}
+
+.icon-bar {
+    background-color: #FFF;
+}
