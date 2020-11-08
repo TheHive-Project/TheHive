@@ -15,6 +15,7 @@
             templateUrl: 'views/components/common/observable-flags.component.html',
             bindings: {
                 observable: '<',
+                inline: '<',
                 onFilter: '&'
             }
         });

@@ -1,4 +1,4 @@
-<div class="observable-flags">
+<div class="observable-flags" ng-class="{'inline': $ctrl.inline}">
     <!-- IOC flag -->
     <div ng-if="!!$ctrl.observable.ioc" class="observable-ioc clickable" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"
         ng-click="$ctrl.filterBy('ioc', true)">
