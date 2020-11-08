@@ -78,6 +78,20 @@
             </dd>
         </dl>
 
+        <dl class="dl-horizontal clear">
+            <dt class="pull-left">Ignored for similarity</dt>
+            <dd ng-if="canEdit">
+                <span class="clickable" ng-click="updateField('ignoreSimilarity', !artifact.ignoreSimilarity)">
+                    <i class="text-primary fa" ng-class="{'true': 'fa-chain-broken', 'false': 'fa-chain'}[artifact.ignoreSimilarity]"></i>
+                </span>
+            </dd>
+            <dd ng-if="!canEdit">
+                <span>
+                    <i class="text-primary fa" ng-class="{'true': 'fa-chain-broken', 'false': 'fa-chain'}[artifact.ignoreSimilarity]"></i>
+				</span>
+            </dd>
+        </dl>
+
         <dl class="dl-horizontal">
             <dt class="pull-left">Tags</dt>
             <dd ng-if="canEdit">
@@ -101,8 +115,9 @@
         </dl>
     </div>
     <!-- Observable links -->
-    <div class="col-md-6">
+    <div class="col-md-6" ng-if="!!!artifact.ignoreSimilarity">
         <h4 class="vpad10 text-primary">Links</h4>
+
         <div class="empty-message" ng-if="similarArtifacts.length === 0">
             This observable has not been seen in any other case
         </div>

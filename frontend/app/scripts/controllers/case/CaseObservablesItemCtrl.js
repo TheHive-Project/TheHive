@@ -33,23 +33,6 @@
                 mode: 'vb'
             };
 
-            // Add tab
-            CaseTabsSrv.addTab(observableName, {
-                name: observableName,
-                label: artifact.data || artifact.attachment.name,
-                closable: true,
-                state: 'app.case.observables-item',
-                params: {
-                    itemId: artifact.id
-                }
-            });
-
-            // Select tab
-            $timeout(function() {
-                CaseTabsSrv.activateTab(observableName);
-                $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
-            }, 0);
-
             $scope.initScope = function (artifact) {
 
                 var promise = $scope.analysisEnabled ? AnalyzerSrv.forDataType(artifact.dataType) : $q.resolve([]);
@@ -171,14 +154,6 @@
                 });
             };
 
-            CaseArtifactSrv.similar(observableId, {
-                range: 'all',
-                sort: ['-startDate']
-            }).then(function(response) {
-                $scope.similarArtifacts = response;
-            });
-
-
             $scope.openArtifact = function (a) {
                 $state.go('app.case.observables-item', {
                     caseId: a.stats['case']._id,
@@ -214,6 +189,10 @@
                     })
                     .then(function(response) {
                         $scope.artifact = response.toJSON();
+
+                        if(fieldName === 'ignoreSimilarity' && !!!newValue) {
+                            $scope.getSimilarity();
+                        }
                     })
                     .catch(function (response) {
                         NotificationSrv.error('ObservableDetails', response.data, response.status);
@@ -367,7 +346,38 @@
                     });
             };
 
+            $scope.getSimilarity = function() {
+                CaseArtifactSrv.similar(observableId, {
+                    range: 'all',
+                    sort: ['-startDate']
+                }).then(function(response) {
+                    $scope.similarArtifacts = response;
+                });
+            };
+
             this.$onInit = function () {
+
+                // Add tab
+                CaseTabsSrv.addTab(observableName, {
+                    name: observableName,
+                    label: artifact.data || artifact.attachment.name,
+                    closable: true,
+                    state: 'app.case.observables-item',
+                    params: {
+                        itemId: artifact.id
+                    }
+                });
+
+                // Select tab
+                $timeout(function() {
+                    CaseTabsSrv.activateTab(observableName);
+                    $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
+                }, 0);
+
+                // Fetch similar cases
+                if(!$scope.artifact.ignoreSimilarity) {
+                    $scope.getSimilarity();
+                }
 
                 if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
                     $scope.loadShares();
