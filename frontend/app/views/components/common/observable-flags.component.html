@@ -1,0 +1,49 @@
+<div class="observable-flags">
+    <!-- IOC flag -->
+    <div ng-if="!!$ctrl.observable.ioc" class="observable-ioc clickable" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"
+        ng-click="$ctrl.filterBy('ioc', true)">
+        <i class="fa fa-star"></i>
+    </div>
+    <div ng-if="!!!$ctrl.observable.ioc" class="observable-ioc clickable"
+        ng-click="$ctrl.filterBy('ioc', false)">
+        <i class="fa fa-star text-disabled"></i>
+    </div>
+
+    <!-- Sighted flag -->
+    <div ng-if="!!$ctrl.observable.sighted" class="observable-ioc clickable" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"
+        ng-click="$ctrl.filterBy('sighted', true)">
+        <i class="fa fa-toggle-on"></i>
+    </div>
+    <div ng-if="!!!$ctrl.observable.sighted" class="observable-ioc clickable"
+        ng-click="$ctrl.filterBy('sighted', false)">
+        <i class="fa fa-toggle-on text-disabled"></i>
+    </div>
+
+    <!-- Seen flag -->
+    <div ng-if="$ctrl.observable.extraData.seen.seen > 0" class="observable-seen" uib-tooltip="{{$ctrl.observable.extraData.seen.seen}} related artifact(s)" tooltip-popup-delay="500" tooltip-placement="bottom">
+        <i ng-class="{'text-danger': $ctrl.observable.extraData.seen.ioc}" class="fa fa-eye"></i>
+    </div>
+    <div ng-if="!($ctrl.observable.extraData.seen.seen > 0)" class="observable-seen">
+        <i class="fa fa-eye-slash text-disabled"></i>
+    </div>
+
+    <!-- Ignore Similarity flag -->
+    <div ng-if="!!$ctrl.observable.ignoreSimilarity" class="observable-ioc clickable" uib-tooltip="ignored for similarity" tooltip-popup-delay="500" tooltip-placement="bottom"
+        ng-click="$ctrl.filterBy('ignoreSimilarity', true)">
+        <i class="fa fa-chain-broken"></i>
+    </div>
+    <div ng-if="!!!$ctrl.observable.ignoreSimilarity" class="observable-ioc clickable"
+        ng-click="$ctrl.filterBy('ignoreSimilarity', false)">
+        <i class="fa fa-chain-broken text-disabled"></i>
+    </div>
+
+
+
+    <!-- <span
+      uib-tooltip="{{artifact.extraData.seen.seen}} related artifact(s)"
+      tooltip-placement="bottom"
+      ng-if="artifact.extraData.seen.seen > 0"
+      class="glyphicon glyphicon-eye-open"
+      ></span> -->
+
+</div>
