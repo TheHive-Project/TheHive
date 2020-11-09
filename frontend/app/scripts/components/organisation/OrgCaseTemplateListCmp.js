@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgCaseTemplateList', {
-            controller: function($uibModal, $scope, CaseTemplateSrv, UserSrv, AuthenticationSrv, NotificationSrv, UtilsSrv, ModalUtilsSrv) {
+            controller: function($uibModal, $scope, CaseTemplateSrv, TagSrv, UserSrv, AuthenticationSrv, NotificationSrv, UtilsSrv, ModalUtilsSrv) {
                 var self = this;
 
                 self.task = '';
@@ -326,6 +326,10 @@
                                 NotificationSrv.error('TemplateCtrl', err.data, err.status);
                             }
                         });
+                };
+
+                self.getTags = function(query) {
+                    return TagSrv.fromCases(query);
                 };
             },
             controllerAs: '$vm',
