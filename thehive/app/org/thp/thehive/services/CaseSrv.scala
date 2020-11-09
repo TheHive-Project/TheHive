@@ -79,9 +79,10 @@ class CaseSrv @Inject() (
       }
       _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
 
-      caseTemplateCf = caseTemplate
-        .fold[Seq[RichCustomField]](Seq())(_.customFields)
-        .map(cf => InputCustomFieldValue(cf.name, cf.value, cf.order))
+      caseTemplateCf =
+        caseTemplate
+          .fold[Seq[RichCustomField]](Seq())(_.customFields)
+          .map(cf => InputCustomFieldValue(cf.name, cf.value, cf.order))
       cfs <- cleanCustomFields(caseTemplateCf, customFields).toTry {
         case InputCustomFieldValue(name, value, order) => createCustomField(createdCase, EntityIdOrName(name), value, order)
       }
@@ -470,9 +471,11 @@ object CaseOps {
       traversal
         .as(originCaseLabel)
         .observables
+        .hasNot(_.ignoreSimilarity, true)
         .as(observableLabel)
         .data
         .observables
+        .hasNot(_.ignoreSimilarity, true)
         .shares
         .filter(_.organisation.current)
         .`case`
