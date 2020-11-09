@@ -124,6 +124,7 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromCase", (tagSteps, _) => tagSteps.fromCase),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
+    Query[Traversal.V[Tag], Traversal.V[Tag]]("fromAlert", (tagSteps, _) => tagSteps.fromAlert),
     Query[Traversal.V[Tag], Traversal[String, Vertex, Converter[String, Vertex]]]("text", (tagSteps, _) => tagSteps.displayName),
     Query.output[String, Traversal[String, Vertex, Converter[String, Vertex]]]
   )

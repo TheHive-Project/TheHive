@@ -9,7 +9,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
-import org.thp.thehive.models.{CaseTag, ObservableTag, Tag}
+import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Tag}
 import org.thp.thehive.services.TagOps._
 
 import scala.util.{Success, Try}
@@ -80,6 +80,8 @@ object TagOps {
     def fromCase: Traversal.V[Tag] = traversal.filter(_.in[CaseTag])
 
     def fromObservable: Traversal.V[Tag] = traversal.filter(_.in[ObservableTag])
+
+    def fromAlert: Traversal.V[Tag] = traversal.filter(_.in[AlertTag])
   }
 
 }
