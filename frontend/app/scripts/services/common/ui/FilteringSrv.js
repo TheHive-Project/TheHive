@@ -11,6 +11,7 @@
                 this.config = config;
                 this.defaults = config.defaults || {};
                 this.defaultFilter = config.defaultFilter || {};
+                this.attributeKeys = [];
 
                 this.initContext = function(state) {
                     self.state = state;
@@ -22,6 +23,8 @@
                             _.each(self.config.excludes || [], function(exclude) {
                                 delete self.attributes[exclude];
                             });
+
+                            self.attributeKeys = _.keys(self.attributes).sort();
                         })
                         .then(function() {
                             var storedContext = localStorageService.get(self.sectionName);

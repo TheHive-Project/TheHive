@@ -11,7 +11,7 @@
                             </button>
                         </span>
                         <select class="form-control" ng-model="filter.field"
-                            ng-options="item.name as item.name for (key, item) in $vm.filtering.attributes"
+                            ng-options="item for item in $vm.filtering.attributeKeys"
                             ng-change="$vm.filtering.setFilterField(filter, config.entity)"></select>
                     </div>
                 </div>
