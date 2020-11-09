@@ -81,13 +81,13 @@
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Ignored for similarity</dt>
             <dd ng-if="canEdit">
-                <span class="clickable" ng-click="updateField('ignoreSimilarity', !artifact.ignoreSimilarity)">
-                    <i class="text-primary fa" ng-class="{'true': 'fa-chain-broken', 'false': 'fa-chain'}[artifact.ignoreSimilarity]"></i>
+                <span class="clickable" ng-click="updateField('ignoreSimilarity', !!!artifact.ignoreSimilarity)">
+                    <i class="text-primary fa" ng-class="{'true': 'fa-chain-broken', 'false': 'fa-chain'}[!!artifact.ignoreSimilarity]"></i>
                 </span>
             </dd>
             <dd ng-if="!canEdit">
                 <span>
-                    <i class="text-primary fa" ng-class="{'true': 'fa-chain-broken', 'false': 'fa-chain'}[artifact.ignoreSimilarity]"></i>
+                    <i class="text-primary fa" ng-class="{'true': 'fa-chain-broken', 'false': 'fa-chain'}[!!artifact.ignoreSimilarity]"></i>
 				</span>
             </dd>
         </dl>
