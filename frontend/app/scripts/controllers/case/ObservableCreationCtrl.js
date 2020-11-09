@@ -13,6 +13,7 @@
             $scope.params = params || {
                 ioc: false,
                 sighted: false,
+                ignoreSimilarity: false,
                 single: false,
                 isUpload: true,
                 isZip: false,
@@ -74,6 +75,7 @@
                         dataType: params.dataType,
                         ioc: params.ioc,
                         sighted: params.sighted,
+                        ignoreSimilarity: params.ignoreSimilarity,
                         tlp: params.tlp,
                         message: params.message,
                         tags: _.unique(_.pluck(params.tags, 'text'))
