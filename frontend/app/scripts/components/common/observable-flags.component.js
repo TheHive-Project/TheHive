@@ -16,6 +16,8 @@
             bindings: {
                 observable: '<',
                 inline: '<',
+                hideSimilarity: '<',
+                hideSeen: '<',
                 onFilter: '&'
             }
         });
