@@ -20,19 +20,19 @@
     </div>
 
     <!-- Seen flag -->
-    <div ng-if="$ctrl.observable.extraData.seen.seen > 0" class="observable-seen" uib-tooltip="{{$ctrl.observable.extraData.seen.seen}} related artifact(s)" tooltip-popup-delay="500" tooltip-placement="bottom">
+    <div ng-if="!!!$ctrl.hideSeen && $ctrl.observable.extraData.seen.seen > 0" class="observable-seen" uib-tooltip="{{$ctrl.observable.extraData.seen.seen}} related artifact(s)" tooltip-popup-delay="500" tooltip-placement="bottom">
         <i ng-class="{'text-danger': $ctrl.observable.extraData.seen.ioc}" class="fa fa-eye"></i>
     </div>
-    <div ng-if="!($ctrl.observable.extraData.seen.seen > 0)" class="observable-seen">
+    <div ng-if="!!!$ctrl.hideSeen && !($ctrl.observable.extraData.seen.seen > 0)" class="observable-seen">
         <i class="fa fa-eye-slash text-disabled"></i>
     </div>
 
     <!-- Ignore Similarity flag -->
-    <div ng-if="!!$ctrl.observable.ignoreSimilarity" class="observable-ioc clickable" uib-tooltip="ignored for similarity" tooltip-popup-delay="500" tooltip-placement="bottom"
+    <div ng-if="!!!$ctrl.hideSimilarity && !!$ctrl.observable.ignoreSimilarity" class="observable-ioc clickable" uib-tooltip="ignored for similarity" tooltip-popup-delay="500" tooltip-placement="bottom"
         ng-click="$ctrl.filterBy('ignoreSimilarity', true)">
         <i class="fa fa-chain-broken"></i>
     </div>
-    <div ng-if="!!!$ctrl.observable.ignoreSimilarity" class="observable-ioc clickable"
+    <div ng-if="!!!$ctrl.hideSimilarity && !!!$ctrl.observable.ignoreSimilarity" class="observable-ioc clickable"
         ng-click="$ctrl.filterBy('ignoreSimilarity', false)">
         <i class="fa fa-chain-broken text-disabled"></i>
     </div>
