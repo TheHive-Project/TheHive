@@ -237,7 +237,7 @@ class AlertSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[RichCase] =
-    get(alert.alert).`case`.richCase.headOption.getOrElse {
+    get(alert.alert).`case`.richCase.getOrFail("Case").orElse {
       for {
         caseTemplate <-
           alert
