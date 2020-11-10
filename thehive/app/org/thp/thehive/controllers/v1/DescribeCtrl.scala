@@ -110,10 +110,21 @@ class DescribeCtrl @Inject() (
   implicit val propertyDescriptionWrites: Writes[PropertyDescription] =
     Json.writes[PropertyDescription].transform((_: JsObject) + ("description" -> JsString("")))
 
-  def customFields: Seq[PropertyDescription] =
+  def customFields: Seq[PropertyDescription] = {
+    def jsonToString(v: JsValue): String =
+      v match {
+        case JsString(s)  => s
+        case JsBoolean(b) => b.toString
+        case JsNumber(v)  => v.toString
+        case other        => other.toString
+      }
     db.roTransaction { implicit graph =>
-      customFieldSrv.startTraversal.toSeq.map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString))
+      customFieldSrv
+        .startTraversal
+        .toSeq
+        .map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString, cf.options, cf.options.map(jsonToString)))
     }
+  }
 
   def impactStatus: PropertyDescription =
     db.roTransaction { implicit graph =>
