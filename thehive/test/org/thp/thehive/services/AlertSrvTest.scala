@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import java.util.Date
 
-import org.thp.scalligraph.EntityName
+import org.thp.scalligraph.{EntityIdOrName, EntityName}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -149,7 +149,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       } must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get(EntityName("testType;testSource;ref1")).customFields("string1").nameJsonValue.headOption
+        app[AlertSrv].get(EntityName("testType;testSource;ref1")).customFields(EntityIdOrName("string1")).nameJsonValue.headOption
       } must beSome("string1" -> JsString("sad"))
     }
 
