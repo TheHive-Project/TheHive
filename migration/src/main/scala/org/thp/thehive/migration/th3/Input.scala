@@ -8,8 +8,9 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
-import com.sksamuel.elastic4s.http.ElasticDsl.{bool, hasParentQuery, idsQuery, rangeQuery, search, termQuery}
+import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.queries.RangeQuery
+import com.sksamuel.elastic4s.searches.queries.term.TermsQuery
 import javax.inject.{Inject, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
@@ -304,14 +305,28 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       Seq(fromFilter.andThen(untilFilter).apply(rangeQuery("createdAt")))
     } else Nil
 
+  def alertIncludeFilter(filter: Filter): Seq[TermsQuery[String]] =
+    (if (filter.includeAlertTypes.nonEmpty) Seq(termsQuery("type", filter.includeAlertTypes)) else Nil) ++
+      (if (filter.includeAlertSources.nonEmpty) Seq(termsQuery("source", filter.includeAlertSources)) else Nil)
+
+  def alertExcludeFilter(filter: Filter): Seq[TermsQuery[String]] =
+    (if (filter.excludeAlertTypes.nonEmpty) Seq(termsQuery("type", filter.excludeAlertTypes)) else Nil) ++
+      (if (filter.excludeAlertSources.nonEmpty) Seq(termsQuery("source", filter.excludeAlertSources)) else Nil)
+
   override def listAlerts(filter: Filter): Source[Try[InputAlert], NotUsed] =
     dbFind(Some("all"), Seq("-createdAt"))(indexName =>
-      search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil))
+      search(indexName).query(
+        bool((alertFilter(filter) :+ termQuery("relations", "alert")) ++ alertIncludeFilter(filter), Nil, alertExcludeFilter(filter))
+      )
     )._1
       .read[InputAlert]
 
   override def countAlerts(filter: Filter): Future[Long] =
-    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil)))._2
+    dbFind(Some("0-0"), Nil)(indexName =>
+      search(indexName).query(
+        bool((alertFilter(filter) :+ termQuery("relations", "alert")) ++ alertIncludeFilter(filter), Nil, alertExcludeFilter(filter))
+      )
+    )._2
 
   override def listAlertObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(alertFilter(filter) :+ termQuery("relations", "alert"), Nil, Nil)))
@@ -638,13 +653,29 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       Seq(fromFilter.andThen(untilFilter).apply(rangeQuery("createdAt")))
     } else Nil
 
+  def auditIncludeFilter(filter: Filter): Seq[TermsQuery[String]] =
+    (if (filter.includeAuditActions.nonEmpty) Seq(termsQuery("operation", filter.includeAuditActions)) else Nil) ++
+      (if (filter.includeAuditObjectTypes.nonEmpty) Seq(termsQuery("objectType", filter.includeAuditObjectTypes)) else Nil)
+
+  def auditExcludeFilter(filter: Filter): Seq[TermsQuery[String]] =
+    (if (filter.excludeAuditActions.nonEmpty) Seq(termsQuery("operation", filter.excludeAuditActions)) else Nil) ++
+      (if (filter.excludeAuditObjectTypes.nonEmpty) Seq(termsQuery("objectType", filter.excludeAuditObjectTypes)) else Nil)
+
   override def listAudit(filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit"), Nil, Nil)))
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool((auditFilter(filter) :+ termQuery("relations", "audit")) ++ auditIncludeFilter(filter), Nil, auditExcludeFilter(filter))
+      )
+    )
       ._1
       .read[(String, InputAudit)]
 
   override def countAudit(filter: Filter): Future[Long] =
-    dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit"), Nil, Nil)))._2
+    dbFind(Some("0-0"), Nil)(indexName =>
+      search(indexName).query(
+        bool((auditFilter(filter) :+ termQuery("relations", "audit")) ++ auditIncludeFilter(filter), Nil, auditExcludeFilter(filter))
+      )
+    )._2
 
   override def listAudit(entityId: String, filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
