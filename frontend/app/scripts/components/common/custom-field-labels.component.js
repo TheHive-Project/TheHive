@@ -3,11 +3,20 @@
 
     angular.module('theHiveComponents')
         .component('customFieldLabels', {
-            controller: function() {
+            controller: function(CustomFieldsSrv) {
+                var self = this;
+
+                this.fieldsCache = {};
                 this.fieldClicked = function(fieldName, newValue) {
                     this.onFieldClick({
                         name: fieldName,
                         value: newValue
+                    });
+                };
+
+                this.$onInit = function() {
+                    CustomFieldsSrv.all().then(function(fields) {
+                        self.fieldsCache = fields;
                     });
                 };
             },

@@ -745,7 +745,7 @@ table.tbody-stripped > tbody:nth-child(2n+1) > tr > th {
 }
 
 table.tbody-stripped > tbody > tr:first-child > td {
-    padding-bottom:0;
+    /* padding-bottom:0; */
 }
 
 /* table.tbody-stripped > tbody > tr:nth-child(2n) > td { */

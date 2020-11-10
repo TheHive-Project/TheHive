@@ -8,7 +8,7 @@
         ng-click="$cmp.fieldClicked('customFields.' + cf.name, cf.value)"
         ng-if="cf.value !== undefined && cf.value !== null">
 
-        <span class="default">{{cf.name}}</span>
+        <span class="default" uib-tooltip="{{cf.description}}" tooltip-placement="top">{{$cmp.fieldsCache[cf.name].name || cf.name}}</span>
         <span class="default">{{cf.value}}</span>
     </span>
 </div>

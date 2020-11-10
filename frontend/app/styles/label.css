@@ -22,7 +22,7 @@
     border-left-width: 3px;
     border-left-style: solid;
 }
-.double-val-label>span:nth-child(2) {
+.double-val-label>span:last-child {
     border-bottom-right-radius: 0.25em;
     border-top-right-radius: .25em;
     /* border-left: 1px dashed #777; */
