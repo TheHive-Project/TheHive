@@ -9,6 +9,6 @@
         ng-if="cf.value !== undefined && cf.value !== null">
 
         <span class="default" uib-tooltip="{{cf.description}}" tooltip-placement="top">{{$cmp.fieldsCache[cf.name].name || cf.name}}</span>
-        <span class="default">{{cf.value}}</span>
+        <span class="default">{{cf | customFieldValue}}</span>
     </span>
 </div>
