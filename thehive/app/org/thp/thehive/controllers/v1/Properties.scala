@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import java.lang.{Long => JLong}
 import java.util.Date
 
 import javax.inject.{Inject, Named, Singleton}
@@ -18,6 +19,7 @@ import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
@@ -233,6 +235,72 @@ class Properties @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
+      .property("computed.handlingDurationInDays", UMapping.long)(
+        _.select(
+          _.coalesceIdent(
+            _.has(_.endDate)
+              .sack(
+                (_: JLong, endDate: JLong) => endDate,
+                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+              )
+              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+              .sack((_: Long) / (_: Long), _.by(_.constant(86400000L)))
+              .sack[Long],
+            _.constant(0L)
+          )
+        ).readonly
+      )
+      .property("computed.handlingDurationInHours", UMapping.long)(
+        _.select(
+          _.coalesceIdent(
+            _.has(_.endDate)
+              .sack(
+                (_: JLong, endDate: JLong) => endDate,
+                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+              )
+              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+              .sack((_: Long) / (_: Long), _.by(_.constant(3600000L)))
+              .sack[Long],
+            _.constant(0L)
+          )
+        ).readonly
+      )
+      .property("computed.handlingDurationInMinutes", UMapping.long)(
+        _.select(
+          _.coalesceIdent(
+            _.has(_.endDate)
+              .sack(
+                (_: JLong, endDate: JLong) => endDate,
+                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+              )
+              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+              .sack((_: Long) / (_: Long), _.by(_.constant(60000L)))
+              .sack[Long],
+            _.constant(0L)
+          )
+        ).readonly
+      )
+      .property("computed.handlingDurationInSeconds", UMapping.long)(
+        _.select(
+          _.coalesceIdent(
+            _.has(_.endDate)
+              .sack(
+                (_: JLong, endDate: JLong) => endDate,
+                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+              )
+              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+              .sack((_: Long) / (_: Long), _.by(_.constant(1000L)))
+              .sack[Long],
+            _.constant(0L)
+          )
+        ).readonly
+      )
+      .property("viewingOrganisation", UMapping.string)(
+        _.authSelect((cases, authContext) => cases.organisations.visible(authContext).value(_.name)).readonly
+      )
+      .property("owningOrganisation", UMapping.string)(
+        _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
+      )
       .build
 
   lazy val caseTemplate: PublicProperties =
