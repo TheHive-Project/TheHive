@@ -423,7 +423,7 @@ class PublicAlert @Inject() (
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(name, _)), alertSteps) =>
-          alertSteps.customFields(name).jsonValue
+          alertSteps.customFields(EntityIdOrName(name)).jsonValue
         case (_, alertSteps) => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }.custom {
         case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>

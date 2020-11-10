@@ -183,15 +183,15 @@ class AlertSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val cfv = get(alert).customFields(cf.name)
+    val cfv = get(alert).customFields(EntityIdOrName(cf.name))
     if (cfv.clone().exists)
       cfv.setValue(cf.value)
     else
       createCustomField(alert, cf).map(_ => ())
   }
 
-  def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
-    get(alert).customFields(customFieldName).richCustomField.headOption
+//  def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
+//    get(alert).customFields(customFieldName).richCustomField.headOption
 
   def updateCustomField(
       alert: Alert with Entity,
@@ -203,7 +203,7 @@ class AlertSrv @Inject() (
       .richCustomField
       .toIterator
       .filterNot(rcf => customFieldNames.contains(rcf.name))
-      .foreach(rcf => get(alert).customFields(rcf.name).remove())
+      .foreach(rcf => get(alert).customFields(rcf.customField._id).remove())
     customFieldValues
       .toTry { case (cf, v) => setOrCreateCustomField(alert, InputCustomFieldValue(cf.name, Some(v), None)) }
       .map(_ => ())
@@ -494,8 +494,12 @@ object AlertOps {
         result.limit(0)
     }
 
-    def customFields(name: String): Traversal.E[AlertCustomField] =
-      traversal.outE[AlertCustomField].filter(_.inV.v[CustomField].has(_.name, name))
+    def customFields(idOrName: EntityIdOrName): Traversal.E[AlertCustomField] =
+      idOrName
+        .fold(
+          id => traversal.outE[AlertCustomField].filter(_.inV.getByIds(id)),
+          name => traversal.outE[AlertCustomField].filter(_.inV.v[CustomField].has(_.name, name))
+        )
 
     def customFields: Traversal.E[AlertCustomField] = traversal.outE[AlertCustomField]
 
