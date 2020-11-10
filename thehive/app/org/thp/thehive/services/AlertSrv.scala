@@ -236,33 +236,35 @@ class AlertSrv @Inject() (
   def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[RichCase] = // FIXME check if alert is already imported
-    for {
-      caseTemplate <-
-        alert
-          .caseTemplate
-          .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
-          .flip
-      customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
-      case0 = Case(
-        number = 0,
-        title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
-        description = alert.description,
-        severity = alert.severity,
-        startDate = new Date,
-        endDate = None,
-        flag = false,
-        tlp = alert.tlp,
-        pap = alert.pap,
-        status = CaseStatus.Open,
-        summary = None
-      )
+  ): Try[RichCase] =
+    get(alert.alert).`case`.richCase.headOption.getOrElse {
+      for {
+        caseTemplate <-
+          alert
+            .caseTemplate
+            .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
+            .flip
+        customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
+        case0 = Case(
+          number = 0,
+          title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
+          description = alert.description,
+          severity = alert.severity,
+          startDate = new Date,
+          endDate = None,
+          flag = false,
+          tlp = alert.tlp,
+          pap = alert.pap,
+          status = CaseStatus.Open,
+          summary = None
+        )
 
-      createdCase <- caseSrv.create(case0, user, organisation, alert.tags.toSet, customField, caseTemplate, Nil)
-      _           <- importObservables(alert.alert, createdCase.`case`)
-      _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
-      _           <- markAsRead(alert._id)
-    } yield createdCase
+        createdCase <- caseSrv.create(case0, user, organisation, alert.tags.toSet, customField, caseTemplate, Nil)
+        _           <- importObservables(alert.alert, createdCase.`case`)
+        _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
+        _           <- markAsRead(alert._id)
+      } yield createdCase
+    }
 
   def mergeInCase(alertId: EntityIdOrName, caseId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     for {
