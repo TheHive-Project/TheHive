@@ -338,9 +338,24 @@ class PublicCase @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
+      .property("computed.handlingDurationInDays", UMapping.long)(
+        _.select(
+          _.coalesceIdent(
+            _.has(_.endDate)
+              .sack(
+                (_: JLong, endDate: JLong) => endDate,
+                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+              )
+              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+              .sack((_: Long) / (_: Long), _.by(_.constant(86400000L)))
+              .sack[Long],
+            _.constant(0L)
+          )
+        ).readonly
+      )
       .property("computed.handlingDurationInHours", UMapping.long)(
         _.select(
-          _.coalesce(
+          _.coalesceIdent(
             _.has(_.endDate)
               .sack(
                 (_: JLong, endDate: JLong) => endDate,
@@ -349,7 +364,37 @@ class PublicCase @Inject() (
               .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
               .sack((_: Long) / (_: Long), _.by(_.constant(3600000L)))
               .sack[Long],
-            0L
+            _.constant(0L)
+          )
+        ).readonly
+      )
+      .property("computed.handlingDurationInMinutes", UMapping.long)(
+        _.select(
+          _.coalesceIdent(
+            _.has(_.endDate)
+              .sack(
+                (_: JLong, endDate: JLong) => endDate,
+                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+              )
+              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+              .sack((_: Long) / (_: Long), _.by(_.constant(60000L)))
+              .sack[Long],
+            _.constant(0L)
+          )
+        ).readonly
+      )
+      .property("computed.handlingDurationInSeconds", UMapping.long)(
+        _.select(
+          _.coalesceIdent(
+            _.has(_.endDate)
+              .sack(
+                (_: JLong, endDate: JLong) => endDate,
+                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+              )
+              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+              .sack((_: Long) / (_: Long), _.by(_.constant(1000L)))
+              .sack[Long],
+            _.constant(0L)
           )
         ).readonly
       )
