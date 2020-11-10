@@ -327,7 +327,7 @@ object JobOps {
         .domainMap {
           case (job, observablesWithLink) =>
             val observables = observablesWithLink.map {
-              case (obs, l) => obs -> Json.obj("observableId" -> l)
+              case (obs, l) => obs -> Json.obj("observableId" -> l.headOption)
             }
             RichJob(job, observables)
         }
