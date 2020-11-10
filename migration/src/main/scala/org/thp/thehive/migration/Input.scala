@@ -8,6 +8,7 @@ import akka.stream.scaladsl.Source
 import com.typesafe.config.Config
 import org.thp.thehive.migration.dto._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
@@ -15,7 +16,15 @@ case class Filter(
     caseDateRange: (Option[Long], Option[Long]),
     caseNumberRange: (Option[Int], Option[Int]),
     alertDateRange: (Option[Long], Option[Long]),
-    auditDateRange: (Option[Long], Option[Long])
+    auditDateRange: (Option[Long], Option[Long]),
+    includeAlertTypes: Seq[String],
+    excludeAlertTypes: Seq[String],
+    includeAlertSources: Seq[String],
+    excludeAlertSources: Seq[String],
+    includeAuditActions: Seq[String],
+    excludeAuditActions: Seq[String],
+    includeAuditObjectTypes: Seq[String],
+    excludeAuditObjectTypes: Seq[String]
 )
 
 object Filter {
@@ -59,7 +68,20 @@ object Filter {
     val auditFromDate   = readDate("auditFromDate", "maxAuditAge")
     val auditUntilDate  = readDate("auditUntilDate", "minAuditAge")
 
-    Filter(caseFromDate -> caseUntilDate, caseFromNumber -> caseUntilNumber, alertFromDate -> alertUntilDate, auditFromDate -> auditUntilDate)
+    Filter(
+      caseFromDate   -> caseUntilDate,
+      caseFromNumber -> caseUntilNumber,
+      alertFromDate  -> alertUntilDate,
+      auditFromDate  -> auditUntilDate,
+      config.getStringList("includeAlertTypes").asScala,
+      config.getStringList("excludeAlertTypes").asScala,
+      config.getStringList("includeAlertSources").asScala,
+      config.getStringList("excludeAlertSources").asScala,
+      config.getStringList("includeAuditActions").asScala,
+      config.getStringList("excludeAuditActions").asScala,
+      config.getStringList("includeAuditObjectTypes").asScala,
+      config.getStringList("excludeAuditObjectTypes").asScala
+    )
   }
 }
 

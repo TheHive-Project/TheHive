@@ -148,18 +148,16 @@ class Output @Inject() (
         .unsafeHas(
           "_label",
           P.within(
-            Seq(
-              "Profile",
-              "Organisation",
-              "User",
-              "ImpactStatus",
-              "ResolutionStatus",
-              "ObservableType",
-              "CustomField",
-              "CaseTemplate",
-              "Case",
-              "Alert"
-            )
+            "Profile",
+            "Organisation",
+            "User",
+            "ImpactStatus",
+            "ResolutionStatus",
+            "ObservableType",
+            "CustomField",
+            "CaseTemplate",
+            "Case",
+            "Alert"
           )
         )
         .toIterator
