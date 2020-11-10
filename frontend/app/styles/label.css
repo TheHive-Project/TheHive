@@ -1,13 +1,11 @@
 .double-val-label {
 	display: table;
-	/* margin: .2em .6em .3em; */
     margin-top: 0;
     margin-left: 0;
 }
 .double-val-label>span {
 	color: #ffffff;
 	display: table-cell;
-	/* font-size: 0.9em; */
 	font-weight: 400;
 	line-height: 1;
 	padding: .3em .6em;
@@ -25,10 +23,7 @@
 .double-val-label>span:last-child {
     border-bottom-right-radius: 0.25em;
     border-top-right-radius: .25em;
-    /* border-left: 1px dashed #777; */
     border-left: 1px dashed #3c8dbc;
-    /* background-color: #d2d6de;
-    color: #444; */
 }
 .double-val-label>span.primary {
 	background-color: #3c8dbc;
@@ -38,16 +33,3 @@
     background-color: #d2d6de;
     color: #444;
 }
-/*
-.double-val-label>span.success {
-	background-color: #5cb85c;
-}
-.double-val-label>span.info {
-	background-color: #5bc0de;
-}
-.double-val-label>span.warning {
-	background-color: #f0ad4e;
-}
-.double-val-label>span.danger {
-	background-color: #d9534f;
-} */
