@@ -81,6 +81,11 @@ table.case-list .case-tags .label,
     font-weight: normal;
 }
 
+table.case-list .btn-icon {
+    padding: 6px;
+    padding-top: 0;
+}
+
 pre.error-trace {
     color: #a94442;
     border: none;
