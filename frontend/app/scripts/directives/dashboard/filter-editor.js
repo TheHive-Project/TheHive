@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, UserSrv, UtilsSrv) {
+    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, UserSrv, TagSrv, UtilsSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -50,6 +50,11 @@
                     if(!field) {
                         return;
                     }
+
+                    if(field.name === 'tags') {
+                        return field.name;
+                    }
+
                     var type = field.type;
 
                     if ((type === 'string' || type === 'number' || type === 'integer'  || type === 'float' ) && field.values.length > 0) {
@@ -64,7 +69,9 @@
 
                     var promise = null;
 
-                    if(field.type === 'user') {
+                    if(field.name === 'tags') {
+                        return TagSrv.getTagsFor(scope.entity, query);
+                    } else if(field.type === 'user') {
                         promise = AuthenticationSrv.current()
                             .then(function(user) {
                                 return UserSrv.autoComplete(user.organisation, query);

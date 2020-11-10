@@ -21,6 +21,27 @@
         </div>
     </div>
 
+    <div ng-switch-when="tags" class="row">
+        <div class="col-xs-2 ph-0" uib-dropdown>
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
+                <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
+                <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-10 pl-xxxs clear">
+            <tags-input class="form-control-wrapper"
+                ng-model="filter.value.list"
+                placeholder="ex: Enter a tag"
+                replace-spaces-with-dashes="false">
+                    <auto-complete source="promiseFor(filter, $query)" min-length="3" debounce-delay="400"></auto-complete>
+                </tags-input>
+        </div>
+    </div>
+
     <div ng-switch-when="user" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
             <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
