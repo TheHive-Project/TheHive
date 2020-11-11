@@ -182,6 +182,13 @@
                         case 'boolean':
                             filter.value = value;
                             break;
+                        case 'integer':
+                        case 'float':
+                            filter.value = {
+                                operator: '=',
+                                value: value
+                            };
+                            break;
                         case 'user':
                             break;
                     }
