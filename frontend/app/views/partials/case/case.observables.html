@@ -57,16 +57,12 @@
     </div>
 </div>
 
-<br>
+<div class="mt-xs stats-panel" ng-include="'views/partials/observables/list/mini-stats.html'" ng-if="filtering.context.showStats"></div>
 
-<div class="filter-panel" ng-include="'views/partials/observables/list/mini-stats.html'" ng-if="filtering.context.showStats"></div>
-<br>
+<div class="mt-xs filter-panel" ng-include="'views/partials/observables/list/filters.html'" ng-show="filtering.context.showFilters"></div>
 
-<div class="filter-panel" ng-include="'views/partials/observables/list/filters.html'" ng-show="filtering.context.showFilters"></div>
-
-<br>
 <!-- Main page : Table + Text/CSV -->
-<div class="row">
+<div class="mt-xs row">
     <div class="selection" ng-if="showExportPanel">
         <div ng-include="'views/partials/observables/list/export.html'"></div>
     </div>

@@ -40,6 +40,21 @@
     color: #ccc;
     text-align: center;
 }
+
+.stats-panel {
+    /* padding: 10px;
+    background-color: #f5f5f5; */
+}
+
+.stats-panel .stats-item-wrapper {
+    padding: 5px;    
+    background-color: #f5f5f5;
+}
+
+.stats-panel .box {
+    margin-bottom: 0;
+}
+
 /*
 .filter-panel hr.filter-separator:after {
     content: "OR";

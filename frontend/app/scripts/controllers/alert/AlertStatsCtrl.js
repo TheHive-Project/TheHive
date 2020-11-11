@@ -14,6 +14,16 @@
             this.byStatus = {};
             this.byTags = {};
 
+            this.readAlerts = {
+                'true': 'Read',
+                'false': 'Unread'
+            };
+
+            this.readValues = {
+                'true': true,
+                'false': false
+            };
+
             self.$onInit = function() {
 
                 // Get stats by tags

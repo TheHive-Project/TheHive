@@ -7,7 +7,7 @@
             </h4>
         </div>
     </div>
-    <div class="clearfix" ng-show="!error && chart">
+    <div class="clearfix" ng-show="!error && chart && !hideActions">
         <a class="pull-right ml-xxs" href ng-csv="onSaveCsv"><i class="fa fa-file-text-o mr-xxxs"></i>CSV</a>
         <a class="pull-right ml-xxs" href ng-click="save()"><i class="fa fa-file-image-o mr-xxxs"></i>Image</a>
         <strong class="text-primary pull-right">Save as</strong>
