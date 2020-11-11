@@ -1,7 +1,7 @@
 <div class="case-tags flexwrap">
     <span class="mr-xxxs text-muted"><i class="fa fa-code"></i></span>
 
-    <strong class="text-muted mr-xxxs" ng-if="!$cmp.customFields || $cmp.customFields.length === 0">None</strong>
+    <strong class="text-muted mr-xxxs" ng-if="!$cmp.customFields || $cmp.definedValues === 0 ">None</strong>
 
     <span class="double-val-label mb-xxxs mr-xxxs pointer"
         ng-repeat="cf in $cmp.customFields | orderBy:'order' track by $index"

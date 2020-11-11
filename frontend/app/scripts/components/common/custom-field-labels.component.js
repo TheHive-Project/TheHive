@@ -7,6 +7,7 @@
                 var self = this;
 
                 this.fieldsCache = {};
+                this.definedValues = 0;
                 this.fieldClicked = function(fieldName, newValue) {
                     this.onFieldClick({
                         name: fieldName,
@@ -18,6 +19,11 @@
                     CustomFieldsSrv.all().then(function(fields) {
                         self.fieldsCache = fields;
                     });
+
+                    self.definedValues = (_.filter(self.customFields, function(item) {
+                        return item.value !== null && item.value !== undefined;
+                    }) || []).length;
+
                 };
             },
             controllerAs: '$cmp',
