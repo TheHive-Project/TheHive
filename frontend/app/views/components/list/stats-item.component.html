@@ -9,6 +9,9 @@
         </div>
     </div>
     <div class="box-body">
+        <div class="empty-message" ng-if="!$cmp.data || ($cmp.data.length === 0)">
+            No Data
+        </div>
         <table ng-if="$cmp.mode === 'table'" class="table table-condensed">
             <tr ng-repeat="item in $cmp.data">
                 <td class="active">{{$cmp.labels[item.key] || item.key}}</td>
@@ -17,7 +20,7 @@
                 </td>
             </tr>
         </table>
-        <donut-Chart ng-if="$cmp.mode === 'chart'" labels="$cmp.labels" data="$cmp.data" title="Cases by Status"
+        <donut-Chart ng-if="$cmp.mode === 'chart' && $cmp.data.length > 0" labels="$cmp.labels" data="$cmp.data" title="Cases by Status"
             on-item-clicked="$cmp.onClick(value)"></donut-chart>
     </div>
 </div>
