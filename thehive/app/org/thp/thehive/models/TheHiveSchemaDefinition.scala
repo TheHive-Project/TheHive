@@ -11,9 +11,11 @@ import org.janusgraph.graphdb.types.TypeDefinitionCategory
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
+import org.thp.scalligraph.{EntityId, RichSeq}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import play.api.Logger
 
@@ -83,6 +85,34 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .onRaw(_.property(Cardinality.set: Cardinality, "permissions", "accessTheHiveFS", Nil: _*)) // Nil is for disambiguate the overloaded methods
         .iterate()
       Success(())
+    }
+    // Taxonomies
+    .addVertexModel[String]("Taxonomy", Seq("namespace"))
+    .dbOperation[Database]("Add Custom taxonomy vertex for each Organisation") { db =>
+      db.tryTransaction { g =>
+        db.labelFilter("Organisation")(Traversal.V()(g)).toIterator.toTry { o =>
+          val taxoVertex = g.addVertex("Taxonomy")
+          taxoVertex.property("namespace", "Custom")
+          o.addEdge("OrganisationTaxonomy", taxoVertex)
+          Success(())
+        }
+      }.map(_ => ())
+    }
+    .dbOperation[Database]("Add each tag to its Organisation's Custom taxonomy") { db =>
+      db.tryTransaction { implicit g =>
+        db.labelFilter("Organisation")(Traversal.V()).toIterator.toTry { o =>
+          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", "Custom").head
+          Traversal.V(EntityId(o.id())).unionFlat(
+            _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
+            _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
+            _.in("AlertOrganisation").out("AlertTag"),
+            _.in("CaseTemplateOrganisation").out("CaseTemplateTag")
+          ).toSeq.foreach(tag =>
+            customTaxo.addEdge("TaxonomyTag", tag)
+          )
+          Success(())
+        }
+      }.map(_ => ())
     }
 
   val reflectionClasses = new Reflections(
