@@ -175,7 +175,7 @@
                                     </td>
                                     <td></td>
                                 </tr>
-                                <tr>
+                                <tr ng-if="$vm.filtering.context.showAdvanced">
                                     <td></td>
                                     <td colspan="9">
                                         <custom-field-labels custom-fields="event.customFields" on-field-click="$vm.addFilterValue(name, value)"><custom-field-labels>

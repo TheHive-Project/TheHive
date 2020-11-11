@@ -36,6 +36,7 @@
                                     state: state,
                                     showFilters: self.defaults.showFilters || false,
                                     showStats: self.defaults.showStats || false,
+                                    showAdvanced: self.defaults.showAdvanced || true,
                                     pageSize: self.defaults.pageSize || 15,
                                     sort: self.defaults.sort || [],
                                     filters: self.defaultFilter || []
@@ -103,6 +104,11 @@
 
                 this.toggleFilters = function() {
                     self.context.showFilters = !self.context.showFilters;
+                    self.storeContext();
+                };
+
+                this.toggleAdvanced = function() {
+                    self.context.showAdvanced = !self.context.showAdvanced;
                     self.storeContext();
                 };
 
