@@ -7,12 +7,12 @@
             <div class="box-body">
                 <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
 
-                <div class="mv-s filter-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-if="$vm.filtering.context.showStats"></div>
+                <div class="mt-xs stats-panel" ng-include="'views/partials/alert/list/mini-stats.html'" ng-if="$vm.filtering.context.showStats"></div>
 
-                <div class="mt-s filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+                <div class="mt-xs filter-panel" ng-include="'views/partials/alert/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
 
                 <!-- Filters preview  -->
-                <div class="row mt-s">
+                <div class="row mt-xs">
                     <div class="col-md-12 clearfix">
                         <filters-preview filters="$vm.filtering.context.filters"
                             on-clear-item="$vm.removeFilter(field)"
@@ -21,7 +21,7 @@
                 </div>
 
                 <!-- Datalist  -->
-                <div class="row mt-s">
+                <div class="row mt-xs">
                     <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
                         <div class="empty-message">No records</div>
                     </div>
