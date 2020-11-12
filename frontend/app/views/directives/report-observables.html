@@ -39,13 +39,13 @@
                         offset: (pagination.currentPage-1)*pagination.pageSize |
                         limitTo: pagination.pageSize ">
                     <td>
-                        <input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="!!observable.stats.observableId">
+                        <input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="!!observable.imported">
                     </td>
                     <td>
                         <observable-flags observable="observable" inline="true" hide-seen="true" hide-similarity="true"></observable-flags>
                     </td>
                     <td align="center">
-                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="right" ng-if="!!observable.stats.observableId" class="fa fa-check"></span>
+                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="right" ng-if="!!observable.imported" class="fa fa-check"></span>
                     </td>
                     <td>{{observable.dataType}}</td>
                     <td class="wrap">

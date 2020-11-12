@@ -125,33 +125,71 @@
                 $scope.similarArtifactsLimit = $scope.similarArtifactsLimit + 10;
             };
 
-            $scope.showReport = function (jobId) {
+            $scope.refreshCurrentJob = function() {
+                $scope.loadReport($scope.currentJob);
+            };
+
+            $scope.loadReport = function(jobId) {
                 $scope.report = {};
 
-                CortexSrv.getJob(jobId, true).then(function(response) {
-                    var job = response.data;
-                    $scope.report = {
-                        template: job.analyzerDefinition,
-                        content: job.report,
-                        status: job.status,
-                        startDate: job.startDate,
-                        endDate: job.endDate
-                    };
+                return CortexSrv.getJob(jobId, true)
+                    .then(function(response) {
+                        var job = response.data;
+                        $scope.report = {
+                            template: job.analyzerDefinition,
+                            content: job.report,
+                            status: job.status,
+                            startDate: job.startDate,
+                            endDate: job.endDate
+                        };
 
-                    $scope.currentJob = jobId;
+                        $scope.currentJob = jobId;
+                    });
+            };
 
-                    $timeout(function() {
-                        var reportEl = angular.element('#analysis-report')[0];
+            $scope.showReport = function (jobId) {
 
-                        // Scrolling hack using jQuery stuff
-                        $('html,body').animate({
-                            scrollTop: $(reportEl).offset().top
-                        }, 'fast');
-                    }, 500);
+                $scope.loadReport(jobId)
+                    .then(function(){
+                        $timeout(function() {
+                            var reportEl = angular.element('#analysis-report')[0];
 
-                }, function(/*err*/) {
-                    NotificationSrv.error('An expected error occured while fetching the job report');
-                });
+                            // Scrolling hack using jQuery stuff
+                            $('html,body').animate({
+                                scrollTop: $(reportEl).offset().top
+                            }, 'fast');
+                        }, 500);
+                    })
+                    .catch(function(/*err*/) {
+                        NotificationSrv.error('An expected error occured while fetching the job report');
+                    });
+
+                // $scope.report = {};
+
+                // CortexSrv.getJob(jobId, true).then(function(response) {
+                //     var job = response.data;
+                //     $scope.report = {
+                //         template: job.analyzerDefinition,
+                //         content: job.report,
+                //         status: job.status,
+                //         startDate: job.startDate,
+                //         endDate: job.endDate
+                //     };
+                //
+                //     $scope.currentJob = jobId;
+                //
+                //     $timeout(function() {
+                //         var reportEl = angular.element('#analysis-report')[0];
+                //
+                //         // Scrolling hack using jQuery stuff
+                //         $('html,body').animate({
+                //             scrollTop: $(reportEl).offset().top
+                //         }, 'fast');
+                //     }, 500);
+                //
+                // }, function(/*err*/) {
+                //     NotificationSrv.error('An expected error occured while fetching the job report');
+                // });
             };
 
             $scope.openArtifact = function (a) {
