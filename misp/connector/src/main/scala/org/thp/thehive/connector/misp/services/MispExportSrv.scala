@@ -37,8 +37,22 @@ class MispExportSrv @Inject() (
         observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(observable.tlp)
       else
         tlpTags.get(observable.tlp).toSeq
-    connector
-      .attributeConverter(observable.`type`)
+
+    observable
+      .data
+      .collect {
+        case data if observable.`type` == "hash" => data.data.length
+      }
+      .collect {
+        case 32  => "md5"
+        case 40  => "sha1"
+        case 56  => "sha224"
+        case 64  => "sha256"
+        case 96  => "sha384"
+        case 128 => "sha512"
+      }
+      .map("Payload delivery" -> _)
+      .orElse(connector.attributeConverter(observable.`type`))
       .map {
         case (cat, tpe) =>
           Attribute(
