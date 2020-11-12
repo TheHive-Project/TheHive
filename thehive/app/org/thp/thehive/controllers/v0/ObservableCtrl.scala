@@ -1,7 +1,13 @@
 package org.thp.thehive.controllers.v0
 
+import java.io.FilterInputStream
+import java.nio.file.Files
+
 import javax.inject.{Inject, Named, Singleton}
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -16,13 +22,17 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services._
+import play.api.Configuration
+import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import scala.collection.JavaConverters._
 import scala.util.Success
 
 @Singleton
 class ObservableCtrl @Inject() (
+    configuration: Configuration,
     override val entrypoint: Entrypoint,
     @Named("with-thehive-schema") override val db: Database,
     observableSrv: ObservableSrv,
@@ -30,14 +40,21 @@ class ObservableCtrl @Inject() (
     caseSrv: CaseSrv,
     errorHandler: ErrorHandler,
     @Named("v0") override val queryExecutor: QueryExecutor,
-    override val publicData: PublicObservable
+    override val publicData: PublicObservable,
+    temporaryFileCreator: DefaultTemporaryFileCreator
 ) extends ObservableRenderer
     with QueryCtrl {
   def create(caseId: String): Action[AnyContent] =
     entrypoint("create artifact")
       .extract("artifact", FieldsParser[InputObservable])
+      .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
+      .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
       .auth { implicit request =>
         val inputObservable: InputObservable = request.body("artifact")
+        val isZip: Option[Boolean]           = request.body("isZip")
+        val zipPassword: Option[String]      = request.body("zipPassword")
+        val inputAttachObs                   = if (isZip.contains(true)) getZipFiles(inputObservable, zipPassword) else Seq(inputObservable)
+
         db
           .roTransaction { implicit graph =>
             for {
@@ -51,25 +68,24 @@ class ObservableCtrl @Inject() (
           }
           .map {
             case (case0, observableType) =>
-              val initialSuccessesAndFailures: (Seq[JsValue], Seq[JsValue]) = inputObservable
-                .attachment
-                .map { attachmentFile =>
-                  db
-                    .tryTransaction { implicit graph =>
-                      observableSrv
-                        .create(inputObservable.toObservable, observableType, attachmentFile, inputObservable.tags, Nil)
-                        .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
+              val initialSuccessesAndFailures: (Seq[JsValue], Seq[JsValue]) =
+                inputAttachObs.foldLeft[(Seq[JsValue], Seq[JsValue])](Nil -> Nil) {
+                  case ((successes, failures), inputObservable) =>
+                    inputObservable.attachment.fold((successes, failures)) { attachment =>
+                      db
+                        .tryTransaction { implicit graph =>
+                          observableSrv
+                            .create(inputObservable.toObservable, observableType, attachment, inputObservable.tags, Nil)
+                            .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
+                        }
+                        .fold(
+                          e =>
+                            successes -> (failures :+ errorHandler.toErrorResult(e)._2 ++ Json
+                              .obj("object" -> Json.obj("attachment" -> Json.obj("name" -> attachment.filename)))),
+                          s => (successes :+ s) -> failures
+                        )
                     }
-                    .fold(
-                      e =>
-                        Nil -> Seq(
-                          errorHandler.toErrorResult(e)._2 ++ Json
-                            .obj("object" -> Json.obj("attachment" -> Json.obj("name" -> attachmentFile.filename)))
-                        ),
-                      s => Seq(s) -> Nil
-                    )
                 }
-                .getOrElse(Nil -> Nil)
 
               val (successes, failures) = inputObservable
                 .data
@@ -158,6 +174,50 @@ class ObservableCtrl @Inject() (
           _ <- observableSrv.remove(observable)
         } yield Results.NoContent
       }
+
+  // extract a file from the archive and make sure its size matches the header (to protect against zip bombs)
+  private def extractAndCheckSize(zipFile: ZipFile, header: FileHeader): Option[FFile] = {
+    val fileName = header.getFileName
+    if (fileName.contains('/')) None
+    else {
+      val file = temporaryFileCreator.create("zip")
+
+      val input = zipFile.getInputStream(header)
+      val size  = header.getUncompressedSize
+      val sizedInput: FilterInputStream = new FilterInputStream(input) {
+        var totalRead = 0
+
+        override def read(): Int =
+          if (totalRead < size) {
+            totalRead += 1
+            super.read()
+          } else throw BadRequestError("Error extracting file: output size doesn't match header")
+      }
+      Files.delete(file)
+      val fileSize = Files.copy(sizedInput, file)
+      if (fileSize != size) {
+        file.toFile.delete()
+        throw InternalError("Error extracting file: output size doesn't match header")
+      }
+      input.close()
+      val contentType = Option(Files.probeContentType(file)).getOrElse("application/octet-stream")
+      Some(FFile(header.getFileName, file, contentType))
+    }
+  }
+
+  private def getZipFiles(observable: InputObservable, zipPassword: Option[String])(implicit authContext: AuthContext): Seq[InputObservable] =
+    observable.attachment.toSeq.flatMap { attachment =>
+      val zipFile                = new ZipFile(attachment.filepath.toFile)
+      val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
+
+      if (zipFile.isEncrypted)
+        zipFile.setPassword(zipPassword.getOrElse(configuration.get[String]("datastore.attachment.password")).toCharArray)
+
+      files
+        .filterNot(_.isDirectory)
+        .flatMap(extractAndCheckSize(zipFile, _))
+        .map(ffile => observable.copy(attachment = Some(ffile)))
+    }
 }
 
 @Singleton
