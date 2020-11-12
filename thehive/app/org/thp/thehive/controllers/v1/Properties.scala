@@ -491,4 +491,14 @@ class Properties @Inject() (
       .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
       .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
+
+  lazy val taxonomy: PublicProperties =
+    PublicPropertyListBuilder[Taxonomy]
+      .property("namespace", UMapping.string)(_.field.readonly)
+      .property("description", UMapping.string)(_.field.readonly)
+      .property("version", UMapping.int)(_.field.readonly)
+      // Predicates ?
+      // Values ?
+      .build
+
 }

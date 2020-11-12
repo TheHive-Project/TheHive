@@ -4,35 +4,47 @@ import java.util.{Map => JMap}
 
 import javax.inject.{Inject, Named}
 import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.thehive.models.{Organisation, OrganisationTaxonomy, Predicate, RichTaxonomy, Tag, Taxonomy, TaxonomyTag, Value}
+import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.{EntityIdOrName, RichSeq}
+import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 
 import scala.util.Try
 
 @Singleton
 class TaxonomySrv @Inject() (
-)(implicit
-  @Named("with-thehive-schema") db: Database
+  organisationSrv: OrganisationSrv,
+  tagSrv: TagSrv
+)(implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Taxonomy] {
 
   val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
+  val organisationTaxonomySrv = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {
-      taxonomy <- createEntity(taxo)
-      _ <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
-      richTaxonomy <- RichTaxonomy(taxonomy, ???, ???)
+      taxonomy     <- createEntity(taxo)
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
+      _            <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
+      richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
     } yield richTaxonomy
+/*
+
+  def getByNamespace(namespace: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
+    Try(startTraversal.getByNamespace(namespace)).getOrElse(startTraversal.limit(0))
+*/
+
 }
 
 object TaxonomyOps {
   implicit class TaxonomyOpsDefs(traversal: Traversal.V[Taxonomy]) {
+
+    def getByNamespace(namespace: String): Traversal.V[Taxonomy] = traversal.has(_.namespace, namespace)
 
     def visible(implicit authContext: AuthContext): Traversal.V[Taxonomy] = visible(authContext.organisation)
 
@@ -49,18 +61,6 @@ object TaxonomyOps {
           _.by
             .by(_.tags.fold)
         )
-        .domainMap {
-          case (taxonomy, tags) =>
-            val predicates = tags.map(t => Predicate(t.predicate)).distinct
-            val values = predicates.map { p =>
-              val tagValues = tags
-                .filter(_.predicate == p.value)
-                .filter(_.value.isDefined)
-                .map(_.value.get)
-              Value(p.value, tagValues)
-            }
-            RichTaxonomy(taxonomy, predicates, values)
-        }
-
+        .domainMap { case (taxonomy, tags) => RichTaxonomy(taxonomy, tags) }
   }
 }

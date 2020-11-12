@@ -4,17 +4,18 @@ import java.util.Date
 
 import play.api.libs.json.{Json, OFormat, OWrites}
 
+// TODO make sure of input format
 case class InputTaxonomy (
   namespace: String,
   description: String,
   version: Int,
-  predicates: Seq[InputPredicate],
-  values: Option[Seq[InputValue]]
+  predicates: Seq[String],
+  values: Option[Seq[InputEntry]]
 )
 
-case class InputPredicate(value: String, expanded: String)
+case class InputEntry(predicate: String, entry: Seq[InputValue])
 
-case class InputValue(predicate: String, entry: Seq[InputPredicate])
+case class InputValue(value: String, expanded: String, colour: Option[String])
 
 object InputTaxonomy {
   implicit val writes: OWrites[InputTaxonomy] = Json.writes[InputTaxonomy]
@@ -30,13 +31,13 @@ case class OutputTaxonomy(
   namespace: String,
   description: String,
   version: Int,
-  predicates: Seq[OutputPredicate],
-  values: Option[Seq[OutputValue]]
+  predicates: Seq[String],
+  values: Option[Seq[OutputEntry]]
 )
 
-case class OutputPredicate(value: String, expanded: String)
+case class OutputEntry(predicate: String, entry: Seq[OutputValue])
 
-case class OutputValue(predicate: String, entry: Seq[OutputPredicate])
+case class OutputValue(value: String, expanded: String)
 
 object OutputTaxonomy {
   implicit val format: OFormat[OutputTaxonomy] = Json.format[OutputTaxonomy]

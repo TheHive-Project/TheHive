@@ -5,7 +5,7 @@ import java.util.Date
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.dto.v0.{InputTaxonomy, OutputTaxonomy}
+import org.thp.thehive.dto.v1.{InputTaxonomy, OutputTaxonomy}
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -263,15 +263,20 @@ object Conversion {
         .transform
   }
 
-  implicit val taxonomyOutput: Renderer.Aux[RichTaxonomy, OutputTaxonomy] = Renderer.toJson[RichTaxonomy, OutputTaxonomy](
-    _.into[OutputTaxonomy]
-      .withFieldComputed(_.namespace, _.namespace)
-      .withFieldComputed(_.description, _.description)
-      .withFieldComputed(_.version, _.version)
-      .withFieldComputed(_.predicates, _.predicates)
-      .withFieldComputed(_.values, _.values)
-      .transform
-  )
+  implicit val taxonomyOutput: Renderer.Aux[RichTaxonomy, OutputTaxonomy] =
+    Renderer.toJson[RichTaxonomy, OutputTaxonomy](
+      _.into[OutputTaxonomy]
+        .withFieldComputed(_.namespace, _.namespace)
+        .withFieldComputed(_.description, _.description)
+        .withFieldComputed(_.version, _.version)
+        .withFieldComputed(_.predicates, _.tags.map(_.predicate).distinct)
+        .withFieldComputed(_.values, _.tags.foldLeft(Map[String, Seq[OutputValue]]())((entryMap, tag) => {
+          val outputValues = entryMap.getOrElse(tag.predicate, Seq())
+          val value = OutputValue(tag.value.getOrElse(""), tag.description.getOrElse(""))
+          entryMap + (tag.predicate -> (outputValues :+ value))
+        }).map(e => OutputEntry(e._1, e._2)))
+        .transform
+    )
 
   implicit class InputUserOps(inputUser: InputUser) {
 
@@ -357,6 +362,7 @@ object Conversion {
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
         .transform
   }
+
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.toJson[RichObservable, OutputObservable](richObservable =>
     richObservable
       .into[OutputObservable]
