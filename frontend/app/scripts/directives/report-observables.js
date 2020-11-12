@@ -21,6 +21,10 @@
                         filter: '',
                         data: scope.observables
                     };
+
+                    _.each(scope.observables, function(item) {
+                        item.imported = !!item.stats.observableId;
+                    });
                 });
             },
             controller: function($scope) {
@@ -50,7 +54,7 @@
                     var type = $scope.pagination.filter;
                     _.each(type === '' ? $scope.observables : $scope.groups[type], function(item) {
                         //if(!item.id && !item.selected) {
-                        if(!item.stats.observableId && !item.selected) {
+                        if(!item.imported && !item.selected) {
                             item.selected = true;
                             $scope.selected++;
                         }
@@ -109,7 +113,8 @@
                         modal.result
                           .then(function(/*response*/) {
                               _.each(list, function(item) {
-                                  item.id = true;
+                                  //item.id = true;
+                                  item.imported = true;
                                   item.selected = false;
                               });
                           });
