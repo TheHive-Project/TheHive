@@ -22,8 +22,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th style="width: 10px;" class="p-0"></th>
-                        <th style="width:50px;"></th>
+                        <th style="width:50px;">Flags</th>
                         <th style="width:100px;">Type</th>
                         <th>Data</th>
                         <th style="width: 120px">Date Added</th>
@@ -31,9 +30,8 @@
                 </thead>
                 <tbody>
                     <tr ng-repeat="observable in $cmp.list.values" class="clickable">
-                        <td class="p-0 bg-tlp-{{observable.tlp}} clickable" ng-click="$cmp.filterBy('tlp', observable.tlp)"></td>
                         <td class="nowrap">
-                            <observable-flags observable="observable" inline="true"></observable-flags>
+                            <observable-flags observable="observable" inline="true" on-filter="$cmp.filterBy(fieldName, value)"></observable-flags>
                         </td>
                         <td>
                             <a href ng-click="$cmp.filterBy('dataType', observable.dataType)">{{observable.dataType}}</a>

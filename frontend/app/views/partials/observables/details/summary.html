@@ -127,22 +127,15 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th width="10">IOC</th>
-                        <th>TLP</th>
+                        <th width="80">Flags</th>
                         <th>Case</th>
-                        <th>Date added</th>
+                        <th width="120">Date added</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr ng-repeat="a in similarArtifacts | limitTo:similarArtifactsLimit" style="cursor: pointer;" ng-click="openArtifact(a)" uib-tooltip="{{a.message}}" tooltip-popup-delay="500" tooltip-placement="bottom">
-                        <td align="center">
-                            <span class="clickable fa"
-                              ng-class="{true: 'fa-star', false: 'fa-star-o'}[a.ioc]"
-                              tooltip-popup-delay="500"
-                              tooltip-placement="bottom"></span>
-                        </td>
                         <td>
-                            <tlp value="a.tlp"></tlp>
+                            <observable-flags observable="a" inline="true" hide-seen="true" hide-similarity="true"></observable-flags>
                         </td>
                         <td>
                           <!-- [{{a.dataType}}]: {{a.data || a.attachment.name}}<br> -->

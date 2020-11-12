@@ -18,6 +18,7 @@
                 inline: '<',
                 hideSimilarity: '<',
                 hideSeen: '<',
+                hideTlp: '<',
                 onFilter: '&'
             }
         });
