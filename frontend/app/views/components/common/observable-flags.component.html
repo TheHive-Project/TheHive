@@ -7,11 +7,11 @@
         3: 'TLP:RED',
     }[$ctrl.observable.tlp] }}" tooltip-popup-delay="500" tooltip-placement="tlp"
         ng-click="$ctrl.filterBy('tlp', $ctrl.observable.tlp)">
-        <i class="fa fa-circle" ng-class="{
+        <i class="fa" ng-class="{
             0: 'text-tlp-default fa-circle-o',
-            1: 'text-tlp-green',
-            2: 'text-tlp-amber',
-            3: 'text-tlp-red',
+            1: 'text-tlp-green fa-circle',
+            2: 'text-tlp-amber fa-circle',
+            3: 'text-tlp-red fa-circle',
         }[$ctrl.observable.tlp]"></i>
     </div>
 

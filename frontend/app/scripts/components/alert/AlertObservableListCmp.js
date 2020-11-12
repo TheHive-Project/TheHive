@@ -10,7 +10,7 @@
                     this.filtering = new FilteringSrv('case_artifact', 'alert.dialog.observables', {
                         version: 'v1',
                         defaults: {
-                            showFilters: true,
+                            showFilters: false,
                             showStats: false,
                             pageSize: 15,
                             sort: ['-startDate']
@@ -73,6 +73,12 @@
                 // this.filter = function () {
                 //     self.filtering.filter().then(this.applyFilters);
                 // };
+                //
+
+                // Filtering methods
+                this.toggleFilters = function () {
+                    this.filtering.toggleFilters();
+                };
 
                 this.clearFilters = function () {
                     this.filtering.clearFilters()
