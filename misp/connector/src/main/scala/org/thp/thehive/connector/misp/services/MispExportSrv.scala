@@ -41,7 +41,7 @@ class MispExportSrv @Inject() (
     observable
       .data
       .collect {
-        case data if observable.`type` == "hash" => data.data.length
+        case data if observable.`type`.name == "hash" => data.data.length
       }
       .collect {
         case 32  => "md5"
