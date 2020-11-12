@@ -12,17 +12,12 @@ case class Taxonomy(
   version: Int
 )
 
-case class Predicate(value: String)
-
-case class Value(predicate: String, entry: Seq[String])
-
 @BuildEdgeEntity[Taxonomy, Tag]
 case class TaxonomyTag()
 
 case class RichTaxonomy(
   taxonomy: Taxonomy with Entity,
-  predicates: Seq[Predicate],
-  values: Seq[Value]
+  tags: Seq[Tag with Entity]
 ) {
   def _id: EntityId               = taxonomy._id
   def _createdBy: String          = taxonomy._createdBy
@@ -32,5 +27,4 @@ case class RichTaxonomy(
   def namespace: String           = taxonomy.namespace
   def description: String         = taxonomy.description
   def version: Int                = taxonomy.version
-
 }
