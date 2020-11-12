@@ -263,8 +263,7 @@ trait Conversion {
       password <- (json \ "password").validateOpt[String]
       role     <- (json \ "roles").validateOpt[Seq[String]].map(_.getOrElse(Nil))
       organisationProfiles =
-        if (role.contains("admin"))
-          Map(Organisation.administration.name -> Profile.admin.name, mainOrganisation -> Profile.orgAdmin.name)
+        if (role.contains("admin")) Map(mainOrganisation -> Profile.orgAdmin.name)
         else if (role.contains("write")) Map(mainOrganisation -> Profile.analyst.name)
         else if (role.contains("read")) Map(mainOrganisation -> Profile.readonly.name)
         else Map(mainOrganisation                            -> Profile.readonly.name)
