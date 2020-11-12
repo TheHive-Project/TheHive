@@ -138,6 +138,8 @@ object OrganisationOps {
 
     def shares: Traversal.V[Share] = traversal.out[OrganisationShare].v[Share]
 
+    def taxonomies: Traversal.V[Taxonomy] = traversal.out[OrganisationTaxonomy].v[Taxonomy]
+
     def caseTemplates: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateOrganisation].v[CaseTemplate]
 
     def users(requiredPermission: Permission): Traversal.V[User] =
