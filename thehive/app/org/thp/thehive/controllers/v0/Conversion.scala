@@ -571,6 +571,27 @@ object Conversion {
           .transform
     }
 
+  implicit class InputTaxonomyOps(inputTaxonomy: InputTaxonomy) {
+
+    def toTaxonomy: Taxonomy =
+      inputTaxonomy
+        .into[Taxonomy]
+        .withFieldComputed(_.namespace, _.namespace)
+        .withFieldComputed(_.description, _.description)
+        .withFieldComputed(_.version, _.version)
+        .transform
+  }
+
+  implicit val taxonomyOutput: Renderer.Aux[RichTaxonomy, OutputTaxonomy] = Renderer.toJson[RichTaxonomy, OutputTaxonomy](
+    _.into[OutputTaxonomy]
+      .withFieldComputed(_.namespace, _.namespace)
+      .withFieldComputed(_.description, _.description)
+      .withFieldComputed(_.version, _.version)
+      .withFieldComputed(_.predicates, _.predicates)
+      .withFieldComputed(_.values, _.values)
+      .transform
+  )
+
   implicit class InputUserOps(inputUser: InputUser) {
 
     def toUser: User =
