@@ -8,7 +8,8 @@
                 observables: '=',
                 analyzer: '=',
                 caseId: '=',
-                permissions: '='
+                permissions: '=',
+                onRefresh: '&?'
             },
             templateUrl: 'views/directives/report-observables.html',
             link: function(scope) {
@@ -117,6 +118,10 @@
                                   item.imported = true;
                                   item.selected = false;
                               });
+
+                              if($scope.onRefresh) {
+                                  $scope.onRefresh();
+                              }
                           });
                     });
 
