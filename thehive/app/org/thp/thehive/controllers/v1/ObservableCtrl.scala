@@ -1,7 +1,13 @@
 package org.thp.thehive.controllers.v1
 
+import java.io.FilterInputStream
+import java.nio.file.Files
+
 import javax.inject.{Inject, Named, Singleton}
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -15,8 +21,11 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
-import play.api.Logger
+import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.mvc.{Action, AnyContent, Results}
+import play.api.{Configuration, Logger}
+
+import scala.collection.JavaConverters._
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -26,7 +35,9 @@ class ObservableCtrl @Inject() (
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    temporaryFileCreator: DefaultTemporaryFileCreator,
+    configuration: Configuration
 ) extends QueryableCtrl
     with ObservableRenderer {
 
@@ -70,8 +81,13 @@ class ObservableCtrl @Inject() (
   def create(caseId: String): Action[AnyContent] =
     entryPoint("create artifact")
       .extract("artifact", FieldsParser[InputObservable])
+      .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
+      .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
       .authTransaction(db) { implicit request => implicit graph =>
+        val isZip: Option[Boolean]           = request.body("isZip")
+        val zipPassword: Option[String]      = request.body("zipPassword")
         val inputObservable: InputObservable = request.body("artifact")
+        val inputAttachObs                   = if (isZip.contains(true)) getZipFiles(inputObservable, zipPassword) else Seq(inputObservable)
         for {
           case0 <-
             caseSrv
@@ -83,12 +99,12 @@ class ObservableCtrl @Inject() (
             inputObservable
               .data
               .toTry(d => observableSrv.create(inputObservable.toObservable, observableType, d, inputObservable.tags, Nil))
-          observableWithAttachment <-
-            inputObservable
-              .attachment
+          observableWithAttachment <- inputAttachObs.toTry(
+            _.attachment
               .map(a => observableSrv.create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil))
               .flip
-          createdObservables <- (observablesWithData ++ observableWithAttachment).toTry { richObservables =>
+          )
+          createdObservables <- (observablesWithData ++ observableWithAttachment.flatten).toTry { richObservables =>
             caseSrv
               .addObservable(case0, richObservables)
               .map(_ => richObservables)
@@ -149,4 +165,48 @@ class ObservableCtrl @Inject() (
           _ <- observableSrv.remove(observable)
         } yield Results.NoContent
       }
+
+  // extract a file from the archive and make sure its size matches the header (to protect against zip bombs)
+  private def extractAndCheckSize(zipFile: ZipFile, header: FileHeader): Option[FFile] = {
+    val fileName = header.getFileName
+    if (fileName.contains('/')) None
+    else {
+      val file = temporaryFileCreator.create("zip")
+
+      val input = zipFile.getInputStream(header)
+      val size  = header.getUncompressedSize
+      val sizedInput: FilterInputStream = new FilterInputStream(input) {
+        var totalRead = 0
+
+        override def read(): Int =
+          if (totalRead < size) {
+            totalRead += 1
+            super.read()
+          } else throw BadRequestError("Error extracting file: output size doesn't match header")
+      }
+      Files.delete(file)
+      val fileSize = Files.copy(sizedInput, file)
+      if (fileSize != size) {
+        file.toFile.delete()
+        throw InternalError("Error extracting file: output size doesn't match header")
+      }
+      input.close()
+      val contentType = Option(Files.probeContentType(file)).getOrElse("application/octet-stream")
+      Some(FFile(header.getFileName, file, contentType))
+    }
+  }
+
+  private def getZipFiles(observable: InputObservable, zipPassword: Option[String])(implicit authContext: AuthContext): Seq[InputObservable] =
+    observable.attachment.toSeq.flatMap { attachment =>
+      val zipFile                = new ZipFile(attachment.filepath.toFile)
+      val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
+
+      if (zipFile.isEncrypted)
+        zipFile.setPassword(zipPassword.getOrElse(configuration.get[String]("datastore.attachment.password")).toCharArray)
+
+      files
+        .filterNot(_.isDirectory)
+        .flatMap(extractAndCheckSize(zipFile, _))
+        .map(ffile => observable.copy(attachment = Some(ffile)))
+    }
 }
