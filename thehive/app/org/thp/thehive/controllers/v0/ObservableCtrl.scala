@@ -81,7 +81,10 @@ class ObservableCtrl @Inject() (
                         .fold(
                           e =>
                             successes -> (failures :+ errorHandler.toErrorResult(e)._2 ++ Json
-                              .obj("object" -> Json.obj("attachment" -> Json.obj("name" -> attachment.filename)))),
+                              .obj(
+                                "object" -> Json
+                                  .obj("data" -> s"file:${attachment.filename}", "attachment" -> Json.obj("name" -> attachment.filename))
+                              )),
                           s => (successes :+ s) -> failures
                         )
                     }

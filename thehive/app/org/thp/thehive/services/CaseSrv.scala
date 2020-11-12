@@ -175,13 +175,20 @@ class CaseSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val alreadyExistInThatCase = observableSrv
-      .get(richObservable.observable)
-      .filteredSimilar
-      .visible
-      .`case`
-      .hasId(`case`._id)
-      .exists || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists // FIXME
+    val alreadyExistInThatCase = richObservable
+      .dataOrAttachment
+      .fold(
+        _ =>
+          observableSrv
+            .get(richObservable.observable)
+            .filteredSimilar
+            .visible
+            .`case`
+            .hasId(`case`._id)
+            .exists,
+        attachment => get(`case`).share.observables.attachments.has(_.attachmentId, attachment.attachmentId).exists
+      ) || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists
+
     if (alreadyExistInThatCase)
       Failure(CreateError("Observable already exists"))
     else
