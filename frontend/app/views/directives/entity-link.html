@@ -1,13 +1,13 @@
 <span ng-if="value._type == 'case'">
 	<a class="text-muted wrap"href ng-click="openLink(entityUrl(value))">
 		<i class="glyphicon glyphicon-folder-open"></i>
-		&nbsp;#{{value.caseId}} - {{value.title}}&nbsp;
+		&nbsp;#{{value.caseId || value.number}} - {{value.title}}&nbsp;
 	</a>
 </span>
 <span ng-if="value._type == 'Case'">
 	<a class="text-muted wrap"href ng-click="openLink(entityUrl(value))">
 		<i class="glyphicon glyphicon-folder-open"></i>
-		&nbsp;#{{value.caseId}} - {{value.title}}&nbsp;
+		&nbsp;#{{value.caseId || value.number}} - {{value.title}}&nbsp;
 	</a>
 </span>
 <span ng-if="value._type == 'case_task'">

@@ -3,22 +3,22 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 
-@EdgeEntity[Observable, KeyValue]
+@BuildEdgeEntity[Observable, KeyValue]
 case class ObservableKeyValue()
 
-@EdgeEntity[Observable, Attachment]
+@BuildEdgeEntity[Observable, Attachment]
 case class ObservableAttachment()
 
-@EdgeEntity[Observable, Data]
+@BuildEdgeEntity[Observable, Data]
 case class ObservableData()
 
-@EdgeEntity[Observable, Tag]
+@BuildEdgeEntity[Observable, Tag]
 case class ObservableTag()
 
-@VertexEntity
-case class Observable(message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean)
+@BuildVertexEntity
+case class Observable(message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean, ignoreSimilarity: Option[Boolean])
 
 case class RichObservable(
     observable: Observable with Entity,
@@ -30,17 +30,19 @@ case class RichObservable(
     extensions: Seq[KeyValue with Entity],
     reportTags: Seq[ReportTag with Entity]
 ) {
-  def _id: String                = observable._id
-  def _createdBy: String         = observable._createdBy
-  def _updatedBy: Option[String] = observable._updatedBy
-  def _createdAt: Date           = observable._createdAt
-  def _updatedAt: Option[Date]   = observable._updatedAt
-  def message: Option[String]    = observable.message
-  def tlp: Int                   = observable.tlp
-  def ioc: Boolean               = observable.ioc
-  def sighted: Boolean           = observable.sighted
+  def _id: EntityId                                                      = observable._id
+  def _createdBy: String                                                 = observable._createdBy
+  def _updatedBy: Option[String]                                         = observable._updatedBy
+  def _createdAt: Date                                                   = observable._createdAt
+  def _updatedAt: Option[Date]                                           = observable._updatedAt
+  def message: Option[String]                                            = observable.message
+  def tlp: Int                                                           = observable.tlp
+  def ioc: Boolean                                                       = observable.ioc
+  def sighted: Boolean                                                   = observable.sighted
+  def ignoreSimilarity: Option[Boolean]                                  = observable.ignoreSimilarity
+  def dataOrAttachment: Either[Data with Entity, Attachment with Entity] = data.toLeft(attachment.get)
 }
 
 @DefineIndex(IndexType.unique, "data")
-@VertexEntity
+@BuildVertexEntity
 case class Data(data: String)

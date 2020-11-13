@@ -1,0 +1,14 @@
+<div class="flow-dashboard" ng-switch="base.operation">
+    <div class="flow-item-title wrap">
+        <i class="fa fa-tachometer"></i>
+        {{base.details.title}}
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-when="Creation">
+        Dashboard {{base.details.title}} added
+    </div>
+
+    <div class="flow-item-updates wrap" ng-switch-when="Delete">
+        Dashboard {{base.details.title}} removed
+    </div>
+</div>

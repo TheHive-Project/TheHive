@@ -6,7 +6,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 
-@EdgeEntity[Alert, CustomField]
+@BuildEdgeEntity[Alert, CustomField]
 case class AlertCustomField(
     order: Option[Int] = None,
     stringValue: Option[String] = None,
@@ -23,22 +23,22 @@ case class AlertCustomField(
   override def dateValue_=(value: Option[Date]): AlertCustomField       = copy(dateValue = value)
 }
 
-@EdgeEntity[Alert, Observable]
+@BuildEdgeEntity[Alert, Observable]
 case class AlertObservable()
 
-@EdgeEntity[Alert, Organisation]
+@BuildEdgeEntity[Alert, Organisation]
 case class AlertOrganisation()
 
-@EdgeEntity[Alert, Case]
+@BuildEdgeEntity[Alert, Case]
 case class AlertCase()
 
-@EdgeEntity[Alert, CaseTemplate]
+@BuildEdgeEntity[Alert, CaseTemplate]
 case class AlertCaseTemplate()
 
-@EdgeEntity[Alert, Tag]
+@BuildEdgeEntity[Alert, Tag]
 case class AlertTag()
 
-@VertexEntity
+@BuildVertexEntity
 @DefineIndex(IndexType.basic, "type", "source", "sourceRef")
 case class Alert(
     `type`: String,
@@ -61,11 +61,11 @@ case class RichAlert(
     organisation: String,
     tags: Seq[Tag with Entity],
     customFields: Seq[RichCustomField],
-    caseId: Option[String],
+    caseId: Option[EntityId],
     caseTemplate: Option[String],
     observableCount: Long
 ) {
-  def _id: String                  = alert._id
+  def _id: EntityId                = alert._id
   def _createdAt: Date             = alert._createdAt
   def _createdBy: String           = alert._createdBy
   def _updatedAt: Option[Date]     = alert._updatedAt
@@ -92,7 +92,7 @@ object RichAlert {
       organisation: String,
       tags: Seq[Tag with Entity],
       customFields: Seq[RichCustomField],
-      caseId: Option[String],
+      caseId: Option[EntityId],
       caseTemplate: Option[String],
       observableCount: Long
   ): RichAlert =

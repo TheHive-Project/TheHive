@@ -1,34 +1,39 @@
 package org.thp.thehive.controllers.v0
 
-import gremlin.scala.{By, Key}
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.Traversal
-import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.services.ObservableSteps
-import play.api.libs.json.{JsObject, Json}
+import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.util.{Map => JMap}
 
-import scala.collection.JavaConverters._
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.traversal.Traversal.V
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.thehive.controllers.v0.Conversion._
+import org.thp.thehive.models.Observable
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
+import play.api.libs.json.{JsObject, Json}
 
 trait ObservableRenderer {
 
-  def observableStatsRenderer(implicit authContext: AuthContext): ObservableSteps => Traversal[JsObject, JsObject] =
-    _.similar
+  def observableStatsRenderer(implicit
+      authContext: AuthContext
+  ): Traversal.V[Observable] => Traversal[JsObject, JMap[JBoolean, JLong], Converter[JsObject, JMap[JBoolean, JLong]]] =
+    _.filteredSimilar
       .visible
-      .groupCount(By(Key[Boolean]("ioc")))
-      .map { stats =>
-        val m      = stats.asScala
-        val nTrue  = m.get(true).fold(0L)(_.toLong)
-        val nFalse = m.get(false).fold(0L)(_.toLong)
+      .groupCount(_.byValue(_.ioc))
+      .domainMap { stats =>
+        val nTrue  = stats.getOrElse(true, 0L)
+        val nFalse = stats.getOrElse(false, 0L)
         Json.obj(
           "seen" -> (nTrue + nFalse),
           "ioc"  -> (nTrue > 0)
         )
       }
 
-  def observableLinkRenderer: ObservableSteps => Traversal[JsObject, JsObject] =
-    _.coalesce(
-      _.alert.richAlert.map(a => Json.obj("alert"            -> a.toJson)),
-      _.`case`.richCaseWithoutPerms.map(c => Json.obj("case" -> c.toJson))
+  def observableLinkRenderer: V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+    _.coalesceMulti(
+      _.alert.richAlert.domainMap(a => Json.obj("alert" -> a.toJson)),
+      _.`case`.richCaseWithoutPerms.domainMap(c => Json.obj("case" -> c.toJson))
     )
 }

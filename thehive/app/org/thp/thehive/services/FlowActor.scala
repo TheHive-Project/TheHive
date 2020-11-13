@@ -1,27 +1,25 @@
 package org.thp.thehive.services
 
-import java.util.{Date, List => JList}
-
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.google.inject.name.Names
 import com.google.inject.{Injector, Key => GuiceKey}
-import gremlin.scala.{By, Key}
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.GuiceAkkaExtension
+import org.thp.thehive.services.AuditOps._
+import org.thp.thehive.services.CaseOps._
 import play.api.cache.SyncCacheApi
 
-import scala.collection.JavaConverters._
-
 object FlowActor {
-  case class FlowId(organisation: String, caseId: Option[String]) {
+  case class FlowId(organisation: EntityIdOrName, caseId: Option[EntityIdOrName]) {
     override def toString: String = s"$organisation;${caseId.getOrElse("-")}"
   }
-  case class AuditIds(ids: Seq[String])
+  case class AuditIds(ids: Seq[EntityId])
 }
 
 class FlowActor extends Actor {
@@ -40,11 +38,11 @@ class FlowActor extends Actor {
       val auditIds = cache.getOrElseUpdate(flowId.toString) {
         db.roTransaction { implicit graph =>
           caseId
-            .fold(auditSrv.initSteps.has("mainAction", true).visible(organisation))(caseSrv.getByIds(_).audits(organisation))
-            .order(List(By(Key[Date]("_createdAt"), Order.desc)))
+            .fold(auditSrv.startTraversal.has(_.mainAction, true).visible(organisation))(caseSrv.get(_).audits(organisation))
+            .sort(_.by("_createdAt", Order.desc))
             .range(0, 10)
             ._id
-            .toList
+            .toSeq
         }
       }
       sender ! AuditIds(auditIds)
@@ -52,23 +50,23 @@ class FlowActor extends Actor {
       db.roTransaction { implicit graph =>
         auditSrv
           .getByIds(ids: _*)
-          .has("mainAction", true)
+          .has(_.mainAction, true)
           .project(
             _.by(_._id)
-              .by(_.organisation.name.fold)
+              .by(_.organisation._id.fold)
               .by(_.`case`._id.fold)
           )
           .toIterator
           .foreach {
-            case (id: AnyRef, organisations: JList[String], cases: JList[AnyRef]) =>
-              organisations.asScala.foreach { organisation =>
+            case (id, organisations, cases) =>
+              organisations.foreach { organisation =>
                 val cacheKey = FlowId(organisation, None).toString
                 val ids      = cache.get[List[String]](cacheKey).getOrElse(Nil)
-                cache.set(cacheKey, id.toString :: ids)
-                cases.asScala.foreach { caseId =>
-                  val cacheKey: String = FlowId(organisation, Some(caseId.toString)).toString
+                cache.set(cacheKey, (id :: ids).take(10))
+                cases.foreach { caseId =>
+                  val cacheKey: String = FlowId(organisation, Some(caseId)).toString
                   val ids              = cache.get[List[String]](cacheKey).getOrElse(Nil)
-                  cache.set(cacheKey, (id.toString :: ids).take(10))
+                  cache.set(cacheKey, (id :: ids).take(10))
                 }
               }
           }

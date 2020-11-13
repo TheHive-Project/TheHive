@@ -1,0 +1,35 @@
+.double-val-label {
+	display: table;
+    margin-top: 0;
+    margin-left: 0;
+}
+.double-val-label>span {
+	color: #ffffff;
+	display: table-cell;
+	font-weight: 400;
+	line-height: 1;
+	padding: .3em .6em;
+	text-align: center;
+	vertical-align: baseline;
+	white-space: nowrap;
+}
+.double-val-label>span:first-child {
+    border-bottom-left-radius: 0.25em;
+    border-top-left-radius: .25em;
+    border-left-color: #3c8dbc;
+    border-left-width: 3px;
+    border-left-style: solid;
+}
+.double-val-label>span:last-child {
+    border-bottom-right-radius: 0.25em;
+    border-top-right-radius: .25em;
+    border-left: 1px dashed #3c8dbc;
+}
+.double-val-label>span.primary {
+	background-color: #3c8dbc;
+    color: #fff;
+}
+.double-val-label>span.default {
+    background-color: #d2d6de;
+    color: #444;
+}

@@ -2,13 +2,16 @@ package org.thp.thehive.services.notification
 
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
-import gremlin.scala.Graph
 import javax.inject.{Inject, Named}
-import org.thp.scalligraph.BadConfigurationError
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.{Database, Entity, Schema}
-import org.thp.scalligraph.services.{EventSrv, RichElement}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.services.EventSrv
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadConfigurationError, EntityId}
 import org.thp.thehive.models.{Audit, Organisation, User}
+import org.thp.thehive.services.AuditOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import org.thp.thehive.services.notification.triggers.{Trigger, TriggerProvider}
@@ -16,7 +19,6 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.{Format, JsValue, Json}
 import play.api.{Configuration, Logger}
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -27,12 +29,12 @@ object NotificationTopic {
 }
 
 sealed trait NotificationMessage
-case class NotificationExecution(userId: Option[String], auditId: String, notificationConfig: NotificationConfig) extends NotificationMessage
+case class NotificationExecution(userId: Option[EntityId], auditId: EntityId, notificationConfig: NotificationConfig) extends NotificationMessage
 
 object NotificationExecution {
   implicit val format: Format[NotificationExecution] = Json.format[NotificationExecution]
 }
-case class AuditNotificationMessage(id: String*) extends NotificationMessage
+case class AuditNotificationMessage(id: EntityId*) extends NotificationMessage
 
 object AuditNotificationMessage {
   implicit val format: Format[AuditNotificationMessage] = Json.format[AuditNotificationMessage]
@@ -51,8 +53,8 @@ class NotificationSrv @Inject() (
       .asOpt[Seq[NotificationConfig]]
       .getOrElse(Nil)
 
-  def getTriggers(config: String): Seq[Trigger] =
-    getConfig(config).flatMap(n => getTrigger(n.triggerConfig).toOption)
+  def getTriggers(config: JsValue): Seq[Trigger] =
+    config.asOpt[Seq[NotificationConfig]].getOrElse(Nil).flatMap(c => getTrigger(c.triggerConfig).toOption)
 
   def getTrigger(config: Configuration): Try[Trigger] =
     for {
@@ -88,7 +90,7 @@ class NotificationActor @Inject() (
   val roles: Set[String]  = configuration.get[Seq[String]]("roles").toSet
 
   // Map of OrganisationId -> Trigger -> (present in org, list of UserId) */
-  def triggerMap: Map[String, Map[Trigger, (Boolean, Seq[String])]] =
+  def triggerMap: Map[EntityId, Map[Trigger, (Boolean, Seq[EntityId])]] =
     cache.getOrElseUpdate("notification-triggers", 5.minutes)(db.roTransaction(graph => configSrv.triggerMap(notificationSrv)(graph)))
 
   override def preStart(): Unit = {
@@ -115,8 +117,8 @@ class NotificationActor @Inject() (
       context: Option[Entity],
       `object`: Option[Entity],
       organisation: Organisation with Entity
-  )(
-      implicit graph: Graph
+  )(implicit
+      graph: Graph
   ): Unit =
     notificationConfigs
       .foreach {
@@ -160,33 +162,26 @@ class NotificationActor @Inject() (
                 .getOrElse(organisation._id, Map.empty)
                 .foreach {
                   case (trigger, (inOrg, userIds)) if trigger.preFilter(audit, context, organisation) =>
-                    logger.debug(s"Notification trigger ${trigger.name} is applicable")
+                    logger.debug(s"Notification trigger ${trigger.name} is applicable for $audit")
                     if (userIds.nonEmpty)
                       userSrv
                         .getByIds(userIds: _*)
                         .project(
                           _.by
-                            .by(_.config("notification").value.fold)
+                            .by(_.config("notification").value(_.value).fold)
                         )
                         .toIterator
                         .foreach {
-                          case (userVertex, notificationConfig) =>
-                            val user = userVertex.as[User]
-                            val config = notificationConfig
-                              .asScala
-                              .flatMap(
-                                Json
-                                  .parse(_)
-                                  .asOpt[NotificationConfig]
-                              )
+                          case (user, notificationConfig) =>
+                            val config = notificationConfig.flatMap(_.asOpt[NotificationConfig])
                             executeNotification(Some(user), config, audit, context, obj, organisation)
                         }
-                    if (inOrg) {
+                    if (inOrg)
                       organisationSrv
                         .get(organisation)
                         .config
-                        .has("name", "notification")
-                        .value
+                        .has(_.name, "notification")
+                        .value(_.value)
                         .toIterator
                         .foreach { notificationConfig: JsValue =>
                           val (userConfig, orgConfig) = notificationConfig
@@ -196,22 +191,21 @@ class NotificationActor @Inject() (
                           organisationSrv
                             .get(organisation)
                             .users
-                            .filter(_.config.hasNot("name", "notification"))
+                            .filter(_.config.hasNot(_.name, "notification"))
                             .toIterator
                             .foreach { user =>
                               executeNotification(Some(user), userConfig, audit, context, obj, organisation)
                             }
                           executeNotification(None, orgConfig, audit, context, obj, organisation)
                         }
-                    }
-                  case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable")
+                  case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable for $audit")
                 }
             case _ =>
           }
       }
     case NotificationExecution(userId, auditId, notificationConfig) =>
       db.roTransaction { implicit graph =>
-        auditSrv.getByIds(auditId).auditContextObjectOrganisation.getOrFail().foreach {
+        auditSrv.getByIds(auditId).auditContextObjectOrganisation.getOrFail("Audit").foreach {
           case (audit, context, obj, Some(organisation)) =>
             for {
               user    <- userId.map(userSrv.getOrFail).flip

@@ -26,8 +26,9 @@
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th style="width:20px;"></th>
-                    <th style="width:20px;"></th>
+                    <th style="width:10px;"></th>
+                    <th style="width:80px;">Flags</th>
+                    <th style="width:80px;">Imported</th>
                     <th style="width:150px;">Type</th>
                     <th>Data</th>
                     <th style="width:80px;"></th>
@@ -37,9 +38,14 @@
                 <tr ng-repeat="observable in pagination.data | orderBy:'id':true |
                         offset: (pagination.currentPage-1)*pagination.pageSize |
                         limitTo: pagination.pageSize ">
-                    <td><input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="!!observable.stats.observableId"></td>
                     <td>
-                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="right" ng-if="!!observable.stats.observableId" class="glyphicon glyphicon-eye-open"></span>
+                        <input type="checkbox" ng-model="observable.selected" ng-change="selectObservable(observable)" ng-disabled="!!observable.imported">
+                    </td>
+                    <td>
+                        <observable-flags observable="observable" inline="true" hide-seen="true" hide-similarity="true"></observable-flags>
+                    </td>
+                    <td align="center">
+                        <span uib-tooltip="Observable already imported" tooltip-popup-delay="500" tooltip-placement="right" ng-if="!!observable.imported" class="fa fa-check"></span>
                     </td>
                     <td>{{observable.dataType}}</td>
                     <td class="wrap">

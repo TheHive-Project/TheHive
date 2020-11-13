@@ -3,8 +3,8 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import org.thp.thehive.connector.cortex.dto.v0.OutputAnalyzerTemplate
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}

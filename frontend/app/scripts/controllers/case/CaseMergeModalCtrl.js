@@ -4,7 +4,7 @@
     angular.module('theHiveControllers')
         .controller('CaseMergeModalCtrl', CaseMergeModalCtrl);
 
-    function CaseMergeModalCtrl($state, $uibModalInstance, $q, SearchSrv, CaseSrv, UserSrv, NotificationSrv, source, title, prompt) {
+    function CaseMergeModalCtrl($state, $uibModalInstance, $q, QuerySrv, SearchSrv, CaseSrv, UserSrv, NotificationSrv, source, title, prompt) {
         var me = this;
 
         this.source = source;
@@ -13,32 +13,41 @@
         this.prompt = prompt;
         this.search = {
             type: 'title',
-            placeholder: 'Search by case title',
+            placeholder: 'Search by case title. "Ex: Malware*"',
             minInputLength: 1,
             input: null,
             cases: []
         };
         this.getUserInfo = UserSrv.getCache;
 
-        this.getCaseByTitle = function(type, input) {
+        this.getCaseList = function(type, input) {
             var defer = $q.defer();
 
-            var query = (type === 'title') ? {
-                _like: {title: input}
+            var filter = (type === 'title') ? {
+                _like: {
+                    title: input
+                }
             } : {
-                caseId: Number.parseInt(input)
+                _field: 'number',
+                _value: Number.parseInt(input)
             };
 
-            SearchSrv(function(data /*, total*/ ) {
+            QuerySrv.call('v1',
+                [{_name: 'listCase'}],
+                {
+                    filter:filter,
+                    name: 'get-case-for-merge'
+                }
+            ).then(function(data) {
                 defer.resolve(data);
-            }, query, 'case', 'all');
+            });
 
             return defer.promise;
         };
 
         this.format = function(caze) {
             if (caze) {
-                return '#' + caze.caseId + ' - ' + caze.title;
+                return '#' + caze.number + ' - ' + caze.title;
             }
             return null;
         };

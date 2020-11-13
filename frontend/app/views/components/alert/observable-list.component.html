@@ -1,4 +1,18 @@
  <div class="alert-observable-list">
+
+    <div ng-include="'views/components/alert/observables/toolbar.html'"></div>
+
+    <div class="mt-xs filter-panel" ng-include="'views/components/alert/observables/filters.html'" ng-show="$cmp.filtering.context.showFilters"></div>
+
+    <div class="row mt-xs">
+        <div class="col-md-12 clearfix">
+
+            <filters-preview filters="$cmp.filtering.context.filters"
+                on-clear-item="$cmp.removeFilter(field)"
+                on-clear-all="$cmp.clearFilters()"></filters-preview>
+        </div>
+    </div>
+
     <div class="row">
 
         <div class="col-md-12" ng-show="$cmp.list.total === 0">
@@ -6,24 +20,12 @@
         </div>
 
         <div class="col-md-12" ng-show="$cmp.list.total > 0">
-            <div class="btn-toolbar" role="toolbar">
-                <div class="btn-group">
-                    <filters-preview filters="$cmp.filtering.context.filters"
-                        on-clear-item="$cmp.removeFilter(field)"
-                        on-clear-all="$cmp.clearFilters()"></filters-preview>
-                </div>
-                <div class="btn-group pull-right" role="group">
-                    <page-sizer collection="$cmp.list" sizes="[10, 15, 30, 100]"></page-sizer>
-                </div>
-            </div>
-
             <psearch control="$cmp.list"></psearch>
 
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th style="width: 10px;" class="p-0"></th>
-                        <th style="width:40px;"></th>
+                        <th style="width:50px;">Flags</th>
                         <th style="width:100px;">Type</th>
                         <th>Data</th>
                         <th style="width: 120px">Date Added</th>
@@ -31,14 +33,11 @@
                 </thead>
                 <tbody>
                     <tr ng-repeat="observable in $cmp.list.values" class="clickable">
-                        <td class="p-0 bg-tlp-{{observable.tlp}} clickable" ng-click="$cmp.filterBy('tlp', observable.tlp)"></td>
                         <td class="nowrap">
-                            <span ng-if="observable.ioc" class="mr-xxs fa fa-star" uib-tooltip="is an IOC" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
-                            <span ng-if="observable.sighted" class="mr-xxs fa fa-toggle-on" uib-tooltip="has been sighted" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
-                            <span ng-if="observable.extraData.seen.seen > 0" class="mr-xxs glyphicon glyphicon-eye-open" ng-class="{'text-danger': observable.extraData.seen.ioc}" uib-tooltip="Seen on {{observable.seen}} existing case(s)" tooltip-popup-delay="500" tooltip-placement="bottom"></span>
+                            <observable-flags observable="observable" inline="true" on-filter="$cmp.addFilterValue(fieldName, value)"></observable-flags>
                         </td>
                         <td>
-                            <a href ng-click="$cmp.filterBy('dataType', observable.dataType)">{{observable.dataType}}</a>
+                            <a href ng-click="$cmp.addFilterValue('dataType', observable.dataType)">{{observable.dataType}}</a>
                         </td>
                         <td class="wrap">
                           <div class="wrap" ng-if="observable.dataType !== 'file'" uib-tooltip="{{observable.message}}" tooltip-placement="top-left">
@@ -56,7 +55,7 @@
                           </div>
                         </td>
                         <td>
-                            <a href ng-click="$cmp.filterBy('_createdAt', observable._createdAt)">{{observable._createdAt | shortDate}}</a>
+                            <a href ng-click="$cmp.addFilterValue('_createdAt', observable._createdAt)">{{observable._createdAt | shortDate}}</a>
                         </td>
                     </tr>
                 </tbody>

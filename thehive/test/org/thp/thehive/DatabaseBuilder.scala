@@ -2,14 +2,14 @@ package org.thp.thehive
 
 import java.io.File
 
-import gremlin.scala.{KeyValue => _, _}
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.scalactic.Or
-import org.thp.scalligraph.RichOption
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.{EntityId, EntityName, RichOption}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.Logger
@@ -166,16 +166,17 @@ class DatabaseBuilder @Inject() (
     try {
       val data = readFile(path)
       for {
-        json <- Json
-          .parse(data)
-          .asOpt[JsValue]
-          .orElse(warn(s"File $data has invalid format"))
-          .flatMap {
-            case arr: JsArray => arr.asOpt[Seq[JsObject]].orElse(warn("Array must contain only object"))
-            case o: JsObject  => Some(Seq(o))
-            case _            => warn(s"File $data contains data that is not an object nor an array")
-          }
-          .getOrElse(Nil)
+        json <-
+          Json
+            .parse(data)
+            .asOpt[JsValue]
+            .orElse(warn(s"File $data has invalid format"))
+            .flatMap {
+              case arr: JsArray => arr.asOpt[Seq[JsObject]].orElse(warn("Array must contain only object"))
+              case o: JsObject  => Some(Seq(o))
+              case _            => warn(s"File $data contains data that is not an object nor an array")
+            }
+            .getOrElse(Nil)
       } yield FObject(json)
     } catch {
       case error: Throwable =>
@@ -185,16 +186,17 @@ class DatabaseBuilder @Inject() (
 
   implicit class RichField(field: Field) {
 
-    def getString(path: String): Option[String] = field.get(path) match {
-      case FString(value) => Some(value)
-      case _              => None
-    }
+    def getString(path: String): Option[String] =
+      field.get(path) match {
+        case FString(value) => Some(value)
+        case _              => None
+      }
   }
 
   def createVertex[V <: Product](
-      srv: VertexSrv[V, _],
+      srv: VertexSrv[V],
       parser: FieldsParser[V]
-  )(implicit graph: Graph, authContext: AuthContext): Map[String, String] =
+  )(implicit graph: Graph, authContext: AuthContext): Map[String, EntityId] =
     readJsonFile(s"data/${srv.model.label}.json").flatMap { fields =>
       parser(fields - "id")
         .flatMap(e => Or.from(srv.createEntity(e)))
@@ -205,19 +207,19 @@ class DatabaseBuilder @Inject() (
 
   def createEdge[E <: Product, FROM <: Product: ru.TypeTag, TO <: Product: ru.TypeTag](
       srv: EdgeSrv[E, FROM, TO],
-      fromSrv: VertexSrv[FROM, _],
-      toSrv: VertexSrv[TO, _],
+      fromSrv: VertexSrv[FROM],
+      toSrv: VertexSrv[TO],
       parser: FieldsParser[E],
-      idMap: Map[String, String]
+      idMap: Map[String, EntityId]
   )(implicit graph: Graph, authContext: AuthContext): Seq[E with Entity] =
     readJsonFile(s"data/${srv.model.label}.json")
       .flatMap { fields =>
         (for {
           fromExtId <- fields.getString("from").toTry(Failure(new Exception("Edge has no from vertex")))
-          fromId = idMap.getOrElse(fromExtId, fromExtId)
+          fromId = idMap.getOrElse(fromExtId, EntityName(fromExtId))
           from    <- fromSrv.getOrFail(fromId)
           toExtId <- fields.getString("to").toTry(Failure(new Exception("Edge has no to vertex")))
-          toId = idMap.getOrElse(toExtId, toExtId)
+          toId = idMap.getOrElse(toExtId, EntityName(toExtId))
           to <- toSrv.getOrFail(toId)
           e  <- parser(fields - "from" - "to").fold(e => srv.create(e, from, to), _ => Failure(new Exception("XX")))
         } yield e)

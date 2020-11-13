@@ -2,7 +2,7 @@ package org.thp.thehive.migration
 import java.io.{File, OutputStreamWriter, Writer}
 
 class Terminal(output: Writer) {
-  lazy val pathedTput: String = if (new File("/usr/bin/tput").exists()) "/usr/bin/tput" else "tput"
+  lazy val pathedTput: String = if (new File("/usr/bin/tput").exists) "/usr/bin/tput" else "tput"
 
   def consoleDim(s: String): Int = {
     import sys.process._
@@ -60,7 +60,7 @@ object Terminal {
   // Prefer standard tools. Not sure why we need to do this, but for some
   // reason the version installed by gnu-coreutils blows up sometimes giving
   // "unable to perform all requested operations"
-  lazy val pathedStty: String = if (new File("/bin/stty").exists()) "/bin/stty" else "stty"
+  lazy val pathedStty: String = if (new File("/bin/stty").exists) "/bin/stty" else "stty"
 
   def apply[A](body: Terminal => A): A = {
     stty("-a")

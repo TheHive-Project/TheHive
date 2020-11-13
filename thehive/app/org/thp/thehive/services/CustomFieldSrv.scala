@@ -3,28 +3,26 @@ package org.thp.thehive.services
 import java.util.{Map => JMap}
 
 import akka.actor.ActorRef
-import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.T
+import org.apache.tinkerpop.gremlin.structure.{Edge, Graph}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.services.{IntegrityCheckOps, RichElement, VertexSrv}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps._
-import org.thp.scalligraph.{EntitySteps, RichSeq}
+import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal._
+import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import play.api.libs.json.{JsNull, JsObject, JsValue}
-import shapeless.HNil
+import org.thp.thehive.services.CustomFieldOps._
+import play.api.libs.json.{JsObject, JsValue}
 
-import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
 @Singleton
 class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
     implicit @Named("with-thehive-schema") db: Database
-) extends VertexSrv[CustomField, CustomFieldSteps] {
+) extends VertexSrv[CustomField] {
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("CustomField")
@@ -37,7 +35,7 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
       _       <- auditSrv.customField.create(created, created.toJson)
     } yield created
 
-  override def exists(e: CustomField)(implicit graph: Graph): Boolean = initSteps.getByName(e.name).exists()
+  override def exists(e: CustomField)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
   def delete(c: CustomField with Entity, force: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     get(c).remove() // TODO use force
@@ -46,152 +44,144 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
     }
   }
 
-  def useCount(c: CustomField with Entity)(implicit graph: Graph): Map[String, Int] =
+  def useCount(c: CustomField with Entity)(implicit graph: Graph): Map[String, Long] =
     get(c)
       .in()
-      .groupCount(By[String](T.label))
-      .headOption()
-      .fold(Map.empty[String, Int])(_.asScala.collect { case (k, v) if k != "Audit" => k -> v.toInt }.toMap)
+      .groupCount(_.byLabel)
+      .headOption
+      .fold(Map.empty[String, Long])(_.filterNot(_._1 == "Audit"))
 
   override def update(
-      steps: CustomFieldSteps,
+      traversal: Traversal.V[CustomField],
       propertyUpdaters: Seq[PropertyUpdater]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(CustomFieldSteps, JsObject)] =
-    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[CustomField], JsObject)] =
+    auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
       case (customFieldSteps, updatedFields) =>
         customFieldSteps
-          .newInstance()
-          .getOrFail()
+          .clone()
+          .getOrFail("CustomFields")
           .flatMap(auditSrv.customField.update(_, updatedFields))
     }
 
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): CustomFieldSteps = new CustomFieldSteps(raw)
-
-  override def get(idOrName: String)(implicit graph: Graph): CustomFieldSteps =
-    if (db.isValidId(idOrName)) super.getByIds(idOrName)
-    else initSteps.getByName(idOrName)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[CustomField] =
+    startTraversal.getByName(name)
 }
 
-@EntitySteps[CustomField]
-class CustomFieldSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
-    extends VertexSteps[CustomField](raw) {
-  override def newInstance(newRaw: GremlinScala[Vertex]): CustomFieldSteps = new CustomFieldSteps(newRaw)
-  override def newInstance(): CustomFieldSteps                             = new CustomFieldSteps(raw.clone())
+object CustomFieldOps {
 
-  def get(idOrName: String): CustomFieldSteps =
-    if (db.isValidId(idOrName)) this.getByIds(idOrName)
-    else getByName(idOrName)
+  implicit class CustomFieldOpsDefs(traversal: Traversal.V[CustomField]) {
+    def get(idOrName: EntityIdOrName): Traversal.V[CustomField] =
+      idOrName.fold(traversal.getByIds(_), getByName)
 
-  def getByName(name: String): CustomFieldSteps = new CustomFieldSteps(raw.has(Key("name") of name))
-
-}
-
-class CustomFieldValueSteps(raw: GremlinScala[Edge])(implicit @Named("with-thehive-schema") db: Database, graph: Graph)
-    extends EdgeSteps[CustomFieldValue[_], Product, CustomField](raw) {
-  override def newInstance(): CustomFieldValueSteps = new CustomFieldValueSteps(raw.clone())
-
-  override def newInstance(newRaw: GremlinScala[Edge]): CustomFieldValueSteps = new CustomFieldValueSteps(newRaw)
-
-  def setValue(value: Option[Any]): Try[Unit] = {
-    val customFieldValueLabel = StepLabel[Edge]()
-    val typeLabel             = StepLabel[String]()
-
-    raw
-      .asInstanceOf[GremlinScala.Aux[Edge, HNil]]
-      .as(customFieldValueLabel)
-      .inV()
-      .value("type")
-      .as(typeLabel)
-      .select()
-      .traversal
-      .asScala
-      .toTry {
-        case (edge, typeName) =>
-          val tpe = CustomFieldType.get(typeName)
-          tpe.setValue(new CustomFieldValueEdge(db, edge), value)
-      }
-      .map(_ => ())
+    def getByName(name: String): Traversal.V[CustomField] = traversal.has(_.name, name)
   }
 
-  private def edgeNameType: GremlinScala[(Edge, String, String)] = {
-    val customFieldValueLabel = StepLabel[Edge]()
-    val typeLabel             = StepLabel[JMap[AnyRef, AnyRef]]()
-    raw
-      .asInstanceOf[GremlinScala.Aux[Edge, HNil]]
-      .as(customFieldValueLabel)
-      .inV()
-      .valueMap("name", "type")
-      .as(typeLabel)
-      .select(customFieldValueLabel.name, typeLabel.name)
-      .map {
-        case SelectMap(map) =>
-          val ValueMap(values) = map.get(typeLabel)
-          (map.get(customFieldValueLabel), values.get("name").asInstanceOf[String], values.get("type").asInstanceOf[String])
-      }
-  }
+  implicit class CustomFieldValueOpsDefs[C <: CustomFieldValue[_]](traversal: Traversal.E[C]) {
 
-  def nameJsonValue: Traversal[(String, JsValue), (String, JsValue)] =
-    Traversal(
-      edgeNameType
-        .map {
-          case (edge, name, tpe) =>
-            name -> CustomFieldType.get(tpe).getJsonValue(new CustomFieldValueEdge(db, edge))
-        }
-    )
+    def setValue(value: Option[Any]): Try[Unit] = {
+      val customFieldValueLabel = StepLabel.identity[Edge]
+      val typeLabel             = StepLabel[CustomFieldType.Value, String, Converter[CustomFieldType.Value, String]]
 
-  def jsonValue: Traversal[JsValue, JsValue] =
-    Traversal(
-      edgeNameType
-        .map {
-          case (edge, _, tpe) =>
-            CustomFieldType.get(tpe).getJsonValue(new CustomFieldValueEdge(db, edge))
-        }
-    )
-
-  def nameValue: Traversal[(String, Option[Any]), (String, Option[Any])] =
-    Traversal(
-      edgeNameType
-        .map {
-          case (edge, name, tpe) =>
-            name -> CustomFieldType.get(tpe).getValue(new CustomFieldValueEdge(db, edge))
-        }
-    )
-
-  def value: Traversal[Any, Any] =
-    Traversal(
-      edgeNameType
-        .map {
-          case (edge, _, tpe) =>
-            CustomFieldType.get(tpe).getValue(new CustomFieldValueEdge(db, edge)).getOrElse(JsNull)
-        }
-    )
-
-  def richCustomField: Traversal[RichCustomField, RichCustomField] = {
-    val customFieldValueLabel = StepLabel[Edge]()
-    val customFieldLabel      = StepLabel[Vertex]()
-    Traversal(
-      raw
-        .asInstanceOf[GremlinScala.Aux[Edge, HNil]]
+      traversal
+        .setConverter[Edge, Converter.Identity[Edge]](Converter.identity)
         .as(customFieldValueLabel)
-        .inV()
-        .as(customFieldLabel)
-        .select(customFieldValueLabel.name, customFieldLabel.name)
-        .map {
-          case SelectMap(m) => RichCustomField(m.get(customFieldLabel).as[CustomField], new CustomFieldValueEdge(db, m.get(customFieldValueLabel)))
+        .inV
+        .v[CustomField]
+        .value(_.`type`)
+        .as(typeLabel)
+        .select((customFieldValueLabel, typeLabel))
+        .toSeq
+        .toTry {
+          case (edge, typeName) =>
+            val tpe = CustomFieldType.map(typeName)
+            tpe.setValue(new CustomFieldValueEdge(edge), value)
         }
-    )
+        .map(_ => ())
+    }
+
+    private def edgeNameType
+        : Traversal[(Edge, String, CustomFieldType.Value), JMap[String, Any], Converter[(Edge, String, CustomFieldType.Value), JMap[String, Any]]] = {
+      val customFieldValueLabel = StepLabel.identity[Edge]
+      val nameLabel             = StepLabel.v[CustomField]
+      val typeLabel             = StepLabel.v[CustomField]
+      traversal
+        .setConverter[Edge, Converter.Identity[Edge]](Converter.identity)
+        .as(customFieldValueLabel)
+        .inV
+        .v[CustomField]
+        .as(nameLabel, typeLabel)
+        .select(_.apply(customFieldValueLabel)(_.by).apply(nameLabel)(_.byValue(_.name)).apply(typeLabel)(_.byValue(_.`type`)))
+    }
+
+    def nameJsonValue: Traversal[(String, JsValue), JMap[String, Any], Converter[(String, JsValue), JMap[String, Any]]] =
+      edgeNameType
+        .domainMap {
+          case (edge, name, tpe) =>
+            name -> CustomFieldType.map(tpe).getJsonValue(new CustomFieldValueEdge(edge))
+        }
+
+    def jsonValue: Traversal[JsValue, JMap[String, Any], Converter[JsValue, JMap[String, Any]]] =
+      edgeNameType
+        .domainMap {
+          case (edge, _, tpe) =>
+            CustomFieldType.map(tpe).getJsonValue(new CustomFieldValueEdge(edge))
+        }
+
+    def nameValue: Traversal[(String, Option[_]), JMap[String, Any], Converter[(String, Option[_]), JMap[String, Any]]] =
+      edgeNameType
+        .domainMap {
+          case (edge, name, tpe) =>
+            name -> CustomFieldType.map(tpe).getValue(new CustomFieldValueEdge(edge))
+        }
+
+    def selectValue: Traversal[Any, JMap[String, Any], Converter[Any, JMap[String, Any]]] =
+      traversal.choose[String, Any](
+        _.on(
+          _.inV
+            .v[CustomField]
+            .value(_.`type`)
+        ).option("boolean", _.value(_.booleanValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("date", _.value(_.dateValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("float", _.value(_.floatValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("integer", _.value(_.integerValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("string", _.value(_.stringValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+      )
+
+//    def value: Traversal[Any, JMap[String, Any], Converter[Any, JMap[String, Any]]] =
+//      edgeNameType
+//        .map {
+//          case (edge, _, tpe) =>
+//            CustomFieldType.map(tpe).getValue(new CustomFieldValueEdge(edge)).getOrElse(JsNull)
+//        }
+
+    def richCustomField: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] = {
+      val customFieldValueLabel = StepLabel.identity[Edge]
+      val customFieldLabel      = StepLabel.v[CustomField]
+      traversal
+        .setConverter[Edge, Converter.Identity[Edge]](Converter.identity)
+        .as(customFieldValueLabel)
+        .inV
+        .v[CustomField]
+        .as(customFieldLabel)
+        .select((customFieldValueLabel, customFieldLabel))
+        .domainMap {
+          case (customFieldValue, customField) => RichCustomField(customField, new CustomFieldValueEdge(customFieldValue))
+        }
+    }
+
+    //  def remove()     = raw.drop().i
   }
 
-//  def remove()     = raw.drop().i
 }
 
 class CustomFieldIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CustomFieldSrv)
     extends IntegrityCheckOps[CustomField] {
-  override def resolve(entities: List[CustomField with Entity])(implicit graph: Graph): Try[Unit] = entities match {
-    case head :: tail =>
-      tail.foreach(copyEdge(_, head))
-      service.getByIds(tail.map(_._id): _*).remove()
-      Success(())
-    case _ => Success(())
-  }
+  override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] =
+    entities match {
+      case head :: tail =>
+        tail.foreach(copyEdge(_, head))
+        service.getByIds(tail.map(_._id): _*).remove()
+        Success(())
+      case _ => Success(())
+    }
 }

@@ -5,7 +5,7 @@ import java.nio.file.{Path, Files => JFiles}
 
 import akka.stream.Materializer
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputTag
 import org.thp.thehive.services.TagSrv
@@ -121,12 +121,12 @@ class TagCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "get a tag" in testApp { app =>
       // Get a tag id first
-      val tags = app[Database].roTransaction(implicit graph => app[TagSrv].initSteps.toList)
+      val tags = app[Database].roTransaction(implicit graph => app[TagSrv].startTraversal.toSeq)
       val tag  = tags.head
 
       val request = FakeRequest("GET", s"/api/tag/${tag._id}")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[TagCtrl].get(tag._id)(request)
+      val result = app[TagCtrl].get(tag._id.toString)(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
@@ -162,7 +162,7 @@ class TagCtrlTest extends PlaySpecification with TestAppBuilder {
       val request = FakeRequest("POST", s"/api/tag/_search")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(json)
-      val result = app[TheHiveQueryExecutor].tag.search(request)
+      val result = app[TagCtrl].search(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 

@@ -1,35 +1,32 @@
 package org.thp.thehive.services
 
-import gremlin.scala.{Graph, GremlinScala, Vertex}
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Organisation, OrganisationPage, Page}
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.PageOps._
 import play.api.libs.json.Json
 
 import scala.util.Try
 
 @Singleton
 class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv)
-    extends VertexSrv[Page, PageSteps] {
+    extends VertexSrv[Page] {
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): PageSteps = new PageSteps(raw)
-
-  override def get(idOrSlug: String)(implicit graph: Graph): PageSteps =
-    if (db.isValidId(idOrSlug)) getByIds(idOrSlug)
-    else initSteps.getBySlug(idOrSlug)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Page] = startTraversal.getBySlug(name)
 
   def create(page: Page)(implicit authContext: AuthContext, graph: Graph): Try[Page with Entity] =
     for {
       created      <- createEntity(page)
-      organisation <- organisationSrv.get(authContext.organisation).getOrFail()
+      organisation <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
       _            <- organisationPageSrv.create(OrganisationPage(), organisation, created)
       _            <- auditSrv.page.create(created, Json.obj("title" -> page.title))
     } yield created
@@ -37,7 +34,7 @@ class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, or
   def update(page: Page with Entity, propertyUpdaters: Seq[PropertyUpdater])(implicit graph: Graph, authContext: AuthContext): Try[Page with Entity] =
     for {
       updated <- update(get(page), propertyUpdaters)
-      p       <- updated._1.getOrFail()
+      p       <- updated._1.getOrFail("Page")
       _       <- auditSrv.page.update(p, Json.obj("title" -> p.title))
     } yield p
 
@@ -48,16 +45,18 @@ class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, or
     }
 }
 
-@EntitySteps[Page]
-class PageSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Page](raw) {
-  override def newInstance(newRaw: GremlinScala[Vertex]): PageSteps = new PageSteps(newRaw)
-  override def newInstance(): PageSteps                             = new PageSteps(raw.clone())
+object PageOps {
 
-  def getByTitle(title: String): PageSteps = this.has("title", title)
-  def getBySlug(slug: String): PageSteps   = this.has("slug", slug)
+  implicit class PageOpsDefs(traversal: Traversal.V[Page]) {
 
-  def visible(implicit authContext: AuthContext): PageSteps = this.filter(
-    _.inTo[OrganisationPage]
-      .has("name", authContext.organisation)
-  )
+    def getByTitle(title: String): Traversal.V[Page] = traversal.has(_.title, title)
+
+    def getBySlug(slug: String): Traversal.V[Page] = traversal.has(_.slug, slug)
+
+    def organisation: Traversal.V[Organisation] = traversal.in[OrganisationPage].v[Organisation]
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Page] =
+      traversal.filter(_.organisation.current)
+  }
+
 }

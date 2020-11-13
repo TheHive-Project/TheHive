@@ -3,11 +3,12 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
+import org.thp.scalligraph.query.QueryExecutor
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.connector.cortex.services.{Connector, CortexActor, TestConnector}
 import org.thp.thehive.services.ObservableSrv
+import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -16,19 +17,19 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
   override def appConfigure: AppBuilder =
     super
       .appConfigure
-      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
       .`override`(
         _.bindActor[CortexActor]("cortex-actor")
           .bindToProvider[CortexClient, TestCortexClientProvider]
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+          .bindNamedToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]("v0")
           .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
       )
 
   "job controller" should {
     "get a job" in testApp { app =>
       val observable = app[Database].roTransaction { implicit graph =>
-        app[ObservableSrv].initSteps.has("message", "Some weird domain").getOrFail("Observable").get
+        app[ObservableSrv].startTraversal.has(_.message, "Some weird domain").getOrFail("Observable").get
       }
 
       val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")
@@ -49,7 +50,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
                  }
               }
             """.stripMargin))
-      val resultSearch = app[CortexQueryExecutor].job.search(requestSearch)
+      val resultSearch = app[JobCtrl].search(requestSearch)
       status(resultSearch) shouldEqual 200
     }
 
@@ -77,7 +78,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
                                      }]
                                    }
             """.stripMargin))
-      val result = app[CortexQueryExecutor].job.stats(request)
+      val result = app[JobCtrl].stats(request)
 
       status(result) shouldEqual 200
     }

@@ -4,9 +4,9 @@ import io.github.nremond.SecureHash
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
-import org.thp.scalligraph.{AuthenticationError, AuthorizationError}
+import org.thp.scalligraph.{AuthenticationError, AuthorizationError, EntityIdOrName}
 import org.thp.thehive.models.User
 import play.api.mvc.RequestHeader
 import play.api.{Configuration, Logger}
@@ -39,31 +39,30 @@ class LocalPasswordAuthSrv(@Named("with-thehive-schema") db: Database, userSrv: 
   def isValidPassword(user: User, password: String): Boolean =
     user.password.fold(false)(hash => SecureHash.validatePassword(password, hash) || isValidPasswordLegacy(hash, password))
 
-  override def authenticate(username: String, password: String, organisation: Option[String], code: Option[String])(
-      implicit request: RequestHeader
+  override def authenticate(username: String, password: String, organisation: Option[EntityIdOrName], code: Option[String])(implicit
+      request: RequestHeader
   ): Try[AuthContext] =
     db.roTransaction { implicit graph =>
-        userSrv
-          .getOrFail(username)
-      }
-      .filter(user => isValidPassword(user, password))
+      userSrv
+        .getOrFail(EntityIdOrName(username))
+    }.filter(user => isValidPassword(user, password))
       .map(user => localUserSrv.getAuthContext(request, user.login, organisation))
       .getOrElse(Failure(AuthenticationError("Authentication failure")))
 
   override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
     db.roTransaction { implicit graph =>
-        userSrv
-          .getOrFail(username)
-      }
-      .filter(user => isValidPassword(user, oldPassword))
+      userSrv
+        .getOrFail(EntityIdOrName(username))
+    }.filter(user => isValidPassword(user, oldPassword))
       .map(_ => setPassword(username, newPassword))
       .getOrElse(Failure(AuthorizationError("Authentication failure")))
 
   override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Try[Unit] =
     db.tryTransaction { implicit graph =>
       userSrv
-        .get(username)
-        .update("password" -> Some(hashPassword(newPassword)))
+        .get(EntityIdOrName(username))
+        .update(_.password, Some(hashPassword(newPassword)))
+        .getOrFail("User")
         .map(_ => ())
     }
 }

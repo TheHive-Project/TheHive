@@ -8,7 +8,8 @@
                 observables: '=',
                 analyzer: '=',
                 caseId: '=',
-                permissions: '='
+                permissions: '=',
+                onRefresh: '&?'
             },
             templateUrl: 'views/directives/report-observables.html',
             link: function(scope) {
@@ -21,6 +22,10 @@
                         filter: '',
                         data: scope.observables
                     };
+
+                    _.each(scope.observables, function(item) {
+                        item.imported = !!item.stats.observableId;
+                    });
                 });
             },
             controller: function($scope) {
@@ -49,7 +54,8 @@
                 $scope.selectAll = function() {
                     var type = $scope.pagination.filter;
                     _.each(type === '' ? $scope.observables : $scope.groups[type], function(item) {
-                        if(!item.id && !item.selected) {
+                        //if(!item.id && !item.selected) {
+                        if(!item.imported && !item.selected) {
                             item.selected = true;
                             $scope.selected++;
                         }
@@ -80,6 +86,7 @@
                             single: list.length === 1,
                             ioc: false,
                             sighted: false,
+                            ignoreSimilarity: false,
                             tlp: 2,
                             message: message,
                             tags: [{text: 'src:' + $scope.analyzer}]
@@ -107,9 +114,14 @@
                         modal.result
                           .then(function(/*response*/) {
                               _.each(list, function(item) {
-                                  item.id = true;
+                                  //item.id = true;
+                                  item.imported = true;
                                   item.selected = false;
                               });
+
+                              if($scope.onRefresh) {
+                                  $scope.onRefresh();
+                              }
                           });
                     });
 

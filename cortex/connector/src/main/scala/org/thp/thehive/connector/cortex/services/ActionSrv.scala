@@ -1,26 +1,32 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.util.Date
+import java.util.{Date, Map => JMap}
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-import gremlin.scala._
 import javax.inject.Inject
+import org.apache.tinkerpop.gremlin.structure.{Element, Graph}
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, VertexSteps}
-import org.thp.scalligraph.{EntitySteps, NotFoundError}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
+import org.thp.thehive.connector.cortex.services.ActionOps._
 import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.models.{Case, Task}
-import org.thp.thehive.services.{AlertSteps, CaseSteps, LogSrv, LogSteps, ObservableSteps, TaskSteps}
+import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.LogSrv
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.{JsObject, Json, OWrites}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,11 +43,9 @@ class ActionSrv @Inject() (
     @Named("with-thehive-cortex-schema") implicit val db: Database,
     implicit val ec: ExecutionContext,
     auditSrv: CortexAuditSrv
-) extends VertexSrv[Action, ActionSteps] {
+) extends VertexSrv[Action] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): ActionSteps = new ActionSteps(raw)
 
   /**
     * Executes an Action on user demand,
@@ -52,8 +56,8 @@ class ActionSrv @Inject() (
     * @param authContext necessary auth context
     * @return
     */
-  def execute(entity: Entity, cortexId: Option[String], workerId: String, parameters: JsObject)(
-      implicit writes: OWrites[Entity],
+  def execute(entity: Product with Entity, cortexId: Option[String], workerId: String, parameters: JsObject)(implicit
+      writes: OWrites[Entity],
       authContext: AuthContext
   ): Future[RichAction] = {
     val cortexClients = serviceHelper.availableCortexClients(connector.clients, authContext.organisation)
@@ -75,7 +79,7 @@ class ActionSrv @Inject() (
         case None => Future.failed(NotFoundError(s"Responder $workerId not found"))
       }
       (label, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
-      inputCortexAction = CortexAction(label, writes.writes(entity), s"thehive:${fromObjectType(entity._model.label)}", tlp, pap, parameters)
+      inputCortexAction = CortexAction(label, writes.writes(entity), s"thehive:${fromObjectType(entity._label)}", tlp, pap, parameters)
       job <- client.execute(workerId, inputCortexAction)
       action = Action(
         job.workerId,
@@ -94,8 +98,8 @@ class ActionSrv @Inject() (
         db.tryTransaction { implicit graph =>
           for {
             richAction <- create(action, entity)
-            auditContext = entity._model.label match {
-              case "Log" => logSrv.get(entity).task.headOption().getOrElse(entity)
+            auditContext = entity._label match {
+              case "Log" => logSrv.get(entity).task.headOption.getOrElse(entity)
               case _     => entity
             }
             _ <- auditSrv.action.create(richAction.action, auditContext, richAction.toJson)
@@ -117,7 +121,7 @@ class ActionSrv @Inject() (
     */
   def create(
       action: Action,
-      context: Entity
+      context: Product with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[RichAction] =
     for {
       createdAction <- createEntity(action)
@@ -128,15 +132,15 @@ class ActionSrv @Inject() (
     * Once the job is finished for a precise Action,
     * updates it
     *
-    * @param actionId        the action to update
-    * @param cortexJob the result Cortex job
-    * @param authContext     context for db queries
+    * @param actionId    the action to update
+    * @param cortexJob   the result Cortex job
+    * @param authContext context for db queries
     * @return
     */
-  def finished(actionId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Action with Entity] =
+  def finished(actionId: EntityId, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Action with Entity] =
     db.tryTransaction { implicit graph =>
-      getByIds(actionId).richAction.getOrFail().flatMap { action =>
-        val operations = cortexJob
+      getByIds(actionId).richAction.getOrFail("Action").flatMap { action =>
+        val operations: Seq[ActionOperationStatus] = cortexJob
           .report
           .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.as[ActionOperation]))
           .map { operation =>
@@ -149,18 +153,17 @@ class ActionSrv @Inject() (
               )
               .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
           }
-        val auditContext = action.context._model.label match {
-          case "Log" => logSrv.get(action.context).task.headOption().getOrElse(action.context)
+        val auditContext = action.context._label match {
+          case "Log" => logSrv.get(action.context).task.headOption.getOrElse(action.context)
           case _     => action.context
         }
 
         getByIds(actionId)
-          .updateOne(
-            "status"     -> cortexJob.status.toJobStatus,
-            "report"     -> cortexJob.report.map(r => Json.toJson(r.copy(operations = Nil))),
-            "endDate"    -> Some(new Date()),
-            "operations" -> operations.map(Json.toJsObject(_))
-          )
+          .update(_.status, cortexJob.status.toJobStatus)
+          .update(_.report, cortexJob.report.map(r => Json.toJsObject(r.copy(operations = Nil))))
+          .update(_.endDate, Some(new Date()))
+          .update(_.operations, operations.map(o => Json.toJsObject(o)))
+          .getOrFail("Action")
           .map { updated =>
             auditSrv
               .action
@@ -170,10 +173,11 @@ class ActionSrv @Inject() (
                 Json.obj(
                   "status"        -> updated.status.toString,
                   "objectId"      -> action.context._id,
-                  "objectType"    -> action.context._model.label,
+                  "objectType"    -> action.context._label,
                   "responderName" -> action.workerName
                 )
               )
+
             updated
           }
       }
@@ -185,69 +189,58 @@ class ActionSrv @Inject() (
     * @param graph db graph
     * @return
     */
-  def relatedCase(id: String)(implicit graph: Graph): Option[Case with Entity] =
+  def relatedCase(id: EntityId)(implicit graph: Graph): Option[Case with Entity] =
     for {
-      richAction  <- initSteps.getByIds(id).richAction.getOrFail().toOption
+      richAction  <- startTraversal.getByIds(id).richAction.getOrFail("Action").toOption
       relatedCase <- entityHelper.parentCase(richAction.context)
     } yield relatedCase
 
-  def relatedTask(id: String)(implicit graph: Graph): Option[Task with Entity] =
+  def relatedTask(id: EntityId)(implicit graph: Graph): Option[Task with Entity] =
     for {
-      richAction  <- initSteps.getByIds(id).richAction.getOrFail().toOption
+      richAction  <- startTraversal.getByIds(id).richAction.getOrFail("Action").toOption
       relatedTask <- entityHelper.parentTask(richAction.context)
     } yield relatedTask
 
   // TODO to be tested
-  def listForEntity(id: String)(implicit graph: Graph): List[RichAction] = initSteps.forEntity(id).richAction.toList
+  def listForEntity(id: EntityId)(implicit graph: Graph): Seq[RichAction] = startTraversal.forEntity(id).richAction.toSeq
 }
 
-@EntitySteps[Action]
-class ActionSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph, schema: Schema)
-    extends VertexSteps[Action](raw) {
+object ActionOps {
 
-  /**
-    * Provides a RichAction model with additional Entity context
-    *
-    * @return
-    */
-  def richAction: Traversal[RichAction, RichAction] =
-    Traversal(
-      raw
+  implicit class ActionOpsDefs(traversal: Traversal.V[Action]) {
+
+    /**
+      * Provides a RichAction model with additional Entity context
+      *
+      * @return
+      */
+    def richAction: Traversal[RichAction, JMap[String, Any], Converter[RichAction, JMap[String, Any]]] =
+      traversal
         .project(
-          _.apply(By[Vertex]())
-            .and(By(__[Vertex].outTo[ActionContext]))
+          _.by
+            .by(_.out[ActionContext].entity)
         )
-        .map {
+        .domainMap {
           case (action, context) =>
-            RichAction(action.as[Action], context.asEntity)
+            RichAction(action, context)
         }
-    )
 
-  def forEntity(entityId: String): ActionSteps =
-    newInstance(
-      raw.filter(
-        _.outTo[ActionContext]
-          .hasId(entityId)
+    def forEntity(entityId: EntityId): Traversal.V[Action] =
+      traversal.filter(_.out[ActionContext].hasId(entityId))
+
+    def context: Traversal[Product with Entity, Element, Converter[Product with Entity, Element]] = traversal.out[ActionContext].entity
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Action] =
+      traversal.filter(
+        _.out[ActionContext]
+          .choose(
+            _.on(_.label)
+              .option("Case", _.v[Case].visible.entity)
+              .option("Task", _.v[Task].visible.entity)
+              .option("Log", _.v[Log].visible.entity)
+              .option("Alert", _.v[Alert].visible.entity)
+              .option("Observable", _.v[Observable].visible.entity)
+          )
       )
-    )
-
-  override def newInstance(newRaw: GremlinScala[Vertex]): ActionSteps = new ActionSteps(newRaw)
-
-  def context: Traversal[Entity, Entity] = Traversal(raw.outTo[ActionContext].map(_.asEntity))
-
-  def visible(implicit authContext: AuthContext): ActionSteps = new ActionSteps(
-    raw.filter(
-      _.outTo[ActionContext]
-        .choose[Label, Vertex](
-          on = _.label(),
-          BranchCase("Case", new CaseSteps(_).visible.raw),
-          BranchCase("Task", new TaskSteps(_).visible.raw),
-          BranchCase("Log", new LogSteps(_).visible.raw),
-          BranchCase("Alert", new AlertSteps(_).visible.raw),
-          BranchCase("Observable", new ObservableSteps(_).visible.raw)
-        )
-    )
-  )
-
-  override def newInstance(): ActionSteps = new ActionSteps(raw.clone())
+  }
 }

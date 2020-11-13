@@ -1,24 +1,23 @@
 package org.thp.thehive.services
 
-import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.EntitySteps
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.VertexSteps
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models._
+import org.thp.thehive.services.RoleOps._
 
 import scala.util.Try
 
 @Singleton
-class RoleSrv @Inject() (@Named("with-thehive-schema") implicit val db: Database) extends VertexSrv[Role, RoleSteps] {
+class RoleSrv @Inject() (@Named("with-thehive-schema") implicit val db: Database) extends VertexSrv[Role] {
 
   val roleOrganisationSrv = new EdgeSrv[RoleOrganisation, Role, Organisation]
   val userRoleSrv         = new EdgeSrv[UserRole, User, Role]
   val roleProfileSrv      = new EdgeSrv[RoleProfile, Role, Profile]
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): RoleSteps = new RoleSteps(raw)
 
   def create(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
       implicit graph: Graph,
@@ -41,17 +40,17 @@ class RoleSrv @Inject() (@Named("with-thehive-schema") implicit val db: Database
   }
 }
 
-@EntitySteps[Role]
-class RoleSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Role](raw) {
-  override def newInstance(newRaw: GremlinScala[Vertex]): RoleSteps = new RoleSteps(newRaw)
-  override def newInstance(): RoleSteps                             = new RoleSteps(raw.clone())
-  def organisation: OrganisationSteps                               = new OrganisationSteps(raw.outTo[RoleOrganisation])
+object RoleOps {
+  implicit class RoleOpsDefs(traversal: Traversal.V[Role]) {
+    def organisation: Traversal.V[Organisation] = traversal.out[RoleOrganisation].v[Organisation]
 
-  def removeProfile(): Unit = {
-    raw.outToE[RoleProfile].drop().iterate()
-    ()
+    def removeProfile(): Unit = {
+      traversal.outE[RoleProfile].remove()
+      ()
+    }
+
+    def profile: Traversal.V[Profile] = traversal.out[RoleProfile].v[Profile]
+    def user: Traversal.V[User]       = traversal.in[UserRole].v[User]
+
   }
-
-  def profile: ProfileSteps = new ProfileSteps(raw.outTo[RoleProfile])
-  def user: UserSteps       = new UserSteps(raw.inTo[UserRole])
 }

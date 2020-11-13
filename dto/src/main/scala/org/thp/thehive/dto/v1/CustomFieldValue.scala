@@ -14,7 +14,19 @@ object InputCustomField {
   implicit val writes: Writes[InputCustomField] = Json.writes[InputCustomField]
 }
 
-case class OutputCustomField(name: String, description: String, `type`: String, mandatory: Boolean)
+case class OutputCustomField(
+    _id: String,
+    _type: String,
+    _createdBy: String,
+    _updatedBy: Option[String] = None,
+    _createdAt: Date,
+    _updatedAt: Option[Date] = None,
+    name: String,
+    description: String,
+    `type`: String,
+    options: Seq[JsValue],
+    mandatory: Boolean
+)
 
 object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]
@@ -24,24 +36,38 @@ case class InputCustomFieldValue(name: String, value: Option[Any], order: Option
 
 object InputCustomFieldValue {
 
-  val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValue") {
+  val valueParser: FieldsParser[Option[Any]] = FieldsParser("customFieldValue") {
+    case (_, FString(value))     => Good(Some(value))
+    case (_, FNumber(value))     => Good(Some(value))
+    case (_, FBoolean(value))    => Good(Some(value))
+    case (_, FAny(value :: _))   => Good(Some(value))
+    case (_, FUndefined | FNull) => Good(None)
+  }
+
+  val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValues") {
     case (_, FObject(fields)) =>
       fields
         .toSeq
         .validatedBy {
-          case (name, FString(value))   => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FNumber(value))   => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FBoolean(value))  => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(name, Some(value), None))
-          case (name, FNull)            => Good(InputCustomFieldValue(name, None, None))
-          case (name, other) =>
-            Bad(
-              One(
-                InvalidFormatAttributeError(name, "CustomFieldValue", Set("field: string", "field: number", "field: boolean", "field: date"), other)
-              )
-            )
+          case (name, valueField) => valueParser(valueField).map(v => InputCustomFieldValue(name, v, None))
         }
         .map(_.toSeq)
+    case (_, FSeq(list)) =>
+      list
+        .validatedBy {
+        case cf: FObject =>
+          val order = FieldsParser.int(cf.get("order")).toOption
+          for {
+            name  <- FieldsParser.string(cf.get("name"))
+            value <- valueParser(cf.get("value"))
+          } yield InputCustomFieldValue(name, value, order)
+        case other =>
+          Bad(
+            One(
+              InvalidFormatAttributeError(s"customField", "CustomFieldValue", Set.empty, other)
+            )
+          )
+      }
     case _ => Good(Nil)
   }
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
@@ -54,11 +80,12 @@ object InputCustomFieldValue {
       case InputCustomFieldValue(name, None, _)             => name -> JsNull
       case InputCustomFieldValue(name, other, _)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
     }
+    // TODO Change JsObject to JsArray ?
     JsObject(fields)
   }
 }
 
-case class OutputCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
+case class OutputCustomFieldValue(_id: String, name: String, description: String, `type`: String, value: JsValue, order: Int)
 
 object OutputCustomFieldValue {
   implicit val format: OFormat[OutputCustomFieldValue] = Json.format[OutputCustomFieldValue]

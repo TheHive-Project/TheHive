@@ -1,6 +1,6 @@
 package org.thp.thehive.services.notification.notifiers
 
-import gremlin.scala.Graph
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation, User}

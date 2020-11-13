@@ -3,31 +3,32 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import com.google.inject.name.Named
 import javax.inject.{Inject, Singleton}
 import org.scalactic.Good
-import org.thp.scalligraph.BadRequestError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FieldsParser
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{BaseTraversal, BaseVertexSteps}
-import org.thp.thehive.connector.cortex.services.{JobSteps, RichObservableSteps}
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
+import org.thp.thehive.connector.cortex.models.Job
+import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.controllers.v0._
-import org.thp.thehive.services.ObservableSteps
+import org.thp.thehive.models.Observable
+import org.thp.thehive.services.ObservableOps._
 
 import scala.reflect.runtime.{universe => ru}
 
 @Singleton
 class CortexQueryExecutor @Inject() (
-    queryCtrlBuilder: QueryCtrlBuilder,
-    @Named("with-thehive-cortex-schema") implicit val db: Database,
-    jobCtrl: JobCtrl,
-    reportCtrl: AnalyzerTemplateCtrl,
-    actionCtrl: ActionCtrl,
-    analyzerTemplateCtrl: AnalyzerTemplateCtrl
+    @Named("with-thehive-cortex-schema") implicit override val db: Database,
+    job: PublicJob,
+    report: PublicAnalyzerTemplate,
+    action: PublicAction,
+    analyzerTemplate: PublicAnalyzerTemplate
 ) extends QueryExecutor {
-  lazy val controllers: List[QueryableCtrl] = actionCtrl :: reportCtrl :: jobCtrl :: analyzerTemplateCtrl :: Nil
+  lazy val controllers: List[PublicData] = action :: report :: job :: analyzerTemplate :: Nil
 
-  override lazy val publicProperties: List[PublicProperty[_, _]] = controllers.flatMap(_.publicProperties)
+  override lazy val publicProperties: PublicProperties = controllers.map(_.publicProperties).reduce(_ ++ _)
 
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) :::
@@ -37,10 +38,10 @@ class CortexQueryExecutor @Inject() (
       controllers.flatMap(_.extraQueries)
 
   val childTypes: PartialFunction[(ru.Type, String), ru.Type] = {
-    case (tpe, "case_artifact_job") if SubType(tpe, ru.typeOf[ObservableSteps]) => ru.typeOf[ObservableSteps]
+    case (tpe, "case_artifact_job") if SubType(tpe, ru.typeOf[Traversal.V[Observable]]) => ru.typeOf[Traversal.V[Observable]]
   }
   val parentTypes: PartialFunction[ru.Type, ru.Type] = {
-    case tpe if SubType(tpe, ru.typeOf[JobSteps]) => ru.typeOf[ObservableSteps]
+    case tpe if SubType(tpe, ru.typeOf[Traversal.V[Job]]) => ru.typeOf[Traversal.V[Observable]]
   }
 
   override val customFilterQuery: FilterQuery = FilterQuery(db, publicProperties) { (tpe, globalParser) =>
@@ -55,23 +56,19 @@ class CortexQueryExecutor @Inject() (
   }
 
   override val version: (Int, Int) = 0 -> 1
-
-  val job: QueryCtrl              = queryCtrlBuilder(jobCtrl, this)
-  val report: QueryCtrl           = queryCtrlBuilder(analyzerTemplateCtrl, this)
-  val action: QueryCtrl           = queryCtrlBuilder(actionCtrl, this)
-  val analyzerTemplate: QueryCtrl = queryCtrlBuilder(analyzerTemplateCtrl, this)
 }
 
-class CortexParentIdInputFilter(parentId: String) extends InputFilter {
-  override def apply[S <: BaseTraversal](
+class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
+  override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
-      stepType: ru.Type,
-      step: S,
+      publicProperties: PublicProperties,
+      traversalType: ru.Type,
+      traversal: Traversal.Unk,
       authContext: AuthContext
-  ): S =
-    if (stepType =:= ru.typeOf[JobSteps]) step.asInstanceOf[JobSteps].filter(_.observable.getByIds(parentId)).asInstanceOf[S]
-    else throw BadRequestError(s"$stepType hasn't parent")
+  ): Traversal.Unk =
+    if (traversalType =:= ru.typeOf[Traversal.V[Job]])
+      traversal.asInstanceOf[Traversal.V[Job]].filter(_.observable.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
+    else throw BadRequestError(s"$traversalType hasn't parent")
 }
 
 /**
@@ -79,28 +76,45 @@ class CortexParentIdInputFilter(parentId: String) extends InputFilter {
   *
   * @param parentFilter the query
   */
-class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter {
-  override def apply[S <: BaseTraversal](
+class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk]) extends InputQuery[Traversal.Unk, Traversal.Unk] {
+  override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
-      stepType: ru.Type,
-      step: S,
+      publicProperties: PublicProperties,
+      traversalType: ru.Type,
+      traversal: Traversal.Unk,
       authContext: AuthContext
-  ): S =
-    if (stepType =:= ru.typeOf[JobSteps])
-      step.filter(t => parentFilter.apply(db, publicProperties, ru.typeOf[ObservableSteps], t.asInstanceOf[JobSteps].observable, authContext))
-    else throw BadRequestError(s"$stepType hasn't parent")
+  ): Traversal.Unk = {
+    def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
+      parentFilter(
+        db,
+        publicProperties,
+        ru.typeOf[Traversal.V[T]],
+        t(traversal.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+        authContext
+      )
+    if (traversalType =:= ru.typeOf[Traversal.V[Job]]) filter[Job, Observable](_.observable)
+    else throw BadRequestError(s"$traversalType hasn't parent")
+  }
 }
 
-class CortexChildQueryInputFilter(childType: String, childFilter: InputFilter) extends InputFilter {
-  override def apply[S <: BaseVertexSteps](
+class CortexChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal.Unk, Traversal.Unk])
+    extends InputQuery[Traversal.Unk, Traversal.Unk] {
+  override def apply(
       db: Database,
-      publicProperties: List[PublicProperty[_, _]],
-      stepType: ru.Type,
-      step: S,
+      publicProperties: PublicProperties,
+      traversalType: ru.Type,
+      traversal: Traversal.Unk,
       authContext: AuthContext
-  ): S =
-    if (stepType =:= ru.typeOf[ObservableSteps] && childType == "case_artifact_job")
-      step.filter(t => childFilter.apply(db, publicProperties, ru.typeOf[JobSteps], t.asInstanceOf[ObservableSteps].jobs, authContext))
-    else throw BadRequestError(s"$stepType hasn't child of type $childType")
+  ): Traversal.Unk = {
+    def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
+      childFilter(
+        db,
+        publicProperties,
+        ru.typeOf[Traversal.V[T]],
+        t(traversal.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+        authContext
+      )
+    if (traversalType =:= ru.typeOf[Traversal.V[Observable]] && childType == "case_artifact_job") filter[Observable, Job](_.jobs)
+    else throw BadRequestError(s"$traversalType hasn't child of type $childType")
+  }
 }

@@ -112,6 +112,17 @@
     </div>
 </div>
 
+<div class="form-group">
+    <label class="col-md-3 control-label">Ignore for similarity</label>
+    <div class="col-md-9">
+        <p class="form-control-static">
+            <a href ng-click="params.ignoreSimilarity = !params.ignoreSimilarity">
+                <i class="text-primary fa" ng-class="{ 'fa-chain-broken' : params.ignoreSimilarity, 'fa-chain' : !params.ignoreSimilarity }"></i>
+            </a>
+        </p>
+    </div>
+</div>
+
 <!-- missing.tags -->
 <div class="form-group" ng-class="{ 'has-error' : observableForm.tags.$invalid && !observableForm.tagsInput.$pristine }">
     <label class="col-md-3 control-label">

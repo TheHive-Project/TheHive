@@ -1,3 +1,5 @@
 package org.thp.thehive.migration
 
-case class IdMapping(inputId: String, outputId: String)
+import org.thp.scalligraph.EntityId
+
+case class IdMapping(inputId: String, outputId: EntityId)

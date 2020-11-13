@@ -2,8 +2,8 @@ package org.thp.thehive.migration.th4
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-import gremlin.scala.Graph
 import javax.inject.{Inject, Provider, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.EventSrv
@@ -20,7 +20,10 @@ class NoAuditSrv @Inject() (
 )(implicit @Named("with-thehive-schema") db: Database)
     extends AuditSrv(userSrvProvider, notificationActor, eventSrv)(db) {
 
-  override def create(audit: Audit, context: Option[Entity], `object`: Option[Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  override def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(
+      implicit graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
     Success(())
 
   override def mergeAudits[R](body: => Try[R])(auditCreator: R => Try[Unit])(implicit graph: Graph): Try[R] = body

@@ -1,11 +1,14 @@
 package org.thp.thehive.services.notification.triggers
 
-import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Audit, Organisation, User}
+import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.TaskSrv
+import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 
 import scala.util.{Success, Try}
@@ -24,13 +27,14 @@ class TaskAssigned(taskSrv: TaskSrv) extends Trigger {
 
   override def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: Option[User with Entity])(
       implicit graph: Graph
-  ): Boolean = user.fold(false) { u =>
-    preFilter(audit, context, organisation) &&
-    super.filter(audit, context, organisation, user) &&
-    u.login != audit._createdBy &&
-    audit.objectId.fold(false)(taskAssignee(_, u.login).isDefined)
-  }
+  ): Boolean =
+    user.fold(false) { u =>
+      preFilter(audit, context, organisation) &&
+      super.filter(audit, context, organisation, user) &&
+      u.login != audit._createdBy &&
+      audit.objectEntityId.fold(false)(taskAssignee(_, u._id).isDefined)
+    }
 
-  def taskAssignee(taskId: String, login: String)(implicit graph: Graph): Option[User with Entity] =
-    taskSrv.getByIds(taskId).assignee.has("login", login).headOption()
+  def taskAssignee(taskId: EntityId, userId: EntityId)(implicit graph: Graph): Option[User with Entity] =
+    taskSrv.getByIds(taskId).assignee.get(userId).headOption
 }

@@ -1,14 +1,14 @@
 package org.thp.thehive.connector.misp.services
 
 import akka.stream.Materializer
-import gremlin.scala.P
 import javax.inject.Inject
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
 import org.thp.misp.client.{MispClient, MispPurpose}
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.thehive.models.HealthStatus
-import org.thp.thehive.services.OrganisationSteps
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.thehive.models.{HealthStatus, Organisation}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClientConfig
@@ -29,6 +29,7 @@ case class TheHiveMispClientConfig(
     caseTemplate: Option[String],
     artifactTags: Seq[String] = Nil,
     exportCaseTags: Boolean = false,
+    exportObservableTags: Boolean = false,
     includedTheHiveOrganisations: Seq[String] = Seq("*"),
     excludedTheHiveOrganisations: Seq[String] = Nil
 )
@@ -49,6 +50,7 @@ object TheHiveMispClientConfig {
       caseTemplate                 <- (JsPath \ "caseTemplate").readNullable[String]
       artifactTags                 <- (JsPath \ "tags").readWithDefault[Seq[String]](Nil)
       exportCaseTags               <- (JsPath \ "exportCaseTags").readWithDefault[Boolean](false)
+      exportObservableTags         <- (JsPath \ "exportObservableTags").readWithDefault[Boolean](false)
       includedTheHiveOrganisations <- (JsPath \ "includedTheHiveOrganisations").readWithDefault[Seq[String]](Seq("*"))
       excludedTheHiveOrganisations <- (JsPath \ "excludedTheHiveOrganisations").readWithDefault[Seq[String]](Nil)
     } yield TheHiveMispClientConfig(
@@ -64,6 +66,7 @@ object TheHiveMispClientConfig {
       caseTemplate,
       artifactTags,
       exportCaseTags,
+      exportObservableTags,
       includedTheHiveOrganisations,
       excludedTheHiveOrganisations
     )
@@ -100,7 +103,8 @@ class TheHiveMispClient(
     purpose: MispPurpose.Value,
     val caseTemplate: Option[String],
     artifactTags: Seq[String], // FIXME use artifactTags
-    exportCaseTags: Boolean,   //  FIXME use exportCaseTags
+    val exportCaseTags: Boolean,
+    val exportObservableTags: Boolean,
     includedTheHiveOrganisations: Seq[String],
     excludedTheHiveOrganisations: Seq[String]
 ) extends MispClient(
@@ -114,22 +118,24 @@ class TheHiveMispClient(
       whitelistTags
     ) {
 
-  @Inject() def this(config: TheHiveMispClientConfig, mat: Materializer) = this(
-    config.name,
-    config.url,
-    config.auth,
-    new ProxyWS(config.wsConfig, mat),
-    config.maxAge,
-    config.excludedOrganisations,
-    config.excludedTags,
-    config.whitelistTags,
-    config.purpose,
-    config.caseTemplate,
-    config.artifactTags,
-    config.exportCaseTags,
-    config.includedTheHiveOrganisations,
-    config.excludedTheHiveOrganisations
-  )
+  @Inject() def this(config: TheHiveMispClientConfig, mat: Materializer) =
+    this(
+      config.name,
+      config.url,
+      config.auth,
+      new ProxyWS(config.wsConfig, mat),
+      config.maxAge,
+      config.excludedOrganisations,
+      config.excludedTags,
+      config.whitelistTags,
+      config.purpose,
+      config.caseTemplate,
+      config.artifactTags,
+      config.exportCaseTags,
+      config.exportObservableTags,
+      config.includedTheHiveOrganisations,
+      config.excludedTheHiveOrganisations
+    )
 
   val (canImport, canExport) = purpose match {
     case MispPurpose.ImportAndExport => (true, true)
@@ -137,12 +143,12 @@ class TheHiveMispClient(
     case MispPurpose.ExportOnly      => (false, true)
   }
 
-  def organisationFilter(organisationSteps: OrganisationSteps): OrganisationSteps = {
+  def organisationFilter(organisationSteps: Traversal.V[Organisation]): Traversal.V[Organisation] = {
     val includedOrgs =
       if (includedTheHiveOrganisations.contains("*") || includedTheHiveOrganisations.isEmpty) organisationSteps
-      else organisationSteps.has("name", P.within(includedTheHiveOrganisations))
+      else organisationSteps.has(_.name, P.within(includedTheHiveOrganisations: _*))
     if (excludedTheHiveOrganisations.isEmpty) includedOrgs
-    else includedOrgs.has("name", P.without(excludedTheHiveOrganisations))
+    else includedOrgs.has(_.name, P.without(excludedTheHiveOrganisations: _*))
   }
 
   override def getStatus(implicit ec: ExecutionContext): Future[JsObject] =

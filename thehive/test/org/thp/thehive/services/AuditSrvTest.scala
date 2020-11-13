@@ -3,9 +3,10 @@ package org.thp.thehive.services
 import java.util.Date
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
@@ -17,7 +18,7 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
     "get main audits by ids and sorted" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         // Create 3 case events first
-        val orgAdmin = app[OrganisationSrv].getOrFail("admin").get
+        val orgAdmin = app[OrganisationSrv].getOrFail(EntityName("admin")).get
         val c1 = app[Database]
           .tryTransaction(implicit graph =>
             app[CaseSrv].create(
@@ -36,9 +37,9 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
           val t = app[TaskSrv].create(Task("test audit", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)
           app[ShareSrv].shareTask(t.get, c1.`case`, orgAdmin)
         }
-        val audits = app[AuditSrv].initSteps.toList
+        val audits = app[AuditSrv].startTraversal.toSeq
 
-        val r = app[AuditSrv].getMainByIds(Order.asc, audits.map(_._id): _*).toList
+        val r = app[AuditSrv].getMainByIds(Order.asc, audits.map(_._id): _*).toSeq
 
         // Only the main ones
         r.head shouldEqual audits.filter(_.mainAction).minBy(_._createdAt)
@@ -54,8 +55,8 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
         app[AuditSrv].mergeAudits(app[TaskSrv].update(app[TaskSrv].get(auditedTask._id), Nil)) {
           case (taskSteps, updatedFields) =>
             taskSteps
-              .newInstance()
-              .getOrFail()
+              .clone()
+              .getOrFail("Task")
               .flatMap(app[AuditSrv].task.update(_, updatedFields))
         }
       } must beSuccessfulTry

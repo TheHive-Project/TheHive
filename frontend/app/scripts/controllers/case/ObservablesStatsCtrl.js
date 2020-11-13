@@ -12,6 +12,16 @@
             this.byIoc = {};
             this.byTags = {};
 
+            this.iocLabels = {
+                'true': 'IOC',
+                'false': 'Not IOC'
+            };
+
+            this.iocValues = {
+                'true': true,
+                'false': false
+            };
+
             self.$onInit = function() {
                 var caseId = $stateParams.caseId;
 

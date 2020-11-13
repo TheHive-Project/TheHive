@@ -3,12 +3,15 @@ package org.thp.thehive.controllers.v0
 import java.util.Date
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.RichObservable
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseSrv
+import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -152,7 +155,20 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     )
 
     TestAlert(resultAlertOutput) shouldEqual expected
-    resultAlertOutput.artifacts must beEmpty
+    resultAlertOutput
+      .artifacts
+      .map(o => TestObservable(o)) must contain(
+      TestObservable(
+        "domain",
+        Some("h.fr"),
+        None,
+        1,
+        Set("testNamespace:testPredicate=\"hello\""),
+        ioc = true,
+        sighted = true,
+        Some("observable from alert")
+      )
+    )
   }
 
   "update an alert" in testApp { app =>
@@ -180,7 +196,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request2 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/markAsRead")
       .withHeaders("user" -> "certuser@thehive.local")
     val result2 = app[AlertCtrl].markAsRead("testType;testSource;ref3")(request2)
-    status(result2) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
+    status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
     val request3 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -191,7 +207,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request4 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/markAsUnread")
       .withHeaders("user" -> "certuser@thehive.local")
     val result4 = app[AlertCtrl].markAsUnread("testType;testSource;ref3")(request4)
-    status(result4) should equalTo(204).updateMessage(s => s"$s\n${contentAsString(result4)}")
+    status(result4) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(result4)}")
 
     val request5 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -210,7 +226,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request2 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/unfollow")
       .withHeaders("user" -> "certuser@thehive.local")
     val result2 = app[AlertCtrl].unfollowAlert("testType;testSource;ref3")(request2)
-    status(result2) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
+    status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
     val request3 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -221,7 +237,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     val request4 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref3/follow")
       .withHeaders("user" -> "certuser@thehive.local")
     val result4 = app[AlertCtrl].followAlert("testType;testSource;ref3")(request4)
-    status(result4) should equalTo(204).updateMessage(s => s"$s\n${contentAsString(result4)}")
+    status(result4) should equalTo(200).updateMessage(s => s"$s\n${contentAsString(result4)}")
 
     val request5 = FakeRequest("GET", "/api/v0/alert/testType;testSource;ref3")
       .withHeaders("user" -> "certuser@thehive.local")
@@ -259,8 +275,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       summary = None,
       owner = Some("certuser@thehive.local"),
       customFields = Json.obj(
-        "boolean1" -> Json.obj("boolean" -> JsNull, "order"                 -> JsNull),
-        "string1"  -> Json.obj("string"  -> "string1 custom field", "order" -> JsNull)
+        "boolean1" -> Json.obj("boolean" -> JsNull, "order" -> 1),
+        "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 0)
       ),
       stats = Json.obj()
     )
@@ -268,7 +284,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     TestCase(resultCaseOutput) must_=== expected
     val observables = app[Database].roTransaction { implicit graph =>
       val authContext = DummyUserSrv(organisation = "cert").authContext
-      app[CaseSrv].get(resultCaseOutput._id).observables(authContext).richObservable.toList
+      app[CaseSrv].get(EntityIdOrName(resultCaseOutput._id)).observables(authContext).richObservable.toList
     }
     observables must contain(
       exactly(
@@ -285,7 +301,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
   "merge an alert with a case" in testApp { app =>
     val request1 = FakeRequest("POST", "/api/v0/alert/testType;testSource;ref5/merge/#1")
       .withHeaders("user" -> "certuser@thehive.local")
-    val result1 = app[AlertCtrl].mergeWithCase("testType;testSource;ref5", "#1")(request1)
+    val result1 = app[AlertCtrl].mergeWithCase("testType;testSource;ref5", "1")(request1)
     status(result1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
     val resultCase       = contentAsJson(result1)
@@ -296,7 +312,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     app[Database].roTransaction { implicit graph =>
       val observables = app
         .apply[CaseSrv]
-        .get("#1")
+        .get(EntityIdOrName("1"))
         .observables(DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").getSystemAuthContext)
         .toList
 

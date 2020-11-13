@@ -33,23 +33,6 @@
                 mode: 'vb'
             };
 
-            // Add tab
-            CaseTabsSrv.addTab(observableName, {
-                name: observableName,
-                label: artifact.data || artifact.attachment.name,
-                closable: true,
-                state: 'app.case.observables-item',
-                params: {
-                    itemId: artifact.id
-                }
-            });
-
-            // Select tab
-            $timeout(function() {
-                CaseTabsSrv.activateTab(observableName);
-                $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
-            }, 0);
-
             $scope.initScope = function (artifact) {
 
                 var promise = $scope.analysisEnabled ? AnalyzerSrv.forDataType(artifact.dataType) : $q.resolve([]);
@@ -142,47 +125,77 @@
                 $scope.similarArtifactsLimit = $scope.similarArtifactsLimit + 10;
             };
 
-            $scope.showReport = function (jobId) {
-                $scope.report = {};
-
-                CortexSrv.getJob(jobId, true).then(function(response) {
-                    var job = response.data;
-                    $scope.report = {
-                        template: job.analyzerDefinition,
-                        content: job.report,
-                        status: job.status,
-                        startDate: job.startDate,
-                        endDate: job.endDate
-                    };
-
-                    $scope.currentJob = jobId;
-
-                    $timeout(function() {
-                        var reportEl = angular.element('#analysis-report')[0];
-
-                        // Scrolling hack using jQuery stuff
-                        $('html,body').animate({
-                            scrollTop: $(reportEl).offset().top
-                        }, 'fast');
-                    }, 500);
-
-                }, function(/*err*/) {
-                    NotificationSrv.error('An expected error occured while fetching the job report');
-                });
+            $scope.refreshCurrentJob = function() {
+                $scope.loadReport($scope.currentJob);
             };
 
-            CaseArtifactSrv.similar(observableId, {
-                range: 'all',
-                sort: ['-startDate']
-            }).then(function(response) {
-                $scope.similarArtifacts = response;
-            });
+            $scope.loadReport = function(jobId) {
+                $scope.report = {};
 
+                return CortexSrv.getJob(jobId, true)
+                    .then(function(response) {
+                        var job = response.data;
+                        $scope.report = {
+                            template: job.analyzerDefinition,
+                            content: job.report,
+                            status: job.status,
+                            startDate: job.startDate,
+                            endDate: job.endDate
+                        };
+
+                        $scope.currentJob = jobId;
+                    });
+            };
+
+            $scope.showReport = function (jobId) {
+
+                $scope.loadReport(jobId)
+                    .then(function(){
+                        $timeout(function() {
+                            var reportEl = angular.element('#analysis-report')[0];
+
+                            // Scrolling hack using jQuery stuff
+                            $('html,body').animate({
+                                scrollTop: $(reportEl).offset().top
+                            }, 'fast');
+                        }, 500);
+                    })
+                    .catch(function(/*err*/) {
+                        NotificationSrv.error('An expected error occured while fetching the job report');
+                    });
+
+                // $scope.report = {};
+
+                // CortexSrv.getJob(jobId, true).then(function(response) {
+                //     var job = response.data;
+                //     $scope.report = {
+                //         template: job.analyzerDefinition,
+                //         content: job.report,
+                //         status: job.status,
+                //         startDate: job.startDate,
+                //         endDate: job.endDate
+                //     };
+                //
+                //     $scope.currentJob = jobId;
+                //
+                //     $timeout(function() {
+                //         var reportEl = angular.element('#analysis-report')[0];
+                //
+                //         // Scrolling hack using jQuery stuff
+                //         $('html,body').animate({
+                //             scrollTop: $(reportEl).offset().top
+                //         }, 'fast');
+                //     }, 500);
+                //
+                // }, function(/*err*/) {
+                //     NotificationSrv.error('An expected error occured while fetching the job report');
+                // });
+            };
 
             $scope.openArtifact = function (a) {
                 $state.go('app.case.observables-item', {
-                    caseId: a['case'].id,
-                    itemId: a.id
+                    caseId: a.stats['case']._id,
+                    itemId: a._id
                 });
             };
 
@@ -214,6 +227,10 @@
                     })
                     .then(function(response) {
                         $scope.artifact = response.toJSON();
+
+                        if(fieldName === 'ignoreSimilarity' && !!!newValue) {
+                            $scope.getSimilarity();
+                        }
                     })
                     .catch(function (response) {
                         NotificationSrv.error('ObservableDetails', response.data, response.status);
@@ -367,7 +384,38 @@
                     });
             };
 
+            $scope.getSimilarity = function() {
+                CaseArtifactSrv.similar(observableId, {
+                    range: 'all',
+                    sort: ['-startDate']
+                }).then(function(response) {
+                    $scope.similarArtifacts = response;
+                });
+            };
+
             this.$onInit = function () {
+
+                // Add tab
+                CaseTabsSrv.addTab(observableName, {
+                    name: observableName,
+                    label: artifact.data || artifact.attachment.name,
+                    closable: true,
+                    state: 'app.case.observables-item',
+                    params: {
+                        itemId: artifact.id
+                    }
+                });
+
+                // Select tab
+                $timeout(function() {
+                    CaseTabsSrv.activateTab(observableName);
+                    $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
+                }, 0);
+
+                // Fetch similar cases
+                if(!$scope.artifact.ignoreSimilarity) {
+                    $scope.getSimilarity();
+                }
 
                 if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
                     $scope.loadShares();

@@ -3,6 +3,7 @@ package org.thp.thehive.controllers.dav
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.AttachmentSrv
@@ -37,14 +38,15 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-s
     case _                                                => debug()
   }
 
-  def debug(): Action[AnyContent] = entrypoint("DAV options") { request =>
-    logger.debug(s"request ${request.method} ${request.path}")
-    request.headers.headers.foreach {
-      case (k, v) => logger.debug(s"$k: $v")
+  def debug(): Action[AnyContent] =
+    entrypoint("DAV options") { request =>
+      logger.debug(s"request ${request.method} ${request.path}")
+      request.headers.headers.foreach {
+        case (k, v) => logger.debug(s"$k: $v")
+      }
+      logger.debug(request.body.toString)
+      Success(Results.Ok(""))
     }
-    logger.debug(request.body.toString)
-    Success(Results.Ok(""))
-  }
 
   def options(): Action[AnyContent] =
     entrypoint("DAV options")
@@ -69,7 +71,7 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-s
           if (request.uri.endsWith("/")) request.uri
           else request.uri + '/'
         val resources =
-          if (request.headers.get("Depth").contains("1")) vfs.get(pathElements) ::: vfs.list(pathElements)
+          if (request.headers.get("Depth").contains("1")) vfs.get(pathElements) ++ vfs.list(pathElements)
           else vfs.get(pathElements)
         val props: NodeSeq = request.body("xml") \ "prop" \ "_"
         val response = <D:multistatus xmlns:D="DAV:">
@@ -101,7 +103,7 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-s
   def downloadFile(id: String): Action[AnyContent] =
     entrypoint("download attachment")
       .authRoTransaction(db) { request => implicit graph =>
-        attachmentSrv.getOrFail(id).map { attachment =>
+        attachmentSrv.getOrFail(EntityIdOrName(id)).map { attachment =>
           val range = request.headers.get("Range")
           range match {
             case Some(rangeExtract(from, maybeTo)) =>

@@ -5,8 +5,126 @@
 
             var baseUrl = './api/alert';
 
-            var factory = {
+            var similarityFilters = {
+                'open-cases': {
+                    label: 'Open Cases',
+                    filters: [{
+                        field: 'status',
+                        type: 'enumeration',
+                        value: {
+                            list: [{
+                                text: 'Open',
+                                label: 'Open'
+                            }]
+                        }
+                    }]
+                },
+                'open-cases-last-7days': {
+                    label: 'Open Cases in the last 7 days',
+                    filters: [{
+                        field: 'status',
+                        type: 'enumeration',
+                        value: {
+                            list: [{
+                                text: 'Open',
+                                label: 'Open'
+                            }]
+                        }
+                    }, {
+                        field: '_createdAt',
+                        type: 'date',
+                        value: {
+                            operator: 'last7days',
+                            from: null,
+                            to: null
+                        }
+                    }]
+                },
+                'open-cases-last-30days': {
+                    label: 'Open Cases in the last 30 days',
+                    filters: [{
+                        field: 'status',
+                        type: 'enumeration',
+                        value: {
+                            list: [{
+                                text: 'Open',
+                                label: 'Open'
+                            }]
+                        }
+                    }, {
+                        field: '_createdAt',
+                        type: 'date',
+                        value: {
+                            operator: 'last30days',
+                            from: null,
+                            to: null
+                        }
+                    }]
+                },
+                'open-cases-last-3months': {
+                    label: 'Open Cases in the last 3 months',
+                    filters: [{
+                        field: 'status',
+                        type: 'enumeration',
+                        value: {
+                            list: [{
+                                text: 'Open',
+                                label: 'Open'
+                            }]
+                        }
+                    }, {
+                        field: '_createdAt',
+                        type: 'date',
+                        value: {
+                            operator: 'last3months',
+                            from: null,
+                            to: null
+                        }
+                    }]
+                },
+                'open-cases-last-year': {
+                    label: 'Open Cases in the last year',
+                    filters: [{
+                        field: 'status',
+                        type: 'enumeration',
+                        value: {
+                            list: [{
+                                text: 'Open',
+                                label: 'Open'
+                            }]
+                        }
+                    }, {
+                        field: '_createdAt',
+                        type: 'date',
+                        value: {
+                            operator: 'lastyear',
+                            from: null,
+                            to: null
+                        }
+                    }]
+                },
+                'resolved-cases': {
+                    label: 'Resolved cases',
+                    filters: [{
+                        field: 'status',
+                        type: 'enumeration',
+                        value: {
+                            list: [{
+                                text: 'Resolved',
+                                label: 'Resolved'
+                            }]
+                        }
+                    }]
+                }
+            };
 
+            var factory = {
+                getSimilarityFilters: function() {
+                    return similarityFilters;
+                },
+                getSimilarityFilter: function(name) {
+                    return (similarityFilters[name] || {}).filters;
+                },
                 list: function(config, callback) {
                     return new PaginatedQuerySrv({
                         name: 'alerts',

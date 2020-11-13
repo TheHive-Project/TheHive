@@ -1,20 +1,28 @@
 package org.thp.thehive.services.notification.notifiers
 
+import java.util.{Date, Map => JMap}
+
 import akka.stream.Materializer
-import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.client.{ProxyWS, ProxyWSConfig}
-import org.thp.scalligraph.BadConfigurationError
-import org.thp.scalligraph.models.{Entity, Schema}
+import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{BranchCase, BranchOtherwise, Traversal, VertexSteps}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
+import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
-import org.thp.thehive.models.{Audit, Organisation, User}
-import org.thp.thehive.services.{AuditSrv, AuditSteps, _}
+import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.AuditOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.{AuditSrv, _}
 import play.api.libs.json.Json.WithDefaultValues
-import play.api.libs.json.{Format, JsObject, JsValue, Json}
+import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,7 +52,6 @@ class WebhookProvider @Inject() (
     appConfig: ApplicationConfig,
     auditSrv: AuditSrv,
     customFieldSrv: CustomFieldSrv,
-    schema: Schema,
     ec: ExecutionContext,
     mat: Materializer
 ) extends NotifierProvider {
@@ -56,12 +63,13 @@ class WebhookProvider @Inject() (
   override def apply(config: Configuration): Try[Notifier] =
     for {
       name <- config.getOrFail[String]("endpoint")
-      config <- webhookConfigs
-        .get
-        .find(_.name == name)
-        .fold[Try[WebhookNotification]](Failure(BadConfigurationError(s"Webhook configuration `$name` not found`")))(Success.apply)
+      config <-
+        webhookConfigs
+          .get
+          .find(_.name == name)
+          .fold[Try[WebhookNotification]](Failure(BadConfigurationError(s"Webhook configuration `$name` not found`")))(Success.apply)
 
-    } yield new Webhook(config, auditSrv, customFieldSrv, mat, schema, ec)
+    } yield new Webhook(config, auditSrv, customFieldSrv, mat, ec)
 }
 
 class Webhook(
@@ -69,7 +77,6 @@ class Webhook(
     auditSrv: AuditSrv,
     customFieldSrv: CustomFieldSrv,
     mat: Materializer,
-    implicit val schema: Schema,
     implicit val ec: ExecutionContext
 ) extends Notifier {
   override val name: String = "webhook"
@@ -80,36 +87,87 @@ class Webhook(
 
   object v1 {
     import org.thp.thehive.controllers.v0.Conversion._
-    def caseToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
-      _.asCase.richCaseWithoutPerms.map(_.toJson)
 
-    def taskToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
-      _.asTask.richTask.map(_.toJson)
+    def caseToJson: Traversal.V[Case] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+      _.richCaseWithoutPerms.domainMap[JsObject](_.toJson.as[JsObject])
 
-    def alertToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
-      _.asAlert.richAlert.map(_.toJson)
+    def taskToJson: Traversal.V[Task] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+      _.project(
+        _.by(_.richTask.domainMap(_.toJson))
+          .by(t => caseToJson(t.`case`))
+      ).domainMap {
+        case (task, case0) => task.as[JsObject] + ("case" -> case0)
+      }
 
-    def logToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
-      _.asLog.richLog.map(_.toJson)
+    def alertToJson: Traversal.V[Alert] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+      _.richAlert.domainMap(_.toJson.as[JsObject])
 
-    def observableToJson: VertexSteps[_ <: Product] => Traversal[JsValue, JsValue] =
-      _.asObservable.richObservable.map(_.toJson)
+    def logToJson: Traversal.V[Log] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+      _.project(
+        _.by(_.richLog.domainMap(_.toJson))
+          .by(l => taskToJson(l.task))
+      ).domainMap { case (log, task) => log.as[JsObject] + ("case_task" -> task) }
 
-    def auditRenderer: AuditSteps => Traversal[JsValue, JsValue] =
-      (_: AuditSteps)
-        .coalesce[JsValue](
-          _.`object`
+    def observableToJson: Traversal.V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+      _.project(
+        _.by(_.richObservable.domainMap(_.toJson))
+          .by(_.coalesceMulti(o => caseToJson(o.`case`), o => alertToJson(o.alert)))
+      ).domainMap {
+        case (obs, caseOrAlert) => obs.as[JsObject] + ((caseOrAlert \ "_type").asOpt[String].getOrElse("<unknown>") -> caseOrAlert)
+      }
+
+    case class Job(
+        workerId: String,
+        workerName: String,
+        workerDefinition: String,
+        status: String,
+        startDate: Date,
+        endDate: Date,
+        report: Option[JsObject],
+        cortexId: String,
+        cortexJobId: String
+    )
+    def jobToJson
+        : Traversal[Vertex, Vertex, IdentityConverter[Vertex]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+      _.project(
+        _.by.by
+      ).domainMap {
+        case (vertex, _) =>
+          JsObject(
+            UMapping.string.optional.getProperty(vertex, "workerId").map(v => "analyzerId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "workerName").map(v => "analyzerName" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "workerDefinition").map(v => "analyzerDefinition" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "status").map(v => "status" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "startDate").map(v => "startDate" -> JsNumber(v.getTime)).toList :::
+              UMapping.date.optional.getProperty(vertex, "endDate").map(v => "endDate" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "cortexId").map(v => "cortexId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "cortexJobId").map(v => "cortexJobId" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_createdBy").map(v => "_createdBy" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "_createdAt").map(v => "_createdAt" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_updatedBy").map(v => "_updatedBy" -> JsString(v)).toList :::
+              UMapping.date.optional.getProperty(vertex, "_updatedAt").map(v => "_updatedAt" -> JsNumber(v.getTime)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_type").map(v => "_type" -> JsString(v)).toList :::
+              UMapping.string.optional.getProperty(vertex, "_id").map(v => "_id" -> JsString(v)).toList
+          )
+      }
+
+    def auditRenderer: Traversal.V[Audit] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+      (_: Traversal.V[Audit])
+        .coalesce(
+          _.`object` //.out[Audited]
             .choose(
-              on = _.label,
-              BranchCase("Case", caseToJson),
-              BranchCase("Task", taskToJson),
-              BranchCase("Log", logToJson),
-              BranchCase("Observable", observableToJson),
-              BranchCase("Alert", alertToJson),
-              BranchOtherwise(_.constant(JsObject.empty))
+              _.on(_.label)
+                .option("Case", t => caseToJson(t.v[Case]))
+                .option("Task", t => taskToJson(t.v[Task]))
+                .option("Log", t => logToJson(t.v[Log]))
+                .option("Observable", t => observableToJson(t.v[Observable]))
+                .option("Alert", t => alertToJson(t.v[Alert]))
+                .option("Job", jobToJson)
+                .none(_.constant2[JsObject, JMap[String, Any]](JsObject.empty))
             ),
-          _.constant(JsObject.empty)
+          JsObject.empty
         )
+
   }
 
   // This method change the format of audit details when it contains custom field.
@@ -123,8 +181,19 @@ class Webhook(
             case keyValue @ (key, value) if key.startsWith("customField.") =>
               val fieldName = key.drop(12)
               customFieldSrv
-                .getOrFail(fieldName)
+                .getOrFail(EntityIdOrName(fieldName))
                 .fold(_ => keyValue, cf => "customFields" -> Json.obj(fieldName -> Json.obj(cf.`type`.toString -> value)))
+            case ("customFields", JsArray(cfs)) =>
+              "customFields" -> cfs
+                .flatMap { cf =>
+                  for {
+                    name <- (cf \ "name").asOpt[String]
+                    tpe  <- (cf \ "type").asOpt[String]
+                    value = (cf \ "value").asOpt[JsValue]
+                    order = (cf \ "order").asOpt[Int]
+                  } yield Json.obj(name -> Json.obj(tpe -> value, "order" -> order))
+                }
+                .foldLeft(JsObject.empty)(_ ++ _)
             case keyValue => keyValue
           })
         }
@@ -135,11 +204,11 @@ class Webhook(
   def buildMessage(version: Int, audit: Audit with Entity)(implicit graph: Graph): Try[JsObject] =
     version match {
       case 0 =>
-        auditSrv.get(audit).richAuditWithCustomRenderer(v0.auditRenderer).getOrFail().map {
+        auditSrv.get(audit).richAuditWithCustomRenderer(v0.auditRenderer).getOrFail("Audit").map {
           case (audit, obj) =>
-            val objectType = audit.objectType.getOrElse(audit.context._model.label)
+            val objectType = audit.objectType.getOrElse(audit.context._label)
             Json.obj(
-              "operation"  -> audit.action,
+              "operation"  -> v0Action(audit.action),
               "details"    -> audit.details.fold[JsValue](JsObject.empty)(fixCustomFieldDetails(objectType, _)),
               "objectType" -> fromObjectType(objectType),
               "objectId"   -> audit.objectId,
@@ -151,9 +220,9 @@ class Webhook(
             )
         }
       case 1 =>
-        auditSrv.get(audit).richAuditWithCustomRenderer(v1.auditRenderer).getOrFail().map {
+        auditSrv.get(audit).richAuditWithCustomRenderer(v1.auditRenderer).getOrFail("Audit").map {
           case (audit, obj) =>
-            val objectType = audit.objectType.getOrElse(audit.context._model.label)
+            val objectType = audit.objectType.getOrElse(audit.context._label)
             Json.obj(
               "operation"  -> audit.action,
               "details"    -> audit.details.fold[JsValue](JsObject.empty)(fixCustomFieldDetails(objectType, _)),
@@ -167,6 +236,12 @@ class Webhook(
             )
         }
       case _ => Failure(BadConfigurationError(s"Message version $version in webhook is not supported"))
+    }
+
+  def v0Action(action: String): String =
+    action match {
+      case Audit.merge => Audit.update
+      case action      => action
     }
 
   override def execute(

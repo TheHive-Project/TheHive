@@ -2,13 +2,15 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.OutputTask
 import org.thp.thehive.models._
+import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -37,10 +39,10 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
   "task controller" should {
     "list available tasks and get one task" in testApp { app =>
       val taskId = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail("Task").get
+        app[TaskSrv].startTraversal.has(_.title, "case 1 task 1")._id.getOrFail("Task").get
       }
       val request    = FakeRequest("GET", s"/api/case/task/$taskId").withHeaders("user" -> "certuser@thehive.local")
-      val result     = app[TaskCtrl].get(taskId)(request)
+      val result     = app[TaskCtrl].get(taskId.toString)(request)
       val resultTask = contentAsJson(result)
 
       status(result) shouldEqual 200
@@ -61,12 +63,12 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "patch a task" in testApp { app =>
       val taskId = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail("Task").get
+        app[TaskSrv].startTraversal.has(_.title, "case 1 task 1")._id.getOrFail("Task").get
       }
       val request = FakeRequest("PATCH", s"/api/case/task/$taskId")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.parse("""{"title": "new title task 1", "owner": "certuser@thehive.local", "status": "InProgress"}"""))
-      val result = app[TaskCtrl].update(taskId)(request)
+      val result = app[TaskCtrl].update(taskId.toString)(request)
 
       status(result) shouldEqual 200
 
@@ -83,7 +85,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val newTask = app[Database]
         .roTransaction { implicit graph =>
-          app[TaskSrv].initSteps.has("title", "new title task 1").richTask.getOrFail("Task")
+          app[TaskSrv].startTraversal.has(_.title, "new title task 1").richTask.getOrFail("Task")
         }
         .map(TestTask.apply)
         .map(_.copy(startDate = None))
@@ -91,7 +93,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "create a new task for an existing case" in testApp { app =>
-      val request = FakeRequest("POST", "/api/case/#1/task?flag=true")
+      val request = FakeRequest("POST", "/api/case/1/task?flag=true")
         .withJsonBody(
           Json
             .parse(
@@ -105,7 +107,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
         )
         .withHeaders("user" -> "certuser@thehive.local")
 
-      val result     = app[TaskCtrl].create("#1")(request)
+      val result     = app[TaskCtrl].create("1")(request)
       val resultTask = contentAsJson(result)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
@@ -113,7 +115,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
       val expected = TestTask(
         title = "case 1 task",
         description = Some("description task 1"),
-        owner = None, // FIXME
+        owner = None,
         startDate = None,
         flag = true,
         status = "Waiting",
@@ -132,18 +134,18 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "unset task owner" in testApp { app =>
       val taskId = app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].initSteps.has("title", "case 1 task 1")._id.getOrFail("Task").get
+        app[TaskSrv].startTraversal.has(_.title, "case 1 task 1")._id.getOrFail("Task").get
       }
       val request = FakeRequest("PATCH", s"/api/case/task/$taskId")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.parse("""{"owner": null}"""))
-      val result = app[TaskCtrl].update(taskId)(request)
+      val result = app[TaskCtrl].update(taskId.toString)(request)
 
       status(result) shouldEqual 200
 
       val newTask = app[Database]
         .roTransaction { implicit graph =>
-          app[TaskSrv].initSteps.has("title", "case 1 task 1").richTask.getOrFail("Task")
+          app[TaskSrv].startTraversal.has(_.title, "case 1 task 1").richTask.getOrFail("Task")
         }
         .map(TestTask.apply)
 
@@ -162,8 +164,29 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
     }
 
+    "search tasks in case" in testApp { app =>
+      val request = FakeRequest("POST", "/api/case/task/_stats")
+        .withHeaders("user" -> "certuser@thehive.local")
+        .withJsonBody(Json.parse(s"""{
+               "query":{
+                 "order": 1
+               }
+             }"""))
+      val result = app[TaskCtrl].search(request)
+      val t = TestTask(
+        title = "case 1 task 2",
+        group = Some("group1"),
+        description = Some("description task 2"),
+        status = "Waiting",
+        flag = true,
+        order = 1
+      )
+      val tasks = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputTask]]
+      tasks.map(TestTask.apply) should contain(t)
+    }
+
     "get tasks stats" in testApp { app =>
-      val case1 = app[Database].roTransaction(graph => app[CaseSrv].initSteps(graph).has("title", "case#1").getOrFail("Case"))
+      val case1 = app[Database].roTransaction(graph => app[CaseSrv].startTraversal(graph).has(_.title, "case#1").getOrFail("Case"))
 
       case1 must beSuccessfulTry
 
@@ -208,7 +231,7 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
                       }""".stripMargin
           )
         )
-      val result = app[Database].roTransaction(_ => app[TheHiveQueryExecutor].task.stats(request))
+      val result = app[TaskCtrl].stats(request)
 
       status(result) must equalTo(200)
 

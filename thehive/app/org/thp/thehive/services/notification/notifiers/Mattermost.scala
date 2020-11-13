@@ -1,10 +1,10 @@
 package org.thp.thehive.services.notification.notifiers
 
 import akka.stream.Materializer
-import gremlin.scala.Graph
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.client.{ProxyWS, ProxyWSConfig}
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.libs.json.{Json, Reads, Writes}
@@ -21,7 +21,7 @@ object MattermostNotification {
 }
 
 @Singleton
-class MattermostProvider @Inject() (appConfig: ApplicationConfig, ec: ExecutionContext, mat: Materializer) extends NotifierProvider {
+class MattermostProvider @Inject() (appConfig: ApplicationConfig, ec: ExecutionContext, schema: Schema, mat: Materializer) extends NotifierProvider {
   override val name: String                            = "Mattermost"
   implicit val optionStringRead: Reads[Option[String]] = Reads.optionNoError[String]
 
@@ -46,12 +46,18 @@ class MattermostProvider @Inject() (appConfig: ApplicationConfig, ec: ExecutionC
     val usernameOverride = usernameConfig.get
     val webhook          = webhookConfig.get
     val mattermost =
-      new Mattermost(new ProxyWS(wsConfig.get, mat), MattermostNotification(template, webhook, channel, usernameOverride), baseUrlConfig.get, ec)
+      new Mattermost(
+        new ProxyWS(wsConfig.get, mat),
+        MattermostNotification(template, webhook, channel, usernameOverride),
+        baseUrlConfig.get,
+        schema,
+        ec
+      )
     Success(mattermost)
   }
 }
 
-class Mattermost(ws: WSClient, mattermostNotification: MattermostNotification, baseUrl: String, implicit val ec: ExecutionContext)
+class Mattermost(ws: WSClient, mattermostNotification: MattermostNotification, baseUrl: String, val schema: Schema, implicit val ec: ExecutionContext)
     extends Notifier
     with Template {
   lazy val logger: Logger   = Logger(getClass)

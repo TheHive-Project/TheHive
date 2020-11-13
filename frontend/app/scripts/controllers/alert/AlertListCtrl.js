@@ -83,6 +83,10 @@
                 this.filtering.toggleFilters();
             };
 
+            this.toggleAdvanced = function () {
+                this.filtering.toggleAdvanced();
+            };
+
             this.canMarkAsRead = AlertingSrv.canMarkAsRead;
             this.canMarkAsUnread = AlertingSrv.canMarkAsUnread;
 
@@ -381,7 +385,7 @@
                 });
 
                 caseModal.result.then(function(selectedCase) {
-                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, '_id'), selectedCase.id);
+                    return AlertingSrv.bulkMergeInto(_.pluck(self.selection, '_id'), selectedCase._id);
                 })
                 .then(function(response) {
                     $rootScope.$broadcast('alert:event-imported');

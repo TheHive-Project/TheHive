@@ -12,6 +12,19 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class StatsCtrl @Inject() (
     entrypoint: Entrypoint,
+    caseCtrl: CaseCtrl,
+    taskCtrl: TaskCtrl,
+    logCtrl: LogCtrl,
+    alertCtrl: AlertCtrl,
+    userCtrl: UserCtrl,
+    caseTemplateCtrl: CaseTemplateCtrl,
+    observableCtrl: ObservableCtrl,
+    dashboardCtrl: DashboardCtrl,
+    organisationCtrl: OrganisationCtrl,
+    auditCtrl: AuditCtrl,
+    profileCtrl: ProfileCtrl,
+    tagCtrl: TagCtrl,
+    pageCtrl: PageCtrl,
     queryExecutor: TheHiveQueryExecutor,
     @Named("with-thehive-schema") db: Database
 ) {
@@ -26,20 +39,20 @@ class StatsCtrl @Inject() (
           .validatedBy { s =>
             for {
               model <- FieldsParser.string(s.get("model"))
-              queryCtrl = model match {
-                case "case"         => queryExecutor.`case`
-                case "task"         => queryExecutor.task
-                case "log"          => queryExecutor.log
-                case "alert"        => queryExecutor.alert
-                case "user"         => queryExecutor.user
-                case "caseTemplate" => queryExecutor.caseTemplate
-                case "observable"   => queryExecutor.observable
-                case "dashboard"    => queryExecutor.dashboard
-                case "organisation" => queryExecutor.organisation
-                case "audit"        => queryExecutor.audit
-                case "profile"      => queryExecutor.profile
-                case "tag"          => queryExecutor.tag
-                case "page"         => queryExecutor.page
+              queryCtrl: QueryCtrl = model match {
+                case "case"          => caseCtrl
+                case "case_task"     => taskCtrl
+                case "case_task_log" => logCtrl
+                case "alert"         => alertCtrl
+                case "user"          => userCtrl
+                case "caseTemplate"  => caseTemplateCtrl
+                case "case_artifact" => observableCtrl
+                case "dashboard"     => dashboardCtrl
+                case "organisation"  => organisationCtrl
+                case "audit"         => auditCtrl
+                case "profile"       => profileCtrl
+                case "tag"           => tagCtrl
+                case "page"          => pageCtrl
               }
               queries <- queryCtrl.statsParser(s)
             } yield queries
@@ -54,7 +67,7 @@ class StatsCtrl @Inject() (
                 val results = outputs
                   .map(_.toJson)
                   .foldLeft(JsObject.empty) {
-                    case (acc, o: JsObject) => acc ++ o
+                    case (acc, o: JsObject) => acc deepMerge o
                     case (acc, r) =>
                       logger.warn(s"Invalid stats result: $r")
                       acc

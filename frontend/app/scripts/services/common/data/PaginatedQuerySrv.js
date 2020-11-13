@@ -65,7 +65,7 @@
                         });
 
                         if (angular.isFunction(this.onUpdate)) {
-                            this.onUpdate();
+                            this.onUpdate(this.allValues);
                         }
                     } else {
                         this.update();

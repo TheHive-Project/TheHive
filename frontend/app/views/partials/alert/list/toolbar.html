@@ -102,6 +102,12 @@
                     <i class="fa fa-bar-chart"></i> Stats
                 </button>
             </div>
+
+            <div class="btn-group pull-right" role="group">
+                <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[!!$vm.filtering.context.showAdvanced]" type="button" ng-click="$vm.toggleAdvanced()">
+                    <i class="fa fa-code"></i> Custom Fields
+                </button>
+            </div>
         </div>
     </div>
 </div>
