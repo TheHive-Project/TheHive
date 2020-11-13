@@ -2,7 +2,7 @@ import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.0.1-1-SNAPSHOT"
+val thehiveVersion         = "4.0.1-1"
 val scala212               = "2.12.12"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
