@@ -14,11 +14,11 @@
             <div class="box-body">
                 <div ng-include="'views/partials/case/list/toolbar.html'"></div>
 
-                <div class="mv-s filter-panel" ng-include="'views/partials/case/list/mini-stats.html'" ng-if="$vm.filtering.context.showStats"></div>
+                <div class="mt-xs stats-panel" ng-include="'views/partials/case/list/mini-stats.html'" ng-if="$vm.filtering.context.showStats"></div>
 
-                <div class="mt-s filter-panel" ng-include="'views/partials/case/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+                <div class="mt-xs filter-panel" ng-include="'views/partials/case/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
 
-                <div class="row mt-s">
+                <div class="row mt-xs">
                     <div class="col-md-12 clearfix">
 
                         <filters-preview filters="$vm.filtering.context.filters"
@@ -75,6 +75,9 @@
 
                                             </span>
                                         </div>
+
+                                        <custom-field-labels ng-if="$vm.filtering.context.showAdvanced" custom-fields="currentCase.customFields" on-field-click="$vm.addFilterValue(name, value)"><custom-field-labels>
+
                                         <div class="text-success" ng-show="currentCase.status !== 'Open'">
                                             <small>
                                                 (Closed at {{currentCase.endDate | showDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)

@@ -21,6 +21,27 @@
         </div>
     </div>
 
+    <div ng-switch-when="tags" class="row">
+        <div class="col-xs-2 ph-0" uib-dropdown>
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
+                <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
+                <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-10 pl-xxxs clear">
+            <tags-input class="form-control-wrapper"
+                ng-model="filter.value.list"
+                placeholder="ex: Enter a tag"
+                replace-spaces-with-dashes="false">
+                    <auto-complete source="promiseFor(filter, $query)" min-length="3" debounce-delay="400"></auto-complete>
+                </tags-input>
+        </div>
+    </div>
+
     <div ng-switch-when="user" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
             <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
@@ -96,10 +117,27 @@
     </div>
 
     <div ng-switch-when="date" class="row">
-        <div class="col-xs-6 pl-0">
+        <div class="ph-0" uib-dropdown ng-class="{
+            'col-xs-2': !filter.value.operator || filter.value.operator === 'custom',
+            'col-xs-4': filter.value.operator && filter.value.operator !== 'custom'
+        }">
+            <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
+                {{dateOperator[filter.value.operator || 'custom']}} <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="setDateFilterOperator(filter, 'custom')">Custom</a></li>
+                <li><a href ng-click="setDateFilterOperator(filter, 'today')">Today</a></li>
+                <li><a href ng-click="setDateFilterOperator(filter, 'last7days')">Last 7 days</a></li>
+                <li><a href ng-click="setDateFilterOperator(filter, 'last30days')">Last 30 days</a></li>
+                <li><a href ng-click="setDateFilterOperator(filter, 'last3months')">Last 3 months</a></li>
+                <li><a href ng-click="setDateFilterOperator(filter, 'last6months')">Last 6 months</a></li>
+                <li><a href ng-click="setDateFilterOperator(filter, 'lastyear')">Last year</a></li>
+            </ul>
+        </div>
+        <div class="col-xs-5 pl-xxxs" ng-show="!filter.value.operator || filter.value.operator === 'custom'">
             <dt-picker date="filter.value.from" placeholder="from"></dt-picker>
         </div>
-        <div class="col-xs-6 pl-0">
+        <div class="col-xs-5 pl-0" ng-show="!filter.value.operator || filter.value.operator === 'custom'">
             <dt-picker date="filter.value.to" placeholder="to"></dt-picker>
         </div>
     </div>

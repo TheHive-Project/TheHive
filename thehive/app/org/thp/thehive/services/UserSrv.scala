@@ -1,23 +1,27 @@
 package org.thp.thehive.services
 
 import java.util.regex.Pattern
-import java.util.{List => JList}
+import java.util.{List => JList, Map => JMap}
 
-import scala.collection.JavaConverters._
 import akka.actor.ActorRef
-import gremlin.scala._
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
+import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntitySteps, InternalError, RichOptionTry}
+import org.thp.scalligraph.traversal.Converter.CList
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, InternalError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ProfileOps._
+import org.thp.thehive.services.RoleOps._
+import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
@@ -31,12 +35,11 @@ class UserSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
     @Named("with-thehive-schema") implicit val db: Database
-) extends VertexSrv[User, UserSteps] {
+) extends VertexSrv[User] {
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
 
-  val userAttachmentSrv                                                           = new EdgeSrv[UserAttachment, User, Attachment]
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): UserSteps = new UserSteps(raw)
+  val userAttachmentSrv = new EdgeSrv[UserAttachment, User, Attachment]
 
   override def createEntity(e: User)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("User")
@@ -53,26 +56,26 @@ class UserSrv @Inject() (
   }
 
   // TODO return Try[Unit]
-  def addUserToOrganisation(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
-      implicit graph: Graph,
+  def addUserToOrganisation(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    (if (!get(user).organisations.getByName(organisation.name).exists())
+    (if (!get(user).organisations.getByName(organisation.name).exists)
        roleSrv.create(user, organisation, profile)
      else
        Success(())).flatMap { _ =>
       for {
-        richUser <- get(user).richUser(organisation.name).getOrFail()
+        richUser <- get(user).richUser(authContext, organisation._id).getOrFail("User")
         _        <- auditSrv.user.create(user, richUser.toJson)
       } yield richUser
     }
 
-  def addOrCreateUser(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(
-      implicit graph: Graph,
+  def addOrCreateUser(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichUser] =
-    get(user.login)
-      .getOrFail()
+    getByName(user.login)
+      .getOrFail("User")
       .orElse {
         for {
           validUser   <- checkUser(user)
@@ -83,14 +86,14 @@ class UserSrv @Inject() (
       .flatMap(addUserToOrganisation(_, organisation, profile))
 
   def canSetPassword(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Boolean = {
-    val userOrganisations     = get(user).organisations.name.toList.toSet
-    val operatorOrganisations = current.organisations(Permissions.manageUser).name.toList
+    val userOrganisations     = get(user).organisations.value(_.name).toSet
+    val operatorOrganisations = current.organisations(Permissions.manageUser).value(_.name).toSeq
     operatorOrganisations.contains(Organisation.administration.name) || (userOrganisations -- operatorOrganisations).isEmpty
   }
 
   def delete(user: User with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    if (get(user).organisations.hasNot("name", organisation.name).exists())
-      get(user).role.filter(_.organisation.has("name", organisation.name)).remove()
+    if (get(user).organisations.filterNot(_.get(organisation._id)).exists)
+      get(user).role.filterNot(_.organisation.get(organisation._id)).remove()
     else {
       get(user).role.remove()
       get(user).remove()
@@ -98,43 +101,41 @@ class UserSrv @Inject() (
     auditSrv.user.delete(user, organisation)
   }
 
-  override def exists(e: User)(implicit graph: Graph): Boolean = initSteps.getByName(e.login).exists()
+  override def exists(e: User)(implicit graph: Graph): Boolean = startTraversal.getByName(e.login).exists
 
   def lock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
     if (user.login == authContext.userId)
       Failure(AuthorizationError("You cannot lock yourself"))
     else
       for {
-        updatedUser <- get(user).updateOne("locked" -> true)
+        updatedUser <- get(user).update(_.locked, true: Boolean).getOrFail("User")
         _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
       } yield updatedUser
 
   def unlock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
     for {
-      updatedUser <- get(user).updateOne("locked" -> false)
+      updatedUser <- get(user).update(_.locked, false: Boolean).getOrFail("User")
       _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> false))
     } yield updatedUser
 
-  def current(implicit graph: Graph, authContext: AuthContext): UserSteps = get(authContext.userId)
+  def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[User] = get(EntityName(authContext.userId))
 
-  override def get(idOrName: String)(implicit graph: Graph): UserSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else
-      defaultUserDomain.fold(initSteps.getByName(idOrName)) {
-        case d if !idOrName.contains('@') => initSteps.getByName(s"$idOrName@$d")
-        case _                            => initSteps.getByName(idOrName)
-      }
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[User] =
+    defaultUserDomain.fold(startTraversal.getByName(name)) {
+      case d if !name.contains('@') => startTraversal.getByName(s"$name@$d")
+      case _                        => startTraversal.getByName(name)
+    }
 
   override def update(
-      steps: UserSteps,
+      traversal: Traversal.V[User],
       propertyUpdaters: Seq[PropertyUpdater]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(UserSteps, JsObject)] =
-    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[User], JsObject)] =
+    auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
       case (userSteps, updatedFields) =>
         userSteps
           .filterNot(_.systemUser)
-          .newInstance()
-          .getOrFail()
+          .clone()
+          .getOrFail("User")
           .flatMap(auditSrv.user.update(_, updatedFields))
     }
 
@@ -148,181 +149,191 @@ class UserSrv @Inject() (
 
   def unsetAvatar(user: User with Entity)(implicit graph: Graph): Unit = get(user).avatar.remove()
 
-  def setProfile(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
-      implicit graph: Graph,
+  def setProfile(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      role <- get(user).role.filter(_.organisation.get(organisation)).getOrFail()
+      role <- get(user).role.filter(_.organisation.getEntity(organisation)).getOrFail("User")
       _ = roleSrv.updateProfile(role, profile)
       _ <- auditSrv.user.changeProfile(user, organisation, profile)
     } yield ()
 }
 
-@EntitySteps[User]
-class UserSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[User](raw) {
-  def current(authContext: AuthContext): UserSteps = get(authContext.userId)
+object UserOps {
 
-  def get(idOrName: String): UserSteps =
-    if (db.isValidId(idOrName)) this.getByIds(idOrName)
-    else getByName(idOrName)
+  implicit class UserOpsDefs(traversal: Traversal.V[User]) {
+    def get(idOrName: EntityIdOrName): Traversal.V[User] =
+      idOrName.fold(traversal.getByIds(_), getByName)
 
-  def getByName(login: String): UserSteps = this.has("login", login.toLowerCase)
+    def current(implicit authContext: AuthContext): Traversal.V[User] = getByName(authContext.userId)
 
-  def visible(implicit authContext: AuthContext): UserSteps =
-    if (authContext.isPermitted(Permissions.manageOrganisation.permission)) this
-    else
-      this.filter(_.or(_.organisations.visibleOrganisationsTo.get(authContext.organisation), _.systemUser))
+    def getByName(login: String): Traversal.V[User] = traversal.has(_.login, login.toLowerCase)
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): UserSteps = new UserSteps(newRaw)
-  override def newInstance(): UserSteps                             = new UserSteps(raw.clone())
+    def visible(implicit authContext: AuthContext): Traversal.V[User] =
+      if (authContext.isPermitted(Permissions.manageOrganisation.permission)) traversal
+      else
+        traversal.filter(_.or(_.organisations.visibleOrganisationsTo.get(authContext.organisation), _.systemUser))
 
-  def can(requiredPermission: Permission)(implicit authContext: AuthContext): UserSteps =
-    this.filter(_.organisations(requiredPermission).get(authContext.organisation))
+    def isNotLocked: Traversal.V[User] = traversal.has(_.locked, false)
 
-  def getByAPIKey(key: String): UserSteps = new UserSteps(raw.has(Key("apikey") of key))
+    def can(requiredPermission: Permission)(implicit authContext: AuthContext, db: Database): Traversal.V[User] =
+      traversal.filter(_.organisations(requiredPermission).get(authContext.organisation))
 
-  def organisations: OrganisationSteps = new OrganisationSteps(raw.outTo[UserRole].outTo[RoleOrganisation])
+    def getByAPIKey(key: String): Traversal.V[User] = traversal.has(_.apikey, key).v[User]
 
-  private def organisations0(requiredPermission: String): OrganisationSteps =
-    new OrganisationSteps(
-      raw
-        .outTo[UserRole]
-        .filter(_.outTo[RoleProfile].has(Key("permissions") of requiredPermission))
-        .outTo[RoleOrganisation]
-    )
+    def organisations: Traversal.V[Organisation] = traversal.out[UserRole].out[RoleOrganisation].v[Organisation]
 
-  def organisations(requiredPermission: String): OrganisationSteps = {
-    val isInAdminOrganisation = newInstance().organisations0(requiredPermission).get(Organisation.administration.name).exists()
-    if (isInAdminOrganisation) new OrganisationSteps(db.labelFilter(db.getVertexModel[Organisation])(graph.V))
-    else organisations0(requiredPermission)
-  }
+    protected def organisations0(requiredPermission: Permission): Traversal.V[Organisation] =
+      role.filter(_.profile.has(_.permissions, requiredPermission)).organisation
 
-  def organisationWithRole: Traversal[JList[(String, String)], JList[(String, String)]] =
-    this
-      .outTo[UserRole]
-      .project(
-        _.by(_.outTo[RoleOrganisation].value[String]("name"))
-          .by(_.outTo[RoleProfile].value[String]("name"))
-      )
-      .fold
+    def organisations(requiredPermission: Permission)(implicit db: Database): Traversal.V[Organisation] = {
+      val isInAdminOrganisation = traversal.clone().organisations0(requiredPermission).getByName(Organisation.administration.name).exists
+      if (isInAdminOrganisation) db.labelFilter("Organisation")(traversal.V()).v[Organisation]
+      else organisations0(requiredPermission)
+    }
 
-  def config: ConfigSteps = new ConfigSteps(raw.outTo[UserConfig])
-
-  def getAuthContext(requestId: String, organisation: Option[String]): Traversal[AuthContext, AuthContext] = {
-    val organisationName = organisation
-      .orElse(
-        this
-          .newInstance()
-          .outTo[UserRole]
-          .order(List(By(Key[Long]("_createdAt"), Order.asc)))
-          .outTo[RoleOrganisation]
-          .value[String]("name")
-          .headOption()
-      )
-      .getOrElse(Organisation.administration.name)
-    getAuthContext(requestId, organisationName)
-  }
-
-  def getAuthContext(requestId: String, organisationName: String): Traversal[AuthContext, AuthContext] =
-    Traversal(
-      this
-        .filter(_.organisations.get(organisationName))
-        .raw
-        .has(Key("locked") of false)
+    def organisationWithRole: Traversal[Seq[(String, String)], JList[JMap[String, Any]], CList[(String, String), JMap[String, Any], Converter[
+      (String, String),
+      JMap[String, Any]
+    ]]] =
+      role
         .project(
-          _.apply(By(__.value[String]("login")))
-            .and(By(__.value[String]("name")))
-            .and(By(__[Vertex].outTo[UserRole].filter(_.outTo[RoleOrganisation].has(Key("name") of organisationName)).outTo[RoleProfile]))
+          _.by(_.organisation.value(_.name))
+            .by(_.profile.value(_.name))
         )
-        .map {
-          case (userId, userName, profile) =>
+        .fold
+
+    def config: Traversal.V[Config] = traversal.out[UserConfig].v[Config]
+
+    def getAuthContext(
+        requestId: String,
+        organisation: Option[EntityIdOrName]
+    ): Traversal[AuthContext, JMap[String, Any], Converter[AuthContext, JMap[String, Any]]] = {
+      val organisationName = organisation
+        .orElse(
+          traversal
+            .clone()
+            .role
+            .sort(_.by("_createdAt", Order.asc))
+            .organisation
+            ._id
+            .headOption
+        )
+        .getOrElse(EntityName(Organisation.administration.name))
+      getAuthContext(requestId, organisationName)
+    }
+
+    def getAuthContext(
+        requestId: String,
+        organisationName: EntityIdOrName
+    ): Traversal[AuthContext, JMap[String, Any], Converter[AuthContext, JMap[String, Any]]] =
+      traversal
+        .isNotLocked
+        .project(
+          _.byValue(_.login)
+            .byValue(_.name)
+            .by(_.profile(organisationName).fold)
+            .by(_.organisations.get(organisationName).value(_.name).limit(1).fold)
+            .by(_.profile(EntityName(Organisation.administration.name)).fold)
+        )
+        .domainMap {
+          case (userId, userName, profile, org, adminProfile) =>
             val scope =
-              if (organisationName == Organisation.administration.name) "admin"
+              if (org.contains(Organisation.administration.name)) "admin"
               else "organisation"
-            val permissions = Permissions.forScope(scope) & profile.as[Profile].permissions
+            val permissions =
+              Permissions.forScope(scope) & profile.headOption.orElse(adminProfile.headOption).fold(Set.empty[Permission])(_.permissions)
             AuthContextImpl(userId, userName, organisationName, requestId, permissions)
         }
-    )
 
-  def profile(organisation: String) =
-    new ProfileSteps(
-      this.outTo[UserRole].filter(_.outTo[RoleOrganisation].has("name", organisation)).outTo[RoleProfile].raw
-    )
+    def profile(organisation: EntityIdOrName): Traversal.V[Profile] =
+      role.filter(_.organisation.get(organisation)).profile
 
-  def richUser(organisation: String): Traversal[RichUser, RichUser] =
-    this
-      .project(
-        _.by
-          .by(_.profile(organisation).fold)
-          .by(_.avatar.fold)
-      )
-      .collect {
-        case (user, profiles, attachment) if profiles.size() == 1 =>
-          val profile = profiles.get(0).as[Profile]
-          val avatar  = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
-          RichUser(user.as[User], avatar, profile.name, profile.permissions, organisation)
-        case (user, _, attachment) =>
-          val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
-          RichUser(user.as[User], avatar, "", Set.empty, organisation)
-      }
+    def richUser(implicit authContext: AuthContext): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
+      richUser(authContext, authContext.organisation)
 
-  def richUser(implicit authContext: AuthContext): Traversal[RichUser, RichUser] =
-    this
-      .project(
-        _.by
-          .by(_.avatar.fold)
-          .by(_.role.project(_.by(_.profile).by(_.organisation.visible.name.fold)).fold)
-      )
-      .map {
-        case (user, attachment, profileOrganisations) =>
-          val po = profileOrganisations.asScala.collect {
-            case (profile, organisationName) if !organisationName.isEmpty => profile.as[Profile] -> organisationName.get(0)
-          }
-          po.find(_._2 == authContext.organisation)
-            .orElse(po.headOption)
-            .fold(throw InternalError(s"")) {
-              case (profile, organisationName) =>
-                val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
-                RichUser(user.as[User], avatar, profile.name, profile.permissions, organisationName)
-            }
-      }
+    def richUser(
+        authContext: AuthContext,
+        organisation: EntityIdOrName
+    ): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.avatar.fold)
+            .by(_.role.project(_.by(_.profile).by(_.organisation.visible(authContext).project(_.by(_._id).byValue(_.name)).fold)).fold)
+        )
+        .domainMap {
+          case (user, attachment, profileOrganisations) =>
+            val avatar = attachment.headOption.map(_.attachmentId)
+            organisation
+              .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
+              .orElse(profileOrganisations.headOption)
+              .fold(RichUser(user, avatar, Profile.admin.name, Set.empty, "no org")) { // fake user (probably "system")
+                case (profile, organisationIdAndName) =>
+                  RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("no org")(_._2))
+              }
+        }
 
-  def richUserWithCustomRenderer[A](organisation: String, entityRenderer: UserSteps => TraversalLike[_, A])(
-      implicit authContext: AuthContext
-  ): Traversal[(RichUser, A), (RichUser, A)] =
-    this
-      .project(
-        _.by
-          .by(_.profile(organisation).fold)
-          .by(_.avatar.fold)
-          .by(entityRenderer(_))
-      )
-      .collect {
-        case (user, profiles, attachment, renderedEntity) if profiles.size() == 1 =>
-          val profile = profiles.get(0).as[Profile]
-          val avatar  = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
-          RichUser(user.as[User], avatar, profile.name, profile.permissions, organisation) -> renderedEntity
-        case (user, _, attachment, renderedEntity) =>
-          val avatar = atMostOneOf[Vertex](attachment).map(_.as[Attachment].attachmentId)
-          RichUser(user.as[User], avatar, "", Set.empty, organisation) -> renderedEntity
-      }
+    /*
+    def richUser(organisationId: EntityId): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.profile(organisation).fold)
+            .by(_.avatar.fold)
+        )
+        .domainMap {
+          case (user, profiles, attachment) =>
+            RichUser(
+              user,
+              attachment.headOption.map(_.attachmentId),
+              profiles.headOption.fold("")(_.name),
+              profiles.headOption.fold(Set.empty[Permission])(_.permissions),
+              organisation
+            )
+        }
 
-  def config(configName: String) = new ConfigSteps(
-    this.outTo[UserConfig].has("name", configName).raw
-  )
+     */
 
-  def role: RoleSteps = new RoleSteps(raw.outTo[UserRole])
+    def richUserWithCustomRenderer[D, G, C <: Converter[D, G]](
+        organisation: EntityIdOrName,
+        entityRenderer: Traversal.V[User] => Traversal[D, G, C]
+    )(implicit authContext: AuthContext): Traversal[(RichUser, D), JMap[String, Any], Converter[(RichUser, D), JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.avatar.fold)
+            .by(_.role.project(_.by(_.profile).by(_.organisation.visible.project(_.by(_._id).byValue(_.name)).fold)).fold)
+            .by(entityRenderer)
+        )
+        .domainMap {
+          case (user, attachment, profileOrganisations, renderedEntity) =>
+            organisation
+              .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
+              .orElse(profileOrganisations.headOption)
+              .fold(throw InternalError(s"")) { // FIXME
+                case (profile, organisationIdAndName) =>
+                  val avatar = attachment.headOption.map(_.attachmentId)
+                  RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("***")(_._2)) -> renderedEntity
+              }
+        }
 
-  def avatar: AttachmentSteps = new AttachmentSteps(raw.outTo[UserAttachment])
+    def config(configName: String): Traversal.V[Config] =
+      traversal.out[UserConfig].v[Config].has(_.name, configName)
 
-  def systemUser: UserSteps = this.has("login", User.system.login)
+    def role: Traversal.V[Role] = traversal.out[UserRole].v[Role]
 
-  def dashboards: DashboardSteps = new DashboardSteps(raw.inTo[DashboardUser])
+    def avatar: Traversal.V[Attachment] = traversal.out[UserAttachment].v[Attachment]
 
-  def tasks: TaskSteps = new TaskSteps(raw.inTo[TaskUser])
+    def systemUser: Traversal.V[User] = traversal.has(_.login, User.system.login)
 
-  def cases: CaseSteps = new CaseSteps(raw.inTo[CaseUser])
+    def dashboards: Traversal.V[Dashboard] = traversal.in[DashboardUser].v[Dashboard]
+
+    def tasks: Traversal.V[Task] = traversal.in[TaskUser].v[Task]
+
+    def cases: Traversal.V[Case] = traversal.in[CaseUser].v[Case]
+  }
 }
 
 @Singleton
@@ -337,17 +348,17 @@ class UserIntegrityCheckOps @Inject() (
   override def initialCheck()(implicit graph: Graph, authContext: AuthContext): Unit = {
     super.initialCheck()
     val adminUserIsCreated = service
-      .get(User.init.login)
+      .getByName(User.init.login)
       .role
       .filter(_.profile.getByName(Profile.admin.name))
       .organisation
       .getByName(Organisation.administration.name)
-      .exists()
+      .exists
     if (!adminUserIsCreated)
       for {
-        adminUser         <- service.getOrFail(User.init.login)
-        adminProfile      <- profileSrv.getOrFail(Profile.admin.name)
-        adminOrganisation <- organisationSrv.getOrFail(Organisation.administration.name)
+        adminUser         <- service.getByName(User.init.login).getOrFail("User")
+        adminProfile      <- profileSrv.getByName(Profile.admin.name).getOrFail("Profile")
+        adminOrganisation <- organisationSrv.getByName(Organisation.administration.name).getOrFail("Organisation")
         _                 <- roleSrv.create(adminUser, adminOrganisation, adminProfile)
       } yield ()
     ()
@@ -356,10 +367,10 @@ class UserIntegrityCheckOps @Inject() (
   override def check(): Unit = {
     super.check()
     db.tryTransaction { implicit graph =>
-      duplicateInEdges[TaskUser](service.initSteps.raw).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
-      duplicateInEdges[CaseUser](service.initSteps.raw).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
+      duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
+      duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
       duplicateLinks[Vertex, Vertex](
-        service.initSteps.raw,
+        service.startTraversal,
         (_.out("UserRole"), _.in("UserRole")),
         (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
       ).flatMap(firstCreatedElement(_)).foreach(e => removeVertices(e._2))
@@ -368,7 +379,7 @@ class UserIntegrityCheckOps @Inject() (
     ()
   }
 
-  override def resolve(entities: List[User with Entity])(implicit graph: Graph): Try[Unit] = {
+  override def resolve(entities: Seq[User with Entity])(implicit graph: Graph): Try[Unit] = {
     firstCreatedEntity(entities).foreach {
       case (firstUser, otherUsers) =>
         otherUsers.foreach(copyEdge(_, firstUser))
@@ -376,5 +387,4 @@ class UserIntegrityCheckOps @Inject() (
     }
     Success(())
   }
-
 }

@@ -11,6 +11,7 @@
                 this.config = config;
                 this.defaults = config.defaults || {};
                 this.defaultFilter = config.defaultFilter || {};
+                this.attributeKeys = [];
 
                 this.initContext = function(state) {
                     self.state = state;
@@ -22,6 +23,8 @@
                             _.each(self.config.excludes || [], function(exclude) {
                                 delete self.attributes[exclude];
                             });
+
+                            self.attributeKeys = _.keys(self.attributes).sort();
                         })
                         .then(function() {
                             var storedContext = localStorageService.get(self.sectionName);
@@ -33,6 +36,7 @@
                                     state: state,
                                     showFilters: self.defaults.showFilters || false,
                                     showStats: self.defaults.showStats || false,
+                                    showAdvanced: self.defaults.showAdvanced || true,
                                     pageSize: self.defaults.pageSize || 15,
                                     sort: self.defaults.sort || [],
                                     filters: self.defaultFilter || []
@@ -100,6 +104,11 @@
 
                 this.toggleFilters = function() {
                     self.context.showFilters = !self.context.showFilters;
+                    self.storeContext();
+                };
+
+                this.toggleAdvanced = function() {
+                    self.context.showAdvanced = !self.context.showAdvanced;
                     self.storeContext();
                 };
 
@@ -178,6 +187,13 @@
                             break;
                         case 'boolean':
                             filter.value = value;
+                            break;
+                        case 'integer':
+                        case 'float':
+                            filter.value = {
+                                operator: '=',
+                                value: value
+                            };
                             break;
                         case 'user':
                             break;

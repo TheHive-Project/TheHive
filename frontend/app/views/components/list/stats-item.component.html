@@ -1,0 +1,26 @@
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title">{{$cmp.title}}</h3>
+        <div class="box-tools pull-right">
+            <div class="btn-group">
+                <label class="btn btn-sm btn-default" ng-model="$cmp.mode" uib-btn-radio="'table'"><i class="fa fa-table"></i></label>
+                <label class="btn btn-sm btn-default" ng-model="$cmp.mode" uib-btn-radio="'chart'"><i class="fa fa-pie-chart"></i></label>
+            </div>
+        </div>
+    </div>
+    <div class="box-body">
+        <div class="empty-message" ng-if="!$cmp.data || ($cmp.data.length === 0)">
+            No Data
+        </div>
+        <table ng-if="$cmp.mode === 'table'" class="table table-condensed">
+            <tr ng-repeat="item in $cmp.data">
+                <td class="active">{{$cmp.labels[item.key] || item.key}}</td>
+                <td>
+                    <a href ng-click="$cmp.onClick(item.key)">{{item.count}}</a>
+                </td>
+            </tr>
+        </table>
+        <donut-Chart ng-if="$cmp.mode === 'chart' && $cmp.data.length > 0" labels="$cmp.labels" data="$cmp.data" title="Cases by Status"
+            on-item-clicked="$cmp.onClick(value)"></donut-chart>
+    </div>
+</div>

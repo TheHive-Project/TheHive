@@ -102,9 +102,9 @@
             };
 
             $scope.filterFields = function(entity) {
-                return _.filter($scope.metadata[entity].attributes, function(value, key) {
+                return _.pluck(_.filter($scope.metadata[entity].attributes, function(value, key) {
                     return !key.startsWith('computed.');
-                });
+                }), 'name').sort();
             };
 
             $scope.search = function() {

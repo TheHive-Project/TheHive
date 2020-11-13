@@ -12,13 +12,13 @@ object TaskStatus extends Enumeration {
   implicit val format: Format[Value] = Json.formatEnum(TaskStatus)
 }
 
-@EdgeEntity[Task, User]
+@BuildEdgeEntity[Task, User]
 case class TaskUser()
 
-@EdgeEntity[Task, Log]
+@BuildEdgeEntity[Task, Log]
 case class TaskLog()
 
-@VertexEntity
+@BuildVertexEntity
 @DefineIndex(IndexType.basic, "status")
 case class Task(
     title: String,
@@ -36,7 +36,7 @@ case class RichTask(
     task: Task with Entity,
     assignee: Option[User with Entity]
 ) {
-  def _id: String                 = task._id
+  def _id: EntityId               = task._id
   def _createdBy: String          = task._createdBy
   def _updatedBy: Option[String]  = task._updatedBy
   def _createdAt: Date            = task._createdAt

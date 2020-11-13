@@ -8,6 +8,8 @@
                 chart: '=',
                 resizeOn: '@',
                 error: '=',
+                height: '<?',
+                hideActions: '<?',
                 onSaveCsv: '&?'
             },
             templateUrl: 'views/directives/charts/c3.html',
@@ -21,7 +23,7 @@
                             pattern: DashboardSrv.colorsPattern
                         };
                         scope.chart.size = {
-                            height: 300
+                            height: scope.height || 300
                         };
                         scope.c3 = c3.generate(scope.chart);
                     }
@@ -42,7 +44,7 @@
                         if(scope.c3) {
                             scope.c3.resize();
                         }
-                    })
+                    });
                 }
             }
         };

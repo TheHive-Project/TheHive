@@ -168,6 +168,10 @@
             this.filtering.toggleFilters();
         };
 
+        this.toggleAdvanced = function () {
+            this.filtering.toggleAdvanced();
+        };
+
         this.filter = function () {
             self.filtering.filter().then(this.applyFilters);
         };

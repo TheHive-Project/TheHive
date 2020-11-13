@@ -9,17 +9,17 @@
                 self.view = {};
 
                 self.defaultFilter = {
-                    '_ne': {
-                        '_field': 'status',
-                        '_value': 'Completed'
+                    _in: {
+                        _field: 'status',
+                        _values: ['Waiting', 'InProgress']
                     }
                 };
 
                 self.queryOperations = view === 'mytasks' ? [
-                    {"_name": "currentUser"},
-                    {"_name": "tasks"}
+                    {_name: 'currentUser'},
+                    {_name: 'tasks'}
                 ] : [
-                    {"_name": "waitingTask"}
+                    {_name: 'waitingTask'}
                 ];
 
                 if ($stateParams.viewId === 'mytasks') {
@@ -61,7 +61,7 @@
                     loadAll: false,
                     pageSize: self.filtering.context.pageSize,
                     filter: self.filtering.buildQuery(),
-                    baseFilter: self.defaultFilter,
+                    baseFilter: view === 'mytasks' ? self.defaultFilter : [],
                     operations: self.queryOperations,
                     extraData: ['case'],
                     name: $stateParams.viewId

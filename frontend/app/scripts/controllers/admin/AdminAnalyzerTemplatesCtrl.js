@@ -8,9 +8,10 @@
         .controller('AdminAnalyzerTemplateDeleteCtrl', AdminAnalyzerTemplateDeleteCtrl);
 
 
-    function AdminAnalyzerTemplatesCtrl($q, $uibModal, AnalyzerSrv, AnalyzerTemplateSrv, NotificationSrv) {
+    function AdminAnalyzerTemplatesCtrl($q, $uibModal, AnalyzerSrv, AnalyzerTemplateSrv, NotificationSrv, appConfig) {
         var self = this;
 
+        this.appConfig = appConfig;
         this.templates = [];
         this.analyzers = [];
         this.analyzerIds = [];

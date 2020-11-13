@@ -3,16 +3,16 @@ package org.thp.thehive.services
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
-import gremlin.scala.Graph
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.commons.codec.binary.Base32
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{AuthenticationError, MultiFactorCodeRequired}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCodeRequired}
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
@@ -45,8 +45,8 @@ class TOTPAuthSrv(
     (timestamp - 1 to timestamp + 1).exists { ts =>
       val data   = (56 to 0 by -8).map(i => (ts >> i).toByte).toArray
       val hash   = mac.doFinal(data)
-      val offset = hash(hash.length - 1) & 0xF
-      (BigInt(hash.slice(offset, offset + 4)).toInt & 0x7FFFFFFF) % 1000000 == code
+      val offset = hash(hash.length - 1) & 0xf
+      (BigInt(hash.slice(offset, offset + 4)).toInt & 0x7fffffff) % 1000000 == code
     }
   }
 
@@ -59,8 +59,8 @@ class TOTPAuthSrv(
       }
       .getOrElse(Failure(MultiFactorCodeRequired("MFA code is required")))
 
-  override def authenticate(username: String, password: String, organisation: Option[String], code: Option[String])(
-      implicit request: RequestHeader
+  override def authenticate(username: String, password: String, organisation: Option[EntityIdOrName], code: Option[String])(implicit
+      request: RequestHeader
   ): Try[AuthContext] =
     super.authenticate(username, password, organisation, code).flatMap {
       case authContext if !enabled => Success(authContext)
@@ -72,10 +72,10 @@ class TOTPAuthSrv(
     }
 
   def getSecret(username: String)(implicit graph: Graph): Option[String] =
-    userSrv.get(username).headOption().flatMap(_.totpSecret)
+    userSrv.get(EntityIdOrName(username)).headOption.flatMap(_.totpSecret)
 
   def unsetSecret(username: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    userSrv.get(username).updateOne("totpSecret" -> None).map(_ => ())
+    userSrv.get(EntityIdOrName(username)).update(_.totpSecret, None).domainMap(_ => ()).getOrFail("User")
 
   def generateSecret(): String = {
     val key = Array.ofDim[Byte](20)
@@ -88,9 +88,10 @@ class TOTPAuthSrv(
 
   def setSecret(username: String, secret: String)(implicit graph: Graph, authContext: AuthContext): Try[String] =
     userSrv
-      .get(username)
-      .update("totpSecret" -> Some(secret))
-      .map(_ => secret)
+      .get(EntityIdOrName(username))
+      .update(_.totpSecret, Some(secret))
+      .domainMap(_ => secret)
+      .getOrFail("User")
 
   def getSecretURI(username: String, secret: String): URI =
     new URI("otpauth", "totp", s"/TheHive:$username", s"secret=$secret&issuer=$issuerName", null)

@@ -7,6 +7,7 @@ import akka.pattern.pipe
 import javax.inject.Inject
 import org.thp.client.ApplicationError
 import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob => CortexJob}
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import play.api.Logger
 
@@ -15,9 +16,9 @@ import scala.concurrent.duration._
 
 object CortexActor {
   final case class CheckJob(
-      jobId: Option[String],
+      jobId: Option[EntityId],
       cortexJobId: String,
-      actionId: Option[String],
+      actionId: Option[EntityId],
       cortexId: String,
       authContext: AuthContext
   )
@@ -45,9 +46,8 @@ class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: Ac
 
     case cj @ CheckJob(jobId, cortexJobId, actionId, cortexId, _) =>
       logger.info(s"CortexActor received job or action (${jobId.getOrElse(actionId.get)}, $cortexJobId, $cortexId) to check, added to $checkedJobs")
-      if (!timers.isTimerActive(CheckJobsKey)) {
+      if (!timers.isTimerActive(CheckJobsKey))
         timers.startSingleTimer(CheckJobsKey, FirstCheckJobs, 500.millis)
-      }
       context.become(receive(cj :: checkedJobs, failuresCount))
 
     case CheckJobs if checkedJobs.isEmpty =>

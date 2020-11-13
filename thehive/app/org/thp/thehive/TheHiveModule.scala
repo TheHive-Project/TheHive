@@ -7,25 +7,11 @@ import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, HadoopStorageSrv, S3StorageSrv}
+import org.thp.thehive.controllers.v0.QueryExecutorVersion0Provider
 import org.thp.thehive.models.{DatabaseProvider, TheHiveSchemaDefinition}
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{
-  CaseIntegrityCheckOps,
-  CaseTemplateIntegrityCheckOps,
-  CustomFieldIntegrityCheckOps,
-  DataIntegrityCheckOps,
-  FlowActorProvider,
-  ImpactStatusIntegrityCheckOps,
-  IntegrityCheckActorProvider,
-  ObservableTypeIntegrityCheckOps,
-  OrganisationIntegrityCheckOps,
-  ProfileIntegrityCheckOps,
-  ResolutionStatusIntegrityCheckOps,
-  TOTPAuthSrvProvider,
-  TagIntegrityCheckOps,
-  UserIntegrityCheckOps
-}
+import org.thp.thehive.services.{UserSrv => _, _}
 import play.api.libs.concurrent.AkkaGuiceSupport
 //import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
 import org.thp.scalligraph.services.config.ConfigActor
@@ -59,7 +45,6 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     authBindings.addBinding.to[PkiAuthProvider]
     authBindings.addBinding.to[SessionAuthProvider]
     authBindings.addBinding.to[OAuth2Provider]
-    // TODO add more authSrv
 
     val triggerBindings = ScalaMultibinder.newSetBinder[TriggerProvider](binder)
     triggerBindings.addBinding.to[AlertCreatedProvider]
@@ -69,6 +54,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     triggerBindings.addBinding.to[JobFinishedProvider]
     triggerBindings.addBinding.to[LogInMyTaskProvider]
     triggerBindings.addBinding.to[TaskAssignedProvider]
+    triggerBindings.addBinding.to[CaseShareProvider]
 
     val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
     notifierBindings.addBinding.to[AppendToFileProvider]
@@ -95,6 +81,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     val queryExecutorBindings = ScalaMultibinder.newSetBinder[QueryExecutor](binder)
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV0]
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV1]
+    bind[QueryExecutor].annotatedWithName("v0").toProvider[QueryExecutorVersion0Provider]
     ScalaMultibinder.newSetBinder[Connector](binder)
     val schemaBindings = ScalaMultibinder.newSetBinder[Schema](binder)
     schemaBindings.addBinding.to[TheHiveSchemaDefinition]

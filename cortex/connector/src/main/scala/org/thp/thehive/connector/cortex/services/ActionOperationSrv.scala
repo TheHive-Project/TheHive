@@ -2,16 +2,17 @@ package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
 
-import gremlin.scala.Graph
 import javax.inject.Inject
-import org.thp.scalligraph.InternalError
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityIdOrName, InternalError}
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
@@ -40,8 +41,8 @@ class ActionOperationSrv @Inject() (
     * @param authContext auth for access check
     * @return
     */
-  def execute(entity: Entity, operation: ActionOperation, relatedCase: Option[Case with Entity], relatedTask: Option[Task with Entity])(
-      implicit graph: Graph,
+  def execute(entity: Entity, operation: ActionOperation, relatedCase: Option[Case with Entity], relatedTask: Option[Task with Entity])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[ActionOperationStatus] = {
 
@@ -71,19 +72,19 @@ class ActionOperationSrv @Inject() (
       case AddCustomFields(name, _, value) =>
         for {
           c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddCustomFields without case")))(Success(_))
-          _ <- caseSrv.setOrCreateCustomField(c, name, Some(value), None)
+          _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)
         } yield updateOperation(operation)
 
       case CloseTask() =>
         for {
           t <- relatedTask.fold[Try[Task with Entity]](Failure(InternalError("Unable to apply action CloseTask without task")))(Success(_))
-          _ <- taskSrv.get(t).update("status" -> TaskStatus.Completed)
+          _ <- taskSrv.get(t).update(_.status, TaskStatus.Completed).getOrFail("Task")
         } yield updateOperation(operation)
 
       case MarkAlertAsRead() =>
-        entity match {
-          case a: Alert => alertSrv.markAsRead(a._id).map(_ => updateOperation(operation))
-          case x        => Failure(new Exception(s"Wrong entity for MarkAlertAsRead: ${x.getClass}"))
+        entity._label match {
+          case "Alert" => alertSrv.markAsRead(entity._id).map(_ => updateOperation(operation))
+          case x       => Failure(new Exception(s"Wrong entity for MarkAlertAsRead: ${x.getClass}"))
         }
 
       case AddLogToTask(content, _) =>
@@ -95,9 +96,9 @@ class ActionOperationSrv @Inject() (
       case AddArtifactToCase(_, dataType, dataMessage) =>
         for {
           c       <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddArtifactToCase without case")))(Success(_))
-          obsType <- observableTypeSrv.getOrFail(dataType)
+          obsType <- observableTypeSrv.getOrFail(EntityIdOrName(dataType))
           richObservable <- observableSrv.create(
-            Observable(Some(dataMessage), 2, ioc = false, sighted = false),
+            Observable(Some(dataMessage), 2, ioc = false, sighted = false, ignoreSimilarity = None),
             obsType,
             dataMessage,
             Set.empty[String],
@@ -109,15 +110,15 @@ class ActionOperationSrv @Inject() (
       case AssignCase(owner) =>
         for {
           c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AssignCase without case")))(Success(_))
-          u <- userSrv.get(owner).getOrFail()
-          _ <- Try(caseSrv.initSteps.get(c._id).unassign())
+          u <- userSrv.get(EntityIdOrName(owner)).getOrFail("User")
+          _ <- Try(caseSrv.startTraversal.getEntity(c).unassign())
           _ <- caseSrv.assign(c, u)
         } yield updateOperation(operation)
 
       case AddTagToAlert(tag) =>
-        entity match {
-          case a: Alert => alertSrv.addTags(a, Set(tag)).map(_ => updateOperation(operation))
-          case x        => Failure(new Exception(s"Wrong entity for AddTagToAlert: ${x.getClass}"))
+        entity._label match {
+          case "Alert" => alertSrv.get(entity).getOrFail("Alert").flatMap(alertSrv.addTags(_, Set(tag)).map(_ => updateOperation(operation)))
+          case x       => Failure(new Exception(s"Wrong entity for AddTagToAlert: ${x.getClass}"))
         }
 
       case x =>

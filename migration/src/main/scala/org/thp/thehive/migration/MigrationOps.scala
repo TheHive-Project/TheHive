@@ -3,7 +3,7 @@ package org.thp.thehive.migration
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import org.thp.scalligraph.{NotFoundError, RichOptionTry}
+import org.thp.scalligraph.{EntityId, NotFoundError, RichOptionTry}
 import org.thp.thehive.migration.dto.{InputAlert, InputAudit, InputCase, InputCaseTemplate}
 import play.api.Logger
 
@@ -25,7 +25,7 @@ class MigrationStats() {
       count = 0
       sum = 0
     }
-    def isEmpty: Boolean          = count == 0
+    def isEmpty: Boolean          = count == 0L
     override def toString: String = if (isEmpty) "0" else (sum / count).toString
   }
 
@@ -122,16 +122,16 @@ trait MigrationOps {
   lazy val logger: Logger            = Logger(getClass)
   val migrationStats: MigrationStats = new MigrationStats
 
-  implicit class IdMappingOps(idMappings: Seq[IdMapping]) {
+  implicit class IdMappingOpsDefs(idMappings: Seq[IdMapping]) {
 
-    def fromInput(id: String): Try[String] =
+    def fromInput(id: String): Try[EntityId] =
       idMappings
         .find(_.inputId == id)
-        .fold[Try[String]](Failure(NotFoundError(s"Id $id not found")))(m => Success(m.outputId))
+        .fold[Try[EntityId]](Failure(NotFoundError(s"Id $id not found")))(m => Success(m.outputId))
   }
 
-  def migrate[A](name: String, source: Source[Try[A], NotUsed], create: A => Try[IdMapping], exists: A => Boolean = (_: A) => true)(
-      implicit mat: Materializer
+  def migrate[A](name: String, source: Source[Try[A], NotUsed], create: A => Try[IdMapping], exists: A => Boolean = (_: A) => true)(implicit
+      mat: Materializer
   ): Future[Seq[IdMapping]] =
     source
       .mapConcat {
@@ -149,7 +149,7 @@ trait MigrationOps {
       name: String,
       parentIds: Seq[IdMapping],
       source: Source[Try[(String, A)], NotUsed],
-      create: (String, A) => Try[IdMapping]
+      create: (EntityId, A) => Try[IdMapping]
   )(implicit mat: Materializer): Future[Seq[IdMapping]] =
     source
       .mapConcat {
@@ -168,8 +168,8 @@ trait MigrationOps {
       }
       .runWith(Sink.seq)
 
-  def migrateAudit(ids: Seq[IdMapping], source: Source[Try[(String, InputAudit)], NotUsed], create: (String, InputAudit) => Try[Unit])(
-      implicit ec: ExecutionContext,
+  def migrateAudit(ids: Seq[IdMapping], source: Source[Try[(String, InputAudit)], NotUsed], create: (EntityId, InputAudit) => Try[Unit])(implicit
+      ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] =
     source
@@ -195,15 +195,16 @@ trait MigrationOps {
       inputCaseTemplate: InputCaseTemplate
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Unit] =
     migrationStats("CaseTemplate")(output.createCaseTemplate(inputCaseTemplate)).fold(
-      _ => Future.successful(()), {
+      _ => Future.successful(()),
+      {
         case caseTemplateId @ IdMapping(inputCaseTemplateId, _) =>
           migrateWithParent("CaseTemplate/Task", Seq(caseTemplateId), input.listCaseTemplateTask(inputCaseTemplateId), output.createCaseTemplateTask)
             .map(_ => ())
       }
     )
 
-  def migrateWholeCaseTemplates(input: Input, output: Output, filter: Filter)(
-      implicit ec: ExecutionContext,
+  def migrateWholeCaseTemplates(input: Input, output: Output, filter: Filter)(implicit
+      ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] =
     input
@@ -225,7 +226,8 @@ trait MigrationOps {
       inputCase: InputCase
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Option[IdMapping]] =
     migrationStats("Case")(output.createCase(inputCase)).fold[Future[Option[IdMapping]]](
-      _ => Future.successful(None), {
+      _ => Future.successful(None),
+      {
         case caseId @ IdMapping(inputCaseId, _) =>
           for {
             caseTaskIds <- migrateWithParent("Case/Task", Seq(caseId), input.listCaseTasks(inputCaseId), output.createCaseTask)
@@ -269,7 +271,8 @@ trait MigrationOps {
       inputAlert: InputAlert
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Unit] =
     migrationStats("Alert")(output.createAlert(inputAlert)).fold(
-      _ => Future.successful(()), {
+      _ => Future.successful(()),
+      {
         case alertId @ IdMapping(inputAlertId, _) =>
           for {
             alertObservableIds <- migrateWithParent(
@@ -296,8 +299,8 @@ trait MigrationOps {
 //      .runWith(Sink.ignore)
 //      .map(_ => ())
 
-  def migrate(input: Input, output: Output, filter: Filter)(
-      implicit ec: ExecutionContext,
+  def migrate(input: Input, output: Output, filter: Filter)(implicit
+      ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] = {
     val pendingAlertCase: mutable.Map[String, mutable.Buffer[InputAlert]] = mutable.HashMap.empty[String, mutable.Buffer[InputAlert]]
@@ -350,7 +353,7 @@ trait MigrationOps {
               .fold(
                 _ => Future.successful(caseIds),
                 caseId =>
-                  migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId))
+                  migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId.map(_.toString)))
                     .map(_ => caseIds)
               )
         }
@@ -361,7 +364,9 @@ trait MigrationOps {
               if (caseId.isEmpty)
                 logger.warn(s"Case ID $caseId not found. Link with alert is ignored")
 
-              alerts.foldLeft(f1)((f2, alert) => f2.flatMap(_ => migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId))))
+              alerts.foldLeft(f1)((f2, alert) =>
+                f2.flatMap(_ => migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId.map(_.toString))))
+              )
           }
         }
     }

@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputCustomField
 import org.thp.thehive.models._
@@ -154,7 +154,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "remove a custom field" in testApp { app =>
-      val l = app[Database].roTransaction(graph => app[CustomFieldSrv].initSteps(graph).toList)
+      val l = app[Database].roTransaction(graph => app[CustomFieldSrv].startTraversal(graph).toSeq)
 
       l must not(beEmpty)
 
@@ -162,17 +162,17 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val request = FakeRequest("DELETE", s"/api/customField/${cf._id}")
         .withHeaders("user" -> "admin@thehive.local")
-      val result = app[CustomFieldCtrl].delete(cf._id)(request)
+      val result = app[CustomFieldCtrl].delete(cf._id.toString)(request)
 
       status(result) shouldEqual 204
 
-      val newList = app[Database].roTransaction(graph => app[CustomFieldSrv].initSteps(graph).toList)
+      val newList = app[Database].roTransaction(graph => app[CustomFieldSrv].startTraversal(graph).toSeq)
 
       newList.find(_._id == cf._id) must beNone
     }
 
     "update a string custom field" in testApp { app =>
-      val l = app[Database].roTransaction(graph => app[CustomFieldSrv].initSteps(graph).toList)
+      val l = app[Database].roTransaction(graph => app[CustomFieldSrv].startTraversal(graph).toSeq)
 
       l must not(beEmpty)
 
@@ -192,7 +192,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
 
               }
             """.stripMargin))
-      val result = app[CustomFieldCtrl].update(cf.get._id)(request)
+      val result = app[CustomFieldCtrl].update(cf.get._id.toString)(request)
 
       status(result) shouldEqual 200
 
@@ -207,7 +207,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a date custom field" in testApp { app =>
-      val l = app[Database].roTransaction(graph => app[CustomFieldSrv].initSteps(graph).toList)
+      val l = app[Database].roTransaction(graph => app[CustomFieldSrv].startTraversal(graph).toSeq)
 
       l must not(beEmpty)
 
@@ -224,7 +224,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder {
 
               }
             """.stripMargin))
-      val result = app[CustomFieldCtrl].update(cf.get._id)(request)
+      val result = app[CustomFieldCtrl].update(cf.get._id.toString)(request)
 
       status(result) shouldEqual 200
 

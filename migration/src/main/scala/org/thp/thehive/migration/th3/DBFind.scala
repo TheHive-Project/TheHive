@@ -92,11 +92,11 @@ class DBFind(pageSize: Int, keepAlive: FiniteDuration, db: DBConfiguration, impl
     logger.debug(
       s"search in ${searchRequest.indexesTypes.indexes.mkString(",")} / ${searchRequest.indexesTypes.types.mkString(",")} ${db.client.show(searchRequest)}"
     )
-    val (src, total) = if (limit > 2 * pageSize) {
-      searchWithScroll(searchRequest, offset, limit)
-    } else {
-      searchWithoutScroll(searchRequest, offset, limit)
-    }
+    val (src, total) =
+      if (limit > 2 * pageSize)
+        searchWithScroll(searchRequest, offset, limit)
+      else
+        searchWithoutScroll(searchRequest, offset, limit)
 
     (src.map(DBUtils.hit2json), total)
   }
@@ -114,13 +114,12 @@ class DBFind(pageSize: Int, keepAlive: FiniteDuration, db: DBConfiguration, impl
     db.execute(searchRequest)
       .recoverWith {
         case t: InternalError => Future.failed(t)
-        case t                => Future.failed(SearchError("Invalid search query"))
+        case _                => Future.failed(SearchError("Invalid search query"))
       }
   }
 }
 
-class SearchWithScroll(db: DBConfiguration, SearchRequest: SearchRequest, keepAliveStr: String, offset: Int, max: Int)(
-    implicit
+class SearchWithScroll(db: DBConfiguration, SearchRequest: SearchRequest, keepAliveStr: String, offset: Int, max: Int)(implicit
     ec: ExecutionContext
 ) extends GraphStage[SourceShape[SearchHit]] {
 
@@ -130,83 +129,82 @@ class SearchWithScroll(db: DBConfiguration, SearchRequest: SearchRequest, keepAl
   val firstResults: Future[SearchResponse]  = db.execute(SearchRequest.scroll(keepAliveStr))
   val totalHits: Future[Long]               = firstResults.map(_.totalHits)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-    var processed: Long                 = 0
-    var skip: Long                      = offset.toLong
-    val queue: mutable.Queue[SearchHit] = mutable.Queue.empty
-    var scrollId: Future[String]        = firstResults.map(_.scrollId.get)
-    var firstResultProcessed            = false
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) {
+      var processed: Long                 = 0
+      var skip: Long                      = offset.toLong
+      val queue: mutable.Queue[SearchHit] = mutable.Queue.empty
+      var scrollId: Future[String]        = firstResults.map(_.scrollId.get)
+      var firstResultProcessed            = false
 
-    setHandler(
-      out,
-      new OutHandler {
+      setHandler(
+        out,
+        new OutHandler {
 
-        def pushNextHit(): Unit = {
-          push(out, queue.dequeue())
-          processed += 1
-          if (processed >= max) {
-            completeStage()
+          def pushNextHit(): Unit = {
+            push(out, queue.dequeue())
+            processed += 1
+            if (processed >= max)
+              completeStage()
           }
-        }
 
-        val firstCallback: AsyncCallback[Try[SearchResponse]] = getAsyncCallback[Try[SearchResponse]] {
-          case Success(searchResponse) if skip > 0 =>
-            if (searchResponse.hits.size <= skip)
-              skip -= searchResponse.hits.size
-            else {
-              queue ++= searchResponse.hits.hits.drop(skip.toInt)
-              skip = 0
-            }
-            firstResultProcessed = true
-            onPull()
-          case Success(searchResponse) =>
-            queue ++= searchResponse.hits.hits
-            firstResultProcessed = true
-            onPull()
-          case Failure(error) =>
-            logger.warn("Search error", error)
-            failStage(error)
-        }
-
-        override def onPull(): Unit =
-          if (firstResultProcessed) {
-            if (processed >= max) completeStage()
-
-            if (queue.isEmpty) {
-              val callback = getAsyncCallback[Try[SearchResponse]] {
-                case Success(searchResponse) if searchResponse.isTimedOut =>
-                  logger.warn("Search timeout")
-                  failStage(SearchError("Request terminated early or timed out"))
-                case Success(searchResponse) if searchResponse.isEmpty =>
-                  completeStage()
-                case Success(searchResponse) if skip > 0 =>
-                  if (searchResponse.hits.size <= skip) {
-                    skip -= searchResponse.hits.size
-                    onPull()
-                  } else {
-                    queue ++= searchResponse.hits.hits.drop(skip.toInt)
-                    skip = 0
-                    pushNextHit()
-                  }
-                case Success(searchResponse) =>
-                  queue ++= searchResponse.hits.hits
-                  pushNextHit()
-                case Failure(error) =>
-                  logger.warn("Search error", error)
-                  failStage(SearchError("Request terminated early or timed out"))
+          val firstCallback: AsyncCallback[Try[SearchResponse]] = getAsyncCallback[Try[SearchResponse]] {
+            case Success(searchResponse) if skip > 0 =>
+              if (searchResponse.hits.size <= skip)
+                skip -= searchResponse.hits.size
+              else {
+                queue ++= searchResponse.hits.hits.drop(skip.toInt)
+                skip = 0
               }
-              val futureSearchResponse = scrollId.flatMap(s => db.execute(searchScroll(s).keepAlive(keepAliveStr)))
-              scrollId = futureSearchResponse.map(_.scrollId.get)
-              futureSearchResponse.onComplete(callback.invoke)
-            } else {
-              pushNextHit()
-            }
-          } else firstResults.onComplete(firstCallback.invoke)
-      }
-    )
-    override def postStop(): Unit =
-      scrollId.foreach { s =>
-        db.execute(clearScroll(s))
-      }
-  }
+              firstResultProcessed = true
+              onPull()
+            case Success(searchResponse) =>
+              queue ++= searchResponse.hits.hits
+              firstResultProcessed = true
+              onPull()
+            case Failure(error) =>
+              logger.warn("Search error", error)
+              failStage(error)
+          }
+
+          override def onPull(): Unit =
+            if (firstResultProcessed) {
+              if (processed >= max) completeStage()
+
+              if (queue.isEmpty) {
+                val callback = getAsyncCallback[Try[SearchResponse]] {
+                  case Success(searchResponse) if searchResponse.isTimedOut =>
+                    logger.warn("Search timeout")
+                    failStage(SearchError("Request terminated early or timed out"))
+                  case Success(searchResponse) if searchResponse.isEmpty =>
+                    completeStage()
+                  case Success(searchResponse) if skip > 0 =>
+                    if (searchResponse.hits.size <= skip) {
+                      skip -= searchResponse.hits.size
+                      onPull()
+                    } else {
+                      queue ++= searchResponse.hits.hits.drop(skip.toInt)
+                      skip = 0
+                      pushNextHit()
+                    }
+                  case Success(searchResponse) =>
+                    queue ++= searchResponse.hits.hits
+                    pushNextHit()
+                  case Failure(error) =>
+                    logger.warn("Search error", error)
+                    failStage(SearchError("Request terminated early or timed out"))
+                }
+                val futureSearchResponse = scrollId.flatMap(s => db.execute(searchScroll(s).keepAlive(keepAliveStr)))
+                scrollId = futureSearchResponse.map(_.scrollId.get)
+                futureSearchResponse.onComplete(callback.invoke)
+              } else
+                pushNextHit()
+            } else firstResults.onComplete(firstCallback.invoke)
+        }
+      )
+      override def postStop(): Unit =
+        scrollId.foreach { s =>
+          db.execute(clearScroll(s))
+        }
+    }
 }

@@ -1,9 +1,9 @@
 package org.thp.thehive.models
 
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity}
 
-@EdgeEntity[Organisation, Page]
+@BuildEdgeEntity[Organisation, Page]
 case class OrganisationPage()
 
-@VertexEntity
+@BuildVertexEntity
 case class Page(title: String, content: String, slug: String, order: Int, category: String)

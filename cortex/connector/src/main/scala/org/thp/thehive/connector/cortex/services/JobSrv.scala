@@ -1,35 +1,39 @@
 package org.thp.thehive.connector.cortex.services
 
 import java.nio.file.Files
-import java.util.Date
+import java.util.{Date, Map => JMap}
 
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
 import akka.stream.scaladsl.FileIO
 import com.google.inject.name.Named
-import gremlin.scala._
 import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.cortex.client.CortexClient
-import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, OutputJob => CortexJob}
+import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, OutputJob => CortexJob, JobStatus => CortexJobStatus}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{Traversal, TraversalLike, VertexSteps}
-import org.thp.scalligraph.{EntitySteps, NotFoundError}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.{EntityId, EntityIdOrName, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
+import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableSteps, ObservableTypeSrv, ReportTagSrv}
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableTypeSrv, ReportTagSrv}
 import play.api.libs.json.Json
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -46,12 +50,10 @@ class JobSrv @Inject() (
     @Named("with-thehive-schema") implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
-) extends VertexSrv[Job, JobSteps] {
+) extends VertexSrv[Job] {
 
   val observableJobSrv    = new EdgeSrv[ObservableJob, Observable, Job]
   val reportObservableSrv = new EdgeSrv[ReportObservable, Job, Observable]
-
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): JobSteps = new JobSteps(raw)
 
   /**
     * Submits an observable for analysis to cortex client and stores
@@ -64,24 +66,27 @@ class JobSrv @Inject() (
     * @param authContext auth context instance
     * @return
     */
-  def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(
-      implicit authContext: AuthContext
+  def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(implicit
+      authContext: AuthContext
   ): Future[RichJob] =
     for {
-      cortexClient <- serviceHelper
-        .availableCortexClients(connector.clients, authContext.organisation)
-        .find(_.name == cortexId)
-        .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
-      analyzer <- cortexClient.getAnalyzer(workerId).recoverWith { case _ => cortexClient.getAnalyzerByName(workerId) } // if get analyzer using cortex2 API fails, try using legacy API
+      cortexClient <-
+        serviceHelper
+          .availableCortexClients(connector.clients, authContext.organisation)
+          .find(_.name == cortexId)
+          .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
+      analyzer <- cortexClient.getAnalyzer(workerId).recoverWith {
+        case _ => cortexClient.getAnalyzerByName(workerId)
+      } // if get analyzer using cortex2 API fails, try using legacy API
       cortexArtifact <- (observable.attachment, observable.data) match {
         case (None, Some(data)) =>
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, Some(data.data), None)
+            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`.number.toString, Some(data.data), None)
           )
         case (Some(a), None) =>
           val attachment = CortexAttachment(a.name, a.size, a.contentType, attachmentSrv.source(a))
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`._id, None, Some(attachment))
+            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`.number.toString, None, Some(attachment))
           )
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
@@ -134,14 +139,15 @@ class JobSrv @Inject() (
     * @param authContext  the auth context for db queries
     * @return the updated job
     */
-  def finished(cortexId: String, jobId: String, cortexJob: CortexJob)(
-      implicit authContext: AuthContext
+  def finished(cortexId: String, jobId: EntityId, cortexJob: CortexJob)(implicit
+      authContext: AuthContext
   ): Future[Job with Entity] =
     for {
-      cortexClient <- serviceHelper
-        .availableCortexClients(connector.clients, authContext.organisation)
-        .find(_.name == cortexId)
-        .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
+      cortexClient <-
+        serviceHelper
+          .availableCortexClients(connector.clients, authContext.organisation)
+          .find(_.name == cortexId)
+          .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       job <- Future.fromTry(updateJobStatus(jobId, cortexJob))
       _   <- importCortexArtifacts(job, cortexJob, cortexClient)
       _   <- Future.fromTry(importAnalyzerTags(job, cortexJob))
@@ -155,32 +161,34 @@ class JobSrv @Inject() (
     * @param authContext the authentication context
     * @return the updated job
     */
-  private def updateJobStatus(jobId: String, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Job with Entity] =
+  private def updateJobStatus(jobId: EntityId, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Job with Entity] =
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
         val report  = cortexJob.report.flatMap(r => r.full orElse r.errorMessage.map(m => Json.obj("errorMessage" -> m)))
         val status  = cortexJob.status.toJobStatus
         val endDate = new Date()
         for {
-          job <- get(job).updateOne(
-            "report"  -> report,
-            "status"  -> status,
-            "endDate" -> endDate
-          )
-          observable <- get(job).observable.getOrFail()
+          job <- get(job)
+            .update(_.report, report)
+            .update(_.status, status)
+            .update(_.endDate, endDate)
+            .getOrFail("Job")
+          observable <- get(job).observable.getOrFail("Observable")
           _          <- auditSrv.job.update(job, observable, Json.obj("status" -> status, "endDate" -> endDate))
         } yield job
       }
     }
 
   private def importAnalyzerTags(job: Job with Entity, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Unit] =
-    db.tryTransaction { implicit graph =>
-      val tags = cortexJob.report.fold[Seq[ReportTag]](Nil)(_.summary.map(_.toAnalyzerTag(job.workerName)))
-      for {
-        observable <- get(job).observable.getOrFail()
-        _          <- reportTagSrv.updateTags(observable, job.workerName, tags)
-      } yield ()
-    }
+    if (cortexJob.status == CortexJobStatus.Success)
+      db.tryTransaction { implicit graph =>
+        val tags = cortexJob.report.fold[Seq[ReportTag]](Nil)(_.summary.map(_.toAnalyzerTag(job.workerName)))
+        for {
+          observable <- get(job).observable.getOrFail("Observable")
+          _          <- reportTagSrv.updateTags(observable, job.workerName, tags)
+        } yield ()
+      }
+    else Success(())
 
   /**
     * Create observable for each artifact of the job report
@@ -191,8 +199,8 @@ class JobSrv @Inject() (
     * @param authContext the authentication context
     * @return
     */
-  private def importCortexArtifacts(job: Job with Entity, cortexJob: CortexJob, cortexClient: CortexClient)(
-      implicit authContext: AuthContext
+  private def importCortexArtifacts(job: Job with Entity, cortexJob: CortexJob, cortexClient: CortexClient)(implicit
+      authContext: AuthContext
   ): Future[Done] = {
     val artifacts = cortexJob
       .report
@@ -200,7 +208,7 @@ class JobSrv @Inject() (
       .flatMap(_.artifacts)
     Future
       .traverse(artifacts) { artifact =>
-        db.tryTransaction(graph => observableTypeSrv.getOrFail(artifact.dataType)(graph)) match {
+        db.tryTransaction(graph => observableTypeSrv.getOrFail(EntityIdOrName(artifact.dataType))(graph)) match {
           case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, attachmentType, cortexClient)
           case Success(dataType) =>
             Future
@@ -238,8 +246,8 @@ class JobSrv @Inject() (
       artifact: OutputArtifact,
       attachmentType: ObservableType with Entity,
       cortexClient: CortexClient
-  )(
-      implicit authContext: AuthContext
+  )(implicit
+      authContext: AuthContext
   ): Future[Attachment with Entity] =
     artifact
       .attachment
@@ -265,101 +273,95 @@ class JobSrv @Inject() (
 
 }
 
-@EntitySteps[Job]
-class JobSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-schema") db: Database, graph: Graph) extends VertexSteps[Job](raw) {
+object JobOps {
 
-  /**
-    * Checks if a Job is visible from a certain UserRole end
-    *
-    * @param authContext the auth context to check login against
-    * @return
-    */
-  def visible(implicit authContext: AuthContext): JobSteps =
-    this.filter(
-      _.inTo[ObservableJob]
-        .inTo[ShareObservable]
-        .inTo[OrganisationShare]
-        .has("name", authContext.organisation)
-    )
+  implicit class JobOpsDefs(traversal: Traversal.V[Job]) {
 
-  /**
-    * Checks if a job is accessible if the user and
-    * the share profile contain the permission
-    * @param permission the permission to check
-    * @param authContext the user context
-    * @return
-    */
-  def can(permission: Permission)(implicit authContext: AuthContext): JobSteps =
-    if (authContext.permissions.contains(permission))
-      this.filter(
-        _.inTo[ObservableJob]
-          .inTo[ShareObservable]
-          .filter(_.outTo[ShareProfile].has("permissions", permission))
-          .inTo[OrganisationShare]
-          .has("name", authContext.organisation)
-      )
-    else this.limit(0)
+    /**
+      * Checks if a Job is visible from a certain UserRole end
+      *
+      * @param authContext the auth context to check login against
+      * @return
+      */
+    def visible(implicit authContext: AuthContext): Traversal.V[Job] =
+      traversal.filter(_.observable.organisations.visible)
 
-  override def newInstance(newRaw: GremlinScala[Vertex]): JobSteps = new JobSteps(newRaw)
-  override def newInstance(): JobSteps                             = new JobSteps(raw.clone())
+    /**
+      * Checks if a job is accessible if the user and
+      * the share profile contain the permission
+      *
+      * @param permission  the permission to check
+      * @param authContext the user context
+      * @return
+      */
+    def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Job] =
+      if (authContext.permissions.contains(permission))
+        traversal.filter(_.observable.can(permission))
+      else traversal.limit(0)
 
-  def observable: ObservableSteps = new ObservableSteps(raw.inTo[ObservableJob])
+    def observable: Traversal.V[Observable] = traversal.in[ObservableJob].v[Observable]
 
-  /**
-    * Returns the potential observables that were attached to a job report
-    * after analyze has completed
-    *
-    * @return
-    */
-  def reportObservables: ObservableSteps = new ObservableSteps(raw.outTo[ReportObservable])
+    /**
+      * Returns the potential observables that were attached to a job report
+      * after analyze has completed
+      *
+      * @return
+      */
+    def reportObservables: Traversal.V[Observable] = traversal.out[ReportObservable].v[Observable]
 
-  def richJob(implicit authContext: AuthContext): Traversal[RichJob, RichJob] = {
-    val thisJob = StepLabel()
-    this
-      .as(thisJob)
-      .project(
-        _.by
-          .by(
-            _.reportObservables
-              .project(
-                _.by(_.richObservable)
-                  .by(_.similar.filter(_.`case`.observables.outTo[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
-              )
-              .fold
-          )
-      )
-      .map {
-        case (job, observablesWithLink) =>
-          val observables = observablesWithLink.asScala.map {
-            case (obs, l) => obs -> Json.obj("observableId" -> l.asScala.headOption.map(_.toString))
-          }
-          RichJob(job.as[Job], observables)
-      }
+    def richJob(implicit authContext: AuthContext): Traversal[RichJob, JMap[String, Any], Converter[RichJob, JMap[String, Any]]] = {
+      val thisJob = StepLabel.v[Job]
+      traversal
+        .as(thisJob)
+        .project(
+          _.by
+            .by(
+              _.reportObservables
+                .project(
+                  _.by(_.richObservable)
+                    .by(_.similar.filter(_.`case`.observables.out[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
+                )
+                .fold
+            )
+        )
+        .domainMap {
+          case (job, observablesWithLink) =>
+            val observables = observablesWithLink.map {
+              case (obs, l) => obs -> Json.obj("observableId" -> l.headOption)
+            }
+            RichJob(job, observables)
+        }
+    }
+
+    def richJobWithCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Job] => Traversal[D, G, C]
+    )(implicit authContext: AuthContext): Traversal[(RichJob, D), JMap[String, Any], Converter[(RichJob, D), JMap[String, Any]]] = {
+      val thisJob = StepLabel.v[Job]
+      traversal
+        .as(thisJob)
+        .project(
+          _.by
+            .by(
+              _.reportObservables
+                .project(
+                  _.by(_.richObservable)
+                    .by(_.similar.filter(_.`case`.observables.out[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
+                )
+                .fold
+            )
+            .by(entityRenderer)
+        )
+        .domainMap {
+          case (job, observablesWithLink, renderedEntity) =>
+            val observables = observablesWithLink.map {
+              case (obs, l) => obs -> Json.obj("observableId" -> l)
+            }
+            RichJob(job, observables) -> renderedEntity
+        }
+    }
   }
-  def richJobWithCustomRenderer[A](
-      entityRenderer: JobSteps => TraversalLike[_, A]
-  )(implicit authContext: AuthContext): Traversal[(RichJob, A), (RichJob, A)] = {
-    val thisJob = StepLabel()
-    this
-      .as(thisJob)
-      .project(
-        _.by
-          .by(
-            _.reportObservables
-              .project(
-                _.by(_.richObservable)
-                  .by(_.similar.filter(_.`case`.observables.outTo[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
-              )
-              .fold
-          )
-          .by(entityRenderer)
-      )
-      .map {
-        case (job, observablesWithLink, renderedEntity) =>
-          val observables = observablesWithLink.asScala.map {
-            case (obs, l) => obs -> Json.obj("observableId" -> l.asScala.headOption.map(_.toString))
-          }
-          RichJob(job.as[Job], observables) -> renderedEntity
-      }
+  implicit class CortexObservableOpsDefs(traversal: Traversal.V[Observable]) {
+    def jobs: Traversal.V[Job] = traversal.out[ObservableJob].v[Job]
   }
+
 }

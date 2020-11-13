@@ -1,4 +1,18 @@
 <div class="similar-case-list">
+
+    <div ng-include="'views/components/alert/similarity/toolbar.html'"></div>
+
+    <div class="mt-xs filter-panel" ng-include="'views/components/alert/similarity/filters.html'" ng-show="$cmp.filtering.context.showFilters"></div>
+
+    <div class="row mt-xs">
+        <div class="col-md-12 clearfix">
+
+            <filters-preview filters="$cmp.filtering.context.filters"
+                on-clear-item="$cmp.removeFilter(field)"
+                on-clear-all="$cmp.clearFilters()"></filters-preview>
+        </div>
+    </div>
+
     <div class="row">
 
         <div class="col-md-12" ng-show="$cmp.list.total === 0">
@@ -6,37 +20,101 @@
         </div>
 
         <div class="col-md-12" ng-show="$cmp.list.total > 0">
-            <div class="btn-toolbar" role="toolbar">
-                <div class="btn-group pull-right" role="group">
-                    <page-sizer collection="$cmp.list" sizes="[10, 15, 30, 100]"></page-sizer>
-                </div>
+            <!-- Client side pagination -->
+            <div class="text-center" ng-show="$cmp.filteredCases.length > $cmp.pagination.pageSize">
+                <ul uib-pagination class="pagination-sm" boundary-links="true"  max-size="5" rotate="false"
+                    total-items="$cmp.filteredCases.length"
+                    items-per-page="$cmp.pagination.pageSize"
+                    ng-model="$cmp.pagination.currentPage"></ul>
             </div>
 
-            <psearch control="$cmp.list"></psearch>
-
+            <!-- Table header -->
             <div class="case-item">
-                <div class="case-details text-bold">Title</div>
-                <div class="case-date text-bold">Date</div>
-                <div class="case-similarity text-bold">Observables</div>
-                <div class="case-similarity text-bold">IOCs</div>
+                <div class="case-details text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('fTitle')">
+                        Title
+                        <i ng-show="$cmp.sortField !== '+fTitle' && $cmp.sortField !== '-fTitle'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+fTitle'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-fTitle'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
+                <div class="case-date text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('sCreatedAt')">
+                        Created At
+                        <i ng-show="$cmp.sortField !== '+sCreatedAt' && $cmp.sortField !== '-sCreatedAt'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+sCreatedAt'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-sCreatedAt'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
+                <div class="case-similarity text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('fObservables')">
+                        Observables
+                        <i ng-show="$cmp.sortField !== '+fObservables' && $cmp.sortField !== '-fObservables'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+fObservables'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-fObservables'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
+                <div class="case-similarity text-bold">
+                    <a href class="text-default" ng-click="$cmp.sortByField('fIocs')">
+                        IOCs
+                        <i ng-show="$cmp.sortField !== '+fIocs' && $cmp.sortField !== '-fIocs'" class="fa fa-sort"></i>
+                        <i ng-show="$cmp.sortField === '+fIocs'" class="fa fa-caret-up"></i>
+                        <i ng-show="$cmp.sortField === '-fIocs'" class="fa fa-caret-down"></i>
+                    </a>
+                </div>
+                <div class="case-similarity-match text-bold">Matches</div>
                 <div class="case-similarity-merge text-bold">Action</div>
             </div>
 
+            <!-- Table filter -->
+            <div class="case-item filter-panel">
+                <div class="case-details text-bold">
+                    <div class="form-group has-feedback has-clear">
+                        <input type="text" class="form-control input-sm" ng-model="$cmp.similarityFilters.fTitle" placeholder="Filter by title">
+                        <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.similarityFilters.fTitle = undefined" style="pointer-events: auto;cursor: pointer;"></a>
+                    </div>
+                </div>
+                <div class="case-date text-bold"></div>
+                <div class="case-similarity text-bold">
+                    <div class="form-group has-feedback has-clear">
+                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fObservables" placeholder="% min.">
+                        <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.rateFilters.fObservables = undefined" style="pointer-events: auto;cursor: pointer;"></a>
+                    </div>
+                </div>
+                <div class="case-similarity text-bold">
+                    <div class="form-group has-feedback has-clear">
+                        <input type="number" class="form-control input-sm" ng-model="$cmp.rateFilters.fIocs" placeholder="% min." step="1" min="0">
+                        <a class="fa fa-times-circle form-control-feedback form-control-clear text-muted" ng-click="$cmp.rateFilters.fIocs = undefined" style="pointer-events: auto;cursor: pointer;"></a>
+                    </div>
+                </div>
+                <div class="case-similarity-match text-bold">
+                    <div>
+                        <multiselect ng-model="$cmp.matchFilters.fMatches" options="$cmp.matches" show-select-all="true" show-unselect-all="true"
+                            classes-btn="'btn-default btn-block btn-sm'"></multiselect>
+                    </div>
+                </div>
+                <div class="case-similarity-merge text-bold">
+                    <div class="text-center">
+                        <a class="btn btn-link btn-clear btn-sm" ng-click="$cmp.clearLocalFilters()"><i class="fa fa-times"></i> Clear Filters</a>
+                    </div>
+                </div>
+            </div>
 
-            <div class="case-collection" ng-repeat="item in filteredLinks = ($cmp.list.values | filter:$cmp.similarityFilters)">
+            <!-- Table data -->
+            <div class="case-collection" ng-repeat="item in ($cmp.filteredCases = ($cmp.list.allValues | filter:$cmp.similarityFilters | filter:$cmp.matchFilter() | filter:$cmp.greaterThan('fObservables') | filter:$cmp.greaterThan('fIocs')) | orderBy:$cmp.sortField | limitTo:$cmp.pagination.pageSize:($cmp.pagination.currentPage-1)*$cmp.pagination.pageSize)">
                 <div class="case-item" >
-                    <!-- case severity -->
-                    <div class="case-tlp bg-tlp-{{item.case.tlp}}"></div>
+                    <!-- case tlp -->
+                    <div class="case-tlp bg-tlp-{{item.case.tlp}} clickable" ng-click="$cmp.addFilterValue('tlp', item.case.tlp)"></div>
 
                     <!-- case title and main details -->
                     <div class="case-details">
                         <div class="case-title">
-                            <a ui-sref="app.case.details({caseId: item.case._id})" target="_blank">#{{item.case.caseId}} - {{item.case.title}}</a>
+                            <a ui-sref="app.case.details({caseId: item.case._id})" target="_blank">#{{item.case.number}} - {{item.case.title}}</a>
                         </div>
                         <div class="case-tags flexwrap mt-xxs">
                             <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
                             <strong class="text-muted mr-xxxs" ng-if="!item.case.tags || item.case.tags.length === 0">None</strong>
-                            <span ng-repeat="tag in item.case.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                            <span ng-repeat="tag in item.case.tags track by $index" ng-click="$cmp.addFilterValue('tags', tag)" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
                         </div>
                         <div class="text-success" ng-show="item.case.status !== 'Open'">
                             <small>
@@ -52,33 +130,40 @@
                     </div>
 
                     <div class="case-severity">
-                        <div class="clickable">
+                        <div class="clickable" ng-click="$cmp.addFilterValue('severity', item.case.severity)">
                             <severity active="false" value="item.case.severity"></severity>
                         </div>
                     </div>
 
                     <div class="case-date">
-                        <span uib-tooltip="{{item.case.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case.startDate | shortDate}}</span>
+                        <a href ng-click="$cmp.addFilterValue('_createdAt', item.case._createdAt)">
+                            <span uib-tooltip="{{item.case._createdAt | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
+                        </a>
                     </div>
 
                     <div class="case-similarity">
                         <div>
-                            <strong>{{(item.similarObservableCount / item.observableCount) | percentage:0}}</strong> ({{item.similarObservableCount}} / {{item.observableCount}})
+                            <a href ng-click="$cmp.rateFilters.fObservables = item.fObservables"><strong>{{item.fObservables | number:0}} %</strong></a> ({{item.similarObservableCount}} / {{item.observableCount}})
                             <uib-progressbar class="progress progress-sm" max="item.observableCount" value="item.similarObservableCount" type="primary"></uib-progressbar>
                         </div>
                     </div>
                     <div class="case-similarity">
                         <div ng-if="item.iocCount > 0">
-                            <strong>{{(item.similarIocCount / item.iocCount) | percentage:0}}</strong> ({{item.similarIocCount}} / {{item.iocCount}})
+                            <a href ng-click="$cmp.rateFilters.fIocs = item.fIocs"><strong>{{item.fIocs | number:0}} %</strong></a> ({{item.similarIocCount}} / {{item.iocCount}})
                             <uib-progressbar class="progress progress-sm" max="item.iocCount" value="item.similarIocCount" type="danger"></uib-progressbar>
                         </div>
                         <div ng-if="item.iocCount === 0">
                             <em>N/A</em>
                         </div>
                     </div>
+                    <div class="case-similarity-match">
+                        <div>
+                            <div ng-repeat="(match, count) in item.observableTypes track by $index">{{match}} ({{count}})</div>
+                        </div>
+                    </div>
 
                     <div class="case-similarity-merge text-center">
-                        <button class="btn btn-sm btn-primary" ng-click="$cmp.mergeIntoCase(item.case._id)">Merge in this case</button>
+                        <button class="btn btn-sm btn-primary" ng-click="$cmp.merge(item.case._id)" ng-if="!($cmp.state.disallowMerge && item.case.status === 'Resolved')">Merge in this case</button>
                     </div>
                 </div>
             </div>

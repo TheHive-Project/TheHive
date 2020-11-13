@@ -1,7 +1,8 @@
 package org.thp.thehive.controllers.v0
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import org.thp.thehive.services.OrganisationSrv
@@ -121,7 +122,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[OrganisationCtrl].update("cert")(request)
       status(result) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
       app[Database].roTransaction { implicit graph =>
-        app[OrganisationSrv].get("cert2").exists() must beTrue
+        app[OrganisationSrv].get(EntityName("cert2")).exists must beTrue
       }
     }
 

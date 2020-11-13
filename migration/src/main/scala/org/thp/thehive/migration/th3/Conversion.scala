@@ -8,6 +8,7 @@ import akka.util.ByteString
 import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.connector.cortex.models.{Action, Job, JobStatus}
 import org.thp.thehive.controllers.v0
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import play.api.libs.functional.syntax._
@@ -96,17 +97,18 @@ trait Conversion {
       sighted  <- (json \ "sighted").validate[Boolean]
       dataType <- (json \ "dataType").validate[String]
       tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
-      dataOrAttachment <- (json \ "data")
-        .validate[String]
-        .map(Left.apply)
-        .orElse(
-          (json \ "attachment")
-            .validate[Attachment]
-            .map(a => Right(InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id))))
-        )
+      dataOrAttachment <-
+        (json \ "data")
+          .validate[String]
+          .map(Left.apply)
+          .orElse(
+            (json \ "attachment")
+              .validate[Attachment]
+              .map(a => Right(InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id))))
+          )
     } yield InputObservable(
       metaData,
-      Observable(message, tlp, ioc, sighted),
+      Observable(message, tlp, ioc, sighted, None),
       Seq(mainOrganisation),
       dataType,
       tags,
@@ -151,9 +153,10 @@ trait Conversion {
       message  <- (json \ "message").validate[String]
       date     <- (json \ "startDate").validate[Date]
       deleted = (json \ "status").asOpt[String].contains("Deleted")
-      attachment = (json \ "attachment")
-        .asOpt[Attachment]
-        .map(a => InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id)))
+      attachment =
+        (json \ "attachment")
+          .asOpt[Attachment]
+          .map(a => InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id)))
     } yield InputLog(metaData, Log(message, date, deleted), attachment.toSeq)
   }
 
@@ -207,31 +210,33 @@ trait Conversion {
     )
   }
 
-  def alertObservableReads(metaData: MetaData): Reads[InputObservable] = Reads[InputObservable] { json =>
-    for {
-      dataType <- (json \ "dataType").validate[String]
-      message  <- (json \ "message").validateOpt[String]
-      tlp      <- (json \ "tlp").validateOpt[Int]
-      tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
-      ioc <- (json \ "ioc").validateOpt[Boolean]
-      dataOrAttachment <- (json \ "data")
-        .validate[String]
-        .map(Left.apply)
-        .orElse(
-          (json \ "attachment")
-            .validate[Attachment]
-            .map(a => Right(InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id))))
-        )
-    } yield InputObservable(
-      metaData,
-      Observable(message, tlp.getOrElse(2), ioc.getOrElse(false), sighted = false),
-      Nil,
-      dataType,
-      tags,
-      dataOrAttachment
-    )
+  def alertObservableReads(metaData: MetaData): Reads[InputObservable] =
+    Reads[InputObservable] { json =>
+      for {
+        dataType <- (json \ "dataType").validate[String]
+        message  <- (json \ "message").validateOpt[String]
+        tlp      <- (json \ "tlp").validateOpt[Int]
+        tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+        ioc <- (json \ "ioc").validateOpt[Boolean]
+        dataOrAttachment <-
+          (json \ "data")
+            .validate[String]
+            .map(Left.apply)
+            .orElse(
+              (json \ "attachment")
+                .validate[Attachment]
+                .map(a => Right(InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id))))
+            )
+      } yield InputObservable(
+        metaData,
+        Observable(message, tlp.getOrElse(2), ioc.getOrElse(false), sighted = false, ignoreSimilarity = None),
+        Nil,
+        dataType,
+        tags,
+        dataOrAttachment
+      )
 
-  }
+    }
 
   def normaliseLogin(login: String): String = {
     def validSegment(value: String) = {
@@ -257,17 +262,18 @@ trait Conversion {
       locked = status == "Locked"
       password <- (json \ "password").validateOpt[String]
       role     <- (json \ "roles").validateOpt[Seq[String]].map(_.getOrElse(Nil))
-      organisationProfiles = if (role.contains("admin"))
-        Map(Organisation.administration.name -> Profile.admin.name, mainOrganisation -> Profile.orgAdmin.name)
-      else if (role.contains("write")) Map(mainOrganisation -> Profile.analyst.name)
-      else if (role.contains("read")) Map(mainOrganisation -> Profile.readonly.name)
-      else Map(mainOrganisation                            -> Profile.readonly.name)
-      avatar = (json \ "avatar")
-        .asOpt[String]
-        .map { base64 =>
-          val data = Base64.getDecoder.decode(base64)
-          InputAttachment(s"$login.avatar", data.size.toLong, "image/png", Nil, Source.single(ByteString(data)))
-        }
+      organisationProfiles =
+        if (role.contains("admin")) Map(mainOrganisation -> Profile.orgAdmin.name)
+        else if (role.contains("write")) Map(mainOrganisation -> Profile.analyst.name)
+        else if (role.contains("read")) Map(mainOrganisation -> Profile.readonly.name)
+        else Map(mainOrganisation                            -> Profile.readonly.name)
+      avatar =
+        (json \ "avatar")
+          .asOpt[String]
+          .map { base64 =>
+            val data = Base64.getDecoder.decode(base64)
+            InputAttachment(s"$login.avatar", data.size.toLong, "image/png", Nil, Source.single(ByteString(data)))
+          }
     } yield InputUser(metaData, User(normaliseLogin(login), name, apikey, locked, password, None), organisationProfiles, avatar)
   }
 
@@ -332,12 +338,12 @@ trait Conversion {
       tags    = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
       metrics = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       metricsValue = metrics.value.map {
-        case (name, value) => (name, Some(value), None)
+        case (name, value) => InputCustomFieldValue(name, Some(value), None)
       }
       customFields <- (json \ "customFields").validateOpt[JsObject]
       customFieldsValue = customFields.getOrElse(JsObject.empty).value.map {
         case (name, value) =>
-          (
+          InputCustomFieldValue(
             name,
             Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull),
             (value \ "order").asOpt[Int]
@@ -362,35 +368,36 @@ trait Conversion {
     )
   }
 
-  def caseTemplateTaskReads(metaData: MetaData): Reads[InputTask] = Reads[InputTask] { json =>
-    for {
-      title       <- (json \ "title").validate[String]
-      group       <- (json \ "group").validateOpt[String]
-      description <- (json \ "description").validateOpt[String]
-      status      <- (json \ "status").validateOpt[TaskStatus.Value]
-      flag        <- (json \ "flag").validateOpt[Boolean]
-      startDate   <- (json \ "startDate").validateOpt[Date]
-      endDate     <- (json \ "endDate").validateOpt[Date]
-      order       <- (json \ "order").validateOpt[Int]
-      dueDate     <- (json \ "dueDate").validateOpt[Date]
-      owner       <- (json \ "owner").validateOpt[String]
-    } yield InputTask(
-      metaData,
-      Task(
-        title,
-        group.getOrElse("default"),
-        description,
-        status.getOrElse(TaskStatus.Waiting),
-        flag.getOrElse(false),
-        startDate,
-        endDate,
-        order.getOrElse(1),
-        dueDate
-      ),
-      owner.map(normaliseLogin),
-      Seq(mainOrganisation)
-    )
-  }
+  def caseTemplateTaskReads(metaData: MetaData): Reads[InputTask] =
+    Reads[InputTask] { json =>
+      for {
+        title       <- (json \ "title").validate[String]
+        group       <- (json \ "group").validateOpt[String]
+        description <- (json \ "description").validateOpt[String]
+        status      <- (json \ "status").validateOpt[TaskStatus.Value]
+        flag        <- (json \ "flag").validateOpt[Boolean]
+        startDate   <- (json \ "startDate").validateOpt[Date]
+        endDate     <- (json \ "endDate").validateOpt[Date]
+        order       <- (json \ "order").validateOpt[Int]
+        dueDate     <- (json \ "dueDate").validateOpt[Date]
+        owner       <- (json \ "owner").validateOpt[String]
+      } yield InputTask(
+        metaData,
+        Task(
+          title,
+          group.getOrElse("default"),
+          description,
+          status.getOrElse(TaskStatus.Waiting),
+          flag.getOrElse(false),
+          startDate,
+          endDate,
+          order.getOrElse(1),
+          dueDate
+        ),
+        owner.map(normaliseLogin),
+        Seq(mainOrganisation)
+      )
+    }
 
   lazy val jobReads: Reads[InputJob] = Reads[InputJob] { json =>
     for {
@@ -423,30 +430,31 @@ trait Conversion {
     )
   }
 
-  def jobObservableReads(metaData: MetaData): Reads[InputObservable] = Reads[InputObservable] { json =>
-    for {
-      message  <- (json \ "message").validateOpt[String] orElse (json \ "attributes" \ "message").validateOpt[String]
-      tlp      <- (json \ "tlp").validate[Int] orElse (json \ "attributes" \ "tlp").validate[Int] orElse JsSuccess(2)
-      ioc      <- (json \ "ioc").validate[Boolean] orElse (json \ "attributes" \ "ioc").validate[Boolean] orElse JsSuccess(false)
-      sighted  <- (json \ "sighted").validate[Boolean] orElse (json \ "attributes" \ "sighted").validate[Boolean] orElse JsSuccess(false)
-      dataType <- (json \ "dataType").validate[String] orElse (json \ "type").validate[String] orElse (json \ "attributes").validate[String]
-      tags     <- (json \ "tags").validate[Set[String]] orElse (json \ "attributes" \ "tags").validate[Set[String]] orElse JsSuccess(Set.empty[String])
-      dataOrAttachment <- ((json \ "data").validate[String] orElse (json \ "value").validate[String])
-        .map(Left.apply)
-        .orElse(
-          (json \ "attachment")
-            .validate[Attachment]
-            .map(a => Right(InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id))))
-        )
-    } yield InputObservable(
-      metaData,
-      Observable(message, tlp, ioc, sighted),
-      Seq(mainOrganisation),
-      dataType,
-      tags,
-      dataOrAttachment
-    )
-  }
+  def jobObservableReads(metaData: MetaData): Reads[InputObservable] =
+    Reads[InputObservable] { json =>
+      for {
+        message  <- (json \ "message").validateOpt[String] orElse (json \ "attributes" \ "message").validateOpt[String]
+        tlp      <- (json \ "tlp").validate[Int] orElse (json \ "attributes" \ "tlp").validate[Int] orElse JsSuccess(2)
+        ioc      <- (json \ "ioc").validate[Boolean] orElse (json \ "attributes" \ "ioc").validate[Boolean] orElse JsSuccess(false)
+        sighted  <- (json \ "sighted").validate[Boolean] orElse (json \ "attributes" \ "sighted").validate[Boolean] orElse JsSuccess(false)
+        dataType <- (json \ "dataType").validate[String] orElse (json \ "type").validate[String] orElse (json \ "attributes").validate[String]
+        tags     <- (json \ "tags").validate[Set[String]] orElse (json \ "attributes" \ "tags").validate[Set[String]] orElse JsSuccess(Set.empty[String])
+        dataOrAttachment <- ((json \ "data").validate[String] orElse (json \ "value").validate[String])
+          .map(Left.apply)
+          .orElse(
+            (json \ "attachment")
+              .validate[Attachment]
+              .map(a => Right(InputAttachment(a.name, a.size, a.contentType, a.hashes.map(_.toString), readAttachment(a.id))))
+          )
+      } yield InputObservable(
+        metaData,
+        Observable(message, tlp, ioc, sighted, ignoreSimilarity = None),
+        Seq(mainOrganisation),
+        dataType,
+        tags,
+        dataOrAttachment
+      )
+    }
 
   implicit val actionReads: Reads[(String, InputAction)] = Reads[(String, InputAction)] { json =>
     for {

@@ -17,14 +17,15 @@ case class InputObservable(
     tlp: Option[Int] = None,
     tags: Set[String] = Set.empty,
     ioc: Option[Boolean] = None,
-    sighted: Option[Boolean] = None
+    sighted: Option[Boolean] = None,
+    ignoreSimilarity: Option[Boolean] = None
 )
 
 object InputObservable {
   implicit val writes: Writes[InputObservable] = Json.writes[InputObservable]
 
   val fp: FieldsParser[Seq[String]] = FieldsParser[Seq[String]]("data") {
-    case (_, FString(s)) => Good(s.split("\\R+").toSeq)
+    case (_, FString(s)) => Good(Seq(s))
     case (_, FAny(s))    => Good(s)
     case (_, FSeq(a))    => a.validatedBy(FieldsParser.string(_))
     case (_, FUndefined) => Good(Nil)
@@ -48,7 +49,8 @@ case class OutputObservable(
     sighted: Boolean,
     reports: JsObject,
     message: Option[String],
-    extraData: JsObject
+    extraData: JsObject,
+    ignoreSimilarity: Option[Boolean]
 )
 
 object OutputObservable {

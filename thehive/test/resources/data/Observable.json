@@ -26,5 +26,12 @@
     "tlp": 1,
     "ioc": false,
     "sighted": true
+  },
+  {
+    "id": "alert-h.fr",
+    "message": "observable from alert",
+    "tlp": 1,
+    "ioc": true,
+    "sighted": true
   }
 ]

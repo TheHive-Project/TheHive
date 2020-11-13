@@ -2,6 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.util.Date
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.thehive.TestAppBuilder
@@ -35,7 +36,7 @@ class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
         app[CaseSrv].create(
           Case(0, s"case audit", s"desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None),
           None,
-          app[OrganisationSrv].getOrFail("cert").get,
+          app[OrganisationSrv].getOrFail(EntityName("cert")).get,
           Set.empty,
           Seq.empty,
           None,

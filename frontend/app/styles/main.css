@@ -380,6 +380,10 @@ ul.observable-reports-summary li {
     background: #f5f5f5;
 }
 
+.text-disabled {
+    color: #dfdfdf;
+}
+
 .text-yellow {
     color: rgb(231, 147, 0);
 }
@@ -718,4 +722,42 @@ table tr td.task-actions span.action-button {
 .label-critical {
     background-color: #8a0000 !important;
     /*background: rgba(0,0,0,0.2) !important;*/
+}
+
+.observable-flags.inline div {
+    display: inline;
+}
+
+@media (max-width: 991px) {
+    .main-header .navbar-right a {
+        color: #777;
+    }
+}
+
+.icon-bar {
+    background-color: #FFF;
+}
+
+
+table.tbody-stripped > tbody:nth-child(2n+1) > tr > td,
+table.tbody-stripped > tbody:nth-child(2n+1) > tr > th {
+   background-color: #f9f9f9;
+}
+
+table.tbody-stripped > tbody > tr:first-child > td {
+    /* padding-bottom:0; */
+}
+
+/* table.tbody-stripped > tbody > tr:nth-child(2n) > td { */
+table.tbody-stripped > tbody > tr:not(:first-child) > td {
+    padding-top:0;
+    border-top: none;
+}
+
+table.tbody-stripped>tbody+tbody {
+    border: none;
+}
+
+table.tbody-stripped > tbody > tr > td {
+
 }

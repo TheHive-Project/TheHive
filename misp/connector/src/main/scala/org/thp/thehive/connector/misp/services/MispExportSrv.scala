@@ -2,14 +2,17 @@ package org.thp.thehive.connector.misp.services
 
 import java.util.Date
 
-import gremlin.scala.Graph
 import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.misp.dto.{Attribute, Tag => MispTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
 import play.api.Logger
 
@@ -28,9 +31,28 @@ class MispExportSrv @Inject() (
 
   lazy val logger: Logger = Logger(getClass)
 
-  def observableToAttribute(observable: RichObservable): Option[Attribute] =
-    connector
-      .attributeConverter(observable.`type`)
+  def observableToAttribute(observable: RichObservable, exportTags: Boolean): Option[Attribute] = {
+    lazy val mispTags =
+      if (exportTags)
+        observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(observable.tlp)
+      else
+        tlpTags.get(observable.tlp).toSeq
+
+    observable
+      .data
+      .collect {
+        case data if observable.`type`.name == "hash" => data.data.length
+      }
+      .collect {
+        case 32  => "md5"
+        case 40  => "sha1"
+        case 56  => "sha224"
+        case 64  => "sha256"
+        case 96  => "sha384"
+        case 128 => "sha512"
+      }
+      .map("Payload delivery" -> _)
+      .orElse(connector.attributeConverter(observable.`type`))
       .map {
         case (cat, tpe) =>
           Attribute(
@@ -47,7 +69,7 @@ class MispExportSrv @Inject() (
             value = observable.data.fold(observable.attachment.get.name)(_.data),
             firstSeen = None,
             lastSeen = None,
-            tags = observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None))
+            tags = mispTags
           )
       }
       .orElse {
@@ -56,6 +78,7 @@ class MispExportSrv @Inject() (
         )
         None
       }
+  }
 
   def getMispClient(mispId: String): Future[TheHiveMispClient] =
     connector
@@ -70,12 +93,12 @@ class MispExportSrv @Inject() (
     caseSrv
       .get(`case`)
       .alert
-      .has("type", "misp")
-      .has("source", orgName)
-      .headOption()
+      .filterBySource(orgName)
+      .filterByType("misp")
+      .headOption
 
-  def getAttributes(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
-    caseSrv.get(`case`).observables.has("ioc", true).richObservable.toIterator.flatMap(observableToAttribute)
+  def getAttributes(`case`: Case with Entity, exportTags: Boolean)(implicit graph: Graph, authContext: AuthContext): Iterator[Attribute] =
+    caseSrv.get(`case`).observables.isIoc.richObservable.toIterator.flatMap(observableToAttribute(_, exportTags))
 
   def removeDuplicateAttributes(attributes: Iterator[Attribute]): Seq[Attribute] = {
     var attrSet = Set.empty[(String, String, String)]
@@ -90,9 +113,21 @@ class MispExportSrv @Inject() (
     builder.result()
   }
 
-  def createEvent(client: TheHiveMispClient, `case`: Case, attributes: Seq[Attribute], extendsEvent: Option[String])(
-      implicit ec: ExecutionContext
-  ): Future[String] =
+  val tlpTags = Map(
+    0 -> MispTag(None, "tlp:white", None, None),
+    1 -> MispTag(None, "tlp:green", None, None),
+    2 -> MispTag(None, "tlp:amber", None, None),
+    3 -> MispTag(None, "tlp:red", None, None)
+  )
+  def createEvent(client: TheHiveMispClient, `case`: Case with Entity, attributes: Seq[Attribute], extendsEvent: Option[String])(implicit
+      ec: ExecutionContext
+  ): Future[String] = {
+    val mispTags =
+      if (client.exportCaseTags)
+        db.roTransaction { implicit graph =>
+          caseSrv.get(`case`._id).tags.toSeq.map(t => MispTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(`case`.tlp)
+        }
+      else tlpTags.get(`case`.tlp).toSeq
     client.createEvent(
       info = `case`.title,
       date = `case`.startDate,
@@ -101,11 +136,13 @@ class MispExportSrv @Inject() (
       analysis = 0,
       distribution = 0,
       attributes = attributes,
+      tags = mispTags,
       extendsEvent = extendsEvent
     )
+  }
 
-  def createAlert(client: TheHiveMispClient, `case`: Case with Entity, eventId: String)(
-      implicit graph: Graph,
+  def createAlert(client: TheHiveMispClient, `case`: Case with Entity, eventId: String)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] =
     for {
@@ -127,13 +164,13 @@ class MispExportSrv @Inject() (
         )
       }
       org          <- organisationSrv.getOrFail(authContext.organisation)
-      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Map.empty[String, Option[Any]], None)
+      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Seq(), None)
       _            <- alertSrv.alertCaseSrv.create(AlertCase(), createdAlert.alert, `case`)
     } yield createdAlert
 
   def canExport(client: TheHiveMispClient)(implicit authContext: AuthContext): Boolean =
     client.canExport && db.roTransaction { implicit graph =>
-      client.organisationFilter(organisationSrv.current).exists()
+      client.organisationFilter(organisationSrv.current).exists
     }
 
   def export(mispId: String, `case`: Case with Entity)(implicit authContext: AuthContext, ec: ExecutionContext): Future[String] = {
@@ -144,7 +181,7 @@ class MispExportSrv @Inject() (
       orgName <- Future.fromTry(client.currentOrganisationName)
       maybeAlert = db.roTransaction(implicit graph => getAlert(`case`, orgName))
       _          = logger.debug(maybeAlert.fold("Related MISP event doesn't exist")(a => s"Related MISP event found : ${a.sourceRef}"))
-      attributes = db.roTransaction(implicit graph => removeDuplicateAttributes(getAttributes(`case`)))
+      attributes = db.roTransaction(implicit graph => removeDuplicateAttributes(getAttributes(`case`, client.exportObservableTags)))
       eventId <- createEvent(client, `case`, attributes, maybeAlert.map(_.sourceRef))
       _       <- Future.fromTry(db.tryTransaction(implicit graph => createAlert(client, `case`, eventId)))
     } yield eventId

@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.thehive.TestAppBuilder
@@ -33,7 +34,7 @@ class CustomFieldSrvTest extends PlaySpecification with TestAppBuilder {
       "delete custom fields" in testApp { app =>
         app[Database].tryTransaction { implicit graph =>
           for {
-            cf <- app[CustomFieldSrv].getOrFail("boolean1")
+            cf <- app[CustomFieldSrv].getOrFail(EntityName("boolean1"))
             _  <- app[CustomFieldSrv].delete(cf, force = true)
           } yield ()
         } must beSuccessfulTry
@@ -41,7 +42,7 @@ class CustomFieldSrvTest extends PlaySpecification with TestAppBuilder {
 
       "count use of custom fields" in testApp { app =>
         app[Database].roTransaction { implicit graph =>
-          app[CustomFieldSrv].useCount(app[CustomFieldSrv].getOrFail("boolean1").get)
+          app[CustomFieldSrv].useCount(app[CustomFieldSrv].getOrFail(EntityName("boolean1")).get)
         } shouldEqual Map("Case" -> 1, "CaseTemplate" -> 1)
       }
     }

@@ -9,20 +9,23 @@ import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.ClusterSetup
 import org.thp.thehive.services.LocalUserSrv
-import play.api.Logger
+import play.api.{Configuration, Logger}
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext}
-import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Try}
 
 @Singleton
 class DatabaseProvider @Inject() (
+    configuration: Configuration,
     database: Database,
     theHiveSchema: TheHiveSchemaDefinition,
     actorSystem: ActorSystem,
-    clusterSetup: ClusterSetup
+    clusterSetup: ClusterSetup // this dependency is here to ensure that cluster setup is finished
 ) extends Provider[Database] {
   import SchemaUpdaterActor._
+
+  lazy val dbInitialisationTimeout: FiniteDuration = configuration.get[FiniteDuration]("db.initialisationTimeout")
   lazy val schemaUpdaterActor: ActorRef = {
     val singletonManager =
       actorSystem.actorOf(
@@ -43,16 +46,17 @@ class DatabaseProvider @Inject() (
     )
   }
 
-  def databaseInstance: String = database match {
-    case jdb: JanusDatabase => jdb.instanceId
-    case _                  => ""
-  }
+  def databaseInstance: String =
+    database match {
+      case jdb: JanusDatabase => jdb.instanceId
+      case _                  => ""
+    }
 
   override def get(): Database = {
-    implicit val timeout: Timeout = Timeout(5.minutes)
+    implicit val timeout: Timeout = Timeout(dbInitialisationTimeout)
     Await.result(schemaUpdaterActor ? RequestDBStatus(databaseInstance), timeout.duration) match {
       case DBStatus(status) =>
-        status.get
+        status.get // if the status is a failure, throw an exception.
         database.asInstanceOf[Database]
     }
   }
@@ -90,10 +94,11 @@ class SchemaUpdaterActor @Inject() (theHiveSchema: TheHiveSchemaDefinition, data
   }
 
   def hasUnknownConnections(instanceIds: Set[String]): Boolean = (originalConnectionIds -- instanceIds).nonEmpty
-  def dropUnknownConnections(instanceIds: Set[String]): Unit = database match {
-    case jdb: JanusDatabase => jdb.dropConnections((originalConnectionIds -- instanceIds).toSeq)
-    case _                  =>
-  }
+  def dropUnknownConnections(instanceIds: Set[String]): Unit =
+    database match {
+      case jdb: JanusDatabase => jdb.dropConnections((originalConnectionIds -- instanceIds).toSeq)
+      case _                  =>
+    }
 
   override def receive: Receive = {
     case RequestDBStatus(instanceId) =>

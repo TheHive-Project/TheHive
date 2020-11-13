@@ -9,28 +9,14 @@ import javax.inject.{Inject, Provider, Singleton}
 import org.apache.commons.io.FileUtils
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{janus, AppBuilder}
+import org.thp.thehive.controllers.v0.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{
-  CaseIntegrityCheckOps,
-  CaseTemplateIntegrityCheckOps,
-  CustomFieldIntegrityCheckOps,
-  DataIntegrityCheckOps,
-  FlowActor,
-  ImpactStatusIntegrityCheckOps,
-  LocalKeyAuthProvider,
-  LocalPasswordAuthProvider,
-  LocalUserSrv,
-  ObservableTypeIntegrityCheckOps,
-  OrganisationIntegrityCheckOps,
-  ProfileIntegrityCheckOps,
-  ResolutionStatusIntegrityCheckOps,
-  TagIntegrityCheckOps,
-  UserIntegrityCheckOps
-}
+import org.thp.thehive.services.{UserSrv => _, _}
 
 import scala.util.Try
 
@@ -45,6 +31,7 @@ trait TestAppBuilder {
       .bind[UserSrv, LocalUserSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchemaDefinition]
+      .bindNamed[QueryExecutor, TheHiveQueryExecutor]("v0")
       .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
       .multiBind[NotifierProvider](classOf[AppendToFileProvider])
       .multiBind[NotifierProvider](classOf[EmailerProvider])
@@ -69,7 +56,7 @@ trait TestAppBuilder {
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
       .bindActor[DummyActor]("integrity-check-actor")
-      .bindActor[FlowActor]("flow-actor")
+      .bindActor[DummyActor]("flow-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
       .addConfiguration("play.modules.disabled = [org.thp.scalligraph.ScalligraphModule, org.thp.thehive.TheHiveModule]")
       .addConfiguration("play.mailer.mock = yes")

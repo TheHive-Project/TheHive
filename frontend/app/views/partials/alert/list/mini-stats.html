@@ -1,52 +1,23 @@
 <div class="row" ng-controller="AlertStatsCtrl as statsCtrl">
-    <div class="col-md-12">
-        <h4>Statistics</h4>
-    </div>
     <div class="col-md-4">
-        <div class="panel panel-default">
-            <div class="panel-heading">Alerts by Status</div>
-            <div class="panel-body">
-                <table class="table table-condensed">
-                    <tr ng-repeat="item in statsCtrl.byStatus.details">
-                        <td class="active">{{item.key === 'true' ? 'Read' : 'Unread'}}</td>
-                        <td>
-                            <a href ng-click="$vm.addFilterValue('read', item.key === 'true')">{{item.count}}</a>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+        <div class="stats-item-wrapper">
+            <stats-item title="Alerts by Status" mode="'chart'" field="read" data="statsCtrl.byStatus.details" labels="statsCtrl.readAlerts" values="statsCtrl.readValues" on-item-clicked="$vm.addFilterValue(field, value)">
+            </stats-item>
+
         </div>
     </div>
 
     <div class="col-md-4">
-        <div class="panel panel-default">
-            <div class="panel-heading">Top 5 Types</div>
-            <div class="panel-body">
-                <table class="table table-condensed">
-                    <tr ng-repeat="item in statsCtrl.byType.details">
-                        <td class="active">{{item.key}}</td>
-                        <td>
-                            <a href ng-click="$vm.addFilterValue('type', item.key)">{{item.count}}</a>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+        <div class="stats-item-wrapper">
+            <stats-item title="Top 5 Types" mode="'chart'" field="type" data="statsCtrl.byType.details" on-item-clicked="$vm.addFilterValue(field, value)">
+            </stats-item>
         </div>
     </div>
 
     <div class="col-md-4">
-        <div class="panel panel-default">
-            <div class="panel-heading">Top 5 tags</div>
-            <div class="panel-body">
-                <table class="table table-condensed">
-                    <tr ng-repeat="item in statsCtrl.byTags.details">
-                        <td class="active">{{item.key}}</td>
-                        <td>
-                            <a href ng-click="$vm.addFilterValue('tags', item.key)">{{item.count}}</a>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+        <div class="stats-item-wrapper">
+            <stats-item title="Top 5 tags" mode="'chart'" field="tags" data="statsCtrl.byTags.details" on-item-clicked="$vm.addFilterValue(field, value)">
+            </stats-item>
         </div>
     </div>
 </div>

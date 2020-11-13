@@ -3,11 +3,12 @@ package org.thp.thehive.controllers.v0
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.ObservableType
+import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -43,9 +44,9 @@ class ListCtrl @Inject() (
           case "custom_fields" =>
             val cf = db
               .roTransaction { implicit grap =>
-                customFieldSrv.initSteps.toList
+                customFieldSrv.startTraversal.toSeq
               }
-              .map(cf => cf._id -> cf.toJson)
+              .map(cf => cf._id.toString -> cf.toJson)
             JsObject(cf)
           case _ => JsObject.empty
         }
@@ -60,24 +61,26 @@ class ListCtrl @Inject() (
         val value: JsObject = request.body("value")
         listName match {
           case "custom_fields" => {
-            for {
-              inputCustomField <- value.validate[InputCustomField]
-            } yield inputCustomField
-          } fold (
-            errors => Failure(new Exception(errors.mkString)),
-            _ => Success(Results.Ok)
-          )
+              for {
+                inputCustomField <- value.validate[InputCustomField]
+              } yield inputCustomField
+            } fold (
+              errors => Failure(new Exception(errors.mkString)),
+              _ => Success(Results.Ok)
+            )
           case _ => Success(Results.Locked(""))
         }
       }
 
-  def deleteItem(itemId: String): Action[AnyContent] = entrypoint("delete list item") { _ =>
-    Success(Results.Locked(""))
-  }
+  def deleteItem(itemId: String): Action[AnyContent] =
+    entrypoint("delete list item") { _ =>
+      Success(Results.Locked(""))
+    }
 
-  def updateItem(itemId: String): Action[AnyContent] = entrypoint("update list item") { _ =>
-    Success(Results.Locked(""))
-  }
+  def updateItem(itemId: String): Action[AnyContent] =
+    entrypoint("update list item") { _ =>
+      Success(Results.Locked(""))
+    }
 
   def itemExists(listName: String): Action[AnyContent] =
     entrypoint("check if item exist in list")
@@ -88,8 +91,8 @@ class ListCtrl @Inject() (
           case "custom_fields" =>
             val v: String = request.body("value")
             customFieldSrv
-              .initSteps
-              .get(v)
+              .startTraversal
+              .getByName(v)
               .getOrFail("CustomField")
               .map(f => Results.Conflict(Json.obj("found" -> f.toJson)))
               .orElse(Success(Results.Ok))

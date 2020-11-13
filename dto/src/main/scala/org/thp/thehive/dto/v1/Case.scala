@@ -3,7 +3,7 @@ package org.thp.thehive.dto.v1
 import java.util.Date
 
 import org.thp.scalligraph.controllers.WithParser
-import play.api.libs.json.{JsObject, Json, OFormat, OWrites, Reads}
+import play.api.libs.json._
 
 case class InputCase(
     title: String,
@@ -19,7 +19,7 @@ case class InputCase(
     summary: Option[String] = None,
     user: Option[String] = None,
     @WithParser(InputCustomFieldValue.parser)
-    customFieldValue: Seq[InputCustomFieldValue] = Nil
+    customFieldValues: Seq[InputCustomFieldValue] = Nil
 )
 
 object InputCase {
@@ -48,7 +48,7 @@ case class OutputCase(
     impactStatus: Option[String] = None,
     resolutionStatus: Option[String] = None,
     assignee: Option[String],
-    customFields: Set[OutputCustomFieldValue] = Set.empty,
+    customFields: Seq[OutputCustomFieldValue] = Seq.empty,
     extraData: JsObject
 )
 
@@ -77,7 +77,7 @@ object OutputCase {
       impactStatus     <- (json \ "impactStatus").validateOpt[String]
       resolutionStatus <- (json \ "resolutionStatus").validateOpt[String]
       assignee         <- (json \ "assignee").validateOpt[String]
-      customFields     <- (json \ "customFields").validate[Set[OutputCustomFieldValue]]
+      customFields     <- (json \ "customFields").validate[Seq[OutputCustomFieldValue]]
       extraData        <- (json \ "extraData").validate[JsObject]
     } yield OutputCase(
       _id,

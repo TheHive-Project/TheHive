@@ -4,10 +4,12 @@ import java.util.Date
 
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0._
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseSrv
 import play.api.libs.json._
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -88,9 +90,9 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         summary = None,
         owner = Some("certuser@thehive.local"),
         customFields = Json.obj(
-          "boolean1" -> Json.obj("boolean" -> true, "order"                   -> JsNull),
-          "string1"  -> Json.obj("string"  -> "string1 custom field", "order" -> JsNull),
-          "date1"    -> Json.obj("date"    -> now.getTime, "order"            -> JsNull)
+          "boolean1" -> Json.obj("boolean" -> true, "order" -> 2),
+          "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 0),
+          "date1"    -> Json.obj("date" -> now.getTime, "order" -> 1)
         ),
         stats = Json.obj()
       )
@@ -145,27 +147,26 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       )
 
       val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "certuser@thehive.local")
-      val resultList  = app[TheHiveQueryExecutor].task.search(requestList)
+      val resultList  = app[TaskCtrl].search(requestList)
 
       status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
       val tasksList = contentAsJson(resultList)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputTask]]
       tasksList.find(_.title == "task x") must beSome
 
-      val assignee = app[Database].roTransaction(implicit graph => app[CaseSrv].get(outputCase._id).assignee.getOrFail())
+      val assignee = app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityIdOrName(outputCase._id)).assignee.getOrFail("Case"))
 
       assignee must beSuccessfulTry
       assignee.get.login shouldEqual "certuser@thehive.local"
     }
 
-    // FIXME doesn't work with SBT ?!
     "try to get a case" in testApp { app =>
       val request = FakeRequest("GET", s"/api/v0/case/#2")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[CaseCtrl].get("#145")(request)
+      val result = app[CaseCtrl].get("145")(request)
 
       status(result) shouldEqual 404
 
-      val result2 = app[CaseCtrl].get("#2")(request)
+      val result2 = app[CaseCtrl].get("2")(request)
       status(result2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result2)}")
       val resultCase       = contentAsJson(result2)
       val resultCaseOutput = resultCase.as[OutputCase]
@@ -192,7 +193,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a case properly" in testApp { app =>
-      val request = FakeRequest("PATCH", s"/api/v0/case/#1")
+      val request = FakeRequest("PATCH", s"/api/v0/case/1")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(
           Json.obj(
@@ -200,7 +201,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
             "flag"  -> true
           )
         )
-      val result = app[CaseCtrl].update("#1")(request)
+      val result = app[CaseCtrl].update("1")(request)
       status(result) must_=== 200
       val resultCase = contentAsJson(result).as[OutputCase]
 
@@ -213,7 +214,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(
           Json.obj(
-            "ids"         -> List("#1", "#2"),
+            "ids"         -> List("1", "2"),
             "description" -> "new description",
             "tlp"         -> 1,
             "pap"         -> 1
@@ -228,18 +229,17 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       resultCases.map(_.tlp) must contain(be_==(1)).forall
       resultCases.map(_.pap) must contain(be_==(1)).forall
 
-      val requestGet1 = FakeRequest("GET", s"/api/v0/case/#1")
+      val requestGet1 = FakeRequest("GET", s"/api/v0/case/1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val resultGet1 = app[CaseCtrl].get("#1")(requestGet1)
+      val resultGet1 = app[CaseCtrl].get("1")(requestGet1)
       status(resultGet1) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet1)}")
-      // Ignore title and flag for case#1 because it can be updated by previous test
-      val case1 = contentAsJson(resultGet1).as[OutputCase].copy(title = resultCases.head.title, flag = resultCases.head.flag)
+      val case1 = contentAsJson(resultGet1).as[OutputCase]
 
-      val requestGet3 = FakeRequest("GET", s"/api/v0/case/#2")
+      val requestGet2 = FakeRequest("GET", s"/api/v0/case/2")
         .withHeaders("user" -> "certuser@thehive.local")
-      val resultGet3 = app[CaseCtrl].get("#2")(requestGet3)
-      status(resultGet3) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet3)}")
-      val case3 = contentAsJson(resultGet3).as[OutputCase]
+      val resultGet2 = app[CaseCtrl].get("2")(requestGet2)
+      status(resultGet2) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultGet2)}")
+      val case3 = contentAsJson(resultGet2).as[OutputCase]
 
       resultCases.map(TestCase.apply) must contain(exactly(TestCase(case1), TestCase(case3)))
     }
@@ -250,7 +250,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(
           Json.parse("""{"query":{"severity":2}}""")
         )
-      val result = app[TheHiveQueryExecutor].`case`.search()(request)
+      val result = app[CaseCtrl].search()(request)
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       header("X-Total", result) must beSome("2")
       val resultCases = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputCase]]
@@ -259,48 +259,47 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "search a case by custom field" in testApp { app =>
-      // Create a case with custom fields
-      val now = new Date()
-      val inputCustomFields = Seq(
-        InputCustomFieldValue("date1", Some(now.getTime), None),
-        InputCustomFieldValue("boolean1", Some(true), None)
-      )
-
-      val request = FakeRequest("POST", "/api/v0/case")
-        .withJsonBody(
-          Json
-            .toJson(
-              InputCase(
-                title = "cf case",
-                description = "cf case description",
-                severity = Some(2),
-                startDate = Some(now),
-                tags = Set("tag1cf", "tag2cf"),
-                flag = Some(false),
-                tlp = Some(2),
-                pap = Some(2),
-                customFields = inputCustomFields
-              )
-            )
-            .as[JsObject] + ("template" -> JsString("spam"))
-        )
-        .withHeaders("user" -> "certuser@thehive.local")
-
-      val result = app[CaseCtrl].create(request)
-      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+//      // Create a case with custom fields
+//      val now = new Date()
+//      val inputCustomFields = Seq(
+//        InputCustomFieldValue("date1", Some(now.getTime), None),
+//        InputCustomFieldValue("boolean1", Some(true), None)
+//      )
+//
+//      val request = FakeRequest("POST", "/api/v0/case")
+//        .withJsonBody(
+//          Json
+//            .toJson(
+//              InputCase(
+//                title = "cf case",
+//                description = "cf case description",
+//                severity = Some(2),
+//                startDate = Some(now),
+//                tags = Set("tag1cf", "tag2cf"),
+//                flag = Some(false),
+//                tlp = Some(2),
+//                pap = Some(2),
+//                customFields = inputCustomFields
+//              )
+//            )
+//            .as[JsObject] + ("template" -> JsString("spam"))
+//        )
+//        .withHeaders("user" -> "certuser@thehive.local")
+//
+//      val result = app[CaseCtrl].create(request)
+//      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       // Search it by cf value
       val requestSearch = FakeRequest("POST", s"/api/v0/case/_search?range=0-15&sort=-flag&sort=-startDate&nstats=true")
-        .withHeaders("user" -> "certuser@thehive.local")
+        .withHeaders("user" -> "socuser@thehive.local")
         .withJsonBody(
-          Json.parse("""{"query":{"_and":[{"_field":"customFields.boolean1","_value":true},{"_not":{"status":"Deleted"}}]}}""")
+          Json.parse("""{"query":{"_and":[{"_field":"customFields.boolean1","_value":true}]}}""")
         )
-      val resultSearch = app[TheHiveQueryExecutor].`case`.search()(requestSearch)
+      val resultSearch = app[CaseCtrl].search()(requestSearch)
       status(resultSearch) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
       contentAsJson(resultSearch)(defaultAwaitTimeout, app[Materializer]).as[List[OutputCase]] must not(beEmpty)
     }
 
-    // FIXME doesn't work with SBT ?!
     "get and aggregate properly case stats" in testApp { app =>
       val request = FakeRequest("POST", s"/api/v0/case/_stats")
         .withHeaders("user" -> "certuser@thehive.local")
@@ -324,7 +323,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
                             ]
                          }""")
         )
-      val result = app[TheHiveQueryExecutor].`case`.stats()(request)
+      val result = app[CaseCtrl].stats()(request)
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
@@ -332,14 +331,13 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       (resultCase \ "testNamespace:testPredicate=\"t1\"" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "testNamespace:testPredicate=\"t2\"" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "testNamespace:testPredicate=\"t3\"" \ "count").asOpt[Int] must beSome(1)
-      (resultCase \ "count").asOpt[Int] must beSome(2)
     }
 
     "assign a case to an user" in testApp { app =>
-      val request = FakeRequest("PATCH", s"/api/v0/case/#4")
+      val request = FakeRequest("PATCH", s"/api/v0/case/4")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.obj("owner" -> "certro@thehive.local"))
-      val result = app[CaseCtrl].update("#1")(request)
+      val result = app[CaseCtrl].update("1")(request)
       status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultCase       = contentAsJson(result)
       val resultCaseOutput = resultCase.as[OutputCase]
@@ -350,18 +348,18 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     "force delete a case" in testApp { app =>
       val tasks = app[Database].roTransaction { implicit graph =>
         val authContext = DummyUserSrv(organisation = "cert").authContext
-        app[CaseSrv].get("#1").tasks(authContext).toList
+        app[CaseSrv].get(EntityIdOrName("1")).tasks(authContext).toSeq
       }
       tasks must have size 2
 
       val requestDel = FakeRequest("DELETE", s"/api/v0/case/#1/force")
         .withHeaders("user" -> "certuser@thehive.local")
-      val resultDel = app[CaseCtrl].realDelete("#1")(requestDel)
+      val resultDel = app[CaseCtrl].delete("1")(requestDel)
       status(resultDel) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(resultDel)}")
 
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].get("#1").headOption() must beNone
-//        tasks.flatMap(task => app[TaskSrv].get(task).headOption()) must beEmpty
+        app[CaseSrv].get(EntityIdOrName("1")).headOption must beNone
+//        tasks.flatMap(task => app[TaskSrv].get(task).headOption) must beEmpty
       }
     }
   }

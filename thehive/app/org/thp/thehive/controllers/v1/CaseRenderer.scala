@@ -1,91 +1,92 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.{Map => JMap}
+import java.lang.{Long => JLong}
+import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
-import gremlin.scala.{__, By, Graph, GremlinScala, Key, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.Traversal
-import org.thp.thehive.models.AlertCase
-import org.thp.thehive.services.CaseSteps
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.thehive.models.{Alert, AlertCase, Case}
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
-
-import scala.collection.JavaConverters._
 
 trait CaseRenderer {
 
-  def observableStats(
-      caseSteps: CaseSteps
-  )(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    caseSteps
-      .share
+  def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
+    _.share
       .observables
       .count
-      .map(count => Json.obj("total" -> count))
+      .domainMap(count => Json.obj("total" -> count))
 
-  def taskStats(caseSteps: CaseSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    caseSteps
-      .share
+  def taskStats(implicit
+      authContext: AuthContext
+  ): Traversal.V[Case] => Traversal[JsValue, JMap[String, JLong], Converter[JsValue, JMap[String, JLong]]] =
+    _.share
       .tasks
       .active
-      .groupCount(By(Key[String]("status")))
-      .map { statusAgg =>
-        val (total, result) = statusAgg.asScala.foldLeft(0L -> JsObject.empty) {
-          case ((t, r), (k, v)) => (t + v) -> (r + (k -> JsNumber(v.toInt)))
+      .groupCount(_.byValue(_.status))
+      .domainMap { statusAgg =>
+        val (total, result) = statusAgg.foldLeft(0L -> JsObject.empty) {
+          case ((t, r), (k, v)) => (t + v) -> (r + (k.toString -> JsNumber(v.toInt)))
         }
         result + ("total" -> JsNumber(total))
       }
 
-  def alertStats(caseSteps: CaseSteps): Traversal[JsValue, JsValue] =
-    caseSteps
-      .inTo[AlertCase]
-      .group(By(Key[String]("type")), By(Key[String]("source")))
-      .map { alertAgg =>
-        JsArray(
-          alertAgg
-            .asScala
-            .flatMap {
-              case (tpe, listOfSource) =>
-                listOfSource.asScala.map(s => Json.obj("type" -> tpe, "source" -> s))
-            }
-            .toSeq
-        )
+  def alertStats: Traversal.V[Case] => Traversal[JsValue, JMap[String, JCollection[String]], Converter[JsValue, JMap[String, JCollection[String]]]] =
+    _.in[AlertCase]
+      .v[Alert]
+      .group(_.byValue(_.`type`), _.byValue(_.source))
+      .domainMap { alertAgg =>
+        JsArray((for {
+          (tpe, sources) <- alertAgg
+          source         <- sources
+        } yield Json.obj("type" -> tpe, "source" -> source)).toSeq)
       }
 
-  def isOwnerStats(
-      caseSteps: CaseSteps
-  )(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    caseSteps.origin.has("name", authContext.organisation).fold.map(l => JsBoolean(!l.isEmpty))
+  def isOwnerStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
+    _.origin.get(authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
 
-  def shareCountStats(caseSteps: CaseSteps): Traversal[JsValue, JsValue] =
-    caseSteps.organisations.count.map(c => JsNumber(c - 1))
+  def shareCountStats: Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
+    _.organisations.count.domainMap(c => JsNumber(c - 1))
 
-  def permissions(caseSteps: CaseSteps)(implicit authContext: AuthContext): Traversal[JsValue, JsValue] =
-    caseSteps.userPermissions.map(permissions => Json.toJson(permissions))
+  def permissions(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Vertex, Converter[JsValue, Vertex]] =
+    _.userPermissions.domainMap(permissions => Json.toJson(permissions))
 
-  def caseStatsRenderer(extraData: Set[String])(
-      implicit authContext: AuthContext,
-      db: Database,
-      graph: Graph
-  ): CaseSteps => Traversal[JsObject, JsObject] = {
-    def addData(f: CaseSteps => Traversal[JsValue, JsValue]): GremlinScala[JMap[String, JsValue]] => GremlinScala[JMap[String, JsValue]] =
-      _.by(f(new CaseSteps(__[Vertex])).raw.traversal)
+  def caseStatsRenderer(extraData: Set[String])(implicit
+      authContext: AuthContext
+  ): Traversal.V[Case] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
+    def addData[G](
+        name: String
+    )(f: Traversal.V[Case] => Traversal[JsValue, G, Converter[JsValue, G]]): Traversal[JsObject, JMap[String, Any], Converter[
+      JsObject,
+      JMap[String, Any]
+    ]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { t =>
+      val dataTraversal = f(traversal.start)
+      t.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.by(dataTraversal.raw)) { jmap =>
+        t.converter(jmap) + (name -> dataTraversal.converter(jmap.get(name).asInstanceOf[G]))
+      }
+    }
 
-    if (extraData.isEmpty) _.constant(JsObject.empty)
+    if (extraData.isEmpty) traversal.constant2[JsObject, JMap[String, Any]](JsObject.empty)
     else {
       val dataName = extraData.toSeq
-      dataName
-        .foldLeft[CaseSteps => GremlinScala[JMap[String, JsValue]]](_.raw.project(dataName.head, dataName.tail: _*)) {
-          case (f, "observableStats") => f.andThen(addData(observableStats))
-          case (f, "taskStats")       => f.andThen(addData(taskStats))
-          case (f, "alerts")          => f.andThen(addData(alertStats))
-          case (f, "isOwner")         => f.andThen(addData(isOwnerStats))
-          case (f, "shareCount")      => f.andThen(addData(shareCountStats))
-          case (f, "permissions")     => f.andThen(addData(permissions))
-          case (f, _)                 => f.andThen(_.by(__.constant(JsNull).traversal))
-        }
-        .andThen(f => Traversal(f.map(m => JsObject(m.asScala))))
+      dataName.foldLeft[Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
+        traversal.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.project(dataName.head, dataName.tail: _*))(_ =>
+          JsObject.empty
+        )
+      ) {
+        case (f, "observableStats") => addData("observableStats")(observableStats)(f)
+        case (f, "taskStats")       => addData("taskStats")(taskStats)(f)
+        case (f, "alerts")          => addData("alerts")(alertStats)(f)
+        case (f, "isOwner")         => addData("isOwner")(isOwnerStats)(f)
+        case (f, "shareCount")      => addData("shareCount")(shareCountStats)(f)
+        case (f, "permissions")     => addData("permissions")(permissions)(f)
+        case (f, _)                 => f
+      }
     }
   }
 }

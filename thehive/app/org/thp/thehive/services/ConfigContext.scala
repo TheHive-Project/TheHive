@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import javax.inject.{Inject, Named, Singleton}
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ConfigContext
@@ -16,7 +17,7 @@ class UserConfigContext @Inject() (@Named("with-thehive-schema") db: Database, c
     db.roTransaction { implicit graph =>
       configSrv
         .user
-        .getConfigValue(context.userId, path)
+        .getConfigValue(EntityName(context.userId), path)
         .orElse(
           configSrv
             .organisation
@@ -29,7 +30,7 @@ class UserConfigContext @Inject() (@Named("with-thehive-schema") db: Database, c
     db.tryTransaction(graph =>
       configSrv
         .user
-        .setConfigValue(context.userId, path, value)(graph, context)
+        .setConfigValue(EntityName(context.userId), path, value)(graph, context)
         .map(_ => s"user.${context.userId}.$path")
     )
 }
@@ -46,7 +47,7 @@ class OrganisationConfigContext @Inject() (@Named("with-thehive-schema") db: Dat
         .orElse(
           configSrv
             .organisation
-            .getConfigValue("defaults", path)
+            .getConfigValue(EntityName("defaults"), path)
         )
         .map(_.value)
     }

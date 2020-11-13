@@ -3,7 +3,8 @@ package org.thp.thehive.services.notification.triggers
 import java.util.Date
 
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{EntityIdOrName, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.controllers.v0.AlertCtrl
 import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
@@ -44,20 +45,20 @@ class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
         status(result) should equalTo(201)
 
         val alertOutput = contentAsJson(result).as[OutputAlert]
-        val alert       = app[AlertSrv].get(alertOutput.id).getOrFail()
+        val alert       = app[AlertSrv].get(EntityIdOrName(alertOutput.id)).getOrFail("Alert")
 
         alert must beSuccessfulTry
 
-        val audit = app[AuditSrv].initSteps.has("objectId", alert.get._id).getOrFail()
+        val audit = app[AuditSrv].startTraversal.has(_.objectId, alert.get._id.toString).getOrFail("Audit")
 
         audit must beSuccessfulTry
 
-        val organisation = app[OrganisationSrv].get("cert").getOrFail()
+        val organisation = app[OrganisationSrv].get(EntityName("cert")).getOrFail("Organisation")
 
         organisation must beSuccessfulTry
 
-        val user2 = app[UserSrv].getOrFail("certadmin@thehive.local")
-        val user1 = app[UserSrv].getOrFail("certuser@thehive.local")
+        val user2 = app[UserSrv].getOrFail(EntityName("certadmin@thehive.local"))
+        val user1 = app[UserSrv].getOrFail(EntityName("certuser@thehive.local"))
 
         user2 must beSuccessfulTry
         user1 must beSuccessfulTry

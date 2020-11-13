@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').service('QueryBuilderSrv', function() {
+    angular.module('theHiveServices').service('QueryBuilderSrv', function(UtilsSrv) {
         var self = this;
 
         this._buildQueryFromDefaultFilter = function(fieldDef, filter) {
@@ -116,19 +116,27 @@
 
         this._buildQueryFromDateFilter = function(fieldDef, filter) {
             var value = filter.value,
+                operator = filter.value.operator || 'custom',
                 start,
                 end;
 
-            if(value.from && value.from !== null) {
-                start = _.isString(value.from) ? (new Date(value.from)).getTime() : value.from.getTime();
-            } else {
-                start = null;
-            }
+            if(operator === 'custom') {
+                if(value.from && value.from !== null) {
+                    start = _.isString(value.from) ? (new Date(value.from)).getTime() : value.from.getTime();
+                } else {
+                    start = null;
+                }
 
-            if(value.to && value.to !== null) {
-                end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.getTime();
+                if(value.to && value.to !== null) {
+                    end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.getTime();
+                } else {
+                    end = null;
+                }
             } else {
-                end = null;
+                var dateRange = UtilsSrv.getDateRange(operator);
+
+                start = dateRange.from.getTime();
+                end = dateRange.to.getTime();
             }
 
             if (start !== null && end !== null) {

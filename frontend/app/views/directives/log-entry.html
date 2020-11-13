@@ -30,7 +30,10 @@
                     <i class="fa fa-trash"></i> Delete
                 </a>
             </span>
-            <span class="text-muted mr-xs pull-right" ng-bind="log.startDate | showDate"></span>
+            <span class="text-muted mr-xs pull-right">
+                <i class="fa fa-calendar"></i>
+                {{log.date | shortDate}}
+            </span>
         </div>
     </div>
 

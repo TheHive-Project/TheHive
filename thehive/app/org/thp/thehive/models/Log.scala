@@ -3,16 +3,16 @@ package org.thp.thehive.models
 import java.util.Date
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.{EdgeEntity, VertexEntity}
+import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 
-@EdgeEntity[Log, Attachment]
+@BuildEdgeEntity[Log, Attachment]
 case class LogAttachment()
 
-@VertexEntity
+@BuildVertexEntity
 case class Log(message: String, date: Date, deleted: Boolean)
 
 case class RichLog(log: Log with Entity, attachments: Seq[Attachment with Entity]) {
-  def _id: String                = log._id
+  def _id: EntityId              = log._id
   def _createdBy: String         = log._createdBy
   def _updatedBy: Option[String] = log._updatedBy
   def _createdAt: Date           = log._createdAt

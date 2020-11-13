@@ -118,6 +118,38 @@
                         });
                         return parsedQuery ? parsedQuery.substr(paramName.length + 1) : undefined;
                     }
+                },
+
+                getDateRange: function(operator) {
+                    var from,
+                        to = moment();
+
+                    switch(operator) {
+                        case 'last7days':
+                            from = moment().subtract(7, 'days');
+                            break;
+                        case 'last30days':
+                            from = moment().subtract(30, 'days');
+                            break;
+                        case 'last3months':
+                            from = moment().subtract(3, 'months');
+                            break;
+                        case 'last6months':
+                            from = moment().subtract(6, 'months');
+                            break;
+                        case 'lastyear':
+                            from = moment().subtract(1, 'years');
+                            break;
+                        case 'today':
+                        default:
+                            from = moment();
+                            break;
+                    }
+
+                    return {
+                        from: from.hour(0).minutes(0).seconds(0).toDate(),
+                        to: to.hour(23).minutes(59).seconds(59).toDate()
+                    };
                 }
             };
 

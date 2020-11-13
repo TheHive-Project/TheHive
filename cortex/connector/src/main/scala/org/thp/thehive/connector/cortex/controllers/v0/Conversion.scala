@@ -12,20 +12,20 @@ import play.api.libs.json.{JsArray, JsFalse, JsObject, Json}
 object Conversion {
   import org.thp.thehive.controllers.v0.Conversion._
 
-  implicit val actionOutput: Renderer.Aux[RichAction, OutputAction] = Renderer.json[RichAction, OutputAction](
+  implicit val actionOutput: Renderer.Aux[RichAction, OutputAction] = Renderer.toJson[RichAction, OutputAction](
     _.into[OutputAction]
       .withFieldRenamed(_.workerId, _.responderId)
       .withFieldRenamed(_.workerName, _.responderName)
       .withFieldRenamed(_.workerDefinition, _.responderDefinition)
       .withFieldComputed(_.status, _.status.toString)
-      .withFieldComputed(_.objectId, _.context._id)
-      .withFieldComputed(_.objectType, _.context._model.label)
+      .withFieldComputed(_.objectId, _.context._id.toString)
+      .withFieldComputed(_.objectType, _.context._label)
       .withFieldComputed(_.operations, a => JsArray(a.operations).toString)
       .withFieldComputed(_.report, _.report.map(_.toString).getOrElse("{}"))
       .transform
   )
 
-  implicit val jobOutput: Renderer.Aux[RichJob, OutputJob] = Renderer.json[RichJob, OutputJob](job =>
+  implicit val jobOutput: Renderer.Aux[RichJob, OutputJob] = Renderer.toJson[RichJob, OutputJob](job =>
     job
       .into[OutputJob]
       .withFieldComputed(_.analyzerId, _.workerId)
@@ -43,14 +43,14 @@ object Conversion {
             case r                                  => r + ("success" -> JsFalse)
           }
       )
-      .withFieldRenamed(_._id, _.id)
+      .withFieldComputed(_.id, _._id.toString)
       .withFieldConst(_._type, "case_artifact_job")
       .withFieldConst(_.case_artifact, None)
       .transform
   )
 
   implicit val jobWithParentOutput: Renderer.Aux[(RichJob, Option[(RichObservable, RichCase)]), OutputJob] =
-    Renderer.json[(RichJob, Option[(RichObservable, RichCase)]), OutputJob] { jobWithParent =>
+    Renderer.toJson[(RichJob, Option[(RichObservable, RichCase)]), OutputJob] { jobWithParent =>
       jobWithParent
         ._1
         .into[OutputJob]
@@ -69,7 +69,7 @@ object Conversion {
               case r                                  => r + ("success" -> JsFalse)
             }
         )
-        .withFieldRenamed(_._id, _.id)
+        .withFieldComputed(_.id, _._id.toString)
         .withFieldConst(_._type, "case_artifact_job")
         .withFieldConst(
           _.case_artifact,
@@ -82,16 +82,16 @@ object Conversion {
     }
 
   implicit val analyzerTemplateOutput: Renderer.Aux[AnalyzerTemplate with Entity, OutputAnalyzerTemplate] =
-    Renderer.json[AnalyzerTemplate with Entity, OutputAnalyzerTemplate](at =>
+    Renderer.toJson[AnalyzerTemplate with Entity, OutputAnalyzerTemplate](at =>
       at.asInstanceOf[AnalyzerTemplate]
         .into[OutputAnalyzerTemplate]
         .withFieldComputed(_.analyzerId, _.workerId)
-        .withFieldConst(_.id, at._id)
+        .withFieldConst(_.id, at._id.toString)
         .withFieldComputed(_.content, _.content)
         .transform
     )
 
-  implicit class InputAnalyzerTemplateOps(inputAnalyzerTemplate: InputAnalyzerTemplate) {
+  implicit class InputAnalyzerTemplateOpsDefs(inputAnalyzerTemplate: InputAnalyzerTemplate) {
 
     def toAnalyzerTemplate: AnalyzerTemplate =
       inputAnalyzerTemplate
@@ -101,7 +101,7 @@ object Conversion {
   }
 
   implicit val workerOutput: Renderer.Aux[(CortexWorker, Seq[String]), OutputWorker] =
-    Renderer.json[(CortexWorker, Seq[String]), OutputWorker](worker =>
+    Renderer.toJson[(CortexWorker, Seq[String]), OutputWorker](worker =>
       worker
         ._1
         .into[OutputWorker]

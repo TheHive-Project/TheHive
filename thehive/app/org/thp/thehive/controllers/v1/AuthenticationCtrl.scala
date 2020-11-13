@@ -4,16 +4,16 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.{AuthenticationError, AuthorizationError, BadRequestError, MultiFactorCodeRequired}
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{AuthenticationError, AuthorizationError, BadRequestError, EntityIdOrName, MultiFactorCodeRequired}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services.{TOTPAuthSrv, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -22,8 +22,7 @@ class AuthenticationCtrl @Inject() (
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database,
-    implicit val ec: ExecutionContext
+    @Named("with-thehive-schema") implicit val db: Database
 ) {
 
   def login: Action[AnyContent] =
@@ -32,25 +31,26 @@ class AuthenticationCtrl @Inject() (
       .extract("password", FieldsParser[String].on("password"))
       .extract("organisation", FieldsParser[String].optional.on("organisation"))
       .extract("code", FieldsParser[String].optional.on("code")) { implicit request =>
-        val login: String                = request.body("login")
-        val password: String             = request.body("password")
-        val organisation: Option[String] = request.body("organisation") orElse requestOrganisation(request)
-        val code: Option[String]         = request.body("code")
+        val login: String                        = request.body("login")
+        val password: String                     = request.body("password")
+        val organisation: Option[EntityIdOrName] = request.body("organisation").map(EntityIdOrName(_)) orElse requestOrganisation(request)
+        val code: Option[String]                 = request.body("code")
         for {
           authContext <- authSrv.authenticate(login, password, organisation, code)
           user <- db.roTransaction { implicit graph =>
             userSrv
-              .get(authContext.userId)
-              .richUserWithCustomRenderer(authContext.organisation, _.organisationWithRole.map(_.asScala.toSeq))(authContext)
+              .current(graph, authContext)
+              .richUserWithCustomRenderer(authContext.organisation, _.organisationWithRole)(authContext)
               .getOrFail("User")
           }
           _ <- if (user._1.locked) Failure(AuthorizationError("Your account is locked")) else Success(())
         } yield authSrv.setSessionUser(authContext)(Results.Ok(user.toJson))
       }
 
-  def logout: Action[AnyContent] = entrypoint("logout") { _ =>
-    Success(Results.Ok.withNewSession)
-  }
+  def logout: Action[AnyContent] =
+    entrypoint("logout") { _ =>
+      Success(Results.Ok.withNewSession)
+    }
 
   def withTotpAuthSrv[A](body: TOTPAuthSrv => Try[A]): Try[A] =
     authSrv match {
@@ -91,9 +91,9 @@ class AuthenticationCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         withTotpAuthSrv { totpAuthSrv =>
           userSrv
-            .getOrFail(userId.getOrElse(request.userId))
+            .getOrFail(EntityIdOrName(userId.getOrElse(request.userId)))
             .flatMap { user =>
-              if (request.userId == user.login || userSrv.current.organisations(Permissions.manageUser).users.get(user._id).exists())
+              if (request.userId == user.login || userSrv.current.organisations(Permissions.manageUser).users.getEntity(user).exists)
                 totpAuthSrv.unsetSecret(user.login)
               else Failure(AuthorizationError("You cannot unset TOTP secret of this user"))
             }

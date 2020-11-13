@@ -2,49 +2,30 @@ package org.thp.thehive.controllers.v0
 
 import java.nio.file.Files
 
-import javax.inject.{Inject, Named}
-import org.thp.scalligraph.RichSeq
+import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser, Renderer}
-import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.query.{ParamQuery, PublicProperty, Query}
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.{PagedResult, Traversal}
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.query._
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
-import org.thp.thehive.services.{TagSrv, TagSteps}
+import org.thp.thehive.services.TagOps._
+import org.thp.thehive.services.TagSrv
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Try
 
 class TagCtrl @Inject() (
-    entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
-    properties: Properties,
-    tagSrv: TagSrv
-) extends QueryableCtrl {
-  override val entityName: String                           = "tag"
-  override val publicProperties: List[PublicProperty[_, _]] = properties.tag ::: metaProperties[TagSteps]
-  override val initialQuery: Query                          = Query.init[TagSteps]("listTag", (graph, _) => tagSrv.initSteps(graph))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, TagSteps, PagedResult[Tag with Entity]](
-    "page",
-    FieldsParser[OutputParam],
-    (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
-  )
-  override val outputQuery: Query = Query.output[Tag with Entity]
-  override val getQuery: ParamQuery[IdOrName] = Query.initWithParam[IdOrName, TagSteps](
-    "getTag",
-    FieldsParser[IdOrName],
-    (param, graph, _) => tagSrv.get(param.idOrName)(graph)
-  )
-  implicit val stringRenderer: Renderer.Aux[String, String] = Renderer.json[String, String](identity)
-  override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[TagSteps, TagSteps]("fromCase", (tagSteps, _) => tagSteps.fromCase),
-    Query[TagSteps, TagSteps]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
-    Query[TagSteps, Traversal[String, String]]("text", (tagSteps, _) => tagSteps.displayName),
-    Query.output[String, Traversal[String, String]]
-  )
-
+    override val entrypoint: Entrypoint,
+    @Named("with-thehive-schema") override val db: Database,
+    tagSrv: TagSrv,
+    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val publicData: PublicTag
+) extends QueryCtrl {
   def importTaxonomy: Action[AnyContent] =
     entrypoint("import taxonomy")
       .extract("file", FieldsParser.file.optional.on("file"))
@@ -57,7 +38,7 @@ class TagCtrl @Inject() (
           content.fold(Seq.empty[Tag])(parseTaxonomy)
 
         tags
-          .filterNot(tagSrv.initSteps.getTag(_).exists())
+          .filterNot(tagSrv.startTraversal.getTag(_).exists)
           .toTry(tagSrv.create)
           .map(ts => Results.Ok(JsNumber(ts.size)))
       }
@@ -72,20 +53,23 @@ class TagCtrl @Inject() (
 
   def parseValues(namespace: String, values: Seq[JsObject]): Seq[Tag] =
     for {
-      value <- values
-        .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "predicate").asOpt[String], acc, v))
-        ._1
+      value <-
+        values
+          .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "predicate").asOpt[String], acc, v))
+          ._1
       predicate <- (value \ "predicate").asOpt[String].toList
-      entry <- (value \ "entry")
-        .asOpt[Seq[JsObject]]
-        .getOrElse(Nil)
-        .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
-        ._1
+      entry <-
+        (value \ "entry")
+          .asOpt[Seq[JsObject]]
+          .getOrElse(Nil)
+          .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
+          ._1
       v <- (entry \ "value").asOpt[String]
-      colour = (entry \ "colour")
-        .asOpt[String]
-        .map(parseColour)
-        .getOrElse(0) // black
+      colour =
+        (entry \ "colour")
+          .asOpt[String]
+          .map(parseColour)
+          .getOrElse(0) // black
       e = (entry \ "description").asOpt[String] orElse (entry \ "expanded").asOpt[String]
     } yield Tag(namespace, predicate, Some(v), e, colour)
 
@@ -97,24 +81,74 @@ class TagCtrl @Inject() (
 
   def parsePredicates(namespace: String, predicates: Seq[JsObject]): Seq[Tag] =
     for {
-      predicate <- predicates
-        .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
-        ._1
+      predicate <-
+        predicates
+          .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
+          ._1
       v <- (predicate \ "value").asOpt[String]
       e = (predicate \ "expanded").asOpt[String]
-      colour = (predicate \ "colour")
-        .asOpt[String]
-        .map(parseColour)
-        .getOrElse(0) // black
+      colour =
+        (predicate \ "colour")
+          .asOpt[String]
+          .map(parseColour)
+          .getOrElse(0) // black
     } yield Tag(namespace, v, None, e, colour)
 
   def get(tagId: String): Action[AnyContent] =
     entrypoint("get tag")
       .authRoTransaction(db) { _ => implicit graph =>
         tagSrv
-          .getOrFail(tagId)
+          .getOrFail(EntityIdOrName(tagId))
           .map { tag =>
             Results.Ok(tag.toJson)
           }
       }
+}
+
+@Singleton
+class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
+  override val entityName: String  = "tag"
+  override val initialQuery: Query = Query.init[Traversal.V[Tag]]("listTag", (graph, _) => tagSrv.startTraversal(graph))
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
+    "page",
+    FieldsParser[OutputParam],
+    (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
+  )
+  override val outputQuery: Query = Query.output[Tag with Entity]
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Tag]](
+    "getTag",
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, _) => tagSrv.get(idOrName)(graph)
+  )
+  implicit val stringRenderer: Renderer[String] = Renderer.toJson[String, String](identity)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[Traversal.V[Tag], Traversal.V[Tag]]("fromCase", (tagSteps, _) => tagSteps.fromCase),
+    Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
+    Query[Traversal.V[Tag], Traversal.V[Tag]]("fromAlert", (tagSteps, _) => tagSteps.fromAlert),
+    Query[Traversal.V[Tag], Traversal[String, Vertex, Converter[String, Vertex]]]("text", (tagSteps, _) => tagSteps.displayName),
+    Query.output[String, Traversal[String, Vertex, Converter[String, Vertex]]]
+  )
+  override val publicProperties: PublicProperties = PublicPropertyListBuilder[Tag]
+    .property("namespace", UMapping.string)(_.field.readonly)
+    .property("predicate", UMapping.string)(_.field.readonly)
+    .property("value", UMapping.string.optional)(_.field.readonly)
+    .property("description", UMapping.string.optional)(_.field.readonly)
+    .property("text", UMapping.string)(
+      _.select(_.displayName)
+        .filter((_, tags) =>
+          tags
+            .graphMap[String, String, Converter.Identity[String]](
+              { v =>
+                val namespace = UMapping.string.getProperty(v, "namespace")
+                val predicate = UMapping.string.getProperty(v, "predicate")
+                val value     = UMapping.string.optional.getProperty(v, "value")
+                Tag(namespace, predicate, value, None, 0).toString
+              },
+              Converter.identity[String]
+            )
+        )
+        .converter(_ => Converter.identity[String])
+        .readonly
+    )
+    .build
 }

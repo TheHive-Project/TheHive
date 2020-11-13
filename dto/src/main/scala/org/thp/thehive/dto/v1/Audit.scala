@@ -10,14 +10,15 @@ case class OutputEntity(_type: String, _id: String, _createdAt: Date, _createdBy
 object OutputEntity {
   implicit val format: OFormat[OutputEntity] = Json.format[OutputEntity]
 
-  def apply(e: Entity): OutputEntity = OutputEntity(
-    e._model.label,
-    e._id,
-    e._createdAt,
-    e._createdBy,
-    e._updatedAt,
-    e._updatedBy
-  )
+  def apply(e: Entity): OutputEntity =
+    OutputEntity(
+      e._label,
+      e._id.toString,
+      e._createdAt,
+      e._createdBy,
+      e._updatedAt,
+      e._updatedBy
+    )
 }
 
 case class OutputAudit(

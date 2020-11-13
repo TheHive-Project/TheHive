@@ -3,17 +3,18 @@ package org.thp.thehive.connector.cortex.services
 import java.util.zip.{ZipEntry, ZipFile}
 
 import com.google.inject.name.Named
-import gremlin.scala._
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.steps.StepsOps._
-import org.thp.scalligraph.steps.VertexSteps
-import org.thp.scalligraph.{CreateError, EntitySteps}
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
+import org.thp.thehive.connector.cortex.services.AnalyzerTemplateOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
@@ -23,17 +24,14 @@ import scala.io.Source
 import scala.util.{Failure, Try}
 
 @Singleton
-class AnalyzerTemplateSrv @Inject() (
-    implicit @Named("with-thehive-cortex-schema") db: Database,
+class AnalyzerTemplateSrv @Inject() (implicit
+    @Named("with-thehive-cortex-schema") db: Database,
     auditSrv: CortexAuditSrv,
     organisationSrv: OrganisationSrv
-) extends VertexSrv[AnalyzerTemplate, AnalyzerTemplateSteps] {
+) extends VertexSrv[AnalyzerTemplate] {
 
-  override def steps(raw: GremlinScala[Vertex])(implicit graph: Graph): AnalyzerTemplateSteps = new AnalyzerTemplateSteps(raw)
-
-  override def get(idOrName: String)(implicit graph: Graph): AnalyzerTemplateSteps =
-    if (db.isValidId(idOrName)) getByIds(idOrName)
-    else initSteps.getByAnalyzerId(idOrName)
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[AnalyzerTemplate] =
+    startTraversal.getByAnalyzerId(name)
 
   def readZipEntry(file: ZipFile, entry: ZipEntry): Try[String] =
     Try {
@@ -43,7 +41,7 @@ class AnalyzerTemplateSrv @Inject() (
     }
 
   def create(analyzerTemplate: AnalyzerTemplate)(implicit graph: Graph, authContext: AuthContext): Try[AnalyzerTemplate with Entity] =
-    if (initSteps.getByAnalyzerId(analyzerTemplate.workerId).exists())
+    if (startTraversal.getByAnalyzerId(analyzerTemplate.workerId).exists)
       Failure(CreateError(s"Analyzer template for ${analyzerTemplate.workerId} already exists"))
     else
       for {
@@ -52,14 +50,14 @@ class AnalyzerTemplateSrv @Inject() (
       } yield created
 
   override def update(
-      steps: AnalyzerTemplateSteps,
+      traversal: Traversal.V[AnalyzerTemplate],
       propertyUpdaters: Seq[PropertyUpdater]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(AnalyzerTemplateSteps, JsObject)] =
-    auditSrv.mergeAudits(super.update(steps, propertyUpdaters)) {
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[AnalyzerTemplate], JsObject)] =
+    auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
       case (analyzerTemplateSteps, updatedFields) =>
         analyzerTemplateSteps
-          .newInstance()
-          .getOrFail()
+          .clone()
+          .getOrFail("AnalyzerTemplate")
           .flatMap(auditSrv.analyzerTemplate.update(_, updatedFields))
     }
 
@@ -85,7 +83,7 @@ class AnalyzerTemplateSrv @Inject() (
       .toSeq
       .groupBy(_.getName.takeWhile(c => c != '/' && c != '.'))
       .flatMap {
-        case (name, entries) if entries.lengthCompare(1) == 0 => List(name                                                               -> entries.head)
+        case (name, entries) if entries.lengthCompare(1) == 0 => List(name -> entries.head)
         case (name, entries)                                  => entries.filterNot(_.getName.endsWith("short.html")).headOption.map(name -> _)
       }
       .foldLeft(Map.empty[String, Try[AnalyzerTemplate with Entity]]) {
@@ -95,7 +93,7 @@ class AnalyzerTemplateSrv @Inject() (
             .flatMap { content =>
               db.tryTransaction { implicit graph =>
                 (for {
-                  updated <- get(analyzerId).updateOne("content" -> content)
+                  updated <- get(EntityName(analyzerId)).update(_.content, content).getOrFail("AnalyzerTemplate")
                   _       <- auditSrv.analyzerTemplate.update(updated, Json.obj("content" -> content))
                 } yield updated).recoverWith {
                   case _ =>
@@ -110,22 +108,18 @@ class AnalyzerTemplateSrv @Inject() (
       }
 }
 
-@EntitySteps[AnalyzerTemplate]
-class AnalyzerTemplateSteps(raw: GremlinScala[Vertex])(implicit @Named("with-thehive-cortex-schema") db: Database, graph: Graph)
-    extends VertexSteps[AnalyzerTemplate](raw) {
+object AnalyzerTemplateOps {
+  implicit class AnalyzerTemplateOpsDefs(traversal: Traversal.V[AnalyzerTemplate]) {
 
-  def get(idOrAnalyzerId: String): AnalyzerTemplateSteps =
-    if (db.isValidId(idOrAnalyzerId)) this.getByIds(idOrAnalyzerId)
-    else getByAnalyzerId(idOrAnalyzerId)
+    def get(idOrAnalyzerId: EntityIdOrName): Traversal.V[AnalyzerTemplate] =
+      idOrAnalyzerId.fold(traversal.getByIds(_), getByAnalyzerId)
 
-  /**
-    * Looks for a template that has the workerId supplied
-    *
-    * @param workerId the id to look for
-    * @return
-    */
-  def getByAnalyzerId(workerId: String): AnalyzerTemplateSteps = new AnalyzerTemplateSteps(raw.has(Key("workerId") of workerId))
-
-  override def newInstance(newRaw: GremlinScala[Vertex]): AnalyzerTemplateSteps = new AnalyzerTemplateSteps(newRaw)
-  override def newInstance(): AnalyzerTemplateSteps                             = new AnalyzerTemplateSteps(raw.clone())
+    /**
+      * Looks for a template that has the workerId supplied
+      *
+      * @param workerId the id to look for
+      * @return
+      */
+    def getByAnalyzerId(workerId: String): Traversal.V[AnalyzerTemplate] = traversal.has(_.workerId, workerId)
+  }
 }

@@ -4,10 +4,11 @@ import java.io.{File, InputStream}
 import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.steps.StepsOps._
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
@@ -55,11 +56,11 @@ class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get an attachment" in testApp { app =>
-      val allAttachments = app[Database].roTransaction(implicit graph => app[AttachmentSrv].initSteps.toList)
+      val allAttachments = app[Database].roTransaction(implicit graph => app[AttachmentSrv].startTraversal.toSeq)
       allAttachments must not(beEmpty)
 
       app[Database].roTransaction { implicit graph =>
-        app[AttachmentSrv].get(allAttachments.head.attachmentId).exists() must beTrue
+        app[AttachmentSrv].get(EntityName(allAttachments.head.attachmentId)).exists must beTrue
       }
     }
   }
