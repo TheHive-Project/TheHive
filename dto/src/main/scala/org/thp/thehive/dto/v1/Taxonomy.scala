@@ -2,7 +2,11 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat, OWrites}
+import org.scalactic.Accumulation.convertGenTraversableOnceToValidatable
+import org.scalactic.{Bad, Good, One}
+import org.thp.scalligraph.InvalidFormatAttributeError
+import org.thp.scalligraph.controllers.{FObject, FSeq, FieldsParser, WithParser}
+import play.api.libs.json.{JsArray, JsObject, JsString, Json, OFormat, OWrites, Writes}
 
 // TODO make sure of input format
 case class InputTaxonomy (
@@ -16,6 +20,20 @@ case class InputTaxonomy (
 case class InputEntry(predicate: String, entry: Seq[InputValue])
 
 case class InputValue(value: String, expanded: String, colour: Option[String])
+
+object InputEntry {
+  implicitly[FieldsParser[Option[Seq[InputEntry]]]]
+
+  implicit val parser: FieldsParser[InputEntry] = FieldsParser[InputEntry]
+
+  implicit val writes: Writes[InputEntry] = Json.writes[InputEntry]
+}
+
+object InputValue {
+  implicit val parser: FieldsParser[InputValue] = FieldsParser[InputValue]
+
+  implicit val writes: Writes[InputValue] = Json.writes[InputValue]
+}
 
 object InputTaxonomy {
   implicit val writes: OWrites[InputTaxonomy] = Json.writes[InputTaxonomy]
@@ -32,7 +50,7 @@ case class OutputTaxonomy(
   description: String,
   version: Int,
   predicates: Seq[String],
-  values: Option[Seq[OutputEntry]]
+  values: Seq[OutputEntry]
 )
 
 case class OutputEntry(predicate: String, entry: Seq[OutputValue])
@@ -41,4 +59,12 @@ case class OutputValue(value: String, expanded: String)
 
 object OutputTaxonomy {
   implicit val format: OFormat[OutputTaxonomy] = Json.format[OutputTaxonomy]
+}
+
+object OutputEntry {
+  implicit val format: OFormat[OutputEntry] = Json.format[OutputEntry]
+}
+
+object OutputValue {
+  implicit val format: OFormat[OutputValue] = Json.format[OutputValue]
 }
