@@ -14,6 +14,7 @@ class Router @Inject() (
     taskCtrl: TaskCtrl,
     customFieldCtrl: CustomFieldCtrl,
     alertCtrl: AlertCtrl,
+    taxonomyCtrl: TaxonomyCtrl,
     auditCtrl: AuditCtrl,
     statusCtrl: StatusCtrl,
     authenticationCtrl: AuthenticationCtrl,
@@ -89,6 +90,13 @@ class Router @Inject() (
     // PATCH    /alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
+
+    case GET(p"/taxonomy")                    => taxonomyCtrl.list
+    case GET(p"/taxonomy/$taxoId")            => taxonomyCtrl.get(taxoId)
+    case POST(p"/taxonomy")                   => taxonomyCtrl.create
+    // case POST(p"/taxonomy/import-zip")        => taxonomyCtrl.importZip
+    // case PUT(p"/taxonomy/$taxoId/activate")   => taxonomyCtrl.activate
+    // case PUT(p"/taxonomy/$taxoId/deactivate") => taxonomyCtrl.deactivate
 
     case GET(p"/audit") => auditCtrl.flow
 //      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])

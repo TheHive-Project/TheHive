@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import java.util.{Map => JMap}
 
-import javax.inject.{Inject, Named}
+import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -17,8 +17,7 @@ import scala.util.Try
 
 @Singleton
 class TaxonomySrv @Inject() (
-  organisationSrv: OrganisationSrv,
-  tagSrv: TagSrv
+  organisationSrv: OrganisationSrv
 )(implicit @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Taxonomy] {
 
@@ -33,6 +32,7 @@ class TaxonomySrv @Inject() (
       _            <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
     } yield richTaxonomy
+
 /*
 
   def getByNamespace(namespace: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
@@ -55,7 +55,7 @@ object TaxonomyOps {
 
     def tags: Traversal.V[Tag] = traversal.out[TaxonomyTag].v[Tag]
 
-    def richTaxonomy(implicit authContext: AuthContext): Traversal[RichTaxonomy, JMap[String, Any], Converter[RichTaxonomy, JMap[String, Any]]] =
+    def richTaxonomy: Traversal[RichTaxonomy, JMap[String, Any], Converter[RichTaxonomy, JMap[String, Any]]] =
       traversal
         .project(
           _.by

@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import java.util.{Map => JMap}
 
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
@@ -23,6 +23,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class OrganisationSrv @Inject() (
+    taxonomySrvProvider: Provider[TaxonomySrv],
     roleSrv: RoleSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
@@ -31,9 +32,9 @@ class OrganisationSrv @Inject() (
 )(implicit
     @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Organisation] {
-
-  val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
-  val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
+  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
+  val organisationOrganisationSrv   = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
+  val organisationShareSrv          = new EdgeSrv[OrganisationShare, Organisation, Share]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("Organisation")
@@ -51,6 +52,7 @@ class OrganisationSrv @Inject() (
   def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
       createdOrganisation <- createEntity(e)
+      _                   <- taxonomySrv.create(Taxonomy("custom", "Custom taxonomy", 1), Seq())
       _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
     } yield createdOrganisation
 

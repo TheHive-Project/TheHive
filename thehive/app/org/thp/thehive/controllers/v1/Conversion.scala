@@ -266,15 +266,19 @@ object Conversion {
   implicit val taxonomyOutput: Renderer.Aux[RichTaxonomy, OutputTaxonomy] =
     Renderer.toJson[RichTaxonomy, OutputTaxonomy](
       _.into[OutputTaxonomy]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Taxonomy")
         .withFieldComputed(_.namespace, _.namespace)
         .withFieldComputed(_.description, _.description)
         .withFieldComputed(_.version, _.version)
         .withFieldComputed(_.predicates, _.tags.map(_.predicate).distinct)
         .withFieldComputed(_.values, _.tags.foldLeft(Map[String, Seq[OutputValue]]())((entryMap, tag) => {
           val outputValues = entryMap.getOrElse(tag.predicate, Seq())
-          val value = OutputValue(tag.value.getOrElse(""), tag.description.getOrElse(""))
-          entryMap + (tag.predicate -> (outputValues :+ value))
-        }).map(e => OutputEntry(e._1, e._2)))
+          if (tag.value.isDefined)
+            entryMap + (tag.predicate -> (outputValues :+ OutputValue(tag.value.get, tag.description.getOrElse(""))))
+          else
+            entryMap + (tag.predicate -> outputValues)
+        }).map(e => OutputEntry(e._1, e._2)).toSeq)
         .transform
     )
 

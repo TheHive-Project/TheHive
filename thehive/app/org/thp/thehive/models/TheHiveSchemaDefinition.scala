@@ -1,6 +1,7 @@
 package org.thp.thehive.models
 
 import java.lang.reflect.Modifier
+import java.util.Date
 
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
@@ -82,7 +83,12 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       db.tryTransaction { g =>
         db.labelFilter("Organisation")(Traversal.V()(g)).toIterator.toTry { o =>
           val taxoVertex = g.addVertex("Taxonomy")
-          taxoVertex.property("namespace", "Custom")
+          taxoVertex.property("_label", "Taxonomy")
+          taxoVertex.property("_createdBy", "???") // TODO What user should be used ?
+          taxoVertex.property("_createdAt", new Date())
+          taxoVertex.property("namespace", "custom")
+          taxoVertex.property("description", "Custom taxonomy")
+          taxoVertex.property("version", 1)
           o.addEdge("OrganisationTaxonomy", taxoVertex)
           Success(())
         }
@@ -97,12 +103,17 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
             _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
             _.in("AlertOrganisation").out("AlertTag"),
             _.in("CaseTemplateOrganisation").out("CaseTemplateTag")
-          ).toSeq.foreach(tag =>
+          ).toSeq.foreach { tag =>
+            tag.property("namespace", "custom")
             customTaxo.addEdge("TaxonomyTag", tag)
-          )
+          }
           Success(())
         }
       }.map(_ => ())
+    }
+    .updateGraph("Add manageTaxonomy to org-admin profile", "Profile") { traversal =>
+      Try(traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageTaxonomy").iterate())
+      Success(())
     }
 
       val reflectionClasses = new Reflections(
