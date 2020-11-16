@@ -260,6 +260,7 @@ object Conversion {
         .withFieldComputed(_.namespace, _.namespace)
         .withFieldComputed(_.description, _.description)
         .withFieldComputed(_.version, _.version)
+        .withFieldConst(_.enabled, false) // TODO always false when importing a taxonomy ?
         .transform
   }
 
@@ -271,6 +272,7 @@ object Conversion {
         .withFieldComputed(_.namespace, _.namespace)
         .withFieldComputed(_.description, _.description)
         .withFieldComputed(_.version, _.version)
+        .withFieldComputed(_.enabled, _.enabled)
         .withFieldComputed(_.predicates, _.tags.map(_.predicate).distinct)
         .withFieldComputed(_.values, _.tags.foldLeft(Map[String, Seq[OutputValue]]())((entryMap, tag) => {
           val outputValues = entryMap.getOrElse(tag.predicate, Seq())

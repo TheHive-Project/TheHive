@@ -99,6 +99,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
           taxoVertex.property("namespace", "custom")
           taxoVertex.property("description", "Custom taxonomy")
           taxoVertex.property("version", 1)
+          taxoVertex.property("enabled", true)
           o.addEdge("OrganisationTaxonomy", taxoVertex)
           Success(())
         }
@@ -107,7 +108,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .dbOperation[Database]("Add each tag to its Organisation's Custom taxonomy") { db =>
       db.tryTransaction { implicit g =>
         db.labelFilter("Organisation")(Traversal.V()).toIterator.toTry { o =>
-          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", "Custom").head
+          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", "custom").head
           Traversal.V(EntityId(o.id())).unionFlat(
             _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
             _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
