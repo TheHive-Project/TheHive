@@ -94,9 +94,9 @@ class Router @Inject() (
     case GET(p"/taxonomy")                    => taxonomyCtrl.list
     case GET(p"/taxonomy/$taxoId")            => taxonomyCtrl.get(taxoId)
     case POST(p"/taxonomy")                   => taxonomyCtrl.create
-    // case POST(p"/taxonomy/import-zip")        => taxonomyCtrl.importZip
-    // case PUT(p"/taxonomy/$taxoId/activate")   => taxonomyCtrl.activate
-    // case PUT(p"/taxonomy/$taxoId/deactivate") => taxonomyCtrl.deactivate
+    // case POST(p"/taxonomy/import-zip")        => taxonomyCtrl.importZip<
+    case PUT(p"/taxonomy/$taxoId/activate")   => taxonomyCtrl.setEnabled(taxoId, isEnabled = true)
+    case PUT(p"/taxonomy/$taxoId/deactivate") => taxonomyCtrl.setEnabled(taxoId, isEnabled = false)
 
     case GET(p"/audit") => auditCtrl.flow
 //      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])

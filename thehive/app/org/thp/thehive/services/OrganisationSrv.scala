@@ -49,12 +49,14 @@ class OrganisationSrv @Inject() (
       _                   <- roleSrv.create(user, createdOrganisation, profileSrv.orgAdmin)
     } yield createdOrganisation
 
-  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
+  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
+    val customTaxo = Taxonomy("custom", "Custom taxonomy", 1, enabled = true)
     for {
       createdOrganisation <- createEntity(e)
-      _                   <- taxonomySrv.createWithOrg(Taxonomy("custom", "Custom taxonomy", 1), Seq(), createdOrganisation)
+      _                   <- taxonomySrv.createWithOrg(customTaxo, Seq(), createdOrganisation)
       _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
     } yield createdOrganisation
+  }
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
 

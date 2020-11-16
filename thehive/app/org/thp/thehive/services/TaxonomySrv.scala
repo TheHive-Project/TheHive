@@ -9,7 +9,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Traversal}
-import org.thp.scalligraph.{EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 
@@ -41,6 +41,11 @@ class TaxonomySrv @Inject() (
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
     } yield richTaxonomy
 
+  def setEnabled(taxonomyId: EntityIdOrName, isEnabled: Boolean)(implicit graph: Graph): Try[Unit] =
+    for {
+      _ <- get(taxonomyId).update(_.enabled, isEnabled).getOrFail("Taxonomy")
+    } yield ()
+
 /*
 
   def getByNamespace(namespace: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
@@ -51,6 +56,9 @@ class TaxonomySrv @Inject() (
 
 object TaxonomyOps {
   implicit class TaxonomyOpsDefs(traversal: Traversal.V[Taxonomy]) {
+
+    def get(idOrName: EntityId): Traversal.V[Taxonomy] =
+      traversal.getByIds(idOrName)
 
     def getByNamespace(namespace: String): Traversal.V[Taxonomy] = traversal.has(_.namespace, namespace)
 

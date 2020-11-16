@@ -70,7 +70,7 @@ class TaxonomyCtrl @Inject() (
       .authPermittedTransaction(db, Permissions.manageTaxonomy) { implicit request => implicit graph =>
         val inputTaxo: InputTaxonomy = request.body("taxonomy")
 
-        val taxonomy = Taxonomy(inputTaxo.namespace, inputTaxo.description, inputTaxo.version)
+        val taxonomy = Taxonomy(inputTaxo.namespace, inputTaxo.description, inputTaxo.version, enabled = false)
 
         // Create tags
         val tagValues = inputTaxo.values.getOrElse(Seq())
@@ -106,6 +106,14 @@ class TaxonomyCtrl @Inject() (
           .richTaxonomy
           .getOrFail("Taxonomy")
           .map(taxonomy => Results.Ok(taxonomy.toJson))
+      }
+
+  def setEnabled(taxonomyId: String, isEnabled: Boolean): Action[AnyContent] =
+    entrypoint("toggle taxonomy")
+      .authPermittedTransaction(db, Permissions.manageTaxonomy) { implicit request => implicit graph =>
+        taxonomySrv
+          .setEnabled(EntityIdOrName(taxonomyId), isEnabled)
+          .map(_ => Results.NoContent)
       }
 
 /*

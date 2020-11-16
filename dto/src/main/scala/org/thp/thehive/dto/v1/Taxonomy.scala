@@ -8,7 +8,6 @@ import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers.{FObject, FSeq, FieldsParser, WithParser}
 import play.api.libs.json.{JsArray, JsObject, JsString, Json, OFormat, OWrites, Writes}
 
-// TODO make sure of input format
 case class InputTaxonomy (
   namespace: String,
   description: String,
@@ -47,6 +46,7 @@ case class OutputTaxonomy(
   namespace: String,
   description: String,
   version: Int,
+  enabled: Boolean,
   predicates: Seq[String],
   values: Seq[OutputEntry]
 )
