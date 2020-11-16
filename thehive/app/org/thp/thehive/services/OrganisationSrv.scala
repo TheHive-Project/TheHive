@@ -52,7 +52,7 @@ class OrganisationSrv @Inject() (
   def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
     for {
       createdOrganisation <- createEntity(e)
-      _                   <- taxonomySrv.create(Taxonomy("custom", "Custom taxonomy", 1), Seq())
+      _                   <- taxonomySrv.createWithOrg(Taxonomy("custom", "Custom taxonomy", 1), Seq(), createdOrganisation)
       _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
     } yield createdOrganisation
 

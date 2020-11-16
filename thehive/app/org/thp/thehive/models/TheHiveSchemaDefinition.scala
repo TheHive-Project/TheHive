@@ -94,7 +94,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         db.labelFilter("Organisation")(Traversal.V()(g)).toIterator.toTry { o =>
           val taxoVertex = g.addVertex("Taxonomy")
           taxoVertex.property("_label", "Taxonomy")
-          taxoVertex.property("_createdBy", "???") // TODO What user should be used ?
+          taxoVertex.property("_createdBy", "system@thehive.local")
           taxoVertex.property("_createdAt", new Date())
           taxoVertex.property("namespace", "custom")
           taxoVertex.property("description", "Custom taxonomy")

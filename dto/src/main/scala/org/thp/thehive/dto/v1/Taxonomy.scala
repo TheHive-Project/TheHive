@@ -22,8 +22,6 @@ case class InputEntry(predicate: String, entry: Seq[InputValue])
 case class InputValue(value: String, expanded: String, colour: Option[String])
 
 object InputEntry {
-  implicitly[FieldsParser[Option[Seq[InputEntry]]]]
-
   implicit val parser: FieldsParser[InputEntry] = FieldsParser[InputEntry]
 
   implicit val writes: Writes[InputEntry] = Json.writes[InputEntry]
