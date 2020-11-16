@@ -26,8 +26,16 @@ class TaxonomySrv @Inject() (
 
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {
-      taxonomy     <- createEntity(taxo)
       organisation <- organisationSrv.getOrFail(authContext.organisation)
+      richTaxonomy <- createWithOrg(taxo, tags, organisation)
+    } yield richTaxonomy
+
+  def createWithOrg(taxo: Taxonomy,
+                    tags: Seq[Tag with Entity],
+                    organisation: Organisation with Entity)
+  (implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
+    for {
+      taxonomy     <- createEntity(taxo)
       _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
       _            <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
