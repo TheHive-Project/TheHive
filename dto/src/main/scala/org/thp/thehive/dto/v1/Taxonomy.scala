@@ -2,11 +2,7 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import org.scalactic.Accumulation.convertGenTraversableOnceToValidatable
-import org.scalactic.{Bad, Good, One}
-import org.thp.scalligraph.InvalidFormatAttributeError
-import org.thp.scalligraph.controllers.{FObject, FSeq, FieldsParser, WithParser}
-import play.api.libs.json.{JsArray, JsObject, JsString, Json, OFormat, OWrites, Writes}
+import play.api.libs.json.{Json, OFormat, OWrites, Writes}
 
 case class InputTaxonomy (
   namespace: String,
@@ -21,14 +17,10 @@ case class InputEntry(predicate: String, entry: Seq[InputValue])
 case class InputValue(value: String, expanded: String, colour: Option[String])
 
 object InputEntry {
-  implicit val parser: FieldsParser[InputEntry] = FieldsParser[InputEntry]
-
   implicit val writes: Writes[InputEntry] = Json.writes[InputEntry]
 }
 
 object InputValue {
-  implicit val parser: FieldsParser[InputValue] = FieldsParser[InputValue]
-
   implicit val writes: Writes[InputValue] = Json.writes[InputValue]
 }
 
