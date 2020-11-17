@@ -18,7 +18,7 @@ case class TaxonomyTag()
 
 case class RichTaxonomy(
   taxonomy: Taxonomy with Entity,
-  tags: Seq[Tag with Entity]
+  tags: Seq[RichTag]
 ) {
   def _id: EntityId               = taxonomy._id
   def _createdBy: String          = taxonomy._createdBy
