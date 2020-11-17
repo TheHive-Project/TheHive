@@ -32,6 +32,7 @@ class TheHiveQueryExecutor @Inject() (
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
     userCtrl: UserCtrl,
+    taxonomyCtrl: TaxonomyCtrl,
     //    dashboardCtrl: DashboardCtrl,
     properties: Properties,
     @Named("with-thehive-schema") implicit val db: Database
@@ -53,7 +54,8 @@ class TheHiveQueryExecutor @Inject() (
       profileCtrl,
 //      tagCtrl,
       taskCtrl,
-      userCtrl
+      userCtrl,
+      taxonomyCtrl
     )
 
   override val version: (Int, Int) = 1 -> 1
