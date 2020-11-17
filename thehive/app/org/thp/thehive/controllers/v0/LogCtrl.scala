@@ -55,7 +55,13 @@ class LogCtrl @Inject() (
               .can(Permissions.manageTask),
             propertyUpdaters
           )
-          .map(_ => Results.NoContent)
+          .flatMap {
+            case (logs, _) =>
+              logs
+                .richLog
+                .getOrFail("Log")
+                .map(richLog => Results.Ok(richLog.toJson))
+          }
       }
 
   def delete(logId: String): Action[AnyContent] =
