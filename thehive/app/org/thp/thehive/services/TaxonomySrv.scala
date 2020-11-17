@@ -24,6 +24,15 @@ class TaxonomySrv @Inject() (
   val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   val organisationTaxonomySrv = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
+  def existsInOrganisation(namespace: String)(implicit graph: Graph, authContext: AuthContext): Boolean = {
+    startTraversal
+          .has(_.namespace, namespace)
+          .in[OrganisationTaxonomy]
+          .v[Organisation]
+          .has(_.name, authContext.organisation.toString) // TODO not great
+          .exists
+  }
+
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {
       organisation <- organisationSrv.getOrFail(authContext.organisation)

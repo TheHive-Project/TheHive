@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named}
-import org.thp.scalligraph.{EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{CreateError, EntityIdOrName, RichSeq}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
@@ -15,7 +15,7 @@ import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.{OrganisationSrv, TagSrv, TaxonomySrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class TaxonomyCtrl @Inject() (
   entrypoint: Entrypoint,
@@ -91,10 +91,13 @@ class TaxonomyCtrl @Inject() (
           Tag(inputTaxo.namespace, p, None, None, tagSrv.defaultColour)
         )
 
-        for {
-          tagsEntities <- allTags.toTry(t => tagSrv.create(t))
-          richTaxonomy <- taxonomySrv.create(taxonomy, tagsEntities)
-        } yield Results.Created(richTaxonomy.toJson)
+        if (taxonomySrv.existsInOrganisation(inputTaxo.namespace))
+          Failure(CreateError("A taxonomy with this namespace already exists in this organisation"))
+        else
+          for {
+            tagsEntities <- allTags.toTry(t => tagSrv.create(t))
+            richTaxonomy <- taxonomySrv.create(taxonomy, tagsEntities)
+          } yield Results.Created(richTaxonomy.toJson)
   }
 
   def get(taxonomyId: String): Action[AnyContent] =
