@@ -47,19 +47,13 @@ class TaxonomySrv @Inject() (
       taxonomy     <- createEntity(taxo)
       _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
       _            <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
-      richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
+      richTaxonomy <- Try(RichTaxonomy(taxonomy, tags.map(RichTag)))
     } yield richTaxonomy
 
   def setEnabled(taxonomyId: EntityIdOrName, isEnabled: Boolean)(implicit graph: Graph): Try[Unit] =
     for {
       _ <- get(taxonomyId).update(_.enabled, isEnabled).getOrFail("Taxonomy")
     } yield ()
-
-/*
-
-  def getByNamespace(namespace: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
-    Try(startTraversal.getByNamespace(namespace)).getOrElse(startTraversal.limit(0))
-*/
 
 }
 
@@ -86,6 +80,6 @@ object TaxonomyOps {
           _.by
             .by(_.tags.fold)
         )
-        .domainMap { case (taxonomy, tags) => RichTaxonomy(taxonomy, tags) }
+        .domainMap { case (taxonomy, tags) => RichTaxonomy(taxonomy, tags.map(RichTag)) }
   }
 }

@@ -273,14 +273,18 @@ object Conversion {
         .withFieldComputed(_.description, _.description)
         .withFieldComputed(_.version, _.version)
         .withFieldComputed(_.enabled, _.enabled)
-        .withFieldComputed(_.predicates, _.tags.map(_.predicate).distinct)
-        .withFieldComputed(_.values, _.tags.foldLeft(Map[String, Seq[OutputValue]]())((entryMap, tag) => {
-          val outputValues = entryMap.getOrElse(tag.predicate, Seq())
-          if (tag.value.isDefined)
-            entryMap + (tag.predicate -> (outputValues :+ OutputValue(tag.value.get, tag.description.getOrElse(""))))
-          else
-            entryMap + (tag.predicate -> outputValues)
-        }).map(e => OutputEntry(e._1, e._2)).toSeq)
+        .withFieldComputed(_.tags, _.tags.map(_.toOutput))
+        .transform
+    )
+
+  implicit val tagOutput: Renderer.Aux[RichTag, OutputTag] =
+    Renderer.toJson[RichTag, OutputTag](
+      _.into[OutputTag]
+        .withFieldComputed(_.namespace, _.namespace)
+        .withFieldComputed(_.predicate, _.predicate)
+        .withFieldComputed(_.value, _.value)
+        .withFieldComputed(_.description, _.description)
+        .withFieldComputed(_.colour, _.colour)
         .transform
     )
 

@@ -39,22 +39,9 @@ case class OutputTaxonomy(
   description: String,
   version: Int,
   enabled: Boolean,
-  predicates: Seq[String],
-  values: Seq[OutputEntry]
+  tags: Seq[OutputTag]
 )
-
-case class OutputEntry(predicate: String, entry: Seq[OutputValue])
-
-case class OutputValue(value: String, expanded: String)
 
 object OutputTaxonomy {
   implicit val format: OFormat[OutputTaxonomy] = Json.format[OutputTaxonomy]
-}
-
-object OutputEntry {
-  implicit val format: OFormat[OutputEntry] = Json.format[OutputEntry]
-}
-
-object OutputValue {
-  implicit val format: OFormat[OutputValue] = Json.format[OutputValue]
 }

@@ -1,7 +1,9 @@
 package org.thp.thehive.models
 
-import org.thp.scalligraph.BuildVertexEntity
-import org.thp.scalligraph.models.{DefineIndex, IndexType}
+import java.util.Date
+
+import org.thp.scalligraph.{BuildVertexEntity, EntityId}
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import play.api.Logger
 
 import scala.util.Try
@@ -53,4 +55,17 @@ object Tag {
       case _                                        => Tag(defaultNamespace, name, None, None, colour)
     }
   }
+}
+
+case class RichTag(tag: Tag with Entity) {
+  def _id: EntityId               = tag._id
+  def _createdBy: String          = tag._createdBy
+  def _updatedBy: Option[String]  = tag._updatedBy
+  def _createdAt: Date            = tag._createdAt
+  def _updatedAt: Option[Date]    = tag._updatedAt
+  def namespace: String           = tag.namespace
+  def predicate: String           = tag.predicate
+  def value: Option[String]       = tag.value
+  def description: Option[String] = tag.description
+  def colour: Int                 = tag.colour
 }
