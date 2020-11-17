@@ -22,8 +22,8 @@ services:
         soft: 65536
         hard: 65536
     volumes:
-      - ./elasticsearch/data:/usr/share/elasticsearch/data
-      - ./elasticsearch/logs:/usr/share/elasticsearch/logs        
+      - ./elasticsearch_data:/usr/share/elasticsearch/data
+      - ./elasticsearch_logs:/usr/share/elasticsearch/logs        
   kibana:
     image: 'docker.elastic.co/kibana/kibana:7.9.3'
     container_name: kibana
@@ -98,12 +98,18 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      - "HOSTNAME=http://misp"
+      - "HOSTNAME=https://localhost"
       - "REDIS_FQDN=redis"
       - "INIT=true"             # Initialze MISP, things includes, attempting to import SQL and the Files DIR
       - "CRON_USER_ID=1"        # The MISP user ID to run cron jobs as
       - "DISIPV6=true" # Disable IPV6 in nginx
- 
+  misp-modules:
+    image: coolacid/misp-docker:modules-latest
+    environment:
+      - "REDIS_BACKEND=redis"
+    depends_on:
+      - redis
+      - db 
 
 #READY FOR AUTOMATION ?
   frontend:
