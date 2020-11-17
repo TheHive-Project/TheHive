@@ -91,17 +91,22 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .addVertexModel[String]("Taxonomy", Seq("namespace"))
     .dbOperation[Database]("Add Custom taxonomy vertex for each Organisation") { db =>
       db.tryTransaction { g =>
-        db.labelFilter("Organisation")(Traversal.V()(g)).toIterator.toTry { o =>
-          val taxoVertex = g.addVertex("Taxonomy")
-          taxoVertex.property("_label", "Taxonomy")
-          taxoVertex.property("_createdBy", "system@thehive.local")
-          taxoVertex.property("_createdAt", new Date())
-          taxoVertex.property("namespace", "custom")
-          taxoVertex.property("description", "Custom taxonomy")
-          taxoVertex.property("version", 1)
-          taxoVertex.property("enabled", true)
-          o.addEdge("OrganisationTaxonomy", taxoVertex)
-          Success(())
+        // If there are no taxonomies in database, add a custom one for each organisation
+        db.labelFilter("Taxonomy")(Traversal.V()(g)).headOption match {
+          case None =>
+            db.labelFilter("Organisation")(Traversal.V()(g)).toIterator.toTry { o =>
+              val taxoVertex = g.addVertex("Taxonomy")
+              taxoVertex.property("_label", "Taxonomy")
+              taxoVertex.property("_createdBy", "system@thehive.local")
+              taxoVertex.property("_createdAt", new Date())
+              taxoVertex.property("namespace", "custom")
+              taxoVertex.property("description", "Custom taxonomy")
+              taxoVertex.property("version", 1)
+              taxoVertex.property("enabled", true)
+              o.addEdge("OrganisationTaxonomy", taxoVertex)
+              Success(())
+            }
+          case _ => Success(())
         }
       }.map(_ => ())
     }
