@@ -19,7 +19,8 @@ object Permissions extends Perms {
   lazy val manageShare: PermissionDesc              = PermissionDesc("manageShare", "Manage shares", "organisation")
   lazy val manageAnalyse: PermissionDesc            = PermissionDesc("manageAnalyse", "Run Cortex analyzer", "organisation")
   lazy val managePage: PermissionDesc               = PermissionDesc("managePage", "Manage pages", "organisation")
-  lazy val manageObservableTemplate: PermissionDesc = PermissionDesc("manageObservableTemplate", "Manage observable types ", "admin")
+  lazy val manageObservableTemplate: PermissionDesc = PermissionDesc("manageObservableTemplate", "Manage observable types", "admin")
+  lazy val accessTheHiveFS: PermissionDesc          = PermissionDesc("accessTheHiveFS", "Access to TheHiveFS", "organisation")
 
   lazy val list: Set[PermissionDesc] =
     Set(
@@ -39,7 +40,8 @@ object Permissions extends Perms {
       manageShare,
       manageAnalyse,
       managePage,
-      manageObservableTemplate
+      manageObservableTemplate,
+      accessTheHiveFS
     )
 
   // These permissions are available only if the user is in admin organisation, they are removed for other organisations

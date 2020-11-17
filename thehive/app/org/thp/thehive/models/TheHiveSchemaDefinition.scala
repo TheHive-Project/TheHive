@@ -3,7 +3,9 @@ package org.thp.thehive.models
 import java.lang.reflect.Modifier
 
 import javax.inject.{Inject, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Graph
+import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 import org.janusgraph.core.schema.ConsistencyModifier
 import org.janusgraph.graphdb.types.TypeDefinitionCategory
 import org.reflections.Reflections
@@ -68,12 +70,20 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .noop // .addIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
     .noop // .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
     .rebuildIndexes
-    // release 4.0.0
+    //=====[release 4.0.0]=====
     .updateGraph("Remove cases with a Deleted status", "Case") { traversal =>
       traversal.unsafeHas("status", "Deleted").remove()
       Success(())
     }
     .addProperty[Option[Boolean]]("Observable", "ignoreSimilarity")
+    //=====[release 4.0.1]=====
+    .updateGraph("Add accessTheHiveFS permission to analyst and org-admin profiles", "Profile") { traversal =>
+      traversal
+        .unsafeHas("name", P.within("org-admin", "analyst"))
+        .onRaw(_.property(Cardinality.set: Cardinality, "permissions", "accessTheHiveFS", Nil: _*)) // Nil is for disambiguate the overloaded methods
+        .iterate()
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

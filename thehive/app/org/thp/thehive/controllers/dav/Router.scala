@@ -6,6 +6,7 @@ import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.AttachmentSrv
 import play.api.Logger
 import play.api.http.{HttpEntity, Status, Writeable}
@@ -65,7 +66,7 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-s
   def dav(path: String): Action[AnyContent] =
     entrypoint("dav")
       .extract("xml", FieldsParser.xml.on("xml"))
-      .authRoTransaction(db) { implicit request => implicit graph =>
+      .authPermittedRoTransaction(db, Permissions.accessTheHiveFS) { implicit request => implicit graph =>
         val pathElements = path.split('/').toList.filterNot(_.isEmpty)
         val baseUrl =
           if (request.uri.endsWith("/")) request.uri
@@ -102,7 +103,7 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-s
 
   def downloadFile(id: String): Action[AnyContent] =
     entrypoint("download attachment")
-      .authRoTransaction(db) { request => implicit graph =>
+      .authPermittedRoTransaction(db, Permissions.accessTheHiveFS) { request => implicit graph =>
         attachmentSrv.getOrFail(EntityIdOrName(id)).map { attachment =>
           val range = request.headers.get("Range")
           range match {
@@ -129,7 +130,7 @@ class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-s
 
   def head(path: String): Action[AnyContent] =
     entrypoint("head")
-      .authRoTransaction(db) { implicit request => implicit graph =>
+      .authPermittedRoTransaction(db, Permissions.accessTheHiveFS) { implicit request => implicit graph =>
         val pathElements = path.split('/').toList
         vfs
           .get(pathElements)
