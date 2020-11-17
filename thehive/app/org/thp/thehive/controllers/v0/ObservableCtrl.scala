@@ -133,7 +133,13 @@ class ObservableCtrl @Inject() (
             _.get(EntityIdOrName(observableId)).can(Permissions.manageObservable),
             propertyUpdaters
           )
-          .map(_ => Results.NoContent)
+          .flatMap {
+            case (observables, _) =>
+              observables
+                .richObservable
+                .getOrFail("Observable")
+                .map(richObservable => Results.Ok(richObservable.toJson))
+          }
       }
 
   def findSimilar(observableId: String): Action[AnyContent] =
