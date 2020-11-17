@@ -24,6 +24,7 @@
             operations: [
                 { '_name': 'getCase', 'idOrName': $scope.caseId },
                 { '_name': 'tasks' },
+                { '_name': 'filter', '_ne':{'_field': 'status', '_value': 'Cancel'}},
                 { '_name': 'logs' },
             ]
         });
