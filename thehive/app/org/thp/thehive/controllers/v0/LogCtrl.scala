@@ -96,6 +96,10 @@ class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) ext
       .property("deleted", UMapping.boolean)(_.field.updatable)
       .property("startDate", UMapping.date)(_.rename("date").readonly)
       .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
-      .property("attachment", UMapping.string)(_.select(_.attachments.value(_.attachmentId)).readonly)
+      .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
+      .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
+      .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
+      .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
+      .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
 }

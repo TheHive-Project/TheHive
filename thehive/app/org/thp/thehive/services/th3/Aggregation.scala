@@ -177,7 +177,7 @@ case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregatio
       traversal: Traversal.Unk,
       authContext: AuthContext
   ): Traversal.Domain[Output[_]] = {
-    val fieldPath = if (fieldName.startsWith("computed")) FPathElem(fieldName) else FPath(fieldName)
+    val fieldPath = FPath(fieldName)
     val property = publicProperties
       .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
       .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))

@@ -435,7 +435,11 @@ class Properties @Inject() (
       .property("message", UMapping.string)(_.field.updatable)
       .property("deleted", UMapping.boolean)(_.field.updatable)
       .property("date", UMapping.date)(_.field.readonly)
-      .property("attachment", UMapping.string)(_.select(_.attachments.value(_.attachmentId)).readonly)
+      .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
+      .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
+      .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
+      .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
+      .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
 
   lazy val user: PublicProperties =
@@ -480,6 +484,10 @@ class Properties @Inject() (
       .property("tlp", UMapping.int)(_.field.updatable)
       .property("dataType", UMapping.string)(_.select(_.observableType.value(_.name)).readonly)
       .property("data", UMapping.string.optional)(_.select(_.data.value(_.data)).readonly)
-      // TODO add attachment ?
+      .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
+      .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
+      .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
+      .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
+      .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
 }
