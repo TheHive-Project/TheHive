@@ -57,6 +57,23 @@
                 <div class="mt-xs" ng-if="dialog.event.description">
                     <h4 class="vpad10 text-primary">
                         Additional fields
+
+                        <span uib-dropdown class="ml-m">
+                            <a href class="dropdown-toggle" uib-dropdown-toggle>
+                                <small><i class="fa fa-columns"></i> Layout</small>
+                            </a>
+                            <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
+                                <li ng-class="{'active': appLayout.alertCustomFieldColumns === 1}">
+                                    <a ng-click="layoutSrv.alertCustomFields(1)">1 column</a>
+                                </li>
+                                <li ng-class="{'active': appLayout.alertCustomFieldColumns === 2}">
+                                    <a ng-click="layoutSrv.alertCustomFields(2)">2 columns</a>
+                                </li>
+                                <li ng-class="{'active': appLayout.alertCustomFieldColumns === 3}">
+                                    <a ng-click="layoutSrv.alertCustomFields(3)">3 columns</a>
+                                </li>
+                            </ul>
+                        </span>
                     </h4>
                     <div ng-include="'views/partials/alert/custom.fields.html'"></div>
                 </div>
