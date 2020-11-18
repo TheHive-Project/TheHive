@@ -2,14 +2,15 @@ package org.thp.thehive.controllers.v1
 
 import javax.inject.{Inject, Named}
 import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.FileHeader
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps.{TraversalOpsDefs, logger}
+import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{CreateError, EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTaxonomy
 import org.thp.thehive.models.{Permissions, RichTaxonomy, Tag, Taxonomy}
@@ -19,6 +20,7 @@ import org.thp.thehive.services.{OrganisationSrv, TagSrv, TaxonomySrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 class TaxonomyCtrl @Inject() (
@@ -80,16 +82,27 @@ class TaxonomyCtrl @Inject() (
   def importZip: Action[AnyContent] =
     entrypoint("import taxonomies zip")
       .extract("file", FieldsParser.file.on("file"))
-      .authPermittedTransaction(db, Permissions.manageTaxonomy) { implicit request => implicit graph =>
+      .authPermitted(Permissions.manageTaxonomy) { implicit request =>
         val file: FFile = request.body("file")
         val zipFile = new ZipFile(file.filepath.toString)
-        zipFile.getFileHeaders.stream.forEach { fileHeader =>
-          val json = Json.parse(zipFile.getInputStream(fileHeader))
-          createFromInput(json.as[InputTaxonomy])
-        }
+        val headers = zipFile
+          .getFileHeaders
+          .iterator()
+          .asScala
 
-        Success(Results.NoContent)
+        for {
+          inputTaxos <- headers.toTry(h => parseJsonFile(zipFile, h))
+          richTaxos  <- db.tryTransaction { implicit graph =>
+            inputTaxos.toTry(inputTaxo => createFromInput(inputTaxo)).map(_.toJson)
+          }
+        } yield Results.Created(richTaxos)
       }
+
+  private def parseJsonFile(zipFile: ZipFile, h: FileHeader): Try[InputTaxonomy] = {
+    Try(Json.parse(zipFile.getInputStream(h)).as[InputTaxonomy]).recoverWith {
+      case _ => Failure(BadRequestError(s"File '${h.getFileName}' does not comply with the MISP taxonomy formatting"))
+    }
+  }
 
   private def createFromInput(inputTaxo: InputTaxonomy)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
     val taxonomy = Taxonomy(inputTaxo.namespace, inputTaxo.description, inputTaxo.version, enabled = false)
@@ -114,7 +127,7 @@ class TaxonomyCtrl @Inject() (
     )
 
     if (taxonomySrv.existsInOrganisation(inputTaxo.namespace))
-      Failure(CreateError("A taxonomy with this namespace already exists in this organisation"))
+      Failure(BadRequestError(s"A taxonomy with namespace '${inputTaxo.namespace}' already exists in this organisation"))
     else
       for {
         tagsEntities <- allTags.toTry(t => tagSrv.create(t))

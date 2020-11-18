@@ -29,7 +29,7 @@ class TaxonomySrv @Inject() (
           .has(_.namespace, namespace)
           .in[OrganisationTaxonomy]
           .v[Organisation]
-          .has(_.name, authContext.organisation.toString) // TODO not great
+          .current
           .exists
   }
 
