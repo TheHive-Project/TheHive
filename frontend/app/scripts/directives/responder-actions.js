@@ -11,7 +11,7 @@
             templateUrl: 'views/directives/responder-actions.html',
             controller: function($scope, $uibModal) {
 
-                $scope.$watch('actions', function(list) {
+                $scope.$watchCollection('actions.values', function(list) {
                     if(!list) {
                         return;
                     }
