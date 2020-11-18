@@ -1,0 +1,38 @@
+.updatable-input {
+    /* border: 1px solid green; */
+}
+
+.updatable-input .updatable-value {
+    vertical-align: top;
+    white-space: pre-wrap
+}
+
+.updatable-input .updatable-input-value-wrapper {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px solid #fff;
+}
+
+.updatable-input .updatable-input-value-wrapper:hover{
+    border-bottom: 1px solid #337ab7;
+    cursor: pointer;
+}
+
+.updatable-input .updatable-input-value-wrapper .updatable-input-icon {
+    display: none;
+    float: right;
+    margin-left: 10px;
+    color: #337ab7;
+}
+
+.updatable-input .updatable-input-value-wrapper .updatable-input-icon.lg {
+    line-height: 18px;
+}
+
+.updatable-input .updatable-input-value-wrapper:hover .updatable-input-icon {
+    display: block;
+}
+
+.updatable-input.updatable-input-tags {
+
+}

@@ -1,29 +1,27 @@
-<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
-    <span ng-if="value!==null && value !==''" style="vertical-align:top" class="updatable-value">{{value | shortDate}}</span>
-    <span ng-if="value===null || value ===''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value text-warning"><em>Not Specified</em></span>
-    <small ng-show="active">
-        <a style="cursor: pointer;" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
-            <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
-        </a>
-    </small>
-    <small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>
-</span>
-<span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
+<div class="updatable-input updatable-input-date">
+    <span class="updatable-input-value-wrapper" ng-hide="updatable.updating" ng-click="edit()">
+        <span ng-if="value!==null && value !==''" class="updatable-value">{{value | shortDate}}</span>
+        <span ng-if="value===null || value ===''" class="updatable-value text-warning"><em>Not Specified</em></span>
 
-    <form ng-submit="update()">
-		<div class="input-group input-group-sm">
-			<input class="input-datetime form-control input-sm" ng-click="dateNow=false" ng-model="humanDate" type="datetime"/>
-			<span class="input-group-btn">
+        <small class="updatable-input-icon">
+            <i class="glyphicon glyphicon-pencil"></i>
+        </small>
+    </span>
+
+    <form ng-submit="update()" ng-show="updatable.updating">
+    	<div class="input-group input-group-sm">
+    		<input class="input-datetime form-control input-sm" ng-click="dateNow=false" ng-model="humanDate" type="datetime"/>
+    		<span class="input-group-btn">
                 <span uib-btn-checkbox="" class="btn btn-sm btn-primary" ng-model="dateNow">
-					Now
-				</span>
-				<button class="btn btn-sm btn-default" type="submit">
-					<i class="text-success glyphicon glyphicon-ok"></i>
-				</button>
+    				Now
+    			</span>
+    			<button class="btn btn-sm btn-default" type="submit">
+    				<i class="text-success glyphicon glyphicon-ok"></i>
+    			</button>
                 <button class="btn btn-sm btn-default" type="button" ng-click="cancel()">
-					<i class="text-danger glyphicon glyphicon-remove"></i>
-				</button>
+    				<i class="text-danger glyphicon glyphicon-remove"></i>
+    			</button>
             </span>
-		</div>
-	</form>
-</span>
+    	</div>
+    </form>
+</div>

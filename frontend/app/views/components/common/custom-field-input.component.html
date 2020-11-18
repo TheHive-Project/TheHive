@@ -1,4 +1,4 @@
-<dl class="dl-horizontal">
+<dl class="dl-horizontal custom-field-input">
     <dt class="pull-left" uib-tooltip="{{$ctrl.field.description}}">{{$ctrl.field.name}}</dt>
     <dd ng-if="$ctrl.editable && $ctrl.field.options.length > 0">
         <updatable-select
@@ -7,27 +7,29 @@
             value="$ctrl.value"></updatable-select>
     </dd>
     <dd ng-if="$ctrl.editable && $ctrl.field.options.length === 0" ng-switch="$ctrl.field.type">
-        <updatable-simple-text ng-switch-when="string"
-            input-type="text" on-update="$ctrl.updateField(newValue)" value="$ctrl.value"></updatable-simple-text>
+        <div class="custom-field-input-wrapper">
+            <updatable-simple-text ng-switch-when="string"
+                input-type="text" on-update="$ctrl.updateField(newValue)" value="$ctrl.value"></updatable-simple-text>
 
-        <updatable-date ng-switch-when="date" on-update="$ctrl.updateField(newValue)" value="$ctrl.value"></updatable-date>
+            <updatable-date ng-switch-when="date" on-update="$ctrl.updateField(newValue)" value="$ctrl.value"></updatable-date>
 
-        <updatable-simple-text ng-switch-when="integer"
-            input-type="integer"
-            on-update="$ctrl.updateField(newValue)"
-            value="$ctrl.value"></updatable-simple-text>
+            <updatable-simple-text ng-switch-when="integer"
+                input-type="integer"
+                on-update="$ctrl.updateField(newValue)"
+                value="$ctrl.value"></updatable-simple-text>
 
-        <updatable-simple-text ng-switch-when="float"
-           input-type="float"
-           on-update="$ctrl.updateField(newValue)"
-           value="$ctrl.value"></updatable-simple-text>
+            <updatable-simple-text ng-switch-when="float"
+               input-type="float"
+               on-update="$ctrl.updateField(newValue)"
+               value="$ctrl.value"></updatable-simple-text>
 
-        <updatable-boolean ng-switch-when="boolean"
-            input-type="number"
-            on-update="$ctrl.updateField(newValue)"
-            value="$ctrl.value"></updatable-boolean>
+            <updatable-boolean ng-switch-when="boolean"
+                input-type="number"
+                on-update="$ctrl.updateField(newValue)"
+                value="$ctrl.value"></updatable-boolean>
 
-        <span ng-switch-default>Not Editable</span>
+            <span ng-switch-default>Not Editable</span>
+        </div>
     </dd>
     <dd ng-if="!$ctrl.editable" ng-switch="$ctrl.field.type">
         <span ng-switch-when="date">{{$ctrl.value | shortDate}}</span>
