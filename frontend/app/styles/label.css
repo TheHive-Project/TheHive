@@ -1,9 +1,9 @@
-.double-val-label {
+.kv-label {
 	display: table;
     margin-top: 0;
     margin-left: 0;
 }
-.double-val-label>span {
+.kv-label>span {
 	color: #ffffff;
 	display: table-cell;
 	font-weight: 400;
@@ -13,23 +13,34 @@
 	vertical-align: baseline;
 	white-space: nowrap;
 }
-.double-val-label>span:first-child {
+.kv-label span.kv-label-key {
     border-bottom-left-radius: 0.25em;
     border-top-left-radius: .25em;
     border-left-color: #3c8dbc;
     border-left-width: 3px;
     border-left-style: solid;
 }
-.double-val-label>span:last-child {
+.kv-label span.kv-label-val {
     border-bottom-right-radius: 0.25em;
     border-top-right-radius: .25em;
     border-left: 1px dashed #3c8dbc;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 200px;
 }
-.double-val-label>span.primary {
+.kv-label>span.primary {
 	background-color: #3c8dbc;
     color: #fff;
 }
-.double-val-label>span.default {
+.kv-label>span.default {
     background-color: #d2d6de;
     color: #444;
+}
+
+
+.kv-label .tooltip-inner{
+	word-wrap: break-word;
+	text-align: left;
+	white-space: pre-line;
 }
