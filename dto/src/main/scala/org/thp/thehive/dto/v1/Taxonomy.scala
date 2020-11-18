@@ -2,30 +2,57 @@ package org.thp.thehive.dto.v1
 
 import java.util.Date
 
-import play.api.libs.json.{Json, OFormat, OWrites, Writes}
+import play.api.libs.json.{Json, OFormat}
 
-case class InputTaxonomy (
+/*
+Format based on :
+https://tools.ietf.org/id/draft-dulaunoy-misp-taxonomy-format-04.html
+*/
+
+case class InputTaxonomy(
   namespace: String,
   description: String,
   version: Int,
-  predicates: Seq[String],
-  values: Option[Seq[InputEntry]]
+  `type`: Option[Seq[String]],
+  exclusive: Option[Boolean],
+  predicates: Seq[InputPredicate],
+  values: Option[Seq[InputValue]]
 )
 
-case class InputEntry(predicate: String, entry: Seq[InputValue])
+case class InputPredicate(
+  value: String,
+  expanded: Option[String],
+  exclusive: Option[Boolean],
+  description: Option[String]
+)
 
-case class InputValue(value: String, expanded: String, colour: Option[String])
+case class InputValue(
+  predicate: String,
+  entry: Seq[InputEntry]
+)
 
-object InputEntry {
-  implicit val writes: Writes[InputEntry] = Json.writes[InputEntry]
+case class InputEntry(
+  value: String,
+  expanded: Option[String],
+  colour: Option[String],
+  description: Option[String],
+  numerical_value: Option[Int]
+)
+
+object InputTaxonomy {
+  implicit val format: OFormat[InputTaxonomy] = Json.format[InputTaxonomy]
+}
+
+object InputPredicate {
+  implicit val format: OFormat[InputPredicate] = Json.format[InputPredicate]
 }
 
 object InputValue {
-  implicit val writes: Writes[InputValue] = Json.writes[InputValue]
+  implicit val format: OFormat[InputValue] = Json.format[InputValue]
 }
 
-object InputTaxonomy {
-  implicit val writes: OWrites[InputTaxonomy] = Json.writes[InputTaxonomy]
+object InputEntry {
+  implicit val format: OFormat[InputEntry] = Json.format[InputEntry]
 }
 
 case class OutputTaxonomy(

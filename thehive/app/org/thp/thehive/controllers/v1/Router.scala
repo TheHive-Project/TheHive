@@ -92,7 +92,7 @@ class Router @Inject() (
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
     case POST(p"/taxonomy")                   => taxonomyCtrl.create
-    // case POST(p"/taxonomy/import-zip")        => taxonomyCtrl.importZip
+    case POST(p"/taxonomy/import-zip")        => taxonomyCtrl.importZip
     case GET(p"/taxonomy/$taxoId")            => taxonomyCtrl.get(taxoId)
     case PUT(p"/taxonomy/$taxoId/activate")   => taxonomyCtrl.setEnabled(taxoId, isEnabled = true)
     case PUT(p"/taxonomy/$taxoId/deactivate") => taxonomyCtrl.setEnabled(taxoId, isEnabled = false)
