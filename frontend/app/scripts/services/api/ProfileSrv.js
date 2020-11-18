@@ -42,7 +42,8 @@
                         'manageObservable',
                         'manageTask',
                         'manageAction',
-                        'manageAnalyse'
+                        'manageAnalyse',
+                        'accessTheHiveFS'
                     ],
                     labels: {
                         manageUser: 'Manage users',
@@ -53,7 +54,8 @@
                         manageObservable: 'Manage observables',
                         manageTask: 'Manage tasks',
                         manageAction: 'Run Cortex responders',
-                        manageAnalyse: 'Run Cortex analyzer'
+                        manageAnalyse: 'Run Cortex analyzer',
+                        accessTheHiveFS: 'Access to TheHiveFS service'
                     }
                 }
             };
