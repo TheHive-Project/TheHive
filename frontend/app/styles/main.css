@@ -761,3 +761,8 @@ table.tbody-stripped>tbody+tbody {
 table.tbody-stripped > tbody > tr > td {
 
 }
+
+.ellipsable {
+    overflow: hidden;
+	text-overflow: ellipsis;
+}

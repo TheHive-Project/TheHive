@@ -14,8 +14,8 @@
 	white-space: nowrap;
 }
 .kv-label span.kv-label-key {
-    border-bottom-left-radius: 0.25em;
-    border-top-left-radius: .25em;
+    /* border-bottom-left-radius: 0.25em;
+    border-top-left-radius: .25em; */
     border-left-color: #3c8dbc;
     border-left-width: 3px;
     border-left-style: solid;
@@ -29,6 +29,17 @@
 	text-overflow: ellipsis;
 	max-width: 200px;
 }
+
+.kv-label.kv-label-addon span.kv-label-val {
+	border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.kv-label.kv-label-addon span:last-child {
+	border-bottom-right-radius: 0.25em;
+	border-top-right-radius: .25em;
+}
+
 .kv-label>span.primary {
 	background-color: #3c8dbc;
     color: #fff;

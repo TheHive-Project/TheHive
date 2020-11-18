@@ -27,6 +27,14 @@
     padding-left: 10px;
 }
 
+.active-filters .filter-value {
+    max-width: 200px;
+}
+
+.active-filters .kv-label .default {
+    background-color: #eee;
+}
+
 .filter-panel {
     padding: 10px;
     background-color: #f5f5f5;
