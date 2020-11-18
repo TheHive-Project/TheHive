@@ -17,7 +17,7 @@
             version: 'v1',
             loadAll: false,
             filter: {
-                '_contains': 'attachment'
+                '_contains': 'attachment.id'
             },
             extraData: ['taskId'],
             pageSize: 100,
