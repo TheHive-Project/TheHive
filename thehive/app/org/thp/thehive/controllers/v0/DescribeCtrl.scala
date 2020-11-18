@@ -215,7 +215,7 @@ class DescribeCtrl @Inject() (
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))
         case c if c == classOf[Date]                              => Seq(PropertyDescription(prop.propertyName, "date"))
-        case c if c == classOf[Hash]                              => Seq(PropertyDescription(prop.propertyName, "hash"))
+        case c if c == classOf[Hash]                              => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if classOf[Number].isAssignableFrom(c)             => Seq(PropertyDescription(prop.propertyName, "number"))
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>
