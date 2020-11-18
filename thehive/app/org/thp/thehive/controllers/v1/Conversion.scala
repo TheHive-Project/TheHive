@@ -257,10 +257,7 @@ object Conversion {
     def toTaxonomy: Taxonomy =
       inputTaxonomy
         .into[Taxonomy]
-        .withFieldComputed(_.namespace, _.namespace)
-        .withFieldComputed(_.description, _.description)
-        .withFieldComputed(_.version, _.version)
-        .withFieldConst(_.enabled, false) // TODO always false when importing a taxonomy ?
+        .withFieldConst(_.enabled, false)
         .transform
   }
 
@@ -269,10 +266,6 @@ object Conversion {
       _.into[OutputTaxonomy]
         .withFieldComputed(_._id, _._id.toString)
         .withFieldConst(_._type, "Taxonomy")
-        .withFieldComputed(_.namespace, _.namespace)
-        .withFieldComputed(_.description, _.description)
-        .withFieldComputed(_.version, _.version)
-        .withFieldComputed(_.enabled, _.enabled)
         .withFieldComputed(_.tags, _.tags.map(_.toOutput))
         .transform
     )
@@ -280,11 +273,6 @@ object Conversion {
   implicit val tagOutput: Renderer.Aux[RichTag, OutputTag] =
     Renderer.toJson[RichTag, OutputTag](
       _.into[OutputTag]
-        .withFieldComputed(_.namespace, _.namespace)
-        .withFieldComputed(_.predicate, _.predicate)
-        .withFieldComputed(_.value, _.value)
-        .withFieldComputed(_.description, _.description)
-        .withFieldComputed(_.colour, _.colour)
         .transform
     )
 

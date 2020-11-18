@@ -122,7 +122,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       Success(())
     }
 
-      val reflectionClasses = new Reflections(
+  val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
       .forPackages("org.thp.thehive.models")
       .addClassLoader(getClass.getClassLoader)
