@@ -288,10 +288,17 @@ class PublicCase @Inject() (
           } yield Json.obj("impactStatus" -> impactStatus)
       })
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), caseSteps) =>
-          caseSteps
-            .customFields(EntityIdOrName(name))
-            .jsonValue
+        case (FPathElem(_, FPathElem(name, _)), caseTraversal) =>
+          db
+            .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField"))
+            .map {
+              case CustomFieldType.boolean => caseTraversal.customFields(EntityIdOrName(name)).value(_.booleanValue).domainMap(v => JsBoolean(v))
+              case CustomFieldType.date    => caseTraversal.customFields(EntityIdOrName(name)).value(_.dateValue).domainMap(v => JsNumber(v.getTime))
+              case CustomFieldType.float   => caseTraversal.customFields(EntityIdOrName(name)).value(_.floatValue).domainMap(v => JsNumber(v))
+              case CustomFieldType.integer => caseTraversal.customFields(EntityIdOrName(name)).value(_.integerValue).domainMap(v => JsNumber(v))
+              case CustomFieldType.string  => caseTraversal.customFields(EntityIdOrName(name)).value(_.stringValue).domainMap(v => JsString(v))
+            }
+            .getOrElse(caseTraversal.constant2(null))
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter {
