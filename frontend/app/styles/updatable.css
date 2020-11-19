@@ -1,16 +1,13 @@
-.updatable-input {
-    /* border: 1px solid green; */
-}
-
 .updatable-input .updatable-value {
     vertical-align: top;
-    white-space: pre-wrap
+    white-space: pre-wrap;
 }
 
 .updatable-input .updatable-input-value-wrapper {
     position: relative;
     display: inline-block;
     border-bottom: 1px solid #fff;
+    padding-right: 20px;
 }
 
 .updatable-input .updatable-input-value-wrapper:hover{
@@ -30,17 +27,16 @@
 }
 
 .updatable-input .updatable-input-value-wrapper:hover .updatable-input-icon {
-    display: block;
-}
-
-.updatable-input.updatable-input-tags {
-
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    right: 0;
 }
 
 .updatable-input.updatable-input-text .updatable-input-markdown {
     cursor: auto;
 }
 .updatable-input.updatable-input-text .updatable-input-markdown .updatable-input-icon {
-    float:left;
-    margin-left: 0;
+    /* float:left;
+    margin-left: 0; */
 }
