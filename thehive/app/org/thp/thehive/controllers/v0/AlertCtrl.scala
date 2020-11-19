@@ -316,6 +316,10 @@ class AlertCtrl @Inject() (
               attachmentSrv
                 .create(filename, contentType, data)
                 .flatMap(attachment => observableSrv.create(observable.toObservable, attachmentType, attachment, observable.tags, Nil))
+            case Array(filename, contentType) =>
+              attachmentSrv
+                .create(filename, contentType, Array.emptyByteArray)
+                .flatMap(attachment => observableSrv.create(observable.toObservable, attachmentType, attachment, observable.tags, Nil))
             case data =>
               Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
           }
