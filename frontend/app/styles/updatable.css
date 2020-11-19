@@ -36,3 +36,8 @@
 .updatable-input.updatable-input-tags {
 
 }
+
+.updatable-input.updatable-input-text .updatable-input-markdown .updatable-input-icon {
+    float:left;
+    margin-left: 0;
+}
