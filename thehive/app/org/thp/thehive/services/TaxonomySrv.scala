@@ -47,7 +47,7 @@ class TaxonomySrv @Inject() (
       taxonomy     <- createEntity(taxo)
       _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
       _            <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
-      richTaxonomy <- Try(RichTaxonomy(taxonomy, tags.map(RichTag)))
+      richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
     } yield richTaxonomy
 
   def setEnabled(taxonomyId: EntityIdOrName, isEnabled: Boolean)(implicit graph: Graph): Try[Unit] =
@@ -80,6 +80,6 @@ object TaxonomyOps {
           _.by
             .by(_.tags.fold)
         )
-        .domainMap { case (taxonomy, tags) => RichTaxonomy(taxonomy, tags.map(RichTag)) }
+        .domainMap { case (taxonomy, tags) => RichTaxonomy(taxonomy, tags) }
   }
 }

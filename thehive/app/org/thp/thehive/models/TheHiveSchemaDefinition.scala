@@ -80,11 +80,11 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     // Taxonomies
     .addVertexModel[String]("Taxonomy", Seq("namespace"))
     .dbOperation[Database]("Add Custom taxonomy vertex for each Organisation") { db =>
-      db.tryTransaction { g =>
-        // If there are no taxonomies in database, add a custom one for each organisation
-        db.labelFilter("Taxonomy")(Traversal.V()(g)).headOption match {
-          case None =>
-            db.labelFilter("Organisation")(Traversal.V()(g)).toIterator.toTry { o =>
+      db.tryTransaction { implicit g =>
+        // For each organisation, if there is no custom taxonomy, create it
+        db.labelFilter("Organisation")(Traversal.V()).toIterator.toTry { o =>
+          Traversal.V(EntityId(o.id)).out[OrganisationTaxonomy].v[Taxonomy].unsafeHas("namespace", "custom").headOption match {
+            case None =>
               val taxoVertex = g.addVertex("Taxonomy")
               taxoVertex.property("_label", "Taxonomy")
               taxoVertex.property("_createdBy", "system@thehive.local")
@@ -95,8 +95,8 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
               taxoVertex.property("enabled", true)
               o.addEdge("OrganisationTaxonomy", taxoVertex)
               Success(())
-            }
-          case _ => Success(())
+            case _ => Success(())
+          }
         }
       }.map(_ => ())
     }
