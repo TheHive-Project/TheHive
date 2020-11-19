@@ -11,7 +11,8 @@
                     'value': '=?',
                     'onUpdate': '&',
                     'active': '=?',
-                    'placeholder': '@'
+                    'placeholder': '@',
+                    'clearable': '<?'
                 }
             };
         });

@@ -22,6 +22,12 @@
                 'restrict': 'E',
                 'link': function(scope, element, attrs, ctrl, transclude) {
                     UtilsSrv.updatableLink(scope, element, attrs, ctrl, transclude);
+
+                    scope.clear = function() {
+                        scope.value = null;
+                        scope.humanDate = null;
+                    };
+
                     $(element).find('.input-datetime').datetimepicker({
                         format: 'dd-mm-yyyy hh:ii',
                         weekStart: 1,
@@ -53,7 +59,8 @@
                 'scope': {
                     'value': '=?',
                     'onUpdate': '&',
-                    'active': '=?'
+                    'active': '=?',
+                    'clearable': '<?'
                 }
             };
         });

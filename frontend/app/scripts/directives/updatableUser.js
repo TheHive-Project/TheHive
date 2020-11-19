@@ -49,7 +49,8 @@
                     query: '=',
                     queryParams: '=',
                     onUpdate: '&',
-                    active: '=?'
+                    active: '=?',
+                    clearable: '<?'
                 }
             };
         });

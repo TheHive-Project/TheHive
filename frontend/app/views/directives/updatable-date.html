@@ -21,6 +21,9 @@
                 <button class="btn btn-sm btn-default" type="button" ng-click="cancel()">
     				<i class="text-danger glyphicon glyphicon-remove"></i>
     			</button>
+                <button class="btn btn-sm btn-default" type="button" ng-click="clear()" ng-if="clearable === true">
+					<i class="text-danger glyphicon glyphicon-erase"></i>
+				</button>
             </span>
     	</div>
     </form>

@@ -12,7 +12,8 @@
                     'active': '=?',
                     'placeholder': '@',
                     'trueText': '@?',
-                    'falseText': '@?'
+                    'falseText': '@?',
+                    'clearable': '<?'
                 }
             };
         });

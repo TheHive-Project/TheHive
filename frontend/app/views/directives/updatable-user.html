@@ -4,7 +4,7 @@
 
         <small class="updatable-input-icon">
             <i class="glyphicon glyphicon-pencil"></i>
-        </small>    
+        </small>
     </span>
     <span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
         <div class="btn-group" uib-dropdown is-open="updatable.dropdownOpen">
@@ -14,6 +14,9 @@
             </button>
             <button class="btn btn-default btn-sm" ng-click='updatable.updating = false' type="button">
                 <i class="text-danger glyphicon glyphicon-remove"></i>
+            </button>
+            <button class="btn btn-sm btn-default" type="button" ng-click="clear()" ng-if="clearable === true">
+                <i class="text-danger glyphicon glyphicon-erase"></i>
             </button>
             <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
                 <li ng-repeat="user in userList">
