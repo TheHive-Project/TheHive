@@ -411,11 +411,7 @@ angular.module('thehive', [
                 controller: 'CaseAlertsCtrl',
                 resolve: {
                     alerts: function($stateParams, CaseSrv) {
-                        return CaseSrv.alerts({range: 'all'}, {
-                            query: {
-                              case: $stateParams.caseId
-                            }
-                        }).$promise;
+                        return CaseSrv.alerts($stateParams.caseId);
                     }
                 },
                 guard: {

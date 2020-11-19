@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('CaseAlertsCtrl',
-        function($scope, $state, $stateParams, $uibModal, $timeout, CaseTabsSrv, VersionSrv, alerts) {
+        function($scope, $state, $stateParams, $uibModal, $timeout, CaseTabsSrv, VersionSrv, NotificationSrv, alerts) {
             $scope.caseId = $stateParams.caseId;
             $scope.alerts = alerts;
             $scope.alertStats = [];
@@ -84,9 +84,16 @@
                         templates: function() {
                             //return CaseTemplateSrv.list();
                             return [];
-                        },                        
+                        },
                         readonly: true
                     }
+                })
+                .result
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('AlertPreview', err.data, err.status);
+                    }
+
                 });
             };
 

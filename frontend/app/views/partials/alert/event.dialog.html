@@ -1,6 +1,6 @@
 <div class="modal-header bg-primary">
     <h3 class="modal-title">
-      Alert Preview <span class="label label-default" ng-class="{'label-danger': !!!dialog.event.read}">{{dialog.event.read ? 'Ignored' : 'New'}}</span>
+      Alert Preview <span class="label label-default" ng-class="{'label-danger': !!!dialog.event.read}">{{dialog.event.caseId ? 'Imported' : 'New'}}</span>
     </h3>
 </div>
 <div class="modal-body">
@@ -20,7 +20,7 @@
                 <div class="mt-xxs">
                     <span>
                         <strong><i class="fa fa-copy"></i> ID: </strong>
-                        <span><a href ng-click="dialog.copyId(dialog.event._id)">{{dialog.event._id}}</a></span>
+                        <span class="clickable"><a ng-click="dialog.copyId(dialog.event._id)">{{dialog.event._id}}</a></span>
                     </span>
                     <span class="ml-xxs">
                         <strong><i class="fa fa-calendar"></i> Date: </strong>

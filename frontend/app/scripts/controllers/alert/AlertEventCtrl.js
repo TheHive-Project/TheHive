@@ -39,11 +39,6 @@
                 AlertingSrv.get(eventId).then(function(data) {
                     self.event = data;
                     self.loading = false;
-
-                    self.dataTypes = _.countBy(self.event.artifacts, function(attr) {
-                        return attr.dataType;
-                    });
-
                 }, function(response) {
                   self.loading = false;
                   NotificationSrv.error('AlertEventCtrl', response.data, response.status);
@@ -185,6 +180,7 @@
 
             self.copyId = function(id) {
                 clipboard.copyText(id);
+                NotificationSrv.log('Alert ID has been copied to clipboard', 'success');
             };
 
             this.$onInit = function() {
