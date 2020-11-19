@@ -67,7 +67,7 @@ services:
       - '0.0.0.0:9000:9000'
     volumes:
       - ./thehive/application.conf:/etc/thehive/application.conf
-      - ./data:/data
+      - ./data:/opt/data
     command: '--no-config --no-config-secret'
 
   redis:
