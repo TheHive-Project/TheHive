@@ -270,8 +270,8 @@ object Conversion {
         .transform
     )
 
-  implicit val tagOutput: Renderer.Aux[RichTag, OutputTag] =
-    Renderer.toJson[RichTag, OutputTag](
+  implicit val tagOutput: Renderer.Aux[Tag, OutputTag] =
+    Renderer.toJson[Tag, OutputTag](
       _.into[OutputTag]
         .transform
     )

@@ -105,12 +105,10 @@ class TaxonomyCtrl @Inject() (
   }
 
   private def createFromInput(inputTaxo: InputTaxonomy)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
-    val taxonomy = Taxonomy(inputTaxo.namespace, inputTaxo.description, inputTaxo.version, enabled = false)
-
     // Create tags
     val tagValues = inputTaxo.values.getOrElse(Seq())
-    val tags = tagValues.foldLeft(Seq[Tag]())((all, value) => {
-      all ++ value.entry.map(e =>
+    val tags = tagValues.flatMap(value => {
+      value.entry.map(e =>
         Tag(inputTaxo.namespace,
           value.predicate,
           Some(e.value),
@@ -131,7 +129,7 @@ class TaxonomyCtrl @Inject() (
     else
       for {
         tagsEntities <- allTags.toTry(t => tagSrv.create(t))
-        richTaxonomy <- taxonomySrv.create(taxonomy, tagsEntities)
+        richTaxonomy <- taxonomySrv.create(inputTaxo.toTaxonomy, tagsEntities)
       } yield richTaxonomy
   }
 
