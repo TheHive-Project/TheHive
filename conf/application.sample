@@ -245,3 +245,14 @@ misp {
   #  purpose = ImportAndExport
   #} ## <-- Uncomment to complete the configuration
 }
+
+misp-thread-pool {
+  fork-join-executor {
+    # Min number of threads available for MISP synchronization
+    parallelism-min = 2
+    # Parallelism (threads) ... ceil(available processors * factor)
+    parallelism-factor = 2.0
+    # Max number of threads available for MISP synchronization
+    parallelism-max = 4
+  }
+}
