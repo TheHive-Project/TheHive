@@ -37,6 +37,9 @@
 
 }
 
+.updatable-input.updatable-input-text .updatable-input-markdown {
+    cursor: auto;
+}
 .updatable-input.updatable-input-text .updatable-input-markdown .updatable-input-icon {
     float:left;
     margin-left: 0;
