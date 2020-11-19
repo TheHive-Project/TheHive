@@ -1,26 +1,25 @@
-<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
-    <user-info class="updatable-value" style="vertical-align:top" value="value" field="name"></user-info>
-    <small ng-show="active">
-        <a class="clickable" target="_self" tooltip-popup-delay='500' uib-tooltip="edit">
-            <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
-        </a>
-    </small>
-    <small ng-hide="active">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>
+<div class="updatable-input updatable-input-user">
+    <span class="updatable-input-value-wrapper" ng-hide="updatable.updating" ng-click="edit()">
+        <user-info class="updatable-value" value="value" field="name"></user-info>
 
-</span>
-<span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
-    <span class="btn-group" uib-dropdown is-open="updatable.dropdownOpen">
-        <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
-            <user-info value="value" field="name"></user-info>
-            <span class="caret"></span>
-        </button>
-        <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
-            <li ng-repeat="user in userList">
-                <a ng-click="update(user.login)">{{user.organisation}}/{{user.name}}</a>
-            </li>
-        </ul>
+        <small class="updatable-input-icon">
+            <i class="glyphicon glyphicon-pencil"></i>
+        </small>    
     </span>
-    <span class="btn" ng-click='updatable.updating = false' target="_self" tooltip-placement="top" tooltip-popup-delay='500' uib-tooltip="cancel">
-        <i class="text-danger glyphicon glyphicon-remove"></i>
+    <span ng-init="updatable.dropdownOpen=false" ng-show="updatable.updating">
+        <div class="btn-group" uib-dropdown is-open="updatable.dropdownOpen">
+            <button class="btn btn-default btn-sm dropdown-toggle" uib-dropdown-toggle type="button">
+                <user-info value="value" field="name"></user-info>
+                <span class="caret"></span>
+            </button>
+            <button class="btn btn-default btn-sm" ng-click='updatable.updating = false' type="button">
+                <i class="text-danger glyphicon glyphicon-remove"></i>
+            </button>
+            <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
+                <li ng-repeat="user in userList">
+                    <a ng-click="update(user.login)">{{user.organisation}}/{{user.name}}</a>
+                </li>
+            </ul>
+        </div>
     </span>
-</span>
+</div>
