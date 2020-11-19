@@ -16,7 +16,7 @@
             <dt class="pull-left">Severity</dt>
             <dd ng-if="canEdit">
                 <a class="noline" href ng-click="activeSev = true" ng-init="activeSev = false">
-                    <severity active="activeSev" on-update="updateField('severity', newValue)" style="float:left; font-size:16px" value="caze.severity"></severity>
+                    <severity active="activeSev" on-update="updateField('severity', newValue)" value="caze.severity"></severity>
                 </a>
             </dd>
             <dd ng-if="!canEdit">
