@@ -68,11 +68,9 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSr
   )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Log], JsObject)] =
     auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
       case (logSteps, updatedFields) =>
-        for {
-          task <- logSteps.clone().task.getOrFail("Task")
-          log  <- logSteps.getOrFail("Log")
-          _    <- auditSrv.log.update(log, task, updatedFields)
-        } yield ()
+        logSteps.clone().project(_.by.by(_.task)).getOrFail("Log").flatMap {
+          case (log, task) => auditSrv.log.update(log, task, updatedFields)
+        }
     }
 }
 

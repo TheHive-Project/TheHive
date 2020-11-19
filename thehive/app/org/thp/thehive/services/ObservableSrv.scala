@@ -183,10 +183,10 @@ class ObservableSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Observable], JsObject)] =
     auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
       case (observableSteps, updatedFields) =>
-        for {
-          observable <- observableSteps.getOrFail("Observable")
-          _          <- auditSrv.observable.update(observable, updatedFields)
-        } yield ()
+        observableSteps
+          .clone()
+          .getOrFail("Observable")
+          .flatMap(observable => auditSrv.observable.update(observable, updatedFields))
     }
 }
 
