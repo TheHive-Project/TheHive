@@ -1,5 +1,30 @@
 # Change Log
 
+## [4.0.2](https://github.com/TheHive-Project/TheHive/milestone/64) (2020-11-20)
+
+**Implemented enhancements:**
+
+- [Feature Request] Add a dedicated permission to give access to TheHiveFS [\#1655](https://github.com/TheHive-Project/TheHive/issues/1655)
+- [Feature Request] Normalize editable input fields [\#1669](https://github.com/TheHive-Project/TheHive/issues/1669)
+
+**Fixed bugs:**
+
+- [Bug] Unable to list Cases [\#1598](https://github.com/TheHive-Project/TheHive/issues/1598)
+- [Bug] Alert to case merge is broken in v4.0.1 [\#1648](https://github.com/TheHive-Project/TheHive/issues/1648)
+- [Bug] Attachment.* filters are broken under observable search in v4.0.1  [\#1649](https://github.com/TheHive-Project/TheHive/issues/1649)
+- [Bug] Result of observable update API v0 is empty [\#1652](https://github.com/TheHive-Project/TheHive/issues/1652)
+- [Bug] Display issue of custom fields [\#1653](https://github.com/TheHive-Project/TheHive/issues/1653)
+- [Bug] Persistent AuditSrv:undefined error on 4.0.1 [\#1656](https://github.com/TheHive-Project/TheHive/issues/1656)
+- [Bug] Issues with case attachments section [\#1657](https://github.com/TheHive-Project/TheHive/issues/1657)
+- [Bug] API method broken: /api/case/artifact/_search in 4.0.1 [\#1659](https://github.com/TheHive-Project/TheHive/issues/1659)
+- [Bug] API method broken: /api/case/task/log/_search in 4.0.1 [\#1660](https://github.com/TheHive-Project/TheHive/issues/1660)
+- [Bug] Unable to define ES index on migration [\#1661](https://github.com/TheHive-Project/TheHive/issues/1661)
+- [Bug] Dashboard max aggregation on custom-integer field does not work [\#1662](https://github.com/TheHive-Project/TheHive/issues/1662)
+- [Bug] Missing the fix for errorMessage [\#1666](https://github.com/TheHive-Project/TheHive/issues/1666)
+- [Bug] Fix alert details dialog [\#1672](https://github.com/TheHive-Project/TheHive/issues/1672)
+- [Bug] error 500 with adding an empty file in Observables of an Alert [\#1673](https://github.com/TheHive-Project/TheHive/issues/1673)
+- [Bug] Fix migration of audit logs [\#1676](https://github.com/TheHive-Project/TheHive/issues/1676)
+
 ## [4.0.1](https://github.com/TheHive-Project/TheHive/milestone/60) (2020-11-13)
 
 **Implemented enhancements:**
@@ -24,6 +49,7 @@
 
 **Fixed bugs:**
 
+- [Bug] MISP->THEHIVE4 'ExportOnly' and 'Exceptions' ignored in application.conf file [\#1482](https://github.com/TheHive-Project/TheHive/issues/1482)
 - [Bug] Mobile-responsive Hamburger not visible [\#1290](https://github.com/TheHive-Project/TheHive/issues/1290)
 - [Bug] Unable to start TheHive after migration [\#1450](https://github.com/TheHive-Project/TheHive/issues/1450)
 - [Bug] Expired session should show a dialog or login page on pageload [\#1456](https://github.com/TheHive-Project/TheHive/issues/1456)
@@ -34,7 +60,6 @@
 - [Bug] Dashboard shared/private [\#1474](https://github.com/TheHive-Project/TheHive/issues/1474)
 - [Bug]Migration tool date/number/duration params don't work [\#1478](https://github.com/TheHive-Project/TheHive/issues/1478)
 - [Bug] AuditSrv: undefined on non-case page(s), thehive4-4.0.0-1, Ubuntu [\#1479](https://github.com/TheHive-Project/TheHive/issues/1479)
-- [Bug] MISP->THEHIVE4 'ExportOnly' and 'Exceptions' ignored in application.conf file [\#1482](https://github.com/TheHive-Project/TheHive/issues/1482)
 - [Bug] Unable to enumerate tasks via API [\#1483](https://github.com/TheHive-Project/TheHive/issues/1483)
 - [Bug] Case close notification displays "#undefined" instead of case number [\#1488](https://github.com/TheHive-Project/TheHive/issues/1488)
 - [Bug] Task under "Waiting tasks" and "My tasks" do not display the case number [\#1489](https://github.com/TheHive-Project/TheHive/issues/1489)
