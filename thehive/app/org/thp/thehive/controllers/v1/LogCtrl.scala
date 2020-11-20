@@ -41,9 +41,9 @@ class LogCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, logSteps, _) =>
+    (range, logSteps, authContext) =>
       logSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
-        _.richLogWithCustomRenderer(logStatsRenderer(range.extraData - "total"))
+        _.richLogWithCustomRenderer(logStatsRenderer(range.extraData - "total")(authContext))
       )
   )
   override val outputQuery: Query = Query.output[RichLog, Traversal.V[Log]](_.richLog)
