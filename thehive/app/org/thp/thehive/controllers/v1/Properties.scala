@@ -413,6 +413,7 @@ class Properties @Inject() (
       .property("endDate", UMapping.date.optional)(_.field.updatable)
       .property("order", UMapping.int)(_.field.updatable)
       .property("dueDate", UMapping.date.optional)(_.field.updatable)
+      .property("group", UMapping.string)(_.field.updatable)
       .property("assignee", UMapping.string.optional)(_.select(_.assignee.value(_.login)).custom {
         case (_, value, vertex, _, graph, authContext) =>
           taskSrv
