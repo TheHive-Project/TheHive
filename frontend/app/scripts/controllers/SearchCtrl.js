@@ -35,6 +35,10 @@
                 case_task_log: {
                     operations: [{'_name': 'listTask'}, {'_name': 'logs'}],
                     extraData: ['task', 'case']
+                },
+                audit: {
+                    operations: [{'_name': 'listAudit'}],
+                    extraData: []
                 }
             };
 
