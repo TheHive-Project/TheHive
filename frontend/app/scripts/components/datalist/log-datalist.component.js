@@ -5,12 +5,9 @@
         .component('logDatalist', {
             controller: function() {
 
-                // this.updateField = function(newValue) {
-                //     this.onUpdate({
-                //         fieldName: ['customFields', this.field.reference, this.field.type].join('.'),
-                //         value: newValue
-                //     });
-                // };
+                this.isImage = function(contentType) {
+                    return angular.isString(contentType) && contentType.indexOf('image') === 0;
+                };
 
             },
             controllerAs: '$cmp',

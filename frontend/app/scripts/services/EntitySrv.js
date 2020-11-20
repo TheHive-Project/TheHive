@@ -34,7 +34,7 @@
             } else if (entity._type === 'Task') {
                 state.name = 'app.case.tasks-item';
                 state.params = {
-                    caseId: entity.extraData.case._id,
+                    caseId: entity.extraData.case ? entity.extraData.case._id : entity.case._id,
                     itemId: entity._id
                 };
             }

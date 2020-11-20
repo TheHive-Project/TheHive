@@ -34,7 +34,7 @@
                 },
                 case_task_log: {
                     operations: [{'_name': 'listTask'}, {'_name': 'logs'}],
-                    extraData: []
+                    extraData: ['task', 'case']
                 }
             };
 

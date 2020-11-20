@@ -1,11 +1,61 @@
-<table>
+<table class="table tbody-stripped">
     <thead>
         <tr>
-            <td></td>
-        </tr>
+            <th>Message</th>
+            <th style="width: 250px">Attachment</th>
+            <th style="width: 200px">Date</th>
+            <th style="width: 120px">Message by</th>
+		</tr>
     </thead>
-    <tbody class="table tbody-stripped data-list" ng-repeat="item in $cmp.data">
-        <tr></tr>
-        <tr></tr>
+    <tbody ng-repeat="item in $cmp.data.values">
+        <tr>
+            <td>
+                <div>{{item.message | limitTo: 250}}</div>
+                <div>
+                    <small><entity-link value="item.extraData.task"></entity-link></small>
+                </div>
+            </td>
+            <td>
+                <div ng-if="!item.attachment.name">
+                    <em class="text-warning">No attachment</em>
+                </div>
+                <div class="wrap" ng-if="item.attachment.name" class="search-item-details">
+                    <div class="wrap clickable text-primary" ng-click="item.preview = !!!item.preview">
+                        {{item.attachment.name}} <i class="fa" ng-class="{
+                            'fa-caret-up': !!item.preview,
+                            'fa-caret-down': !!!item.preview
+                        }"></i>
+                    </div>
+                    <div class="mt-xs attachment search-item-details" ng-show="!!item.preview">
+                        <div class="file-box">
+                            <div class="file">
+                                <a href="./api/datastore/{{item.attachment.id}}?name={{item.attachment.name | escape}}" target="_blank">
+                                    <div class="image" ng-show="$cmp.isImage(item.attachment.contentType)">
+                                        <img class="btn img-responsive img-thumbnail" src="./api/datastore/{{item.attachment.id}}" alt="{{item.attachment.name}}"></img>
+                                    </div>
+
+                                    <div class="icon" ng-hide="$cmp.isImage(item.attachment.contentType)">
+                                        <i class="glyphicon glyphicon-file"></i>
+                                    </div>
+                                    <div class="file-name">
+                                        {{item.attachment.name}}
+                                    </div>
+                                </a>
+
+                            </div>
+                        </div>
+
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+
+            </td>
+            <td>
+                {{item.date | shortDate}}
+            </td>
+            <td>
+                <user user-id="item.owner" icon-only="true" icon-size="m"></user>
+            </td>
+        </tr>
     </tbody>
 </table>
