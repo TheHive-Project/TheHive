@@ -17,7 +17,7 @@
             $scope.queries = {
                 case: {
                     operations: [{'_name': 'listCase'}],
-                    extraData: ['isOwner', 'shareCount']
+                    extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount']
                     // extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount', 'permissions']
                 },
                 alert: {

@@ -1,11 +1,96 @@
-<table>
+<table class="table tbody-stripped case-list">
     <thead>
         <tr>
-            <td></td>
-        </tr>
+            <th style="width: 10px;" class="p-0"></th>
+            <th style="width: 30px;"></th>
+            <th>Title</th>
+            <th style="width: 70px;"></th>
+            <th style="width: 80px;text-align:center;">Severity</th>
+            <th style="width: 100px;">Tasks</th>
+            <th style="width: 100px;">Observables</th>
+            <th style="width: 60px;">Assignee</th>
+            <th style="width: 120px;">Date</th>
+		</tr>
     </thead>
-    <tbody class="table tbody-stripped data-list" ng-repeat="item in $cmp.data">
-        <tr></tr>
-        <tr></tr>
+    <tbody ng-repeat="item in $cmp.data.values">
+        <tr>
+            <td class="p-0 bg-tlp-{{item.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', item.tlp)"></td>
+            <td>
+                <span ng-if="item.flag" class="text-yellow"><i class="fa fa-flag"></i></span>
+            </td>
+            <td>
+                <div class="case-title wrap">
+                    <span class="mr-xxs text-primary" ng-if="!!!item.extraData.isOwner"><i class="fa fa-share-square"
+                        uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
+                    <span class="mr-xxs text-primary" ng-if="!!item.extraData.isOwner"><i class="fa fa-building-o"
+                        uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span>
+                    <a ui-sref="app.case.details({caseId: item._id})">#{{item.number}} - {{item.title}}</a>
+                </div>
+                <div class="case-tags flexwrap mt-xxs">
+                    <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                    <strong class="text-muted mr-xxxs" ng-if="!item.tags || item.tags.length === 0">None</strong>
+                    <span ng-repeat="tag in item.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$vm.addFilterValue('tags', tag)">{{tag}}</span>
+                </div>
+                <custom-field-labels custom-fields="item.customFields" on-field-click="$vm.addFilterValue(name, value)"><custom-field-labels>
+                <div class="text-success" ng-show="item.status !== 'Open'">
+                    <small>
+                        (Closed at {{item.endDate | showDate}} as <strong>{{$vm.CaseResolutionStatus[item.resolutionStatus]}}</strong>)
+                    </small>
+                </div>
+                <div class="text-danger" ng-if="item.mergeFrom">
+                              <small>
+                        Merged from <a href ui-sref="app.case.details({caseId: item.mergeFrom[0]})"> Case #{{item.stats.mergeFrom[0].number}}</a> and
+                        <a href ui-sref="app.case.details({caseId: item.mergeFrom[1]})"> Case #{{item.stats.mergeFrom[1].number}}</a>
+                    </small>
+                        </div>
+            </td>
+            <td align="center">
+                <a href ng-if="item.extraData.shareCount > 0" ui-sref="app.case.sharing({caseId: item._id})" class="noline"
+                        uib-tooltip="{{ {
+                            true: 'Current organisation has shared this Case with ' + item.extraData.shareCount + ' organisation(s)',
+                            false: 'This Case has been shared by its owner with ' + item.extraData.shareCount + ' organisation(s)'
+                        }[item.extraData.isOwner] }}"
+                        tooltip-placement="left-middle">
+
+                    <i class="fa fa-users"></i>
+                    ({{item.extraData.shareCount || 0}})
+                </a>
+            </td>
+            <td align="center">
+                <div class="clickable" ng-click="$vm.addFilterValue('severity', item.severity)">
+                    <severity active="false" value="item.severity"></severity>
+                </div>
+            </td>
+            <td>
+                <a ui-sref="app.case.tasks({caseId: item._id})">
+                    <ng-pluralize count="item.extraData.taskStats.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
+                </a>
+                <br>
+                <task-progress ng-show="item.extraData.taskStats.total > 0" tasks="item.extraData.taskStats"/>
+            </td>
+            <td>
+                <a ui-sref="app.case.observables({caseId: item._id})">{{item.extraData.observableStats.total}}</a>
+            </td>
+            <td class="nowrap">
+                <user user-id="item.assignee" icon-only="true" icon-size="m"></user>
+            </td>
+            <td>
+                <div>
+                    <a href ng-click="$vm.addFilterValue('startDate', item.startDate)">
+                        <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span>
+                    </a>
+                </div>
+                <div>
+                    <case-duration start="item.startDate" end="item.endDate" icon="fa-clock-o"></case-duration>
+                </div>
+            </td>
+            <td class="text-center">
+                    <!-- <a href class="text-primary noline nowrap" ng-click="$vm.getCaseResponders(item, true)" uib-dropdown-toggle> -->
+                <a href class="btn btn-icon btn-clear" ng-click="$vm.getCaseResponders(item, true)"
+                    ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{item.extraData.permissions.join(',')}}">
+                    <i class="text-info fa fa-cog"></i>
+                </a>
+            </td>
+        </tr>
     </tbody>
 </table>
