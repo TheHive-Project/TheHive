@@ -369,7 +369,7 @@ object Conversion {
       case (richObservable, extraData) =>
         richObservable
           .into[OutputObservable]
-          .withFieldConst(_._type, "case_artifact")
+          .withFieldConst(_._type, "Observable")
           .withFieldComputed(_._id, _._id.toString)
           .withFieldComputed(_.dataType, _.`type`.name)
           .withFieldComputed(_.startDate, _.observable._createdAt)
