@@ -21,8 +21,13 @@ trait LogRenderer {
   ): Traversal.V[Log] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] =
     _.`case`.richCase.fold.domainMap(_.headOption.fold[JsValue](JsNull)(_.toJson))
 
-  def taskParent: Traversal.V[Log] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] =
-    _.task.richTask.fold.domainMap(_.headOption.fold[JsValue](JsNull)(_.toJson))
+  def taskParent(implicit
+      authContext: AuthContext
+  ): Traversal.V[Log] => Traversal[JsValue, JMap[String, Any], Converter[JsValue, JMap[String, Any]]] =
+    _.task.project(_.by(_.richTask.fold).by(_.`case`.richCase.fold)).domainMap {
+      case (task, case0) =>
+        task.headOption.fold[JsValue](JsNull)(_.toJson.as[JsObject] + ("case" -> case0.headOption.fold[JsValue](JsNull)(_.toJson)))
+    }
 
   def taskParentId: Traversal.V[Log] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
     _.task.fold.domainMap(_.headOption.fold[JsValue](JsNull)(c => JsString(c._id.toString)))
