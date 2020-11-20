@@ -1,11 +1,54 @@
-<table>
+<table class="table tbody-stripped">
     <thead>
         <tr>
-            <td></td>
-        </tr>
+			<th style="width: 40px"></th>
+            <th style="width: 250px">Group</th>
+            <th>Task</th>
+            <th class="text-center" style="width: 100px;">Severity</th>
+            <th style="width: 200px">Date</th>
+            <th style="width: 150px">Assignee</th>
+		</tr>
     </thead>
-    <tbody class="table tbody-stripped data-list" ng-repeat="item in $cmp.data">
-        <tr></tr>
-        <tr></tr>
+    <tbody ng-repeat="item in $cmp.data.values">
+        <tr class="task-row" ng-class="{'warning': (item.status=== 'Waiting' || item.status=== 'InProgress') && item.flag == true}">
+            <td class="task-status" align="center" ng-switch="item.status">
+                <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok"></i>
+                <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[item.flag]"></i>
+                <i ng-switch-when="Waiting" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag'}[item.flag]"></i>
+            </td>
+            <td>
+                {{item.group}}
+            </td>
+            <td>
+              <div>
+                  <a href ui-sref="app.case.tasks-item({caseId: item.extraData.case._id, itemId:item._id})">{{item.title}}</a>
+              </div>
+              <div>
+                  <small><entity-link value="item.extraData.case"></entity-link></small>
+              </div>
+            </td>
+            <td class="text-center">
+				<severity active="false" value="item.extraData.case.severity"></severity>
+			</td>
+            <td>
+                <div>
+                    {{(item.startDate | shortDate) || 'Not started'}}
+                </div>
+                <div ng-show="item.status === 'Completed'" class="text-success">
+                    Closed after <em>{{(item.endDate - item.startDate) | amDurationFormat : 'milliseconds'}}</em>
+                </div>
+                <div ng-show="item.status === 'InProgress'" class="text-warning">
+                    Started <em am-time-ago="item.startDate"></em>
+                </div>
+            </td>
+            <td>
+                <span ng-show="item.assignee">
+                    <user user-id="item.assignee" icon-only="true" icon-size="m"></user>
+                </span>
+                <span ng-show="!item.assignee">
+                    <em class="text-warning">Not Assigned</em>
+                </span>
+            </td>
+        </tr>
     </tbody>
 </table>

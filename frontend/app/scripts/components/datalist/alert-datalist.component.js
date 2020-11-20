@@ -42,18 +42,18 @@
                     });
                 };
 
-                this.search = function () {
-                    self.load();
-                    if(self.onReload) {
-                        self.reload();
-                    }
-
-                    //self.filtering.storeContext();
-                };
-                this.addFilterValue = function (field, value) {
-                    this.filtering.addFilterValue(field, value);
-                    this.search();
-                };
+                // this.search = function () {
+                //     self.load();
+                //     if(self.onReload) {
+                //         self.reload();
+                //     }
+                //
+                //     //self.filtering.storeContext();
+                // };
+                // this.addFilterValue = function (field, value) {
+                //     this.filtering.addFilterValue(field, value);
+                //     this.search();
+                // };
 
             },
             controllerAs: '$cmp',
