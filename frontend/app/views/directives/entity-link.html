@@ -35,6 +35,13 @@
 		&nbsp;{{value.data | ellipsis:100}}{{value.attachment.name}}
 	</a>
 </span>
+<span ng-if="value._type == 'Observable'">
+	<entity-link value="value.extraData.links.case" target="target"></entity-link>
+	<a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
+		<i class="glyphicon glyphicon-pushpin"></i>
+		&nbsp;{{value.data | ellipsis:100}}{{value.attachment.name}}
+	</a>
+</span>
 <span ng-if="value._type == 'case_artifact_job'">
 	<entity-link value="value.case_artifact" target="target"></entity-link>
 </span>

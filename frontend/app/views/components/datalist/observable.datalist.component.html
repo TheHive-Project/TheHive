@@ -1,11 +1,72 @@
-<table>
+<table class="table tbody-stripped case-list">
     <thead>
         <tr>
-            <td></td>
+            <th style="width: 80px">Flags</th>
+            <th style="width: 100px">
+              <a href class="text-default" ng-click="sortByField('dataType')">
+                Type
+                <i ng-show="artifacts.sort !== '+dataType' && artifacts.sort !== '-dataType'" class="fa fa-sort"></i>
+                <i ng-show="artifacts.sort === '+dataType'" class="fa fa-caret-up"></i>
+                <i ng-show="artifacts.sort === '-dataType'" class="fa fa-caret-down"></i>
+              </a>
+            </th>
+            <th>
+              <a href class="text-default" ng-click="sortByField('data')">
+                Value/Filename
+                <i ng-show="artifacts.sort !== '+data' && artifacts.sort !== '-data'" class="fa fa-sort"></i>
+                <i ng-show="artifacts.sort === '+data'" class="fa fa-caret-up"></i>
+                <i ng-show="artifacts.sort === '-data'" class="fa fa-caret-down"></i>
+              </a>
+            </th>
+            <th style="width: 250px">Case</th>
+            <th style="width: 120px">
+              <a href class="text-default" ng-click="sortByField('startDate')">
+                Date Added
+                <i ng-show="artifacts.sort !== '+startDate' && artifacts.sort !== '-startDate'" class="fa fa-sort"></i>
+                <i ng-show="artifacts.sort === '+startDate'" class="fa fa-caret-up"></i>
+                <i ng-show="artifacts.sort === '-startDate'" class="fa fa-caret-down"></i>
+              </a>
+            </th>
         </tr>
     </thead>
-    <tbody class="table tbody-stripped data-list" ng-repeat="item in $cmp.data">
-        <tr></tr>
-        <tr></tr>
+    <tbody ng-repeat="item in $cmp.data.values">
+        <tr>
+            <td>
+                <observable-flags observable="item" on-filter="$cmp.addFilterValue(fieldName, value)" inline="true" hide-seen="true"></observable-flags>
+            </td>
+            <td>
+                <a href ng-click="$cmp.addFilterValue('dataType', item.dataType)"><span ng-bind="item.dataType"></span></a>
+            </td>
+            <td class="wrap">
+                <div>
+                    <a href ui-sref="app.case.observables-item({caseId: item.extraData.links.case._id, itemId:item._id})">{{(item.data | fang) || (item.attachment.name | fang)}}</a>
+                </div>
+
+                <div class="case-tags flexwrap mt-xxs">
+                    <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                    <strong class="text-muted mr-xxxs" ng-if="!item.tags || item.tags.length === 0">None</strong>
+                    <span class="label label-primary mb-xxxs mr-xxxs pointer"
+                        ng-repeat="tag in item.tags track by $index"
+                        ng-click="addFilterValue('tags', tag)">
+                        {{tag}}
+                    </span>
+                </div>
+
+                <mini-report-list observable="item" reports="item.reports" on-item-clicked="showReport(item, analyzerId)"></mini-report-list>
+
+                <!-- FIXME -->
+                <!-- <div class="wrap clickable" ng-click="$cmp.openArtifact(artifact)">
+                    <span class="wrap clickable" uib-tooltip="{{item.message}}" tooltip-placement="top-left">
+                        {{(item.data | fang) || (item.attachment.name | fang)}}
+                    </span>
+                </div> -->
+            </td>
+            <td class="wrap">
+                <entity-link value="item.extraData.links.case"></entity-link>
+            </td>
+            <td>
+                <a href ng-click="addFilterValue('startDate', item.startDate)"><span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span></a>
+            </td>
+        </tr>
     </tbody>
 </table>

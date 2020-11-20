@@ -26,7 +26,7 @@
                 },
                 case_artifact: {
                     operations: [{'_name': 'listObservable'}],
-                    extraData: ['case']
+                    extraData: ['links']
                 },
                 case_task: {
                     operations: [{'_name': 'listTask'}],
