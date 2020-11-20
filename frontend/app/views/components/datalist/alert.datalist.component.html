@@ -1,0 +1,130 @@
+<table class="alert-datalist table tbody-stripped">
+    <thead>
+        <tr>
+            <th width="150px">
+              <a href class="text-default" ng-click="$cmp.sortByField('sourceRef')">
+                Reference
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+sourceRef') === -1 && $cmp.filtering.context.sort.indexOf('-sourceRef') === -1" class="fa fa-sort"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+sourceRef') !== -1" class="fa fa-caret-up"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('-sourceRef') !== -1" class="fa fa-caret-down"></i>
+              </a>
+            </th>
+            <th width="80px">
+              <a href class="text-default" ng-click="$cmp.sortByField('type')">
+                Type
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+type') === -1 && $cmp.filtering.context.sort.indexOf('-type') === -1" class="fa fa-sort"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+type') !== -1" class="fa fa-caret-up"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('-type') !== -1" class="fa fa-caret-down"></i>
+              </a>
+            </th>
+            <th width="80px" class="text-center">
+                Imported
+            </th>
+            <th width="80px" class="text-center">
+                Read
+            </th>
+            <th>
+              Title
+            </th>
+            <th width="150px">
+              <a href class="text-default" ng-click="$cmp.sortByField('source')">
+                Source
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+source') === -1 && $cmp.filtering.context.sort.indexOf('-source') === -1" class="fa fa-sort"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+source') !== -1" class="fa fa-caret-up"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('-source') !== -1" class="fa fa-caret-down"></i>
+              </a>
+            </th>
+            <th width="100px">
+              <a href class="text-default" ng-click="$cmp.sortByField('severity')">
+                Severity
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+severity') === -1 && $cmp.filtering.context.sort.indexOf('-severity') === -1" class="fa fa-sort"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+severity') !== -1" class="fa fa-caret-up"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('-severity') !== -1" class="fa fa-caret-down"></i>
+              </a>
+            </th>
+            <th width="80px">
+              Observables
+            </th>
+            <th style="width: 120px">
+              <a href class="text-default" ng-click="$cmp.sortByField('date')">
+                Date
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+date') === -1 && $cmp.filtering.context.sort.indexOf('-date') === -1" class="fa fa-sort"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('+date') !== -1" class="fa fa-caret-up"></i>
+                <i ng-show="$cmp.filtering.context.sort.indexOf('-date') !== -1" class="fa fa-caret-down"></i>
+              </a>
+            </th>
+            <th style="width: 80px"></th>
+        </tr>
+    </thead>
+    <tbody ng-repeat="item in $cmp.data.values">
+        <tr>
+            <td class="wrap">
+                <strong>
+                    <span>{{item.sourceRef}}</span>
+
+                    <span ng-if="item.externalLink" class="pl-xxs">
+                        <a ng-href="{{item.externalLink}}" target="_blank" uib-tooltip="Open alert's external link">
+                            <i class="fa fa-external-link"></i>
+                        </a>
+                    </span>
+                </strong>
+
+            </td>
+            <td>
+                <span><a href ng-click="$cmp.addFilterValue('type', item.type)">{{item.type}}</a></span>
+            </td>
+            <td align="center">
+                <span class="clickable label label-default" ng-class="{'label-danger': !item.caseId}" ng-click="$cmp.addFilterValue('imported', !!item.caseId)">{{item.caseId ? 'Imported' : 'New'}}</span>
+            </td>
+            <td align="center">
+                <span class="clickable label label-default" ng-click="$cmp.addFilterValue('read', !!item.read)">{{item.read ? 'Read' : 'Unread'}}</span>
+            </td>
+            <td class="wrap">
+                <div class="case-title">
+                    <span>
+                        <span ng-if="!item.caseId">{{item.title}}</span>
+                        <span ng-if="item.caseId" ui-sref="app.case.details({caseId: item.caseId})">
+                            <a href>{{item.title}}</a>
+                        </span>
+                    </span>
+                </div>
+            </td>
+            <td><a href ng-click="$cmp.addFilterValue('source', item.source)">{{item.source}}</a></td>
+            <td class="text-center">
+                <div class="clickable" ng-click="$cmp.addFilterValue('severity', item.severity)">
+                    <severity active="false" value="item.severity"></severity>
+                </div>
+            </td>
+            <td class="text-center">{{item.observableCount || 0}}</td>
+            <td>
+                <a href ng-click="$cmp.addFilterValue('date', item.date)">{{item.date | shortDate}}</a>
+            </td>
+            <td class="clearfix">
+                <div class="pull-right">
+                    <a class="btn btn-icon btn-clear" href ng-click="$cmp.preview(item)" uib-tooltip="Preview" ng-if="!item.caseId">
+                        <i class="text-info fa fa-file-text-o"></i>
+                    </a>
+                    <a class="btn btn-icon btn-clear" href ui-sref="app.case.details({caseId: item.caseId})" uib-tooltip="View case" ng-if="item.caseId">
+                        <i class="text-info fa fa-search"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="9">
+                <div class="case-tags flexwrap">
+                    <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                    <strong class="text-muted mr-xxxs" ng-if="!item.tags || item.tags.length === 0">None</strong>
+                    <span ng-repeat="tag in item.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer" ng-click="$cmp.addFilterValue('tags', tag)">{{tag}}</span>
+                </div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <td colspan="9">
+                <custom-field-labels custom-fields="item.customFields" on-field-click="$cmp.addFilterValue(name, value)"><custom-field-labels>
+            </td>
+            <td></td>
+        </tr>
+    </tbody>
+</table>

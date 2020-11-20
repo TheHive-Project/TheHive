@@ -2,17 +2,17 @@
     <!-- <a href ui-sref="app.case.details({caseId: value.id})">
         {{value.title}}
     </a> -->
-    <span ng-if="!value.case" ng-click="onTitleClicked({value: value})">
+    <span ng-if="!value.caseId" ng-click="onTitleClicked({value: value})">
       <a href>{{value.title}}</a>
     </span>
-    <span ng-if="value.case" ui-sref="app.case.details({caseId: value.case})">
+    <span ng-if="value.caseId" ui-sref="app.case.details({caseId: value.caseId})">
         <a href>{{::value.title}}</a>
     </span>
 </div>
 <div>
     <span>
         <i class="fa fa-calendar"></i> Date:
-        <strong class="text-muted">{{value.date | showDate}}</strong>
+        <strong class="text-muted">{{value.date | shortDate}}</strong>
     </span>
     <span class="ml-xxs">
         <i class="fa fa-certificate"></i> Type:
@@ -28,8 +28,8 @@
     </span>
     <span class="ml-xxs">
         <i class="glyphicon glyphicon-pushpin"></i> Attributes:
-        <strong class="text-muted">{{value.artifacts.length}}</strong>
-    </span>    
+        <strong class="text-muted">{{value.observableCount}}</strong>
+    </span>
 </div>
 <div class="mt-xs wrap" ng-if="value.tags.length>0">
     <strong>Tags:</strong><tag-list data="value.tags"></tag-list>
@@ -37,7 +37,10 @@
 <div class="mt-xs wrap">
     <strong>Status:</strong>
     <div>
-      <span class="label label-default" ng-class="{'label-danger': value.status==='New', 'label-warning': value.status === 'Updated'}">{{value.status}}</span>
+      <span class="label" ng-class="{
+          'label-default': !!value.caseId,
+          'label-danger': !!!value.caseId
+      }">{{!!value.caseId ? 'Imported' : 'New'}}</span>
     </div>
 </div>
 <div class="mt-xs wrap">

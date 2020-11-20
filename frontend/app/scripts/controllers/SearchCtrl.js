@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, AlertingSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
+        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PaginatedQuerySrv, PSearchSrv, AlertingSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
             $scope.metadata = metadata;
             $scope.toolbar = [
                 // {name: 'all', label: 'All', icon: 'glyphicon glyphicon-search'},
@@ -13,6 +13,30 @@
                 {name: 'case_artifact_job', label: 'Jobs', icon: 'glyphicon glyphicon-cog'},
                 {name: 'audit', label: 'Audit Logs', icon: 'glyphicon glyphicon-list-alt'}
             ];
+
+            $scope.queries = {
+                case: {
+                    operations: [{'_name': 'listCase'}],
+                    extraData: ['isOwner', 'shareCount']
+                    // extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount', 'permissions']
+                },
+                alert: {
+                    operations: [{'_name': 'listAlert'}],
+                    extraData: []
+                },
+                case_artifact: {
+                    operations: [{'_name': 'listObservable'}],
+                    extraData: ['case']
+                },
+                case_task: {
+                    operations: [{'_name': 'listTask'}],
+                    extraData: ['case']
+                },
+                case_task_log: {
+                    operations: [{'_name': 'listTask'}, {'_name': 'logs'}],
+                    extraData: []
+                }
+            };
 
             $scope.getUserInfo = UserSrv.getCache;
             $scope.config = GlobalSearchSrv.restore();
@@ -43,7 +67,7 @@
                     size: 'max',
                     resolve: {
                         event: function() {
-                            return AlertingSrv.get(event.id);
+                            return AlertingSrv.get(event._id);
                         },
                         templates: function() {
                             return CaseTemplateSrv.list();
@@ -140,17 +164,35 @@
                     if(query) {
                         GlobalSearchSrv.save($scope.config);
 
-                        $scope.searchResults = PSearchSrv(undefined, entityName === 'all' ? 'any' : $scope.metadata[entityName].path, {
+                        // $scope.searchResults = PSearchSrv(undefined, entityName === 'all' ? 'any' : $scope.metadata[entityName].path, {
+                        //     filter: query,
+                        //     baseFilter: $scope.buildBaseFilter(entityName),
+                        //     nparent: 10,
+                        //     nstats: entityName === 'audit',
+                        //     skipStream: true
+                        // });
+
+                        $scope.searchResults = $scope.paginatedList = new PaginatedQuerySrv({
+                            name: 'search-' + entityName,
+                            objectType: entityName,
+                            version: 'v1',
+                            //sort: self.filtering.context.sort,
+                            loadAll: false,
+                            pageSize: 10,
                             filter: query,
-                            baseFilter: $scope.buildBaseFilter(entityName),
-                            nparent: 10,
-                            nstats: entityName === 'audit',
-                            skipStream: true
+                            operations: $scope.queries[entityName].operations,
+                            extraData: $scope.queries[entityName].extraData,
+                            skipStream: true,
+                            onUpdate: function() {
+
+                            }
                         });
                     } else {
                         $scope.searchResults = null;
+                        $scope.paginatedList = null;
                     }
                 } catch(err) {
+                    console.error(err);
                     NotificationSrv.log('Invalid filters error', 'error');
                 }
             };

@@ -156,7 +156,8 @@ angular.module('thehive', [
                     metadata: function($q, DashboardSrv, NotificationSrv) {
                         var defer = $q.defer();
 
-                        DashboardSrv.getMetadata()
+                        // DashboardSrv.getMetadata()
+                        DashboardSrv.getMetadata('v1')
                             .then(function(response) {
                                 defer.resolve(response);
                             }, function(err) {

@@ -86,17 +86,33 @@
                     No result found.
                 </div>
             </div>
-            <div class="col-md-12" ng-repeat="value in searchResults.values" ng-switch="value._type">
-                <search-item type="case" value="value" ng-switch-when="case" icon="glyphicon glyphicon-folder-open"></search-item>
-                <search-item type="task" value="value" ng-switch-when="case_task" icon="glyphicon glyphicon-tasks"></search-item>
-                <search-item type="task-log" value="value" ng-switch-when="case_task_log" icon="glyphicon glyphicon-comment"></search-item>
-                <search-item type="observable" value="value" ng-switch-when="case_artifact" icon="glyphicon glyphicon-pushpin"></search-item>
-                <search-item type="observable-job" value="value" ng-switch-when="case_artifact_job" icon="glyphicon glyphicon-cog"></search-item>
-                <search-item type="alert" value="value" ng-switch-when="alert" icon="glyphicon glyphicon-alert" on-title-clicked="importAlert(value)"></search-item>
-                <search-item type="audit" value="value" ng-switch-when="audit" icon="glyphicon glyphicon-list-alt"></search-item>
+            <div class="col-md-12" ng-switch="config.entity">
+                <alert-datalist ng-switch-when="alert" data="searchResults" filtering="filtering" on-reload="search"></alert-datalist>
+                <case-datalist ng-switch-when="case" data="searchResults"></case-datalist>
+                <task-datalist ng-switch-when="case_task" data="searchResults"></task-datalist>
+                <observable-datalist ng-switch-when="case_artifact" data="searchResults"></observable-datalist>
+
+                <!--
+                <log-datalist ng-switch-when="Log" data="searchResults"></log-datalist>
+                <audit-datalist ng-switch-when="Audit" data="searchResults"></audit-datalist>
+                <job-datalist ng-switch-when="Job" data="searchResults"></job-datalist>
+                <action-datalist ng-switch-when="Action" data="searchResults"></action-datalist>
+                 -->
             </div>
+            <!-- <div class="col-md-12" ng-repeat="value in searchResults.values" ng-switch="value._type">
+                <search-item type="alert" value="value" ng-switch-when="Alert" icon="glyphicon glyphicon-alert" on-title-clicked="importAlert(value)"></search-item>
+                <search-item type="case" value="value" ng-switch-when="Case" icon="glyphicon glyphicon-folder-open"></search-item>
+                <search-item type="task" value="value" ng-switch-when="Task" icon="glyphicon glyphicon-tasks"></search-item>
+                <search-item type="observable" value="value" ng-switch-when="case_artifact" icon="glyphicon glyphicon-pushpin"></search-item>
+                <search-item type="task-log" value="value" ng-switch-when="Log" icon="glyphicon glyphicon-comment"></search-item>
+
+                <search-item type="observable-job" value="value" ng-switch-when="case_artifact_job" icon="glyphicon glyphicon-cog"></search-item>
+                <search-item type="audit" value="value" ng-switch-when="audit" icon="glyphicon glyphicon-list-alt"></search-item>
+            </div> -->
             <psearch control="searchResults"></psearch>
         </div>
     </div>
+
+    <pre>{{paginatedList.values | json}}</pre>
 
 </div>

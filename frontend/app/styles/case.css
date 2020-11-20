@@ -70,17 +70,20 @@ span.link-id {
 }
 
 .tags-list,
+table.data-list,
 table.case-list .case-tags {
     font-size: 12px !important;
 }
 
 table.case-list .case-tags .label,
 .case-tags .label,
+.data-list .label,
 .tags-list .label  {
     font-size: 12px !important;
     font-weight: normal;
 }
 
+table.data-list .btn-icon,
 table.case-list .btn-icon {
     padding: 6px;
     padding-top: 0;
