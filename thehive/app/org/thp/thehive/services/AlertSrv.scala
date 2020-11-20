@@ -417,10 +417,9 @@ object AlertOps {
           )
             .by(
               _.selectValues
-                .unfold
                 .project(
-                  _.by(_.groupCount(_.byValue(_.ioc)))
-                    .by(_.groupCount(_.by(_.typeName)))
+                  _.by(_.unfold.groupCount(_.byValue(_.ioc)))
+                    .by(_.unfold.groupCount(_.by(_.typeName)))
                 )
             )
         )
