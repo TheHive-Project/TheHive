@@ -137,9 +137,11 @@ trait Input {
   def listAction(filter: Filter): Source[Try[(String, InputAction)], NotUsed]
   def countAction(filter: Filter): Future[Long]
   def listAction(entityId: String): Source[Try[(String, InputAction)], NotUsed]
+  def listActions(entityIds: Seq[String]): Source[Try[(String, InputAction)], NotUsed]
   def countAction(entityId: String): Future[Long]
   def listAudit(filter: Filter): Source[Try[(String, InputAudit)], NotUsed]
   def countAudit(filter: Filter): Future[Long]
   def listAudit(entityId: String, filter: Filter): Source[Try[(String, InputAudit)], NotUsed]
+  def listAudits(entityIds: Seq[String], filter: Filter): Source[Try[(String, InputAudit)], NotUsed]
   def countAudit(entityId: String, filter: Filter): Future[Long]
 }
