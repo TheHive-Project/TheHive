@@ -18,6 +18,7 @@ import play.api.cache.SyncCacheApi
 import play.api.inject.Injector
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
+import org.thp.thehive.controllers.v0.{QueryCtrl => QueryCtrlV0}
 
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
@@ -72,14 +73,15 @@ class DescribeCtrl @Inject() (
   def describeCortexEntity(
       name: String,
       className: String,
-      packageName: String = "org.thp.thehive.connector.cortex.controllers.v1"
+      packageName: String = "org.thp.thehive.connector.cortex.controllers.v0"
   ): Option[EntityDescription] =
     Try(
       EntityDescription(
         name,
         injector
           .instanceOf(getClass.getClassLoader.loadClass(s"$packageName.$className"))
-          .asInstanceOf[QueryableCtrl]
+          .asInstanceOf[QueryCtrlV0]
+          .publicData
           .publicProperties
           .list
           .flatMap(propertyToJson(name, _))
@@ -103,8 +105,8 @@ class DescribeCtrl @Inject() (
         EntityDescription("profile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _)))
 //        EntityDescription("dashboard", dashboardCtrl.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
 //        EntityDescription("page", pageCtrl.publicProperties.list.flatMap(propertyToJson("page", _)))
-      ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
-        describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
+      ) ++ describeCortexEntity("case_artifact_job", "JobCtrl") ++
+        describeCortexEntity("action", "ActionCtrl")
     }
 
   implicit val propertyDescriptionWrites: Writes[PropertyDescription] =
@@ -207,7 +209,7 @@ class DescribeCtrl @Inject() (
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))
         case c if c == classOf[Date]                              => Seq(PropertyDescription(prop.propertyName, "date"))
-        case c if c == classOf[Hash]                              => Seq(PropertyDescription(prop.propertyName, "hash"))
+        case c if c == classOf[Hash]                              => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if classOf[Number].isAssignableFrom(c)             => Seq(PropertyDescription(prop.propertyName, "number"))
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>

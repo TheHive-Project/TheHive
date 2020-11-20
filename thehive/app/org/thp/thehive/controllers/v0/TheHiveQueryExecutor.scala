@@ -149,12 +149,14 @@ class ParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.U
       authContext: AuthContext
   ): Traversal.Unk = {
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
-      parentFilter(
-        db,
-        publicProperties,
-        ru.typeOf[Traversal.V[T]],
-        t(traversal.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
-        authContext
+      traversal.filter(parent =>
+        parentFilter(
+          db,
+          publicProperties,
+          ru.typeOf[Traversal.V[T]],
+          t(parent.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+          authContext
+        )
       )
 
     RichType
@@ -189,12 +191,14 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
       authContext: AuthContext
   ): Traversal.Unk = {
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
-      childFilter(
-        db,
-        publicProperties,
-        ru.typeOf[Traversal.V[T]],
-        t(traversal.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
-        authContext
+      traversal.filter(child =>
+        childFilter(
+          db,
+          publicProperties,
+          ru.typeOf[Traversal.V[T]],
+          t(child.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+          authContext
+        )
       )
 
     RichType

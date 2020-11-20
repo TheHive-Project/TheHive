@@ -17,13 +17,14 @@
             version: 'v1',
             loadAll: false,
             filter: {
-                '_contains': 'attachment'
+                '_contains': 'attachment.id'
             },
             extraData: ['taskId'],
             pageSize: 100,
             operations: [
                 { '_name': 'getCase', 'idOrName': $scope.caseId },
                 { '_name': 'tasks' },
+                { '_name': 'filter', '_ne':{'_field': 'status', '_value': 'Cancel'}},
                 { '_name': 'logs' },
             ]
         });

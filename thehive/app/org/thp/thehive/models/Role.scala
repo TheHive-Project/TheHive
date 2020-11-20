@@ -26,7 +26,8 @@ object Profile {
       Permissions.manageAction,
       Permissions.manageShare,
       Permissions.manageAnalyse,
-      Permissions.managePage
+      Permissions.managePage,
+      Permissions.accessTheHiveFS
     )
   )
   val readonly: Profile           = Profile("read-only", Set.empty)

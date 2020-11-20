@@ -68,7 +68,13 @@ class CaseTemplateCtrl @Inject() (
               .can(Permissions.manageCaseTemplate),
             propertyUpdaters
           )
-          .map(_ => Results.NoContent)
+          .flatMap {
+            case (caseTemplates, _) =>
+              caseTemplates
+                .richCaseTemplate
+                .getOrFail("CaseTemplate")
+                .map(richCaseTemplate => Results.Ok(richCaseTemplate.toJson))
+          }
       }
 
   def delete(caseTemplateNameOrId: String): Action[AnyContent] =

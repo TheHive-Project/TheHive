@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
+        .controller('SearchCtrl', function($scope, $q, $stateParams, $uibModal, PSearchSrv, AlertingSrv, CaseTemplateSrv, CaseTaskSrv, NotificationSrv, EntitySrv, UserSrv, QueryBuilderSrv, GlobalSearchSrv, metadata) {
             $scope.metadata = metadata;
             $scope.toolbar = [
                 // {name: 'all', label: 'All', icon: 'glyphicon glyphicon-search'},
@@ -42,14 +42,24 @@
                     controllerAs: 'dialog',
                     size: 'max',
                     resolve: {
-                        event: event,
+                        event: function() {
+                            return AlertingSrv.get(event.id);
+                        },
                         templates: function() {
                             return CaseTemplateSrv.list();
                         },
                         readonly: true
                     }
-                }).result.then(function(/*response*/) {
+                })
+                .result
+                .then(function(/*response*/) {
                   $scope.searchResults.update();
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('AlertPreview', err.data, err.status);
+                    }
+
                 });
             };
 

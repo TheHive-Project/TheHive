@@ -1,19 +1,25 @@
 package org.thp.thehive.services
 
+import java.util.Date
+
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.google.inject.name.Names
 import com.google.inject.{Injector, Key => GuiceKey}
 import javax.inject.{Inject, Provider, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.Order
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
+import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.GuiceAkkaExtension
 import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.CaseOps._
 import play.api.cache.SyncCacheApi
+
+import scala.concurrent.duration.FiniteDuration
 
 object FlowActor {
   case class FlowId(organisation: EntityIdOrName, caseId: Option[EntityIdOrName]) {
@@ -25,20 +31,26 @@ object FlowActor {
 class FlowActor extends Actor {
   import FlowActor._
 
-  lazy val injector: Injector  = GuiceAkkaExtension(context.system).injector
-  lazy val cache: SyncCacheApi = injector.getInstance(classOf[SyncCacheApi])
-  lazy val auditSrv: AuditSrv  = injector.getInstance(classOf[AuditSrv])
-  lazy val caseSrv: CaseSrv    = injector.getInstance(classOf[CaseSrv])
-  lazy val db: Database        = injector.getInstance(GuiceKey.get(classOf[Database], Names.named("with-thehive-schema")))
-  lazy val eventSrv: EventSrv  = injector.getInstance(classOf[EventSrv])
+  lazy val injector: Injector           = GuiceAkkaExtension(context.system).injector
+  lazy val cache: SyncCacheApi          = injector.getInstance(classOf[SyncCacheApi])
+  lazy val auditSrv: AuditSrv           = injector.getInstance(classOf[AuditSrv])
+  lazy val caseSrv: CaseSrv             = injector.getInstance(classOf[CaseSrv])
+  lazy val db: Database                 = injector.getInstance(GuiceKey.get(classOf[Database], Names.named("with-thehive-schema")))
+  lazy val appConfig: ApplicationConfig = injector.getInstance(classOf[ApplicationConfig])
+  lazy val maxAgeConfig: ConfigItem[FiniteDuration, FiniteDuration] =
+    appConfig.item[FiniteDuration]("flow.maxAge", "Max age of audit logs shown in initial flow")
+  def fromDate: Date = new Date(System.currentTimeMillis() - maxAgeConfig.get.toMillis)
 
+  lazy val eventSrv: EventSrv   = injector.getInstance(classOf[EventSrv])
   override def preStart(): Unit = eventSrv.subscribe(StreamTopic(), self)
   override def receive: Receive = {
     case flowId @ FlowId(organisation, caseId) =>
       val auditIds = cache.getOrElseUpdate(flowId.toString) {
         db.roTransaction { implicit graph =>
           caseId
-            .fold(auditSrv.startTraversal.has(_.mainAction, true).visible(organisation))(caseSrv.get(_).audits(organisation))
+            .fold(auditSrv.startTraversal.has(_.mainAction, true).has(_._createdAt, P.gt(fromDate)).visible(organisation))(
+              caseSrv.get(_).audits(organisation)
+            )
             .sort(_.by("_createdAt", Order.desc))
             .range(0, 10)
             ._id

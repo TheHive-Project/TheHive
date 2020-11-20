@@ -110,7 +110,8 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
           Permissions.manageObservable,
           Permissions.manageAlert,
           Permissions.manageAction,
-          Permissions.manageConfig
+          Permissions.manageConfig,
+          Permissions.accessTheHiveFS
         ),
         organisation = "cert"
       )

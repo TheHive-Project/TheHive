@@ -160,7 +160,7 @@ pre.clearpre {
 /***************************/
 
 .flexwrap {
-    display: flex;
+    display: flex !important;
     flex-wrap: wrap;
     justify-content: flex-start;
     align-items: flex-start;
@@ -338,6 +338,11 @@ ul.observable-reports-summary li {
 .case-details dt,
 .case-custom-fields dt {
     width: 200px !important;
+}
+
+.case-details dd,
+.case-custom-fields dd {
+    margin-left: 200px !important;
 }
 
 .case-custom-fields dt {
@@ -760,4 +765,9 @@ table.tbody-stripped>tbody+tbody {
 
 table.tbody-stripped > tbody > tr > td {
 
+}
+
+.ellipsable {
+    overflow: hidden;
+	text-overflow: ellipsis;
 }

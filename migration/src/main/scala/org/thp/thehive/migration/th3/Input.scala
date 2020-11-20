@@ -639,7 +639,16 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
     dbFind(Some("0-0"), Nil)(indexName => search(indexName).query(termQuery("relations", "action")))._2
 
   override def listAction(entityId: String): Source[Try[(String, InputAction)], NotUsed] =
-    dbFind(Some("all"), Nil)(indexName => search(indexName).query(bool(Seq(termQuery("relations", "action"), idsQuery(entityId)), Nil, Nil)))
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "action"), termQuery("objectId", entityId)), Nil, Nil))
+    )
+      ._1
+      .read[(String, InputAction)]
+
+  override def listActions(entityIds: Seq[String]): Source[Try[(String, InputAction)], NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(bool(Seq(termQuery("relations", "action"), termsQuery("objectId", entityIds)), Nil, Nil))
+    )
       ._1
       .read[(String, InputAction)]
 
@@ -679,11 +688,34 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
 
   override def listAudit(entityId: String, filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
     dbFind(Some("all"), Nil)(indexName =>
-      search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId), Nil, Nil))
+      search(indexName).query(
+        bool(
+          auditFilter(filter) ++ auditIncludeFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId),
+          Nil,
+          auditExcludeFilter(filter)
+        )
+      )
+    )._1.read[(String, InputAudit)]
+
+  override def listAudits(entityIds: Seq[String], filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
+    dbFind(Some("all"), Nil)(indexName =>
+      search(indexName).query(
+        bool(
+          auditFilter(filter) ++ auditIncludeFilter(filter) :+ termQuery("relations", "audit") :+ termsQuery("objectId", entityIds),
+          Nil,
+          auditExcludeFilter(filter)
+        )
+      )
     )._1.read[(String, InputAudit)]
 
   def countAudit(entityId: String, filter: Filter): Future[Long] =
     dbFind(Some("0-0"), Nil)(indexName =>
-      search(indexName).query(bool(auditFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId), Nil, Nil))
+      search(indexName).query(
+        bool(
+          auditFilter(filter) ++ auditIncludeFilter(filter) :+ termQuery("relations", "audit") :+ termQuery("objectId", entityId),
+          Nil,
+          auditExcludeFilter(filter)
+        )
+      )
     )._2
 }

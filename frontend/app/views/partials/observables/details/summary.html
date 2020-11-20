@@ -25,7 +25,7 @@
             <dt class="pull-left">TLP</dt>
             <dd ng-if="canEdit">
                 <a class="noline" href ng-init="activeTlp = 'static'" ng-click="activeTlp = 'active'">
-                    <tlp value="artifact.tlp" format="activeTlp" style="font-size:16px" on-update="updateField('tlp', newValue)"></tlp>
+                    <tlp value="artifact.tlp" format="activeTlp" on-update="updateField('tlp', newValue)"></tlp>
                 </a>
             </dd>
             <dd ng-if="!canEdit">

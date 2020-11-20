@@ -1,14 +1,14 @@
 ## Example of docker-compose (not for production)
 With this docker-compose.yml you will be able to run the following images:
-- The Hive 4
+- The Hive 4.0.1-1
 - Cassandra 3.11
 - Cortex 3.1.0-1
 - Elasticsearch 7.9.3
 - Kibana 7.9.3
-- MISP 2.4.133
+- MISP 2.4.134
 - Mysql 8.0.22
 - Redis 6.0.9
-- Shuffle 0.7.1
+- Shuffle 0.7.6
 
 ## Some Hint
 
@@ -17,46 +17,45 @@ In docker-compose version is set 3.8, to run this version you need at least Dock
 ```
 Compose file format    Docker Engine release
 3.8                    19.03.0+
-3.7	               18.06.0+
-3.6	               18.02.0+
-3.5	               17.12.0+
-3.4	               17.09.0+
+3.7	                   18.06.0+
+3.6	                   18.02.0+
+3.5	                   17.12.0+
+3.4	                   17.09.0+
 ```
 If for some reason you have a previous version of Docker Engine or a previous version of Docker Compose and can't upgrade those, you can use 3.7 or 3.6 in docker-compose.yml
 
 
 ### Mapping volumes
-If you take a look of docker-compose.yml you will see you need some local folder that needs to be mapped, so before do docker-compose up, ensure folders (and config files) exist:
-- ./elasticsearch/data:/usr/share/elasticsearch/data
-- ./elasticsearch/logs:/usr/share/elasticsearch/logs
+If you take a look of docker-compose.yml you will see you need some local folder that needs to be mapped, so before do docker-compose up, ensure at least folders with config files exist:
 - ./cortex/application.conf:/etc/cortex/application.conf
 - ./thehive/application.conf:/etc/thehive/application.conf
-- ./data:/data
-- ./mysql:/var/lib/mysql
 
 Structure would look like:
 ```
 ├── docker-compose.yml
-├── elasticsearch
-│   └── data
-│   └── logs
+├── elasticsearch_data
+|── elasticsearch_logs
 ├── cortex
 │   └── application.conf 
-└── thehive
-   └── application.conf
-└── data
-└── mysql
+|── thehive
+|   └── application.conf
+|── data
+|── mysql
 ```
+If you run docker-compose with sudo, ensure you have created elasticsearch_data and elasticsearch_logs folders with non root user, otherwise elasticsearch container will not start.
 
 ### ElasticSearch
 ElasticSearch container likes big mmap count (https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) so from shell you can change with
 ```sysctl -w vm.max_map_count=262144```
-Due you would run all on same system and maybe you have a limited amount of RAM, better to set some size, for ElasticSearch, in docker-compose.yml I added those:
+To set this value permanently, update the vm.max_map_count setting in /etc/sysctl.conf. To verify after rebooting, run sysctl vm.max_map_count
+
+If you would run all containers on the same system - and maybe you have a limited amount of RAM - better to set some limit, for ElasticSearch, in docker-compose.yml I added those:
 
 ```- bootstrap.memory_lock=true```
 ```- "ES_JAVA_OPTS=-Xms256m -Xmx256m"```
 
 Adjust depending on your needs and your env. Without these settings in my environment ElasticSearch was using 1.5GB
+
 
 ### Cassandra
 Like for ElasticSearch maybe you would run all on same system and maybe you don't have a limited amount of RAM, better to set some size, here for Cassandra, in docker-compose.yml I added those:
@@ -68,7 +67,7 @@ Adjust depending on your needs and your env. Without these settings in my enviro
 
 ### Cortex-Analyzers
 - In order to use Analyzers in docker version, it is set  the online json url instead absolute path of analyzers in the application.conf of Cortex:
-  https://dl.bintray.com/thehive-project/cortexneurons/analyzers.json
+  https://download.thehive-project.org/analyzers.json
 - In order to use Analyzers in docker version it is set the application.conf thejob: ```
   job {
   runner = [docker]
@@ -142,3 +141,21 @@ curl -XPUT -uuser@thehive.local:user@thehive.local -H 'Content-type: application
 ```
 - Now are able to play automation with The Hive, Cortex-Analyzers, MISP thanks to SHUFFLE!
 
+
+### Result
+In conclusion, after execute ```sudo docker-compose up``` you will have the following services running:
+
+
+| Service   |      Address      |  User |  Password |
+|----------|:-------------:|:------:|------:|
+| The Hive |  http://localhost:9000 | admin@thehive.local | secret
+| Cortex |    http://localhost:9001  |    |
+| Elasticsearch | http://localhost:9200 |     |
+| Kibana |  http://localhost:5601 |  |
+| MISP |    https://localhost:443   |  admin@admin.test | admin
+| Shuffle | http://localhost:3001 |    |
+
+
+
+![image](https://user-images.githubusercontent.com/16938405/99674126-e8c99f80-2a75-11eb-9a8b-1603cf67d665.png)
+![image](https://user-images.githubusercontent.com/16938405/99674544-7c02d500-2a76-11eb-92a5-3fbb5c3c5cc5.png)

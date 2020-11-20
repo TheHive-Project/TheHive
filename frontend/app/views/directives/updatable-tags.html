@@ -1,30 +1,31 @@
-<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
-    <span class="updatable-value" ng-show="!value || value.length === 0" style="vertical-align:top; white-space: pre-wrap"><span class="text-warning"><em>Not Specified</em></span></span>
+<div class="updatable-input updatable-input-tags">
+    <span class="updatable-input-value-wrapper" ng-hide="updatable.updating" ng-click="edit()"
+        ng-class="{'tags-list flexwrap': value.length > 0}">
+        <span class="updatable-value text-warning" ng-show="!value || value.length === 0"><em>Not Specified</em></span>
 
-    <span class="tags-list flexwrap">
         <span ng-repeat="tag in value" class="label label-primary mb-xxxs mr-xxxs">{{tag.text}}</span>
-        <!-- -->
-        <small ng-show="active" style="line-height:18px;" class="mb-xxxs mr-xxxs">
-            <a href class="clickable" tooltip-popup-delay='500' uib-tooltip="edit">
-                <i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
-            </a>
+
+        <small class="updatable-input-icon" ng-class="{'lg': value.length > 0}">
+            <i class="glyphicon glyphicon-pencil"></i>
         </small>
     </span>
 
-</span>
-
-<span ng-show="updatable.updating">
-    <div class="form-group">
-        <tags-input class="ti-input-sm" min-length="2" ng-model="value" placeholder="Add labels" replace-spaces-with-dashes="false">
-            <auto-complete ng-if="source" min-length="3" debounce-delay="400" source="source($query)"></auto-complete>
-        </tags-input>
-    </div>
-    <div class="form-group">
-        <span class="btn" ng-click='update()' tooltip-placement="top" tooltip-popup-delay='500' uib-tooltip="save">
-            <i class="text-success glyphicon glyphicon-ok"></i>
-        </span>
-        <span class="btn" ng-click='cancel()' tooltip-placement="top" tooltip-popup-delay='500' uib-tooltip="cancel">
-            <i class="text-danger glyphicon glyphicon-remove"></i>
-        </span>
-    </div>
-</span>
+    <span ng-show="updatable.updating">
+        <div class="form-group">
+            <tags-input class="ti-input-sm" min-length="2" ng-model="value" placeholder="Add labels" replace-spaces-with-dashes="false">
+                <auto-complete ng-if="source" min-length="3" debounce-delay="400" source="source($query)"></auto-complete>
+            </tags-input>
+        </div>
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-sm btn-default" ng-click='update()'>
+                <i class="text-success glyphicon glyphicon-ok"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-default" ng-click='cancel()'>
+                <i class="text-danger glyphicon glyphicon-remove"></i>
+            </button>
+            <button class="btn btn-sm btn-default" type="button" ng-click="clear()" ng-if="clearable === true">
+                <i class="text-danger glyphicon glyphicon-erase"></i>
+            </button>
+        </div>
+    </span>
+</div>

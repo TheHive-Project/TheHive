@@ -32,11 +32,11 @@
                     url: './api/case/_search',
                     isArray: true
                 },
-                alerts: {
-                    method: 'POST',
-                    url: './api/alert/_search',
-                    isArray: true
-                }
+                // alerts: {
+                //     method: 'POST',
+                //     url: './api/alert/_search',
+                //     isArray: true
+                // }
             });
 
             this.get = resource.get;
@@ -47,6 +47,23 @@
             this.update = resource.update;
             this.merge = resource.merge;
             this.query = resource.query;
+
+            this.alerts = function(id) {
+                var defer = $q.defer();
+
+                QuerySrv.call('v1', [{
+                    '_name': 'getCase',
+                    'idOrName': id
+                }, {'_name': 'alerts'}], {
+                    name:'get-case-alerts' + id
+                }).then(function(response) {
+                    defer.resolve(response);
+                }).catch(function(err){
+                    defer.reject(err);
+                });
+
+                return defer.promise;
+            };
 
             this.getById = function(id, withStats) {
                 var defer = $q.defer();

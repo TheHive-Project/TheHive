@@ -3,12 +3,12 @@
 
     <strong class="text-muted mr-xxxs" ng-if="!$cmp.customFields || $cmp.definedValues === 0 ">None</strong>
 
-    <span class="double-val-label mb-xxxs mr-xxxs pointer"
+    <span class="kv-label mb-xxxs mr-xxxs pointer"
         ng-repeat="cf in $cmp.customFields | orderBy:'order' track by $index"
         ng-click="$cmp.fieldClicked('customFields.' + cf.name, cf.value)"
         ng-if="cf.value !== undefined && cf.value !== null">
 
-        <span class="default" uib-tooltip="{{cf.description}}" tooltip-placement="top">{{$cmp.fieldsCache[cf.name].name || cf.name}}</span>
-        <span class="default">{{cf | customFieldValue}}</span>
+        <span class="kv-label-key default" uib-tooltip="{{cf.description}}" tooltip-placement="top">{{$cmp.fieldsCache[cf.name].name || cf.name}}</span>
+        <span class="kv-label-val value default" uib-tooltip="{{cf | customFieldValue}}" tooltip-placement="top">{{cf | customFieldValue}}</span>
     </span>
 </div>

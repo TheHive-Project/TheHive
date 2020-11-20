@@ -8,7 +8,8 @@
             'scope': {
                 'value': '=?',
                 'onUpdate': '&',
-                'active': '=?'
+                'active': '=?',
+                'clearable': '<?'
             }
         };
     });

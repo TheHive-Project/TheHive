@@ -3,11 +3,28 @@
         Additional information
         <span uib-dropdown class="ml-m" ng-if="canEdit && customFieldsAvailable">
             <a href class="dropdown-toggle" uib-dropdown-toggle>
-                <i class="fa fa-plus"></i>
+                <small><i class="fa fa-plus"></i> Add</small>
             </a>
             <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
                 <li ng-repeat="key in keys(allCustomFields) | orderBy">
                     <a ng-click="addCustomField(allCustomFields[key])">{{allCustomFields[key].name}}</a>
+                </li>
+            </ul>
+        </span>
+
+        <span uib-dropdown class="ml-m">
+            <a href class="dropdown-toggle" uib-dropdown-toggle>
+                <small><i class="fa fa-columns"></i> Layout</small>
+            </a>
+            <ul class="dropdown-menu scroll-dropdown" uib-dropdown-menu>
+                <li ng-class="{'active': appLayout.caseCustomFieldColumns === 1}">
+                    <a ng-click="layoutSrv.caseCustomFields(1)">1 column</a>
+                </li>
+                <li ng-class="{'active': appLayout.caseCustomFieldColumns === 2}">
+                    <a ng-click="layoutSrv.caseCustomFields(2)">2 columns</a>
+                </li>
+                <li ng-class="{'active': appLayout.caseCustomFieldColumns === 3}">
+                    <a ng-click="layoutSrv.caseCustomFields(3)">3 columns</a>
                 </li>
             </ul>
         </span>
@@ -19,8 +36,8 @@
 
     <div class="row">
         <div ng-repeat="customField in (caze.customFields | orderBy:'order') track by $index">
-            <div class="clearfix" ng-if="$index % 3 == 0"></div>
-            <div class="col-xs-4">
+            <div class="clearfix" ng-if="$index % (appLayout.caseCustomFieldColumns || 3) == 0"></div>
+            <div class="{{'col-xs-' + (12/(appLayout.caseCustomFieldColumns || 3))}}">
                 <custom-field-input
                     index="$index"
                     editable="canEdit"

@@ -1,0 +1,42 @@
+.updatable-input .updatable-value {
+    vertical-align: top;
+    white-space: pre-wrap;
+}
+
+.updatable-input .updatable-input-value-wrapper {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px solid #fff;
+    padding-right: 20px;
+}
+
+.updatable-input .updatable-input-value-wrapper:hover{
+    border-bottom: 1px solid #337ab7;
+    cursor: pointer;
+}
+
+.updatable-input .updatable-input-value-wrapper .updatable-input-icon {
+    display: none;
+    float: right;
+    margin-left: 10px;
+    color: #337ab7;
+}
+
+.updatable-input .updatable-input-value-wrapper .updatable-input-icon.lg {
+    line-height: 18px;
+}
+
+.updatable-input .updatable-input-value-wrapper:hover .updatable-input-icon {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.updatable-input.updatable-input-text .updatable-input-markdown {
+    cursor: auto;
+}
+.updatable-input.updatable-input-text .updatable-input-markdown .updatable-input-icon {
+    /* float:left;
+    margin-left: 0; */
+}

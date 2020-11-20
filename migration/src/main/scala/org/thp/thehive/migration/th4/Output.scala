@@ -32,6 +32,7 @@ import play.api.{Configuration, Environment, Logger}
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
+import org.thp.thehive.controllers.v1.Conversion._
 
 object Output {
 
@@ -220,15 +221,15 @@ class Output @Inject() (
       alerts.nonEmpty
     )
       logger.info(s"""Already migrated:
-                     | ${profiles.size} profiles\n
-                     | ${organisations.size} organisations\n
-                     | ${users.size} users\n
-                     | ${impactStatuses.size} impactStatuses\n
-                     | ${resolutionStatuses.size} resolutionStatuses\n
-                     | ${observableTypes.size} observableTypes\n
-                     | ${customFields.size} customFields\n
-                     | ${caseTemplates.size} caseTemplates\n
-                     | ${caseNumbers.size} caseNumbers\n
+                     | ${profiles.size} profiles
+                     | ${organisations.size} organisations
+                     | ${users.size} users
+                     | ${impactStatuses.size} impactStatuses
+                     | ${resolutionStatuses.size} resolutionStatuses
+                     | ${observableTypes.size} observableTypes
+                     | ${customFields.size} customFields
+                     | ${caseTemplates.size} caseTemplates
+                     | ${caseNumbers.size} caseNumbers
                      | ${alerts.size} alerts""".stripMargin)
   }
 
@@ -579,7 +580,9 @@ class Output @Inject() (
       for {
         task <- taskSrv.getOrFail(taskId)
         _ = logger.debug(s"Create log in task ${task.title}")
-        log <- logSrv.create(inputLog.log, task)
+        log <- logSrv.createEntity(inputLog.log)
+        _   <- logSrv.taskLogSrv.create(TaskLog(), task, log)
+        _   <- auditSrv.log.create(log, task, RichLog(log, Nil).toJson)
         _ = updateMetaData(log, inputLog.metaData)
         _ <- inputLog.attachments.toTry { inputAttachment =>
           attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap { attachment =>
@@ -717,6 +720,7 @@ class Output @Inject() (
       case "Log"        => logSrv.getOrFail(entityId)
       case "Alert"      => alertSrv.getOrFail(entityId)
       case "Job"        => jobSrv.getOrFail(entityId)
+      case "Action"     => actionSrv.getOrFail(entityId)
       case _            => Failure(BadRequestError(s"objectType $entityType is not recognised"))
     }
 
@@ -744,6 +748,7 @@ class Output @Inject() (
           case "Alert"                                        => "Alert"
           case "Log" | "Task" | "Observable" | "Case" | "Job" => "Case"
           case "User"                                         => "User"
+          case "Action"                                       => "Action" // FIXME
           case other =>
             logger.error(s"Unknown object type: $other")
             other

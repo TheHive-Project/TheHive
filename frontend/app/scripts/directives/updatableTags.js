@@ -10,7 +10,8 @@
                     'value': '=?',
                     'onUpdate': '&',
                     'active': '=?',
-                    'source': '='
+                    'source': '=',
+                    'clearable': '<?'
                 }
             };
         });

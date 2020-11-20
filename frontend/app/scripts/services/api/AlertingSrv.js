@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, PaginatedQuerySrv, QuerySrv) {
+        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, PaginatedQuerySrv) {
 
             var baseUrl = './api/alert';
 
@@ -144,15 +144,10 @@
                 },
 
                 get: function(alertId) {
-                    return QuerySrv.call('v1', [{
-                            '_name': 'getAlert',
-                            'idOrName': alertId
-                        }
-                    ], {
-                        name: 'get-alert-' + alertId
-                    }).then(function(response) {
-                        return response[0];
-                    });
+                    return $http.get('./api/v1/alert/' + alertId)
+                        .then(function(response) {
+                            return response.data;
+                        });
                 },
 
                 create: function(alertId, data) {

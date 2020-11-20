@@ -1,17 +1,18 @@
-<span ng-hide="updatable.updating" ng-init="active = false" ng-mouseenter="active = true" ng-mouseleave="active = false">
-	<span ng-if="value!==null && value !==''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value">{{value}}</span>
-	<span ng-if="value===null || value ===''" style="vertical-align: top; white-space: pre-wrap" class="updatable-value text-warning"><em>Not Specified</em></span>
-	<small ng-show="active">
-		<a tooltip-popup-delay='500' uib-tooltip="edit" target="_self" style="cursor: pointer;">
-			<i class="glyphicon glyphicon-pencil" ng-click="edit()"></i>
-		</a>
-	</small>
-	<small ng-hide="active">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>
-</span>
-<span ng-show="updatable.updating" ng-init="updatable.dropdownOpen=false">
-	<form ng-submit="update()">
+<div class="updatable-input updatable-input-text">
+	<span class="updatable-input-value-wrapper" ng-hide="updatable.updating" ng-click="edit()">
+		<span ng-if="value!==null && value !==''" class="updatable-value">{{value}}</span>
+		<span ng-if="value===null || value ===''" class="updatable-value text-warning"><em>Not Specified</em></span>
+
+		<small class="updatable-input-icon">
+			<i class="glyphicon glyphicon-pencil"></i>
+		</small>
+	</span>
+
+	<form ng-submit="update()" ng-show="updatable.updating">
 		<div class="input-group input-group-sm">
+
 			<input type="{{ {'float': 'number', 'integer': 'number', 'text': 'text'}[inputType] }}" step="{{ {'float':'.01', 'integer': '1'}[inputType] }}" class="form-control input-sm" placeholder="{{placeholder}}" ng-model="value" autofocus="autofocus">
+
 			<span class="input-group-btn">
 				<button class="btn btn-sm btn-default" type="submit">
 					<i class="text-success glyphicon glyphicon-ok"></i>
@@ -19,7 +20,10 @@
 				<button class="btn btn-sm btn-default" type="button" ng-click="cancel()">
 					<i class="text-danger glyphicon glyphicon-remove"></i>
 				</button>
-            </span>
+				<button class="btn btn-sm btn-default" type="button" ng-click="clear()" ng-if="clearable === true">
+					<i class="text-danger glyphicon glyphicon-erase"></i>
+				</button>
+	        </span>
 		</div>
 	</form>
-</span>
+</div>

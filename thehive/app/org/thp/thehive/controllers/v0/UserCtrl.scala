@@ -117,7 +117,6 @@ class UserCtrl @Inject() (
               .update(userSrv.get(EntityIdOrName(userId)), propertyUpdaters) // Authorisation is managed in public properties
               .flatMap { case (user, _) => user.richUser.getOrFail("User") }
         } yield Results.Ok(user.toJson)
-
       }
 
   def setPassword(userId: String): Action[AnyContent] =

@@ -7,7 +7,7 @@ import org.thp.scalligraph.{EntityId, NotFoundError, RichOptionTry}
 import org.thp.thehive.migration.dto.{InputAlert, InputAudit, InputCase, InputCaseTemplate}
 import play.api.Logger
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -251,10 +251,10 @@ trait MigrationOps {
               output.createJobObservable
             )
             caseEntitiesIds = caseTaskIds ++ caseTaskLogIds ++ caseObservableIds ++ jobIds ++ jobObservableIds :+ caseId
-            actionSource    = Source(caseEntitiesIds.to[immutable.Iterable]).flatMapConcat(id => input.listAction(id.inputId))
+            actionSource    = input.listActions(caseEntitiesIds.map(_.inputId).distinct)
             actionIds <- migrateWithParent("Action", caseEntitiesIds, actionSource, output.createAction)
             caseEntitiesAuditIds = caseEntitiesIds ++ actionIds
-            auditSource          = Source(caseEntitiesAuditIds.to[immutable.Iterable]).flatMapConcat(id => input.listAudit(id.inputId, filter))
+            auditSource          = input.listAudits(caseEntitiesAuditIds.map(_.inputId).distinct, filter)
             _ <- migrateAudit(caseEntitiesAuditIds, auditSource, output.createAudit)
           } yield Some(caseId)
       }
@@ -282,10 +282,10 @@ trait MigrationOps {
               output.createAlertObservable
             )
             alertEntitiesIds = alertId +: alertObservableIds
-            actionSource     = Source(alertEntitiesIds.to[immutable.Iterable]).flatMapConcat(id => input.listAction(id.inputId))
+            actionSource     = input.listActions(alertEntitiesIds.map(_.inputId).distinct)
             actionIds <- migrateWithParent("Action", alertEntitiesIds, actionSource, output.createAction)
             alertEntitiesAuditIds = alertEntitiesIds ++ actionIds
-            auditSource           = Source(alertEntitiesAuditIds.to[immutable.Iterable]).flatMapConcat(id => input.listAudit(id.inputId, filter))
+            auditSource           = input.listAudits(alertEntitiesAuditIds.map(_.inputId).distinct, filter)
             _ <- migrateAudit(alertEntitiesAuditIds, auditSource, output.createAudit)
           } yield ()
       }

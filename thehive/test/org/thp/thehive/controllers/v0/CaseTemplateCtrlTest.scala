@@ -131,7 +131,8 @@ class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
         )
       val result = app[CaseTemplateCtrl].update("spam")(request)
 
-      status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      contentAsJson(result).as[OutputCaseTemplate].displayName must beEqualTo("patched")
 
       val updatedOutput = app[Database].roTransaction { implicit graph =>
         app[CaseTemplateSrv].get(EntityName("spam")).richCaseTemplate.head

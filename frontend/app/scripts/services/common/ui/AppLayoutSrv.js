@@ -8,7 +8,9 @@
 
             this.init = function() {
                 this.layout = localStorageService.get(key) || {
-                    showFlow: true
+                    showFlow: true,
+                    caseCustomFieldColumns: 3,
+                    alertCustomFieldColumns: 2
                 };
 
                 this.saveLayout();
@@ -30,6 +32,16 @@
 
             this.groupTasks = function(group) {
                 this.layout.groupTasks = group;
+                this.saveLayout();
+            };
+
+            this.caseCustomFields = function(columns) {
+                this.layout.caseCustomFieldColumns = columns;
+                this.saveLayout();
+            };
+
+            this.alertCustomFields = function(columns) {
+                this.layout.alertCustomFieldColumns = columns;
                 this.saveLayout();
             };
 

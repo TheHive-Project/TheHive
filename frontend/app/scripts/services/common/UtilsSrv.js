@@ -101,6 +101,9 @@
                         scope.value = scope.oldValue;
                         scope.updatable.updating = false;
                     };
+                    scope.clear = function() {
+                        scope.value = null;
+                    };
                 },
 
                 extractQueryParam: function(paramName, queryString) {
