@@ -10,7 +10,7 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Converter, IdentityConverter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityId, EntityIdOrName, EntityName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
@@ -411,17 +411,22 @@ class PublicAlert @Inject() (
       .property("read", UMapping.boolean)(_.field.updatable)
       .property("follow", UMapping.boolean)(_.field.updatable)
       .property("status", UMapping.string)(
-        _.select(
-          _.project(
+        _.select { alerts =>
+          val readAndCase = alerts.project(
             _.byValue(_.read)
               .by(_.`case`.limit(1).count)
-          ).domainMap {
-            case (false, caseCount) if caseCount == 0L => "New"
-            case (false, _)                            => "Updated"
-            case (true, caseCount) if caseCount == 0L  => "Ignored"
-            case (true, _)                             => "Imported"
-          }
-        ).readonly
+          )
+          readAndCase.graphMap[String, String, IdentityConverter[String]](
+            jmap =>
+              readAndCase.converter.apply(jmap) match {
+                case (false, caseCount) if caseCount == 0L => "New"
+                case (false, _)                            => "Updated"
+                case (true, caseCount) if caseCount == 0L  => "Ignored"
+                case (true, _)                             => "Imported"
+              },
+            Converter.identity[String]
+          )
+        }.readonly
       )
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("user", UMapping.string)(_.field.updatable)
