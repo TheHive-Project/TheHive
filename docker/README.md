@@ -1,6 +1,6 @@
 ## Example of docker-compose (not for production)
 With this docker-compose.yml you will be able to run the following images:
-- The Hive 4.0.1-1
+- The Hive 4.0.2-1
 - Cassandra 3.11
 - Cortex 3.1.0-1
 - Elasticsearch 7.9.3
