@@ -8,7 +8,7 @@ With this docker-compose.yml you will be able to run the following images:
 - MISP 2.4.134
 - Mysql 8.0.22
 - Redis 6.0.9
-- Shuffle 0.7.6
+- Shuffle 0.8.0
 
 ## Some Hint
 
