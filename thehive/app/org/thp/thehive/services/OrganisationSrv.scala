@@ -35,6 +35,7 @@ class OrganisationSrv @Inject() (
   lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
   val organisationOrganisationSrv   = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv          = new EdgeSrv[OrganisationShare, Organisation, Share]
+  val organisationTaxonomySrv       = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
     integrityCheckActor ! IntegrityCheckActor.EntityAdded("Organisation")
@@ -50,12 +51,14 @@ class OrganisationSrv @Inject() (
     } yield createdOrganisation
 
   def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
-    val customTaxo = Taxonomy("custom", "Custom taxonomy", 1, enabled = true)
+    val customTaxo = Taxonomy("_freetags", "Custom taxonomy", 1)
+    val activeTaxos = getByName("admin").taxonomies.toSeq
     for {
-      createdOrganisation <- createEntity(e)
-      _                   <- taxonomySrv.createWithOrg(customTaxo, Seq(), createdOrganisation)
-      _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
-    } yield createdOrganisation
+      newOrga <- createEntity(e)
+      _       <- taxonomySrv.createWithOrg(customTaxo, Seq(), newOrga)
+      _       <- activeTaxos.toTry(t => organisationTaxonomySrv.create(OrganisationTaxonomy(), newOrga, t))
+      _       <- auditSrv.organisation.create(newOrga, newOrga.toJson)
+    } yield newOrga
   }
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)

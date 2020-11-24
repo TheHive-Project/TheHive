@@ -381,7 +381,6 @@ class Properties @Inject() (
       .property("namespace", UMapping.string)(_.field.readonly)
       .property("description", UMapping.string)(_.field.readonly)
       .property("version", UMapping.int)(_.field.readonly)
-      .property("enabled", UMapping.boolean)(_.field.readonly)
       .build
 
 }

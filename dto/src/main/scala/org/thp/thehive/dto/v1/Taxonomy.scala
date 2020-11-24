@@ -65,7 +65,6 @@ case class OutputTaxonomy(
   namespace: String,
   description: String,
   version: Int,
-  enabled: Boolean,
   tags: Seq[OutputTag]
 )
 

@@ -89,7 +89,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
               taxoVertex.property("_label", "Taxonomy")
               taxoVertex.property("_createdBy", "system@thehive.local")
               taxoVertex.property("_createdAt", new Date())
-              taxoVertex.property("namespace", "custom")
+              taxoVertex.property("namespace", "_freetags")
               taxoVertex.property("description", "Custom taxonomy")
               taxoVertex.property("version", 1)
               taxoVertex.property("enabled", true)
@@ -103,14 +103,22 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .dbOperation[Database]("Add each tag to its Organisation's Custom taxonomy") { db =>
       db.tryTransaction { implicit g =>
         db.labelFilter("Organisation")(Traversal.V()).toIterator.toTry { o =>
-          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", "custom").head
+          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", "_freetags").head
           Traversal.V(EntityId(o.id())).unionFlat(
             _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
             _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
             _.in("AlertOrganisation").out("AlertTag"),
             _.in("CaseTemplateOrganisation").out("CaseTemplateTag")
           ).toSeq.foreach { tag =>
-            tag.property("namespace", "custom")
+            // Create a freetext tag and store it into predicate
+            val tagStr = tagString(
+              tag.property("namespace").value().toString,
+              tag.property("predicate").value().toString,
+              tag.property("value").value().toString
+            )
+            tag.property("namespace", "_freetags")
+            tag.property("predicate", tagStr)
+            tag.property("value").remove()
             customTaxo.addEdge("TaxonomyTag", tag)
           }
           Success(())
@@ -147,6 +155,11 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
   override lazy val initialValues: Seq[InitialValue[_]] = modelList.collect {
     case vertexModel: VertexModel => vertexModel.getInitialValues
   }.flatten
+
+  private def tagString(namespace: String, predicate: String, value: String): String =
+    (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
+    (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
+    (if (value.isEmpty) "" else f"""="$value"""")
 
   override def init(db: Database)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
 }

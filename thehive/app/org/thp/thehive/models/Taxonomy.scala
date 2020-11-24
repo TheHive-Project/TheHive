@@ -9,8 +9,7 @@ import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 case class Taxonomy(
   namespace: String,
   description: String,
-  version: Int,
-  enabled: Boolean
+  version: Int
 )
 
 @BuildEdgeEntity[Taxonomy, Tag]
@@ -28,5 +27,4 @@ case class RichTaxonomy(
   def namespace: String           = taxonomy.namespace
   def description: String         = taxonomy.description
   def version: Int                = taxonomy.version
-  def enabled: Boolean            = taxonomy.enabled
 }
