@@ -36,20 +36,20 @@ class TaxonomySrv @Inject() (
 
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {
-      organisation <- organisationSrv.getOrFail(authContext.organisation)
-      richTaxonomy <- createWithOrg(taxo, tags, organisation)
-    } yield richTaxonomy
-
-  def createWithOrg(taxo: Taxonomy,
-                    tags: Seq[Tag with Entity],
-                    organisation: Organisation with Entity)
-  (implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
-    for {
       taxonomy     <- createEntity(taxo)
-      _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
       _            <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
+      _            <- activate(richTaxonomy._id)
     } yield richTaxonomy
+
+  def createFreetag(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
+    val customTaxo = Taxonomy("_freetags", "Custom taxonomy", 1)
+    for {
+      taxonomy     <- createEntity(customTaxo)
+      richTaxonomy <- Try(RichTaxonomy(taxonomy, Seq()))
+      _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
+    } yield richTaxonomy
+  }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
     Try(startTraversal.getByNamespace(name)).getOrElse(startTraversal.limit(0))
@@ -57,7 +57,7 @@ class TaxonomySrv @Inject() (
   def activate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       taxo          <- get(taxonomyId).getOrFail("Taxonomy")
-      organisations <- Try(organisationSrv.startTraversal.filter(_
+      organisations <- Try(organisationSrv.startTraversal.filterNot(_
         .out[OrganisationTaxonomy]
         .filter(_.unsafeHas("namespace", taxo.namespace))
       ).toSeq)
@@ -67,8 +67,8 @@ class TaxonomySrv @Inject() (
   def deactivate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       taxo <- get(taxonomyId).getOrFail("Taxonomy")
-      _    <- Try(organisationSrv
-        .get(authContext.organisation)
+      _    <- Try(organisationSrv.startTraversal
+        .filterNot(_.unsafeHas("name", "admin"))
         .outE[OrganisationTaxonomy]
         .filter(_.otherV().unsafeHas("namespace", taxo.namespace))
         .remove())

@@ -51,11 +51,10 @@ class OrganisationSrv @Inject() (
     } yield createdOrganisation
 
   def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
-    val customTaxo = Taxonomy("_freetags", "Custom taxonomy", 1)
     val activeTaxos = getByName("admin").taxonomies.toSeq
     for {
       newOrga <- createEntity(e)
-      _       <- taxonomySrv.createWithOrg(customTaxo, Seq(), newOrga)
+      _       <- taxonomySrv.createFreetag(newOrga)
       _       <- activeTaxos.toTry(t => organisationTaxonomySrv.create(OrganisationTaxonomy(), newOrga, t))
       _       <- auditSrv.organisation.create(newOrga, newOrga.toJson)
     } yield newOrga

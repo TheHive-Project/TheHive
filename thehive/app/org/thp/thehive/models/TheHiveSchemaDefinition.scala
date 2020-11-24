@@ -92,8 +92,8 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .dbOperation[Database]("Add Custom taxonomy vertex for each Organisation") { db =>
       db.tryTransaction { implicit g =>
         // For each organisation, if there is no custom taxonomy, create it
-        db.labelFilter("Organisation")(Traversal.V()).toIterator.toTry { o =>
-          Traversal.V(EntityId(o.id)).out[OrganisationTaxonomy].v[Taxonomy].unsafeHas("namespace", "custom").headOption match {
+        db.labelFilter("Organisation")(Traversal.V()).unsafeHas("name", P.neq("admin")).toIterator.toTry { o =>
+          Traversal.V(EntityId(o.id)).out[OrganisationTaxonomy].v[Taxonomy].unsafeHas("namespace", "_freetags").headOption match {
             case None =>
               val taxoVertex = g.addVertex("Taxonomy")
               taxoVertex.property("_label", "Taxonomy")
@@ -124,7 +124,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
             val tagStr = tagString(
               tag.property("namespace").value().toString,
               tag.property("predicate").value().toString,
-              tag.property("value").value().toString
+              tag.property ("value").orElse("")
             )
             tag.property("namespace", "_freetags")
             tag.property("predicate", tagStr)
@@ -135,8 +135,8 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         }
       }.map(_ => ())
     }
-    .updateGraph("Add manageTaxonomy to org-admin profile", "Profile") { traversal =>
-      Try(traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageTaxonomy").iterate())
+    .updateGraph("Add manageTaxonomy to admin profile", "Profile") { traversal =>
+      Try(traversal.unsafeHas("name", "admin").raw.property("permissions", "manageTaxonomy").iterate())
       Success(())
     }
 
