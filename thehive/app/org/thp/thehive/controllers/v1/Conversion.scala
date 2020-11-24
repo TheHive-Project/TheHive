@@ -257,7 +257,6 @@ object Conversion {
     def toTaxonomy: Taxonomy =
       inputTaxonomy
         .into[Taxonomy]
-        .withFieldConst(_.enabled, false)
         .transform
   }
 

@@ -119,12 +119,16 @@ class TaxonomyCtrl @Inject() (
     })
 
     // Create a tag for predicates with no tags associated
-    val predicateWithNoTags = inputTaxo.predicates.diff(tagValues.map(_.predicate))
+    val predicateWithNoTags = inputTaxo.predicates.map(_.value).diff(tagValues.map(_.predicate))
     val allTags = tags ++ predicateWithNoTags.map(p =>
-      Tag(inputTaxo.namespace, p.value, None, None, tagSrv.defaultColour)
+      Tag(inputTaxo.namespace, p, None, None, tagSrv.defaultColour)
     )
 
-    if (taxonomySrv.existsInOrganisation(inputTaxo.namespace))
+    if (inputTaxo.namespace.isEmpty)
+      Failure(BadRequestError(s"A taxonomy with no namespace cannot be imported"))
+    else if (inputTaxo.namespace == "_freetags")
+      Failure(BadRequestError(s"Namespace _freetags is restricted for TheHive"))
+    else if (taxonomySrv.existsInOrganisation(inputTaxo.namespace))
       Failure(BadRequestError(s"A taxonomy with namespace '${inputTaxo.namespace}' already exists in this organisation"))
     else
       for {
@@ -144,12 +148,25 @@ class TaxonomyCtrl @Inject() (
           .map(taxonomy => Results.Ok(taxonomy.toJson))
       }
 
-  def setEnabled(taxonomyId: String, isEnabled: Boolean): Action[AnyContent] =
+  def toggleActivation(taxonomyId: String, isActive: Boolean): Action[AnyContent] =
     entrypoint("toggle taxonomy")
       .authPermittedTransaction(db, Permissions.manageTaxonomy) { implicit request => implicit graph =>
-        taxonomySrv
-          .setEnabled(EntityIdOrName(taxonomyId), isEnabled)
-          .map(_ => Results.NoContent)
+        val toggleF = if (isActive) taxonomySrv.activate _ else taxonomySrv.deactivate _
+        toggleF(EntityIdOrName(taxonomyId)).map(_ => Results.NoContent)
+      }
+
+  def delete(taxoId: String): Action[AnyContent] =
+    entrypoint("delete taxonomy")
+      .authPermittedTransaction(db, Permissions.manageTaxonomy) { implicit request => implicit graph =>
+        for {
+        taxo <- taxonomySrv
+          .get(EntityIdOrName(taxoId))
+          .visible
+          .getOrFail("Taxonomy")
+        tags <- Try(taxonomySrv.get(taxo).tags.toSeq)
+        _ <- tags.toTry(t => tagSrv.delete(t))
+        _ <- taxonomySrv.delete(taxo)
+        } yield Results.NoContent
       }
 
 }

@@ -12,8 +12,9 @@ import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.TaxonomyOps._
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 @Singleton
 class TaxonomySrv @Inject() (
@@ -50,10 +51,28 @@ class TaxonomySrv @Inject() (
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
     } yield richTaxonomy
 
-  def setEnabled(taxonomyId: EntityIdOrName, isEnabled: Boolean)(implicit graph: Graph): Try[Unit] =
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
+    Try(startTraversal.getByNamespace(name)).getOrElse(startTraversal.limit(0))
+
+  def activate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      _ <- get(taxonomyId).update(_.enabled, isEnabled).getOrFail("Taxonomy")
-    } yield ()
+      taxo          <- get(taxonomyId).getOrFail("Taxonomy")
+      organisations <- Try(organisationSrv.startTraversal.filter(_
+        .out[OrganisationTaxonomy]
+        .filter(_.unsafeHas("namespace", taxo.namespace))
+      ).toSeq)
+      _ <- organisations.toTry(o => organisationTaxonomySrv.create(OrganisationTaxonomy(), o, taxo))
+    } yield Success(())
+
+  def deactivate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      taxo <- get(taxonomyId).getOrFail("Taxonomy")
+      _    <- Try(organisationSrv
+        .get(authContext.organisation)
+        .outE[OrganisationTaxonomy]
+        .filter(_.otherV().unsafeHas("namespace", taxo.namespace))
+        .remove())
+    } yield Success(())
 
 }
 
