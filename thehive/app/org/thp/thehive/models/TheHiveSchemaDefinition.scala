@@ -103,7 +103,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     }
     .dbOperation[Database]("Add each tag to its Organisation's Custom taxonomy") { db =>
       db.tryTransaction { implicit g =>
-        db.labelFilter("Organisation")(Traversal.V()).toIterator.toTry { o =>
+        db.labelFilter("Organisation")(Traversal.V()).unsafeHas("name", P.neq("admin")).toIterator.toTry { o =>
           val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", "_freetags").head
           Traversal.V(EntityId(o.id())).unionFlat(
             _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
