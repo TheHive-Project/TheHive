@@ -68,5 +68,12 @@
     "predicate": "testPredicate",
     "value": "world",
     "colour": 0
+  },
+  {
+    "id": "taxonomy-tag1",
+    "namespace": "taxonomy1",
+    "predicate": "pred1",
+    "value": "value1",
+    "colour": 0
   }
 ]

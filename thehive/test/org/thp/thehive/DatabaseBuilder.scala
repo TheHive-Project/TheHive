@@ -35,6 +35,7 @@ class DatabaseBuilder @Inject() (
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     taskSrv: TaskSrv,
+    taxonomySrv: TaxonomySrv,
     tagSrv: TagSrv,
     keyValueSrv: KeyValueSrv,
     dataSrv: DataSrv,
@@ -82,11 +83,15 @@ class DatabaseBuilder @Inject() (
               createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
               createVertex(attachmentSrv, FieldsParser[Attachment]) ++
               createVertex(tagSrv, FieldsParser[Tag]) ++
+              createVertex(taxonomySrv, FieldsParser[Taxonomy]) ++
               createVertex(pageSrv, FieldsParser[Page]) ++
               createVertex(dashboardSrv, FieldsParser[Dashboard])
 
           createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
           createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
+          createEdge(organisationSrv.organisationTaxonomySrv, organisationSrv, taxonomySrv, FieldsParser[OrganisationTaxonomy], idMap)
+
+          createEdge(taxonomySrv.taxonomyTagSrv, taxonomySrv, tagSrv, FieldsParser[TaxonomyTag], idMap)
 
           createEdge(roleSrv.userRoleSrv, userSrv, roleSrv, FieldsParser[UserRole], idMap)
 
