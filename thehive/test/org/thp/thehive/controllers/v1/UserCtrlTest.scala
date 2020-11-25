@@ -109,7 +109,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
           Permissions.managePage,
           Permissions.manageObservable,
           Permissions.manageAlert,
-          Permissions.manageTaxonomy,
           Permissions.manageAction,
           Permissions.manageConfig,
           Permissions.accessTheHiveFS
