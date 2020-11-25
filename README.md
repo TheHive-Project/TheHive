@@ -6,7 +6,7 @@
 <div>
   <p align="center">
     <a href="https://chat.thehive-project.org" target"_blank"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg?sanitize=true" alt="Discord"></a>
-    <a href><img src="https://drone.strangebee.com/api/badges/TheHive-Project/TheHive/status.svg?ref=refs/heads/master-th4" alt="Build status"></a>
+    <a href><img src="https://drone.strangebee.com/api/badges/TheHive-Project/TheHive/status.svg?ref=refs/heads/master" alt="Build status"></a>
     <a href="./LICENSE" target"_blank"><img src="https://img.shields.io/github/license/TheHive-Project/TheHive" alt="License"></a>        
   </p>
 </div>
