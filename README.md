@@ -1,7 +1,6 @@
-![](images/thehive-logo.png)
 <div>
   <p align="center">
-    <img src="images/thehive-logo.png"width="200"/>  
+    <img src="images/thehive-logo.png"width="600"/>  
   </p>
 </div>
 <div>
