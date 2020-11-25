@@ -2,11 +2,11 @@ package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.dto.v1.{InputEntry, InputPredicate, InputTaxonomy, InputValue, OutputTag, OutputTaxonomy}
+import org.thp.thehive.dto.v1._
 import play.api.libs.Files
 import play.api.libs.json.Json
-import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestTaxonomy(
@@ -22,7 +22,7 @@ object TestTaxonomy {
       outputTaxonomy.namespace,
       outputTaxonomy.description,
       outputTaxonomy.version,
-      outputTaxonomy.tags.toList,
+      outputTaxonomy.tags.toList
     )
 }
 
@@ -39,15 +39,18 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         InputPredicate("pred1", None, None, None),
         InputPredicate("pred2", None, None, None)
       ),
-      Some(List(
-        InputValue("pred1", List(
-          InputEntry("entry1", None, None, None, None))
-        ),
-        InputValue("pred2", List(
-          InputEntry("entry2", None, None, None, None),
-          InputEntry("entry21", None, None, None, None)
-        ))
-      ))
+      Some(
+        List(
+          InputValue("pred1", List(InputEntry("entry1", None, None, None, None))),
+          InputValue(
+            "pred2",
+            List(
+              InputEntry("entry2", None, None, None, None),
+              InputEntry("entry21", None, None, None, None)
+            )
+          )
+        )
+      )
     )
 
     "create a valid taxonomy" in testApp { app =>
@@ -113,7 +116,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[TaxonomyCtrl].get("taxonomy1")(request)
-      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultCase = contentAsJson(result).as[OutputTaxonomy]
 
       TestTaxonomy(resultCase) must_=== TestTaxonomy(
@@ -178,27 +181,65 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       (contentAsJson(result) \ "message").as[String] must contain("formatting")
     }
 
-    /*
-        "activate a taxonomy" in testApp { app =>
+    "activate a taxonomy" in testApp { app =>
+      val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy2")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result1 = app[TaxonomyCtrl].get("taxonomy2")(request1)
+      status(result1) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
-        }
+      val request2 = FakeRequest("PUT", "/api/v1/taxonomy/taxonomy2")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result2 = app[TaxonomyCtrl].toggleActivation("taxonomy2", isActive = true)(request2)
+      status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
-        "deactivate a taxonomy" in testApp { app =>
+      val request3 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy2")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result3 = app[TaxonomyCtrl].get("taxonomy2")(request3)
+      status(result3) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result3)}")
+    }
 
-        }
+    "deactivate a taxonomy" in testApp { app =>
+      val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result1 = app[TaxonomyCtrl].get("taxonomy1")(request1)
+      status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
-        "delete a taxonomy" in testApp { app =>
+      val request2 = FakeRequest("PUT", "/api/v1/taxonomy/taxonomy1/deactivate")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result2 = app[TaxonomyCtrl].toggleActivation("taxonomy1", isActive = false)(request2)
+      status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
-        }
+      val request3 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result3 = app[TaxonomyCtrl].get("taxonomy1")(request3)
+      status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")
+    }
 
-      */
+    "delete a taxonomy" in testApp { app =>
+      val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result1 = app[TaxonomyCtrl].get("taxonomy1")(request1)
+      status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
+
+      val request2 = FakeRequest("DELETE", "/api/v1/taxonomy/taxonomy1")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result2 = app[TaxonomyCtrl].delete("taxonomy1")(request2)
+      status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
+
+      val request3 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result3 = app[TaxonomyCtrl].get("taxonomy1")(request3)
+      status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")
+    }
+
   }
 
-  def multipartZipFile(name: String): MultipartFormData[Files.TemporaryFile] = MultipartFormData(
+  def multipartZipFile(name: String): MultipartFormData[Files.TemporaryFile] =
     // file must be place in test/resources/
-    dataParts = Map.empty,
-    files = Seq(FilePart("file", name, Option("application/zip"), FakeTemporaryFile.fromResource(s"/$name"))),
-    badParts = Seq()
-  )
+    MultipartFormData(
+      dataParts = Map.empty,
+      files = Seq(FilePart("file", name, Option("application/zip"), FakeTemporaryFile.fromResource(s"/$name"))),
+      badParts = Seq()
+    )
 
 }

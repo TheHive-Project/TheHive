@@ -3,6 +3,12 @@
     "id": "taxonomy1",
     "namespace": "taxonomy1",
     "description": "The taxonomy 1",
-    "version": "1"
+    "version": 1
+  },
+  {
+    "id": "taxonomy2",
+    "namespace": "taxonomy2",
+    "description": "The taxonomy 2",
+    "version": 1
   }
 ]
