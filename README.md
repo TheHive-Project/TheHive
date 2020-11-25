@@ -1,6 +1,15 @@
-![](images/thehive-logo.png)
-
-[![Join the chat at https://chat.thehive-project.org](https://img.shields.io/badge/chat-on%20discord-7289da.svg?sanitize=true)](https://chat.thehive-project.org/)
+<div>
+  <p align="center">
+    <img src="images/thehive-logo.png"width="600"/>  
+  </p>
+</div>
+<div>
+  <p align="center">
+    <a href="https://chat.thehive-project.org" target"_blank"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg?sanitize=true" alt="Discord"></a>
+    <a href><img src="https://drone.strangebee.com/api/badges/TheHive-Project/TheHive/status.svg?ref=refs/heads/master-th4" alt="Build status"></a>
+    <a href="./LICENSE" target"_blank"><img src="https://img.shields.io/github/license/TheHive-Project/TheHive" alt="License"></a>        
+  </p>
+</div>
 
 [TheHive](https://thehive-project.org/) is a scalable 4-in-1 open source and free Security Incident Response Platform designed to make life easier for SOCs, CSIRTs, CERTs and any information security practitioner dealing with security incidents that need to be investigated and acted upon swiftly. It is the perfect companion for [MISP](http://www.misp-project.org/). You can synchronize it with one or multiple MISP instances to start investigations out of MISP events. You can also export an investigation's results as a MISP event to help your peers and partners detect and react to attacks you've dealt with. Additionally, when TheHive is used in conjunction with [Cortex](https://github.com/TheHive-Project/Cortex/), security analysts and researchers can easily analyze hundred of observables at once using more than 100 analyzers, contain an incident or eradicate malware thanks to Cortex responders.
 
