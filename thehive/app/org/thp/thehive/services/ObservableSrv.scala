@@ -235,7 +235,8 @@ object ObservableOps {
         .profile
         .domainMap(profile => profile.permissions & authContext.permissions)
 
-    def organisations: Traversal.V[Organisation] = traversal.in[ShareObservable].in[OrganisationShare].v[Organisation]
+    def organisations: Traversal.V[Organisation] =
+      traversal.coalesceIdent(_.in[ShareObservable].in[OrganisationShare], _.in[AlertObservable].out[AlertOrganisation]).v[Organisation]
 
     def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
