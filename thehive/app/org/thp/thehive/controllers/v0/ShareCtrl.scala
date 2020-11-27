@@ -115,7 +115,7 @@ class ShareCtrl @Inject() (
             organisations.toTry { organisationName =>
               organisationSrv
                 .getOrFail(EntityIdOrName(organisationName))
-                .flatMap(shareSrv.removeShareTasks(task, _))
+                .flatMap(shareSrv.unshareTask(task, _))
             }
           }
           .map(_ => Results.NoContent)
@@ -133,7 +133,7 @@ class ShareCtrl @Inject() (
             organisations.toTry { organisationName =>
               organisationSrv
                 .getOrFail(EntityIdOrName(organisationName))
-                .flatMap(shareSrv.removeShareObservable(observable, _))
+                .flatMap(shareSrv.unshareObservable(observable, _))
             }
           }
           .map(_ => Results.NoContent)

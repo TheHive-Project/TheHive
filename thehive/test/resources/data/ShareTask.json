@@ -3,5 +3,10 @@
   {"from": "case1-cert", "to": "task2"},
   {"from": "case2-soc", "to": "task3"},
   {"from": "case2-cert", "to": "task4"},
-  {"from": "case3-soc", "to": "task5"}
+  {"from": "case3-soc", "to": "task5"},
+  {"from": "cascade-remove-simple", "to": "task-cascade-remove-simple"},
+  {"from": "share-cascade-remove", "to": "task-cascade-remove-delete"},
+  {"from": "share-cascade-remove", "to": "task-cascade-remove-unshare"},
+  {"from": "share-cascade-remove2", "to": "task-cascade-remove-unshare"}
+
 ]

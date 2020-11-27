@@ -11,6 +11,9 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{CreateError, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
+import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.Json
@@ -207,7 +210,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "get correct next case number" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].nextCaseNumber shouldEqual 4
+        app[CaseSrv].nextCaseNumber shouldEqual 6
       }
     }
 
@@ -419,5 +422,120 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityName("1")).linkedCases must not(beEmpty))
       }
     }
+
+    "cascade remove, case not shared" in testApp { app =>
+      app[Database].roTransaction { implicit graph =>
+        implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert", permissions = Set(Permissions.manageCase)).authContext
+
+        def caze = app[CaseSrv].startTraversal.has(_.number, 5).getOrFail("Case")
+        caze must beSuccessfulTry
+
+        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-simple")._id.getOrFail("Task").get
+        def taskDelete = app[TaskSrv].get(taskId).getOrFail("Task")
+        def logs = app[TaskSrv].get(taskId).logs.toSeq.size
+        def logsAttach = app[TaskSrv].get(taskId).logs.attachments.toSeq.size
+        taskDelete       must beSuccessfulTry
+        logs        must beEqualTo(1)
+        logsAttach  must beEqualTo(1)
+
+        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-simple")._id.getOrFail("Observable").get
+        def obsDelete = app[ObservableSrv].get(obsId).getOrFail("Observable")
+        def obsAttach = app[ObservableSrv].get(obsId).attachments.toSeq.size
+        obsDelete must beSuccessfulTry
+        obsAttach must beEqualTo(1)
+
+        app[CaseSrv].cascadeRemove(caze.get) must beASuccessfulTry
+
+        taskDelete must beAFailedTry // TODO it's a Success, why ???
+        logs       must beEqualTo(0)
+        logsAttach must beEqualTo(0)
+        obsDelete  must beAFailedTry
+        obsAttach  must beEqualTo(0)
+        caze       must beAFailedTry
+      }
+    }
+
+    "cascade remove, shared" in testApp { app =>
+      app[Database].roTransaction { implicit graph =>
+        // Check users of soc have access to case 4
+        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
+
+        def caze = app[CaseSrv].startTraversal.has(_.number, 4).getOrFail("Case")
+        caze must beSuccessfulTry
+
+        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")._id.getOrFail("Task").get
+        def taskUnshare = app[TaskSrv].get(taskId).getOrFail("Task")
+        taskUnshare      must beSuccessfulTry
+
+        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")._id.getOrFail("Observable").get
+        def obsUnshare = app[ObservableSrv].get(obsId).getOrFail("Observable")
+        obsUnshare must beSuccessfulTry
+      }
+
+      app[Database].roTransaction { implicit graph =>
+        // Check entities & cascade remove the case
+        implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert", permissions = Set(Permissions.manageCase)).authContext
+
+        def caze = app[CaseSrv].startTraversal.has(_.number, 4).getOrFail("Case")
+        caze must beSuccessfulTry
+
+        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-delete")._id.getOrFail("Task").get
+        val taskId2 = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")._id.getOrFail("Task").get
+        def taskDelete = app[TaskSrv].get(taskId).getOrFail("Task")
+        def taskUnshare = app[TaskSrv].get(taskId2).getOrFail("Task")
+        def logs = app[TaskSrv].get(taskId).logs.toSeq.size
+        def logs2 = app[TaskSrv].get(taskId2).logs.toSeq.size
+        def taskAttach = app[TaskSrv].get(taskId).logs.attachments.toSeq.size
+        def taskAttach2 = app[TaskSrv].get(taskId2).logs.attachments.toSeq.size
+        taskDelete       must beSuccessfulTry
+        logs        must beEqualTo(1)
+        taskAttach  must beEqualTo(1)
+        taskUnshare      must beSuccessfulTry
+        logs2      must beEqualTo(0)
+        taskAttach2 must beEqualTo(0)
+
+        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-delete")._id.getOrFail("Observable").get
+        val obsId2 = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")._id.getOrFail("Observable").get
+        def obsDelete  = app[ObservableSrv].get(obsId).getOrFail("Observable")
+        def obsUnshare = app[ObservableSrv].get(obsId2).getOrFail("Observable")
+        def obsAttach  = app[ObservableSrv].get(obsId).attachments.toSeq.size
+        def obsAttach2 = app[ObservableSrv].get(obsId2).attachments.toSeq.size
+        obsDelete       must beSuccessfulTry
+        obsAttach  must beEqualTo(1)
+        obsUnshare      must beSuccessfulTry
+        obsAttach2 must beEqualTo(0)
+
+        app[CaseSrv].cascadeRemove(caze.get) must beASuccessfulTry
+
+        caze             must beASuccessfulTry
+        taskDelete       must beAFailedTry
+        taskUnshare      must beASuccessfulTry
+        logs        must beEqualTo(0)
+        taskAttach  must beEqualTo(0)
+        logs2       must beEqualTo(0)
+        taskAttach2 must beEqualTo(0)
+        obsDelete        must beAFailedTry
+        obsUnshare       must beASuccessfulTry
+        obsAttach   must beEqualTo(0)
+        obsAttach2  must beEqualTo(0)
+      }
+
+      app[Database].roTransaction { implicit graph =>
+        // Users of soc should still have access to case
+        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
+
+        def caze = app[CaseSrv].startTraversal.has(_.number, 4).getOrFail("Case")
+        caze must beSuccessfulTry
+
+        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")._id.getOrFail("Task").get
+        def taskUnshare = app[TaskSrv].get(taskId).getOrFail("Task")
+        taskUnshare      must beSuccessfulTry
+
+        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")._id.getOrFail("Observable").get
+        def obsUnshare = app[ObservableSrv].get(obsId).getOrFail("Observable")
+        obsUnshare must beSuccessfulTry
+      }
+    }
+
   }
 }

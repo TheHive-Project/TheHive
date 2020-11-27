@@ -1,5 +1,9 @@
 [
   {"from": "case1-cert", "to": "h.fr"},
   {"from": "case2-cert", "to": "helloworld"},
-  {"from": "case2-soc", "to": "helloworld"}
+  {"from": "case2-soc", "to": "helloworld"},
+  {"from": "cascade-remove-simple", "to": "obs-cascade-remove-simple"},
+  {"from": "share-cascade-remove", "to": "obs-cascade-remove-delete"},
+  {"from": "share-cascade-remove", "to": "obs-cascade-remove-unshare"},
+  {"from": "share-cascade-remove2", "to": "obs-cascade-remove-unshare"}
 ]

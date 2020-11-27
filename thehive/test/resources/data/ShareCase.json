@@ -2,5 +2,8 @@
   {"from": "case1-cert", "to": "case1"},
   {"from": "case2-cert", "to": "case2"},
   {"from": "case2-soc", "to": "case2"},
-  {"from": "case3-soc", "to": "case3"}
+  {"from": "case3-soc", "to": "case3"},
+  {"from": "cascade-remove-simple", "to": "case5"},
+  {"from": "share-cascade-remove", "to": "case4"},
+  {"from": "share-cascade-remove2", "to": "case4"}
 ]

@@ -34,5 +34,29 @@
     "tlp": 2,
     "pap": 2,
     "status": "Open"
+  },
+  {
+    "id": "case4",
+    "number": 4,
+    "title": "case#4",
+    "description": "description of case cascade remove",
+    "severity": 2,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "status": "Open"
+  },
+  {
+    "id": "case5",
+    "number": 5,
+    "title": "case#5",
+    "description": "description of case cascade remove",
+    "severity": 2,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "status": "Open"
   }
 ]

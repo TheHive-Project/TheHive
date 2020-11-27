@@ -4,5 +4,11 @@
     "message": "log for action test",
     "date": 1566303875000,
     "deleted": false
+  },
+  {
+    "id": "log-cascade-remove",
+    "message": "log cascade remove",
+    "date": 1566303875000,
+    "deleted": false
   }
 ]

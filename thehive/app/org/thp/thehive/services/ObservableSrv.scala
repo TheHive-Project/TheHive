@@ -174,15 +174,22 @@ class ObservableSrv @Inject() (
               .map(_ => get(observable).remove())
           }
           .map(_ => ())
-      case Some(alert) => alertSrv.removeObservable(alert, observable)
+      case Some(alert) => for {
+        _ <- Try(get(observable).remove())
+      } yield auditSrv.observableInAlert.delete(observable, Some(alert))
     }
 
   // Same as remove but with no Audit creation
-  def cascadeRemove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    get(observable).alert.headOption match {
-      case None        => Try(get(observable).remove())
-      case Some(alert) => alertSrv.removeObservable(alert, observable)
-    }
+  def cascadeRemove(observable: Observable with Entity, share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val alert = get(observable).alert.headOption
+    if (alert.isDefined) { auditSrv.observableInAlert.delete(observable, alert) }
+    for {
+      attachments <- Try(get(observable).attachments.toSeq)
+      _           <- attachments.toTry(attachmentSrv.cascadeRemove(_))
+      _           <- auditSrv.observable.delete(observable, share)
+      // TODO handle Jobs ?
+    } yield Try(get(observable).remove())
+  }
 
   override def update(
       traversal: Traversal.V[Observable],

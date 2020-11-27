@@ -58,9 +58,8 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSr
     for {
       _    <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
       task <- get(log).task.getOrFail("Task")
-      _ = get(log).remove()
-      _ <- auditSrv.log.delete(log, Some(task))
-    } yield ()
+      _    <- auditSrv.log.delete(log, Some(task))
+    } yield get(log).remove()
 
   override def update(
       traversal: Traversal.V[Log],

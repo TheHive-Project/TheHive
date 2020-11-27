@@ -58,11 +58,12 @@ class TaskSrv @Inject() (
           .map(_ => get(task).remove())
     }
 
-  def cascadeRemove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def cascadeRemove(task: Task with Entity, share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      task        <- getOrFail(task._id)
-      logs        <- Try(get(task).logs.toSeq)
-      _           <- logs.toTry(l => logSrv.cascadeRemove(l))
+      task <- getOrFail(task._id)
+      logs <- Try(get(task).logs.toSeq)
+      _    <- logs.toTry(logSrv.cascadeRemove(_))
+      _    <- auditSrv.task.delete(task, share)
     } yield remove(task)
 
   override def update(

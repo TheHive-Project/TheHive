@@ -137,8 +137,7 @@ class AlertSrv @Inject() (
   def removeObservable(alert: Alert with Entity, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     observableSrv
       .get(observable)
-      .inE[AlertObservable]
-      .filter(_.outV.hasId(alert._id))
+      .filter(_.inE[AlertObservable].outV.hasId(alert._id))
       .getOrFail("Observable")
       .flatMap { alertObservable =>
         alertObservableSrv.get(alertObservable).remove()
