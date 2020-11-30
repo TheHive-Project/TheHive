@@ -327,7 +327,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      (resultCase \ "count").asOpt[Int] must beSome(2)
+      (resultCase \ "count").asOpt[Int] must beSome(4)
       (resultCase \ "testNamespace:testPredicate=\"t1\"" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "testNamespace:testPredicate=\"t2\"" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "testNamespace:testPredicate=\"t3\"" \ "count").asOpt[Int] must beSome(1)
