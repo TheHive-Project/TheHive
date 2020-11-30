@@ -424,7 +424,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "cascade remove, case not shared" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
+      app[Database].transaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert", permissions = Set(Permissions.manageCase)).authContext
 
         def caze = app[CaseSrv].startTraversal.has(_.number, 5).getOrFail("Case")
@@ -446,7 +446,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
         app[CaseSrv].cascadeRemove(caze.get) must beASuccessfulTry
 
-        taskDelete must beAFailedTry // TODO it's a Success, why ???
+        taskDelete must beAFailedTry
         logs       must beEqualTo(0)
         logsAttach must beEqualTo(0)
         obsDelete  must beAFailedTry
@@ -472,7 +472,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         obsUnshare must beSuccessfulTry
       }
 
-      app[Database].roTransaction { implicit graph =>
+      app[Database].transaction { implicit graph =>
         // Check entities & cascade remove the case
         implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert", permissions = Set(Permissions.manageCase)).authContext
 
