@@ -185,7 +185,7 @@ class ObservableSrv @Inject() (
     if (alert.isDefined) { auditSrv.observableInAlert.delete(observable, alert) }
     for {
       attachments <- Try(get(observable).attachments.toSeq)
-      _           <- attachments.toTry(attachmentSrv.cascadeRemove(_))
+      _           <- attachments.toTry(a => Try(attachmentSrv.cascadeRemove(a)))
       _           <- auditSrv.observable.delete(observable, share)
       // TODO handle Jobs ?
     } yield Try(get(observable).remove())

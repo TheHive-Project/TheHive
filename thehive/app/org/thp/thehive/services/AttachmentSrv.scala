@@ -71,10 +71,13 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
 
   def exists(attachment: Attachment with Entity): Boolean = storageSrv.exists("attachment", attachment.attachmentId)
 
-  def cascadeRemove(attachment: Attachment with Entity)(implicit graph: Graph): Try[Unit] = {
-    // TODO storageSrv delete data ?
-    // TODO check attachmentId not used by other Attachment vertices
-    Try(get(attachment).remove())
+  def cascadeRemove(attachment: Attachment with Entity)(implicit graph: Graph): Unit = {
+    val attachments = startTraversal.has(_.attachmentId, attachment.attachmentId).limit(2).getCount
+    if (attachments == 1) {
+      storageSrv.delete("attachment", attachment.attachmentId)
+    }
+
+    get(attachment).remove()
   }
 
 }
