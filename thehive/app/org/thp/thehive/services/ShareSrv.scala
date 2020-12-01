@@ -120,7 +120,11 @@ class ShareSrv @Inject() (
     for {
       case0        <- get(shareId).`case`.getOrFail("Case")
       organisation <- get(shareId).organisation.getOrFail("Organisation")
-      shareCase    <- get(shareId).`case`.inE[ShareCase].getOrFail("Case")
+      shareCase    <- get(shareId)
+                        .`case`
+                        .inE[ShareCase]
+                        .filter(_.outV.v[Share].byOrganisation(organisation._id))
+                        .getOrFail("Case")
       _            <- auditSrv.share.unshareCase(case0, organisation)
     } yield shareCaseSrv.get(shareCase).remove()
 
