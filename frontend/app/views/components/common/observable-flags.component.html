@@ -36,7 +36,7 @@
     </div>
 
     <!-- Seen flag -->
-    <div ng-if="!!!$ctrl.hideSeen && $ctrl.observable.extraData.seen.seen > 0" class="observable-seen" uib-tooltip="{{$ctrl.observable.extraData.seen.seen}} related artifact(s)" tooltip-popup-delay="500" tooltip-placement="bottom">
+    <div ng-if="!!!$ctrl.hideSeen && $ctrl.observable.extraData.seen.seen > 0" class="observable-seen" uib-tooltip="{{$ctrl.observable.extraData.seen.seen}} related observable(s)" tooltip-popup-delay="500" tooltip-placement="bottom">
         <i ng-class="{'text-danger': $ctrl.observable.extraData.seen.ioc}" class="fa fa-eye"></i>
     </div>
     <div ng-if="!!!$ctrl.hideSeen && !($ctrl.observable.extraData.seen.seen > 0)" class="observable-seen">
