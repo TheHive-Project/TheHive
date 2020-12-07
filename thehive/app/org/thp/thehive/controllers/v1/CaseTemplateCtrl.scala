@@ -39,9 +39,11 @@ class CaseTemplateCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CaseTemplate], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richCaseTemplate)
+    (range, caseTemplateSteps, authContext) =>
+      caseTemplateSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richCaseTemplate(authContext))
   )
-  override val outputQuery: Query               = Query.output[RichCaseTemplate, Traversal.V[CaseTemplate]](_.richCaseTemplate)
+  override val outputQuery: Query =
+    Query.outputWithContext[RichCaseTemplate, Traversal.V[CaseTemplate]]((ctSteps, authContext) => ctSteps.richCaseTemplate(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq()
 
   def create: Action[AnyContent] =

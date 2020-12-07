@@ -193,6 +193,12 @@ class Properties @Inject() (
       .property("pap", UMapping.int)(_.field.updatable)
       .property("status", UMapping.enum[CaseStatus.type])(_.field.updatable)
       .property("summary", UMapping.string.optional)(_.field.updatable)
+      .property("actionRequired", UMapping.boolean)(_
+        .authSelect((t, auth) =>
+          t.choose(_.share(auth).outE[ShareTask].has(_.actionRequired, true), true, false)
+        )
+        .readonly
+      )
       .property("assignee", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, _, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")

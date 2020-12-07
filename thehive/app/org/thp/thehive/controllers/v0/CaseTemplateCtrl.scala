@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
@@ -21,7 +20,9 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.Failure
+
 @Singleton
 class CaseTemplateCtrl @Inject() (
     override val entrypoint: Entrypoint,
@@ -110,9 +111,10 @@ class PublicCaseTemplate @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CaseTemplate], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
+    (range, caseTemplateSteps, authContext) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate(authContext))
   )
-  override val outputQuery: Query = Query.output[RichCaseTemplate, Traversal.V[CaseTemplate]](_.richCaseTemplate)
+  override val outputQuery: Query =
+    Query.outputWithContext[RichCaseTemplate, Traversal.V[CaseTemplate]]((ctSteps, authContext) => ctSteps.richCaseTemplate(authContext))
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[CaseTemplate]
     .property("name", UMapping.string)(_.field.updatable)
     .property("displayName", UMapping.string)(_.field.updatable)
@@ -165,7 +167,7 @@ class PublicCaseTemplate @Inject() (
         } yield Json.obj("customFields" -> values)
       case _ => Failure(BadRequestError("Invalid custom fields format"))
     })
-    .property("tasks", UMapping.jsonNative.sequence)(_.select(_.tasks.richTask.domainMap(_.toJson)).custom { //  FIXME select the correct mapping
+    .property("tasks", UMapping.jsonNative.sequence)(_.authSelect((t, authContext) => t.tasks.richTask(authContext).domainMap(_.toJson)).custom { //  FIXME select the correct mapping
       (_, value, vertex, _, graph, authContext) =>
         val fp = FieldsParser[InputTask]
 

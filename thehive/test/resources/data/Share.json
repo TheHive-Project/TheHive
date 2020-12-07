@@ -2,5 +2,7 @@
   {"id": "case1-cert", "owner":  true},
   {"id": "case2-cert", "owner":  true},
   {"id": "case2-soc", "owner":  false},
-  {"id": "case3-soc", "owner":  true}
+  {"id": "case3-soc", "owner":  true},
+  {"id": "case-actionRequired-soc", "owner":  true},
+  {"id": "case-actionRequired-cert", "owner":  true}
 ]

@@ -1,7 +1,8 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputCaseTemplate
@@ -11,6 +12,8 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
+// TODO what to do with unused test ?
+
 //  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
 
 //    def getAndTestCaseTemplate(name: String, description: String)(body: OutputCaseTemplate => MatchResult[Any]) = {
@@ -135,6 +138,9 @@ class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
       contentAsJson(result).as[OutputCaseTemplate].displayName must beEqualTo("patched")
 
       val updatedOutput = app[Database].roTransaction { implicit graph =>
+        implicit val authContext: AuthContext =
+          DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
+
         app[CaseTemplateSrv].get(EntityName("spam")).richCaseTemplate.head
       }
 

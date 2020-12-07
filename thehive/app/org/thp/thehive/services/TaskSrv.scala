@@ -21,7 +21,7 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)(implicit
+class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, organisationSrv: OrganisationSrv)(implicit
     @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Task] {
 
@@ -34,7 +34,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)
     for {
       task <- createEntity(e)
       _    <- owner.map(taskUserSrv.create(TaskUser(), task, _)).flip
-    } yield RichTask(task, owner)
+    } yield RichTask(task, owner, actionRequired = false)
 
   def isAvailableFor(taskId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Boolean =
     get(taskId).visible(authContext).exists
@@ -48,7 +48,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)
     get(task).caseTemplate.headOption match {
       case None =>
         get(task)
-          .shares
+          .taskToShares
           .toIterator
           .toTry { share =>
             auditSrv
@@ -114,6 +114,36 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv)
       _ <- auditSrv.task.update(task, Json.obj("assignee" -> user.login))
     } yield ()
   }
+
+  def isActionRequired(
+    task: Task with Entity,
+    organisations: Seq[Organisation with Entity]
+  )(implicit graph: Graph, authContext: AuthContext): Map[String, Boolean] = {
+    organisations
+      .flatMap { o =>
+        organisationSrv.get(o).shares
+          .outE[ShareTask]
+          .filter(_.inV.v[Task].hasId(task._id))
+          .value(_.actionRequired)
+          .headOption
+          .map(o.name -> _)
+      }
+      .toMap
+  }
+
+  def actionRequired(
+    task: Task with Entity,
+    organisation: Organisation with Entity,
+    actionRequired: Boolean
+  )(implicit graph: Graph): Try[Unit] = {
+      Success(organisationSrv.get(organisation)
+      .out[OrganisationShare]
+      .outE[ShareTask]
+      .filter(_.inV.v[Task].hasId(task._id))
+      .update(_.actionRequired, actionRequired)
+      .iterate())
+  }
+
 }
 
 object TaskOps {
@@ -129,7 +159,7 @@ object TaskOps {
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Task] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(_.shares.filter(_.profile.has(_.permissions, permission)).organisation.current)
+        traversal.filter(_.taskToShares.filter(_.profile.has(_.permissions, permission)).organisation.current)
       else
         traversal.limit(0)
 
@@ -149,9 +179,9 @@ object TaskOps {
 
     def organisations: Traversal.V[Organisation] = traversal.in[ShareTask].in[OrganisationShare].v[Organisation]
     def organisations(permission: Permission): Traversal.V[Organisation] =
-      shares.filter(_.profile.has(_.permissions, permission)).organisation
+      taskToShares.filter(_.profile.has(_.permissions, permission)).organisation
 
-    def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
+    def origin: Traversal.V[Organisation] = taskToShares.has(_.owner, true).organisation
 
     def assignableUsers(implicit authContext: AuthContext): Traversal.V[User] =
       organisations(Permissions.manageTask)
@@ -159,33 +189,45 @@ object TaskOps {
         .users(Permissions.manageTask)
         .dedup
 
-    def richTask: Traversal[RichTask, util.Map[String, Any], Converter[RichTask, util.Map[String, Any]]] =
+    def richTask(implicit authContext: AuthContext): Traversal[RichTask, util.Map[String, Any], Converter[RichTask, util.Map[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.out[TaskUser].v[User].fold)
+            .by(_.inE[ShareTask].filter(_.outV.v[Share].organisation.current))
+        )
+        .domainMap {
+          case (task, user, shareEdge) => RichTask(task, user.headOption, shareEdge.actionRequired)
+        }
+
+    def richTaskWithoutActionRequired: Traversal[RichTask, util.Map[String, Any], Converter[RichTask, util.Map[String, Any]]] =
       traversal
         .project(
           _.by
             .by(_.out[TaskUser].v[User].fold)
         )
         .domainMap {
-          case (task, user) => RichTask(task, user.headOption)
+          case (task, user) => RichTask(task, user.headOption, actionRequired = false)
         }
 
     def richTaskWithCustomRenderer[D, G, C <: Converter[D, G]](
         entityRenderer: Traversal.V[Task] => Traversal[D, G, C]
-    ): Traversal[(RichTask, D), util.Map[String, Any], Converter[(RichTask, D), util.Map[String, Any]]] =
+    )(implicit authContext: AuthContext): Traversal[(RichTask, D), util.Map[String, Any], Converter[(RichTask, D), util.Map[String, Any]]] =
       traversal
         .project(
           _.by
             .by(_.assignee.fold)
+            .by(_.inE[ShareTask].filter(_.outV.v[Share].organisation.current))
             .by(entityRenderer)
         )
         .domainMap {
-          case (task, user, renderedEntity) =>
-            RichTask(task, user.headOption) -> renderedEntity
+          case (task, user, shareEdge, renderedEntity) =>
+            RichTask(task, user.headOption, shareEdge.actionRequired) -> renderedEntity
         }
 
     def unassign(): Unit = traversal.outE[TaskUser].remove()
 
-    def shares: Traversal.V[Share] = traversal.in[ShareTask].v[Share]
+    def taskToShares: Traversal.V[Share] = traversal.in[ShareTask].v[Share]
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
 

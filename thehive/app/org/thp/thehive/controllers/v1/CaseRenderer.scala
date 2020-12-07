@@ -14,7 +14,7 @@ import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
 
-trait CaseRenderer {
+trait CaseRenderer extends BaseRenderer[Case] {
 
   def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
     _.share
@@ -56,37 +56,17 @@ trait CaseRenderer {
   def permissions(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Vertex, Converter[JsValue, Vertex]] =
     _.userPermissions.domainMap(permissions => Json.toJson(permissions))
 
-  def caseStatsRenderer(extraData: Set[String])(implicit
-      authContext: AuthContext
-  ): Traversal.V[Case] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
-    def addData[G](
-        name: String
-    )(f: Traversal.V[Case] => Traversal[JsValue, G, Converter[JsValue, G]]): Traversal[JsObject, JMap[String, Any], Converter[
-      JsObject,
-      JMap[String, Any]
-    ]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { t =>
-      val dataTraversal = f(traversal.start)
-      t.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.by(dataTraversal.raw)) { jmap =>
-        t.converter(jmap) + (name -> dataTraversal.converter(jmap.get(name).asInstanceOf[G]))
-      }
-    }
-
-    if (extraData.isEmpty) traversal.constant2[JsObject, JMap[String, Any]](JsObject.empty)
-    else {
-      val dataName = extraData.toSeq
-      dataName.foldLeft[Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
-        traversal.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.project(dataName.head, dataName.tail: _*))(_ =>
-          JsObject.empty
-        )
-      ) {
-        case (f, "observableStats") => addData("observableStats")(observableStats)(f)
-        case (f, "taskStats")       => addData("taskStats")(taskStats)(f)
-        case (f, "alerts")          => addData("alerts")(alertStats)(f)
-        case (f, "isOwner")         => addData("isOwner")(isOwnerStats)(f)
-        case (f, "shareCount")      => addData("shareCount")(shareCountStats)(f)
-        case (f, "permissions")     => addData("permissions")(permissions)(f)
-        case (f, _)                 => f
-      }
-    }
+  def caseStatsRenderer(extraData: Set[String])(
+    implicit authContext: AuthContext
+  ): Traversal.V[Case] => JsTraversal = { implicit traversal =>
+    baseRenderer(extraData, traversal, {
+      case (f, "observableStats") => addData("observableStats", f)(observableStats)
+      case (f, "taskStats")       => addData("taskStats", f)(taskStats)
+      case (f, "alerts")          => addData("alerts", f)(alertStats)
+      case (f, "isOwner")         => addData("isOwner", f)(isOwnerStats)
+      case (f, "shareCount")      => addData("shareCount", f)(shareCountStats)
+      case (f, "permissions")     => addData("permissions", f)(permissions)
+      case (f, _)                 => f
+    })
   }
 }

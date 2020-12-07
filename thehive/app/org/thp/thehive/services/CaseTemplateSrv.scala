@@ -87,7 +87,7 @@ class CaseTemplateSrv @Inject() (
   ): Try[Unit] =
     for {
       _ <- caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
-      _ <- auditSrv.taskInTemplate.create(task, caseTemplate, RichTask(task, None).toJson)
+      _ <- auditSrv.taskInTemplate.create(task, caseTemplate, RichTask(task, None, actionRequired = false).toJson)
     } yield ()
 
   override def update(
@@ -194,7 +194,7 @@ object CaseTemplateOps {
       else
         traversal.limit(0)
 
-    def richCaseTemplate: Traversal[RichCaseTemplate, JMap[String, Any], Converter[RichCaseTemplate, JMap[String, Any]]] = {
+    def richCaseTemplate(implicit authContext: AuthContext): Traversal[RichCaseTemplate, JMap[String, Any], Converter[RichCaseTemplate, JMap[String, Any]]] = {
       val caseTemplateCustomFieldLabel = StepLabel.e[CaseTemplateCustomField]
       val customFieldLabel             = StepLabel.v[CustomField]
       traversal
@@ -202,7 +202,7 @@ object CaseTemplateOps {
           _.by
             .by(_.organisation.value(_.name))
             .by(_.tags.fold)
-            .by(_.tasks.richTask.fold)
+            .by(_.tasks.richTaskWithoutActionRequired.fold)
             .by(
               _.outE[CaseTemplateCustomField]
                 .as(caseTemplateCustomFieldLabel)

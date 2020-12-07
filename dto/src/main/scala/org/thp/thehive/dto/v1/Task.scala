@@ -38,6 +38,7 @@ case class OutputTask(
     assignee: Option[String],
     order: Int,
     dueDate: Option[Date],
+    actionRequired: Boolean,
     extraData: JsObject
 )
 

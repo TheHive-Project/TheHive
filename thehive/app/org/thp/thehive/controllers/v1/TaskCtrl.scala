@@ -17,7 +17,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
 @Singleton
 class TaskCtrl @Inject() (
@@ -40,7 +40,7 @@ class TaskCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, taskSteps, authContext) =>
       taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
-        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))
+        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))(authContext)
       )
   )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
@@ -48,7 +48,8 @@ class TaskCtrl @Inject() (
     FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask, Traversal.V[Task]](_.richTask)
+  override val outputQuery: Query =
+    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[Task]](
       "waitingTask",
@@ -110,4 +111,26 @@ class TaskCtrl @Inject() (
           )
           .map(_ => Results.NoContent)
       }
+
+  def isActionRequired(taskId: String): Action[AnyContent] =
+    entrypoint("is action required")
+      .authTransaction(db){ implicit request => implicit graph =>
+        val taskTraversal = taskSrv.get(EntityIdOrName(taskId))
+        for {
+          task  <- taskTraversal.clone().visible.getOrFail("Task")
+          orgas <- Try(taskTraversal.in[ShareTask].in[OrganisationShare].v[Organisation].visible.toSeq)
+        } yield Results.Ok(taskSrv.isActionRequired(task, orgas).toJson)
+      }
+
+
+  def actionRequired(taskId: String, orgaId: String, required: Boolean): Action[AnyContent] =
+    entrypoint("action required")
+      .authTransaction(db){ implicit request => implicit graph =>
+        for {
+          organisation <- organisationSrv.get(EntityIdOrName(orgaId)).getOrFail("Organisation")
+          task         <- taskSrv.get(EntityIdOrName(taskId)).getOrFail("Task")
+          _            <- taskSrv.actionRequired(task, organisation, required)
+        } yield Results.NoContent
+      }
+
 }

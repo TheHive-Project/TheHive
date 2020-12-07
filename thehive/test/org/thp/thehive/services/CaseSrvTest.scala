@@ -207,7 +207,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "get correct next case number" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].nextCaseNumber shouldEqual 4
+        app[CaseSrv].nextCaseNumber shouldEqual 6
       }
     }
 
