@@ -27,9 +27,8 @@ class TaxonomySrv @Inject() (
 
   def existsInOrganisation(namespace: String)(implicit graph: Graph, authContext: AuthContext): Boolean = {
     startTraversal
-          .has(_.namespace, namespace)
-          .in[OrganisationTaxonomy]
-          .v[Organisation]
+          .getByNamespace(namespace)
+          .organisations
           .current
           .exists
   }
@@ -39,7 +38,6 @@ class TaxonomySrv @Inject() (
       taxonomy     <- createEntity(taxo)
       _            <- tags.toTry(t => taxonomyTagSrv.create(TaxonomyTag(), taxonomy, t))
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
-      _            <- activate(richTaxonomy._id)
     } yield richTaxonomy
 
   def createFreetag(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
@@ -59,7 +57,8 @@ class TaxonomySrv @Inject() (
       taxo          <- get(taxonomyId).getOrFail("Taxonomy")
       organisations <- Try(organisationSrv.startTraversal.filterNot(_
         .out[OrganisationTaxonomy]
-        .filter(_.unsafeHas("namespace", taxo.namespace))
+        .v[Taxonomy]
+        .has(_.namespace, taxo.namespace)
       ).toSeq)
       _ <- organisations.toTry(o => organisationTaxonomySrv.create(OrganisationTaxonomy(), o, taxo))
     } yield Success(())
@@ -68,9 +67,9 @@ class TaxonomySrv @Inject() (
     for {
       taxo <- get(taxonomyId).getOrFail("Taxonomy")
       _    <- Try(organisationSrv.startTraversal
-        .filterNot(_.unsafeHas("name", "admin"))
+        .hasNot(_.name, "admin")
         .outE[OrganisationTaxonomy]
-        .filter(_.otherV().unsafeHas("namespace", taxo.namespace))
+        .filter(_.otherV.v[Taxonomy].has(_.namespace, taxo.namespace))
         .remove())
     } yield Success(())
 
@@ -80,7 +79,7 @@ object TaxonomyOps {
   implicit class TaxonomyOpsDefs(traversal: Traversal.V[Taxonomy]) {
 
     def get(idOrName: EntityId): Traversal.V[Taxonomy] =
-      traversal.getByIds(idOrName)
+      idOrName.fold(traversal.getByIds(_), getByNamespace)
 
     def getByNamespace(namespace: String): Traversal.V[Taxonomy] = traversal.has(_.namespace, namespace)
 
