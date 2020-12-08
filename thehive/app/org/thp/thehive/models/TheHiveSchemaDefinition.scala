@@ -93,7 +93,6 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
               taxoVertex.property("namespace", "_freetags")
               taxoVertex.property("description", "Custom taxonomy")
               taxoVertex.property("version", 1)
-              taxoVertex.property("enabled", true)
               o.addEdge("OrganisationTaxonomy", taxoVertex)
               Success(())
             case _ => Success(())
