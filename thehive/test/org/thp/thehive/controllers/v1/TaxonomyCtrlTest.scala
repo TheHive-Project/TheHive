@@ -148,15 +148,28 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       zipTaxos.size must beEqualTo(2)
     }
 
-    "return error if zip file contains other files than taxonomies" in testApp { app =>
+    "import zip file with folders correctly" in testApp { app =>
+      val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag-folders.zip")))
+
+      val result = app[TaxonomyCtrl].importZip(request)
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+      val zipTaxos = contentAsJson(result).as[Seq[OutputTaxonomy]]
+      zipTaxos.size must beEqualTo(2)
+    }
+
+    "return no error if zip file contains other files than taxonomies" in testApp { app =>
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
         .withHeaders("user" -> "admin@thehive.local")
         .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag-otherfiles.zip")))
 
       val result = app[TaxonomyCtrl].importZip(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
-      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
-      (contentAsJson(result) \ "message").as[String] must contain("formatting")
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+      val zipTaxos = contentAsJson(result).as[Seq[OutputTaxonomy]]
+      zipTaxos.size must beEqualTo(1)
     }
 
     "return error if zip file contains an already present taxonomy" in testApp { app =>

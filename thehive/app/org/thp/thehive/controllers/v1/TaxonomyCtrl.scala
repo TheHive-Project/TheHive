@@ -91,7 +91,9 @@ class TaxonomyCtrl @Inject() (
           .asScala
 
         for {
-          inputTaxos <- headers.toTry(h => parseJsonFile(zipFile, h))
+          inputTaxos <- headers
+            .filter(h => h.getFileName.endsWith("machinetag.json"))
+            .toTry(parseJsonFile(zipFile, _))
           richTaxos  <- db.tryTransaction { implicit graph =>
             inputTaxos.toTry(inputTaxo => createFromInput(inputTaxo)).map(_.toJson)
           }
