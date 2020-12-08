@@ -498,11 +498,4 @@ class Properties @Inject() (
       .property("description", UMapping.string)(_.field.readonly)
       .property("version", UMapping.int)(_.field.readonly)
       .build
-
-  lazy val taxonomy: PublicProperties =
-    PublicPropertyListBuilder[Taxonomy]
-      .property("namespace", UMapping.string)(_.field.readonly)
-      .property("description", UMapping.string)(_.field.readonly)
-      .property("version", UMapping.int)(_.field.readonly)
-      .build
 }
