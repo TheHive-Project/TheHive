@@ -1,0 +1,56 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">List of taxonomies</h3>
+            </div>
+            <div class="box-body">
+                <div ng-include="'views/partials/admin/taxonomy/list/toolbar.html'"></div>
+
+                <div class="row mv-s" ng-show="$vm.list.length === 0">
+                    <div class="col-md-12">
+                        <div class="empty-message">No taxnomies found.</div>
+                    </div>
+                </div>
+
+                <!-- Datalist  -->
+                <div class="row mt-s" ng-if="$vm.list.length > 0">
+                    <div class="col-md-12">
+                        <table class="table table-striped case-list">
+                            <thead>
+                                <tr>
+                                    <th width="300">Name</th>
+                                    <th>Description</th>
+                                    <th width="80" class="text-center"># Tags</th>
+                                    <th style="width: 150px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="taxonomy in $vm.list | orderBy:'name'">
+                                    <td>
+                                        <div class="taxonomy-name">
+                                            {{::taxonomy.namespace}}
+                                        </div>
+                                    </td>
+                                    <td class="wrap">
+                                        {{::taxonomy.description}}
+                                    </td>
+                                    <td class="text-center">
+                                        {{::taxonomy.tags.length}}
+                                    </td>
+                                    <td class="text-left nowrap">
+                                        <span class="clickable mr-xs text-primary nowrap" ng-click="$vm.showTaxonomy('edit', taxonomy)">
+                                            <i class="fa fa-edit"></i>Edit</span>
+
+                                        <span class="clickable mr-xs text-danger nowrap" ng-click="$vm.removeTaxonomy(taxonomy)">
+                                            <i class="fa fa-trash"></i>Delete</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

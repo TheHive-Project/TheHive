@@ -217,6 +217,21 @@ angular.module('thehive', [
                     permissions: ['manageProfile']
                 }
             })
+            .state('app.administration.taxonomies', {
+                url: '/taxonomies',
+                templateUrl: 'views/partials/admin/taxonomy/list.html',
+                controller: 'TaxonomyListCtrl',
+                controllerAs: '$vm',
+                title: 'Taxonomies administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                },
+                guard: {
+                    permissions: ['manageTaxonomy']
+                }
+            })
             .state('app.administration.organisations', {
                 url: '/organisations',
                 templateUrl: 'views/partials/admin/organisation/list.html',
