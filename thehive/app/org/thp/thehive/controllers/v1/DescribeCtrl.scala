@@ -56,7 +56,7 @@ class DescribeCtrl @Inject() (
     PropertyDescription("_updatedBy", "user"),
     PropertyDescription("_updatedAt", "date")
   )
-  case class EntityDescription(label: String, attributes: Seq[PropertyDescription]) {
+  case class EntityDescription(label: String, initialQuery: String, attributes: Seq[PropertyDescription]) {
     def toJson: JsObject =
       Json.obj(
         "label"      -> label,
@@ -72,12 +72,14 @@ class DescribeCtrl @Inject() (
 
   def describeCortexEntity(
       name: String,
+      initialQuery: String,
       className: String,
       packageName: String = "org.thp.thehive.connector.cortex.controllers.v0"
   ): Option[EntityDescription] =
     Try(
       EntityDescription(
         name,
+        initialQuery,
         injector
           .instanceOf(getClass.getClassLoader.loadClass(s"$packageName.$className"))
           .asInstanceOf[QueryCtrlV0]
@@ -91,22 +93,26 @@ class DescribeCtrl @Inject() (
   def entityDescriptions: Seq[EntityDescription] =
     cacheApi.getOrElseUpdate(s"describe.v1", cacheExpire) {
       Seq(
-        EntityDescription("case", caseCtrl.publicProperties.list.flatMap(propertyToJson("case", _))),
-        EntityDescription("case_task", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
-        EntityDescription("alert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
-        EntityDescription("case_artifact", observableCtrl.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
-        EntityDescription("user", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _))),
-        EntityDescription("case_task_log", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
-        EntityDescription("audit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _))),
-        EntityDescription("caseTemplate", caseTemplateCtrl.publicProperties.list.flatMap(propertyToJson("caseTemplate", _))),
-        EntityDescription("customField", customFieldCtrl.publicProperties.list.flatMap(propertyToJson("customField", _))),
-        EntityDescription("observableType", observableTypeCtrl.publicProperties.list.flatMap(propertyToJson("observableType", _))),
-        EntityDescription("organisation", organisationCtrl.publicProperties.list.flatMap(propertyToJson("organisation", _))),
-        EntityDescription("profile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _)))
-//        EntityDescription("dashboard", dashboardCtrl.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
-//        EntityDescription("page", pageCtrl.publicProperties.list.flatMap(propertyToJson("page", _)))
-      ) ++ describeCortexEntity("case_artifact_job", "JobCtrl") ++
-        describeCortexEntity("action", "ActionCtrl")
+        EntityDescription("alert", "listAlert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
+        EntityDescription("audit", "listAudit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _))),
+        EntityDescription("case", "listCase", caseCtrl.publicProperties.list.flatMap(propertyToJson("case", _))),
+        EntityDescription("caseTemplate", "listCaseTemplate", caseTemplateCtrl.publicProperties.list.flatMap(propertyToJson("caseTemplate", _))),
+        EntityDescription("customField", "listCustomField", customFieldCtrl.publicProperties.list.flatMap(propertyToJson("customField", _))),
+        // EntityDescription("dashboard", "listDashboard", dashboardCtrl.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
+        EntityDescription("log", "listLog", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
+        EntityDescription("observable", "listObservable", observableCtrl.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
+        EntityDescription(
+          "observableType",
+          "listObservableType",
+          observableTypeCtrl.publicProperties.list.flatMap(propertyToJson("observableType", _))
+        ),
+        EntityDescription("organisation", "listOrganisation", organisationCtrl.publicProperties.list.flatMap(propertyToJson("organisation", _))),
+        // EntityDescription("page", "listPage", pageCtrl.publicProperties.list.flatMap(propertyToJson("page", _)))
+        EntityDescription("profile", "listProfile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _))),
+        EntityDescription("task", "listTask", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
+        EntityDescription("user", "listUser", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _)))
+      ) ++ describeCortexEntity("job", "listJob", "JobCtrl") ++
+        describeCortexEntity("action", "listAction", "ActionCtrl")
     }
 
   implicit val propertyDescriptionWrites: Writes[PropertyDescription] =
