@@ -90,9 +90,9 @@ class TaxonomyCtrl @Inject() (
               createFromInput(taxo)
             } match {
               case Failure(e) =>
-                Json.obj("namespace" -> taxo.namespace, "importState" -> s"Failure : ${e.getMessage}")
+                Json.obj("namespace" -> taxo.namespace, "status" -> "Failure", "message" -> e.getMessage)
               case Success(t) =>
-                Json.obj("namespace" -> t.namespace, "importState" -> s"Success : ${t.tags.size} tags imported")
+                Json.obj("namespace" -> t.namespace, "status" -> "Success", "tagsImported" -> t.tags.size)
             }
             array :+ res
           })
