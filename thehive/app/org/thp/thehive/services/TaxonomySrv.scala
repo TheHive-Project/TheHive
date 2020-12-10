@@ -1,5 +1,7 @@
 package org.thp.thehive.services
 
+import org.apache.tinkerpop.gremlin.process.traversal.TextP
+
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
@@ -75,10 +77,13 @@ object TaxonomyOps {
 
     def visible(implicit authContext: AuthContext): Traversal.V[Taxonomy] = {
       if (authContext.isPermitted(Permissions.manageTaxonomy))
-        traversal
+        traversal.noFreetags
       else
         traversal.filter(_.organisations.get(authContext.organisation))
     }
+
+    private def noFreetags: Traversal.V[Taxonomy] =
+      traversal.filterNot(_.has(_.namespace, TextP.startingWith("_freetags")))
 
     def alreadyImported(namespace: String): Boolean =
       traversal.getByNamespace(namespace).exists
