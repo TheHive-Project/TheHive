@@ -18,7 +18,7 @@
             };
 
             this.$onInit = function() {
-                $scope.filtering = new FilteringSrv('case_artifact', 'observable.list', {
+                $scope.filtering = new FilteringSrv('observable', 'observable.list', {
                     version: 'v1',
                     defaults: {
                         showFilters: true,
@@ -68,7 +68,7 @@
                 $scope.artifacts = new PaginatedQuerySrv({
                     name: 'observables',
                     root: $scope.caseId,
-                    objectType: 'case_artifact',
+                    objectType: 'obserable',
                     version: 'v1',
                     scope: $scope,
                     sort: $scope.filtering.context.sort,
