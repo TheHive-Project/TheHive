@@ -16,11 +16,11 @@ import org.thp.thehive.dto.v1.InputTaxonomy
 import org.thp.thehive.models.{Permissions, RichTaxonomy, Tag, Taxonomy}
 import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.{TagSrv, TaxonomySrv}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 class TaxonomyCtrl @Inject() (
   entrypoint: Entrypoint,
@@ -85,9 +85,17 @@ class TaxonomyCtrl @Inject() (
           inputTaxos <- headers
             .filter(h => h.getFileName.endsWith("machinetag.json"))
             .toTry(parseJsonFile(zipFile, _))
-          richTaxos <- db.tryTransaction { implicit graph =>
-            inputTaxos.toTry(inputTaxo => createFromInput(inputTaxo)).map(_.toJson)
-          }
+          richTaxos = inputTaxos.foldLeft[JsArray](JsArray.empty)((array, taxo) => {
+            val res = db.tryTransaction { implicit graph =>
+              createFromInput(taxo)
+            } match {
+              case Failure(e) =>
+                Json.obj("namespace" -> taxo.namespace, "importState" -> s"Failure : ${e.getMessage}")
+              case Success(t) =>
+                Json.obj("namespace" -> t.namespace, "importState" -> s"Success : ${t.tags.size} tags imported")
+            }
+            array :+ res
+          })
         } yield Results.Created(richTaxos)
       }
 

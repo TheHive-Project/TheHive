@@ -77,7 +77,7 @@ object TaxonomyOps {
 
     def visible(implicit authContext: AuthContext): Traversal.V[Taxonomy] = {
       if (authContext.isPermitted(Permissions.manageTaxonomy))
-        traversal.noFreetags
+        noFreetags
       else
         traversal.filter(_.organisations.get(authContext.organisation))
     }
