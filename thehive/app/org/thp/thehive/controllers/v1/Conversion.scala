@@ -266,8 +266,20 @@ object Conversion {
         .withFieldComputed(_._id, _._id.toString)
         .withFieldConst(_._type, "Taxonomy")
         .withFieldComputed(_.tags, _.tags.map(_.toOutput))
+        .withFieldConst(_.extraData, JsObject.empty)
         .transform
     )
+
+  implicit val taxonomyWithStatsOutput: Renderer.Aux[(RichTaxonomy, JsObject), OutputTaxonomy] =
+    Renderer.toJson[(RichTaxonomy, JsObject), OutputTaxonomy] { taxoWithExtraData =>
+      taxoWithExtraData._1
+        .into[OutputTaxonomy]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Taxonomy")
+        .withFieldComputed(_.tags, _.tags.map(_.toOutput))
+        .withFieldConst(_.extraData, taxoWithExtraData._2)
+        .transform
+    }
 
   implicit val tagOutput: Renderer.Aux[Tag, OutputTag] =
     Renderer.toJson[Tag, OutputTag](

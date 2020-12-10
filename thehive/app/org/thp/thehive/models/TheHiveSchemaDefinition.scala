@@ -93,13 +93,13 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       db.tryTransaction { implicit g =>
         // For each organisation, if there is no custom taxonomy, create it
         db.labelFilter("Organisation")(Traversal.V()).unsafeHas("name", P.neq("admin")).toIterator.toTry { o =>
-          Traversal.V(EntityId(o.id)).out[OrganisationTaxonomy].v[Taxonomy].unsafeHas("namespace", "_freetags").headOption match {
+          Traversal.V(EntityId(o.id)).out[OrganisationTaxonomy].v[Taxonomy].unsafeHas("namespace", s"_freetags_${o.id()}").headOption match {
             case None =>
               val taxoVertex = g.addVertex("Taxonomy")
               taxoVertex.property("_label", "Taxonomy")
               taxoVertex.property("_createdBy", "system@thehive.local")
               taxoVertex.property("_createdAt", new Date())
-              taxoVertex.property("namespace", "_freetags")
+              taxoVertex.property("namespace", s"_freetags_${o.id()}")
               taxoVertex.property("description", "Custom taxonomy")
               taxoVertex.property("version", 1)
               o.addEdge("OrganisationTaxonomy", taxoVertex)
@@ -112,7 +112,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .dbOperation[Database]("Add each tag to its Organisation's Custom taxonomy") { db =>
       db.tryTransaction { implicit g =>
         db.labelFilter("Organisation")(Traversal.V()).unsafeHas("name", P.neq("admin")).toIterator.toTry { o =>
-          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", "_freetags").head
+          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", s"_freetags_${o.id()}").head
           Traversal.V(EntityId(o.id())).unionFlat(
             _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
             _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
@@ -125,7 +125,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
               tag.property("predicate").value().toString,
               tag.property ("value").orElse("")
             )
-            tag.property("namespace", "_freetags")
+            tag.property("namespace", s"_freetags_${o.id()}")
             tag.property("predicate", tagStr)
             tag.property("value").remove()
             customTaxo.addEdge("TaxonomyTag", tag)

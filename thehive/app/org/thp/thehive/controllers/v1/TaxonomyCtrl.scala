@@ -14,29 +14,27 @@ import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTaxonomy
 import org.thp.thehive.models.{Permissions, RichTaxonomy, Tag, Taxonomy}
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaxonomyOps._
-import org.thp.thehive.services.{OrganisationSrv, TagSrv, TaxonomySrv}
+import org.thp.thehive.services.{TagSrv, TaxonomySrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 class TaxonomyCtrl @Inject() (
   entrypoint: Entrypoint,
   properties: Properties,
   taxonomySrv: TaxonomySrv,
-  organisationSrv: OrganisationSrv,
   tagSrv: TagSrv,
   @Named("with-thehive-schema") implicit val db: Database
-) extends QueryableCtrl {
+) extends QueryableCtrl with TaxonomyRenderer {
 
   override val entityName: String = "taxonomy"
   override val publicProperties: PublicProperties = properties.taxonomy
   override val initialQuery: Query =
     Query.init[Traversal.V[Taxonomy]]("listTaxonomy", (graph, authContext) =>
-      organisationSrv.get(authContext.organisation)(graph).taxonomies
+      taxonomySrv.startTraversal(graph).visible(authContext)
     )
   override val getQuery: ParamQuery[EntityIdOrName] =
     Query.initWithParam[EntityIdOrName, Traversal.V[Taxonomy]](
@@ -48,8 +46,12 @@ class TaxonomyCtrl @Inject() (
     Query.withParam[OutputParam, Traversal.V[Taxonomy], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, traversal, _) =>
-      traversal.richPage(range.from, range.to, range.extraData.contains("total"))(_.richTaxonomy)
+    {
+      case (OutputParam(from, to, extraData), taxoSteps, authContext) =>
+        taxoSteps.richPage(from, to, extraData.contains("total")) {
+          _.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total")(authContext))
+        }
+    }
   )
   override val outputQuery: Query =
     Query.outputWithContext[RichTaxonomy, Traversal.V[Taxonomy]]((traversal, _) =>
@@ -58,17 +60,6 @@ class TaxonomyCtrl @Inject() (
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Taxonomy], Traversal.V[Tag]]("tags", (traversal, _) => traversal.tags)
   )
-
-  def list: Action[AnyContent] =
-    entrypoint("list taxonomies")
-      .authRoTransaction(db) { implicit request => implicit graph =>
-        val taxos = taxonomySrv
-          .startTraversal
-          .visible
-          .richTaxonomy
-          .toSeq
-        Success(Results.Ok(taxos.toJson))
-      }
 
   def create: Action[AnyContent] =
     entrypoint("import taxonomy")
@@ -94,7 +85,7 @@ class TaxonomyCtrl @Inject() (
           inputTaxos <- headers
             .filter(h => h.getFileName.endsWith("machinetag.json"))
             .toTry(parseJsonFile(zipFile, _))
-          richTaxos  <- db.tryTransaction { implicit graph =>
+          richTaxos <- db.tryTransaction { implicit graph =>
             inputTaxos.toTry(inputTaxo => createFromInput(inputTaxo)).map(_.toJson)
           }
         } yield Results.Created(richTaxos)
@@ -128,9 +119,9 @@ class TaxonomyCtrl @Inject() (
 
     if (inputTaxo.namespace.isEmpty)
       Failure(BadRequestError(s"A taxonomy with no namespace cannot be imported"))
-    else if (inputTaxo.namespace == "_freetags")
+    else if (inputTaxo.namespace.startsWith("_freetags"))
       Failure(BadRequestError(s"Namespace _freetags is restricted for TheHive"))
-    else if (taxonomySrv.existsInOrganisation(inputTaxo.namespace))
+    else if (taxonomySrv.startTraversal.alreadyImported(inputTaxo.namespace))
       Failure(BadRequestError(s"A taxonomy with namespace '${inputTaxo.namespace}' already exists in this organisation"))
     else
       for {

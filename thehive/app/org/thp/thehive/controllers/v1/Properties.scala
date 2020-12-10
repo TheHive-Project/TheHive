@@ -21,6 +21,7 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -497,5 +498,6 @@ class Properties @Inject() (
       .property("namespace", UMapping.string)(_.field.readonly)
       .property("description", UMapping.string)(_.field.readonly)
       .property("version", UMapping.int)(_.field.readonly)
+      .property("enabled", UMapping.boolean)(_.select(_.enabled).readonly)
       .build
 }

@@ -1,8 +1,7 @@
 package org.thp.thehive.dto.v1
 
 import java.util.Date
-
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{JsObject, Json, OFormat}
 
 /*
 Format based on :
@@ -65,7 +64,8 @@ case class OutputTaxonomy(
   namespace: String,
   description: String,
   version: Int,
-  tags: Seq[OutputTag]
+  tags: Seq[OutputTag],
+  extraData: JsObject
 )
 
 object OutputTaxonomy {

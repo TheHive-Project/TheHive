@@ -1,20 +1,20 @@
 package org.thp.thehive.services
 
 import java.util.{Map => JMap}
-
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
+import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Traversal}
-import org.thp.scalligraph.{EntityId, EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaxonomyOps._
 
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaxonomySrv @Inject() (
@@ -25,14 +25,6 @@ class TaxonomySrv @Inject() (
   val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   val organisationTaxonomySrv = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
-  def existsInOrganisation(namespace: String)(implicit graph: Graph, authContext: AuthContext): Boolean = {
-    startTraversal
-          .getByNamespace(namespace)
-          .organisations
-          .current
-          .exists
-  }
-
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {
       taxonomy     <- createEntity(taxo)
@@ -41,7 +33,7 @@ class TaxonomySrv @Inject() (
     } yield richTaxonomy
 
   def createFreetag(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
-    val customTaxo = Taxonomy("_freetags", "Custom taxonomy", 1)
+    val customTaxo = Taxonomy(s"_freetags_${organisation._id}", "Custom taxonomy", 1)
     for {
       taxonomy     <- createEntity(customTaxo)
       richTaxonomy <- Try(RichTaxonomy(taxonomy, Seq()))
@@ -54,24 +46,22 @@ class TaxonomySrv @Inject() (
 
   def activate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      taxo          <- get(taxonomyId).getOrFail("Taxonomy")
-      organisations <- Try(organisationSrv.startTraversal.filterNot(_
-        .out[OrganisationTaxonomy]
-        .v[Taxonomy]
-        .has(_.namespace, taxo.namespace)
-      ).toSeq)
-      _ <- organisations.toTry(o => organisationTaxonomySrv.create(OrganisationTaxonomy(), o, taxo))
-    } yield Success(())
-
-  def deactivate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
       taxo <- get(taxonomyId).getOrFail("Taxonomy")
-      _    <- Try(organisationSrv.startTraversal
-        .hasNot(_.name, "admin")
-        .outE[OrganisationTaxonomy]
-        .filter(_.otherV.v[Taxonomy].has(_.namespace, taxo.namespace))
-        .remove())
-    } yield Success(())
+      _    <- if (taxo.namespace.startsWith("_freetags")) Failure(BadRequestError("Cannot activate a freetags taxonomy"))
+              else Success(())
+      _    <- organisationSrv.startTraversal
+                .filterNot(_.out[OrganisationTaxonomy].v[Taxonomy].has(_.namespace, taxo.namespace))
+                .toSeq
+                .toTry(o => organisationTaxonomySrv.create(OrganisationTaxonomy(), o, taxo))
+    } yield ()
+
+  def deactivate(taxonomyId: EntityIdOrName)(implicit graph: Graph): Try[Unit] = {
+    for {
+      taxo <- getOrFail(taxonomyId)
+      _ <- if (taxo.namespace.startsWith("_freetags")) Failure(BadRequestError("Cannot deactivate a freetags taxonomy"))
+           else Success(())
+    } yield get(taxonomyId).inE[OrganisationTaxonomy].remove()
+  }
 
 }
 
@@ -83,12 +73,20 @@ object TaxonomyOps {
 
     def getByNamespace(namespace: String): Traversal.V[Taxonomy] = traversal.has(_.namespace, namespace)
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Taxonomy] = visible(authContext.organisation)
+    def visible(implicit authContext: AuthContext): Traversal.V[Taxonomy] = {
+      if (authContext.isPermitted(Permissions.manageTaxonomy))
+        traversal
+      else
+        traversal.filter(_.organisations.get(authContext.organisation))
+    }
 
-    def visible(organisationIdOrName: EntityIdOrName): Traversal.V[Taxonomy] =
-      traversal.filter(_.organisations.get(organisationIdOrName))
+    def alreadyImported(namespace: String): Boolean =
+      traversal.getByNamespace(namespace).exists
 
     def organisations: Traversal.V[Organisation] = traversal.in[OrganisationTaxonomy].v[Organisation]
+
+    def enabled: Traversal[Boolean, Boolean, Identity[Boolean]] =
+      traversal.choose(_.organisations, true, false)
 
     def tags: Traversal.V[Tag] = traversal.out[TaxonomyTag].v[Tag]
 
@@ -99,5 +97,22 @@ object TaxonomyOps {
             .by(_.tags.fold)
         )
         .domainMap { case (taxonomy, tags) => RichTaxonomy(taxonomy, tags) }
+
+    def richTaxonomyWithCustomRenderer[D, G, C <: Converter[D, G]](entityRenderer: Traversal.V[Taxonomy] => Traversal[D, G, C]):
+      Traversal[(RichTaxonomy, D), JMap[String, Any], Converter[(RichTaxonomy, D), JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.tags.fold)
+            .by(_.enabled)
+            .by(entityRenderer)
+        )
+        .domainMap {
+          case (taxo, tags, _, renderedEntity) =>
+            RichTaxonomy(
+              taxo,
+              tags
+            ) -> renderedEntity
+        }
   }
 }
