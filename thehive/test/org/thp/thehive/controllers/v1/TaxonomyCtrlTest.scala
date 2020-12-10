@@ -4,7 +4,7 @@ import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1._
 import play.api.libs.Files
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -144,8 +144,8 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      val zipTaxos = contentAsJson(result).as[Seq[OutputTaxonomy]]
-      zipTaxos.size must beEqualTo(2)
+      contentAsString(result) must not contain("Failure")
+      contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
     "import zip file with folders correctly" in testApp { app =>
@@ -156,8 +156,8 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      val zipTaxos = contentAsJson(result).as[Seq[OutputTaxonomy]]
-      zipTaxos.size must beEqualTo(2)
+      contentAsString(result) must not contain("Failure")
+      contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
     "return no error if zip file contains other files than taxonomies" in testApp { app =>
@@ -168,8 +168,8 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      val zipTaxos = contentAsJson(result).as[Seq[OutputTaxonomy]]
-      zipTaxos.size must beEqualTo(1)
+      contentAsString(result) must not contain("Failure")
+      contentAsJson(result).as[JsArray].value.size must beEqualTo(1)
     }
 
     "return error if zip file contains an already present taxonomy" in testApp { app =>
@@ -178,9 +178,9 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag-present.zip")))
 
       val result = app[TaxonomyCtrl].importZip(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
-      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
-      (contentAsJson(result) \ "message").as[String] must contain("already exists")
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+      contentAsString(result) must contain("Failure")
+      contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
     "return error if zip file contains a bad formatted taxonomy" in testApp { app =>
