@@ -76,6 +76,13 @@ body {
     text-align: center;
     padding: 40px;
 }
+.loading-message {
+    background-color: #f5f5f5;
+    color: #AAA;
+    font-size: 18px;
+    text-align: center;
+    padding: 40px;
+}
 
 .tpad50 {
     padding-top: 50px

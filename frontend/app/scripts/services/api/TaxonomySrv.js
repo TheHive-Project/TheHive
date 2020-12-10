@@ -2,21 +2,14 @@
     'use strict';
     angular.module('theHiveServices')
         .service('TaxonomySrv', function($http, QuerySrv) {
-            // var self = this;
             var baseUrl = './api/v1/taxonomy';
 
             this.list = function() {
-                // return $http.get(baseUrl, {params: {
-                //     range: 'all'
-                // }});
-                //
                 return QuerySrv.call('v1', [
                     { _name: 'listTaxonomy' }
                 ], {
                     name:'list-taxonomies'
                 });
-
-                //listTaxonomies
             };
 
             this.get = function(name) {
@@ -26,13 +19,6 @@
             this.toggleActive = function(id, active) {
                 return $http.put([baseUrl, id, !!active ? 'activate' : 'deactivate'].join('/'));
             };
-
-            // this.map = function() {
-            //     return self.list()
-            //         .then(function(response) {
-            //             return _.indexBy(response.data, 'name');
-            //         });
-            // };
 
             this.create = function(profile) {
                 return $http.post(baseUrl, profile);

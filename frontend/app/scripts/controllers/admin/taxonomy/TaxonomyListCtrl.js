@@ -5,19 +5,43 @@
         .controller('TaxonomyListCtrl', TaxonomyListCtrl)
         .controller('TaxonomyImportCtrl', TaxonomyImportCtrl);
 
-    function TaxonomyListCtrl($uibModal, TaxonomySrv, NotificationSrv, ModalSrv, appConfig) {
+    function TaxonomyListCtrl($scope, $uibModal, PaginatedQuerySrv, FilteringSrv, TaxonomySrv, NotificationSrv, ModalSrv, appConfig) {
         var self = this;
 
         this.appConfig = appConfig;
 
         self.load = function() {
-            TaxonomySrv.list()
-                .then(function(response) {
-                    self.list = response;
-                })
-                .catch(function(rejection) {
-                    NotificationSrv.error('Taxonomies management', rejection.data, rejection.status);
-                });
+            this.loading = true;
+
+            // TaxonomySrv.list()
+            //     .then(function(response) {
+            //         self.list = response;
+            //     })
+            //     .catch(function(rejection) {
+            //         NotificationSrv.error('Taxonomies management', rejection.data, rejection.status);
+            //     })
+            //     .finally(function(){
+            //         //self.loading = false;
+            //     });
+
+            this.list = new PaginatedQuerySrv({
+                name: 'taxonomies',
+                root: undefined,
+                objectType: 'taxonomy',
+                version: 'v1',
+                scope: $scope,
+                sort: self.filtering.context.sort,
+                loadAll: false,
+                pageSize: self.filtering.context.pageSize,
+                filter: this.filtering.buildQuery(),
+                operations: [
+                    {'_name': 'listTaxonomy'}
+                ],
+                extraData: ['enabled'],
+                onUpdate: function() {
+                    self.loading = false;
+                }
+            });
         };
 
         self.import = function () {
@@ -26,7 +50,10 @@
                 templateUrl: 'views/partials/admin/taxonomy/import.html',
                 controller: 'TaxonomyImportCtrl',
                 controllerAs: '$vm',
-                size: 'lg'
+                size: 'lg',
+                resolve: {
+                    appConfig: self.appConfig
+                }
             });
 
             modalInstance.result
@@ -40,10 +67,12 @@
                 });
         };
 
-        this.toggleActive = function(id, active) {
-            TaxonomySrv.toggleActive(id, active)
+        this.toggleActive = function(taxonomy) {
+            var active = !taxonomy.extraData.enabled;
+
+            TaxonomySrv.toggleActive(taxonomy._id, active)
                 .then(function() {
-                    NotificationSrv.log('Taxonomy has been successfully ' + active ? 'activated' : 'deactivated', 'success');
+                    NotificationSrv.log(['Taxonomy [', taxonomy.namespace, '] has been successfully', (active ? 'activated' : 'deactivated')].join(' '), 'success');
 
                     self.load();
                 })
@@ -54,36 +83,86 @@
                 });
         };
 
-        self.update = function(id, taxonomy) {
-            // TODO
-            // TaxonomySrv.update(id, _.pick(taxonomy, '...'))
-            TaxonomySrv.update(id, _.pick(taxonomy, '...'))
-                .then(function(/*response*/) {
+        self.remove = function(taxonomy) {
+            var modalInstance = ModalSrv.confirm(
+                'Remove taxonomy',
+                'Are you sure you want to remove the selected taxonomy?', {
+                    flavor: 'danger',
+                    okText: 'Yes, remove it'
+                }
+            );
+
+            modalInstance.result
+                .then(function() {
+                    return TaxonomySrv.remove(taxonomy._id);
+                })
+                .then(function( /*response*/ ) {
                     self.load();
-                    NotificationSrv.log('Taxonomy updated successfully', 'success');
+                    NotificationSrv.success(
+                        'Taxonomy ' + taxonomy.namespace + ' has been successfully removed.'
+                    );
                 })
                 .catch(function(err) {
-                    NotificationSrv.error('Error', 'Taxonomy update failed', err.status);
+                    if (err && !_.isString(err)) {
+                        NotificationSrv.error('TaxonomyListCtrl', err.data, err.status);
+                    }
                 });
         };
 
-        self.create = function(taxonomy) {
-            TaxonomySrv.create(taxonomy)
-                .then(function(/*response*/) {
-                    self.load();
-                    NotificationSrv.log('Taxonomy created successfully', 'success');
-                })
-                .catch(function(err) {
-                    NotificationSrv.error('Error', 'Taxonomy creation failed', err.status);
-                });
+        this.toggleFilters = function () {
+            this.filtering.toggleFilters();
+        };
+
+        this.filter = function () {
+            self.filtering.filter().then(this.applyFilters);
+        };
+
+        this.clearFilters = function () {
+            this.filtering.clearFilters()
+                .then(self.search);
+        };
+
+        this.removeFilter = function (index) {
+            self.filtering.removeFilter(index)
+                .then(self.search);
+        };
+
+        this.search = function () {
+            self.load();
+            self.filtering.storeContext();
+        };
+        this.addFilterValue = function (field, value) {
+            this.filtering.addFilterValue(field, value);
+            this.search();
         };
 
         self.$onInit = function() {
-            self.load();
+            //self.load();
+
+            self.filtering = new FilteringSrv('taxonomy', 'taxonomy.list', {
+                version: 'v1',
+                defaults: {
+                    showFilters: true,
+                    showStats: false,
+                    pageSize: 15,
+                    sort: ['+namespace']
+                },
+                defaultFilter: []
+            });
+
+            self.filtering.initContext('list')
+                .then(function() {
+                    self.load();
+
+                    $scope.$watch('$vm.list.pageSize', function (newValue) {
+                        self.filtering.setPageSize(newValue);
+                    });
+                });
         };
     }
 
-    function TaxonomyImportCtrl($uibModalInstance, TaxonomySrv, NotificationSrv) {
+    function TaxonomyImportCtrl($uibModalInstance, TaxonomySrv, NotificationSrv, appConfig) {
+        this.appConfig = appConfig;
         this.formData = {};
 
         this.ok = function () {
