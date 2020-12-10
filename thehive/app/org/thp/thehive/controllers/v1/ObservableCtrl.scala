@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import java.io.FilterInputStream
 import java.nio.file.Files
-
 import javax.inject.{Inject, Named, Singleton}
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
@@ -22,6 +21,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
 import play.api.libs.Files.DefaultTemporaryFileCreator
+import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 import play.api.{Configuration, Logger}
 
@@ -29,7 +29,7 @@ import scala.collection.JavaConverters._
 
 @Singleton
 class ObservableCtrl @Inject() (
-    entryPoint: Entrypoint,
+    entrypoint: Entrypoint,
     @Named("with-thehive-schema") db: Database,
     properties: Properties,
     observableSrv: ObservableSrv,
@@ -37,7 +37,8 @@ class ObservableCtrl @Inject() (
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
     temporaryFileCreator: DefaultTemporaryFileCreator,
-    configuration: Configuration
+    configuration: Configuration,
+    errorHandler: ErrorHandler
 ) extends QueryableCtrl
     with ObservableRenderer {
 
@@ -79,41 +80,73 @@ class ObservableCtrl @Inject() (
   )
 
   def create(caseId: String): Action[AnyContent] =
-    entryPoint("create artifact")
-      .extract("artifact", FieldsParser[InputObservable])
+    entrypoint("create observable")
+      .extract("observable", FieldsParser[InputObservable])
       .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
       .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .auth { implicit request =>
+        val inputObservable: InputObservable = request.body("observable")
         val isZip: Option[Boolean]           = request.body("isZip")
         val zipPassword: Option[String]      = request.body("zipPassword")
-        val inputObservable: InputObservable = request.body("artifact")
         val inputAttachObs                   = if (isZip.contains(true)) getZipFiles(inputObservable, zipPassword) else Seq(inputObservable)
-        for {
-          case0 <-
-            caseSrv
-              .get(EntityIdOrName(caseId))
-              .can(Permissions.manageObservable)
-              .getOrFail("Case")
-          observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
-          observablesWithData <-
-            inputObservable
-              .data
-              .toTry(d => observableSrv.create(inputObservable.toObservable, observableType, d, inputObservable.tags, Nil))
-          observableWithAttachment <- inputAttachObs.toTry(
-            _.attachment
-              .map(a => observableSrv.create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil))
-              .flip
-          )
-          createdObservables <- (observablesWithData ++ observableWithAttachment.flatten).toTry { richObservables =>
-            caseSrv
-              .addObservable(case0, richObservables)
-              .map(_ => richObservables)
+
+        db
+          .roTransaction { implicit graph =>
+            for {
+              case0 <-
+                caseSrv
+                  .get(EntityIdOrName(caseId))
+                  .can(Permissions.manageObservable)
+                  .orFail(AuthorizationError("Operation not permitted"))
+              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
+            } yield (case0, observableType)
           }
-        } yield Results.Created(createdObservables.toJson)
+          .map {
+            case (case0, observableType) =>
+              val initialSuccessesAndFailures: (Seq[JsValue], Seq[JsValue]) =
+                inputAttachObs.foldLeft[(Seq[JsValue], Seq[JsValue])](Nil -> Nil) {
+                  case ((successes, failures), inputObservable) =>
+                    inputObservable.attachment.fold((successes, failures)) { attachment =>
+                      db
+                        .tryTransaction { implicit graph =>
+                          observableSrv
+                            .create(inputObservable.toObservable, observableType, attachment, inputObservable.tags, Nil)
+                            .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
+                        }
+                        .fold(
+                          e =>
+                            successes -> (failures :+ errorHandler.toErrorResult(e)._2 ++ Json
+                              .obj(
+                                "object" -> Json
+                                  .obj("data" -> s"file:${attachment.filename}", "attachment" -> Json.obj("name" -> attachment.filename))
+                              )),
+                          s => (successes :+ s) -> failures
+                        )
+                    }
+                }
+
+              val (successes, failures) = inputObservable
+                .data
+                .foldLeft(initialSuccessesAndFailures) {
+                  case ((successes, failures), data) =>
+                    db
+                      .tryTransaction { implicit graph =>
+                        observableSrv
+                          .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
+                          .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
+                      }
+                      .fold(
+                        failure => (successes, failures :+ errorHandler.toErrorResult(failure)._2 ++ Json.obj("object" -> Json.obj("data" -> data))),
+                        success => (successes :+ success, failures)
+                      )
+                }
+              if (failures.isEmpty) Results.Created(JsArray(successes))
+              else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
+          }
       }
 
   def get(observableId: String): Action[AnyContent] =
-    entryPoint("get observable")
+    entrypoint("get observable")
       .authRoTransaction(db) { _ => implicit graph =>
         observableSrv
           .get(EntityIdOrName(observableId))
@@ -126,7 +159,7 @@ class ObservableCtrl @Inject() (
       }
 
   def update(observableId: String): Action[AnyContent] =
-    entryPoint("update observable")
+    entrypoint("update observable")
       .extract("observable", FieldsParser.update("observable", publicProperties))
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
@@ -139,7 +172,7 @@ class ObservableCtrl @Inject() (
       }
 
   def bulkUpdate: Action[AnyContent] =
-    entryPoint("bulk update")
+    entrypoint("bulk update")
       .extract("input", FieldsParser.update("observable", publicProperties))
       .extract("ids", FieldsParser.seq[String].on("ids"))
       .authTransaction(db) { implicit request => implicit graph =>
@@ -154,7 +187,7 @@ class ObservableCtrl @Inject() (
       }
 
   def delete(obsId: String): Action[AnyContent] =
-    entryPoint("delete")
+    entrypoint("delete")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           observable <-

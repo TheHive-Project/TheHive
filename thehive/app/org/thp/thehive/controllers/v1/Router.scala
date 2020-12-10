@@ -7,17 +7,29 @@ import play.api.routing.sird._
 
 @Singleton
 class Router @Inject() (
+    authenticationCtrl: AuthenticationCtrl,
+    alertCtrl: AlertCtrl,
+    // attachmentCtrl: AttachmentCtrl,
+    auditCtrl: AuditCtrl,
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
-    userCtrl: UserCtrl,
-    organisationCtrl: OrganisationCtrl,
-    taskCtrl: TaskCtrl,
+    // configCtrl: ConfigCtrl,
     customFieldCtrl: CustomFieldCtrl,
-    alertCtrl: AlertCtrl,
-    auditCtrl: AuditCtrl,
-    statusCtrl: StatusCtrl,
-    authenticationCtrl: AuthenticationCtrl,
-    describeCtrl: DescribeCtrl
+    // dashboardCtrl: DashboardCtrl,
+    describeCtrl: DescribeCtrl,
+    logCtrl: LogCtrl,
+    observableCtrl: ObservableCtrl,
+    observableTypeCtrl: ObservableTypeCtrl,
+    organisationCtrl: OrganisationCtrl,
+    // pageCtrl: PageCtrl,
+    // permissionCtrl: PermissionCtrl,
+    profileCtrl: ProfileCtrl,
+    taskCtrl: TaskCtrl,
+    // shareCtrl: ShareCtrl,
+    userCtrl: UserCtrl,
+    statusCtrl: StatusCtrl
+    // streamCtrl: StreamCtrl,
+    // tagCtrl: TagCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -39,6 +51,14 @@ class Router @Inject() (
 //    case PATCH(p"api/case/_bulk") =>                          caseCtrl.bulkUpdate()
 //    case POST(p"/case/_stats") =>                        caseCtrl.stats()
 //    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
+
+    case POST(p"/case/$caseId/observable")    => observableCtrl.create(caseId)
+    case GET(p"/observable/$observableId")    => observableCtrl.get(observableId)
+    case DELETE(p"/observable/$observableId") => observableCtrl.delete(observableId)
+    case PATCH(p"/observable/_bulk")          => observableCtrl.bulkUpdate
+    case PATCH(p"/observable/$observableId")  => observableCtrl.update(observableId)
+//    case GET(p"/observable/$observableId/similar") => observableCtrl.findSimilar(observableId)
+//    case POST(p"/observable/$observableId/shares") => shareCtrl.shareObservable(observableId)
 
     case GET(p"/caseTemplate")                   => caseTemplateCtrl.list
     case POST(p"/caseTemplate")                  => caseTemplateCtrl.create
@@ -75,6 +95,10 @@ class Router @Inject() (
     // POST     /case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
     // POST     /case/task/_stats                    controllers.TaskCtrl.stats()
 
+    case POST(p"/task/$taskId/log") => logCtrl.create(taskId)
+    case PATCH(p"/log/$logId")      => logCtrl.update(logId)
+    case DELETE(p"/log/$logId")     => logCtrl.delete(logId)
+
     case GET(p"/customField")  => customFieldCtrl.list
     case POST(p"/customField") => customFieldCtrl.create
 
@@ -96,8 +120,16 @@ class Router @Inject() (
 //    POST     /audit/_search                       controllers.AuditCtrl.find()
 //    POST     /audit/_stats                        controllers.AuditCtrl.stats()
 
+    case POST(p"/profile")              => profileCtrl.create
+    case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)
+    case PATCH(p"/profile/$profileId")  => profileCtrl.update(profileId)
+    case DELETE(p"/profile/$profileId") => profileCtrl.delete(profileId)
+
     case GET(p"/describe/_all")       => describeCtrl.describeAll
     case GET(p"/describe/$modelName") => describeCtrl.describe(modelName)
 
+    case GET(p"/observable/type/$idOrName")    => observableTypeCtrl.get(idOrName)
+    case POST(p"/observable/type")             => observableTypeCtrl.create
+    case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
   }
 }

@@ -7,31 +7,31 @@ import play.api.routing.sird._
 
 @Singleton
 class Router @Inject() (
-    statsCtrl: StatsCtrl,
+    authenticationCtrl: AuthenticationCtrl,
+    alertCtrl: AlertCtrl,
+    attachmentCtrl: AttachmentCtrl,
+    auditCtrl: AuditCtrl,
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
-    userCtrl: UserCtrl,
-    organisationCtrl: OrganisationCtrl,
-    taskCtrl: TaskCtrl,
+    configCtrl: ConfigCtrl,
+    customFieldCtrl: CustomFieldCtrl,
+    dashboardCtrl: DashboardCtrl,
+    describeCtrl: DescribeCtrl,
+    listCtrl: ListCtrl,
     logCtrl: LogCtrl,
     observableCtrl: ObservableCtrl,
-    customFieldCtrl: CustomFieldCtrl,
-    alertCtrl: AlertCtrl,
-    auditCtrl: AuditCtrl,
-    statusCtrl: StatusCtrl,
-    dashboardCtrl: DashboardCtrl,
-    authenticationCtrl: AuthenticationCtrl,
-    listCtrl: ListCtrl,
-    streamCtrl: StreamCtrl,
-    attachmentCtrl: AttachmentCtrl,
-    describeCtrl: DescribeCtrl,
-    configCtrl: ConfigCtrl,
-    profileCtrl: ProfileCtrl,
-    shareCtrl: ShareCtrl,
-    tagCtrl: TagCtrl,
+    organisationCtrl: OrganisationCtrl,
+    observableTypeCtrl: ObservableTypeCtrl,
     pageCtrl: PageCtrl,
     permissionCtrl: PermissionCtrl,
-    observableTypeCtrl: ObservableTypeCtrl
+    profileCtrl: ProfileCtrl,
+    taskCtrl: TaskCtrl,
+    shareCtrl: ShareCtrl,
+    statsCtrl: StatsCtrl,
+    userCtrl: UserCtrl,
+    statusCtrl: StatusCtrl,
+    streamCtrl: StreamCtrl,
+    tagCtrl: TagCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -86,11 +86,11 @@ class Router @Inject() (
     case POST(p"/case/artifact/$observableId/shares") => shareCtrl.shareObservable(observableId)
 
     case GET(p"/case")                  => caseCtrl.search
-    case POST(p"/case")                 => caseCtrl.create             // Audit ok
+    case POST(p"/case")                 => caseCtrl.create         // Audit ok
     case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
-    case PATCH(p"/case/_bulk")          => caseCtrl.bulkUpdate         // Not used by the frontend
-    case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)     // Audit ok
-    case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds)     // Not implemented in backend and not used by frontend
+    case PATCH(p"/case/_bulk")          => caseCtrl.bulkUpdate     // Not used by the frontend
+    case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId) // Audit ok
+    case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds) // Not implemented in backend and not used by frontend
     case POST(p"/case/_search")         => caseCtrl.search
     case POST(p"/case/_stats")          => caseCtrl.stats
     case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId) // Not used by the frontend
