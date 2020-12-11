@@ -1,9 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Long => JLong}
-import java.util.Date
-
-import javax.inject.{Inject, Named, Singleton}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
@@ -26,6 +23,9 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
+import java.lang.{Long => JLong}
+import java.util.Date
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.Failure
 
 @Singleton
@@ -65,12 +65,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -171,12 +166,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -356,12 +346,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -465,12 +450,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -500,4 +480,12 @@ class Properties @Inject() (
       .property("version", UMapping.int)(_.field.readonly)
       .property("enabled", UMapping.boolean)(_.select(_.enabled).readonly)
       .build
+
+  private def vertexToTag: Vertex => String = { v =>
+    val namespace = UMapping.string.getProperty(v, "namespace")
+    val predicate = UMapping.string.getProperty(v, "predicate")
+    val value     = UMapping.string.optional.getProperty(v, "value")
+    Tag(namespace, predicate, value, None, "#000000").toString
+  }
+
 }

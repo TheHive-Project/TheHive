@@ -7,7 +7,7 @@ case class OutputTag(
   predicate: String,
   value: Option[String],
   description: Option[String],
-  colour: Int
+  colour: String
 )
 
 object OutputTag {

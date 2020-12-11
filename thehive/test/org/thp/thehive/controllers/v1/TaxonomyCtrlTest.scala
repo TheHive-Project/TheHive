@@ -68,9 +68,9 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "A test taxonomy",
         1,
         List(
-          OutputTag("test-taxo", "pred1", Some("entry1"), None, 0),
-          OutputTag("test-taxo", "pred2", Some("entry2"), None, 0),
-          OutputTag("test-taxo", "pred2", Some("entry21"), None, 0)
+          OutputTag("test-taxo", "pred1", Some("entry1"), None, "#000000"),
+          OutputTag("test-taxo", "pred2", Some("entry2"), None, "#000000"),
+          OutputTag("test-taxo", "pred2", Some("entry21"), None, "#000000")
         )
       )
     }
@@ -123,7 +123,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "taxonomy1",
         "The taxonomy 1",
         1,
-        List(OutputTag("taxonomy1", "pred1", Some("value1"), None, 0))
+        List(OutputTag("taxonomy1", "pred1", Some("value1"), None, "#000000"))
       )
     }
 
@@ -144,7 +144,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsString(result) must not contain("Failure")
+      contentAsString(result) must not contain "Failure"
       contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
@@ -156,7 +156,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsString(result) must not contain("Failure")
+      contentAsString(result) must not contain "Failure"
       contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
@@ -168,7 +168,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsString(result) must not contain("Failure")
+      contentAsString(result) must not contain "Failure"
       contentAsJson(result).as[JsArray].value.size must beEqualTo(1)
     }
 

@@ -49,7 +49,7 @@ class TaxonomyCtrl @Inject() (
     {
       case (OutputParam(from, to, extraData), taxoSteps, authContext) =>
         taxoSteps.richPage(from, to, extraData.contains("total")) {
-          _.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total")(authContext))
+          _.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total"))
         }
     }
   )
@@ -114,7 +114,7 @@ class TaxonomyCtrl @Inject() (
           value.predicate,
           Some(e.value),
           e.expanded,
-          e.colour.map(tagSrv.parseTagColour).getOrElse(tagSrv.defaultColour)
+          e.colour.getOrElse(tagSrv.defaultColour)
         )
       )
     })

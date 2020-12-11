@@ -29,20 +29,10 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
 
   def defaultNamespace: String = defaultNamespaceConfig.get
 
-  private val defaultColourConfig: ConfigItem[String, Int] =
-    appConfig.mapItem[String, Int](
-      "tags.defaultColour",
-      "Default colour of the automatically created tags",
-      {
-        case s if s(0) == '#' => parseTagColour(s.tail)
-        case _                => defaultColour
-      }
-    )
+  private val defaultColourConfig: ConfigItem[String, String] =
+    appConfig.item[String]("tags.defaultColour", "Default colour of the automatically created tags")
 
-  def defaultColour: Int = defaultColourConfig.get
-
-  // TODO Duplication in Tag.scala
-  def parseTagColour(c: String) = Try(Integer.parseUnsignedInt(c, 16)).getOrElse(defaultColour)
+  def defaultColour: String = defaultColourConfig.get
 
   def parseString(tagName: String): Tag =
     Tag.fromString(tagName, defaultNamespace, defaultColour)

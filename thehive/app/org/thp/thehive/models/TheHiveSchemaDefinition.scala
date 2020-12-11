@@ -57,6 +57,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
               case error => logger.warn(s"Unable to remove lock on property $name: $error")
             }
         }
+      // TODO remove unused commented code ?
       // def removeIndexLock(name: String): Try[Unit] =
       //   db.managementTransaction { mgmt =>
       //     Try(mgmt.setConsistency(mgmt.getGraphIndex(name), ConsistencyModifier.DEFAULT))
@@ -136,6 +137,16 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     }
     .updateGraph("Add manageTaxonomy to admin profile", "Profile") { traversal =>
       Try(traversal.unsafeHas("name", "admin").raw.property("permissions", "manageTaxonomy").iterate())
+      Success(())
+    }
+    .updateGraph("Remove colour property for Tags", "Tag") { traversal =>
+      traversal.removeProperty("colour").iterate()
+      Success(())
+    }
+    .removeProperty("Tag", "colour", usedOnlyByThisModel = true)
+    .addProperty[String]("Tag", "colour")
+    .updateGraph("Add property colour for Tags ", "Tag") { traversal =>
+      traversal.raw.property("colour", "#000000").iterate()
       Success(())
     }
 

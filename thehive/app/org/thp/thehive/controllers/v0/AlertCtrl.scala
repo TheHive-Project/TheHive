@@ -391,7 +391,7 @@ class PublicAlert @Inject() (
                   val namespace = UMapping.string.getProperty(v, "namespace")
                   val predicate = UMapping.string.getProperty(v, "predicate")
                   val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
+                  Tag(namespace, predicate, value, None, "#000000").toString
                 },
                 Converter.identity[String]
               )

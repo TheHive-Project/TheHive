@@ -1,10 +1,9 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.services.TaxonomyOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.Taxonomy
+import org.thp.thehive.services.TaxonomyOps._
 import play.api.libs.json._
 
 import java.util.{Map => JMap}
@@ -14,9 +13,8 @@ trait TaxonomyRenderer {
   def enabledStats: Traversal.V[Taxonomy] => Traversal[JsValue, Boolean, Converter[JsValue, Boolean]] =
     _.enabled.domainMap(l => JsBoolean(l))
 
-  def taxoStatsRenderer(extraData: Set[String])(implicit
-      authContext: AuthContext
-  ): Traversal.V[Taxonomy] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
+  def taxoStatsRenderer(extraData: Set[String]):
+    Traversal.V[Taxonomy] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
     def addData[G](
         name: String
     )(f: Traversal.V[Taxonomy] => Traversal[JsValue, G, Converter[JsValue, G]]): Traversal[JsObject, JMap[String, Any], Converter[
