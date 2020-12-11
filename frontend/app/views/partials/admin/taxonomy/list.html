@@ -44,6 +44,7 @@
                                     <th width="10"></th>
                                     <th width="300">Namespace</th>
                                     <th>Description</th>
+                                    <th width="100" class="text-center">Version</th>
                                     <th width="80" class="text-center"># Tags</th>
                                     <th width="120"></th>
                                 </tr>
@@ -58,11 +59,14 @@
                                     </td>
                                     <td>
                                         <div class="taxonomy-name">
-                                            {{::taxonomy.namespace}}
+                                            <a href ng-click="$vm.show(taxonomy)">{{::taxonomy.namespace}}</a>
                                         </div>
                                     </td>
                                     <td class="wrap">
                                         {{::taxonomy.description}}
+                                    </td>
+                                    <td class="text-center">
+                                        {{::taxonomy.version}}
                                     </td>
                                     <td class="text-center">
                                         {{::taxonomy.tags.length}}
@@ -78,8 +82,8 @@
                                                 }[!!taxonomy.extraData.enabled]"></i>
                                             </a>
 
-                                            <a class="btn btn-icon btn-clear" href  ng-click="$vm.showTaxonomy(taxonomy)" uib-tooltip="Edit taxonomy">
-                                                <i class="text-primary fa fa-edit"></i>
+                                            <a class="btn btn-icon btn-clear" href  ng-click="$vm.show(taxonomy)" uib-tooltip="Edit taxonomy">
+                                                <i class="text-primary fa fa-search"></i>
                                             </a>
 
                                             <a class="btn btn-icon btn-clear" href  ng-click="$vm.remove(taxonomy)" uib-tooltip="Delete taxonomy">

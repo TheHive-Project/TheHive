@@ -3,6 +3,7 @@
 
     angular.module('theHiveControllers')
         .controller('TaxonomyListCtrl', TaxonomyListCtrl)
+        .controller('TaxonomyDialogCtrl', TaxonomyDialogCtrl)
         .controller('TaxonomyImportCtrl', TaxonomyImportCtrl);
 
     function TaxonomyListCtrl($scope, $uibModal, PaginatedQuerySrv, FilteringSrv, TaxonomySrv, NotificationSrv, ModalSrv, appConfig) {
@@ -12,17 +13,6 @@
 
         self.load = function() {
             this.loading = true;
-
-            // TaxonomySrv.list()
-            //     .then(function(response) {
-            //         self.list = response;
-            //     })
-            //     .catch(function(rejection) {
-            //         NotificationSrv.error('Taxonomies management', rejection.data, rejection.status);
-            //     })
-            //     .finally(function(){
-            //         //self.loading = false;
-            //     });
 
             this.list = new PaginatedQuerySrv({
                 name: 'taxonomies',
@@ -43,6 +33,32 @@
                 }
             });
         };
+
+        self.show = function(taxonomy) {
+            // var modalInstance = $uibModal.open({
+
+            $uibModal.open({
+                animation: true,
+                templateUrl: 'views/partials/admin/taxonomy/view.html',
+                controller: 'TaxonomyDialogCtrl',
+                controllerAs: '$modal',
+                size: 'max',
+                resolve: {
+                    taxonomy: angular.copy(taxonomy)
+                }
+            });
+
+            // modalInstance.result
+            //     .then(function() {
+            //         self.load();
+            //     })
+            //     .catch(function(err){
+            //         if(err && !_.isString(err)) {
+            //             NotificationSrv.error('Taxonomies import', err.data, err.status);
+            //         }
+            //     });
+        };
+
 
         self.import = function () {
             var modalInstance = $uibModal.open({
@@ -137,8 +153,6 @@
         };
 
         self.$onInit = function() {
-            //self.load();
-
             self.filtering = new FilteringSrv('taxonomy', 'taxonomy.list', {
                 version: 'v1',
                 defaults: {
@@ -158,6 +172,18 @@
                         self.filtering.setPageSize(newValue);
                     });
                 });
+        };
+    }
+
+    function TaxonomyDialogCtrl($uibModalInstance, TaxonomySrv, NotificationSrv, taxonomy) {
+        this.taxonomy = taxonomy;
+
+        this.ok = function () {
+            $uibModalInstance.close();
+        };
+
+        this.cancel = function () {
+            $uibModalInstance.dismiss('cancel');
         };
     }
 
