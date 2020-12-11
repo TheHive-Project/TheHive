@@ -2,12 +2,13 @@ package org.thp.thehive.connector.misp.controllers.v0
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
+
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv}
+import org.thp.thehive.connector.misp.services.{MispActor, MispExportSrv, Synchro}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -31,7 +32,7 @@ class MispCtrl @Inject() (
   def sync: Action[AnyContent] =
     entrypoint("sync MISP events")
       .authPermitted(Permissions.manageOrganisation) { _ =>
-        mispActor ! MispActor.Synchro
+        mispActor ! Synchro
         Success(Results.NoContent)
       }
 
