@@ -111,10 +111,10 @@ class PublicCaseTemplate @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CaseTemplate], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, caseTemplateSteps, authContext) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate(authContext))
+    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichCaseTemplate, Traversal.V[CaseTemplate]]((ctSteps, authContext) => ctSteps.richCaseTemplate(authContext))
+    Query.outputWithContext[RichCaseTemplate, Traversal.V[CaseTemplate]]((ctSteps, authContext) => ctSteps.richCaseTemplate)
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[CaseTemplate]
     .property("name", UMapping.string)(_.field.updatable)
     .property("displayName", UMapping.string)(_.field.updatable)

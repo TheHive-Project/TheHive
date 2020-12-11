@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -17,7 +16,8 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.{Success, Try}
+import javax.inject.{Inject, Named, Singleton}
+import scala.util.Success
 
 @Singleton
 class TaskCtrl @Inject() (
@@ -118,17 +118,16 @@ class TaskCtrl @Inject() (
         val taskTraversal = taskSrv.get(EntityIdOrName(taskId))
         for {
           task  <- taskTraversal.clone().visible.getOrFail("Task")
-          orgas <- Try(taskTraversal.in[ShareTask].in[OrganisationShare].v[Organisation].visible.toSeq)
+          orgas =  taskTraversal.organisations.visible.toSeq
         } yield Results.Ok(taskSrv.isActionRequired(task, orgas).toJson)
       }
-
 
   def actionRequired(taskId: String, orgaId: String, required: Boolean): Action[AnyContent] =
     entrypoint("action required")
       .authTransaction(db){ implicit request => implicit graph =>
         for {
-          organisation <- organisationSrv.get(EntityIdOrName(orgaId)).getOrFail("Organisation")
-          task         <- taskSrv.get(EntityIdOrName(taskId)).getOrFail("Task")
+          organisation <- organisationSrv.get(EntityIdOrName(orgaId)).visible.getOrFail("Organisation")
+          task         <- taskSrv.get(EntityIdOrName(taskId)).visible.getOrFail("Task")
           _            <- taskSrv.actionRequired(task, organisation, required)
         } yield Results.NoContent
       }

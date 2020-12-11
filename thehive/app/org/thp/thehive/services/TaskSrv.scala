@@ -118,7 +118,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
   def isActionRequired(
     task: Task with Entity,
     organisations: Seq[Organisation with Entity]
-  )(implicit graph: Graph, authContext: AuthContext): Map[String, Boolean] = {
+  )(implicit graph: Graph): Map[String, Boolean] = {
     organisations
       .flatMap { o =>
         organisationSrv.get(o).shares
@@ -178,6 +178,7 @@ object TaskOps {
     def unassigned: Traversal.V[Task] = traversal.filterNot(_.outE[TaskUser])
 
     def organisations: Traversal.V[Organisation] = traversal.in[ShareTask].in[OrganisationShare].v[Organisation]
+
     def organisations(permission: Permission): Traversal.V[Organisation] =
       taskToShares.filter(_.profile.has(_.permissions, permission)).organisation
 
@@ -194,10 +195,11 @@ object TaskOps {
         .project(
           _.by
             .by(_.out[TaskUser].v[User].fold)
-            .by(_.inE[ShareTask].filter(_.outV.v[Share].organisation.current))
+            .by(_.inE[ShareTask].filter(_.outV.v[Share].organisation.current).fold)
         )
         .domainMap {
-          case (task, user, shareEdge) => RichTask(task, user.headOption, shareEdge.actionRequired)
+          case (task, user, Seq()) => RichTask(task, user.headOption, actionRequired = false)
+          case (task, user, shareEdge) => RichTask(task, user.headOption, shareEdge.head.actionRequired)
         }
 
     def richTaskWithoutActionRequired: Traversal[RichTask, util.Map[String, Any], Converter[RichTask, util.Map[String, Any]]] =
@@ -217,12 +219,14 @@ object TaskOps {
         .project(
           _.by
             .by(_.assignee.fold)
-            .by(_.inE[ShareTask].filter(_.outV.v[Share].organisation.current))
+            .by(_.inE[ShareTask].filter(_.outV.v[Share].organisation.current).fold)
             .by(entityRenderer)
         )
         .domainMap {
+          case (task, user, Seq(), renderedEntity) =>
+            RichTask(task, user.headOption, actionRequired = false) -> renderedEntity
           case (task, user, shareEdge, renderedEntity) =>
-            RichTask(task, user.headOption, shareEdge.actionRequired) -> renderedEntity
+            RichTask(task, user.headOption, shareEdge.head.actionRequired) -> renderedEntity
         }
 
     def unassign(): Unit = traversal.outE[TaskUser].remove()

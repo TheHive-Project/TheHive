@@ -25,9 +25,7 @@ trait TaskRenderer extends BaseRenderer[Task] {
   def caseParentId: Traversal.V[Task] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
     _.`case`.fold.domainMap(_.headOption.fold[JsValue](JsNull)(c => JsString(c._id.toString)))
 
-  def caseTemplateParent(
-    implicit authContext: AuthContext
-  ): Traversal.V[Task] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] =
+  def caseTemplateParent: Traversal.V[Task] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] =
     _.caseTemplate.richCaseTemplate.fold.domainMap(_.headOption.fold[JsValue](JsNull)(_.toJson))
 
   def caseTemplateParentId: Traversal.V[Task] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =

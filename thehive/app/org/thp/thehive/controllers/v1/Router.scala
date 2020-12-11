@@ -73,8 +73,8 @@ class Router @Inject() (
     case GET(p"/task/$taskId")                         => taskCtrl.get(taskId)
     case PATCH(p"/task/$taskId")                       => taskCtrl.update(taskId)
     case GET(p"/task/$taskId/actionRequired")          => taskCtrl.isActionRequired(taskId)
-    case POST(p"/task/$taskId/actionRequired/$orgaId") => taskCtrl.actionRequired(taskId, orgaId, required = true)
-    case POST(p"/task/$taskId/actionDone/$orgaId")     => taskCtrl.actionRequired(taskId, orgaId, required = false)
+    case PUT(p"/task/$taskId/actionRequired/$orgaId")  => taskCtrl.actionRequired(taskId, orgaId, required = true)
+    case PUT(p"/task/$taskId/actionDone/$orgaId")      => taskCtrl.actionRequired(taskId, orgaId, required = false)
     // POST     /case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
     // POST     /case/task/_stats                    controllers.TaskCtrl.stats()
 

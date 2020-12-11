@@ -194,7 +194,7 @@ object CaseTemplateOps {
       else
         traversal.limit(0)
 
-    def richCaseTemplate(implicit authContext: AuthContext): Traversal[RichCaseTemplate, JMap[String, Any], Converter[RichCaseTemplate, JMap[String, Any]]] = {
+    def richCaseTemplate: Traversal[RichCaseTemplate, JMap[String, Any], Converter[RichCaseTemplate, JMap[String, Any]]] = {
       val caseTemplateCustomFieldLabel = StepLabel.e[CaseTemplateCustomField]
       val customFieldLabel             = StepLabel.v[CustomField]
       traversal
