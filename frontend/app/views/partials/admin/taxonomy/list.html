@@ -52,10 +52,12 @@
                             <tbody>
                                 <tr ng-repeat="taxonomy in $vm.list.values">
                                     <td>
-                                        <span><i class="fa" ng-class="{
-                                            true: 'text-tlp-green fa-circle',
-                                            false: 'text-tlp-red fa-circle',
-                                        }[!!taxonomy.extraData.enabled]"></i></span>
+                                        <span class="clickable" ng-click="$vm.addFilterValue('enabled', !!taxonomy.extraData.enabled)">
+                                            <i class="fa" ng-class="{
+                                                    true: 'text-tlp-green fa-circle',
+                                                    false: 'text-tlp-red fa-circle',
+                                                }[!!taxonomy.extraData.enabled]"></i>
+                                        </span>
                                     </td>
                                     <td>
                                         <div class="taxonomy-name">
