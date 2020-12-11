@@ -36,7 +36,7 @@ class OrganisationSrv @Inject() (
   val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Organisation")
+    integrityCheckActor ! EntityAdded("Organisation")
     super.createEntity(e)
   }
 

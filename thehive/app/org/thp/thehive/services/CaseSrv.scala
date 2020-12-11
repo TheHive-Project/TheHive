@@ -54,7 +54,7 @@ class CaseSrv @Inject() (
 
   override def createEntity(e: Case)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     super.createEntity(e).map { `case` =>
-      integrityCheckActor ! IntegrityCheckActor.EntityAdded("Case")
+      integrityCheckActor ! EntityAdded("Case")
       `case`
     }
 
