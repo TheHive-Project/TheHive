@@ -13,7 +13,6 @@ import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Audit, RichAudit}
 import org.thp.thehive.services.AuditOps._
-import org.thp.thehive.services.FlowActor.{AuditIds, FlowId}
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}

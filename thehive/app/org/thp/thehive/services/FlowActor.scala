@@ -21,15 +21,13 @@ import play.api.cache.SyncCacheApi
 
 import scala.concurrent.duration.FiniteDuration
 
-object FlowActor {
-  case class FlowId(organisation: EntityIdOrName, caseId: Option[EntityIdOrName]) {
-    override def toString: String = s"$organisation;${caseId.getOrElse("-")}"
-  }
-  case class AuditIds(ids: Seq[EntityId])
+sealed trait FlowMessage
+case class FlowId(organisation: EntityIdOrName, caseId: Option[EntityIdOrName]) extends FlowMessage {
+  override def toString: String = s"$organisation;${caseId.getOrElse("-")}"
 }
+case class AuditIds(ids: Seq[EntityId]) extends FlowMessage
 
 class FlowActor extends Actor {
-  import FlowActor._
 
   lazy val injector: Injector           = GuiceAkkaExtension(context.system).injector
   lazy val cache: SyncCacheApi          = injector.getInstance(classOf[SyncCacheApi])
