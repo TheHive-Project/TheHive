@@ -76,8 +76,8 @@
                                             </span>
                                         </div>
 
-                                        <custom-field-labels ng-if="$vm.filtering.context.showAdvanced" custom-fields="currentCase.customFields" on-field-click="$vm.addFilterValue(name, value)"><custom-field-labels>
-
+                                        <custom-field-labels ng-if="$vm.filtering.context.showAdvanced" custom-fields="currentCase.customFields" on-field-click="$vm.addFilterValue(name, value)"></custom-field-labels>
+                                        
                                         <div class="text-success" ng-show="currentCase.status !== 'Open'">
                                             <small>
                                                 (Closed at {{currentCase.endDate | showDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)

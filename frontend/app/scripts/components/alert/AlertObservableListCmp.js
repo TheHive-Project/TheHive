@@ -7,7 +7,7 @@
                 var self = this;
 
                 self.$onInit = function() {
-                    this.filtering = new FilteringSrv('case_artifact', 'alert.dialog.observables', {
+                    this.filtering = new FilteringSrv('observable', 'alert.dialog.observables', {
                         version: 'v1',
                         defaults: {
                             showFilters: false,

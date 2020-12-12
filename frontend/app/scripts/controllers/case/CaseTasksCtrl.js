@@ -19,7 +19,7 @@
         $scope.collapseOptions = {};
 
         this.$onInit = function() {
-            $scope.filtering = new FilteringSrv('case_task', 'task.list', {
+            $scope.filtering = new FilteringSrv('task', 'task.list', {
                 version: 'v1',
                 defaults: {
                     showFilters: true,

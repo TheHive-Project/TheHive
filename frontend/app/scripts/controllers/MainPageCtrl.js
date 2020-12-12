@@ -31,7 +31,7 @@
                     self.view.data = 'waitingtasks';
                 }
 
-                self.filtering = new FilteringSrv('case_task', $stateParams.viewId + '.list', {
+                self.filtering = new FilteringSrv('task', $stateParams.viewId + '.list', {
                     version: 'v1',
                     defaults: {
                         showFilters: true,
