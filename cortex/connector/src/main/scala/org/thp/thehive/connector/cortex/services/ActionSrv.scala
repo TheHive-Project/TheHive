@@ -18,7 +18,6 @@ import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.ActionOps._
 import org.thp.thehive.connector.cortex.services.Conversion._
-import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._

@@ -1,39 +1,39 @@
 package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
-
 import akka.actor._
 import akka.pattern.pipe
+
 import javax.inject.Inject
 import org.thp.client.ApplicationError
-import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob => CortexJob}
+import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob}
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import play.api.Logger
+import play.api.libs.json.{Json, OFormat}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-object CortexActor {
-  final case class CheckJob(
-      jobId: Option[EntityId],
-      cortexJobId: String,
-      actionId: Option[EntityId],
-      cortexId: String,
-      authContext: AuthContext
-  )
+sealed trait CortexActorMessage
+case class RemoteJob(job: OutputJob) extends CortexActorMessage
+case class CheckJob(
+    jobId: Option[EntityId],
+    cortexJobId: String,
+    actionId: Option[EntityId],
+    cortexId: String,
+    authContext: AuthContext
+) extends CortexActorMessage
 
-  final private case object CheckJobs
-  final private case object CheckJobsKey
-  final private case object FirstCheckJobs
-}
-
+private case object CheckJobs extends CortexActorMessage
+private case object CheckJobsKey
+private case object FirstCheckJobs extends CortexActorMessage
+// FIXME Add serializer
 /**
   * This actor is primarily used to check Job statuses on regular
   * ticks using the provided client for each job
   */
 class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers {
-  import CortexActor._
   implicit val ec: ExecutionContext = context.dispatcher
   lazy val logger: Logger           = Logger(getClass)
 
@@ -66,35 +66,36 @@ class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: Ac
                   .getReport(cortexJobId, 1.second)
                   .recover { // this is a workaround for a timeout bug in Cortex
                     case ApplicationError(500, body) if (body \ "type").asOpt[String].contains("akka.pattern.AskTimeoutException") =>
-                      CortexJob(cortexJobId, "", "", "", new Date, None, None, JobStatus.InProgress, None, None, "", "", None, JobType.analyzer)
+                      OutputJob(cortexJobId, "", "", "", new Date, None, None, JobStatus.InProgress, None, None, "", "", None, JobType.analyzer)
                   }
+                  .map(RemoteJob)
                   .pipeTo(self)
                 ()
               }
         }
 
-    case cortexJob: CortexJob if cortexJob.status == JobStatus.Success || cortexJob.status == JobStatus.Failure =>
-      checkedJobs.find(_.cortexJobId == cortexJob.id) match {
-        case Some(CheckJob(Some(jobId), cortexJobId, _, cortexId, authContext)) if cortexJob.`type` == JobType.analyzer =>
-          logger.info(s"Job $cortexJobId in cortex $cortexId has finished with status ${cortexJob.status}, updating job $jobId")
-          jobSrv.finished(cortexId, jobId, cortexJob)(authContext)
-          context.become(receive(checkedJobs.filterNot(_.cortexJobId == cortexJob.id), failuresCount))
+    case RemoteJob(job) if job.status == JobStatus.Success || job.status == JobStatus.Failure =>
+      checkedJobs.find(_.cortexJobId == job.id) match {
+        case Some(CheckJob(Some(jobId), cortexJobId, _, cortexId, authContext)) if job.`type` == JobType.analyzer =>
+          logger.info(s"Job $cortexJobId in cortex $cortexId has finished with status ${job.status}, updating job $jobId")
+          jobSrv.finished(cortexId, jobId, job)(authContext)
+          context.become(receive(checkedJobs.filterNot(_.cortexJobId == job.id), failuresCount))
 
-        case Some(CheckJob(_, cortexJobId, Some(actionId), cortexId, authContext)) if cortexJob.`type` == JobType.responder =>
-          logger.info(s"Job $cortexJobId in cortex $cortexId has finished with status ${cortexJob.status}, updating action $actionId")
-          actionSrv.finished(actionId, cortexJob)(authContext)
-          context.become(receive(checkedJobs.filterNot(_.cortexJobId == cortexJob.id), failuresCount))
+        case Some(CheckJob(_, cortexJobId, Some(actionId), cortexId, authContext)) if job.`type` == JobType.responder =>
+          logger.info(s"Job $cortexJobId in cortex $cortexId has finished with status ${job.status}, updating action $actionId")
+          actionSrv.finished(actionId, job)(authContext)
+          context.become(receive(checkedJobs.filterNot(_.cortexJobId == job.id), failuresCount))
 
         case Some(_) =>
-          logger.error(s"CortexActor received job output $cortexJob but with unknown type ${cortexJob.`type`}")
+          logger.error(s"CortexActor received job output $job but with unknown type ${job.`type`}")
 
         case None =>
-          logger.error(s"CortexActor received job output $cortexJob but did not have it in state $checkedJobs")
+          logger.error(s"CortexActor received job output $job but did not have it in state $checkedJobs")
       }
-    case cortexJob: CortexJob if cortexJob.status == JobStatus.InProgress || cortexJob.status == JobStatus.Waiting =>
-      logger.info(s"CortexActor received ${cortexJob.status} from client, retrying in ${connector.refreshDelay}")
+    case RemoteJob(job) if job.status == JobStatus.InProgress || job.status == JobStatus.Waiting =>
+      logger.info(s"CortexActor received ${job.status} from client, retrying in ${connector.refreshDelay}")
 
-    case _: CortexJob =>
+    case _: RemoteJob =>
       logger.warn(s"CortexActor received JobStatus.Unknown from client, retrying in ${connector.refreshDelay}")
 
     case Status.Failure(e) if failuresCount < connector.maxRetryOnError =>

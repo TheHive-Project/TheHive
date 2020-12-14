@@ -2,6 +2,8 @@ package org.thp.thehive.connector.misp.services
 
 import akka.serialization.Serializer
 
+import java.io.NotSerializableException
+
 class MispSerializer extends Serializer {
   override def identifier: Int = -222314660
 
@@ -12,6 +14,7 @@ class MispSerializer extends Serializer {
       case Synchro                   => Array(0)
       case EndOfSynchro(None)        => Array(1)
       case EndOfSynchro(Some(error)) => 2.toByte +: error.getBytes()
+      case _                         => throw new NotSerializableException
     }
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
@@ -19,5 +22,6 @@ class MispSerializer extends Serializer {
       case 0 => Synchro
       case 1 => EndOfSynchro(None)
       case 2 => EndOfSynchro(Some(new String(bytes.tail)))
+      case _ => throw new NotSerializableException
     }
 }

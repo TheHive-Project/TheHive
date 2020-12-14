@@ -61,12 +61,11 @@ class DatabaseProvider @Inject() (
 sealed trait SchemaUpdaterMessage
 case class RequestDB(databaseInstanceId: String) extends SchemaUpdaterMessage
 case object DBReady                              extends SchemaUpdaterMessage
+case object Update                               extends SchemaUpdaterMessage
 
 class SchemaUpdaterActor @Inject() (theHiveSchema: TheHiveSchemaDefinition, database: Database) extends Actor {
 
   lazy val logger: Logger = Logger(getClass)
-
-  final case object Update
 
   implicit val ec: ExecutionContext      = context.dispatcher
   var originalConnectionIds: Set[String] = Set.empty

@@ -13,6 +13,7 @@ class SchemaUpdaterSerializer extends Serializer {
     o match {
       case RequestDB(instanceId) => 0.toByte +: instanceId.getBytes
       case DBReady               => Array(1)
+      case Update                => Array(2)
       case _                     => throw new NotSerializableException
     }
 
@@ -20,6 +21,7 @@ class SchemaUpdaterSerializer extends Serializer {
     bytes(0) match {
       case 0 => RequestDB(new String(bytes.tail))
       case 1 => DBReady
+      case 2 => Update
       case _ => throw new NotSerializableException
     }
 }
