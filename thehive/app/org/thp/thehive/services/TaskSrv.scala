@@ -119,15 +119,13 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
     task: Task with Entity,
     organisations: Seq[Organisation with Entity]
   )(implicit graph: Graph): Map[String, Boolean] = {
-    organisations
-      .flatMap { o =>
-        organisationSrv.get(o).shares
-          .outE[ShareTask]
-          .filter(_.inV.v[Task].hasId(task._id))
-          .value(_.actionRequired)
-          .headOption
-          .map(o.name -> _)
-      }
+    get(task)
+      .inE[ShareTask]
+      .project(_
+        .by(_.outV.v[Share].organisation.hasId(organisations.map(_._id): _*).value(_.name))
+        .byValue(_.actionRequired)
+      )
+      .toSeq
       .toMap
   }
 
