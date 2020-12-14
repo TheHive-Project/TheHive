@@ -108,12 +108,20 @@
                       </div>
                     </td>
                     <td align="center">
-                        <a href ng-if="task.extraData.shareCount > 0" ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
-                            tooltip-placement="left-middle">
+                        <div ng-if="task.extraData.actionRequired === true">
+                            <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="text-danger noline" uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                <i class="fa fa-exclamation-triangle"></i>
+                            </a>
+                        </div>
+                        <div ng-if="task.extraData.shareCount > 0">
+                            <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
+                                tooltip-placement="left-middle">
 
-                            <i class="fa fa-users"></i>
-                            ({{task.extraData.shareCount || 0}})
-                        </a>
+                                <i class="fa fa-users"></i>
+                                ({{task.extraData.shareCount || 0}})
+                            </a>
+                        </div>
+
                     </td>
                     <td>{{task.startDate | shortDate}}</td>
                     <td ng-if="canEdit">
@@ -227,11 +235,19 @@
                               </div>
                             </td>
                             <td align="center">
-                                <a href ng-if="task.extraData.shareCount > 0" ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
+                                <div ng-if="task.extraData.actionRequired === true">
+                                    <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="text-danger noline" uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                        <i class="fa fa-exclamation-triangle"></i>
+                                    </a>
+                                </div>
+                                <div ng-if="task.extraData.shareCount > 0">
+                                    <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
                                         tooltip-placement="left-middle">
-                                    <i class="fa fa-users"></i>
-                                    ({{task.extraData.shareCount || 0}})
-                                </a>
+
+                                        <i class="fa fa-users"></i>
+                                        ({{task.extraData.shareCount || 0}})
+                                    </a>
+                                </div>
                             </td>
                             <td>{{task.startDate | shortDate}}</td>
                             <td ng-if="canEdit">

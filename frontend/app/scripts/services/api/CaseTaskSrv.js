@@ -17,13 +17,14 @@
                 var defer = $q.defer();
 
                 QuerySrv.call('v1', [{
-                    '_name': 'getTask',
-                    'idOrName': id
+                    _name: 'getTask',
+                    idOrName: id
                 }], {
                     name: 'get-task-' + id,
                     page: {
                         from: 0,
-                        to: 1
+                        to: 1,
+                        extraData: ['actionRequired']
                     }
                 }).then(function(response) {
                     defer.resolve(response[0]);
@@ -32,6 +33,18 @@
                 });
 
                 return defer.promise;
+            };
+
+            this.getActionRequiredMap = function(taskId) {
+                return $http.get('./api/v1/task/' + taskId + '/actionRequired');
+            };
+
+            this.markAsDone = function(taskId, org) {
+                return $http.put('./api/v1/task/' + taskId + '/actionDone/' + org);
+            };
+
+            this.markAsActionRequired = function(taskId, org) {
+                return $http.put('./api/v1/task/' + taskId + '/actionRequired' + org);
             };
 
             this.getShares = function(caseId, taskId) {

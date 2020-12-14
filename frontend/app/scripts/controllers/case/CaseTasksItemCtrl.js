@@ -1,12 +1,13 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
+        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task, actionRequiredMap) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
             // Initialize controller
             $scope.task = task;
+            $scope.actionRequiredMap = actionRequiredMap;
             $scope.tabName = 'task-' + task._id;
             $scope.taskResponders = null;
 
@@ -301,6 +302,16 @@
                         if(err && !_.isString(err)) {
                             NotificationSrv.error('Error', 'Task sharings update failed', err.status);
                         }
+                    });
+            };
+
+            $scope.markAdDone = function(task) {
+                CaseTaskSrv.markAsDone(task._id, $scope.currentUser.organisation)
+                    .then(function(/*response*/) {
+                        NotificationSrv.log('Task marked as done', 'success');
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Error', 'Failed to mark the task as done', err.status);
                     });
             };
 

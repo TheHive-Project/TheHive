@@ -91,16 +91,23 @@
                         				        </div>
                                     </td>
                                     <td align="center">
-                                        <a href ng-if="currentCase.extraData.shareCount > 0" ui-sref="app.case.sharing({caseId: currentCase._id})" class="noline"
-                                                uib-tooltip="{{ {
-                                                    true: 'Current organisation has shared this Case with ' + currentCase.extraData.shareCount + ' organisation(s)',
-                                                    false: 'This Case has been shared by its owner with ' + currentCase.extraData.shareCount + ' organisation(s)'
-                                                }[currentCase.extraData.isOwner] }}"
-                                                tooltip-placement="left-middle">
+                                        <div ng-if="currentCase.extraData.actionRequired === true">
+                                            <a href ui-sref="app.case.tasks({caseId: currentCase._id})" class="text-danger noline" uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                                <i class="fa fa-exclamation-triangle"></i>
+                                            </a>
+                                        </div>
+                                        <div ng-if="currentCase.extraData.shareCount > 0">
+                                            <a href ui-sref="app.case.sharing({caseId: currentCase._id})" class="noline"
+                                                    uib-tooltip="{{ {
+                                                        true: 'Current organisation has shared this Case with ' + currentCase.extraData.shareCount + ' organisation(s)',
+                                                        false: 'This Case has been shared by its owner with ' + currentCase.extraData.shareCount + ' organisation(s)'
+                                                    }[currentCase.extraData.isOwner] }}"
+                                                    tooltip-placement="left-middle">
 
-                                            <i class="fa fa-users"></i>
-                                            ({{currentCase.extraData.shareCount || 0}})
-                                        </a>
+                                                <i class="fa fa-users"></i>
+                                                ({{currentCase.extraData.shareCount || 0}})
+                                            </a>
+                                        </div>
                                     </td>
                                     <td align="center">
                                         <div class="clickable" ng-click="$vm.addFilterValue('severity', currentCase.severity)">
