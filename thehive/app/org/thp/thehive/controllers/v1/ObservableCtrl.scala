@@ -75,7 +75,8 @@ class ObservableCtrl @Inject() (
       "similar",
       (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
     ),
-    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`)
+    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
+    Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
 
   def create(caseId: String): Action[AnyContent] =

@@ -10,7 +10,7 @@ import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, InputTask}
-import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate, Tag}
+import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate, Tag, Task}
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
@@ -113,6 +113,9 @@ class PublicCaseTemplate @Inject() (
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
   override val outputQuery: Query = Query.output[RichCaseTemplate, Traversal.V[CaseTemplate]](_.richCaseTemplate)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[Traversal.V[CaseTemplate], Traversal.V[Task]]("tasks", (caseTemplateSteps, _) => caseTemplateSteps.tasks)
+  )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[CaseTemplate]
     .property("name", UMapping.string)(_.field.updatable)
     .property("displayName", UMapping.string)(_.field.updatable)

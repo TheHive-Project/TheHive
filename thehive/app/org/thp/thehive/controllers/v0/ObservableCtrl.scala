@@ -270,7 +270,16 @@ class PublicObservable @Inject() (
     )
   override val outputQuery: Query = Query.output[RichObservable, Traversal.V[Observable]](_.richObservable)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    //    Query.output[(RichObservable, JsObject, Option[RichCase])]
+    Query[Traversal.V[Observable], Traversal.V[Organisation]](
+      "organisations",
+      (observableSteps, authContext) => observableSteps.organisations.visible(authContext)
+    ),
+    Query[Traversal.V[Observable], Traversal.V[Observable]](
+      "similar",
+      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
+    ),
+    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
+    Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Observable]
     .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
