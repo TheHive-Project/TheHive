@@ -1,14 +1,11 @@
 package org.thp.thehive.services
 
-import java.io.InputStream
-import java.nio.file.Files
-
 import akka.NotUsed
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.stream.{IOResult, Materializer}
 import akka.util.ByteString
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
@@ -20,6 +17,9 @@ import org.thp.thehive.models.Attachment
 import org.thp.thehive.services.AttachmentOps._
 import play.api.Configuration
 
+import java.io.InputStream
+import java.nio.file.Files
+import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.Future
 import scala.util.Try
 
@@ -59,6 +59,20 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
     val hs = hashers.fromBinary(data)
     val id = hs.head.toString
     storageSrv.saveBinary("attachment", id, data).flatMap(_ => createEntity(Attachment(filename, size, contentType, hs, id)))
+  }
+
+  def duplicate(filename: String, contentType: String, attachmentId: String)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Attachment with Entity] = {
+    val (size, hashes) = getByName(attachmentId).headOption match {
+      case Some(a) => (a.size, a.hashes)
+      case None =>
+        val s  = storageSrv.getSize("attachment", attachmentId).getOrElse(throw NotFoundError(s"Attachment $attachmentId not found"))
+        val hs = hashers.fromInputStream(storageSrv.loadBinary("attachment", attachmentId))
+        (s, hs)
+    }
+    createEntity(Attachment(filename, size, contentType, hashes, attachmentId))
   }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Attachment] =
