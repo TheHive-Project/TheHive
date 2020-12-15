@@ -138,9 +138,6 @@ class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
       contentAsJson(result).as[OutputCaseTemplate].displayName must beEqualTo("patched")
 
       val updatedOutput = app[Database].roTransaction { implicit graph =>
-        implicit val authContext: AuthContext =
-          DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
-
         app[CaseTemplateSrv].get(EntityName("spam")).richCaseTemplate.head
       }
 

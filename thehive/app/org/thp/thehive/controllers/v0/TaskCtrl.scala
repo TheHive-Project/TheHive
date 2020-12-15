@@ -105,12 +105,12 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
     FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, _, 0), taskSteps, authContext) =>
-        taskSteps.richPage(from, to, withTotal = true)(_.richTask(authContext).domainMap(_ -> (None: Option[RichCase])))
+        taskSteps.richPage(from, to, withTotal = true)(_.richTask.domainMap(_ -> (None: Option[RichCase])))
       case (OutputParam(from, to, _, _), taskSteps, authContext) =>
         taskSteps.richPage(from, to, withTotal = true)(
           _.richTaskWithCustomRenderer(
             _.`case`.richCase(authContext).domainMap(c => Some(c): Option[RichCase])
-          )(authContext)
+          )
         )
     }
   )
@@ -120,7 +120,7 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask(authContext))
+    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.output[(RichTask, Option[RichCase])],
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext))

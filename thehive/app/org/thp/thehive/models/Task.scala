@@ -34,8 +34,7 @@ case class Task(
 
 case class RichTask(
     task: Task with Entity,
-    assignee: Option[User with Entity],
-    actionRequired: Boolean
+    assignee: Option[User with Entity]
 ) {
   def _id: EntityId               = task._id
   def _createdBy: String          = task._createdBy

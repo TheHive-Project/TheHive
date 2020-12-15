@@ -87,7 +87,7 @@ class CaseTemplateSrv @Inject() (
   ): Try[Unit] =
     for {
       _ <- caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, task)
-      _ <- auditSrv.taskInTemplate.create(task, caseTemplate, RichTask(task, None, actionRequired = false).toJson)
+      _ <- auditSrv.taskInTemplate.create(task, caseTemplate, RichTask(task, None).toJson)
     } yield ()
 
   override def update(

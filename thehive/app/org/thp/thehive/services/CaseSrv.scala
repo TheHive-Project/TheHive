@@ -5,7 +5,7 @@ import akka.actor.ActorRef
 
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
-import org.apache.tinkerpop.gremlin.structure.{Edge, Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._

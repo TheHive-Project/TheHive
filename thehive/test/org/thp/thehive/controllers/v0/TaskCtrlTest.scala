@@ -1,10 +1,8 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.controllers.v0.Conversion._
@@ -14,6 +12,8 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 case class TestTask(
     title: String,
@@ -85,9 +85,6 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val newTask = app[Database]
         .roTransaction { implicit graph =>
-          implicit val authContext: AuthContext =
-            DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
-
           app[TaskSrv].startTraversal.has(_.title, "new title task 1").richTask.getOrFail("Task")
         }
         .map(TestTask.apply)
@@ -148,9 +145,6 @@ class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val newTask = app[Database]
         .roTransaction { implicit graph =>
-          implicit val authContext: AuthContext =
-            DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
-
           app[TaskSrv].startTraversal.has(_.title, "case 1 task 1").richTask.getOrFail("Task")
         }
         .map(TestTask.apply)

@@ -40,7 +40,7 @@ class TaskCtrl @Inject() (
     FieldsParser[OutputParam],
     (range, taskSteps, authContext) =>
       taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
-        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))(authContext)
+        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))
       )
   )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
@@ -49,7 +49,7 @@ class TaskCtrl @Inject() (
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask(authContext))
+    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[Task]](
       "waitingTask",
