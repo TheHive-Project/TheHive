@@ -6,26 +6,24 @@ import play.api._
 import play.core.server.{RealServerProcess, ServerConfig, ServerProcess, ServerProvider}
 
 object DevStart extends App {
-  override def main(args: Array[String]): Unit = {
-    val process = new RealServerProcess(args)
-    val config  = readConfig(process)
+  val process = new RealServerProcess(args)
+  val config  = readConfig(process)
 
-    val application: Application = {
-      val environment = Environment(config.rootDir, process.classLoader, Mode.Dev)
-      val context     = ApplicationLoader.Context.create(environment)
-      val loader      = ApplicationLoader(context)
-      loader.load(context)
-    }
-    Play.start(application)
+  val application: Application = {
+    val environment = Environment(config.rootDir, process.classLoader, Mode.Dev)
+    val context     = ApplicationLoader.Context.create(environment)
+    val loader      = ApplicationLoader(context)
+    loader.load(context)
+  }
+  Play.start(application)
 
-    // Start the server
-    val serverProvider = ServerProvider.fromConfiguration(process.classLoader, config.configuration)
-    val server         = serverProvider.createServer(config, application)
+  // Start the server
+  val serverProvider = ServerProvider.fromConfiguration(process.classLoader, config.configuration)
+  val server         = serverProvider.createServer(config, application)
 
-    process.addShutdownHook {
-      if (application.coordinatedShutdown.shutdownReason().isEmpty)
-        server.stop()
-    }
+  process.addShutdownHook {
+    if (application.coordinatedShutdown.shutdownReason().isEmpty)
+      server.stop()
   }
 
   def readConfig(process: ServerProcess) = {
