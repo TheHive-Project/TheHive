@@ -1,17 +1,15 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.util.Date
 import akka.actor._
 import akka.pattern.pipe
-
-import javax.inject.Inject
 import org.thp.client.ApplicationError
 import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob}
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import play.api.Logger
-import play.api.libs.json.{Json, OFormat}
 
+import java.util.Date
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
