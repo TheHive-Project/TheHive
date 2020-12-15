@@ -4,8 +4,8 @@ import akka.serialization.Serializer
 import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
-import play.api.libs.json.{JsPath, Json, OFormat, Reads, Writes}
 import play.api.libs.functional.syntax._
+import play.api.libs.json._
 
 import java.io.NotSerializableException
 
