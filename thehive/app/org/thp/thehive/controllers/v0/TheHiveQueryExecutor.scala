@@ -83,11 +83,11 @@ class TheHiveQueryExecutor @Inject() (
     case (tpe, _) if SubType(tpe, ru.typeOf[Traversal.V[Log]])               => ru.typeOf[Traversal.V[Task]]
   }
   override val customFilterQuery: FilterQuery = FilterQuery(db, publicProperties) { (tpe, globalParser) =>
-    FieldsParser.debug("parentChildFilter") {
-      case (_, FObjOne("_parent", ParentIdFilter(parentType, parentId))) if parentTypes.isDefinedAt(tpe, parentType) =>
+    FieldsParser("parentChildFilter") {
+      case (_, FObjOne("_parent", ParentIdFilter(parentType, parentId))) if parentTypes.isDefinedAt((tpe, parentType)) =>
         Good(new ParentIdInputFilter(parentType, parentId))
-      case (path, FObjOne("_parent", ParentQueryFilter(parentType, parentFilterField))) if parentTypes.isDefinedAt(tpe, parentType) =>
-        globalParser(parentTypes(tpe, parentType)).apply(path, parentFilterField).map(query => new ParentQueryInputFilter(parentType, query))
+      case (path, FObjOne("_parent", ParentQueryFilter(parentType, parentFilterField))) if parentTypes.isDefinedAt((tpe, parentType)) =>
+        globalParser(parentTypes((tpe, parentType))).apply(path, parentFilterField).map(query => new ParentQueryInputFilter(parentType, query))
       case (path, FObjOne("_child", ChildQueryFilter(childType, childQueryField))) if childTypes.isDefinedAt((tpe, childType)) =>
         globalParser(childTypes((tpe, childType))).apply(path, childQueryField).map(query => new ChildQueryInputFilter(childType, query))
     }
