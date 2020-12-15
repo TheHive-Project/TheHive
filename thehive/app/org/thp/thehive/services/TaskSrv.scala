@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import java.util
-import java.util.Date
-
-import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -18,6 +14,9 @@ import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
+import java.lang.{Boolean => JBoolean}
+import java.util.{Date, Map => JMap}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -115,20 +114,6 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
     } yield ()
   }
 
-  def isActionRequired(
-    task: Task with Entity,
-    organisations: Seq[Organisation with Entity]
-  )(implicit graph: Graph): Map[String, Boolean] = {
-    get(task)
-      .inE[ShareTask]
-      .project(_
-        .by(_.outV.v[Share].organisation.hasId(organisations.map(_._id): _*).value(_.name))
-        .byValue(_.actionRequired)
-      )
-      .toSeq
-      .toMap
-  }
-
   def actionRequired(
     task: Task with Entity,
     organisation: Organisation with Entity,
@@ -188,7 +173,19 @@ object TaskOps {
         .users(Permissions.manageTask)
         .dedup
 
-    def richTask(implicit authContext: AuthContext): Traversal[RichTask, util.Map[String, Any], Converter[RichTask, util.Map[String, Any]]] =
+    def actionRequired(implicit authContext: AuthContext): Traversal[Boolean, JBoolean, Converter[Boolean, JBoolean]] =
+      traversal.inE[ShareTask].filter(_.outV.v[Share].organisation.current).value(_.actionRequired)
+
+    def actionRequiredMap(implicit authContext: AuthContext):
+    Traversal[(String, Boolean), JMap[String, Any], Converter[(String, Boolean), JMap[String, Any]]] =
+      traversal.inE[ShareTask]
+        .filter(_.outV.v[Share].organisation.visible)
+        .project(_
+          .by(_.outV.v[Share].organisation.value(_.name))
+          .byValue(_.actionRequired)
+        )
+
+    def richTask(implicit authContext: AuthContext): Traversal[RichTask, JMap[String, Any], Converter[RichTask, JMap[String, Any]]] =
       traversal
         .project(
           _.by
@@ -200,7 +197,7 @@ object TaskOps {
           case (task, user, shareEdge) => RichTask(task, user.headOption, shareEdge.head.actionRequired)
         }
 
-    def richTaskWithoutActionRequired: Traversal[RichTask, util.Map[String, Any], Converter[RichTask, util.Map[String, Any]]] =
+    def richTaskWithoutActionRequired: Traversal[RichTask, JMap[String, Any], Converter[RichTask, JMap[String, Any]]] =
       traversal
         .project(
           _.by
@@ -212,7 +209,7 @@ object TaskOps {
 
     def richTaskWithCustomRenderer[D, G, C <: Converter[D, G]](
         entityRenderer: Traversal.V[Task] => Traversal[D, G, C]
-    )(implicit authContext: AuthContext): Traversal[(RichTask, D), util.Map[String, Any], Converter[(RichTask, D), util.Map[String, Any]]] =
+    )(implicit authContext: AuthContext): Traversal[(RichTask, D), JMap[String, Any], Converter[(RichTask, D), JMap[String, Any]]] =
       traversal
         .project(
           _.by

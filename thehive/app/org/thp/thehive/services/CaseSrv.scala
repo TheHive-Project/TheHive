@@ -564,8 +564,8 @@ object CaseOps {
 
     def alert: Traversal.V[Alert] = traversal.in[AlertCase].v[Alert]
 
-    def isActionRequired(implicit authContext: AuthContext): Traversal[ShareTask with Entity, Edge, Converter[ShareTask with Entity, Edge]] =
-      share(authContext).outE[ShareTask].has(_.actionRequired, true)
+    def isActionRequired(implicit authContext: AuthContext): Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
+      traversal.choose(_.share(authContext).outE[ShareTask].has(_.actionRequired, true), true, false)
 
   }
 

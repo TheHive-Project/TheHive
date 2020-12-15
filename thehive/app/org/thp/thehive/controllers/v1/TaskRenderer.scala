@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Long => JLong}
+import java.lang.{Long => JLong, Boolean => JBoolean}
 import java.util.{List => JList, Map => JMap}
 
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -37,17 +37,26 @@ trait TaskRenderer extends BaseRenderer[Task] {
   def isOwner(implicit authContext: AuthContext): Traversal.V[Task] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
     _.origin.get(authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
 
+  def actionRequired(implicit authContext: AuthContext): Traversal.V[Task] => Traversal[JsValue, JBoolean, Converter[JsValue, JBoolean]] =
+    _.actionRequired.domainMap(JsBoolean(_))
+
+  def actionRequiredMap(implicit authContext: AuthContext):
+  Traversal.V[Task] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] =
+    _.actionRequiredMap.fold.domainMap(_.toMap.toJson)
+
   def taskStatsRenderer(extraData: Set[String])(
     implicit authContext: AuthContext
   ): Traversal.V[Task] => JsTraversal = { implicit traversal =>
     baseRenderer(extraData, traversal, {
-      case (f, "case")           => addData("case", f)(caseParent)
-      case (f, "caseId")         => addData("caseId", f)(caseParentId)
-      case (f, "caseTemplate")   => addData("caseTemplate", f)(caseTemplateParent)
-      case (f, "caseTemplateId") => addData("caseTemplateId", f)(caseTemplateParentId)
-      case (f, "isOwner")        => addData("isOwner", f)(isOwner)
-      case (f, "shareCount")     => addData("shareCount", f)(shareCount)
-      case (f, _)                => f
+      case (f, "case")              => addData("case", f)(caseParent)
+      case (f, "caseId")            => addData("caseId", f)(caseParentId)
+      case (f, "caseTemplate")      => addData("caseTemplate", f)(caseTemplateParent)
+      case (f, "caseTemplateId")    => addData("caseTemplateId", f)(caseTemplateParentId)
+      case (f, "isOwner")           => addData("isOwner", f)(isOwner)
+      case (f, "shareCount")        => addData("shareCount", f)(shareCount)
+      case (f, "actionRequired")    => addData("actionRequired", f)(actionRequired)
+      case (f, "actionRequiredMap") => addData("actionRequiredMap", f)(actionRequiredMap)
+      case (f, _)                   => f
     })
   }
 }

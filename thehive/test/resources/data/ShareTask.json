@@ -6,6 +6,6 @@
   {"from": "case3-soc", "to": "task5", "actionRequired":  false},
   {"from": "case-actionRequired-soc", "to": "taskActionRequired1", "actionRequired":  false},
   {"from": "case-actionRequired-cert", "to": "taskActionRequired1", "actionRequired":  false},
-  {"from": "case-actionRequired-soc", "to": "taskActionRequired2", "actionRequired":  true},
-  {"from": "case-actionRequired-cert", "to": "taskActionRequired2", "actionRequired":  false}
+  {"from": "case-actionRequired-soc", "to": "taskActionRequired2", "actionRequired":  false},
+  {"from": "case-actionRequired-cert", "to": "taskActionRequired2", "actionRequired":  true}
 ]

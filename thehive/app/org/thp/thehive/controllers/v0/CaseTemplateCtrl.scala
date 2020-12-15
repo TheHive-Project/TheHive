@@ -114,7 +114,7 @@ class PublicCaseTemplate @Inject() (
     (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, withTotal = true)(_.richCaseTemplate)
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichCaseTemplate, Traversal.V[CaseTemplate]]((ctSteps, authContext) => ctSteps.richCaseTemplate)
+    Query.outputWithContext[RichCaseTemplate, Traversal.V[CaseTemplate]]((ctSteps, _) => ctSteps.richCaseTemplate)
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[CaseTemplate]
     .property("name", UMapping.string)(_.field.updatable)
     .property("displayName", UMapping.string)(_.field.updatable)
@@ -167,7 +167,7 @@ class PublicCaseTemplate @Inject() (
         } yield Json.obj("customFields" -> values)
       case _ => Failure(BadRequestError("Invalid custom fields format"))
     })
-    .property("tasks", UMapping.jsonNative.sequence)(_.authSelect((t, authContext) => t.tasks.richTask(authContext).domainMap(_.toJson)).custom { //  FIXME select the correct mapping
+    .property("tasks", UMapping.jsonNative.sequence)(_.select(_.tasks.richTaskWithoutActionRequired.domainMap(_.toJson)).custom { //  FIXME select the correct mapping
       (_, value, vertex, _, graph, authContext) =>
         val fp = FieldsParser[InputTask]
 

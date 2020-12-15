@@ -115,11 +115,8 @@ class TaskCtrl @Inject() (
   def isActionRequired(taskId: String): Action[AnyContent] =
     entrypoint("is action required")
       .authTransaction(db){ implicit request => implicit graph =>
-        val taskTraversal = taskSrv.get(EntityIdOrName(taskId))
-        for {
-          task  <- taskTraversal.clone().visible.getOrFail("Task")
-          orgas =  taskTraversal.organisations.visible.toSeq
-        } yield Results.Ok(taskSrv.isActionRequired(task, orgas).toJson)
+        val actionTraversal = taskSrv.get(EntityIdOrName(taskId)).visible.actionRequiredMap
+        Success(Results.Ok(actionTraversal.toSeq.toMap.toJson))
       }
 
   def actionRequired(taskId: String, orgaId: String, required: Boolean): Action[AnyContent] =
