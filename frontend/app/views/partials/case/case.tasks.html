@@ -225,10 +225,12 @@
                             </td>
                             <td>
                               <div>
-                                  <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" ng-class="{'text-danger': !!task.extraData.actionRequired}">
+                                  <a href ng-class="{'text-danger': !!task.extraData.actionRequired}" ng-click="addFilterValue('actionRequired', true)">
                                       <span ng-if="!!task.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
                                           <i class="fa fa-exclamation-triangle"></i>
                                       </span>
+                                  </a>
+                                  <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" ng-class="{'text-danger': !!task.extraData.actionRequired}">
                                       {{task.title}}
                                   </a>
                               </div>

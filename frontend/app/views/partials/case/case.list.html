@@ -111,12 +111,17 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <a ui-sref="app.case.tasks({caseId: currentCase._id})" ng-class="{'text-danger': !!currentCase.extraData.actionRequired}">
-                                            <span ng-if="!!currentCase.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
-                                                <i class="fa fa-exclamation-triangle"></i>
-                                            </span>
-                                            <ng-pluralize count="currentCase.extraData.taskStats.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
-                                        </a>
+                                        <div ng-class="{'text-danger': !!currentCase.extraData.actionRequired}">
+                                            <a href ng-click="$vm.addFilterValue('actionRequired', true)">
+                                                <span ng-if="!!currentCase.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                                    <i class="fa fa-exclamation-triangle"></i>
+                                                </span>
+                                            </a>
+
+                                            <a ui-sref="app.case.tasks({caseId: currentCase._id})" ng-class="{'text-danger': !!currentCase.extraData.actionRequired}">
+                                                <ng-pluralize count="currentCase.extraData.taskStats.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
+                                            </a>
+                                        </div>
                                         <br>
                                         <task-progress ng-show="currentCase.extraData.taskStats.total > 0" tasks="currentCase.extraData.taskStats"/>
                                     </td>
