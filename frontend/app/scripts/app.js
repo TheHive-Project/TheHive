@@ -436,20 +436,6 @@ angular.module('thehive', [
                             });
 
                         return deferred.promise;
-                    },
-                    actionRequiredMap: function($q, $stateParams, CaseTaskSrv, NotificationSrv) {
-                        var deferred = $q.defer();
-
-                        CaseTaskSrv.getActionRequiredMap($stateParams.itemId)
-                            .then(function(response) {
-                                deferred.resolve(response.data);
-                            })
-                            .catch(function(response) {
-                                deferred.reject(response);
-                                NotificationSrv.error('taskDetails', response.data, response.status);
-                            });
-
-                        return deferred.promise;
                     }
                 },
                 guard: {

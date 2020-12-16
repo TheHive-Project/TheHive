@@ -91,11 +91,7 @@
                         				        </div>
                                     </td>
                                     <td align="center">
-                                        <div ng-if="currentCase.extraData.actionRequired === true">
-                                            <a href ui-sref="app.case.tasks({caseId: currentCase._id})" class="text-danger noline" uib-tooltip="Action Required" tooltip-placement="left-middle">
-                                                <i class="fa fa-exclamation-triangle"></i>
-                                            </a>
-                                        </div>
+
                                         <div ng-if="currentCase.extraData.shareCount > 0">
                                             <a href ui-sref="app.case.sharing({caseId: currentCase._id})" class="noline"
                                                     uib-tooltip="{{ {
@@ -115,7 +111,10 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <a ui-sref="app.case.tasks({caseId: currentCase._id})">
+                                        <a ui-sref="app.case.tasks({caseId: currentCase._id})" ng-class="{'text-danger': !!currentCase.extraData.actionRequired}">
+                                            <span ng-if="!!currentCase.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                                <i class="fa fa-exclamation-triangle"></i>
+                                            </span>
                                             <ng-pluralize count="currentCase.extraData.taskStats.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
                                         </a>
                                         <br>

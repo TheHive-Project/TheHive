@@ -284,6 +284,7 @@ pre.clearpre {
 
 .progress.task-progress .progress-bar {
     opacity: 0.8;
+    height: 4px;
 }
 
 .btn-canceled, .progress-bar-default {

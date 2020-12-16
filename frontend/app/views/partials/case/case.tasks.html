@@ -98,7 +98,12 @@
                               uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
                           <span class="mr-xxs text-primary clickable" ng-if="!!task.extraData.isOwner"><i class="fa fa-building-o"
                               uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span> -->
-                          <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})">{{task.title}}</a>
+                          <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" ng-class="{'text-danger': !!task.extraData.actionRequired}">
+                              <span ng-if="!!task.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                  <i class="fa fa-exclamation-triangle"></i>
+                              </span>
+                              {{task.title}}
+                          </a>
                       </div>
                       <div ng-show="task.status === 'Completed'" class="text-success">
                           Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
@@ -108,11 +113,6 @@
                       </div>
                     </td>
                     <td align="center">
-                        <div ng-if="task.extraData.actionRequired === true">
-                            <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="text-danger noline" uib-tooltip="Action Required" tooltip-placement="left-middle">
-                                <i class="fa fa-exclamation-triangle"></i>
-                            </a>
-                        </div>
                         <div ng-if="task.extraData.shareCount > 0">
                             <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
                                 tooltip-placement="left-middle">
@@ -225,7 +225,12 @@
                             </td>
                             <td>
                               <div>
-                                  <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})">{{task.title}}</a>
+                                  <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" ng-class="{'text-danger': !!task.extraData.actionRequired}">
+                                      <span ng-if="!!task.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                          <i class="fa fa-exclamation-triangle"></i>
+                                      </span>
+                                      {{task.title}}
+                                  </a>
                               </div>
                               <div ng-show="task.status === 'Completed'" class="text-success">
                                   Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
@@ -235,11 +240,6 @@
                               </div>
                             </td>
                             <td align="center">
-                                <div ng-if="task.extraData.actionRequired === true">
-                                    <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="text-danger noline" uib-tooltip="Action Required" tooltip-placement="left-middle">
-                                        <i class="fa fa-exclamation-triangle"></i>
-                                    </a>
-                                </div>
                                 <div ng-if="task.extraData.shareCount > 0">
                                     <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
                                         tooltip-placement="left-middle">

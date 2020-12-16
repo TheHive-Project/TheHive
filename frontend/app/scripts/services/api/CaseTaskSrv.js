@@ -24,7 +24,7 @@
                     page: {
                         from: 0,
                         to: 1,
-                        extraData: ['actionRequired']
+                        extraData: ['actionRequired', 'actionRequiredMap']
                     }
                 }).then(function(response) {
                     defer.resolve(response[0]);
