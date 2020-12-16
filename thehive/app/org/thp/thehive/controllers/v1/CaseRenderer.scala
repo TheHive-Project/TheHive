@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Long => JLong}
-import java.util.{Collection => JCollection, List => JList, Map => JMap}
-
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -13,6 +10,9 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
+
+import java.lang.{Long => JLong}
+import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 trait CaseRenderer extends BaseRenderer[Case] {
 
@@ -56,6 +56,9 @@ trait CaseRenderer extends BaseRenderer[Case] {
   def permissions(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Vertex, Converter[JsValue, Vertex]] =
     _.userPermissions.domainMap(permissions => Json.toJson(permissions))
 
+  def actionRequired(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Boolean, Converter[JsValue, Boolean]] =
+    _.isActionRequired.domainMap(JsBoolean(_))
+
   def caseStatsRenderer(extraData: Set[String])(
     implicit authContext: AuthContext
   ): Traversal.V[Case] => JsTraversal = { implicit traversal =>
@@ -66,6 +69,7 @@ trait CaseRenderer extends BaseRenderer[Case] {
       case (f, "isOwner")         => addData("isOwner", f)(isOwnerStats)
       case (f, "shareCount")      => addData("shareCount", f)(shareCountStats)
       case (f, "permissions")     => addData("permissions", f)(permissions)
+      case (f, "actionRequired")  => addData("actionRequired", f)(actionRequired)
       case (f, _)                 => f
     })
   }

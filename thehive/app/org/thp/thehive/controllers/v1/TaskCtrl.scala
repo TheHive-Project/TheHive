@@ -49,7 +49,7 @@ class TaskCtrl @Inject() (
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask)
+    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, _) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[Task]](
       "waitingTask",
