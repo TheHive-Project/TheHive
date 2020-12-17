@@ -20,10 +20,10 @@ import scala.util.Success
 
 sealed trait IntegrityCheckMessage
 case class EntityAdded(name: String) extends IntegrityCheckMessage
+case class NeedCheck(name: String)   extends IntegrityCheckMessage
+case class Check(name: String)       extends IntegrityCheckMessage
 
 class IntegrityCheckActor() extends Actor {
-  case class NeedCheck(name: String)
-  case class Check(name: String)
 
   lazy val logger: Logger               = Logger(getClass)
   lazy val injector: Injector           = GuiceAkkaExtension(context.system).injector
