@@ -224,7 +224,7 @@
             };
 
             $scope.reloadTask = function() {
-                CaseTaskSrv.getById($scope.task._id)
+                return CaseTaskSrv.getById($scope.task._id)
                     .then(function(data) {
                         $scope.task = data;
                     })
@@ -236,6 +236,12 @@
             $scope.loadShares = function () {
                 return CaseTaskSrv.getShares(caseId, taskId)
                     .then(function(response) {
+
+                        // Add action required flag to shares
+                        _.each(response.data, function(share) {
+                            share.actionRequired = !!$scope.task.extraData.actionRequiredMap[share.organisationName];
+                        });
+
                         $scope.shares = response.data;
                     });
             };
@@ -304,14 +310,39 @@
                     });
             };
 
-            $scope.markAdDone = function(task) {
+            $scope.markAsDone = function(task) {
                 CaseTaskSrv.markAsDone(task._id, $scope.currentUser.organisation)
                     .then(function(/*response*/) {
                         $scope.reloadTask();
-                        NotificationSrv.log('Task marked as done', 'success');
+                        NotificationSrv.log('The task\'s required action is completed', 'success');
                     })
                     .catch(function(err) {
-                        NotificationSrv.error('Error', 'Failed to mark the task as done', err.status);
+                        NotificationSrv.error('Error', 'Failed to mark the task\'s required action as done', err.status);
+                    });
+            };
+
+            $scope.markAsActionRequired = function(task) {
+                CaseTaskSrv.markAsActionRequired(task._id, $scope.currentUser.organisation)
+                    .then(function(/*response*/) {
+                        $scope.reloadTask();
+                        NotificationSrv.log('The task\'s required action flag has been set', 'success');
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Error', 'Failed setting the task\' action required flag', err.status);
+                    });
+            };
+
+            $scope.markShareAsActionRequired = function(task, org) {
+                CaseTaskSrv.markAsActionRequired(task._id, org)
+                    .then(function(/*response*/) {
+                        NotificationSrv.log('The task\'s required action flag has been set for organisation ' + org, 'success');
+                        return $scope.reloadTask();
+                    })
+                    .then(function() {
+                        $scope.loadShares();
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Error', 'Failed setting the task\' action required flag for the organisation ' + org, err.status);
                     });
             };
 

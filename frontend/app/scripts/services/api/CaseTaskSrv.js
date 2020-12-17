@@ -44,7 +44,7 @@
             };
 
             this.markAsActionRequired = function(taskId, org) {
-                return $http.put('./api/v1/task/' + taskId + '/actionRequired' + org);
+                return $http.put('./api/v1/task/' + taskId + '/actionRequired/' + org);
             };
 
             this.getShares = function(caseId, taskId) {

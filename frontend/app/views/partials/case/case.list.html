@@ -122,7 +122,6 @@
                                                 <ng-pluralize count="currentCase.extraData.taskStats.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
                                             </a>
                                         </div>
-                                        <br>
                                         <task-progress ng-show="currentCase.extraData.taskStats.total > 0" tasks="currentCase.extraData.taskStats"/>
                                     </td>
                                     <td>

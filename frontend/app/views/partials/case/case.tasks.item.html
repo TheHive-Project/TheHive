@@ -6,7 +6,7 @@
             </h4>
             <div>
                 This task requires an action from your organisation.
-                <button if-permission="manageTask" allowed="{{userPermissions}}" class="ml-m btn btn-sm btn-default" ng-click="markAdDone(task)">Mark as Done</button>
+                <button if-permission="manageTask" allowed="{{userPermissions}}" class="ml-m btn btn-sm btn-default" ng-click="markAsDone(task)">Mark as Done</button>
             </div>
         </div>
     </div>
@@ -18,12 +18,19 @@
             <span>
                 <a href ng-click="scrollTo('#task-sharings')">
                     <span class="mr-xxs action-button">
-                        <i class="fa fa-users"></i> Sharing
+                        <i class="fa fa-users"></i> Sharing ({{shares.length || 0}})
                     </span>
                 </a>
 
                 <span class="mr-xxs text-primary">|</span>
             </span>
+
+            <a href ng-if="!!!task.extraData.actionRequired" ng-click="markAsActionRequired(task)">
+                <span class="mr-xxs action-button text-primary">
+                    <i class="fa fa-exclamation-triangle"></i> Require Action
+                </span>
+            </a>
+
             <a href ng-click="switchFlag()">
                 <span class="mr-xxs action-button" ng-class="{true: 'text-yellow', false: 'text-muted'}[task.flag]">
                     <i class="fa fa-flag"></i> {{task.flag ? 'Unflag' : 'Flag'}}
@@ -244,12 +251,14 @@
              </div>
          </div>
          <div class="mv-s">
-             <sharing-list
+             <task-sharing-list
+                 task="task"
                  shares="shares"
                  read-only="true"
+                 on-require-action="markShareAsActionRequired(task, org)"
                  on-delete="removeShare(share)"
                  permissions="userPermissions"
-                 ></sharing-list>
+                 ></task-sharing-list>
          </div>
     </div>
 
