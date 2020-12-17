@@ -11,17 +11,13 @@ class MispSerializer extends Serializer {
 
   override def toBinary(o: AnyRef): Array[Byte] =
     o match {
-      case Synchro                   => Array(0)
-      case EndOfSynchro(None)        => Array(1)
-      case EndOfSynchro(Some(error)) => 2.toByte +: error.getBytes()
-      case _                         => throw new NotSerializableException
+      case Synchro => Array(0)
+      case _       => throw new NotSerializableException
     }
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
     bytes(0) match {
       case 0 => Synchro
-      case 1 => EndOfSynchro(None)
-      case 2 => EndOfSynchro(Some(new String(bytes.tail)))
       case _ => throw new NotSerializableException
     }
 }
