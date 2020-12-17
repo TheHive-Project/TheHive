@@ -115,16 +115,22 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
   }
 
   def actionRequired(
-    task: Task with Entity,
-    organisation: Organisation with Entity,
-    actionRequired: Boolean
-  )(implicit graph: Graph): Try[Unit] = {
-      Success(organisationSrv.get(organisation)
-      .out[OrganisationShare]
-      .outE[ShareTask]
-      .filter(_.inV.v[Task].hasId(task._id))
-      .update(_.actionRequired, actionRequired)
-      .iterate())
+      task: Task with Entity,
+      organisation: Organisation with Entity,
+      actionRequired: Boolean
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val details = Json.obj(s"actionRequired.${organisation.name}" -> actionRequired)
+    for {
+      _ <- auditSrv.task.update(task, details)
+    } yield Success(
+      organisationSrv
+        .get(organisation)
+        .out[OrganisationShare]
+        .outE[ShareTask]
+        .filter(_.inV.v[Task].hasId(task._id))
+        .update(_.actionRequired, actionRequired)
+        .iterate()
+    )
   }
 
 }
@@ -176,13 +182,15 @@ object TaskOps {
     def actionRequired(implicit authContext: AuthContext): Traversal[Boolean, JBoolean, Converter[Boolean, JBoolean]] =
       traversal.inE[ShareTask].filter(_.outV.v[Share].organisation.current).value(_.actionRequired)
 
-    def actionRequiredMap(implicit authContext: AuthContext):
-    Traversal[(String, Boolean), JMap[String, Any], Converter[(String, Boolean), JMap[String, Any]]] =
-      traversal.inE[ShareTask]
+    def actionRequiredMap(implicit
+        authContext: AuthContext
+    ): Traversal[(String, Boolean), JMap[String, Any], Converter[(String, Boolean), JMap[String, Any]]] =
+      traversal
+        .inE[ShareTask]
         .filter(_.outV.v[Share].organisation.visible)
-        .project(_
-          .by(_.outV.v[Share].organisation.value(_.name))
-          .byValue(_.actionRequired)
+        .project(
+          _.by(_.outV.v[Share].organisation.value(_.name))
+            .byValue(_.actionRequired)
         )
 
     def richTask: Traversal[RichTask, JMap[String, Any], Converter[RichTask, JMap[String, Any]]] =

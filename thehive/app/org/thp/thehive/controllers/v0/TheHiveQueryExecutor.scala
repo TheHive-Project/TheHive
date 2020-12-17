@@ -77,7 +77,7 @@ class TheHiveQueryExecutor @Inject() (
     case tpe if SubType(tpe, ru.typeOf[Traversal.V[Log]])        => ru.typeOf[Traversal.V[Observable]]
   }
   override val customFilterQuery: FilterQuery = FilterQuery(db, publicProperties) { (tpe, globalParser) =>
-    FieldsParser.debug("parentChildFilter") {
+    FieldsParser("parentChildFilter") {
       case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) if parentTypes.isDefinedAt(tpe) =>
         Good(new ParentIdInputFilter(parentId))
       case (path, FObjOne("_parent", ParentQueryFilter(_, parentFilterField))) if parentTypes.isDefinedAt(tpe) =>
