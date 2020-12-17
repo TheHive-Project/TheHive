@@ -207,20 +207,18 @@ class CaseSrv @Inject() (
       org   <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
       _     <- auditSrv.`case`.delete(caze, org, Some(details))
       _ <-
-        if (share.owner) remove(caze)
+        if (share.owner) delete(caze)
         else shareSrv.unshareCase(share._id)
-    } yield shareSrv.delete(share._id)
+      _ <- shareSrv.delete(share._id)
+    } yield ()
   }
 
-  def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  private[services] def delete(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val details = Json.obj("number" -> `case`.number, "title" -> `case`.title)
     for {
       organisation <- organisationSrv.getOrFail(authContext.organisation)
       _            <- auditSrv.`case`.delete(`case`, organisation, Some(details))
-    } yield {
-      get(`case`).share.remove()
-      get(`case`).remove()
-    }
+    } yield get(`case`).remove()
   }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Case] =

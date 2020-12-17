@@ -93,7 +93,7 @@ class ShareSrv @Inject() (
   def remove(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     unshareCase(shareId).flatMap(_ => Try(get(shareId).remove()))
 
-  def delete(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  private[services] def delete(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       share <- getOrFail(shareId)
       tasks = get(share).tasks.toSeq

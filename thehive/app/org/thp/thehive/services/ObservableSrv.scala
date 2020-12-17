@@ -184,7 +184,7 @@ class ObservableSrv @Inject() (
     }
 
   // Same as remove but with no Audit creation
-  def delete(obs: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  private[services] def delete(obs: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     if (get(obs).isShared.head)
       for {
         orga <- organisationSrv.getOrFail(authContext.organisation)

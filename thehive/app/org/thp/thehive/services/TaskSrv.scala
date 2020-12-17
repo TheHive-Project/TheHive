@@ -63,7 +63,7 @@ class TaskSrv @Inject() (
           .map(_ => get(task).remove())
     }
 
-  def delete(t: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  private[services] def delete(t: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     if (get(t).isShared.head)
       for {
         orga <- organisationSrv.getOrFail(authContext.organisation)
