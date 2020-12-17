@@ -1,8 +1,8 @@
 package org.thp.thehive.services
 
 import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
+
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
@@ -11,6 +11,7 @@ import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
@@ -198,11 +199,17 @@ class CaseSrv @Inject() (
       } yield ()
   }
 
-  def cascadeRemove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    // We let ShareSrv handle all cascade deletions (Case, Tasks, Logs and Observables)
+  def shareDelete(caze: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val details = Json.obj("number" -> caze.number, "title" -> caze.title)
+
     for {
-      share <- shareSrv.get(`case`, authContext.organisation).getOrFail("Case")
-    } yield shareSrv.cascadeRemove(share._id)
+      share <- shareSrv.get(caze, authContext.organisation).getOrFail("Share")
+      org   <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
+      _     <- auditSrv.`case`.delete(caze, org, Some(details))
+      _ <-
+        if (share.owner) remove(caze)
+        else shareSrv.unshareCase(share._id)
+    } yield shareSrv.delete(share._id)
   }
 
   def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -499,6 +506,9 @@ object CaseOps {
         .project(_.by(_.selectKeys.richCase).by(_.selectValues))
         .toSeq
     }
+
+    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+      traversal.choose(_.inE[ShareCase].count.is(P.gt(1)), true, false)
 
     def richCase(implicit authContext: AuthContext): Traversal[RichCase, JMap[String, Any], Converter[RichCase, JMap[String, Any]]] =
       traversal

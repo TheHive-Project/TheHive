@@ -1,15 +1,15 @@
 package org.thp.thehive.services
 
 import java.util.{Map => JMap}
-
 import javax.inject.{Inject, Named, Provider, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
 import org.thp.scalligraph.utils.Hash
@@ -28,12 +28,15 @@ class ObservableSrv @Inject() (
     dataSrv: DataSrv,
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
-    caseSrvProvider: Provider[CaseSrv],
+    organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
+    shareSrvProvider: Provider[ShareSrv],
+    caseSrvProvider: Provider[CaseSrv],
     alertSrvProvider: Provider[AlertSrv]
 )(implicit
     @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Observable] {
+  lazy val shareSrv: ShareSrv  = shareSrvProvider.get
   lazy val caseSrv: CaseSrv    = caseSrvProvider.get
   lazy val alertSrv: AlertSrv  = alertSrvProvider.get
   val observableKeyValueSrv    = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
@@ -174,22 +177,26 @@ class ObservableSrv @Inject() (
               .map(_ => get(observable).remove())
           }
           .map(_ => ())
-      case Some(alert) => for {
-        _ <- Try(get(observable).remove())
-      } yield auditSrv.observableInAlert.delete(observable, Some(alert))
+      case Some(alert) =>
+        for {
+          _ <- Try(get(observable).remove())
+        } yield auditSrv.observableInAlert.delete(observable, Some(alert))
     }
 
   // Same as remove but with no Audit creation
-  def cascadeRemove(observable: Observable with Entity, share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val alert = get(observable).alert.headOption
-    if (alert.isDefined) { auditSrv.observableInAlert.delete(observable, alert) }
-    for {
-      attachments <- Try(get(observable).attachments.toSeq)
-      _           <- attachments.toTry(a => Try(attachmentSrv.cascadeRemove(a)))
-      _           <- auditSrv.observable.delete(observable, share)
-      // TODO handle Jobs ?
-    } yield Try(get(observable).remove())
-  }
+  def delete(obs: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    if (get(obs).isShared.head)
+      for {
+        orga <- organisationSrv.getOrFail(authContext.organisation)
+      } yield shareSrv.unshareObservable(obs, orga)
+    else {
+      val alert       = get(obs).alert.headOption
+      val attachments = get(obs).attachments.toSeq
+      if (alert.isDefined) auditSrv.observableInAlert.delete(obs, alert)
+      for {
+        _ <- attachments.toTry(attachmentSrv.delete(_))
+      } yield get(obs).remove()
+    }
 
   override def update(
       traversal: Traversal.V[Observable],
@@ -253,6 +260,9 @@ object ObservableOps {
       traversal.coalesceIdent(_.in[ShareObservable].in[OrganisationShare], _.in[AlertObservable].out[AlertOrganisation]).v[Organisation]
 
     def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
+
+    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+      traversal.choose(_.inE[ShareObservable].count.is(P.gt(1)), true, false)
 
     def richObservable: Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
       traversal
@@ -364,7 +374,7 @@ object ObservableOps {
           _.out[ObservableAttachment]
             .in[ObservableAttachment] // FIXME this doesn't work. Link must be done with attachmentId
         )
-        .where(JP.without(originLabel.name))
+        .where(P.without(originLabel.name))
         .dedup
         .v[Observable]
     }

@@ -4,6 +4,6 @@
   {"id": "case2-soc", "owner":  false},
   {"id": "case3-soc", "owner":  true},
   {"id": "cascade-remove-simple", "owner":  true},
-  {"id": "share-cascade-remove", "owner":  true},
+  {"id": "share-cascade-remove", "owner":  false},
   {"id": "share-cascade-remove2", "owner":  true}
 ]

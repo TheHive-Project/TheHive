@@ -29,6 +29,7 @@ case class RichShare(share: Share with Entity, caseId: EntityId, organisationNam
   def owner: Boolean             = share.owner
 }
 
+// TODO what to do with this unused code ?
 //object RichShare {
 //  def apply(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity): RichShare =
 //    RichShare(`case`._id, organisation.name, profile.permissions)

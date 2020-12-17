@@ -1,8 +1,9 @@
 package org.thp.thehive.services
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
+
 import java.util
 import java.util.Date
-
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
@@ -10,6 +11,7 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.{TaskStatus, _}
@@ -23,16 +25,19 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class TaskSrv @Inject() (
     @Named("with-thehive-schema") implicit val db: Database,
+    shareSrvProvider: Provider[ShareSrv],
     caseSrvProvider: Provider[CaseSrv],
     logSrvProvider: Provider[LogSrv],
+    organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv
 ) extends VertexSrv[Task] {
 
-  lazy val caseSrv: CaseSrv = caseSrvProvider.get
-  lazy val logSrv: LogSrv   = logSrvProvider.get
-  val caseTemplateTaskSrv   = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
-  val taskUserSrv           = new EdgeSrv[TaskUser, Task, User]
-  val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
+  lazy val shareSrv: ShareSrv = shareSrvProvider.get
+  lazy val caseSrv: CaseSrv   = caseSrvProvider.get
+  lazy val logSrv: LogSrv     = logSrvProvider.get
+  val caseTemplateTaskSrv     = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
+  val taskUserSrv             = new EdgeSrv[TaskUser, Task, User]
+  val taskLogSrv              = new EdgeSrv[TaskLog, Task, Log]
 
   def create(e: Task, owner: Option[User with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
     for {
@@ -50,7 +55,7 @@ class TaskSrv @Inject() (
 
   def remove(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(task).caseTemplate.headOption match {
-      case None               => Try(get(task).remove())
+      case None => Try(get(task).remove())
       case Some(caseTemplate) =>
         auditSrv
           .caseTemplate
@@ -58,13 +63,15 @@ class TaskSrv @Inject() (
           .map(_ => get(task).remove())
     }
 
-  def cascadeRemove(task: Task with Entity, share: Share with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      task <- getOrFail(task._id)
-      logs <- Try(get(task).logs.toSeq)
-      _    <- logs.toTry(logSrv.cascadeRemove(_))
-      _    <- auditSrv.task.delete(task, share)
-    } yield remove(task)
+  def delete(t: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    if (get(t).isShared.head)
+      for {
+        orga <- organisationSrv.getOrFail(authContext.organisation)
+      } yield shareSrv.unshareTask(t, orga)
+    else
+      for {
+        _ <- get(t).logs.toSeq.toTry(logSrv.delete(_))
+      } yield remove(t)
 
   override def update(
       traversal: Traversal.V[Task],
@@ -160,6 +167,9 @@ object TaskOps {
         .visible
         .users(Permissions.manageTask)
         .dedup
+
+    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+      traversal.choose(_.inE[ShareTask].count.is(P.gt(1)), true, false)
 
     def richTask: Traversal[RichTask, util.Map[String, Any], Converter[RichTask, util.Map[String, Any]]] =
       traversal

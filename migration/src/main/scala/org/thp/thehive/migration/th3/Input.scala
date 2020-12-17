@@ -23,7 +23,7 @@ import play.api.{Configuration, Logger}
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 import scala.util.{Failure, Success, Try}
 
 object Input {
@@ -267,7 +267,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
               )
             ),
             Nil,
-            Nil
+            Seq(termQuery("status", "deleted"))
           )
         )
     )._2

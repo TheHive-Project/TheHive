@@ -132,9 +132,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         richCase.tlp must_=== 2
         richCase.pap must_=== 2
         richCase.status must_=== CaseStatus.Open
-        richCase.summary must beNone
+        richCase.summary      must beNone
         richCase.impactStatus must beNone
-        richCase.assignee must beSome("socuser@thehive.local")
+        richCase.assignee     must beSome("socuser@thehive.local")
         CustomField("boolean1", "boolean1", "boolean custom field", CustomFieldType.boolean, mandatory = false, options = Nil)
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
@@ -185,7 +185,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].transaction { implicit graph =>
         app[CaseSrv].getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
           app[CaseSrv].setOrCreateCustomField(`case`, EntityName("boolean1"), Some(true), None) must beSuccessfulTry
-          app[CaseSrv].getCustomField(`case`, EntityName("boolean1")).flatMap(_.value) must beSome.which(_ == true)
+          app[CaseSrv].getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)          must beSome.which(_ == true)
         }
       }
     }
@@ -194,7 +194,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].transaction { implicit graph =>
         app[CaseSrv].getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
           app[CaseSrv].setOrCreateCustomField(`case`, EntityName("boolean1"), Some(false), None) must beSuccessfulTry
-          app[CaseSrv].getCustomField(`case`, EntityName("boolean1")).flatMap(_.value) must beSome.which(_ == false)
+          app[CaseSrv].getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)           must beSome.which(_ == false)
         }
       }
     }
@@ -358,7 +358,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           )
           .get
 
-        app[CaseSrv].get(c7._id).resolutionStatus.exists must beFalse
+        app[CaseSrv].get(c7._id).resolutionStatus.exists                                                          must beFalse
         app[Database].tryTransaction(implicit graph => app[CaseSrv].setResolutionStatus(c7.`case`, "Duplicated")) must beSuccessfulTry
         app[Database].roTransaction(implicit graph => app[CaseSrv].get(c7._id).resolutionStatus.exists must beTrue)
         app[Database].tryTransaction(implicit graph => app[CaseSrv].unsetResolutionStatus(c7.`case`)) must beSuccessfulTry
@@ -430,21 +430,21 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         def caze = app[CaseSrv].startTraversal.has(_.number, 5).getOrFail("Case")
         caze must beSuccessfulTry
 
-        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-simple")._id.getOrFail("Task").get
-        def taskDelete = app[TaskSrv].get(taskId).getOrFail("Task")
-        def logs = app[TaskSrv].get(taskId).logs.toSeq.size
-        def logsAttach = app[TaskSrv].get(taskId).logs.attachments.toSeq.size
-        taskDelete       must beSuccessfulTry
-        logs        must beEqualTo(1)
-        logsAttach  must beEqualTo(1)
+        def taskTraversal = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-simple")
+        def taskDelete    = taskTraversal.getOrFail("Task")
+        def logs          = taskTraversal.logs.toSeq.size
+        def logsAttach    = taskTraversal.logs.attachments.toSeq.size
+        taskDelete must beSuccessfulTry
+        logs       must beEqualTo(1)
+        logsAttach must beEqualTo(1)
 
-        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-simple")._id.getOrFail("Observable").get
-        def obsDelete = app[ObservableSrv].get(obsId).getOrFail("Observable")
-        def obsAttach = app[ObservableSrv].get(obsId).attachments.toSeq.size
+        def obsTraversal = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-simple")
+        def obsDelete    = obsTraversal.getOrFail("Observable")
+        def obsAttach    = obsTraversal.attachments.toSeq.size
         obsDelete must beSuccessfulTry
         obsAttach must beEqualTo(1)
 
-        app[CaseSrv].cascadeRemove(caze.get) must beASuccessfulTry
+        app[CaseSrv].shareDelete(caze.get) must beASuccessfulTry
 
         taskDelete must beAFailedTry
         logs       must beEqualTo(0)
@@ -460,16 +460,20 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         // Check users of soc have access to case 4
         implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
 
-        def caze = app[CaseSrv].startTraversal.has(_.number, 4).getOrFail("Case")
-        caze must beSuccessfulTry
+        app[CaseSrv]
+          .startTraversal
+          .has(_.number, 4)
+          .getOrFail("Case") must beSuccessfulTry
 
-        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")._id.getOrFail("Task").get
-        def taskUnshare = app[TaskSrv].get(taskId).getOrFail("Task")
-        taskUnshare      must beSuccessfulTry
+        app[TaskSrv]
+          .startTraversal
+          .has(_.title, "task-cascade-remove-unshare")
+          .getOrFail("Task") must beSuccessfulTry
 
-        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")._id.getOrFail("Observable").get
-        def obsUnshare = app[ObservableSrv].get(obsId).getOrFail("Observable")
-        obsUnshare must beSuccessfulTry
+        app[ObservableSrv]
+          .startTraversal
+          .has(_.message, "obs-cascade-remove-unshare")
+          .getOrFail("Observable") must beSuccessfulTry
       }
 
       app[Database].transaction { implicit graph =>
@@ -479,43 +483,43 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         def caze = app[CaseSrv].startTraversal.has(_.number, 4).getOrFail("Case")
         caze must beSuccessfulTry
 
-        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-delete")._id.getOrFail("Task").get
-        val taskId2 = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")._id.getOrFail("Task").get
-        def taskDelete = app[TaskSrv].get(taskId).getOrFail("Task")
-        def taskUnshare = app[TaskSrv].get(taskId2).getOrFail("Task")
-        def logs = app[TaskSrv].get(taskId).logs.toSeq.size
-        def logs2 = app[TaskSrv].get(taskId2).logs.toSeq.size
-        def taskAttach = app[TaskSrv].get(taskId).logs.attachments.toSeq.size
-        def taskAttach2 = app[TaskSrv].get(taskId2).logs.attachments.toSeq.size
-        taskDelete       must beSuccessfulTry
+        def taskTraversal  = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-delete")
+        def taskTraversal2 = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")
+        def taskDelete     = taskTraversal.getOrFail("Task")
+        def taskUnshare    = taskTraversal2.getOrFail("Task")
+        def logs           = taskTraversal.logs.toSeq.size
+        def logs2          = taskTraversal2.logs.toSeq.size
+        def taskAttach     = taskTraversal.logs.attachments.toSeq.size
+        def taskAttach2    = taskTraversal2.logs.attachments.toSeq.size
+        taskDelete  must beSuccessfulTry
         logs        must beEqualTo(1)
         taskAttach  must beEqualTo(1)
-        taskUnshare      must beSuccessfulTry
-        logs2      must beEqualTo(0)
+        taskUnshare must beSuccessfulTry
+        logs2       must beEqualTo(0)
         taskAttach2 must beEqualTo(0)
 
-        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-delete")._id.getOrFail("Observable").get
-        val obsId2 = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")._id.getOrFail("Observable").get
-        def obsDelete  = app[ObservableSrv].get(obsId).getOrFail("Observable")
-        def obsUnshare = app[ObservableSrv].get(obsId2).getOrFail("Observable")
-        def obsAttach  = app[ObservableSrv].get(obsId).attachments.toSeq.size
-        def obsAttach2 = app[ObservableSrv].get(obsId2).attachments.toSeq.size
-        obsDelete       must beSuccessfulTry
+        def obsTraversal  = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-delete")
+        def obsTraversal2 = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")
+        def obsDelete     = obsTraversal.getOrFail("Observable")
+        def obsUnshare    = obsTraversal2.getOrFail("Observable")
+        def obsAttach     = obsTraversal.attachments.toSeq.size
+        def obsAttach2    = obsTraversal2.attachments.toSeq.size
+        obsDelete  must beSuccessfulTry
         obsAttach  must beEqualTo(1)
-        obsUnshare      must beSuccessfulTry
+        obsUnshare must beSuccessfulTry
         obsAttach2 must beEqualTo(0)
 
-        app[CaseSrv].cascadeRemove(caze.get) must beASuccessfulTry
+        app[CaseSrv].shareDelete(caze.get) must beASuccessfulTry
 
-        caze             must beASuccessfulTry
-        taskDelete       must beAFailedTry
-        taskUnshare      must beASuccessfulTry
+        caze        must beASuccessfulTry
+        taskDelete  must beAFailedTry
+        taskUnshare must beASuccessfulTry
         logs        must beEqualTo(0)
         taskAttach  must beEqualTo(0)
         logs2       must beEqualTo(0)
         taskAttach2 must beEqualTo(0)
-        obsDelete        must beAFailedTry
-        obsUnshare       must beASuccessfulTry
+        obsDelete   must beAFailedTry
+        obsUnshare  must beASuccessfulTry
         obsAttach   must beEqualTo(0)
         obsAttach2  must beEqualTo(0)
       }
@@ -524,16 +528,20 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         // Users of soc should still have access to case
         implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
 
-        def caze = app[CaseSrv].startTraversal.has(_.number, 4).getOrFail("Case")
-        caze must beSuccessfulTry
+        app[CaseSrv]
+          .startTraversal
+          .has(_.number, 4)
+          .getOrFail("Case") must beSuccessfulTry
 
-        val taskId = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")._id.getOrFail("Task").get
-        def taskUnshare = app[TaskSrv].get(taskId).getOrFail("Task")
-        taskUnshare      must beSuccessfulTry
+        app[TaskSrv]
+          .startTraversal
+          .has(_.title, "task-cascade-remove-unshare")
+          .getOrFail("Task") must beSuccessfulTry
 
-        val obsId = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")._id.getOrFail("Observable").get
-        def obsUnshare = app[ObservableSrv].get(obsId).getOrFail("Observable")
-        obsUnshare must beSuccessfulTry
+        app[ObservableSrv]
+          .startTraversal
+          .has(_.message, "obs-cascade-remove-unshare")
+          .getOrFail("Observable") must beSuccessfulTry
       }
     }
 
