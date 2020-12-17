@@ -59,6 +59,7 @@ class TestMispClientProvider @Inject() (Action: DefaultActionBuilder, implicit v
       ws = ws,
       maxAge = None,
       excludedOrganisations = Nil,
+      whitelistOrganisations = Nil,
       excludedTags = Set.empty,
       whitelistTags = Set.empty,
       purpose = MispPurpose.ImportAndExport,

@@ -23,6 +23,7 @@ case class TheHiveMispClientConfig(
     wsConfig: ProxyWSConfig = ProxyWSConfig(AhcWSClientConfig(), None),
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String] = Nil,
+    whitelistOrganisations: Seq[String] = Nil,
     excludedTags: Set[String] = Set.empty,
     whitelistTags: Set[String] = Set.empty,
     purpose: MispPurpose.Value = MispPurpose.ImportAndExport,
@@ -44,6 +45,7 @@ object TheHiveMispClientConfig {
       wsConfig                     <- (JsPath \ "wsConfig").readWithDefault[ProxyWSConfig](ProxyWSConfig(AhcWSClientConfig(), None))
       maxAge                       <- (JsPath \ "maxAge").readNullable[Duration]
       excludedOrganisations        <- (JsPath \ "exclusion" \ "organisations").readWithDefault[Seq[String]](Nil)
+      whitelistOrganisations       <- (JsPath \ "whitelist" \ "organisations").readWithDefault[Seq[String]](Nil)
       excludedTags                 <- (JsPath \ "exclusion" \ "tags").readWithDefault[Set[String]](Set.empty)
       whitelistTags                <- (JsPath \ "whitelist" \ "tags").readWithDefault[Set[String]](Set.empty)
       purpose                      <- (JsPath \ "purpose").readWithDefault[MispPurpose.Value](MispPurpose.ImportAndExport)
@@ -60,6 +62,7 @@ object TheHiveMispClientConfig {
       wsConfig,
       maxAge,
       excludedOrganisations,
+      whitelistOrganisations,
       excludedTags,
       whitelistTags,
       purpose,
@@ -98,6 +101,7 @@ class TheHiveMispClient(
     ws: WSClient,
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String],
+    whitelistOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String],
     purpose: MispPurpose.Value,
@@ -114,6 +118,7 @@ class TheHiveMispClient(
       ws,
       maxAge,
       excludedOrganisations,
+      whitelistOrganisations,
       excludedTags,
       whitelistTags
     ) {
@@ -126,6 +131,7 @@ class TheHiveMispClient(
       new ProxyWS(config.wsConfig, mat),
       config.maxAge,
       config.excludedOrganisations,
+      config.whitelistOrganisations,
       config.excludedTags,
       config.whitelistTags,
       config.purpose,
