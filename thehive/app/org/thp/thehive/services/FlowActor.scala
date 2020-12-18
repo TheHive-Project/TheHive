@@ -41,6 +41,7 @@ class FlowActor extends Actor {
 
   lazy val eventSrv: EventSrv   = injector.getInstance(classOf[EventSrv])
   override def preStart(): Unit = eventSrv.subscribe(StreamTopic(), self)
+  override def postStop(): Unit = eventSrv.unsubscribe(StreamTopic(), self)
   override def receive: Receive = {
     case flowId @ FlowId(organisation, caseId) =>
       val auditIds = cache.getOrElseUpdate(flowId.toString) {
