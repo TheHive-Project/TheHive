@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
+        function ($q, $scope, $rootScope, $state, $stateParams, $timeout, $uibModal, StreamSrv, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -310,6 +310,30 @@
                     });
             };
 
+
+
+            $scope.showAddLog = function(prompt) {
+                var modalInstance = $uibModal.open({
+                    animation: true,
+                    keyboard: false,
+                    backdrop: 'static',
+                    templateUrl: 'views/partials/case/tasklogs/add-task-log.modal.html',
+                    controller: 'AddTaskLogModalCtrl',
+                    controllerAs: '$modal',
+                    size: 'lg',
+                    resolve: {
+                        task: task,
+                        config: function() {
+                            return {
+                                prompt: prompt
+                            };
+                        }
+                    }
+                });
+
+                return modalInstance.result;
+            };
+
             $scope.markAsDone = function(task) {
                 CaseTaskSrv.markAsDone(task._id, $scope.currentUser.organisation)
                     .then(function(/*response*/) {
@@ -322,27 +346,58 @@
             };
 
             $scope.markAsActionRequired = function(task) {
-                CaseTaskSrv.markAsActionRequired(task._id, $scope.currentUser.organisation)
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before requesting action?')
+                    .then(function(response) {
+                        if(response === 'skip-log') {
+                            return $q.resolve();
+                        } else {
+                            return $scope.showAddLog('Would you like to add a message before requesting action?');
+                        }
+                    })
                     .then(function(/*response*/) {
-                        $scope.reloadTask();
-                        NotificationSrv.log('The task\'s required action flag has been set', 'success');
+                        CaseTaskSrv.markAsActionRequired(task._id, $scope.currentUser.organisation)
+                            .then(function(/*response*/) {
+                                $scope.reloadTask();
+                                NotificationSrv.log('The task\'s required action flag has been set', 'success');
+                            })
+                            .catch(function(err) {
+                                NotificationSrv.error('Error', 'Failed setting the task\' action required flag', err.status);
+                            });
                     })
                     .catch(function(err) {
-                        NotificationSrv.error('Error', 'Failed setting the task\' action required flag', err.status);
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task request action failed', err.status);
+                        }
                     });
+
             };
 
             $scope.markShareAsActionRequired = function(task, org) {
-                CaseTaskSrv.markAsActionRequired(task._id, org)
-                    .then(function(/*response*/) {
-                        NotificationSrv.log('The task\'s required action flag has been set for organisation ' + org, 'success');
-                        return $scope.reloadTask();
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before requesting action?')
+                    .then(function(response) {
+                        if(response === 'skip-log') {
+                            return $q.resolve();
+                        } else {
+                            return $scope.showAddLog('Would you like to add a message before requesting action?');
+                        }
                     })
-                    .then(function() {
-                        $scope.loadShares();
+                    .then(function(/*response*/) {
+                        CaseTaskSrv.markAsActionRequired(task._id, org)
+                            .then(function(/*response*/) {
+                                NotificationSrv.log('The task\'s required action flag has been set for organisation ' + org, 'success');
+                                return $scope.reloadTask();
+                            })
+                            .then(function() {
+                                $scope.loadShares();
+                            })
+                            .catch(function(err) {
+                                NotificationSrv.error('Error', 'Failed setting the task\' action required flag for organisation ' + org, err.status);
+                            });
                     })
                     .catch(function(err) {
-                        NotificationSrv.error('Error', 'Failed setting the task\' action required flag for the organisation ' + org, err.status);
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task request action failed', err.status);
+                        }
                     });
             };
 
@@ -364,6 +419,15 @@
                     $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
                 }, 0);
 
+                // Add action required listener
+                StreamSrv.addListener({
+                    rootId: $scope.task._id,
+                    objectType: 'case_task',
+                    scope: $scope,
+                    callback: function(updates) {
+                        console.log(updates);
+                    }
+                });
 
                 // Prepare the scope data
                 $scope.initScope(task);

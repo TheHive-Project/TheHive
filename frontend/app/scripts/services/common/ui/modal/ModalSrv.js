@@ -12,6 +12,9 @@
         this.confirm = function() {
             $uibModalInstance.close('ok');
         };
+        this.dismiss = function(value) {
+            $uibModalInstance.dismiss(value);
+        };
     }
 
     angular.module('theHiveServices')
@@ -19,6 +22,8 @@
 
             this.confirm = function(title, message, config) {
                 return $uibModal.open({
+                    keyboard: false,
+                    backdrop: 'static',
                     controller: ModalConfirmCtrl,
                     templateUrl: 'views/components/common/modal/modal.confirm.html',
                     controllerAs: '$modal',

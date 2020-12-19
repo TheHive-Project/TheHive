@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('CaseTaskSrv', function($resource, $http, $q, QuerySrv) {
+        .service('CaseTaskSrv', function($resource, $http, $q, QuerySrv, ModalSrv) {
             var resource = $resource('./api/case/:caseId/task/:taskId', {}, {
                 update: {
                     method: 'PATCH'
@@ -67,6 +67,38 @@
                     }
                 });
             };
+
+            this.promtForActionRequired = function(title, prompt) {
+               var defer = $q.defer();
+
+               var confirmModal = ModalSrv.confirm(
+                   title,
+                   prompt, {
+                       okText: 'Yes, add log',
+                       actions: [
+                           {
+                               flavor: 'default',
+                               text: 'Proceed without log',
+                               dismiss: 'skip-log'
+                           }
+                       ]
+                   }
+               );
+
+               confirmModal.result
+                   .then(function(/*response*/) {
+                       defer.resolve('add-log');
+                   })
+                   .catch(function(err) {
+                       if(err === 'skip-log') {
+                           defer.resolve(err);
+                       } else {
+                           defer.reject(err);
+                       }
+                   });
+
+               return defer.promise;
+           };
 
         });
 })();
