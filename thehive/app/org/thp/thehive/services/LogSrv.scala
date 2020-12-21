@@ -1,8 +1,5 @@
 package org.thp.thehive.services
 
-import java.util
-import scala.util.Success
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -16,9 +13,11 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.TaskOps._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.JsObject
 
-import scala.util.Try
+import java.util
+import javax.inject.{Inject, Named, Singleton}
+import scala.util.{Success, Try}
 
 @Singleton
 class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSrv: TaskSrv, userSrv: UserSrv)(implicit
@@ -27,32 +26,17 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSr
   val taskLogSrv       = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv = new EdgeSrv[LogAttachment, Log, Attachment]
 
-  def create(log: Log, task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Log with Entity] =
+  def create(log: Log, task: Task with Entity, file: Option[FFile])(implicit graph: Graph, authContext: AuthContext): Try[RichLog] =
     for {
       createdLog <- createEntity(log)
       _          <- taskLogSrv.create(TaskLog(), task, createdLog)
       user       <- userSrv.current.getOrFail("User") // user is used only if task status is waiting but the code is cleaner
       _          <- if (task.status == TaskStatus.Waiting) taskSrv.updateStatus(task, user, TaskStatus.InProgress) else Success(())
-      _          <- auditSrv.log.create(createdLog, task, RichLog(createdLog, Nil).toJson)
-    } yield createdLog
-
-  def addAttachment(log: Log with Entity, file: FFile)(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
-    for {
-      task       <- get(log).task.getOrFail("Task")
-      attachment <- attachmentSrv.create(file)
-      _          <- addAttachment(log, attachment)
-      _          <- auditSrv.log.update(log, task, Json.obj("attachment" -> attachment.name))
-    } yield attachment
-
-  def addAttachment(
-      log: Log with Entity,
-      attachment: Attachment with Entity
-  )(implicit graph: Graph, authContext: AuthContext): Try[Attachment with Entity] =
-    for {
-      _    <- logAttachmentSrv.create(LogAttachment(), log, attachment)
-      task <- get(log).task.getOrFail("Task")
-      _    <- auditSrv.log.update(log, task, Json.obj("attachment" -> attachment.name))
-    } yield attachment
+      attachment <- file.map(attachmentSrv.create).flip
+      _          <- attachment.map(logAttachmentSrv.create(LogAttachment(), createdLog, _)).flip
+      richLog = RichLog(createdLog, Nil)
+      _ <- auditSrv.log.create(createdLog, task, richLog.toJson)
+    } yield richLog
 
   def cascadeRemove(log: Log with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {

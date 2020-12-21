@@ -1,8 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputCaseTemplate

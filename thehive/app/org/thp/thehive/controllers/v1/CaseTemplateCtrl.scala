@@ -9,7 +9,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCaseTemplate
-import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate}
+import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate, Task}
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv}
@@ -39,12 +39,12 @@ class CaseTemplateCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CaseTemplate], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, caseTemplateSteps, _) =>
-      caseTemplateSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richCaseTemplate)
+    (range, caseTemplateSteps, _) => caseTemplateSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richCaseTemplate)
   )
-  override val outputQuery: Query =
-    Query.outputWithContext[RichCaseTemplate, Traversal.V[CaseTemplate]]((ctSteps, _) => ctSteps.richCaseTemplate)
-  override val extraQueries: Seq[ParamQuery[_]] = Seq()
+  override val outputQuery: Query = Query.output[RichCaseTemplate, Traversal.V[CaseTemplate]](_.richCaseTemplate)
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[Traversal.V[CaseTemplate], Traversal.V[Task]]("tasks", (caseTemplateSteps, _) => caseTemplateSteps.tasks)
+  )
 
   def create: Action[AnyContent] =
     entrypoint("create case template")

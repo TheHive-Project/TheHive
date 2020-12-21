@@ -1,19 +1,19 @@
 package org.thp.misp.client
 
-import java.util.Date
-
 import akka.NotUsed
 import akka.stream.alpakka.json.scaladsl.JsonReader
 import akka.stream.scaladsl.{JsonFraming, Source}
 import akka.util.ByteString
 import org.thp.client.{ApplicationError, Authentication, ProxyWS}
-import org.thp.misp.dto.{Attribute, Event, Organisation, Tag, User}
+import org.thp.misp.dto._
 import org.thp.scalligraph.InternalError
+import org.thp.scalligraph.utils.FunctionalCondition._
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSRequest}
 
+import java.util.Date
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -29,6 +29,7 @@ class MispClient(
     ws: WSClient,
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String],
+    whitelistOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String]
 ) {
@@ -148,7 +149,7 @@ class MispClient(
 
   def getEvent(eventId: String)(implicit ec: ExecutionContext): Future[Event] = {
     logger.debug(s"Get MISP event $eventId")
-    require(!eventId.isEmpty)
+    require(eventId.nonEmpty)
     get(s"events/$eventId")
       .map(e => (e \ "Event").as[Event])
   }
@@ -163,7 +164,17 @@ class MispClient(
       .recover { case _ => Json.obj("name" -> name, "version" -> "", "status" -> "ERROR", "url" -> baseUrl) }
 
   def searchEvents(publishDate: Option[Date] = None)(implicit ec: ExecutionContext): Source[Event, NotUsed] = {
-    val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> ((d.getTime / 1000) + 1)))
+    val fromDate = (maxAge.map(a => System.currentTimeMillis() - a.toMillis).toSeq ++ publishDate.map(_.getTime))
+      .sorted(Ordering[Long].reverse)
+      .headOption
+      .map(d => "searchpublish_timestamp" -> JsNumber((d / 1000) + 1))
+    val tagFilter          = (whitelistTags ++ excludedTags.map("!" + _)).map(JsString.apply)
+    val organisationFilter = (whitelistOrganisations ++ excludedOrganisations.map("!" + _)).map(JsString.apply)
+    val query = JsObject
+      .empty
+      .merge(fromDate)(_ + _)
+      .when(tagFilter.nonEmpty)(_ + ("searchtag" -> JsArray(tagFilter.toSeq)))
+      .when(organisationFilter.nonEmpty)(_ + ("searchorg" -> JsArray(organisationFilter)))
     logger.debug("Search MISP events")
     Source
       .futureSource(postStream("events/index", query))

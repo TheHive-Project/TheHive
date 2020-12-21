@@ -2,9 +2,8 @@ package org.thp.thehive.controllers.v0
 
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
-
 import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.NotFoundError
+import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PublicProperty
@@ -218,6 +217,7 @@ class DescribeCtrl @Inject() (
         case c if c == classOf[Hash]                              => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if classOf[Number].isAssignableFrom(c)             => Seq(PropertyDescription(prop.propertyName, "number"))
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
+        case c if c == classOf[EntityId]                          => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>
           logger.warn(s"Unrecognized property $prop. Add a custom description")
           Seq(PropertyDescription(prop.propertyName, "unknown"))

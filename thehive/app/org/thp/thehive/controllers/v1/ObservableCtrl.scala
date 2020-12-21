@@ -1,19 +1,16 @@
 package org.thp.thehive.controllers.v1
 
-import java.io.FilterInputStream
-import java.nio.file.Files
-
-import javax.inject.{Inject, Named, Singleton}
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.InputObservable
+import org.thp.thehive.dto.v1.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
@@ -21,10 +18,15 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
 import play.api.libs.Files.DefaultTemporaryFileCreator
+import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 import play.api.{Configuration, Logger}
 
+import java.io.FilterInputStream
+import java.nio.file.Files
+import javax.inject.{Inject, Named, Singleton}
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success}
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -35,6 +37,8 @@ class ObservableCtrl @Inject() (
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
+    attachmentSrv: AttachmentSrv,
+    errorHandler: ErrorHandler,
     temporaryFileCreator: DefaultTemporaryFileCreator,
     configuration: Configuration
 ) extends QueryableCtrl
@@ -74,7 +78,8 @@ class ObservableCtrl @Inject() (
       "similar",
       (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
     ),
-    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`)
+    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
+    Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
 
   def create(caseId: String): Action[AnyContent] =
@@ -82,34 +87,78 @@ class ObservableCtrl @Inject() (
       .extract("artifact", FieldsParser[InputObservable])
       .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
       .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .auth { implicit request =>
+        val inputObservable: InputObservable = request.body("artifact")
         val isZip: Option[Boolean]           = request.body("isZip")
         val zipPassword: Option[String]      = request.body("zipPassword")
-        val inputObservable: InputObservable = request.body("artifact")
         val inputAttachObs                   = if (isZip.contains(true)) getZipFiles(inputObservable, zipPassword) else Seq(inputObservable)
-        for {
-          case0 <-
-            caseSrv
-              .get(EntityIdOrName(caseId))
-              .can(Permissions.manageObservable)
-              .getOrFail("Case")
-          observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
-          observablesWithData <-
-            inputObservable
-              .data
-              .toTry(d => observableSrv.create(inputObservable.toObservable, observableType, d, inputObservable.tags, Nil))
-          observableWithAttachment <- inputAttachObs.toTry(
-            _.attachment
-              .map(a => observableSrv.create(inputObservable.toObservable, observableType, a, inputObservable.tags, Nil))
-              .flip
-          )
-          createdObservables <- (observablesWithData ++ observableWithAttachment.flatten).toTry { richObservables =>
-            caseSrv
-              .addObservable(case0, richObservables)
-              .map(_ => richObservables)
+
+        db
+          .roTransaction { implicit graph =>
+            for {
+              case0 <-
+                caseSrv
+                  .get(EntityIdOrName(caseId))
+                  .can(Permissions.manageObservable)
+                  .orFail(AuthorizationError("Operation not permitted"))
+              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
+            } yield (case0, observableType)
           }
-        } yield Results.Created(createdObservables.toJson)
+          .map {
+            case (case0, observableType) =>
+              val (successes, failures) = inputAttachObs
+                .flatMap { obs =>
+                  obs.attachment.map(createAttachmentObservable(case0, obs, observableType, _)) ++
+                    obs.data.map(createSimpleObservable(case0, obs, observableType, _))
+                }
+                .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
+                  case ((s, f), Right(o)) => (s :+ o, f)
+                  case ((s, f), Left(o))  => (s, f :+ o)
+                }
+              if (failures.isEmpty) Results.Created(JsArray(successes))
+              else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
+          }
       }
+
+  def createSimpleObservable(
+      `case`: Case with Entity,
+      inputObservable: InputObservable,
+      observableType: ObservableType with Entity,
+      data: String
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        observableSrv
+          .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
+          .flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
+      } match {
+      case Success(o)     => Right(o.toJson)
+      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+    }
+
+  def createAttachmentObservable(
+      `case`: Case with Entity,
+      inputObservable: InputObservable,
+      observableType: ObservableType with Entity,
+      fileOrAttachment: Either[FFile, InputAttachment]
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        val observable = fileOrAttachment match {
+          case Left(file) => observableSrv.create(inputObservable.toObservable, observableType, file, inputObservable.tags, Nil)
+          case Right(attachment) =>
+            for {
+              attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
+              obs    <- observableSrv.create(inputObservable.toObservable, observableType, attach, inputObservable.tags, Nil)
+            } yield obs
+        }
+        observable.flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
+      } match {
+      case Success(o) => Right(o.toJson)
+      case _ =>
+        val filename = fileOrAttachment.fold(_.filename, _.name)
+        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+    }
 
   def get(observableId: String): Action[AnyContent] =
     entryPoint("get observable")
@@ -196,7 +245,7 @@ class ObservableCtrl @Inject() (
   }
 
   private def getZipFiles(observable: InputObservable, zipPassword: Option[String]): Seq[InputObservable] =
-    observable.attachment.toSeq.flatMap { attachment =>
+    observable.attachment.flatMap(_.swap.toSeq).flatMap { attachment =>
       val zipFile                = new ZipFile(attachment.filepath.toFile)
       val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
 
@@ -206,6 +255,6 @@ class ObservableCtrl @Inject() (
       files
         .filterNot(_.isDirectory)
         .flatMap(extractAndCheckSize(zipFile, _))
-        .map(ffile => observable.copy(attachment = Some(ffile)))
+        .map(ffile => observable.copy(attachment = Seq(Left(ffile))))
     }
 }

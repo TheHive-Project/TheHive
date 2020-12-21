@@ -120,9 +120,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
       actionRequired: Boolean
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val details = Json.obj(s"actionRequired.${organisation.name}" -> actionRequired)
-    for {
-      _ <- auditSrv.task.update(task, details)
-    } yield Success(
+    auditSrv.task.update(task, details).map { _ =>
       organisationSrv
         .get(organisation)
         .out[OrganisationShare]
@@ -130,9 +128,8 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
         .filter(_.inV.v[Task].hasId(task._id))
         .update(_.actionRequired, actionRequired)
         .iterate()
-    )
+    }
   }
-
 }
 
 object TaskOps {

@@ -42,7 +42,7 @@ class CaseTemplateSrv @Inject() (
     startTraversal.getByName(name)
 
   override def createEntity(e: CaseTemplate)(implicit graph: Graph, authContext: AuthContext): Try[CaseTemplate with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("CaseTemplate")
+    integrityCheckActor ! EntityAdded("CaseTemplate")
     super.createEntity(e)
   }
 

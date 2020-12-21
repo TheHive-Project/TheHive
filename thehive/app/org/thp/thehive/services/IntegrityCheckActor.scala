@@ -18,14 +18,12 @@ import scala.collection.immutable
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Success
 
-object IntegrityCheckActor {
-  case class EntityAdded(name: String)
-}
+sealed trait IntegrityCheckMessage
+case class EntityAdded(name: String) extends IntegrityCheckMessage
+case class NeedCheck(name: String)   extends IntegrityCheckMessage
+case class Check(name: String)       extends IntegrityCheckMessage
 
 class IntegrityCheckActor() extends Actor {
-  case class NeedCheck(name: String)
-  case class Check(name: String)
-  import IntegrityCheckActor._
 
   lazy val logger: Logger               = Logger(getClass)
   lazy val injector: Injector           = GuiceAkkaExtension(context.system).injector
@@ -44,10 +42,8 @@ class IntegrityCheckActor() extends Actor {
   def interval(name: String): FiniteDuration =
     configuration.getOptional[FiniteDuration](s"integrityCheck.$name.interval").getOrElse(defaultInitalDelay)
 
-  lazy val integrityCheckMap: Map[String, IntegrityCheckOps[_]] = {
-
+  lazy val integrityCheckMap: Map[String, IntegrityCheckOps[_]] =
     integrityCheckOps.map(d => d.name -> d).toMap
-  }
   def check(name: String): Unit = integrityCheckMap.get(name).foreach(_.check())
 
   override def preStart(): Unit = {
