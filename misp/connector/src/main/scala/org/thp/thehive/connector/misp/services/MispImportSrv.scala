@@ -293,13 +293,13 @@ class MispImportSrv @Inject() (
         .runWith(Sink.queue[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])])
     QueueIterator(queue).foreach {
       case (observable, observableType, tags, Left(data)) =>
-        updateOrCreateObservable(alert, observable, observableType, data, tags, lastSynchro.isEmpty)
+        updateOrCreateObservable(alert, observable, observableType, data, tags ++ client.observableTags, lastSynchro.isEmpty)
           .recover {
             case error =>
               logger.error(s"Unable to create observable $observable ${observableType.name}:$data", error)
           }
       case (observable, observableType, tags, Right((filename, contentType, src))) =>
-        updateOrCreateObservable(alert, observable, observableType, filename, contentType, src, tags, lastSynchro.isEmpty)
+        updateOrCreateObservable(alert, observable, observableType, filename, contentType, src, tags ++ client.observableTags, lastSynchro.isEmpty)
           .recover {
             case error =>
               logger.error(s"Unable to create observable $observable ${observableType.name}:$filename", error)

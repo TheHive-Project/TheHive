@@ -64,7 +64,7 @@ class TestMispClientProvider @Inject() (Action: DefaultActionBuilder, implicit v
       whitelistTags = Set.empty,
       purpose = MispPurpose.ImportAndExport,
       caseTemplate = None,
-      artifactTags = Seq("TEST"),
+      observableTags = Seq("TEST"),
       exportCaseTags = true,
       exportObservableTags = true,
       includedTheHiveOrganisations = Seq("*"),
