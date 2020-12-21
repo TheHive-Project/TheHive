@@ -234,16 +234,18 @@
             };
 
             $scope.loadShares = function () {
-                return CaseTaskSrv.getShares(caseId, taskId)
-                    .then(function(response) {
+                if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
+                    return CaseTaskSrv.getShares(caseId, taskId)
+                        .then(function(response) {
 
-                        // Add action required flag to shares
-                        _.each(response.data, function(share) {
-                            share.actionRequired = !!$scope.task.extraData.actionRequiredMap[share.organisationName];
+                            // Add action required flag to shares
+                            _.each(response.data, function(share) {
+                                share.actionRequired = !!$scope.task.extraData.actionRequiredMap[share.organisationName];
+                            });
+
+                            $scope.shares = response.data;
                         });
-
-                        $scope.shares = response.data;
-                    });
+                }
             };
 
             $scope.removeShare = function(share) {
@@ -335,13 +337,24 @@
             };
 
             $scope.markAsDone = function(task) {
-                CaseTaskSrv.markAsDone(task._id, $scope.currentUser.organisation)
-                    .then(function(/*response*/) {
-                        $scope.reloadTask();
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before marking the required action as DONE?')
+                    .then(function(response) {
+                        if(response === 'skip-log') {
+                            return $q.resolve();
+                        } else {
+                            return $scope.showAddLog('Please add a task log');
+                        }
+                    })
+                    .then(function() {
+                        return CaseTaskSrv.markAsDone(task._id, $scope.currentUser.organisation);
+                    })
+                    .then(function() {
                         NotificationSrv.log('The task\'s required action is completed', 'success');
                     })
                     .catch(function(err) {
-                        NotificationSrv.error('Error', 'Failed to mark the task\'s required action as done', err.status);
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task required action failed to be marked as done', err.status);
+                        }
                     });
             };
 
@@ -351,18 +364,14 @@
                         if(response === 'skip-log') {
                             return $q.resolve();
                         } else {
-                            return $scope.showAddLog('Would you like to add a message before requesting action?');
+                            return $scope.showAddLog('Please add a task log');
                         }
                     })
-                    .then(function(/*response*/) {
-                        CaseTaskSrv.markAsActionRequired(task._id, $scope.currentUser.organisation)
-                            .then(function(/*response*/) {
-                                $scope.reloadTask();
-                                NotificationSrv.log('The task\'s required action flag has been set', 'success');
-                            })
-                            .catch(function(err) {
-                                NotificationSrv.error('Error', 'Failed setting the task\' action required flag', err.status);
-                            });
+                    .then(function() {
+                        return CaseTaskSrv.markAsActionRequired(task._id, $scope.currentUser.organisation);
+                    })
+                    .then(function() {
+                        NotificationSrv.log('The task\'s required action flag has been set', 'success');
                     })
                     .catch(function(err) {
                         if(err && !_.isString(err)) {
@@ -378,21 +387,14 @@
                         if(response === 'skip-log') {
                             return $q.resolve();
                         } else {
-                            return $scope.showAddLog('Would you like to add a message before requesting action?');
+                            return $scope.showAddLog('Please add a task log');
                         }
                     })
-                    .then(function(/*response*/) {
-                        CaseTaskSrv.markAsActionRequired(task._id, org)
-                            .then(function(/*response*/) {
-                                NotificationSrv.log('The task\'s required action flag has been set for organisation ' + org, 'success');
-                                return $scope.reloadTask();
-                            })
-                            .then(function() {
-                                $scope.loadShares();
-                            })
-                            .catch(function(err) {
-                                NotificationSrv.error('Error', 'Failed setting the task\' action required flag for organisation ' + org, err.status);
-                            });
+                    .then(function() {
+                        return CaseTaskSrv.markAsActionRequired(task._id, org);
+                    })
+                    .then(function() {
+                        NotificationSrv.log('The task\'s required action flag has been set for organisation ' + org, 'success');
                     })
                     .catch(function(err) {
                         if(err && !_.isString(err)) {
@@ -421,20 +423,37 @@
 
                 // Add action required listener
                 StreamSrv.addListener({
-                    rootId: $scope.task._id,
+                    rootId: caseId,
                     objectType: 'case_task',
                     scope: $scope,
                     callback: function(updates) {
-                        console.log(updates);
+                        // Update action required indicators in task item page and shares list
+                        _.each(updates, function(update) {
+                            if(update.base.objectId === $scope.task._id ){
+
+                                var updatedKeys = _.keys(update.base.details);
+
+                                var actionRequiredChange = _.find(updatedKeys, function(key) {
+                                    return key.startsWith('actionRequired');
+                                });
+
+                                if(actionRequiredChange !== undefined) {
+                                    $scope.reloadTask()
+                                        .then(function() {
+                                            $scope.loadShares();
+                                        });
+                                }
+                            }
+                        });
                     }
                 });
 
                 // Prepare the scope data
                 $scope.initScope(task);
 
-                if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
-                    $scope.loadShares();
-                }
+                // if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
+                $scope.loadShares();
+                //}
 
                 // $scope.organisations = organisations;
                 // $scope.profiles = profiles;

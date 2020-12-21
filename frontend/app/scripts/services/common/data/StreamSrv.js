@@ -16,8 +16,6 @@
 
             runCallbacks: function(id, objectType, message) {
                 $rootScope.$broadcast('stream:' + id + '-' + objectType, message);
-
-                console.log('stream:' + id + '-' + objectType);
             },
 
             handleStreamResponse: function(data) {
