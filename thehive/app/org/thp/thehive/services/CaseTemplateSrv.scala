@@ -202,7 +202,7 @@ object CaseTemplateOps {
           _.by
             .by(_.organisation.value(_.name))
             .by(_.tags.fold)
-            .by(_.tasks.richTask.fold)
+            .by(_.tasks.richTaskWithoutActionRequired.fold)
             .by(
               _.outE[CaseTemplateCustomField]
                 .as(caseTemplateCustomFieldLabel)

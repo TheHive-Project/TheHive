@@ -23,8 +23,16 @@
 			<td>{{value.group}}</td>
 			<td>
 				<div>
-					<span ng-if="value.flag"><i class="text-primary glyphicon glyphicon-flag"></i></span>
-					<span ng-bind="value.title"></span>
+					<span class="text-primary mr-xxxs" ng-if="value.flag">
+						<i class="glyphicon glyphicon-flag"></i>
+					</span>
+
+					<a href ui-sref="app.case.tasks-item({caseId: value.extraData.case._id, itemId:value._id})" ng-class="{'text-danger': !!value.extraData.actionRequired}">
+						<span ng-if="!!value.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
+							<i class="fa fa-exclamation-triangle"></i>
+						</span>
+						{{value.title}}
+					</a>					
 				</div>
 				<div ng-show="value.status === 'InProgress'" class="text-warning">
 						Started <em am-time-ago="value.startDate"></em>
@@ -34,7 +42,7 @@
 				</div>
 			</td>
 			<td>
-				{{value.startDate | showDate}}
+				{{value.startDate | shortDate}}
 			</td>
 		</tr>
 	</tbody>

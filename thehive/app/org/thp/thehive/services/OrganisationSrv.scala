@@ -162,7 +162,7 @@ object OrganisationOps {
       if (authContext.isPermitted(Permissions.manageOrganisation))
         traversal
       else
-        traversal.filter(_.visibleOrganisationsTo.users.current)
+        traversal.filter(_.visibleOrganisationsTo.current)
 
     def richOrganisation: Traversal[RichOrganisation, JMap[String, Any], Converter[RichOrganisation, JMap[String, Any]]] =
       traversal

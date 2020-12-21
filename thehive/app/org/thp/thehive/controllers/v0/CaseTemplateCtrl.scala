@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
@@ -21,7 +20,9 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.Failure
+
 @Singleton
 class CaseTemplateCtrl @Inject() (
     override val entrypoint: Entrypoint,
@@ -168,25 +169,27 @@ class PublicCaseTemplate @Inject() (
         } yield Json.obj("customFields" -> values)
       case _ => Failure(BadRequestError("Invalid custom fields format"))
     })
-    .property("tasks", UMapping.jsonNative.sequence)(_.select(_.tasks.richTask.domainMap(_.toJson)).custom { //  FIXME select the correct mapping
-      (_, value, vertex, _, graph, authContext) =>
-        val fp = FieldsParser[InputTask]
+    .property("tasks", UMapping.jsonNative.sequence)(
+      _.select(_.tasks.richTaskWithoutActionRequired.domainMap(_.toJson)).custom { //  FIXME select the correct mapping
+        (_, value, vertex, _, graph, authContext) =>
+          val fp = FieldsParser[InputTask]
 
-        caseTemplateSrv.get(vertex)(graph).tasks.remove()
-        for {
-          caseTemplate <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-          tasks        <- value.validatedBy(t => fp(Field(t))).badMap(AttributeCheckingError(_)).toTry
-          createdTasks <-
-            tasks
-              .toTry(t =>
-                t.owner
-                  .map(o => userSrv.getOrFail(EntityIdOrName(o))(graph))
-                  .flip
-                  .flatMap(owner => taskSrv.create(t.toTask, owner)(graph, authContext))
-              )
-          _ <- createdTasks.toTry(t => caseTemplateSrv.addTask(caseTemplate, t.task)(graph, authContext))
-        } yield Json.obj("tasks" -> createdTasks.map(_.toJson))
-    })
+          caseTemplateSrv.get(vertex)(graph).tasks.remove()
+          for {
+            caseTemplate <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
+            tasks        <- value.validatedBy(t => fp(Field(t))).badMap(AttributeCheckingError(_)).toTry
+            createdTasks <-
+              tasks
+                .toTry(t =>
+                  t.owner
+                    .map(o => userSrv.getOrFail(EntityIdOrName(o))(graph))
+                    .flip
+                    .flatMap(owner => taskSrv.create(t.toTask, owner)(graph, authContext))
+                )
+            _ <- createdTasks.toTry(t => caseTemplateSrv.addTask(caseTemplate, t.task)(graph, authContext))
+          } yield Json.obj("tasks" -> createdTasks.map(_.toJson))
+      }
+    )
     .build
 
 }

@@ -1,8 +1,8 @@
 package org.thp.thehive.services
 
 import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
+
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
@@ -553,6 +553,10 @@ object CaseOps {
         .dedup
 
     def alert: Traversal.V[Alert] = traversal.in[AlertCase].v[Alert]
+
+    def isActionRequired(implicit authContext: AuthContext): Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
+      traversal.choose(_.share(authContext).outE[ShareTask].has(_.actionRequired, true), true, false)
+
   }
 
 //  implicit class CaseCustomFieldsOpsDefs(traversal: Traversal.E[CaseCustomField]) extends CustomFieldValueOpsDefs(traversal)

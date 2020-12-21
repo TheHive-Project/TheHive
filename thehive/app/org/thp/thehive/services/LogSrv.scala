@@ -1,8 +1,5 @@
 package org.thp.thehive.services
 
-import java.util
-import scala.util.Success
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -16,9 +13,11 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.TaskOps._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.JsObject
 
-import scala.util.Try
+import java.util
+import javax.inject.{Inject, Named, Singleton}
+import scala.util.{Success, Try}
 
 @Singleton
 class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSrv: TaskSrv, userSrv: UserSrv)(implicit

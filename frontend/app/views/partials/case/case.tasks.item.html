@@ -1,4 +1,15 @@
 <div class="vpad10">
+    <div class="mb-xs" ng-if="task.extraData.actionRequired === true">
+        <div class="alert bg-yellow">
+            <h4>
+                <i class="icon fa fa-exclamation-triangle"></i> Action Required!
+            </h4>
+            <div>
+                This task requires an action from your organisation.
+                <button if-permission="manageTask" allowed="{{userPermissions}}" class="ml-m btn btn-sm btn-default" ng-click="markAsDone(task)">Mark as Done</button>
+            </div>
+        </div>
+    </div>
     <h4 class="mb-xs text-primary">
         Basic Information
 
@@ -7,12 +18,19 @@
             <span>
                 <a href ng-click="scrollTo('#task-sharings')">
                     <span class="mr-xxs action-button">
-                        <i class="fa fa-users"></i> Sharing
+                        <i class="fa fa-users"></i> Sharing ({{shares.length || 0}})
                     </span>
                 </a>
 
                 <span class="mr-xxs text-primary">|</span>
             </span>
+
+            <a href ng-if="!!!task.extraData.actionRequired" ng-click="markAsActionRequired(task)">
+                <span class="mr-xxs action-button text-primary">
+                    <i class="fa fa-exclamation-triangle"></i> Require Action
+                </span>
+            </a>
+
             <a href ng-click="switchFlag()">
                 <span class="mr-xxs action-button" ng-class="{true: 'text-yellow', false: 'text-muted'}[task.flag]">
                     <i class="fa fa-flag"></i> {{task.flag ? 'Unflag' : 'Flag'}}
@@ -233,12 +251,14 @@
              </div>
          </div>
          <div class="mv-s">
-             <sharing-list
+             <task-sharing-list
+                 task="task"
                  shares="shares"
                  read-only="true"
+                 on-require-action="markShareAsActionRequired(task, org)"
                  on-delete="removeShare(share)"
                  permissions="userPermissions"
-                 ></sharing-list>
+                 ></task-sharing-list>
          </div>
     </div>
 

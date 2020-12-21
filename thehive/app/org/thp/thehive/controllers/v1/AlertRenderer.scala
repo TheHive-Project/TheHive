@@ -10,7 +10,7 @@ import org.thp.thehive.models.{Alert, RichCase, SimilarStats}
 import org.thp.thehive.services.AlertOps._
 import play.api.libs.json._
 
-trait AlertRenderer {
+trait AlertRenderer extends BaseRenderer[Alert] {
   implicit val similarCaseWrites: Writes[(RichCase, SimilarStats)] = Writes[(RichCase, SimilarStats)] {
     case (richCase, similarStats) =>
       Json.obj(
@@ -39,32 +39,12 @@ trait AlertRenderer {
     _.similarCases(None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
-  def alertStatsRenderer[D, G, C <: Converter[D, G]](extraData: Set[String])(implicit
-      authContext: AuthContext
-  ): Traversal.V[Alert] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
-    def addData[T](
-        name: String
-    )(f: Traversal.V[Alert] => Traversal[JsValue, T, Converter[JsValue, T]]): Traversal[JsObject, JMap[String, Any], Converter[
-      JsObject,
-      JMap[String, Any]
-    ]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { t =>
-      val dataTraversal = f(traversal.start)
-      t.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.by(dataTraversal.raw)) { jmap =>
-        t.converter(jmap) + (name -> dataTraversal.converter(jmap.get(name).asInstanceOf[T]))
-      }
-    }
-
-    if (extraData.isEmpty) traversal.constant2(JsObject.empty)
-    else {
-      val dataName = extraData.toSeq
-      dataName.foldLeft[Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
-        traversal.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.project(dataName.head, dataName.tail: _*))(_ =>
-          JsObject.empty
-        )
-      ) {
-        case (f, "similarCases") => addData("similarCases")(similarCasesStats)(f)
-        case (f, _)              => f
-      }
-    }
+  def alertStatsRenderer(extraData: Set[String])(
+    implicit authContext: AuthContext
+  ): Traversal.V[Alert] => JsTraversal = { implicit traversal =>
+    baseRenderer(extraData, traversal, {
+      case (f, "similarCases") => addData("similarCases", f)(similarCasesStats)
+      case (f, _)              => f
+    })
   }
 }

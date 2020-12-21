@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -17,6 +16,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.Success
 
 @Singleton
@@ -48,7 +48,8 @@ class TaskCtrl @Inject() (
     FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask, Traversal.V[Task]](_.richTask)
+  override val outputQuery: Query =
+    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, _) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[Task]](
       "waitingTask",
@@ -111,4 +112,22 @@ class TaskCtrl @Inject() (
           )
           .map(_ => Results.NoContent)
       }
+
+  def isActionRequired(taskId: String): Action[AnyContent] =
+    entrypoint("is action required")
+      .authTransaction(db){ implicit request => implicit graph =>
+        val actionTraversal = taskSrv.get(EntityIdOrName(taskId)).visible.actionRequiredMap
+        Success(Results.Ok(actionTraversal.toSeq.toMap.toJson))
+      }
+
+  def actionRequired(taskId: String, orgaId: String, required: Boolean): Action[AnyContent] =
+    entrypoint("action required")
+      .authTransaction(db){ implicit request => implicit graph =>
+        for {
+          organisation <- organisationSrv.get(EntityIdOrName(orgaId)).visible.getOrFail("Organisation")
+          task         <- taskSrv.get(EntityIdOrName(taskId)).visible.getOrFail("Task")
+          _            <- taskSrv.actionRequired(task, organisation, required)
+        } yield Results.NoContent
+      }
+
 }

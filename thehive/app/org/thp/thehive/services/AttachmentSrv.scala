@@ -95,7 +95,7 @@ object AttachmentOps {
   implicit class AttachmentOpsDefs(traversal: Traversal.V[Attachment]) {
     def getByAttachmentId(attachmentId: String): Traversal.V[Attachment] = traversal.has(_.attachmentId, attachmentId)
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Attachment] = traversal // TODO
+    def visible: Traversal.V[Attachment] = traversal // TODO
 
   }
 }
