@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Long => JLong}
+import java.lang.{Long => JLong, Boolean => JBoolean}
 import java.util.{List => JList, Map => JMap}
 
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -15,7 +15,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
 
-trait TaskRenderer {
+trait TaskRenderer extends BaseRenderer[Task] {
 
   def caseParent(implicit
       authContext: AuthContext
@@ -37,37 +37,26 @@ trait TaskRenderer {
   def isOwner(implicit authContext: AuthContext): Traversal.V[Task] => Traversal[JsValue, JList[Vertex], Converter[JsValue, JList[Vertex]]] =
     _.origin.get(authContext.organisation).fold.domainMap(l => JsBoolean(l.nonEmpty))
 
-  def taskStatsRenderer(extraData: Set[String])(implicit
-      authContext: AuthContext
-  ): Traversal.V[Task] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
-    def addData[G](
-        name: String
-    )(f: Traversal.V[Task] => Traversal[JsValue, G, Converter[JsValue, G]]): Traversal[JsObject, JMap[String, Any], Converter[
-      JsObject,
-      JMap[String, Any]
-    ]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { t =>
-      val dataTraversal = f(traversal.start)
-      t.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.by(dataTraversal.raw)) { jmap =>
-        t.converter(jmap) + (name -> dataTraversal.converter(jmap.get(name).asInstanceOf[G]))
-      }
-    }
+  def actionRequired(implicit authContext: AuthContext): Traversal.V[Task] => Traversal[JsValue, JBoolean, Converter[JsValue, JBoolean]] =
+    _.actionRequired.domainMap(JsBoolean(_))
 
-    if (extraData.isEmpty) traversal.constant2[JsObject, JMap[String, Any]](JsObject.empty)
-    else {
-      val dataName = extraData.toSeq
-      dataName.foldLeft[Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
-        traversal.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.project(dataName.head, dataName.tail: _*))(_ =>
-          JsObject.empty
-        )
-      ) {
-        case (f, "case")           => addData("case")(caseParent)(f)
-        case (f, "caseId")         => addData("caseId")(caseParentId)(f)
-        case (f, "caseTemplate")   => addData("caseTemplate")(caseTemplateParent)(f)
-        case (f, "caseTemplateId") => addData("caseTemplateId")(caseTemplateParentId)(f)
-        case (f, "isOwner")        => addData("isOwner")(isOwner)(f)
-        case (f, "shareCount")     => addData("shareCount")(shareCount)(f)
-        case (f, _)                => f
-      }
-    }
+  def actionRequiredMap(implicit authContext: AuthContext):
+  Traversal.V[Task] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] =
+    _.actionRequiredMap.fold.domainMap(_.toMap.toJson)
+
+  def taskStatsRenderer(extraData: Set[String])(
+    implicit authContext: AuthContext
+  ): Traversal.V[Task] => JsTraversal = { implicit traversal =>
+    baseRenderer(extraData, traversal, {
+      case (f, "case")              => addData("case", f)(caseParent)
+      case (f, "caseId")            => addData("caseId", f)(caseParentId)
+      case (f, "caseTemplate")      => addData("caseTemplate", f)(caseTemplateParent)
+      case (f, "caseTemplateId")    => addData("caseTemplateId", f)(caseTemplateParentId)
+      case (f, "isOwner")           => addData("isOwner", f)(isOwner)
+      case (f, "shareCount")        => addData("shareCount", f)(shareCount)
+      case (f, "actionRequired")    => addData("actionRequired", f)(actionRequired)
+      case (f, "actionRequiredMap") => addData("actionRequiredMap", f)(actionRequiredMap)
+      case (f, _)                   => f
+    })
   }
 }

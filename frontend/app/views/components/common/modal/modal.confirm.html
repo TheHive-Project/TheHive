@@ -6,7 +6,10 @@
     <p>{{$modal.message}}</p>
   </div>
   <div class="modal-footer text-left">
-    <button class="btn btn-default pull-left" ng-click="$modal.cancel()" type="button">Cancel</button>
+    <button class="btn btn-default pull-left" ng-click="$modal.cancel()" type="button">{{$modal.config.cancelText || 'Cancel'}}</button>
+
+    <button ng-repeat="action in $modal.config.actions" class="btn btn-{{action.flavor || 'default'}}" type="button" ng-click="$modal.dismiss(action.dismiss)">{{action.text}}</button>
+
     <button class="btn btn-{{$modal.config.flavor || 'primary'}} pull-right" type="submit" auto-focus>{{$modal.config.okText || 'Ok'}}</button>
   </div>
 </form>

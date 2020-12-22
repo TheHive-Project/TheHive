@@ -1,7 +1,6 @@
 package org.thp.thehive.dto.v1
 
 import java.util.Date
-
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
@@ -9,11 +8,12 @@ import play.api.libs.json.{JsObject, Json, OFormat, Writes}
 
 case class InputObservable(
     dataType: String,
-    @WithParser(InputObservable.fp)
+    @WithParser(InputObservable.dataParser)
     data: Seq[String] = Nil,
     message: Option[String] = None,
     startDate: Option[Date] = None,
-    attachment: Option[FFile] = None,
+    @WithParser(InputObservable.fileOrAttachmentParser)
+    attachment: Seq[Either[FFile, InputAttachment]] = Seq.empty,
     tlp: Option[Int] = None,
     tags: Set[String] = Set.empty,
     ioc: Option[Boolean] = None,
@@ -22,14 +22,32 @@ case class InputObservable(
 )
 
 object InputObservable {
+  implicit val fileOrAttachmentWrites: Writes[Either[FFile, InputAttachment]] = Writes[Either[FFile, InputAttachment]] {
+    case Left(file)        => Json.toJson(file)
+    case Right(attachment) => Json.toJson(attachment)
+  }
+
   implicit val writes: Writes[InputObservable] = Json.writes[InputObservable]
 
-  val fp: FieldsParser[Seq[String]] = FieldsParser[Seq[String]]("data") {
+  val dataParser: FieldsParser[Seq[String]] = FieldsParser[Seq[String]]("data") {
     case (_, FString(s)) => Good(Seq(s))
     case (_, FAny(s))    => Good(s)
     case (_, FSeq(a))    => a.validatedBy(FieldsParser.string(_))
     case (_, FUndefined) => Good(Nil)
   }
+
+  val fileOrAttachmentParser: FieldsParser[Seq[Either[FFile, InputAttachment]]] =
+    FieldsParser[FFile]
+      .map("fileOrAttachmentParser")(f => Seq(Left(f)))
+      .recover(
+        FieldsParser[InputAttachment]
+          .map("fileOrAttachmentParser")(a => Seq(Right(a)))
+          .recover(
+            FieldsParser[InputAttachment]
+              .sequence
+              .map("fileOrAttachmentParser")(as => as.map(Right(_)))
+          )
+      )
 }
 
 case class OutputObservable(

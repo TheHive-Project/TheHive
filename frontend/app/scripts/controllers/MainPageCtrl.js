@@ -63,7 +63,7 @@
                     filter: self.filtering.buildQuery(),
                     baseFilter: view === 'mytasks' ? self.defaultFilter : [],
                     operations: self.queryOperations,
-                    extraData: ['case'],
+                    extraData: ['case', 'actionRequired'],
                     name: $stateParams.viewId
                 });
             };

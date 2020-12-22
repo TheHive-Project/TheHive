@@ -25,7 +25,7 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
 ) extends VertexSrv[CustomField] {
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("CustomField")
+    integrityCheckActor ! EntityAdded("CustomField")
     super.createEntity(e)
   }
 

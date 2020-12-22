@@ -43,5 +43,23 @@
     "status": "Waiting",
     "flag": true,
     "order": 0
+  },
+  {
+    "id": "taskActionRequired1",
+    "title": "taskActionRequired1",
+    "group": "groupActionRequired",
+    "description": "description task Required",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0
+  },
+  {
+    "id": "taskActionRequired2",
+    "title": "taskActionRequired2",
+    "group": "groupActionRequired",
+    "description": "description task Required",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0
   }
 ]

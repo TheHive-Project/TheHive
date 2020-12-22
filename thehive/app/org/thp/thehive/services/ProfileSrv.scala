@@ -29,7 +29,7 @@ class ProfileSrv @Inject() (
   lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Profile")
+    integrityCheckActor ! EntityAdded("Profile")
     super.createEntity(e)
   }
 

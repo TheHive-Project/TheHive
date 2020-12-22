@@ -2,5 +2,7 @@
   {"from": "cert", "to": "case1-cert"},
   {"from": "cert", "to": "case2-cert"},
   {"from": "soc", "to": "case2-soc"},
-  {"from": "soc", "to": "case3-soc"}
+  {"from": "soc", "to": "case3-soc"},
+  {"from": "soc", "to": "case-actionRequired-soc"},
+  {"from": "cert", "to": "case-actionRequired-cert"}
 ]

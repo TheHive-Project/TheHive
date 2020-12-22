@@ -1,8 +1,8 @@
 package org.thp.thehive.services
 
 import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
+
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
@@ -54,7 +54,7 @@ class CaseSrv @Inject() (
 
   override def createEntity(e: Case)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     super.createEntity(e).map { `case` =>
-      integrityCheckActor ! IntegrityCheckActor.EntityAdded("Case")
+      integrityCheckActor ! EntityAdded("Case")
       `case`
     }
 
@@ -176,18 +176,8 @@ class CaseSrv @Inject() (
       authContext: AuthContext
   ): Try[Unit] = {
     val alreadyExistInThatCase = richObservable
-      .dataOrAttachment
-      .fold(
-        _ =>
-          observableSrv
-            .get(richObservable.observable)
-            .filteredSimilar
-            .visible
-            .`case`
-            .hasId(`case`._id)
-            .exists,
-        attachment => get(`case`).share.observables.attachments.has(_.attachmentId, attachment.attachmentId).exists
-      ) || get(`case`).observables.filter(_.hasId(richObservable.observable._id)).exists
+      .data
+      .fold(false)(data => get(`case`).observables.data.has(_.data, data.data).exists)
 
     if (alreadyExistInThatCase)
       Failure(CreateError("Observable already exists"))
@@ -563,6 +553,10 @@ object CaseOps {
         .dedup
 
     def alert: Traversal.V[Alert] = traversal.in[AlertCase].v[Alert]
+
+    def isActionRequired(implicit authContext: AuthContext): Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
+      traversal.choose(_.share(authContext).outE[ShareTask].has(_.actionRequired, true), true, false)
+
   }
 
 //  implicit class CaseCustomFieldsOpsDefs(traversal: Traversal.E[CaseCustomField]) extends CustomFieldValueOpsDefs(traversal)

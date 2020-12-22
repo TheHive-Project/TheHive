@@ -586,7 +586,7 @@ class Output @Inject() (
         _ = updateMetaData(log, inputLog.metaData)
         _ <- inputLog.attachments.toTry { inputAttachment =>
           attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap { attachment =>
-            logSrv.addAttachment(log, attachment)
+            logSrv.logAttachmentSrv.create(LogAttachment(), log, attachment)
           }
         }
       } yield IdMapping(inputLog.metaData.id, log._id)

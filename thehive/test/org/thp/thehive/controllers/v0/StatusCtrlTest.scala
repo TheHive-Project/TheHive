@@ -66,7 +66,8 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
           "protectDownloadsWith" -> config.get[String]("datastore.attachment.password"),
           "authType"             -> Seq("local", "key", "header"),
           "capabilities"         -> Seq("changePassword", "setPassword", "authByKey"),
-          "ssoAutoLogin"         -> config.get[Boolean]("user.autoCreateOnSso")
+          "ssoAutoLogin"         -> config.get[Boolean]("user.autoCreateOnSso"),
+          "pollingDuration"      -> 1000
         )
       )
 

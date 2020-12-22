@@ -11,6 +11,8 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
+// TODO what to do with unused test ?
+
 //  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)
 
 //    def getAndTestCaseTemplate(name: String, description: String)(body: OutputCaseTemplate => MatchResult[Any]) = {
