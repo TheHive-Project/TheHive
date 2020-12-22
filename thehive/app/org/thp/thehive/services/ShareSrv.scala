@@ -101,7 +101,8 @@ class ShareSrv @Inject() (
       case0        <- get(shareId).`case`.getOrFail("Case")
       organisation <- get(shareId).organisation.getOrFail("Organisation")
       _            <- auditSrv.share.unshareCase(case0, organisation)
-    } yield delete(shareId)
+      _            <- delete(shareId)
+    } yield ()
 
   def unshareTask(
       task: Task with Entity,

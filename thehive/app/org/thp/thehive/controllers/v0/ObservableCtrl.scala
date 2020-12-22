@@ -1,13 +1,8 @@
 package org.thp.thehive.controllers.v0
 
-import java.io.FilterInputStream
-import java.nio.file.Files
-
-import javax.inject.{Inject, Named, Singleton}
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._
-import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -27,6 +22,9 @@ import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.io.FilterInputStream
+import java.nio.file.Files
+import javax.inject.{Inject, Named, Singleton}
 import scala.collection.JavaConverters._
 import scala.util.Success
 
@@ -214,7 +212,7 @@ class ObservableCtrl @Inject() (
     }
   }
 
-  private def getZipFiles(observable: InputObservable, zipPassword: Option[String])(implicit authContext: AuthContext): Seq[InputObservable] =
+  private def getZipFiles(observable: InputObservable, zipPassword: Option[String]): Seq[InputObservable] =
     observable.attachment.toSeq.flatMap { attachment =>
       val zipFile                = new ZipFile(attachment.filepath.toFile)
       val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]

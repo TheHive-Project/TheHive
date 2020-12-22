@@ -189,7 +189,8 @@ class ObservableSrv @Inject() (
     if (get(obs).isShared.head)
       for {
         orga <- organisationSrv.getOrFail(authContext.organisation)
-      } yield shareSrv.unshareObservable(obs, orga)
+        _    <- shareSrv.unshareObservable(obs, orga)
+      } yield ()
     else {
       val alert       = get(obs).alert.headOption
       val attachments = get(obs).attachments.toSeq
