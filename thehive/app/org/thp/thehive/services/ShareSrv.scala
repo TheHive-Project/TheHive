@@ -87,13 +87,7 @@ class ShareSrv @Inject() (
     } yield newShareProfile
   }
 
-//  def remove(`case`: Case with Entity, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-//    caseSrv.get(`case`).in[ShareCase].filter(_.in[OrganisationShare])._id.getOrFail().flatMap(remove(_)) // FIXME add organisation ?
-
-  def remove(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    unshareCase(shareId).flatMap(_ => Try(get(shareId).remove()))
-
-  private[services] def delete(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  private def delete(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       share <- getOrFail(shareId)
       tasks = get(share).tasks.toSeq
@@ -106,14 +100,8 @@ class ShareSrv @Inject() (
     for {
       case0        <- get(shareId).`case`.getOrFail("Case")
       organisation <- get(shareId).organisation.getOrFail("Organisation")
-      shareCase <-
-        get(shareId)
-          .`case`
-          .inE[ShareCase]
-          .filter(_.outV.v[Share].byOrganisation(organisation._id))
-          .getOrFail("Case")
-      _ <- auditSrv.share.unshareCase(case0, organisation)
-    } yield shareCaseSrv.get(shareCase).remove()
+      _            <- auditSrv.share.unshareCase(case0, organisation)
+    } yield delete(shareId)
 
   def unshareTask(
       task: Task with Entity,

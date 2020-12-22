@@ -209,15 +209,16 @@ class CaseSrv @Inject() (
       _ <-
         if (share.owner) delete(caze)
         else shareSrv.unshareCase(share._id)
-      _ <- shareSrv.delete(share._id)
     } yield ()
   }
 
-  private[services] def delete(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  private def delete(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val details = Json.obj("number" -> `case`.number, "title" -> `case`.title)
     for {
       organisation <- organisationSrv.getOrFail(authContext.organisation)
-      _            <- auditSrv.`case`.delete(`case`, organisation, Some(details))
+      shares = get(`case`).shares.toSeq
+      _ <- shares.toTry(s => shareSrv.unshareCase(s._id))
+      _ <- auditSrv.`case`.delete(`case`, organisation, Some(details))
     } yield get(`case`).remove()
   }
 

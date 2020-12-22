@@ -313,7 +313,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         )
         .get
 
-      app[Database].tryTransaction(implicit graph => app[CaseSrv].delete(c1.`case`)) must beSuccessfulTry
+      app[Database].tryTransaction(implicit graph => app[CaseSrv].shareDelete(c1.`case`)) must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
         app[CaseSrv].get(c1._id).exists must beFalse
       }

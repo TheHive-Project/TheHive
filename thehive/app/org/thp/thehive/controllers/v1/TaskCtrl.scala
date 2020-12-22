@@ -110,4 +110,17 @@ class TaskCtrl @Inject() (
           )
           .map(_ => Results.NoContent)
       }
+
+  def delete(taskId: String): Action[AnyContent] =
+    entrypoint("delete task")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          t <-
+            taskSrv
+              .get(EntityIdOrName(taskId))
+              .can(Permissions.manageTask)
+              .getOrFail("Task")
+          _ <- taskSrv.delete(t)
+        } yield Results.NoContent
+      }
 }

@@ -68,10 +68,11 @@ class Router @Inject() (
 //    case GET(p"/share/$shareId")   => shareCtrl.get(shareId)
 //    case PATCH(p"/share/$shareId") => shareCtrl.update(shareId)
 
-    case GET(p"/task")           => taskCtrl.list
-    case POST(p"/task")          => taskCtrl.create
-    case GET(p"/task/$taskId")   => taskCtrl.get(taskId)
-    case PATCH(p"/task/$taskId") => taskCtrl.update(taskId)
+    case GET(p"/task")            => taskCtrl.list
+    case POST(p"/task")           => taskCtrl.create
+    case GET(p"/task/$taskId")    => taskCtrl.get(taskId)
+    case PATCH(p"/task/$taskId")  => taskCtrl.update(taskId)
+    case DELETE(p"/task/$taskId") => taskCtrl.delete(taskId)
     // POST     /case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
     // POST     /case/task/_stats                    controllers.TaskCtrl.stats()
 

@@ -97,7 +97,7 @@ class ShareCtrl @Inject() (
                   .has(_.owner, false)
                   ._id
                   .orFail(AuthorizationError("Operation not permitted"))
-              _ <- shareSrv.remove(shareId)
+              _ <- shareSrv.unshareCase(shareId)
             } yield ()
           }
           .map(_ => Results.NoContent)
@@ -147,7 +147,7 @@ class ShareCtrl @Inject() (
     else if (shareSrv.get(shareId).has(_.owner, true).exists)
       Failure(AuthorizationError("You can't remove initial shares"))
     else
-      shareSrv.remove(shareId)
+      shareSrv.unshareCase(shareId)
 
   def updateShare(shareId: String): Action[AnyContent] =
     entrypoint("update share")

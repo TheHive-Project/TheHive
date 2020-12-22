@@ -180,7 +180,8 @@ class ObservableSrv @Inject() (
       case Some(alert) =>
         for {
           _ <- Try(get(observable).remove())
-        } yield auditSrv.observableInAlert.delete(observable, Some(alert))
+          _ <- auditSrv.observableInAlert.delete(observable, Some(alert))
+        } yield ()
     }
 
   // Same as remove but with no Audit creation
