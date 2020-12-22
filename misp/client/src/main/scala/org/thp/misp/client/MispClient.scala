@@ -183,25 +183,7 @@ class MispClient(
         val maybeEvent = Try(Json.parse(data.toArray[Byte]).as[Event])
         maybeEvent.fold(error => { logger.warn(s"Event has invalid format: ${data.decodeString("UTF-8")}", error); Nil }, List(_))
       }
-      .filterNot(isExcluded)
       .mapMaterializedValue(_ => NotUsed)
-  }
-
-  def isExcluded(event: Event): Boolean = {
-    val eventTags = event.tags.map(_.name).toSet
-    if (whitelistTags.nonEmpty && (whitelistTags & eventTags).isEmpty) {
-      logger.debug(s"event ${event.id} is ignored because it doesn't contain any of whitelist tags (${whitelistTags.mkString(",")})")
-      true
-    } else if (excludedOrganisations.contains(event.orgc)) {
-      logger.debug(s"event ${event.id} is ignored because its organisation (${event.orgc}) is excluded")
-      true
-    } else {
-      val t = excludedTags.intersect(eventTags)
-      if ((excludedTags & eventTags).nonEmpty) {
-        logger.debug(s"event ${event.id} is ignored because one of its tags (${t.mkString(",")}) is excluded")
-        true
-      } else false
-    }
   }
 
   def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Source[Attribute, NotUsed] = {
