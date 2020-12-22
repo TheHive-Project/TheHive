@@ -36,7 +36,7 @@ class OrganisationSrv @Inject() (
   val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Organisation")
+    integrityCheckActor ! EntityAdded("Organisation")
     super.createEntity(e)
   }
 
@@ -162,7 +162,7 @@ object OrganisationOps {
       if (authContext.isPermitted(Permissions.manageOrganisation))
         traversal
       else
-        traversal.filter(_.visibleOrganisationsTo.users.current)
+        traversal.filter(_.visibleOrganisationsTo.current)
 
     def richOrganisation: Traversal[RichOrganisation, JMap[String, Any], Converter[RichOrganisation, JMap[String, Any]]] =
       traversal

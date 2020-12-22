@@ -8,12 +8,12 @@ import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.InputObservable
+import org.thp.thehive.dto.v1.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
@@ -25,7 +25,11 @@ import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 import play.api.{Configuration, Logger}
 
+import java.io.FilterInputStream
+import java.nio.file.Files
+import javax.inject.{Inject, Named, Singleton}
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success}
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -36,6 +40,8 @@ class ObservableCtrl @Inject() (
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
+    attachmentSrv: AttachmentSrv,
+    errorHandler: ErrorHandler,
     temporaryFileCreator: DefaultTemporaryFileCreator,
     configuration: Configuration,
     errorHandler: ErrorHandler
@@ -76,7 +82,8 @@ class ObservableCtrl @Inject() (
       "similar",
       (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
     ),
-    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`)
+    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
+    Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
 
   def create(caseId: String): Action[AnyContent] =
@@ -103,47 +110,59 @@ class ObservableCtrl @Inject() (
           }
           .map {
             case (case0, observableType) =>
-              val initialSuccessesAndFailures: (Seq[JsValue], Seq[JsValue]) =
-                inputAttachObs.foldLeft[(Seq[JsValue], Seq[JsValue])](Nil -> Nil) {
-                  case ((successes, failures), inputObservable) =>
-                    inputObservable.attachment.fold((successes, failures)) { attachment =>
-                      db
-                        .tryTransaction { implicit graph =>
-                          observableSrv
-                            .create(inputObservable.toObservable, observableType, attachment, inputObservable.tags, Nil)
-                            .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
-                        }
-                        .fold(
-                          e =>
-                            successes -> (failures :+ errorHandler.toErrorResult(e)._2 ++ Json
-                              .obj(
-                                "object" -> Json
-                                  .obj("data" -> s"file:${attachment.filename}", "attachment" -> Json.obj("name" -> attachment.filename))
-                              )),
-                          s => (successes :+ s) -> failures
-                        )
-                    }
+              val (successes, failures) = inputAttachObs
+                .flatMap { obs =>
+                  obs.attachment.map(createAttachmentObservable(case0, obs, observableType, _)) ++
+                    obs.data.map(createSimpleObservable(case0, obs, observableType, _))
                 }
-
-              val (successes, failures) = inputObservable
-                .data
-                .foldLeft(initialSuccessesAndFailures) {
-                  case ((successes, failures), data) =>
-                    db
-                      .tryTransaction { implicit graph =>
-                        observableSrv
-                          .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
-                          .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
-                      }
-                      .fold(
-                        failure => (successes, failures :+ errorHandler.toErrorResult(failure)._2 ++ Json.obj("object" -> Json.obj("data" -> data))),
-                        success => (successes :+ success, failures)
-                      )
+                .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
+                  case ((s, f), Right(o)) => (s :+ o, f)
+                  case ((s, f), Left(o))  => (s, f :+ o)
                 }
               if (failures.isEmpty) Results.Created(JsArray(successes))
               else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
           }
       }
+
+  def createSimpleObservable(
+      `case`: Case with Entity,
+      inputObservable: InputObservable,
+      observableType: ObservableType with Entity,
+      data: String
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        observableSrv
+          .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
+          .flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
+      } match {
+      case Success(o)     => Right(o.toJson)
+      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+    }
+
+  def createAttachmentObservable(
+      `case`: Case with Entity,
+      inputObservable: InputObservable,
+      observableType: ObservableType with Entity,
+      fileOrAttachment: Either[FFile, InputAttachment]
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        val observable = fileOrAttachment match {
+          case Left(file) => observableSrv.create(inputObservable.toObservable, observableType, file, inputObservable.tags, Nil)
+          case Right(attachment) =>
+            for {
+              attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
+              obs    <- observableSrv.create(inputObservable.toObservable, observableType, attach, inputObservable.tags, Nil)
+            } yield obs
+        }
+        observable.flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
+      } match {
+      case Success(o) => Right(o.toJson)
+      case _ =>
+        val filename = fileOrAttachment.fold(_.filename, _.name)
+        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+    }
 
   def get(observableId: String): Action[AnyContent] =
     entrypoint("get observable")
@@ -229,8 +248,8 @@ class ObservableCtrl @Inject() (
     }
   }
 
-  private def getZipFiles(observable: InputObservable, zipPassword: Option[String])(implicit authContext: AuthContext): Seq[InputObservable] =
-    observable.attachment.toSeq.flatMap { attachment =>
+  private def getZipFiles(observable: InputObservable, zipPassword: Option[String]): Seq[InputObservable] =
+    observable.attachment.flatMap(_.swap.toSeq).flatMap { attachment =>
       val zipFile                = new ZipFile(attachment.filepath.toFile)
       val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
 
@@ -240,6 +259,6 @@ class ObservableCtrl @Inject() (
       files
         .filterNot(_.isDirectory)
         .flatMap(extractAndCheckSize(zipFile, _))
-        .map(ffile => observable.copy(attachment = Some(ffile)))
+        .map(ffile => observable.copy(attachment = Seq(Left(ffile))))
     }
 }

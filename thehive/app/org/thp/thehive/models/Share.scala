@@ -15,7 +15,7 @@ case class ShareCase()
 case class ShareObservable()
 
 @BuildEdgeEntity[Share, Task]
-case class ShareTask()
+case class ShareTask(actionRequired: Boolean = false)
 
 @BuildEdgeEntity[Share, Profile]
 case class ShareProfile()
@@ -28,8 +28,3 @@ case class RichShare(share: Share with Entity, caseId: EntityId, organisationNam
   def _updatedAt: Option[Date]   = share._updatedAt
   def owner: Boolean             = share.owner
 }
-
-//object RichShare {
-//  def apply(`case`: Case with Entity, organisation: Organisation with Entity, profile: Profile with Entity): RichShare =
-//    RichShare(`case`._id, organisation.name, profile.permissions)
-//}

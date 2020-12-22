@@ -73,9 +73,8 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
   "MISP service" should {
     "import events" in testApp { app =>
-      await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
-
       app[Database].roTransaction { implicit graph =>
+        app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])
         app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible.getOrFail("Alert")
       } must beSuccessfulTry(
         Alert(
@@ -108,7 +107,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
         .map(o => (o.`type`.name, o.data.map(_.data), o.tlp, o.message, o.tags.map(_.toString).toSet))
 //        println(observables.mkString("\n"))
       observables must contain(
-        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
+        ("filename", Some("plop"), 0, Some(""), Set("TEST", "TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
       )
     }
   }

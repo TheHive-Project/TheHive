@@ -31,7 +31,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
   val operations: Operations = Operations(name)
     .addProperty[Option[Boolean]]("Observable", "seen")
     .updateGraph("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
-      Try(traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageConfig").iterate())
+      traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageConfig").iterate()
       Success(())
     }
     .updateGraph("Remove duplicate custom fields", "CustomField") { traversal =>
@@ -82,6 +82,11 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .unsafeHas("name", P.within("org-admin", "analyst"))
         .onRaw(_.property(Cardinality.set: Cardinality, "permissions", "accessTheHiveFS", Nil: _*)) // Nil is for disambiguate the overloaded methods
         .iterate()
+      Success(())
+    }
+    .addProperty[Boolean]("ShareTask", "actionRequired")
+    .updateGraph("Add actionRequire property", "Share") { traversal =>
+      traversal.outE[ShareTask].raw.property("actionRequired", false).iterate()
       Success(())
     }
 

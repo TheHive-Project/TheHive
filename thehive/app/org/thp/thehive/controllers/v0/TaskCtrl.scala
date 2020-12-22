@@ -104,11 +104,13 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
     "page",
     FieldsParser[OutputParam],
     {
-      case (OutputParam(from, to, _, 0), taskSteps, _) =>
+      case (OutputParam(from, to, _, 0), taskSteps, authContext) =>
         taskSteps.richPage(from, to, withTotal = true)(_.richTask.domainMap(_ -> (None: Option[RichCase])))
       case (OutputParam(from, to, _, _), taskSteps, authContext) =>
         taskSteps.richPage(from, to, withTotal = true)(
-          _.richTaskWithCustomRenderer(_.`case`.richCase(authContext).domainMap(c => Some(c): Option[RichCase]))
+          _.richTaskWithCustomRenderer(
+            _.`case`.richCase(authContext).domainMap(c => Some(c): Option[RichCase])
+          )
         )
     }
   )
@@ -117,10 +119,19 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
     FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
-  override val outputQuery: Query = Query.output[RichTask, Traversal.V[Task]](_.richTask)
+  override val outputQuery: Query =
+    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.output[(RichTask, Option[RichCase])],
-    Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext))
+    Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
+    Query.init[Traversal.V[Task]](
+      "waitingTask",
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(authContext)
+    ),
+    Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
+    Query[Traversal.V[Task], Traversal.V[Case]]("case", (taskSteps, _) => taskSteps.`case`),
+    Query[Traversal.V[Task], Traversal.V[CaseTemplate]]("caseTemplate", (taskSteps, _) => taskSteps.caseTemplate),
+    Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Task]
     .property("title", UMapping.string)(_.field.updatable)

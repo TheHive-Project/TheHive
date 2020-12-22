@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import java.lang.{Long => JLong}
-import java.util.{Date, List => JList, Map => JMap}
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -24,6 +20,9 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import play.api.libs.json.{JsObject, Json}
 
+import java.lang.{Long => JLong}
+import java.util.{Date, List => JList, Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -101,7 +100,10 @@ class AlertSrv @Inject() (
           .flatMap(auditSrv.alert.update(_, updatedFields))
     }
 
-  def updateTags(alert: Alert with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  def updateTags(alert: Alert with Entity, tags: Set[Tag with Entity])(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[(Set[Tag with Entity], Set[Tag with Entity])] = {
     val (tagsToAdd, tagsToRemove) = get(alert)
       .tags
       .toIterator
@@ -114,11 +116,14 @@ class AlertSrv @Inject() (
       _ <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
       _ = get(alert).removeTags(tagsToRemove)
       _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags.map(_.toString)))
-    } yield ()
+    } yield (tagsToAdd, tagsToRemove)
 
   }
 
-  def updateTagNames(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def updateTagNames(alert: Alert with Entity, tags: Set[String])(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[(Set[Tag with Entity], Set[Tag with Entity])] =
     tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(alert, t.toSet))
 
   def addTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
@@ -237,34 +242,36 @@ class AlertSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[RichCase] =
-    get(alert.alert).`case`.richCase.getOrFail("Case").orElse {
-      for {
-        caseTemplate <-
-          alert
-            .caseTemplate
-            .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
-            .flip
-        customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
-        case0 = Case(
-          number = 0,
-          title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
-          description = alert.description,
-          severity = alert.severity,
-          startDate = new Date,
-          endDate = None,
-          flag = false,
-          tlp = alert.tlp,
-          pap = alert.pap,
-          status = CaseStatus.Open,
-          summary = None
-        )
+    auditSrv.mergeAudits {
+      get(alert.alert).`case`.richCase.getOrFail("Case").orElse {
+        for {
+          caseTemplate <-
+            alert
+              .caseTemplate
+              .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
+              .flip
+          customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
+          case0 = Case(
+            number = 0,
+            title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
+            description = alert.description,
+            severity = alert.severity,
+            startDate = new Date,
+            endDate = None,
+            flag = false,
+            tlp = alert.tlp,
+            pap = alert.pap,
+            status = CaseStatus.Open,
+            summary = None
+          )
 
-        createdCase <- caseSrv.create(case0, user, organisation, alert.tags.toSet, customField, caseTemplate, Nil)
-        _           <- importObservables(alert.alert, createdCase.`case`)
-        _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
-        _           <- markAsRead(alert._id)
-      } yield createdCase
-    }
+          createdCase <- caseSrv.create(case0, user, organisation, alert.tags.toSet, customField, caseTemplate, Nil)
+          _           <- importObservables(alert.alert, createdCase.`case`)
+          _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
+          _           <- markAsRead(alert._id)
+        } yield createdCase
+      }
+    }(richCase => auditSrv.`case`.create(richCase.`case`, richCase.toJson))
 
   def mergeInCase(alertId: EntityIdOrName, caseId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     for {

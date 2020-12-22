@@ -20,7 +20,18 @@
 			</td>
 			<td>{{value.group}}</td>
 			<td>
-				<div>{{value.title}}</div>
+				<div>
+					<span class="text-primary mr-xxxs" ng-if="value.flag">
+						<i class="glyphicon glyphicon-flag"></i>
+					</span>
+
+					<a href ui-sref="app.case.tasks-item({caseId: value.extraData.case._id, itemId:value._id})" ng-class="{'text-danger': !!value.extraData.actionRequired}">
+						<span ng-if="!!value.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
+							<i class="fa fa-exclamation-triangle"></i>
+						</span>
+						{{value.title}}
+					</a>
+				</div>
 				<div>
 					<small><entity-link value="value.extraData.case"></entity-link></small>
 				</div>

@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.models.Database
@@ -14,6 +12,8 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, TaskSrv}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 case class TestTask(
     title: String,

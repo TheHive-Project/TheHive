@@ -27,7 +27,7 @@ class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityChec
   override def exists(e: ObservableType)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
   override def createEntity(e: ObservableType)(implicit graph: Graph, authContext: AuthContext): Try[ObservableType with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("ObservableType")
+    integrityCheckActor ! EntityAdded("ObservableType")
     super.createEntity(e)
   }
 

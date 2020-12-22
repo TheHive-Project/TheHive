@@ -42,7 +42,7 @@ class CaseTemplateSrv @Inject() (
     startTraversal.getByName(name)
 
   override def createEntity(e: CaseTemplate)(implicit graph: Graph, authContext: AuthContext): Try[CaseTemplate with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("CaseTemplate")
+    integrityCheckActor ! EntityAdded("CaseTemplate")
     super.createEntity(e)
   }
 
@@ -202,7 +202,7 @@ object CaseTemplateOps {
           _.by
             .by(_.organisation.value(_.name))
             .by(_.tags.fold)
-            .by(_.tasks.richTask.fold)
+            .by(_.tasks.richTaskWithoutActionRequired.fold)
             .by(
               _.outE[CaseTemplateCustomField]
                 .as(caseTemplateCustomFieldLabel)

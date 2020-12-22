@@ -23,7 +23,7 @@ class ImpactStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckA
     startTraversal.getByName(name)
 
   override def createEntity(e: ImpactStatus)(implicit graph: Graph, authContext: AuthContext): Try[ImpactStatus with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("ImpactStatus")
+    integrityCheckActor ! EntityAdded("ImpactStatus")
     super.createEntity(e)
   }
 
