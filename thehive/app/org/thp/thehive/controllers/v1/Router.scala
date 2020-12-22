@@ -11,6 +11,7 @@ class Router @Inject() (
     caseTemplateCtrl: CaseTemplateCtrl,
     userCtrl: UserCtrl,
     organisationCtrl: OrganisationCtrl,
+    observableCtrl: ObservableCtrl,
     taskCtrl: TaskCtrl,
     customFieldCtrl: CustomFieldCtrl,
     alertCtrl: AlertCtrl,
@@ -67,6 +68,8 @@ class Router @Inject() (
 //    case POST(p"/share")           => shareCtrl.create
 //    case GET(p"/share/$shareId")   => shareCtrl.get(shareId)
 //    case PATCH(p"/share/$shareId") => shareCtrl.update(shareId)
+
+    case DELETE(p"/observable/$observableId") => observableCtrl.delete(observableId)
 
     case GET(p"/task")            => taskCtrl.list
     case POST(p"/task")           => taskCtrl.create
