@@ -43,8 +43,7 @@ class ObservableCtrl @Inject() (
     attachmentSrv: AttachmentSrv,
     errorHandler: ErrorHandler,
     temporaryFileCreator: DefaultTemporaryFileCreator,
-    configuration: Configuration,
-    errorHandler: ErrorHandler
+    configuration: Configuration
 ) extends QueryableCtrl
     with ObservableRenderer {
 
