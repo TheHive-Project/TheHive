@@ -124,22 +124,22 @@ class PublicCaseTemplate @Inject() (
     .property("description", UMapping.string.optional)(_.field.updatable)
     .property("severity", UMapping.int.optional)(_.field.updatable)
     .property("tags", UMapping.string.set)(
-      _.select(_.tags.displayName)
-        .filter((_, cases) =>
-          cases
-            .tags
-            .graphMap[String, String, Converter.Identity[String]](
-              { v =>
-                val namespace = UMapping.string.getProperty(v, "namespace")
-                val predicate = UMapping.string.getProperty(v, "predicate")
-                val value     = UMapping.string.optional.getProperty(v, "value")
-                Tag(namespace, predicate, value, None, 0).toString
-              },
-              Converter.identity[String]
-            )
-        )
-        .converter(_ => Converter.identity[String])
-        .custom { (_, value, vertex, _, graph, authContext) =>
+      _.select(_.tags.displayName) // FIXME add filter
+//        .filter(FieldsParser.string)((_, cases, _, predicate) =>
+//          cases
+//            .tags
+//            .graphMap[String, String, Converter.Identity[String]](
+//              { v =>
+//                val namespace = UMapping.string.getProperty(v, "namespace")
+//                val predicate = UMapping.string.getProperty(v, "predicate")
+//                val value     = UMapping.string.optional.getProperty(v, "value")
+//                Tag(namespace, predicate, value, None, 0).toString
+//              },
+//              Converter.identity[String]
+//            )
+//        )
+//        .converter(_ => Converter.identity[String])
+        .custom { (_, value, vertex, graph, authContext) =>
           caseTemplateSrv
             .get(vertex)(graph)
             .getOrFail("CaseTemplate")

@@ -206,7 +206,7 @@ case class AggMin(aggName: Option[String], fieldName: String) extends Aggregatio
         property
           .select(fieldPath, t, authContext)
           .min
-          .domainMap(min => Output(Json.obj(name -> property.mapping.selectRenderer.toJson(min)))),
+          .domainMap(min => Output(Json.obj(name -> property.toJson(min)))),
       Output(Json.obj(name -> JsNull))
     )
   }
@@ -228,7 +228,7 @@ case class AggMax(aggName: Option[String], fieldName: String) extends Aggregatio
         property
           .select(fieldPath, t, authContext)
           .max
-          .domainMap(max => Output(Json.obj(name -> property.mapping.selectRenderer.toJson(max)))),
+          .domainMap(max => Output(Json.obj(name -> property.toJson(max)))),
       Output(Json.obj(name -> JsNull))
     )
   }
