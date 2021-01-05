@@ -36,7 +36,10 @@ class CaseCtrl @Inject() (
   override val entityName: String                 = "case"
   override val publicProperties: PublicProperties = properties.`case`
   override val initialQuery: Query =
-    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
+    if (db.fullTextIndexAvailable)
+      Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => caseSrv.startTraversal(graph).visible(authContext))
+    else
+      Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
     "getCase",
     FieldsParser[EntityIdOrName],
@@ -76,7 +79,7 @@ class CaseCtrl @Inject() (
           user         <- inputCase.user.fold[Try[Option[User with Entity]]](Success(None))(u => userSrv.getOrFail(EntityIdOrName(u)).map(Some.apply))
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
           richCase <- caseSrv.create(
-            caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
+            caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase(organisation._id),
             user,
             organisation,
             tags.toSet,

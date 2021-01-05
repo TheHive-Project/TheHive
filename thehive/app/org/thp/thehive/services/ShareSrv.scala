@@ -90,7 +90,6 @@ class ShareSrv @Inject() (implicit
 
   def remove(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      case0        <- get(shareId).`case`.getOrFail("Case")
       organisation <- get(shareId).organisation.getOrFail("Organisation")
       case0        <- get(shareId).`case`.removeValue(_.organisationIds, organisation._id).getOrFail("Case")
       _            <- auditSrv.share.unshareCase(case0, organisation)

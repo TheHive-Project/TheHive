@@ -79,10 +79,14 @@ case class CaseCaseTemplate()
 
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "number")
-//@DefineIndex(IndexType.fulltext, "title")
-//@DefineIndex(IndexType.fulltext, "description")
-//@DefineIndex(IndexType.standard, "startDate")
-@DefineIndex(IndexType.basic, "status")
+@DefineIndex(IndexType.fulltext, "title")
+@DefineIndex(IndexType.fulltext, "description")
+@DefineIndex(IndexType.fulltext, "summary")
+@DefineIndex(IndexType.standard, "startDate")
+@DefineIndex(IndexType.standard, "endDate")
+@DefineIndex(IndexType.standard, "flag")
+@DefineIndex(IndexType.standard, "status")
+@DefineIndex(IndexType.standard, "organisationIds")
 case class Case(
     number: Int,
     title: String,
@@ -94,7 +98,8 @@ case class Case(
     tlp: Int,
     pap: Int,
     status: CaseStatus.Value,
-    summary: Option[String]
+    summary: Option[String],
+    organisationIds: Seq[EntityId]
 )
 
 case class RichCase(
@@ -148,16 +153,18 @@ object RichCase {
       resolutionStatus: Option[String],
       user: Option[String],
       customFields: Seq[RichCustomField],
-      userPermissions: Set[Permission]
+      userPermissions: Set[Permission],
+      organisationIds: Seq[EntityId]
   ): RichCase = {
-    val `case`: Case with Entity = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
-      override val _id: EntityId              = __id
-      override val _label: String             = "Case"
-      override val _createdBy: String         = __createdBy
-      override val _updatedBy: Option[String] = __updatedBy
-      override val _createdAt: Date           = __createdAt
-      override val _updatedAt: Option[Date]   = __updatedAt
-    }
+    val `case`: Case with Entity =
+      new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary, organisationIds) with Entity {
+        override val _id: EntityId              = __id
+        override val _label: String             = "Case"
+        override val _createdBy: String         = __createdBy
+        override val _updatedBy: Option[String] = __updatedBy
+        override val _createdAt: Date           = __createdAt
+        override val _updatedAt: Option[Date]   = __updatedAt
+      }
     RichCase(`case`, tags, impactStatus, resolutionStatus, user, customFields, userPermissions)
   }
 }

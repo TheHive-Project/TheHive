@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Long => JLong}
-import java.util.Date
+import org.apache.tinkerpop.gremlin.process.traversal.P
 
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
@@ -60,7 +59,7 @@ class CaseCtrl @Inject() (
           tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
           tasks        <- inputTasks.toTry(t => t.owner.map(o => userSrv.getOrFail(EntityIdOrName(o))).flip.map(owner => t.toTask -> owner))
           richCase <- caseSrv.create(
-            caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
+            caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase(organisation._id),
             user,
             organisation,
             tags.toSet,
@@ -229,22 +228,22 @@ class PublicCase @Inject() (
       .property("startDate", UMapping.date)(_.field.updatable)
       .property("endDate", UMapping.date.optional)(_.field.updatable)
       .property("tags", UMapping.string.set)(
-        _.select(_.tags.displayName)
-          .filter((_, cases) =>
-            cases
-              .tags
-              .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
-                Converter.identity[String]
-              )
-          )
-          .converter(_ => Converter.identity[String])
-          .custom { (_, value, vertex, _, graph, authContext) =>
+        _.select(_.tags.displayName) // FIXME add filter
+//          .filter((_, cases) =>
+//            cases
+//              .tags
+//              .graphMap[String, String, Converter.Identity[String]](
+//                { v =>
+//                  val namespace = UMapping.string.getProperty(v, "namespace")
+//                  val predicate = UMapping.string.getProperty(v, "predicate")
+//                  val value     = UMapping.string.optional.getProperty(v, "value")
+//                  Tag(namespace, predicate, value, None, 0).toString
+//                },
+//                Converter.identity[String]
+//              )
+//          )
+//          .converter(_ => Converter.identity[String])
+          .custom { (_, value, vertex, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
               .getOrFail("Case")
@@ -301,35 +300,14 @@ class PublicCase @Inject() (
             .getOrElse(caseTraversal.constant2(null))
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
-        .filter {
-          case (FPathElem(_, FPathElem(name, _)), caseTraversal) =>
-            db
-              .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField"))
-              .map {
-                case CustomFieldType.boolean => caseTraversal.customFields(EntityIdOrName(name)).value(_.booleanValue)
-                case CustomFieldType.date    => caseTraversal.customFields(EntityIdOrName(name)).value(_.dateValue)
-                case CustomFieldType.float   => caseTraversal.customFields(EntityIdOrName(name)).value(_.floatValue)
-                case CustomFieldType.integer => caseTraversal.customFields(EntityIdOrName(name)).value(_.integerValue)
-                case CustomFieldType.string  => caseTraversal.customFields(EntityIdOrName(name)).value(_.stringValue)
-              }
-              .getOrElse(caseTraversal.constant2(null))
-          case (_, caseTraversal) => caseTraversal.constant2(null)
-        }
-        .converter {
-          case FPathElem(_, FPathElem(name, _)) =>
-            db
-              .roTransaction { implicit graph =>
-                customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField")
-              }
-              .map {
-                case CustomFieldType.boolean => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Boolean] }
-                case CustomFieldType.date    => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Date] }
-                case CustomFieldType.float   => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Double] }
-                case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
-                case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
-              }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
-          case _ => (x: JsValue) => x
+        .filter(FieldsParser.json) {
+          case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
+            predicate match {
+              case Right(predicate) => caseTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+              case Left(true)       => caseTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
+              case Left(false)      => caseTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+            }
+          case (_, caseTraversal, _, _) => caseTraversal.limit(0)
         }
         .custom {
           case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>

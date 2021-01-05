@@ -77,7 +77,7 @@ trait Conversion {
           name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
       }
     } yield InputCase(
-      Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary),
+      Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary, Nil), // organisation Ids are filled by output
       user.map(normaliseLogin),
       Map(mainOrganisation -> Profile.orgAdmin.name),
       tags,

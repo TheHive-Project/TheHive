@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import akka.actor.ActorRef
 
 import javax.inject.{Inject, Named, Singleton}
@@ -14,6 +14,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
+import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -23,7 +24,7 @@ import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
-import play.api.libs.json.{JsNull, JsObject, Json}
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import scala.util.{Failure, Success, Try}
 
@@ -361,7 +362,13 @@ object CaseOps {
     def visible(implicit authContext: AuthContext): Traversal.V[Case] = visible(authContext.organisation)
 
     def visible(organisationIdOrName: EntityIdOrName): Traversal.V[Case] =
-      traversal.filter(_.organisations.get(organisationIdOrName))
+      organisationIdOrName.fold(
+        orgId => traversal.has(_.organisationIds, orgId),
+        orgName => {
+          logger.warn(s"Organisation ID is not available, queries become slow")
+          traversal.filter(_.organisations.getByName(orgName))
+        }
+      )
 
     def assignee: Traversal.V[User] = traversal.out[CaseUser].v[User]
 
@@ -417,6 +424,54 @@ object CaseOps {
         .domainMap {
           case (cfv, cf) => RichCustomField(cf, cfv)
         }
+
+    def customFieldFilter(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName, predicate: P[JsValue]): Traversal.V[Case] =
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.map(_.as[Boolean])))
+          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.map(_.as[Date])))
+          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.map(_.as[Double])))
+          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.map(_.as[Int])))
+          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.map(_.as[String])))
+        }
+        .getOrElse(traversal.limit(0))
+
+    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] = {
+      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
+
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.booleanValue).inV.v[CustomField]))
+          case CustomFieldType.date    => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.dateValue).inV.v[CustomField]))
+          case CustomFieldType.float   => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.floatValue).inV.v[CustomField]))
+          case CustomFieldType.integer => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.integerValue).inV.v[CustomField]))
+          case CustomFieldType.string  => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.stringValue).inV.v[CustomField]))
+        }
+        .getOrElse(traversal.limit(0))
+    }
+
+    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] = {
+      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
+
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.booleanValue).inV.v[CustomField]))
+          case CustomFieldType.date    => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.dateValue).inV.v[CustomField]))
+          case CustomFieldType.float   => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.floatValue).inV.v[CustomField]))
+          case CustomFieldType.integer => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.integerValue).inV.v[CustomField]))
+          case CustomFieldType.string  => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.stringValue).inV.v[CustomField]))
+        }
+        .getOrElse(traversal.limit(0))
+    }
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
 
@@ -560,7 +615,7 @@ object CaseOps {
 //  implicit class CaseCustomFieldsOpsDefs(traversal: Traversal.E[CaseCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-class CaseIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {
+class CaseIntegrityCheckOps @Inject() (val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {
   def removeDuplicates(): Unit =
     duplicateEntities
       .foreach { entities =>

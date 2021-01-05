@@ -33,10 +33,11 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
 
     // Create an event first
     val `case` = app[Database].tryTransaction { implicit graph =>
+      val organisation = app[OrganisationSrv].getOrFail(EntityIdOrName("admin")).get
       app[CaseSrv].create(
-        Case(0, "case audit", "desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None),
+        Case(0, "case audit", "desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None, Seq(organisation._id)),
         None,
-        app[OrganisationSrv].getOrFail(EntityIdOrName("admin")).get,
+        organisation,
         Set.empty,
         Seq.empty,
         None,

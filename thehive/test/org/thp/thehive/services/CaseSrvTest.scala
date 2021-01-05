@@ -64,7 +64,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.manageShare,
             Permissions.managePage,
             Permissions.accessTheHiveFS
-          )
+          ),
+          richCase.`case`.organisationIds
         )
         richCase.tags.map(_.toString) must contain(exactly("testNamespace:testPredicate=\"t1\"", "testNamespace:testPredicate=\"t3\""))
       }
@@ -105,7 +106,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.manageShare,
             Permissions.managePage,
             Permissions.accessTheHiveFS
-          )
+          ),
+          richCase.`case`.organisationIds
         )
         richCase.tags.map(_.toString) must contain(exactly("testNamespace:testPredicate=\"t2\"", "testNamespace:testPredicate=\"t1\""))
         richCase._createdBy must_=== "system@thehive.local"
@@ -239,19 +241,18 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "add new tags and not previous ones" in testApp { app =>
       // Create a case with tags first
-      val c = app[Database]
-        .tryTransaction(implicit graph =>
-          app[CaseSrv].create(
-            Case(0, "case 5", "desc 5", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-            None,
-            app[OrganisationSrv].getOrFail(EntityName("cert")).get,
-            app[TagSrv].startTraversal.toSeq.toSet,
-            Seq.empty,
-            None,
-            Nil
-          )
+      val c = app[Database].tryTransaction { implicit graph =>
+        val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
+        app[CaseSrv].create(
+          Case(0, "case 5", "desc 5", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None, Seq(organisation._id)),
+          None,
+          organisation,
+          app[TagSrv].startTraversal.toSeq.toSet,
+          Seq.empty,
+          None,
+          Nil
         )
-        .get
+      }.get
 
       c.tags must not(beEmpty)
 
@@ -296,19 +297,18 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "remove a case and its dependencies" in testApp { app =>
-      val c1 = app[Database]
-        .tryTransaction(implicit graph =>
-          app[CaseSrv].create(
-            Case(0, "case 9", "desc 9", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-            None,
-            app[OrganisationSrv].getOrFail(EntityName("cert")).get,
-            Set[Tag with Entity](),
-            Seq.empty,
-            None,
-            Nil
-          )
+      val c1 = app[Database].tryTransaction { implicit graph =>
+        val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
+        app[CaseSrv].create(
+          Case(0, "case 9", "desc 9", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None, Seq(organisation._id)),
+          None,
+          organisation,
+          Set[Tag with Entity](),
+          Seq.empty,
+          None,
+          Nil
         )
-        .get
+      }.get
 
       app[Database].tryTransaction(implicit graph => app[CaseSrv].remove(c1.`case`)) must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
@@ -320,10 +320,11 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database]
         .tryTransaction { implicit graph =>
           for {
+            organisation <- app[OrganisationSrv].getOrFail(EntityName("cert"))
             case0 <- app[CaseSrv].create(
-              Case(0, "case 6", "desc 6", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+              Case(0, "case 6", "desc 6", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None, Seq(organisation._id)),
               None,
-              app[OrganisationSrv].getOrFail(EntityName("cert")).get,
+              organisation,
               app[TagSrv].startTraversal.toSeq.toSet,
               Seq.empty,
               None,
@@ -341,19 +342,18 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "set or unset case resolution status" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
-        val c7 = app[Database]
-          .tryTransaction(implicit graph =>
-            app[CaseSrv].create(
-              Case(0, "case 7", "desc 7", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
-              None,
-              app[OrganisationSrv].getOrFail(EntityName("cert")).get,
-              app[TagSrv].startTraversal.toSeq.toSet,
-              Seq.empty,
-              None,
-              Nil
-            )
+        val c7 = app[Database].tryTransaction { implicit graph =>
+          val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
+          app[CaseSrv].create(
+            Case(0, "case 7", "desc 7", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None, Seq(organisation._id)),
+            None,
+            organisation,
+            app[TagSrv].startTraversal.toSeq.toSet,
+            Seq.empty,
+            None,
+            Nil
           )
-          .get
+        }.get
 
         app[CaseSrv].get(c7._id).resolutionStatus.exists must beFalse
         app[Database].tryTransaction(implicit graph => app[CaseSrv].setResolutionStatus(c7.`case`, "Duplicated")) must beSuccessfulTry
@@ -365,17 +365,18 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "assign/unassign a case" in testApp { app =>
       val c8 = app[Database]
-        .tryTransaction(implicit graph =>
+        .tryTransaction { implicit graph =>
+          val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
           app[CaseSrv].create(
-            Case(0, "case 8", "desc 8", 2, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None),
+            Case(0, "case 8", "desc 8", 2, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None, Seq(organisation._id)),
             Some(app[UserSrv].get(EntityName("certuser@thehive.local")).getOrFail("Case").get),
-            app[OrganisationSrv].getOrFail(EntityName("cert")).get,
+            organisation,
             app[TagSrv].startTraversal.toSeq.toSet,
             Seq.empty,
             None,
             Nil
           )
-        )
+        }
         .get
         .`case`
 

@@ -107,7 +107,7 @@ object Conversion {
 
   implicit class InputCaseOps(inputCase: InputCase) {
 
-    def toCase: Case =
+    def toCase(organisationIds: EntityId*): Case =
       inputCase
         .into[Case]
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
@@ -117,6 +117,7 @@ object Conversion {
         .withFieldComputed(_.pap, _.pap.getOrElse(2))
         .withFieldConst(_.status, CaseStatus.Open)
         .withFieldConst(_.number, 0)
+        .withFieldConst(_.organisationIds, organisationIds)
         .transform
 
     def withCaseTemplate(caseTemplate: RichCaseTemplate): InputCase =
