@@ -76,23 +76,28 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
       app[Database].roTransaction { implicit graph =>
         app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])
         app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible.getOrFail("Alert")
-      } must beSuccessfulTry(
-        Alert(
-          `type` = "misp",
-          source = "ORGNAME",
-          sourceRef = "1",
-          externalLink = Some("https://misp.test/events/1"),
-          title = "#1 test1 -> 1.2",
-          description = s"Imported from MISP Event #1, created at ${Event.simpleDateFormat.parse("2019-08-23")}",
-          severity = 3,
-          date = Event.simpleDateFormat.parse("2019-08-23"),
-          lastSyncDate = new Date(1566913355000L),
-          tlp = 2,
-          pap = 2,
-          read = false,
-          follow = true
-        )
-      ).eventually(5, 100.milliseconds)
+      } must beSuccessfulTry
+        .which { alert: Alert =>
+          alert must beEqualTo(
+            Alert(
+              `type` = "misp",
+              source = "ORGNAME",
+              sourceRef = "1",
+              externalLink = Some("https://misp.test/events/1"),
+              title = "#1 test1 -> 1.2",
+              description = s"Imported from MISP Event #1, created at ${Event.simpleDateFormat.parse("2019-08-23")}",
+              severity = 3,
+              date = Event.simpleDateFormat.parse("2019-08-23"),
+              lastSyncDate = new Date(1566913355000L),
+              tlp = 2,
+              pap = 2,
+              read = false,
+              follow = true,
+              organisationId = alert.organisationId
+            )
+          )
+        }
+        .eventually(5, 100.milliseconds)
 
       val observables = app[Database]
         .roTransaction { implicit graph =>

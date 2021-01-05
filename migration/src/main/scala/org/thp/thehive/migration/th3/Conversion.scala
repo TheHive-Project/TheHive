@@ -5,6 +5,7 @@ import java.util.{Base64, Date}
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.connector.cortex.models.{Action, Job, JobStatus}
 import org.thp.thehive.controllers.v0
@@ -200,7 +201,8 @@ trait Conversion {
         tlp,
         pap.getOrElse(2),
         read,
-        follow
+        follow,
+        new EntityId("") // Filled by output
       ),
       caseId,
       mainOrganisation,

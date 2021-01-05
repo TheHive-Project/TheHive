@@ -22,6 +22,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
   "alert service" should {
     "create an alert" in testApp { app =>
       val a = app[Database].tryTransaction { implicit graph =>
+        val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
         app[AlertSrv].create(
           Alert(
             `type` = "test",
@@ -36,9 +37,10 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
             tlp = 1,
             pap = 2,
             read = false,
-            follow = false
+            follow = false,
+            organisationId = organisation._id
           ),
-          app[OrganisationSrv].getOrFail(EntityName("cert")).get,
+          organisation,
           Set("tag1", "tag2"),
           Seq(InputCustomFieldValue("string1", Some("lol"), None)),
           Some(app[CaseTemplateSrv].getOrFail(EntityName("spam")).get)

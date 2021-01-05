@@ -38,7 +38,11 @@ class AlertCtrl @Inject() (
   override val entityName: String                 = "alert"
   override val publicProperties: PublicProperties = properties.alert
   override val initialQuery: Query =
-    Query.init[Traversal.V[Alert]]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
+    if (db.fullTextIndexAvailable)
+      Query.init[Traversal.V[Alert]]("listAlert", (graph, authContext) => alertSrv.startTraversal(graph).visible(authContext))
+    else
+      Query.init[Traversal.V[Alert]]("listAlert", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).alerts)
+
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Alert]](
     "getAlert",
     FieldsParser[EntityIdOrName],
@@ -86,7 +90,7 @@ class AlertCtrl @Inject() (
         for {
           organisation <- userSrv.current.organisations(Permissions.manageAlert).getOrFail("Organisation")
           customFields = inputAlert.customFieldValue.map(cf => InputCustomFieldValue(cf.name, cf.value, cf.order))
-          richAlert <- alertSrv.create(inputAlert.toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
+          richAlert <- alertSrv.create(inputAlert.toAlert(organisation._id), organisation, inputAlert.tags, customFields, caseTemplate)
         } yield Results.Created(richAlert.toJson)
       }
 

@@ -25,7 +25,7 @@ class MispExportSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) {
 
   lazy val logger: Logger = Logger(getClass)
@@ -145,6 +145,7 @@ class MispExportSrv @Inject() (
       authContext: AuthContext
   ): Try[RichAlert] =
     for {
+      org <- organisationSrv.getOrFail(authContext.organisation)
       alert <- client.currentOrganisationName.map { orgName =>
         Alert(
           `type` = "misp",
@@ -159,10 +160,10 @@ class MispExportSrv @Inject() (
           tlp = `case`.tlp,
           pap = `case`.pap,
           read = false,
-          follow = true
+          follow = true,
+          org._id
         )
       }
-      org          <- organisationSrv.getOrFail(authContext.organisation)
       createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Seq(), None)
       _            <- alertSrv.alertCaseSrv.create(AlertCase(), createdAlert.alert, `case`)
     } yield createdAlert

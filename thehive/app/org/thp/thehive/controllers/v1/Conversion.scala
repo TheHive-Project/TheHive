@@ -3,6 +3,7 @@ package org.thp.thehive.controllers.v1
 import java.util.Date
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1._
@@ -66,7 +67,7 @@ object Conversion {
 
   implicit class InputAlertOps(inputAlert: InputAlert) {
 
-    def toAlert: Alert =
+    def toAlert(organisationId: EntityId): Alert =
       inputAlert
         .into[Alert]
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
@@ -75,6 +76,7 @@ object Conversion {
         .withFieldConst(_.read, false)
         .withFieldConst(_.lastSyncDate, new Date)
         .withFieldConst(_.follow, true)
+        .withFieldConst(_.organisationId, organisationId)
         .transform
   }
 

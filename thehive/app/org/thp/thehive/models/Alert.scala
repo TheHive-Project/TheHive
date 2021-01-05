@@ -40,6 +40,19 @@ case class AlertTag()
 
 @BuildVertexEntity
 @DefineIndex(IndexType.basic, "type", "source", "sourceRef")
+@DefineIndex(IndexType.standard, "type")
+@DefineIndex(IndexType.standard, "source")
+@DefineIndex(IndexType.standard, "sourceRef")
+@DefineIndex(IndexType.fulltext, "title")
+@DefineIndex(IndexType.fulltext, "description")
+@DefineIndex(IndexType.standard, "severity")
+@DefineIndex(IndexType.standard, "date")
+@DefineIndex(IndexType.standard, "lastSyncDate")
+@DefineIndex(IndexType.standard, "tlp")
+@DefineIndex(IndexType.standard, "pap")
+@DefineIndex(IndexType.standard, "read")
+@DefineIndex(IndexType.standard, "follow")
+@DefineIndex(IndexType.standard, "organisationId")
 case class Alert(
     `type`: String,
     source: String,
@@ -53,7 +66,8 @@ case class Alert(
     tlp: Int,
     pap: Int,
     read: Boolean,
-    follow: Boolean
+    follow: Boolean,
+    organisationId: EntityId
 )
 
 case class RichAlert(
