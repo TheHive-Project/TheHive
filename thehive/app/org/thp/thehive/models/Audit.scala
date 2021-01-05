@@ -11,8 +11,15 @@ import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 @BuildEdgeEntity[Audit, User]
 case class AuditUser()
 
-@DefineIndex(IndexType.basic, "requestId", "mainAction")
 @BuildVertexEntity
+@DefineIndex(IndexType.basic, "requestId", "mainAction")
+@DefineIndex(IndexType.standard, "requestId")
+@DefineIndex(IndexType.standard, "action")
+@DefineIndex(IndexType.standard, "mainAction")
+@DefineIndex(IndexType.standard, "objectId")
+@DefineIndex(IndexType.standard, "objectType")
+@DefineIndex(IndexType.standard, "_createdAt")
+@DefineIndex(IndexType.standard, "_updatedAt")
 case class Audit(
     requestId: String,
     action: String,
