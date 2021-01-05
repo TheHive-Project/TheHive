@@ -129,12 +129,12 @@ class Properties @Inject() (
           case _ => (x: JsValue) => x
         }
         .custom {
-          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
             for {
               c <- caseSrv.get(vertex)(graph).getOrFail("Case")
               _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
             } yield Json.obj(s"customField.$idOrName" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
             for {
               c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
               cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
@@ -193,11 +193,8 @@ class Properties @Inject() (
       .property("pap", UMapping.int)(_.field.updatable)
       .property("status", UMapping.enum[CaseStatus.type])(_.field.updatable)
       .property("summary", UMapping.string.optional)(_.field.updatable)
-      .property("actionRequired", UMapping.boolean)(_
-        .authSelect((t, auth) => t.isActionRequired(auth))
-        .readonly
-      )
-      .property("assignee", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, _, graph, authContext) =>
+      .property("actionRequired", UMapping.boolean)(_.authSelect((t, auth) => t.isActionRequired(auth)).readonly)
+      .property("assignee", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
           user <- login.map(u => userSrv.get(EntityIdOrName(u))(graph).getOrFail("User")).flip
@@ -207,18 +204,17 @@ class Properties @Inject() (
           }
         } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property("impactStatus", UMapping.string.optional)(_.select(_.impactStatus.value(_.value)).custom {
-        (_, value, vertex, _, graph, authContext) =>
-          caseSrv
-            .get(vertex)(graph)
-            .getOrFail("Case")
-            .flatMap { c =>
-              value.fold(caseSrv.unsetImpactStatus(c)(graph, authContext))(caseSrv.setImpactStatus(c, _)(graph, authContext))
-            }
-            .map(_ => Json.obj("impactStatus" -> value))
+      .property("impactStatus", UMapping.string.optional)(_.select(_.impactStatus.value(_.value)).custom { (_, value, vertex, graph, authContext) =>
+        caseSrv
+          .get(vertex)(graph)
+          .getOrFail("Case")
+          .flatMap { c =>
+            value.fold(caseSrv.unsetImpactStatus(c)(graph, authContext))(caseSrv.setImpactStatus(c, _)(graph, authContext))
+          }
+          .map(_ => Json.obj("impactStatus" -> value))
       })
       .property("resolutionStatus", UMapping.string.optional)(_.select(_.resolutionStatus.value(_.value)).custom {
-        (_, value, vertex, _, graph, authContext) =>
+        (_, value, vertex, graph, authContext) =>
           caseSrv
             .get(vertex)(graph)
             .getOrFail("Case")
@@ -234,43 +230,22 @@ class Properties @Inject() (
             .jsonValue
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
-        .filter {
-          case (FPathElem(_, FPathElem(idOrName, _)), caseTraversal) =>
-            db
-              .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(idOrName)).value(_.`type`).getOrFail("CustomField"))
-              .map {
-                case CustomFieldType.boolean => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.booleanValue)
-                case CustomFieldType.date    => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.dateValue)
-                case CustomFieldType.float   => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.floatValue)
-                case CustomFieldType.integer => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.integerValue)
-                case CustomFieldType.string  => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.stringValue)
-              }
-              .getOrElse(caseTraversal.constant2(null))
-          case (_, caseTraversal) => caseTraversal.constant2(null)
-        }
-        .converter {
-          case FPathElem(_, FPathElem(idOrName, _)) =>
-            db
-              .roTransaction { implicit graph =>
-                customFieldSrv.get(EntityIdOrName(idOrName)).value(_.`type`).getOrFail("CustomField")
-              }
-              .map {
-                case CustomFieldType.boolean => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Boolean] }
-                case CustomFieldType.date    => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Date] }
-                case CustomFieldType.float   => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Double] }
-                case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
-                case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
-              }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
-          case _ => (x: JsValue) => x
+        .filter(FieldsParser.json) {
+          case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
+            predicate match {
+              case Right(predicate) => caseTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+              case Left(true)       => caseTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
+              case Left(false)      => caseTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+            }
+          case (_, caseTraversal, _, _) => caseTraversal.limit(0)
         }
         .custom {
-          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
             for {
               c <- caseSrv.get(vertex)(graph).getOrFail("Case")
               _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
             } yield Json.obj(s"customField.$idOrName" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
             for {
               c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
               cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
@@ -354,22 +329,22 @@ class Properties @Inject() (
       .property("description", UMapping.string.optional)(_.field.updatable)
       .property("severity", UMapping.int.optional)(_.field.updatable)
       .property("tags", UMapping.string.set)(
-        _.select(_.tags.displayName)
-          .filter((_, cases) =>
-            cases
-              .tags
-              .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
-                Converter.identity[String]
-              )
-          )
-          .converter(_ => Converter.identity[String])
-          .custom { (_, value, vertex, _, graph, authContext) =>
+        _.select(_.tags.displayName) // FIXME add filter
+//          .filter((_, cases) =>
+//            cases
+//              .tags
+//              .graphMap[String, String, Converter.Identity[String]](
+//                { v =>
+//                  val namespace = UMapping.string.getProperty(v, "namespace")
+//                  val predicate = UMapping.string.getProperty(v, "predicate")
+//                  val value     = UMapping.string.optional.getProperty(v, "value")
+//                  Tag(namespace, predicate, value, None, 0).toString
+//                },
+//                Converter.identity[String]
+//              )
+//          )
+//          .converter(_ => Converter.identity[String])
+          .custom { (_, value, vertex, graph, authContext) =>
             caseTemplateSrv
               .get(vertex)(graph)
               .getOrFail("CaseTemplate")
@@ -386,7 +361,7 @@ class Properties @Inject() (
         case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue
         case (_, alertSteps)                                => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }.custom {
-        case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+        case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
           for {
             c <- caseTemplateSrv.getOrFail(vertex)(graph)
             _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
@@ -419,7 +394,7 @@ class Properties @Inject() (
       .property("dueDate", UMapping.date.optional)(_.field.updatable)
       .property("group", UMapping.string)(_.field.updatable)
       .property("assignee", UMapping.string.optional)(_.select(_.assignee.value(_.login)).custom {
-        case (_, value, vertex, _, graph, authContext) =>
+        case (_, value, vertex, graph, authContext) =>
           taskSrv
             .get(vertex)(graph)
             .getOrFail("Task")
@@ -433,12 +408,9 @@ class Properties @Inject() (
             }
             .map(_ => Json.obj("assignee" -> value))
       })
-      .property("actionRequired", UMapping.boolean)(_
-        .authSelect((t, authContext) => {
-          t.actionRequired(authContext)
-        })
-        .readonly
-      )
+      .property("actionRequired", UMapping.boolean)(_.authSelect { (t, authContext) =>
+        t.actionRequired(authContext)
+      }.readonly)
       .build
 
   lazy val log: PublicProperties =

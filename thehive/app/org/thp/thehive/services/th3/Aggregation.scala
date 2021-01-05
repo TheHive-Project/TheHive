@@ -148,7 +148,6 @@ object TH3Aggregation {
 
 case class AggSum(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -171,7 +170,6 @@ case class AggSum(aggName: Option[String], fieldName: String) extends Aggregatio
 }
 case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -194,7 +192,6 @@ case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregatio
 
 case class AggMin(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"min_$fieldName")) {
   override def getTraversal(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -217,7 +214,6 @@ case class AggMin(aggName: Option[String], fieldName: String) extends Aggregatio
 
 case class AggMax(aggName: Option[String], fieldName: String) extends Aggregation(aggName.getOrElse(s"max_$fieldName")) {
   override def getTraversal(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -240,7 +236,6 @@ case class AggMax(aggName: Option[String], fieldName: String) extends Aggregatio
 
 case class AggCount(aggName: Option[String]) extends Aggregation(aggName.getOrElse("count")) {
   override def getTraversal(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -264,7 +259,6 @@ case class FieldAggregation(
   lazy val logger: Logger = Logger(getClass)
 
   override def getTraversal(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -295,7 +289,7 @@ case class FieldAggregation(
         Traversal.UnkD,
         Traversal.UnkG
       ]]]) =>
-        s.by(t => agg.getTraversal(db, publicProperties, traversalType, t.unfold, authContext).castDomain[Output[_]])
+        s.by(t => agg.getTraversal(publicProperties, traversalType, t.unfold, authContext).castDomain[Output[_]])
     }
 
     sizedSortedAndGroupedVertex
@@ -365,7 +359,6 @@ case class TimeAggregation(
   def keyToDate(key: Long): Date = new Date(key)
 
   override def getTraversal(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -388,7 +381,7 @@ case class TimeAggregation(
         JList[Traversal.UnkG],
         Converter.CList[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
       ]) =>
-        s.by(t => agg.getTraversal(db, publicProperties, traversalType, t.unfold, authContext).castDomain[Output[_]])
+        s.by(t => agg.getTraversal(publicProperties, traversalType, t.unfold, authContext).castDomain[Output[_]])
     }
 
     groupedVertex

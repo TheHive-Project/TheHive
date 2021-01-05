@@ -47,15 +47,16 @@ class IntegrityCheckActor() extends Actor {
   def check(name: String): Unit = integrityCheckMap.get(name).foreach(_.check())
 
   override def preStart(): Unit = {
-    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-    integrityCheckOps.foreach { integrityCheck =>
-      db.tryTransaction { implicit graph =>
-        Success(integrityCheck.initialCheck())
-      }
-    }
-    integrityCheckOps.foreach { integrityCheck =>
-      Success(integrityCheck.check())
-    }
+    // FIXME disabled to speed-up develop start
+//    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+//    integrityCheckOps.foreach { integrityCheck =>
+//      db.tryTransaction { implicit graph =>
+//        Success(integrityCheck.initialCheck())
+//      }
+//    }
+//    integrityCheckOps.foreach { integrityCheck =>
+//      Success(integrityCheck.check())
+//    }
   }
   override def receive: Receive = receive(Map.empty)
   def receive(states: Map[String, (Boolean, Cancellable)]): Receive = {

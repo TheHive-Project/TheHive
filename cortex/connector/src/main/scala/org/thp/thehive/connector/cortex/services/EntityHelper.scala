@@ -1,9 +1,9 @@
 package org.thp.thehive.connector.cortex.services
 
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.thehive.models._

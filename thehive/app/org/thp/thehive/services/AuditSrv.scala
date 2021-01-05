@@ -1,18 +1,18 @@
 package org.thp.thehive.services
 
 import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
+
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Transaction.Status
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AuditOps._

@@ -1,10 +1,8 @@
 package org.thp.thehive.models
 
 import java.lang.reflect.Modifier
-
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 import org.janusgraph.core.schema.ConsistencyModifier
 import org.janusgraph.graphdb.types.TypeDefinitionCategory
@@ -14,6 +12,7 @@ import org.reflections.util.ConfigurationBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import play.api.Logger
 

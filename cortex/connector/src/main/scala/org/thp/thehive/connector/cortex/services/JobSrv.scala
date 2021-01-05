@@ -2,24 +2,23 @@ package org.thp.thehive.connector.cortex.services
 
 import java.nio.file.Files
 import java.util.{Date, Map => JMap}
-
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
 import akka.stream.scaladsl.FileIO
 import com.google.inject.name.Named
 import io.scalaland.chimney.dsl._
+
 import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.cortex.client.CortexClient
-import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, OutputJob => CortexJob, JobStatus => CortexJobStatus}
+import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, JobStatus => CortexJobStatus, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._

@@ -112,25 +112,25 @@ class PublicDashboard @Inject() (
     .property("status", UMapping.string)(
       _.select(_.choose(_.organisation, "Shared", "Private"))
         .custom {
-          case (_, "Shared", vertex, _, graph, authContext) =>
+          case (_, "Shared", vertex, graph, authContext) =>
             for {
               dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
             } yield Json.obj("status" -> "Shared")
 
-          case (_, "Private", vertex, _, graph, authContext) =>
+          case (_, "Private", vertex, graph, authContext) =>
             for {
               d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _ <- dashboardSrv.unshare(d, authContext.organisation)(graph, authContext)
             } yield Json.obj("status" -> "Private")
 
-          case (_, "Deleted", vertex, _, graph, authContext) =>
+          case (_, "Deleted", vertex, graph, authContext) =>
             for {
               d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _ <- dashboardSrv.remove(d)(graph, authContext)
             } yield Json.obj("status" -> "Deleted")
 
-          case (_, status, _, _, _, _) =>
+          case (_, status, _, _, _) =>
             Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))
         }
     )

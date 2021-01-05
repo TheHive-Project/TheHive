@@ -1,12 +1,11 @@
 package org.thp.thehive.services
 
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Observable, ObservableReportTag, ReportTag}
 import org.thp.thehive.services.ObservableOps._

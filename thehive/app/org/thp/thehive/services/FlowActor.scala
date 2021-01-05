@@ -1,12 +1,13 @@
 package org.thp.thehive.services
 
 import java.util.Date
-
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
-import com.google.inject.name.Names
-import com.google.inject.{Injector, Key => GuiceKey}
+import com.google.inject.Injector
+
 import javax.inject.{Inject, Provider, Singleton}
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.FilterRankingStrategy
+import org.apache.tinkerpop.gremlin.process.traversal.util.{TraversalExplanation, TraversalMetrics}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv

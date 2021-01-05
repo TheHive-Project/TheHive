@@ -136,7 +136,7 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Task]
     .property("title", UMapping.string)(_.field.updatable)
     .property("description", UMapping.string.optional)(_.field.updatable)
-    .property("status", UMapping.enum[TaskStatus.type])(_.field.custom { (_, value, vertex, _, graph, authContext) =>
+    .property("status", UMapping.enum[TaskStatus.type])(_.field.custom { (_, value, vertex, graph, authContext) =>
       for {
         task <- taskSrv.get(vertex)(graph).getOrFail("Task")
         user <-
@@ -154,7 +154,7 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
     .property("group", UMapping.string)(_.field.updatable)
     .property("owner", UMapping.string.optional)(
       _.select(_.assignee.value(_.login))
-        .custom { (_, login: Option[String], vertex, _, graph, authContext) =>
+        .custom { (_, login: Option[String], vertex, graph, authContext) =>
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail("Task")
             user <- login.map(l => userSrv.getOrFail(EntityIdOrName(l))(graph)).flip

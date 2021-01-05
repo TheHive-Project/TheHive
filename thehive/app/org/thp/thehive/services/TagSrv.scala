@@ -1,14 +1,15 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Tag}
 import org.thp.thehive.services.TagOps._
 

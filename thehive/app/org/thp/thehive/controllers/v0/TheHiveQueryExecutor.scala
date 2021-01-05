@@ -82,7 +82,7 @@ class TheHiveQueryExecutor @Inject() (
     case (tpe, _) if SubType(tpe, ru.typeOf[Traversal.V[Observable]])        => ru.typeOf[Traversal.V[Case]]
     case (tpe, _) if SubType(tpe, ru.typeOf[Traversal.V[Log]])               => ru.typeOf[Traversal.V[Task]]
   }
-  override val customFilterQuery: FilterQuery = FilterQuery(db, publicProperties) { (tpe, globalParser) =>
+  override val customFilterQuery: FilterQuery = FilterQuery(publicProperties) { (tpe, globalParser) =>
     FieldsParser("parentChildFilter") {
       case (_, FObjOne("_parent", ParentIdFilter(parentType, parentId))) if parentTypes.isDefinedAt((tpe, parentType)) =>
         Good(new ParentIdInputFilter(parentType, parentId))
@@ -115,7 +115,6 @@ object ParentIdFilter {
 
 class ParentIdInputFilter(parentType: String, parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -168,7 +167,6 @@ object ParentQueryFilter {
 class ParentQueryInputFilter(parentType: String, parentFilter: InputQuery[Traversal.Unk, Traversal.Unk])
     extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -177,7 +175,6 @@ class ParentQueryInputFilter(parentType: String, parentFilter: InputQuery[Traver
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
       traversal.filter(parent =>
         parentFilter(
-          db,
           publicProperties,
           ru.typeOf[Traversal.V[T]],
           t(parent.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
@@ -212,7 +209,6 @@ object ChildQueryFilter {
 class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal.Unk, Traversal.Unk])
     extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -221,7 +217,6 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
       traversal.filter(child =>
         childFilter(
-          db,
           publicProperties,
           ru.typeOf[Traversal.V[T]],
           t(child.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],

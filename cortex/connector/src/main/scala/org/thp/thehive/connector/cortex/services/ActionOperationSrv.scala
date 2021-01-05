@@ -1,11 +1,10 @@
 package org.thp.thehive.connector.cortex.services
 
 import java.util.Date
-
 import javax.inject.Inject
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityIdOrName, InternalError}
 import org.thp.thehive.connector.cortex.models._

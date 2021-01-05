@@ -44,7 +44,7 @@ class CortexQueryExecutor @Inject() (
     case tpe if SubType(tpe, ru.typeOf[Traversal.V[Job]]) => ru.typeOf[Traversal.V[Observable]]
   }
 
-  override val customFilterQuery: FilterQuery = FilterQuery(db, publicProperties) { (tpe, globalParser) =>
+  override val customFilterQuery: FilterQuery = FilterQuery(publicProperties) { (tpe, globalParser) =>
     FieldsParser("parentChildFilter") {
       case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) if parentTypes.isDefinedAt(tpe) =>
         Good(new CortexParentIdInputFilter(parentId))
@@ -60,7 +60,6 @@ class CortexQueryExecutor @Inject() (
 
 class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -78,7 +77,6 @@ class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.U
   */
 class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk]) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -86,7 +84,6 @@ class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Trave
   ): Traversal.Unk = {
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
       parentFilter(
-        db,
         publicProperties,
         ru.typeOf[Traversal.V[T]],
         t(traversal.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
@@ -100,7 +97,6 @@ class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Trave
 class CortexChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal.Unk, Traversal.Unk])
     extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -108,7 +104,6 @@ class CortexChildQueryInputFilter(childType: String, childFilter: InputQuery[Tra
   ): Traversal.Unk = {
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
       childFilter(
-        db,
         publicProperties,
         ru.typeOf[Traversal.V[T]],
         t(traversal.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],

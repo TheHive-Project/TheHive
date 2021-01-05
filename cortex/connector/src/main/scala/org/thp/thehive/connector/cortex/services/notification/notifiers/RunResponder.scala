@@ -1,9 +1,10 @@
 package org.thp.thehive.connector.cortex.services.notification.notifiers
 
 import com.typesafe.config.ConfigRenderOptions
+
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadConfigurationError, NotFoundError, RichOption}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ResponderSrv}

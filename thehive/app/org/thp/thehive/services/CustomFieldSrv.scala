@@ -4,7 +4,7 @@ import java.util.{Map => JMap}
 
 import akka.actor.ActorRef
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Edge, Graph}
+import org.apache.tinkerpop.gremlin.structure.{Edge}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater

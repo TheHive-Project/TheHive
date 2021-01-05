@@ -1,13 +1,13 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+
 import javax.inject.{Inject, Named, Provider, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, EntityName}
 import org.thp.thehive.controllers.v1.Conversion._

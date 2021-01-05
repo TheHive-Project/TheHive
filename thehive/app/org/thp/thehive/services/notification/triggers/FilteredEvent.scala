@@ -1,9 +1,10 @@
 package org.thp.thehive.services.notification.triggers
 
 import com.typesafe.config.ConfigRenderOptions
+
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.Configuration
 import play.api.libs.functional.syntax._

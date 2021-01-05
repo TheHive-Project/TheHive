@@ -156,12 +156,12 @@ class PublicCaseTemplate @Inject() (
       case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFields(name).jsonValue
       case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
     }.custom {
-      case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+      case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
         for {
           c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
           _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
         } yield Json.obj(s"customFields.$name" -> value)
-      case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+      case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
         for {
           c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
           cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
@@ -171,7 +171,7 @@ class PublicCaseTemplate @Inject() (
     })
     .property("tasks", UMapping.jsonNative.sequence)(
       _.select(_.tasks.richTaskWithoutActionRequired.domainMap(_.toJson)).custom { //  FIXME select the correct mapping
-        (_, value, vertex, _, graph, authContext) =>
+        (_, value, vertex, graph, authContext) =>
           val fp = FieldsParser[InputTask]
 
           caseTemplateSrv.get(vertex)(graph).tasks.remove()

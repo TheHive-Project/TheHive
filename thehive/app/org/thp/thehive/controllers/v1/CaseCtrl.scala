@@ -29,7 +29,7 @@ class CaseCtrl @Inject() (
     userSrv: UserSrv,
     tagSrv: TagSrv,
     organisationSrv: OrganisationSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl
     with CaseRenderer {
 

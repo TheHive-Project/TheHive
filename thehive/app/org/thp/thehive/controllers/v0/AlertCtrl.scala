@@ -1,16 +1,15 @@
 package org.thp.thehive.controllers.v0
 
 import java.util.{Base64, List => JList, Map => JMap}
-
 import io.scalaland.chimney.dsl._
+
 import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IdentityConverter, IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityId, EntityIdOrName, EntityName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
@@ -435,12 +434,12 @@ class PublicAlert @Inject() (
           alertSteps.customFields(EntityIdOrName(name)).jsonValue
         case (_, alertSteps) => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }.custom {
-        case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+        case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
           for {
             c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
             _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
           } yield Json.obj(s"customField.$name" -> value)
-        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
           for {
             c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
             cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }

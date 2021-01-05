@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database

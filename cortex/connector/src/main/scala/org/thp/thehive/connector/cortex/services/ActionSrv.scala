@@ -1,18 +1,18 @@
 package org.thp.thehive.connector.cortex.services
 
 import java.util.{Date, Map => JMap}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
+
 import javax.inject.Inject
-import org.apache.tinkerpop.gremlin.structure.{Element, Graph}
+import org.apache.tinkerpop.gremlin.structure.Element
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._

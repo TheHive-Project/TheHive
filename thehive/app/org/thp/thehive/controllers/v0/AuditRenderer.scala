@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.util.{Date, Map => JMap}
 
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.{Vertex}
 import org.thp.scalligraph.models.UMapping
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._

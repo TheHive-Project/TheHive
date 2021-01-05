@@ -1,9 +1,9 @@
 package org.thp.thehive.services.notification.triggers
 
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Audit, Organisation, User}
 import org.thp.thehive.services.LogOps._

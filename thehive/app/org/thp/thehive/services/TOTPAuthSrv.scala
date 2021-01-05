@@ -2,15 +2,14 @@ package org.thp.thehive.services
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
-
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.commons.codec.binary.Base32
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCodeRequired}
 import play.api.Configuration

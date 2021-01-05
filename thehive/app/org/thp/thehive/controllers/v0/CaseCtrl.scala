@@ -257,7 +257,7 @@ class PublicCase @Inject() (
       .property("pap", UMapping.int)(_.field.updatable)
       .property("status", UMapping.enum[CaseStatus.type])(_.field.updatable)
       .property("summary", UMapping.string.optional)(_.field.updatable)
-      .property("owner", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, _, graph, authContext) =>
+      .property("owner", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
           user <- login.map(u => userSrv.get(EntityIdOrName(u))(graph).getOrFail("User")).flip
@@ -268,7 +268,7 @@ class PublicCase @Inject() (
         } yield Json.obj("owner" -> user.map(_.login))
       })
       .property("resolutionStatus", UMapping.string.optional)(_.select(_.resolutionStatus.value(_.value)).custom {
-        (_, resolutionStatus, vertex, _, graph, authContext) =>
+        (_, resolutionStatus, vertex, graph, authContext) =>
           for {
             c <- caseSrv.get(vertex)(graph).getOrFail("Case")
             _ <- resolutionStatus match {
@@ -278,7 +278,7 @@ class PublicCase @Inject() (
           } yield Json.obj("resolutionStatus" -> resolutionStatus)
       })
       .property("impactStatus", UMapping.string.optional)(_.select(_.impactStatus.value(_.value)).custom {
-        (_, impactStatus, vertex, _, graph, authContext) =>
+        (_, impactStatus, vertex, graph, authContext) =>
           for {
             c <- caseSrv.get(vertex)(graph).getOrFail("Case")
             _ <- impactStatus match {
@@ -332,12 +332,12 @@ class PublicCase @Inject() (
           case _ => (x: JsValue) => x
         }
         .custom {
-          case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
             for {
               c <- caseSrv.get(vertex)(graph).getOrFail("Case")
               _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)(graph, authContext)
             } yield Json.obj(s"customField.$name" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
             for {
               c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
               cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }

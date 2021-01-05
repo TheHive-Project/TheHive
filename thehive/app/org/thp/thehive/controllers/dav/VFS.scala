@@ -1,8 +1,8 @@
 package org.thp.thehive.controllers.dav
 
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseSrv

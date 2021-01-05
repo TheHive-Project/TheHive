@@ -4,13 +4,12 @@ import akka.NotUsed
 import akka.stream.scaladsl.{Source, StreamConverters}
 import akka.stream.{IOResult, Materializer}
 import akka.util.ByteString
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{StorageSrv, VertexSrv}
-import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment

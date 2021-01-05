@@ -212,7 +212,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "close a case properly" in testApp { app =>
-      val updates = Seq(PropertyUpdater(FPathElem("status"), CaseStatus.Resolved) { (vertex, _, _, _) =>
+      val updates = Seq(PropertyUpdater(FPathElem("status"), CaseStatus.Resolved) { (vertex, _, _) =>
         vertex.property("status", CaseStatus.Resolved)
         Success(Json.obj("status" -> CaseStatus.Resolved))
       })

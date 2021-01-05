@@ -1,14 +1,13 @@
 package org.thp.thehive
 
 import java.io.File
-
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.scalactic.Or
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.{EntityId, EntityName, RichOption}
 import org.thp.thehive.models._
 import org.thp.thehive.services._

@@ -245,14 +245,14 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, 
   override val extraQueries: Seq[ParamQuery[_]] = Seq()
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[User]
     .property("login", UMapping.string)(_.field.readonly)
-    .property("name", UMapping.string)(_.field.custom { (_, value, vertex, db, graph, authContext) =>
+    .property("name", UMapping.string)(_.field.custom { (_, value, vertex, graph, authContext) =>
       def isCurrentUser: Try[Unit] =
         userSrv.get(vertex)(graph).current(authContext).existsOrFail
 
       def isUserAdmin: Try[Unit] =
         userSrv
           .current(graph, authContext)
-          .organisations(Permissions.manageUser)(db)
+          .organisations(Permissions.manageUser)
           .users
           .getElement(vertex)
           .existsOrFail
@@ -266,10 +266,10 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, 
     })
     .property("status", UMapping.string)(
       _.select(_.choose(predicate = _.value(_.locked).is(P.eq(true)), onTrue = "Locked", onFalse = "Ok"))
-        .custom { (_, value, vertex, _, graph, authContext) =>
+        .custom { (_, value, vertex, graph, authContext) =>
           userSrv
             .current(graph, authContext)
-            .organisations(Permissions.manageUser)(db)
+            .organisations(Permissions.manageUser)
             .users
             .getElement(vertex)
             .orFail(AuthorizationError("Operation not permitted"))

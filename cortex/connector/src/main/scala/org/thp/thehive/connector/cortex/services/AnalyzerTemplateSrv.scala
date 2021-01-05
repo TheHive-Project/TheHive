@@ -1,15 +1,14 @@
 package org.thp.thehive.connector.cortex.services
 
 import java.util.zip.{ZipEntry, ZipFile}
-
 import com.google.inject.name.Named
+
 import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._

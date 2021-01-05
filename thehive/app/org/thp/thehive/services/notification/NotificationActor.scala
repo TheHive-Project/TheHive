@@ -2,10 +2,11 @@ package org.thp.thehive.services.notification
 
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
+
 import javax.inject.{Inject, Named}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.EventSrv
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadConfigurationError, EntityId}
 import org.thp.thehive.models.{Audit, Organisation, User}

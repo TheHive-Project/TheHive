@@ -2,11 +2,11 @@ package org.thp.thehive.services
 
 import java.util.regex.Pattern
 import java.util.{List => JList, Map => JMap}
-
 import akka.actor.ActorRef
+
 import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -14,7 +14,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.CList
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, InternalError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -177,7 +177,7 @@ object UserOps {
 
     def isNotLocked: Traversal.V[User] = traversal.has(_.locked, false)
 
-    def can(requiredPermission: Permission)(implicit authContext: AuthContext, db: Database): Traversal.V[User] =
+    def can(requiredPermission: Permission)(implicit authContext: AuthContext): Traversal.V[User] =
       traversal.filter(_.organisations(requiredPermission).get(authContext.organisation))
 
     def getByAPIKey(key: String): Traversal.V[User] = traversal.has(_.apikey, key).v[User]
@@ -187,9 +187,9 @@ object UserOps {
     protected def organisations0(requiredPermission: Permission): Traversal.V[Organisation] =
       role.filter(_.profile.has(_.permissions, requiredPermission)).organisation
 
-    def organisations(requiredPermission: Permission)(implicit db: Database): Traversal.V[Organisation] = {
+    def organisations(requiredPermission: Permission): Traversal.V[Organisation] = {
       val isInAdminOrganisation = traversal.clone().organisations0(requiredPermission).getByName(Organisation.administration.name).exists
-      if (isInAdminOrganisation) db.labelFilter("Organisation")(traversal.V()).v[Organisation]
+      if (isInAdminOrganisation) traversal.graph.V[Organisation]()
       else organisations0(requiredPermission)
     }
 
