@@ -27,7 +27,6 @@ class ResponderSrvTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   "responder service" should {
     "fetch responders by type" in testApp { app =>

@@ -19,8 +19,8 @@ import org.thp.thehive.services.ObservableOps._
 import scala.reflect.runtime.{universe => ru}
 
 @Singleton
-class CortexQueryExecutor @Inject() (
-    @Named("with-thehive-cortex-schema") implicit override val db: Database,
+class CortexQueryExecutor @Inject() (implicit
+    override val db: Database,
     job: PublicJob,
     report: PublicAnalyzerTemplate,
     action: PublicAction,

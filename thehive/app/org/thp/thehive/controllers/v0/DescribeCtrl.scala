@@ -41,7 +41,7 @@ class DescribeCtrl @Inject() (
     userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     injector: Injector,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     applicationConfig: ApplicationConfig
 ) {
 
@@ -209,7 +209,7 @@ class DescribeCtrl @Inject() (
       case _ => None
     }
 
-  def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
+  def propertyToJson(model: String, prop: PublicProperty): Seq[PropertyDescription] =
     customDescription(model, prop.propertyName).getOrElse {
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))

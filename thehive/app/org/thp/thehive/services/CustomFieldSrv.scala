@@ -21,7 +21,7 @@ import scala.util.{Success, Try}
 
 @Singleton
 class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
-    implicit @Named("with-thehive-schema") db: Database
+    implicit db: Database
 ) extends VertexSrv[CustomField] {
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
@@ -174,8 +174,7 @@ object CustomFieldOps {
 
 }
 
-class CustomFieldIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CustomFieldSrv)
-    extends IntegrityCheckOps[CustomField] {
+class CustomFieldIntegrityCheckOps @Inject() (val db: Database, val service: CustomFieldSrv) extends IntegrityCheckOps[CustomField] {
   override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

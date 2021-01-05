@@ -24,7 +24,7 @@ class DashboardCtrl @Inject() (
     override val entrypoint: Entrypoint,
     dashboardSrv: DashboardSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     override val publicData: PublicDashboard,
     @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {

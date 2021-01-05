@@ -31,7 +31,7 @@ class AlertCtrl @Inject() (
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl
     with AlertRenderer {
 

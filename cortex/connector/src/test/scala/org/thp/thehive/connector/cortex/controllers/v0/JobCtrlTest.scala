@@ -23,7 +23,6 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
           .bindNamedToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]("v0")
-          .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
       )
 
   "job controller" should {

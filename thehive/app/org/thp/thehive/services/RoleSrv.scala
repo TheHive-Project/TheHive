@@ -12,14 +12,14 @@ import org.thp.thehive.services.RoleOps._
 import scala.util.Try
 
 @Singleton
-class RoleSrv @Inject() (@Named("with-thehive-schema") implicit val db: Database) extends VertexSrv[Role] {
+class RoleSrv @Inject() (implicit val db: Database) extends VertexSrv[Role] {
 
   val roleOrganisationSrv = new EdgeSrv[RoleOrganisation, Role, Organisation]
   val userRoleSrv         = new EdgeSrv[UserRole, User, Role]
   val roleProfileSrv      = new EdgeSrv[RoleProfile, Role, Profile]
 
-  def create(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
-      implicit graph: Graph,
+  def create(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Role with Entity] =
     for {

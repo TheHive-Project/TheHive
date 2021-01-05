@@ -28,7 +28,7 @@ class OrganisationSrv @Inject() (
     userSrv: UserSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[Organisation] {
 
   val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
@@ -194,8 +194,7 @@ object OrganisationOps {
 
 }
 
-class OrganisationIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: OrganisationSrv)
-    extends IntegrityCheckOps[Organisation] {
+class OrganisationIntegrityCheckOps @Inject() (val db: Database, val service: OrganisationSrv) extends IntegrityCheckOps[Organisation] {
   override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

@@ -4,6 +4,8 @@ import akka.actor.{Actor, ActorSystem, Props}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberEvent, _}
 import com.google.inject.Injector
+import javax.inject.{Inject, Provider, Singleton}
+import org.thp.scalligraph.SingleInstance
 import play.api.{Configuration, Logger}
 
 import javax.inject.{Inject, Singleton}
@@ -42,4 +44,9 @@ class ClusterListener extends Actor {
     case MemberExited(member)                  => logger.debug(s"Member is exited: $member")
     case MemberDowned(member)                  => logger.debug(s"Member is downed: $member")
   }
+}
+
+@Singleton
+class SingleInstanceProvider @Inject() (configuration: Configuration) extends Provider[SingleInstance] {
+  override def get(): SingleInstance = new SingleInstance(configuration.get[Seq[String]]("akka.cluster.seed-nodes").isEmpty)
 }

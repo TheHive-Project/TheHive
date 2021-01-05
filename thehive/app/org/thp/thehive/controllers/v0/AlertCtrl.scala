@@ -40,7 +40,7 @@ class AlertCtrl @Inject() (
     userSrv: UserSrv,
     caseSrv: CaseSrv,
     override val publicData: PublicAlert,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
@@ -331,7 +331,8 @@ class PublicAlert @Inject() (
     alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
     customFieldSrv: CustomFieldSrv,
-    @Named("with-thehive-schema") db: Database
+    tagSrv: TagSrv,
+    db: Database
 ) extends PublicData {
   override val entityName: String = "alert"
   override val initialQuery: Query =

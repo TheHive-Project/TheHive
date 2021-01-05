@@ -16,7 +16,7 @@ import play.api.Logger
 
 @Singleton
 class ServiceHelper @Inject() (
-    @Named("with-thehive-cortex-schema") db: Database,
+    db: Database,
     organisationSrv: OrganisationSrv
 ) {
 

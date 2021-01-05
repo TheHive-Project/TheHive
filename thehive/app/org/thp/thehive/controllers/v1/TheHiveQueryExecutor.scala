@@ -34,7 +34,7 @@ class TheHiveQueryExecutor @Inject() (
     userCtrl: UserCtrl,
     //    dashboardCtrl: DashboardCtrl,
     properties: Properties,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryExecutor {
 
   lazy val controllers: Seq[QueryableCtrl] =

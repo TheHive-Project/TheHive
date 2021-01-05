@@ -24,7 +24,7 @@ import scala.util.Try
 
 @Singleton
 class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     mat: Materializer
 ) extends VertexSrv[Attachment] {
 

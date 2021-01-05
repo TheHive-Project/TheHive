@@ -23,7 +23,7 @@ class CaseTemplateCtrl @Inject() (
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                 = "caseTemplate"

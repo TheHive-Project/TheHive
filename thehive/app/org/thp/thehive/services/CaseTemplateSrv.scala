@@ -29,8 +29,7 @@ class CaseTemplateSrv @Inject() (
     taskSrv: TaskSrv,
     auditSrv: AuditSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
-)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[CaseTemplate] {
+) extends VertexSrv[CaseTemplate] {
 
   val caseTemplateTagSrv          = new EdgeSrv[CaseTemplateTag, CaseTemplate, Tag]
   val caseTemplateCustomFieldSrv  = new EdgeSrv[CaseTemplateCustomField, CaseTemplate, CustomField]
@@ -245,7 +244,7 @@ object CaseTemplateOps {
 }
 
 class CaseTemplateIntegrityCheckOps @Inject() (
-    @Named("with-thehive-schema") val db: Database,
+    val db: Database,
     val service: CaseTemplateSrv,
     organisationSrv: OrganisationSrv
 ) extends IntegrityCheckOps[CaseTemplate] {

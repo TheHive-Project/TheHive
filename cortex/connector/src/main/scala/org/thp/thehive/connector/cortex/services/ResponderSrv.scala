@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
 @Singleton
 class ResponderSrv @Inject() (
     connector: Connector,
-    @Named("with-thehive-cortex-schema") db: Database,
+    db: Database,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
     implicit val ec: ExecutionContext

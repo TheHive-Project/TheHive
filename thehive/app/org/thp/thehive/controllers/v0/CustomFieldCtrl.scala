@@ -19,7 +19,7 @@ import scala.util.Success
 @Singleton
 class CustomFieldCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     customFieldSrv: CustomFieldSrv,
     override val publicData: PublicCustomField,
     @Named("v0") override val queryExecutor: QueryExecutor

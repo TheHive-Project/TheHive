@@ -19,7 +19,7 @@ import scala.util.{Success, Try}
 
 @Singleton
 class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[Dashboard] {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
   val dashboardUserSrv         = new EdgeSrv[DashboardUser, Dashboard, User]

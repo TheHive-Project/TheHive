@@ -25,7 +25,7 @@ class AttachmentCtrl @Inject() (
     entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     attachmentSrv: AttachmentSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 

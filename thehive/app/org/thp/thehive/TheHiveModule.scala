@@ -3,12 +3,13 @@ package org.thp.thehive
 import akka.actor.ActorRef
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
+import org.thp.scalligraph.SingleInstance
 import org.thp.scalligraph.auth._
-import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.janus.{JanusDatabase, JanusDatabaseProvider}
+import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, HadoopStorageSrv, S3StorageSrv}
 import org.thp.thehive.controllers.v0.QueryExecutorVersion0Provider
-import org.thp.thehive.models.{DatabaseProvider, TheHiveSchemaDefinition}
+import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.{UserSrv => _, _}
@@ -63,10 +64,9 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     notifierBindings.addBinding.to[WebhookProvider]
 
     configuration.get[String]("db.provider") match {
-      case "janusgraph" => bind[Database].to[JanusDatabase]
+      case "janusgraph" => bind[Database].toProvider[JanusDatabaseProvider]
       case other        => sys.error(s"Authentication provider [$other] is not recognized")
     }
-    bind[Database].annotatedWithName("with-thehive-schema").toProvider[DatabaseProvider]
 
     configuration.get[String]("storage.provider") match {
       case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
@@ -83,7 +83,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV1]
     bind[QueryExecutor].annotatedWithName("v0").toProvider[QueryExecutorVersion0Provider]
     ScalaMultibinder.newSetBinder[Connector](binder)
-    val schemaBindings = ScalaMultibinder.newSetBinder[Schema](binder)
+    val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
     schemaBindings.addBinding.to[TheHiveSchemaDefinition]
 
     bindActor[ConfigActor]("config-actor")
@@ -104,6 +104,8 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     bind[ActorRef].annotatedWithName("integrity-check-actor").toProvider[IntegrityCheckActorProvider]
 
     bind[ActorRef].annotatedWithName("flow-actor").toProvider[FlowActorProvider]
+
+    bind[SingleInstance].toProvider[SingleInstanceProvider]
 
     bind[ClusterSetup].asEagerSingleton()
     ()

@@ -19,7 +19,7 @@ class AuthenticationCtrl @Inject() (
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     implicit val ec: ExecutionContext
 ) {
 

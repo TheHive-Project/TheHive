@@ -20,7 +20,7 @@ import scala.util.{Success, Try}
 
 @Singleton
 class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSrv: TaskSrv, userSrv: UserSrv)(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[Log] {
   val taskLogSrv       = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv = new EdgeSrv[LogAttachment, Log, Attachment]

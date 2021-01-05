@@ -21,7 +21,7 @@ import scala.util.Try
 class ConfigSrv @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
-)(@Named("with-thehive-schema") implicit val db: Database)
+)(implicit val db: Database)
     extends VertexSrv[Config] {
   val organisationConfigSrv = new EdgeSrv[OrganisationConfig, Organisation, Config]
   val userConfigSrv         = new EdgeSrv[UserConfig, User, Config]

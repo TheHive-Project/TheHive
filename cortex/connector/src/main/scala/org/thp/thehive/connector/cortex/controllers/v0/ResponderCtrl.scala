@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class ResponderCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-cortex-schema") implicit val db: Database,
+    implicit val db: Database,
     responderSrv: ResponderSrv,
     implicit val ex: ExecutionContext
 ) {

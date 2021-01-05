@@ -7,10 +7,6 @@ import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class AnalyzerCtrlTest extends PlaySpecification with TestAppBuilder {
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   "analyzer controller" should {
     "list analyzers" in testApp { app =>

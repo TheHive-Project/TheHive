@@ -22,7 +22,6 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   "service helper" should {
     "filter properly organisations according to supplied config" in testApp { app =>

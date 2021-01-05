@@ -21,7 +21,7 @@ import scala.util.Try
 
 class TagCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     tagSrv: TagSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicTag
@@ -134,20 +134,20 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
     .property("value", UMapping.string.optional)(_.field.readonly)
     .property("description", UMapping.string.optional)(_.field.readonly)
     .property("text", UMapping.string)(
-      _.select(_.displayName)
-        .filter((_, tags) =>
-          tags
-            .graphMap[String, String, Converter.Identity[String]](
-              { v =>
-                val namespace = UMapping.string.getProperty(v, "namespace")
-                val predicate = UMapping.string.getProperty(v, "predicate")
-                val value     = UMapping.string.optional.getProperty(v, "value")
-                Tag(namespace, predicate, value, None, 0).toString
-              },
-              Converter.identity[String]
-            )
-        )
-        .converter(_ => Converter.identity[String])
+      _.select(_.displayName) // FIXME add filter
+//        .filter((_, tags) =>
+//          tags
+//            .graphMap[String, String, Converter.Identity[String]](
+//              { v =>
+//                val namespace = UMapping.string.getProperty(v, "namespace")
+//                val predicate = UMapping.string.getProperty(v, "predicate")
+//                val value     = UMapping.string.optional.getProperty(v, "value")
+//                Tag(namespace, predicate, value, None, 0).toString
+//              },
+//              Converter.identity[String]
+//            )
+//        )
+//        .converter(_ => Converter.identity[String])
         .readonly
     )
     .build

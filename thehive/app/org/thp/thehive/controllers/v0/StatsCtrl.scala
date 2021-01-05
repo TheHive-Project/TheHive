@@ -26,7 +26,7 @@ class StatsCtrl @Inject() (
     tagCtrl: TagCtrl,
     pageCtrl: PageCtrl,
     queryExecutor: TheHiveQueryExecutor,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) {
   lazy val logger: Logger = Logger(getClass)
 

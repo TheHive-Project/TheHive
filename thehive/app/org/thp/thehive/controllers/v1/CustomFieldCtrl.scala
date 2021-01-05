@@ -15,8 +15,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.util.Success
 
 @Singleton
-class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database, customFieldSrv: CustomFieldSrv)
-    extends QueryableCtrl {
+class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFieldSrv: CustomFieldSrv) extends QueryableCtrl {
 
   override val entityName: String  = "CustomField"
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))

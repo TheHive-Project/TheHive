@@ -21,7 +21,7 @@ class ProfileCtrl @Inject() (
     override val entrypoint: Entrypoint,
     profileSrv: ProfileSrv,
     override val publicData: PublicProfile,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =

@@ -31,7 +31,6 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
       .bindActor[CortexActor]("cortex-actor")
       .bindToProvider[CortexClient, TestCortexClientProvider]
       .bind[Connector, TestConnector]
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
       .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
 
   "job service" should {

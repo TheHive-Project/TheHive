@@ -26,7 +26,7 @@ class AuditCtrl @Inject() (
     auditSrv: AuditSrv,
     @Named("flow-actor") flowActor: ActorRef,
     override val publicData: PublicAudit,
-    @Named("with-thehive-schema") implicit override val db: Database,
+    implicit override val db: Database,
     implicit val ec: ExecutionContext,
     @Named("v0") override val queryExecutor: QueryExecutor
 ) extends AuditRenderer
@@ -52,7 +52,7 @@ class AuditCtrl @Inject() (
                       .deepMerge(
                         Json.obj(
                           "base"    -> Json.obj("object" -> obj, "rootId" -> audit.context._id),
-                          "summary" -> jsonSummary(auditSrv, audit.requestId)
+                          "summary" -> JsObject.empty //jsonSummary(auditSrv, audit.requestId)
                         )
                       )
                 }
@@ -64,7 +64,7 @@ class AuditCtrl @Inject() (
 }
 
 @Singleton
-class PublicAudit @Inject() (auditSrv: AuditSrv, @Named("with-thehive-schema") db: Database) extends PublicData {
+class PublicAudit @Inject() (auditSrv: AuditSrv, db: Database) extends PublicData {
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
     FieldsParser[EntityIdOrName],

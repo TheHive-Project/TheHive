@@ -40,8 +40,7 @@ class CaseSrv @Inject() (
     resolutionStatusSrv: ResolutionStatusSrv,
     impactStatusSrv: ImpactStatusSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
-)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Case] {
+) extends VertexSrv[Case] {
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]

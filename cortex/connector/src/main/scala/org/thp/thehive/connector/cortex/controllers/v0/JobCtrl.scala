@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class JobCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-cortex-schema") override val db: Database,
+    override val db: Database,
     jobSrv: JobSrv,
     observableSrv: ObservableSrv,
     errorHandler: ErrorHandler,

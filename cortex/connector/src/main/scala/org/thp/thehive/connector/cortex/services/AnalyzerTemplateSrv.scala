@@ -24,7 +24,7 @@ import scala.util.{Failure, Try}
 
 @Singleton
 class AnalyzerTemplateSrv @Inject() (implicit
-    @Named("with-thehive-cortex-schema") db: Database,
+    db: Database,
     auditSrv: CortexAuditSrv,
     organisationSrv: OrganisationSrv
 ) extends VertexSrv[AnalyzerTemplate] {

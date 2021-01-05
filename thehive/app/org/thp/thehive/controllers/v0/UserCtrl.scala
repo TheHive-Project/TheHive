@@ -28,7 +28,7 @@ class UserCtrl @Inject() (
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") implicit override val db: Database,
+    override val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicUser
 ) extends QueryCtrl {
@@ -226,7 +226,7 @@ class UserCtrl @Inject() (
 }
 
 @Singleton
-class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, @Named("with-thehive-schema") db: Database) extends PublicData {
+class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
   override val entityName: String = "user"
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)

@@ -33,7 +33,6 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   def testAppBuilder[A](body: AppBuilder => A): A =
     testApp { app =>

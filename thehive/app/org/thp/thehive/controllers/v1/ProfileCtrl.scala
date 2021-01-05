@@ -21,7 +21,7 @@ class ProfileCtrl @Inject() (
     entrypoint: Entrypoint,
     properties: Properties,
     profileSrv: ProfileSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl {
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](

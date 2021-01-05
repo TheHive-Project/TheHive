@@ -29,7 +29,7 @@ class ShareCtrl @Inject() (
     taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) {
 
   def shareCase(caseId: String): Action[AnyContent] =
@@ -164,7 +164,7 @@ class ShareCtrl @Inject() (
               .richShare
               .getOrFail("Share")
           profile <- profileSrv.getOrFail(EntityIdOrName(profile))
-          _       <- shareSrv.update(richShare.share, profile)
+          _       <- shareSrv.updateProfile(richShare.share, profile)
         } yield Results.Ok
       }
 

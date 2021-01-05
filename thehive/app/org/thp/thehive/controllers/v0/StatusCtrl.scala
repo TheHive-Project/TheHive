@@ -24,7 +24,7 @@ class StatusCtrl @Inject() (
     authSrv: AuthSrv,
     userSrv: UserSrv,
     connectors: immutable.Set[Connector],
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) {
 
   val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")

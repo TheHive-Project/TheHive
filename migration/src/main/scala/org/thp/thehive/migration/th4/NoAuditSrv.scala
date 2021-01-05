@@ -17,12 +17,12 @@ import scala.util.{Success, Try}
 class NoAuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
-    eventSrv: EventSrv
-)(implicit @Named("with-thehive-schema") db: Database)
-    extends AuditSrv(userSrvProvider, notificationActor, eventSrv)(db) {
+    eventSrv: EventSrv,
+    db: Database
+) extends AuditSrv(userSrvProvider, notificationActor, eventSrv, db) {
 
-  override def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(
-      implicit graph: Graph,
+  override def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     Success(())

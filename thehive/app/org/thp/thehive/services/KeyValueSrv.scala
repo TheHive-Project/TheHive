@@ -10,6 +10,6 @@ import org.thp.thehive.models.KeyValue
 import scala.util.Try
 
 @Singleton
-class KeyValueSrv @Inject() ()(implicit @Named("with-thehive-schema") db: Database) extends VertexSrv[KeyValue] {
+class KeyValueSrv @Inject() () extends VertexSrv[KeyValue] {
   def create(e: KeyValue)(implicit graph: Graph, authContext: AuthContext): Try[KeyValue with Entity] = createEntity(e)
 }

@@ -22,7 +22,7 @@ class AuthenticationCtrl @Inject() (
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) {
 
   def login: Action[AnyContent] =

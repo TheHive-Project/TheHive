@@ -44,7 +44,7 @@ class DescribeCtrl @Inject() (
     impactStatusSrv: ImpactStatusSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     injector: Injector,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     applicationConfig: ApplicationConfig
 ) {
 
@@ -209,7 +209,7 @@ class DescribeCtrl @Inject() (
       case _ => None
     }
 
-  def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
+  def propertyToJson(model: String, prop: PublicProperty): Seq[PropertyDescription] =
     customDescription(model, prop.propertyName).getOrElse {
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))
@@ -219,7 +219,7 @@ class DescribeCtrl @Inject() (
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if c == classOf[EntityId]                          => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>
-          logger.warn(s"Unrecognized property $prop. Add a custom description")
+          logger.warn(s"Unrecognized property ${prop.propertyName}:${prop.mapping.domainTypeClass.getSimpleName}. Add a custom description")
           Seq(PropertyDescription(prop.propertyName, "unknown"))
       }
     }

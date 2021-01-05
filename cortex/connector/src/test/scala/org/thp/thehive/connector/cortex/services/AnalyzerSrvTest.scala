@@ -22,7 +22,6 @@ class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext

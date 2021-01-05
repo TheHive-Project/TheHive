@@ -3,7 +3,8 @@ package org.thp.thehive.migration.th4
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.google.inject.Guice
-import javax.inject.{Inject, Named, Provider, Singleton}
+
+import javax.inject.{Inject, Provider, Singleton}
 import net.codingwell.scalaguice.ScalaModule
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph._
@@ -15,6 +16,7 @@ import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.models.{CortexSchemaDefinition, TheHiveCortexSchemaProvider}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
@@ -31,7 +33,6 @@ import play.api.{Configuration, Environment, Logger}
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
-import org.thp.thehive.controllers.v1.Conversion._
 
 object Output {
 
@@ -54,8 +55,7 @@ object Output {
 
               bind[AuditSrv].to[NoAuditSrv]
               bind[Database].to[JanusDatabase]
-              bind[Database].annotatedWithName("with-thehive-schema").toProvider[BasicDatabaseProvider]
-              bind[Database].annotatedWithName("with-thehive-cortex-schema").toProvider[BasicDatabaseProvider]
+              bind[Database].toProvider[BasicDatabaseProvider]
               bind[Configuration].toInstance(configuration)
               bind[Environment].toInstance(Environment.simple())
               bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
@@ -74,7 +74,7 @@ object Output {
   def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Output = {
     if (configuration.getOptional[Boolean]("dropDatabase").contains(true)) {
       Logger(getClass).info("Drop database")
-      new JanusDatabase(configuration, actorSystem).drop()
+      new JanusDatabase(configuration, actorSystem, fullTextIndexAvailable = false).drop()
     }
     buildApp(configuration).getInstance(classOf[Output])
   }
@@ -109,7 +109,7 @@ class Output @Inject() (
     resolutionStatusSrv: ResolutionStatusSrv,
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     cache: SyncCacheApi
 ) extends migration.Output {
   lazy val logger: Logger = Logger(getClass)
@@ -232,11 +232,11 @@ class Output @Inject() (
                      | ${alerts.size} alerts""".stripMargin)
   }
 
-  def startMigration(): Try[Unit] = {
-    db match {
-      case jdb: JanusDatabase => jdb.dropOtherConnections.recover { case error => logger.error(s"Fail to remove other connection", error) }
-      case _                  =>
-    }
+  def startMigration(): Try[Unit] =
+//    db match {
+//      case jdb: JanusDatabase => jdb.dropOtherConnections.recover { case error => logger.error(s"Fail to remove other connection", error) }
+//      case _                  =>
+//    }
     if (db.version("thehive") == 0)
       db.createSchemaFrom(theHiveSchema)(LocalUserSrv.getSystemAuthContext)
         .flatMap(_ => db.setVersion(theHiveSchema.name, theHiveSchema.operations.lastVersion))
@@ -245,13 +245,12 @@ class Output @Inject() (
         .map(_ => retrieveExistingData())
     else
       theHiveSchema
-        .update(db)(LocalUserSrv.getSystemAuthContext)
-        .flatMap(_ => cortexSchema.update(db)(LocalUserSrv.getSystemAuthContext))
+        .update(db)
+        .flatMap(_ => cortexSchema.update(db))
         .map { _ =>
           retrieveExistingData()
           db.removeAllIndexes()
         }
-  }
 
   def endMigration(): Try[Unit] = {
     db.addSchemaIndexes(theHiveSchema)
@@ -496,7 +495,11 @@ class Output @Inject() (
   override def createCase(inputCase: InputCase): Try[IdMapping] =
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create case #${inputCase.`case`.number}")
-      caseSrv.createEntity(inputCase.`case`).map { createdCase =>
+      val organisationIds = inputCase.organisations.flatMap {
+        case (orgName, _) => getOrganisation(orgName).map(_._id).toOption
+      }
+      val `case` = inputCase.`case`.copy(organisationIds = organisationIds.toSeq)
+      caseSrv.createEntity(`case`).map { createdCase =>
         updateMetaData(createdCase, inputCase.metaData)
         inputCase
           .user

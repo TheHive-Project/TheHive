@@ -28,9 +28,9 @@ case class PendingAudit(audit: Audit, context: Option[Product with Entity], `obj
 class AuditSrv @Inject() (
     userSrvProvider: Provider[UserSrv],
     @Named("notification-actor") notificationActor: ActorRef,
-    eventSrv: EventSrv
-)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Audit] { auditSrv =>
+    eventSrv: EventSrv,
+    db: Database
+) extends VertexSrv[Audit] { auditSrv =>
   lazy val userSrv: UserSrv                                 = userSrvProvider.get
   val auditUserSrv                                          = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv                                            = new EdgeSrv[Audited, Audit, Product]

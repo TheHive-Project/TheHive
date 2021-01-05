@@ -23,7 +23,7 @@ class ProfileSrv @Inject() (
     organisationSrvProvider: Provider[OrganisationSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(implicit
-    @Named("with-thehive-schema") val db: Database
+    val db: Database
 ) extends VertexSrv[Profile] {
   lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
   lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
@@ -83,8 +83,7 @@ object ProfileOps {
 
 }
 
-class ProfileIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ProfileSrv)
-    extends IntegrityCheckOps[Profile] {
+class ProfileIntegrityCheckOps @Inject() (val db: Database, val service: ProfileSrv) extends IntegrityCheckOps[Profile] {
   override def resolve(entities: Seq[Profile with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

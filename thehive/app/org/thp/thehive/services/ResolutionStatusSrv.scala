@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[ResolutionStatus] {
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ResolutionStatus] =
@@ -45,8 +45,7 @@ object ResolutionStatusOps {
   }
 }
 
-class ResolutionStatusIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ResolutionStatusSrv)
-    extends IntegrityCheckOps[ResolutionStatus] {
+class ResolutionStatusIntegrityCheckOps @Inject() (val db: Database, val service: ResolutionStatusSrv) extends IntegrityCheckOps[ResolutionStatus] {
   override def resolve(entities: Seq[ResolutionStatus with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

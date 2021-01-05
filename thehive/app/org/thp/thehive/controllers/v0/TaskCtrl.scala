@@ -21,7 +21,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class TaskCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     userSrv: UserSrv,

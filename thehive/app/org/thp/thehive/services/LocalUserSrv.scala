@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class LocalUserSrv @Inject() (
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     profileSrv: ProfileSrv,

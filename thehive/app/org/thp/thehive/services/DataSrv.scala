@@ -17,8 +17,7 @@ import org.thp.thehive.services.DataOps._
 import scala.util.{Success, Try}
 
 @Singleton
-class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Data] {
+class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[Data] {
   override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     super.createEntity(e).map { data =>
       integrityCheckActor ! EntityAdded("Data")
@@ -56,7 +55,7 @@ object DataOps {
 
 }
 
-class DataIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
+class DataIntegrityCheckOps @Inject() (val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
   override def resolve(entities: Seq[Data with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

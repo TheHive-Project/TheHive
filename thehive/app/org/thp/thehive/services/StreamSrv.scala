@@ -45,11 +45,11 @@ class StreamActor(
     graceDuration: FiniteDuration,
     keepAlive: FiniteDuration,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends Actor {
   import context.dispatcher
 
-  lazy val logger: Logger = Logger(s"${getClass.getName}.$self")
+  lazy val logger: Logger = Logger(getClass)
 
   override def receive: Receive = {
     val keepAliveTimer = context.system.scheduler.scheduleOnce(keepAlive, self, PoisonPill)
@@ -136,7 +136,7 @@ class StreamSrv @Inject() (
     appConfig: ApplicationConfig,
     eventSrv: EventSrv,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     system: ActorSystem,
     implicit val ec: ExecutionContext
 ) {

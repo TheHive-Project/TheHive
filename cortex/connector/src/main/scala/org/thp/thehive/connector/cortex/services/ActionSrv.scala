@@ -39,7 +39,7 @@ class ActionSrv @Inject() (
     logSrv: LogSrv,
     connector: Connector,
     implicit val schema: Schema,
-    @Named("with-thehive-cortex-schema") implicit val db: Database,
+    implicit val db: Database,
     implicit val ec: ExecutionContext,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[Action] {

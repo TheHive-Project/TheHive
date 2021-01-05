@@ -35,7 +35,7 @@ class CaseCtrl @Inject() (
     userSrv: UserSrv,
     override val publicData: PublicCase,
     @Named("v0") override val queryExecutor: QueryExecutor,
-    @Named("with-thehive-schema") implicit override val db: Database
+    implicit override val db: Database
 ) extends CaseRenderer
     with QueryCtrl {
   def create: Action[AnyContent] =
@@ -190,7 +190,7 @@ class PublicCase @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     customFieldSrv: CustomFieldSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends PublicData
     with CaseRenderer {
   override val entityName: String = "case"

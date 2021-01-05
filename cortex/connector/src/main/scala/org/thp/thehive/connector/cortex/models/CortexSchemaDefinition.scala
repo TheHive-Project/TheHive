@@ -4,7 +4,9 @@ import javax.inject.{Inject, Singleton}
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
+import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
 import scala.collection.JavaConverters._
@@ -39,4 +41,5 @@ class CortexSchemaDefinition @Inject() () extends Schema with UpdatableSchema {
       }
       .toSeq
   }
+  override val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
 }

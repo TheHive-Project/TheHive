@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, organisationSrv: OrganisationSrv)(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[Task] {
 
   lazy val caseSrv: CaseSrv = caseSrvProvider.get

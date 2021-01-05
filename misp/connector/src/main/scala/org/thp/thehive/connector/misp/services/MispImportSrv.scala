@@ -11,7 +11,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.FunctionalCondition._
-import org.thp.scalligraph.{EntityName, RichSeq}
+import org.thp.scalligraph.{EntityId, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -37,15 +37,15 @@ class MispImportSrv @Inject() (
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    db: Database,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
   lazy val logger: Logger = Logger(getClass)
 
-  def eventToAlert(client: TheHiveMispClient, event: Event): Try[Alert] =
+  def eventToAlert(client: TheHiveMispClient, event: Event, organisationId: EntityId): Try[Alert] =
     client
       .currentOrganisationName
       .map { mispOrganisation =>
@@ -70,7 +70,8 @@ class MispImportSrv @Inject() (
             .getOrElse(2),
           pap = 2,
           read = false,
-          follow = true
+          follow = true,
+          organisationId = organisationId
         )
       }
 
@@ -335,7 +336,7 @@ class MispImportSrv @Inject() (
       caseTemplate: Option[CaseTemplate with Entity]
   )(implicit graph: Graph, authContext: AuthContext): Try[(Alert with Entity, JsObject)] = {
     logger.debug(s"updateOrCreateAlert ${client.name}#${event.id} for organisation ${organisation.name}")
-    eventToAlert(client, event).flatMap { alert =>
+    eventToAlert(client, event, organisation._id).flatMap { alert =>
       organisationSrv
         .get(organisation)
         .alerts

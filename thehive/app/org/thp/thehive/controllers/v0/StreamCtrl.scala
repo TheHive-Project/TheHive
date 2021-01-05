@@ -23,7 +23,7 @@ class StreamCtrl @Inject() (
     val caseSrv: CaseSrv,
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     implicit val schema: Schema,
     implicit val ec: ExecutionContext
 ) extends AuditRenderer {

@@ -20,8 +20,7 @@ import scala.util.matching.Regex
 import scala.xml.{Node, NodeSeq}
 
 @Singleton
-class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-schema") db: Database, attachmentSrv: AttachmentSrv)
-    extends SimpleRouter {
+class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv) extends SimpleRouter {
   lazy val logger: Logger = Logger(getClass)
 
   object PROPFIND {

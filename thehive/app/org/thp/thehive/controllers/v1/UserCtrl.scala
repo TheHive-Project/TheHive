@@ -34,7 +34,7 @@ class UserCtrl @Inject() (
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                 = "user"

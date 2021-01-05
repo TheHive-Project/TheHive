@@ -81,7 +81,6 @@ trait TestAppBuilder {
                                |akka.cluster.jmx.multi-mbeans-in-same-jvm: on
                                |""".stripMargin)
           .bind[Database, janus.JanusDatabase]
-          .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-schema")
 
         app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
         app[Database].close()
@@ -90,7 +89,6 @@ trait TestAppBuilder {
     }
     val app = appConfigure
       .bind[Database, janus.JanusDatabase]
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-schema")
       .addConfiguration(s"""
                            |db {
                            |  provider: janusgraph

@@ -20,7 +20,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class LogCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     logSrv: LogSrv,
     taskSrv: TaskSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,

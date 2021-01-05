@@ -17,7 +17,7 @@ import scala.util.{Success, Try}
 
 @Singleton
 class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[Tag] {
 
   val autoCreateConfig: ConfigItem[Boolean, Boolean] =
@@ -87,7 +87,7 @@ object TagOps {
 
 }
 
-class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
+class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
 
   override def resolve(entities: Seq[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
     firstCreatedEntity(entities).foreach {

@@ -21,8 +21,7 @@ import org.thp.thehive.services.TaskOps._
 import scala.util.{Failure, Try}
 
 @Singleton
-class ShareSrv @Inject() (
-    @Named("with-thehive-schema") implicit val db: Database,
+class ShareSrv @Inject() (implicit
     auditSrv: AuditSrv,
     caseSrvProvider: Provider[CaseSrv],
     taskSrv: TaskSrv,
@@ -59,6 +58,7 @@ class ShareSrv @Inject() (
           _            <- organisationShareSrv.create(OrganisationShare(), organisation, createdShare)
           _            <- shareCaseSrv.create(ShareCase(), createdShare, `case`)
           _            <- shareProfileSrv.create(ShareProfile(), createdShare, profile)
+          _            <- caseSrv.get(`case`).addValue(_.organisationIds, organisation._id).getOrFail("Case")
           _            <- auditSrv.share.shareCase(`case`, organisation, profile)
         } yield createdShare
     }
@@ -72,7 +72,7 @@ class ShareSrv @Inject() (
   def get(task: Task with Entity, organisationName: EntityIdOrName)(implicit graph: Graph): Traversal.V[Share] =
     taskSrv.get(task).share(organisationName)
 
-  def update(
+  def updateProfile(
       share: Share with Entity,
       profile: Profile with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[ShareProfile with Entity] = {
@@ -92,7 +92,9 @@ class ShareSrv @Inject() (
     for {
       case0        <- get(shareId).`case`.getOrFail("Case")
       organisation <- get(shareId).organisation.getOrFail("Organisation")
+      case0        <- get(shareId).`case`.removeValue(_.organisationIds, organisation._id).getOrFail("Case")
       _            <- auditSrv.share.unshareCase(case0, organisation)
+      // TODO delete all descendant of share linked only to this share
     } yield get(shareId).remove()
 
   /**

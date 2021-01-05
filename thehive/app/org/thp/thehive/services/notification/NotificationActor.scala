@@ -83,7 +83,7 @@ class NotificationActor @Inject() (
     userSrv: UserSrv,
     notificationSrv: NotificationSrv,
     cache: SyncCacheApi,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     implicit val schema: Schema
 ) extends Actor {
   import context.dispatcher

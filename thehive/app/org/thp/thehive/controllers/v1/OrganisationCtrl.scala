@@ -21,7 +21,7 @@ class OrganisationCtrl @Inject() (
     properties: Properties,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                 = "organisation"

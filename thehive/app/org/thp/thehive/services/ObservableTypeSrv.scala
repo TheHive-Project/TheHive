@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[ObservableType] {
 
   val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
@@ -56,8 +56,7 @@ object ObservableTypeOps {
   }
 }
 
-class ObservableTypeIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ObservableTypeSrv)
-    extends IntegrityCheckOps[ObservableType] {
+class ObservableTypeIntegrityCheckOps @Inject() (val db: Database, val service: ObservableTypeSrv) extends IntegrityCheckOps[ObservableType] {
   override def resolve(entities: Seq[ObservableType with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

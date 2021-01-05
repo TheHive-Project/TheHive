@@ -36,7 +36,7 @@ object OutputParam {
 
 @Singleton
 class TheHiveQueryExecutor @Inject() (
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     alert: PublicAlert,
     audit: PublicAudit,
     `case`: PublicCase,

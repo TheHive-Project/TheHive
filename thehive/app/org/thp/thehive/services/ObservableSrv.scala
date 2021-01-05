@@ -30,8 +30,6 @@ class ObservableSrv @Inject() (
     caseSrvProvider: Provider[CaseSrv],
     auditSrv: AuditSrv,
     alertSrvProvider: Provider[AlertSrv]
-)(implicit
-    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Observable] {
   lazy val caseSrv: CaseSrv    = caseSrvProvider.get
   lazy val alertSrv: AlertSrv  = alertSrvProvider.get

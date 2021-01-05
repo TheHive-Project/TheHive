@@ -22,7 +22,7 @@ import scala.util.Success
 @Singleton
 class TaskCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     properties: Properties,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,

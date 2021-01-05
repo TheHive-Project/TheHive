@@ -22,7 +22,7 @@ class OrganisationCtrl @Inject() (
     override val entrypoint: Entrypoint,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit override val db: Database,
+    implicit override val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicOrganisation
 ) extends QueryCtrl {

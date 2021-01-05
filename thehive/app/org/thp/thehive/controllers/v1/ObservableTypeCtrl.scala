@@ -16,7 +16,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class ObservableTypeCtrl @Inject() (
     val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     observableTypeSrv: ObservableTypeSrv
 ) extends QueryableCtrl {
   override val entityName: String = "ObservableType"

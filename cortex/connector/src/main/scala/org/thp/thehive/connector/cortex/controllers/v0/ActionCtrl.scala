@@ -26,7 +26,7 @@ import scala.reflect.runtime.{universe => ru}
 @Singleton
 class ActionCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     actionSrv: ActionSrv,
     entityHelper: EntityHelper,
     caseSrv: CaseSrv,
@@ -76,7 +76,7 @@ class ActionCtrl @Inject() (
 }
 
 @Singleton
-class PublicAction @Inject() (actionSrv: ActionSrv, @Named("with-thehive-schema") db: Database) extends PublicData {
+class PublicAction @Inject() (actionSrv: ActionSrv, db: Database) extends PublicData {
 
   override val entityName: String = "action"
   override val initialQuery: Query =

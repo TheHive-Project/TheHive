@@ -26,7 +26,7 @@ import scala.util.{Failure, Success}
 @Singleton
 class AnalyzerTemplateCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-cortex-schema") override val db: Database,
+    override val db: Database,
     analyzerTemplateSrv: AnalyzerTemplateSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicAnalyzerTemplate

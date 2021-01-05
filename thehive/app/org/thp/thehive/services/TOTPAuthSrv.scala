@@ -23,7 +23,7 @@ class TOTPAuthSrv(
     appConfig: ApplicationConfig,
     availableAuthProviders: immutable.Set[AuthSrvProvider],
     userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends MultiAuthSrv(configuration, appConfig, availableAuthProviders) {
   override val name: String = "totp"
 
@@ -102,7 +102,7 @@ class TOTPAuthSrvProvider @Inject() (
     appConfig: ApplicationConfig,
     authProviders: immutable.Set[AuthSrvProvider],
     userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends Provider[AuthSrv] {
   override def get(): AuthSrv = new TOTPAuthSrv(configuration, appConfig, authProviders, userSrv, db)
 }

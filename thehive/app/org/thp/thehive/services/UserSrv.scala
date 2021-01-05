@@ -34,7 +34,7 @@ class UserSrv @Inject() (
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends VertexSrv[User] {
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
@@ -338,7 +338,7 @@ object UserOps {
 
 @Singleton
 class UserIntegrityCheckOps @Inject() (
-    @Named("with-thehive-schema") val db: Database,
+    val db: Database,
     val service: UserSrv,
     profileSrv: ProfileSrv,
     organisationSrv: OrganisationSrv,

@@ -36,7 +36,7 @@ class Properties @Inject() (
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     customFieldSrv: CustomFieldSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) {
 
   lazy val metaProperties: PublicProperties =

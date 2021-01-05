@@ -26,7 +26,7 @@ class ConfigCtrl @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) {
 
   lazy val logger: Logger = Logger(getClass)

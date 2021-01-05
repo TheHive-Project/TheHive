@@ -13,10 +13,6 @@ import play.api.test.{FakeRequest, PlaySpecification}
 import scala.util.Random
 
 class AnalyzerTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   "report controller" should {
 //      "create, fetch, update and delete a template" in testApp {app =>

@@ -45,7 +45,7 @@ class JobSrv @Inject() (
     reportTagSrv: ReportTagSrv,
     serviceHelper: ServiceHelper,
     auditSrv: CortexAuditSrv,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) extends VertexSrv[Job] {

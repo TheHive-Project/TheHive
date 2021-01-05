@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 @Singleton
 class ListCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     customFieldSrv: CustomFieldSrv,
     observableTypeSrv: ObservableTypeSrv
 ) {

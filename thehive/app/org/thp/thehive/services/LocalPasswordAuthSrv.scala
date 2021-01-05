@@ -19,7 +19,7 @@ object LocalPasswordAuthSrv {
     SecureHash.createHash(password)
 }
 
-class LocalPasswordAuthSrv(@Named("with-thehive-schema") db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
+class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)
   lazy val logger: Logger                              = Logger(getClass)
@@ -68,8 +68,7 @@ class LocalPasswordAuthSrv(@Named("with-thehive-schema") db: Database, userSrv: 
 }
 
 @Singleton
-class LocalPasswordAuthProvider @Inject() (@Named("with-thehive-schema") db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv)
-    extends AuthSrvProvider {
+class LocalPasswordAuthProvider @Inject() (db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrvProvider {
   override val name: String                               = "local"
   override def apply(config: Configuration): Try[AuthSrv] = Success(new LocalPasswordAuthSrv(db, userSrv, localUserSrv))
 }

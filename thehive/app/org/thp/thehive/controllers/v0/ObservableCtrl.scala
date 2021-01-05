@@ -8,7 +8,7 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
@@ -33,7 +33,7 @@ import scala.util.{Failure, Success}
 class ObservableCtrl @Inject() (
     configuration: Configuration,
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,

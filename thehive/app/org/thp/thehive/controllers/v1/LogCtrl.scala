@@ -21,7 +21,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class LogCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     properties: Properties,
     logSrv: LogSrv,
     taskSrv: TaskSrv,

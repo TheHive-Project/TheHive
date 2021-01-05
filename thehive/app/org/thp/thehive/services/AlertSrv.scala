@@ -34,7 +34,7 @@ class AlertSrv @Inject() (
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv
 )(implicit
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends VertexSrv[Alert] {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]

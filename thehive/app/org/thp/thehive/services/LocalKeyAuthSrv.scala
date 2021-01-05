@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Random, Success, Try}
 
 class LocalKeyAuthSrv(
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     userSrv: UserSrv,
     localUserSrv: LocalUserSrv,
     authSrv: AuthSrv,
@@ -69,7 +69,7 @@ class LocalKeyAuthSrv(
 
 @Singleton
 class LocalKeyAuthProvider @Inject() (
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     userSrv: UserSrv,
     localUserSrv: LocalUserSrv,
     authSrvProvider: Provider[AuthSrv],
