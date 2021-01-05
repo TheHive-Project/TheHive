@@ -42,7 +42,7 @@ class UserSrv @Inject() (
   val userAttachmentSrv = new EdgeSrv[UserAttachment, User, Attachment]
 
   override def createEntity(e: User)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("User")
+    integrityCheckActor ! EntityAdded("User")
     super.createEntity(e)
   }
 

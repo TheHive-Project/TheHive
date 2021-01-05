@@ -24,7 +24,7 @@ trait AuditRenderer {
 
   def taskToJson: Traversal.V[Task] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     _.project(
-      _.by(_.richTask.domainMap(_.toJson))
+      _.by(_.richTaskWithoutActionRequired.domainMap(_.toJson))
         .by(t => caseToJson(t.`case`))
     ).domainMap {
       case (task, case0) => task.as[JsObject] + ("case" -> case0)

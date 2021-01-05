@@ -23,7 +23,7 @@ class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCh
     startTraversal.getByName(name)
 
   override def createEntity(e: ResolutionStatus)(implicit graph: Graph, authContext: AuthContext): Try[ResolutionStatus with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Resolution")
+    integrityCheckActor ! EntityAdded("Resolution")
     super.createEntity(e)
   }
 

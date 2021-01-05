@@ -21,7 +21,7 @@ class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: Ac
     extends VertexSrv[Data] {
   override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     super.createEntity(e).map { data =>
-      integrityCheckActor ! IntegrityCheckActor.EntityAdded("Data")
+      integrityCheckActor ! EntityAdded("Data")
       data
     }
 

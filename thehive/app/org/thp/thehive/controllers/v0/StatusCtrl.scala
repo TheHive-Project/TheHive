@@ -1,9 +1,9 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.{EntityName, ScalligraphApplicationLoader}
 import org.thp.thehive.TheHiveModule
@@ -12,7 +12,9 @@ import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
 
 @Singleton
@@ -26,6 +28,12 @@ class StatusCtrl @Inject() (
 ) {
 
   val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")
+  def password: String                           = passwordConfig.get
+  val streamPollingDurationConfig: ConfigItem[FiniteDuration, FiniteDuration] =
+    appConfig.item[FiniteDuration]("stream.longPolling.pollingDuration", "amount of time the UI have to wait before polling the stream")
+  def streamPollingDuration: FiniteDuration = streamPollingDurationConfig.get
+
+  private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def get: Action[AnyContent] =
     entrypoint("status") { _ =>
@@ -44,17 +52,14 @@ class StatusCtrl @Inject() (
                 case multiAuthSrv: MultiAuthSrv => Json.toJson(multiAuthSrv.providerNames)
                 case _                          => JsString(authSrv.name)
               }),
-              "capabilities" -> authSrv.capabilities.map(c => JsString(c.toString)),
-              "ssoAutoLogin" -> authSrv.capabilities.contains(AuthCapability.sso)
+              "capabilities"    -> authSrv.capabilities.map(c => JsString(c.toString)),
+              "ssoAutoLogin"    -> authSrv.capabilities.contains(AuthCapability.sso),
+              "pollingDuration" -> streamPollingDuration.toMillis
             )
           )
         )
       )
     }
-
-  def password: String = passwordConfig.get
-
-  private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def health: Action[AnyContent] =
     entrypoint("health") { _ =>

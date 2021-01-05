@@ -4,14 +4,13 @@ import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.pattern.ask
 import akka.util.Timeout
-import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 @Singleton
 class DatabaseProvider @Inject() (
@@ -19,7 +18,6 @@ class DatabaseProvider @Inject() (
     @Named("with-thehive-schema") database: Database,
     actorSystem: ActorSystem
 ) extends Provider[Database] {
-  import SchemaUpdaterActor._
   lazy val schemaUpdaterActor: ActorRef = {
     val singletonManager =
       actorSystem.actorOf(
@@ -42,43 +40,37 @@ class DatabaseProvider @Inject() (
 
   override def get(): Database = {
     implicit val timeout: Timeout = Timeout(5.minutes)
-    Await.result(schemaUpdaterActor ? RequestDBStatus, timeout.duration) match {
-      case DBStatus(status) =>
-        status.get
-        database
+    Await.result(schemaUpdaterActor ? RequestDB, timeout.duration) match {
+      case DBReady => database
     }
   }
 }
 
-object SchemaUpdaterActor {
-  case object RequestDBStatus
-  case class DBStatus(status: Try[Unit])
-}
+sealed trait SchemaUpdaterMessage
+case object RequestDB extends SchemaUpdaterMessage
+case object DBReady   extends SchemaUpdaterMessage
 
 class SchemaUpdaterActor @Inject() (cortexSchema: CortexSchemaDefinition, database: Database) extends Actor {
-  import SchemaUpdaterActor._
   lazy val logger: Logger = Logger(getClass)
 
-  def update(): Try[Unit] =
+  def update(): Unit = {
     cortexSchema
       .update(database)(LocalUserSrv.getSystemAuthContext)
       .recover {
         case error => logger.error(s"Database with CortexSchema schema update failure", error)
       }
-
-  override def receive: Receive = {
-    case RequestDBStatus =>
-      val status = update()
-      sender ! DBStatus(status)
-      context.become(receive(status))
+    ()
   }
 
-  def receive(status: Try[Unit]): Receive = {
-    case RequestDBStatus =>
-      status.fold({ _ =>
-        val newStatus = update()
-        sender ! DBStatus(newStatus)
-        context.become(receive(newStatus))
-      }, _ => sender ! DBStatus(status))
+  override def receive: Receive = {
+    case RequestDB =>
+      update()
+      sender ! DBReady
+      context.become(databaseUpToDate)
+  }
+
+  def databaseUpToDate: Receive = {
+    case RequestDB =>
+      sender ! DBReady
   }
 }

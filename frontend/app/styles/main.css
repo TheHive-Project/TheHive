@@ -291,6 +291,7 @@ pre.clearpre {
 
 .progress.task-progress .progress-bar {
     opacity: 0.8;
+    height: 4px;
 }
 
 .btn-canceled, .progress-bar-default {
@@ -339,7 +340,7 @@ ul.observable-reports-summary li {
 
 .case-page .case-page-content {
     background-color: #FFF;
-    padding: 20px 10px 10px 10px;
+    padding: 10px 10px 10px 10px;
 }
 
 .case-details dt,

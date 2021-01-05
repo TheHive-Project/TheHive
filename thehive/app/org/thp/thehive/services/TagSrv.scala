@@ -47,7 +47,7 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
   }
 
   override def createEntity(e: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Tag")
+    integrityCheckActor ! EntityAdded("Tag")
     super.createEntity(e)
   }
 

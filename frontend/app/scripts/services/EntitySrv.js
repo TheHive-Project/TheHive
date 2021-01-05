@@ -19,6 +19,12 @@
                     caseId: entity.case.id,
                     itemId: entity.id
                 };
+            } else if (entity._type === 'observable') {
+                state.name = 'app.case.observables-item';
+                state.params = {
+                    caseId: entity.case.id,
+                    itemId: entity.id
+                };
             } else if (entity._type === 'case_artifact_job') {
                 state.name = 'app.case.observables-item';
                 state.params = {

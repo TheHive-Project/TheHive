@@ -126,7 +126,10 @@
                                 });
                         });
                     }
-                    self.poll();
+
+                    $timeout(function() {
+                        self.poll();
+                    }, 0);
 
                 }).catch(function(err) {
                     // Initialize the stream;
@@ -182,7 +185,7 @@
                 config.scope.$on(eventName, function(event, data) {
                     if(!self.disabled) {
                         config.callback(data);
-                    }                    
+                    }
                 });
             }
         };

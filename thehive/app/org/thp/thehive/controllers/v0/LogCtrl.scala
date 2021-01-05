@@ -38,10 +38,8 @@ class LogCtrl @Inject() (
               .get(EntityIdOrName(taskId))
               .can(Permissions.manageTask)
               .getOrFail("Task")
-          createdLog <- logSrv.create(inputLog.toLog, task)
-          attachment <- inputLog.attachment.map(logSrv.addAttachment(createdLog, _)).flip
-          richLog = RichLog(createdLog, attachment.toList)
-        } yield Results.Created(richLog.toJson)
+          createdLog <- logSrv.create(inputLog.toLog, task, inputLog.attachment)
+        } yield Results.Created(createdLog.toJson)
       }
 
   def update(logId: String): Action[AnyContent] =

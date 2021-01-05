@@ -19,7 +19,7 @@
         $scope.collapseOptions = {};
 
         this.$onInit = function() {
-            $scope.filtering = new FilteringSrv('case_task', 'task.list', {
+            $scope.filtering = new FilteringSrv('task', 'task.list', {
                 version: 'v1',
                 defaults: {
                     showFilters: true,
@@ -68,7 +68,7 @@
                     {'_name': 'getCase', "idOrName": $scope.caseId},
                     {'_name': 'tasks'}
                 ],
-                extraData: ['shareCount'],
+                extraData: ['shareCount', 'actionRequired'],
                 //extraData: ['isOwner', 'shareCount'],
                 onUpdate: function() {
                     $scope.buildTaskGroups($scope.tasks.values);

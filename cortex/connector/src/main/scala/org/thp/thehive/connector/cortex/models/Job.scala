@@ -1,11 +1,11 @@
 package org.thp.thehive.connector.cortex.models
 
-import java.util.Date
-
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 import org.thp.thehive.models.{Observable, RichObservable}
 import play.api.libs.json.{Format, JsObject, Json}
+
+import java.util.Date
 
 object JobStatus extends Enumeration {
   val InProgress, Success, Failure, Waiting, Deleted = Value

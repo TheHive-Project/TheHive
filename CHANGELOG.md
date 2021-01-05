@@ -1,5 +1,26 @@
 # Change Log
 
+## [4.0.3](https://github.com/TheHive-Project/TheHive/milestone/66) (2020-12-22)
+
+**Implemented enhancements:**
+
+- Providing output details for Responders [\#1293](https://github.com/TheHive-Project/TheHive/issues/1293)
+- [Enhancement] Change artifacts by observables on the onMouseOver tooltip of the eye icon of observable [\#1695](https://github.com/TheHive-Project/TheHive/issues/1695)
+- [Bug] Enhance support of S3 for attachment storage [\#1705](https://github.com/TheHive-Project/TheHive/issues/1705)
+- Update the headers of basic info sections [\#1710](https://github.com/TheHive-Project/TheHive/issues/1710)
+- [Enhancement] Add poll duration config for UI Stream [\#1720](https://github.com/TheHive-Project/TheHive/issues/1720)
+
+**Fixed bugs:**
+
+- [Bug] MISP filters are not correctly implemented [\#1685](https://github.com/TheHive-Project/TheHive/issues/1685)
+- [Bug] The query "getObservable" doesn't work for alert observables [\#1691](https://github.com/TheHive-Project/TheHive/issues/1691)
+- Click analyzers mini-report does not load the full report [\#1694](https://github.com/TheHive-Project/TheHive/issues/1694)
+- [TH4] Import file observable in gui generate error [\#1697](https://github.com/TheHive-Project/TheHive/issues/1697)
+- [Bug] Cannot search for alerts per observables [\#1707](https://github.com/TheHive-Project/TheHive/issues/1707)
+- [Bug] Serialization problem in cluster mode [\#1708](https://github.com/TheHive-Project/TheHive/issues/1708)
+- [Bug] Issue with sorting [\#1716](https://github.com/TheHive-Project/TheHive/issues/1716)
+- [Bug] Identical URL Observables can be added multiple times to the same case [\#1718](https://github.com/TheHive-Project/TheHive/issues/1718)
+
 ## [4.0.2](https://github.com/TheHive-Project/TheHive/milestone/64) (2020-11-20)
 
 **Implemented enhancements:**
@@ -218,7 +239,6 @@
 - A (received) Shared Case is displayed as sender/owner [\#1245](https://github.com/TheHive-Project/TheHive/issues/1245)
 - FR: Alignment of case custom-fields (metrics) [\#1246](https://github.com/TheHive-Project/TheHive/issues/1246)
 - Add information about the age of a Case  [\#1257](https://github.com/TheHive-Project/TheHive/issues/1257)
-- Providing output details for Responders [\#1293](https://github.com/TheHive-Project/TheHive/issues/1293)
 - Add support to multi-factor authentication [\#1303](https://github.com/TheHive-Project/TheHive/issues/1303)
 - Add support to webhooks [\#1306](https://github.com/TheHive-Project/TheHive/issues/1306)
 

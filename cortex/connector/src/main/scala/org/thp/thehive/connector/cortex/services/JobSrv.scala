@@ -24,7 +24,6 @@ import org.thp.scalligraph.{EntityId, EntityIdOrName, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.Conversion._
-import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._

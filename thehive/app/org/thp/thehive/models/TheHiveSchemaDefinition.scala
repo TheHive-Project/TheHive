@@ -34,7 +34,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
   val operations: Operations = Operations(name)
     .addProperty[Option[Boolean]]("Observable", "seen")
     .updateGraph("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
-      Try(traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageConfig").iterate())
+      traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageConfig").iterate()
       Success(())
     }
     .updateGraph("Remove duplicate custom fields", "CustomField") { traversal =>
@@ -88,6 +88,11 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .iterate()
       Success(())
     }
+    .addProperty[Boolean]("ShareTask", "actionRequired")
+    .updateGraph("Add actionRequire property", "Share") { traversal =>
+      traversal.outE[ShareTask].raw.property("actionRequired", false).iterate()
+      Success(())
+    }
     // Taxonomies
     .addVertexModel[String]("Taxonomy", Seq("namespace"))
     .dbOperation[Database]("Add Custom taxonomy vertex for each Organisation") { db =>
@@ -114,23 +119,27 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       db.tryTransaction { implicit g =>
         db.labelFilter("Organisation")(Traversal.V()).unsafeHas("name", P.neq("admin")).toIterator.toTry { o =>
           val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", s"_freetags_${o.id()}").head
-          Traversal.V(EntityId(o.id())).unionFlat(
-            _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
-            _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
-            _.in("AlertOrganisation").out("AlertTag"),
-            _.in("CaseTemplateOrganisation").out("CaseTemplateTag")
-          ).toSeq.foreach { tag =>
-            // Create a freetext tag and store it into predicate
-            val tagStr = tagString(
-              tag.property("namespace").value().toString,
-              tag.property("predicate").value().toString,
-              tag.property ("value").orElse("")
+          Traversal
+            .V(EntityId(o.id()))
+            .unionFlat(
+              _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
+              _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
+              _.in("AlertOrganisation").out("AlertTag"),
+              _.in("CaseTemplateOrganisation").out("CaseTemplateTag")
             )
-            tag.property("namespace", s"_freetags_${o.id()}")
-            tag.property("predicate", tagStr)
-            tag.property("value").remove()
-            customTaxo.addEdge("TaxonomyTag", tag)
-          }
+            .toSeq
+            .foreach { tag =>
+              // Create a freetext tag and store it into predicate
+              val tagStr = tagString(
+                tag.property("namespace").value().toString,
+                tag.property("predicate").value().toString,
+                tag.property("value").orElse("")
+              )
+              tag.property("namespace", s"_freetags_${o.id()}")
+              tag.property("predicate", tagStr)
+              tag.property("value").remove()
+              customTaxo.addEdge("TaxonomyTag", tag)
+            }
           Success(())
         }
       }.map(_ => ())
@@ -178,8 +187,8 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
 
   private def tagString(namespace: String, predicate: String, value: String): String =
     (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
-    (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
-    (if (value.isEmpty) "" else f"""="$value"""")
+      (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
+      (if (value.isEmpty) "" else f"""="$value"""")
 
   override def init(db: Database)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
 }

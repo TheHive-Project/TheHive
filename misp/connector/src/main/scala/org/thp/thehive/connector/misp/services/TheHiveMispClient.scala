@@ -23,11 +23,12 @@ case class TheHiveMispClientConfig(
     wsConfig: ProxyWSConfig = ProxyWSConfig(AhcWSClientConfig(), None),
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String] = Nil,
+    whitelistOrganisations: Seq[String] = Nil,
     excludedTags: Set[String] = Set.empty,
     whitelistTags: Set[String] = Set.empty,
     purpose: MispPurpose.Value = MispPurpose.ImportAndExport,
     caseTemplate: Option[String],
-    artifactTags: Seq[String] = Nil,
+    observableTags: Seq[String] = Nil,
     exportCaseTags: Boolean = false,
     exportObservableTags: Boolean = false,
     includedTheHiveOrganisations: Seq[String] = Seq("*"),
@@ -44,11 +45,12 @@ object TheHiveMispClientConfig {
       wsConfig                     <- (JsPath \ "wsConfig").readWithDefault[ProxyWSConfig](ProxyWSConfig(AhcWSClientConfig(), None))
       maxAge                       <- (JsPath \ "maxAge").readNullable[Duration]
       excludedOrganisations        <- (JsPath \ "exclusion" \ "organisations").readWithDefault[Seq[String]](Nil)
+      whitelistOrganisations       <- (JsPath \ "whitelist" \ "organisations").readWithDefault[Seq[String]](Nil)
       excludedTags                 <- (JsPath \ "exclusion" \ "tags").readWithDefault[Set[String]](Set.empty)
       whitelistTags                <- (JsPath \ "whitelist" \ "tags").readWithDefault[Set[String]](Set.empty)
       purpose                      <- (JsPath \ "purpose").readWithDefault[MispPurpose.Value](MispPurpose.ImportAndExport)
       caseTemplate                 <- (JsPath \ "caseTemplate").readNullable[String]
-      artifactTags                 <- (JsPath \ "tags").readWithDefault[Seq[String]](Nil)
+      observableTags               <- (JsPath \ "tags").readWithDefault[Seq[String]](Nil)
       exportCaseTags               <- (JsPath \ "exportCaseTags").readWithDefault[Boolean](false)
       exportObservableTags         <- (JsPath \ "exportObservableTags").readWithDefault[Boolean](false)
       includedTheHiveOrganisations <- (JsPath \ "includedTheHiveOrganisations").readWithDefault[Seq[String]](Seq("*"))
@@ -60,11 +62,12 @@ object TheHiveMispClientConfig {
       wsConfig,
       maxAge,
       excludedOrganisations,
+      whitelistOrganisations,
       excludedTags,
       whitelistTags,
       purpose,
       caseTemplate,
-      artifactTags,
+      observableTags,
       exportCaseTags,
       exportObservableTags,
       includedTheHiveOrganisations,
@@ -82,7 +85,7 @@ object TheHiveMispClientConfig {
       "whitelistTags"                -> Json.obj("whitelist" -> cfg.whitelistTags),
       "purpose"                      -> cfg.purpose,
       "caseTemplate"                 -> cfg.caseTemplate,
-      "tags"                         -> cfg.artifactTags,
+      "tags"                         -> cfg.observableTags,
       "exportCaseTags"               -> cfg.exportCaseTags,
       "includedTheHiveOrganisations" -> cfg.includedTheHiveOrganisations,
       "excludedTheHiveOrganisations" -> cfg.excludedTheHiveOrganisations
@@ -98,11 +101,12 @@ class TheHiveMispClient(
     ws: WSClient,
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String],
+    whitelistOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String],
     purpose: MispPurpose.Value,
     val caseTemplate: Option[String],
-    artifactTags: Seq[String], // FIXME use artifactTags
+    val observableTags: Seq[String],
     val exportCaseTags: Boolean,
     val exportObservableTags: Boolean,
     includedTheHiveOrganisations: Seq[String],
@@ -114,6 +118,7 @@ class TheHiveMispClient(
       ws,
       maxAge,
       excludedOrganisations,
+      whitelistOrganisations,
       excludedTags,
       whitelistTags
     ) {
@@ -126,11 +131,12 @@ class TheHiveMispClient(
       new ProxyWS(config.wsConfig, mat),
       config.maxAge,
       config.excludedOrganisations,
+      config.whitelistOrganisations,
       config.excludedTags,
       config.whitelistTags,
       config.purpose,
       config.caseTemplate,
-      config.artifactTags,
+      config.observableTags,
       config.exportCaseTags,
       config.exportObservableTags,
       config.includedTheHiveOrganisations,

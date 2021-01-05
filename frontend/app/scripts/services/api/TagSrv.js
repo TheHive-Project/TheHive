@@ -41,7 +41,7 @@
                 switch(entity) {
                     case 'case':
                         return self.fromCases(query);
-                    case 'case_artifact':
+                    case 'observable':
                         return self.fromObservables(query);
                     case 'alert':
                         return self.fromAlerts(query);
