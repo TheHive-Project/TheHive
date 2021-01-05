@@ -22,7 +22,7 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
         val c1 = app[Database]
           .tryTransaction(implicit graph =>
             app[CaseSrv].create(
-              Case(0, "case audit", "desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None),
+              Case(0, "case audit", "desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None, Seq(orgAdmin._id)),
               None,
               orgAdmin,
               Set.empty,

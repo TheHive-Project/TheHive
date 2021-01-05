@@ -173,7 +173,10 @@ class AuditSrv @Inject() (
     def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
 
-    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
       auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), Some(destination), Some(destination))
   }
 
@@ -186,7 +189,10 @@ class AuditSrv @Inject() (
       if (details == JsObject.empty) Success(())
       else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, details.map(_.toString())), Some(context), None)
   }
 
@@ -276,8 +282,11 @@ class AuditSrv @Inject() (
 
 object AuditOps {
 
-  implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
+  implicit class VertexDefs(traversal: Traversal[Vertex, Vertex, IdentityConverter[Vertex]]) {
+    def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase]).v[Share]
+  }
 
+  implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
     def auditContextObjectOrganisation
         : Traversal[(Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]), JMap[String, Any], Converter[
           (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]),
@@ -332,7 +341,7 @@ object AuditOps {
     def `case`: Traversal.V[Case] =
       traversal
         .out[AuditContext]
-        .coalesceIdent[Vertex](_.in().hasLabel("Share"), _.hasLabel("Share"))
+        .share
         .out[ShareCase]
         .v[Case]
 
@@ -340,9 +349,11 @@ object AuditOps {
       traversal
         .out[AuditContext]
         .coalesceIdent[Vertex](
+          _.share.in[OrganisationShare],
+          _.out[AlertOrganisation],
           _.hasLabel("Organisation"),
-          _.in().hasLabel("Share").in[OrganisationShare],
-          _.both().hasLabel("Organisation")
+          _.out[CaseTemplateOrganisation],
+          _.in[OrganisationDashboard]
         )
         .v[Organisation]
 
