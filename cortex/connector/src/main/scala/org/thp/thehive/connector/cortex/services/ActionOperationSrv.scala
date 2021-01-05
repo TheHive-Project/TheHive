@@ -94,10 +94,19 @@ class ActionOperationSrv @Inject() (
 
       case AddArtifactToCase(_, dataType, dataMessage) =>
         for {
-          c       <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddArtifactToCase without case")))(Success(_))
-          obsType <- observableTypeSrv.getOrFail(EntityIdOrName(dataType))
+          c            <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddArtifactToCase without case")))(Success(_))
+          obsType      <- observableTypeSrv.getOrFail(EntityIdOrName(dataType))
+          organisation <- organisationSrv.getOrFail(authContext.organisation)
           richObservable <- observableSrv.create(
-            Observable(Some(dataMessage), 2, ioc = false, sighted = false, ignoreSimilarity = None),
+            Observable(
+              Some(dataMessage),
+              2,
+              ioc = false,
+              sighted = false,
+              ignoreSimilarity = None,
+              organisationIds = Seq(organisation._id),
+              relatedId = c._id
+            ),
             obsType,
             dataMessage,
             Set.empty[String],

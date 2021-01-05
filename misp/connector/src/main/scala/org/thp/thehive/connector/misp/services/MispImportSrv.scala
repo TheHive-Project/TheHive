@@ -23,7 +23,7 @@ import play.api.libs.json._
 
 import java.nio.file.Files
 import java.util.Date
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
@@ -91,9 +91,9 @@ class MispImportSrv @Inject() (
       .fold(observableTypeSrv.getOrFail(EntityName("other")).map(_ -> Seq.empty[String]))(Success(_))
   }
 
-  def attributeToObservable(
-      attribute: Attribute
-  )(implicit graph: Graph): List[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])] =
+  def attributeToObservable(alert: Alert with Entity, attribute: Attribute)(implicit
+      graph: Graph
+  ): List[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])] =
     attribute
       .`type`
       .split('|')
@@ -114,7 +114,15 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
+              Observable(
+                attribute.comment,
+                0,
+                ioc = false,
+                sighted = false,
+                ignoreSimilarity = None,
+                organisationIds = Seq(alert.organisationId),
+                relatedId = alert._id
+              ),
               observableType,
               attribute.tags.map(_.name).toSet ++ additionalTags,
               Right(attribute.data.get)
@@ -126,7 +134,15 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
+              Observable(
+                attribute.comment,
+                0,
+                ioc = false,
+                sighted = false,
+                ignoreSimilarity = None,
+                organisationIds = Seq(alert.organisationId),
+                relatedId = alert._id
+              ),
               observableType,
               attribute.tags.map(_.name).toSet ++ additionalTags,
               Left(attribute.value)
@@ -144,7 +160,15 @@ class MispImportSrv @Inject() (
                   s"attribute ${attribute.category}:${attribute.`type`} (${attribute.tags}) is converted to observable $observableType with tags $additionalTags"
                 )
                 (
-                  Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
+                  Observable(
+                    attribute.comment,
+                    0,
+                    ioc = false,
+                    sighted = false,
+                    ignoreSimilarity = None,
+                    organisationIds = Seq(alert.organisationId),
+                    relatedId = alert._id
+                  ),
                   observableType,
                   attribute.tags.map(_.name).toSet ++ additionalTags,
                   Left(value)
@@ -278,7 +302,7 @@ class MispImportSrv @Inject() (
     val queue =
       client
         .searchAttributes(event.id, lastSynchro)
-        .mapConcat(attributeToObservable)
+        .mapConcat(attributeToObservable(alert, _))
         .fold(
           Map.empty[
             (String, String),

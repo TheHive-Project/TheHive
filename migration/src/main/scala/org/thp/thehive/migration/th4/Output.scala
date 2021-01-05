@@ -23,6 +23,7 @@ import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import org.thp.thehive.connector.cortex.services.JobOps._
 import play.api.cache.SyncCacheApi
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
@@ -600,23 +601,30 @@ class Output @Inject() (
       for {
         observableType <- getObservableType(inputObservable.`type`)
         tags           <- inputObservable.tags.filterNot(_.isEmpty).toTry(getTag)
+        orgs           <- inputObservable.organisations.toTry(getOrganisation)
         richObservable <-
           inputObservable
             .dataOrAttachment
             .fold(
               dataValue =>
                 dataSrv.createEntity(Data(dataValue)).flatMap { data =>
-                  observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
+                  observableSrv
+                    .create(inputObservable.observable.copy(organisationIds = orgs.map(_._id), relatedId = caseId), observableType, data, tags, Nil)
                 },
               inputAttachment =>
                 attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
                   attachment =>
-                    observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
+                    observableSrv.create(
+                      inputObservable.observable.copy(organisationIds = orgs.map(_._id), relatedId = caseId),
+                      observableType,
+                      attachment,
+                      tags,
+                      Nil
+                    )
                 }
             )
         _ = updateMetaData(richObservable.observable, inputObservable.metaData)
         case0 <- getCase(caseId)
-        orgs  <- inputObservable.organisations.toTry(getOrganisation)
         _     <- orgs.toTry(o => shareSrv.shareObservable(richObservable, case0, o))
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
@@ -636,6 +644,7 @@ class Output @Inject() (
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in job $jobId")
       for {
         job            <- jobSrv.getOrFail(jobId)
+        jobObs         <- jobSrv.get(job).observable.getOrFail("Observable")
         observableType <- getObservableType(inputObservable.`type`)
         tags = inputObservable.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
         richObservable <-
@@ -644,12 +653,25 @@ class Output @Inject() (
             .fold(
               dataValue =>
                 dataSrv.createEntity(Data(dataValue)).flatMap { data =>
-                  observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
+                  observableSrv.create(
+                    inputObservable.observable.copy(organisationIds = jobObs.organisationIds, relatedId = jobId),
+                    observableType,
+                    data,
+                    tags,
+                    Nil
+                  )
                 },
               inputAttachment =>
                 attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
                   attachment =>
-                    observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
+                    observableSrv
+                      .create(
+                        inputObservable.observable.copy(organisationIds = jobObs.organisationIds, relatedId = jobId),
+                        observableType,
+                        attachment,
+                        tags,
+                        Nil
+                      )
                 }
             )
         _ = updateMetaData(richObservable.observable, inputObservable.metaData)
@@ -678,7 +700,7 @@ class Output @Inject() (
             )
         tags = inputAlert.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
 //        alert <- alertSrv.create(inputAlert.alert, organisation, tags, inputAlert.customFields, caseTemplate) // FIXME don't check duplicate
-        alert <- alertSrv.createEntity(inputAlert.alert)
+        alert <- alertSrv.createEntity(inputAlert.alert.copy(organisationId = organisation._id))
         _     <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), alert, organisation)
         _     <- caseTemplate.map(ct => alertSrv.alertCaseTemplateSrv.create(AlertCaseTemplate(), alert, ct)).flip
         _     <- tags.toTry(t => alertSrv.alertTagSrv.create(AlertTag(), alert, t))
@@ -691,26 +713,40 @@ class Output @Inject() (
   override def createAlertObservable(alertId: EntityId, inputObservable: InputObservable): Try[IdMapping] =
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
+      val tags = inputObservable.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
       for {
         observableType <- getObservableType(inputObservable.`type`)
-        tags = inputObservable.tags.filterNot(_.isEmpty).flatMap(getTag(_).toOption).toSeq
+        alert          <- alertSrv.getOrFail(alertId)
         richObservable <-
           inputObservable
             .dataOrAttachment
             .fold(
               dataValue =>
                 dataSrv.createEntity(Data(dataValue)).flatMap { data =>
-                  observableSrv.create(inputObservable.observable, observableType, data, tags, Nil)
+                  observableSrv.create(
+                    inputObservable.observable.copy(organisationIds = Seq(alert.organisationId), relatedId = alertId),
+                    observableType,
+                    data,
+                    tags,
+                    Nil
+                  )
                 },
               inputAttachment =>
                 attachmentSrv.create(inputAttachment.name, inputAttachment.size, inputAttachment.contentType, inputAttachment.data).flatMap {
                   attachment =>
-                    observableSrv.create(inputObservable.observable, observableType, attachment, tags, Nil)
+                    observableSrv
+                      .create(
+                        inputObservable.observable.copy(organisationIds = Seq(alert.organisationId), relatedId = alertId),
+                        observableType,
+                        attachment,
+                        tags,
+                        Nil
+                      )
                 }
             )
         _ = updateMetaData(richObservable.observable, inputObservable.metaData)
-        alert <- alertSrv.getOrFail(alertId)
-        _     <- alertSrv.alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
+
+        _ <- alertSrv.alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
 

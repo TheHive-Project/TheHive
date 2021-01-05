@@ -6,7 +6,7 @@ import io.scalaland.chimney.dsl._
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, IteratorOutput, Traversal}
@@ -301,7 +301,7 @@ class AlertCtrl @Inject() (
         } yield Results.Ok(alertWithObservables.toJson)
       }
 
-  private def createObservable(observable: InputObservable)(implicit
+  private def createObservable(organisation: Organisation with Entity, observable: InputObservable)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Seq[RichObservable]] =
@@ -314,15 +314,20 @@ class AlertCtrl @Inject() (
               val data = Base64.getDecoder.decode(value)
               attachmentSrv
                 .create(filename, contentType, data)
-                .flatMap(attachment => observableSrv.create(observable.toObservable, attachmentType, attachment, observable.tags, Nil))
+                .flatMap(attachment =>
+                  observableSrv.create(observable.toObservable(organisation._id), attachmentType, attachment, observable.tags, Nil)
+                )
             case Array(filename, contentType) =>
               attachmentSrv
                 .create(filename, contentType, Array.emptyByteArray)
-                .flatMap(attachment => observableSrv.create(observable.toObservable, attachmentType, attachment, observable.tags, Nil))
+                .flatMap(attachment =>
+                  observableSrv.create(observable.toObservable(organisation._id), attachmentType, attachment, observable.tags, Nil)
+                )
             case data =>
               Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
           }
-        case dataType => observable.data.toTry(d => observableSrv.create(observable.toObservable, dataType, d, observable.tags, Nil))
+        case dataType =>
+          observable.data.toTry(d => observableSrv.create(observable.toObservable(organisation._id), dataType, d, observable.tags, Nil))
       }
 }
 

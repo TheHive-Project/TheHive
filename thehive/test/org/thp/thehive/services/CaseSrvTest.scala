@@ -281,8 +281,17 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         }.get must throwA[CreateError]
 
         val newObs = app[Database].tryTransaction { implicit graph =>
+          val organisation = app[OrganisationSrv].current.getOrFail("Organisation").get
           app[ObservableSrv].create(
-            Observable(Some("if you feel lost"), 1, ioc = false, sighted = true, ignoreSimilarity = None),
+            Observable(
+              Some("if you feel lost"),
+              1,
+              ioc = false,
+              sighted = true,
+              ignoreSimilarity = None,
+              organisationIds = Seq(organisation._id),
+              c1._id
+            ),
             app[ObservableTypeSrv].get(EntityName("domain")).getOrFail("Case").get,
             "lost.com",
             Set[String](),

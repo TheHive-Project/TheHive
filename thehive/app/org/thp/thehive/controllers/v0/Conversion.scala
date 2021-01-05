@@ -335,12 +335,14 @@ object Conversion {
 
   implicit class InputObservableOps(inputObservable: InputObservable) {
 
-    def toObservable: Observable =
+    def toObservable(relatedId: EntityId, organisationIds: EntityId*): Observable =
       inputObservable
         .into[Observable]
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
         .withFieldComputed(_.ioc, _.ioc.getOrElse(false))
         .withFieldComputed(_.sighted, _.sighted.getOrElse(false))
+        .withFieldConst(_.organisationIds, organisationIds)
+        .withFieldConst(_.relatedId, relatedId)
         .transform
   }
 

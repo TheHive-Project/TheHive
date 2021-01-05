@@ -109,7 +109,7 @@ trait Conversion {
           )
     } yield InputObservable(
       metaData,
-      Observable(message, tlp, ioc, sighted, None),
+      Observable(message, tlp, ioc, sighted, None, Nil, EntityId("")), // organisation and related Ids are filled by output
       Seq(mainOrganisation),
       dataType,
       tags,
@@ -231,7 +231,15 @@ trait Conversion {
             )
       } yield InputObservable(
         metaData,
-        Observable(message, tlp.getOrElse(2), ioc.getOrElse(false), sighted = false, ignoreSimilarity = None),
+        Observable(
+          message,
+          tlp.getOrElse(2),
+          ioc.getOrElse(false),
+          sighted = false,
+          ignoreSimilarity = None,
+          organisationIds = Nil,
+          relatedId = EntityId("")
+        ),
         Nil,
         dataType,
         tags,
@@ -450,7 +458,7 @@ trait Conversion {
           )
       } yield InputObservable(
         metaData,
-        Observable(message, tlp, ioc, sighted, ignoreSimilarity = None),
+        Observable(message, tlp, ioc, sighted, ignoreSimilarity = None, organisationIds = Nil, relatedId = EntityId("")),
         Seq(mainOrganisation),
         dataType,
         tags,

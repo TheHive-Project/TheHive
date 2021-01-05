@@ -182,6 +182,7 @@ class ShareSrv @Inject() (implicit
     for {
       share <- get(`case`, organisation._id).getOrFail("Case")
       _     <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
+      _     <- observableSrv.get(richObservable.observable).addValue(_.organisationIds, organisation._id).getOrFail("Observable")
       _     <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
     } yield ()
 
@@ -193,12 +194,23 @@ class ShareSrv @Inject() (implicit
   def shareCaseObservables(
       share: Share with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareObservable with Entity]] =
-    get(share)
-      .`case`
-      .observables
-      .filter(_.shares.has(T.id, P.neq(share._id)))
-      .toIterator
-      .toTry(shareObservableSrv.create(ShareObservable(), share, _))
+    for {
+      organisation <- get(share).organisation.getOrFail("Share")
+      shareObservables <-
+        get(share)
+          .`case`
+          .observables // list observables related to authContext
+          .filter(_.shares.has(T.id, P.neq(share._id)))
+          .toIterator
+          .toTry { obs =>
+            observableSrv
+              .get(obs)
+              .addValue(_.organisationIds, organisation._id)
+              .getOrFail("Observable")
+              .flatMap(_ => shareObservableSrv.create(ShareObservable(), share, obs))
+
+          }
+    } yield shareObservables
 
   /**
     * Does a full rebuild of the share status of a task,
@@ -273,6 +285,7 @@ class ShareSrv @Inject() (implicit
           case0 <- observableSrv.get(observable).`case`.getOrFail("Observable")
           share <- caseSrv.get(case0).share(organisation._id).getOrFail("Case")
           _     <- shareObservableSrv.create(ShareObservable(), share, observable)
+          _     <- observableSrv.get(observable).addValue(_.organisationIds, organisation._id).getOrFail("Observable")
           _     <- auditSrv.share.shareObservable(observable, case0, organisation)
         } yield ()
       }
@@ -299,11 +312,11 @@ class ShareSrv @Inject() (implicit
         case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
         case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
       }
-    orgsToRemove.foreach(o => observableSrv.get(observable).share(o._id).remove())
+    orgsToRemove.foreach(o => observableSrv.get(observable).removeValue(_.organisationIds, o._id).share(o._id).remove())
     orgsToAdd
       .toTry { organisation =>
         for {
-          case0 <- observableSrv.get(observable).`case`.getOrFail("Observable")
+          case0 <- observableSrv.get(observable).addValue(_.organisationIds, organisation._id).`case`.getOrFail("Observable")
           share <- caseSrv.get(case0).share(organisation._id).getOrFail("Case")
           _     <- shareObservableSrv.create(ShareObservable(), share, observable)
           _     <- auditSrv.share.shareObservable(observable, case0, organisation)

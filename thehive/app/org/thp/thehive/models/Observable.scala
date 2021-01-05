@@ -17,8 +17,19 @@ case class ObservableData()
 @BuildEdgeEntity[Observable, Tag]
 case class ObservableTag()
 
+@DefineIndex(IndexType.standard, "organisationIds", "relatedId", "tlp", "ioc", "sighted", "ignoreSimilarity")
+@DefineIndex(IndexType.fulltext, "message")
 @BuildVertexEntity
-case class Observable(message: Option[String], tlp: Int, ioc: Boolean, sighted: Boolean, ignoreSimilarity: Option[Boolean])
+// TODO Add data and dataType
+case class Observable(
+    message: Option[String],
+    tlp: Int,
+    ioc: Boolean,
+    sighted: Boolean,
+    ignoreSimilarity: Option[Boolean],
+    organisationIds: Seq[EntityId],
+    relatedId: EntityId
+)
 
 case class RichObservable(
     observable: Observable with Entity,

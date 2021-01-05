@@ -36,6 +36,7 @@ class ObservableCtrl @Inject() (
     override val db: Database,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
+    organisationSrv: OrganisationSrv,
     caseSrv: CaseSrv,
     attachmentSrv: AttachmentSrv,
     errorHandler: ErrorHandler,
@@ -64,15 +65,19 @@ class ObservableCtrl @Inject() (
                   .can(Permissions.manageObservable)
                   .orFail(AuthorizationError("Operation not permitted"))
               observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
-            } yield (case0, observableType)
+              organisation   <- organisationSrv.current.getOrFail("Organisation")
+            } yield (case0, observableType, organisation)
           }
           .map {
-            case (case0, observableType) =>
-              val (successes, failures) = inputAttachObs
-                .flatMap { obs =>
-                  obs.attachment.map(createAttachmentObservable(case0, obs, observableType, _)) ++
-                    obs.data.map(createSimpleObservable(case0, obs, observableType, _))
-                }
+            case (case0, observableType, organisation) =>
+              val successesAndFailures =
+                if (observableType.isAttachment)
+                  inputAttachObs
+                    .flatMap(obs => obs.attachment.map(createAttachmentObservable(organisation, case0, obs, observableType, _)))
+                else
+                  inputAttachObs
+                    .flatMap(obs => obs.data.map(createSimpleObservable(organisation, case0, obs, observableType, _)))
+              val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
                   case ((s, f), Left(o))  => (s, f :+ o)
@@ -83,6 +88,7 @@ class ObservableCtrl @Inject() (
       }
 
   def createSimpleObservable(
+      organisation: Organisation with Entity,
       `case`: Case with Entity,
       inputObservable: InputObservable,
       observableType: ObservableType with Entity,
@@ -91,7 +97,7 @@ class ObservableCtrl @Inject() (
     db
       .tryTransaction { implicit graph =>
         observableSrv
-          .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
+          .create(inputObservable.toObservable(organisation._id), observableType, data, inputObservable.tags, Nil)
           .flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
       } match {
       case Success(o)     => Right(o.toJson)
@@ -99,6 +105,7 @@ class ObservableCtrl @Inject() (
     }
 
   def createAttachmentObservable(
+      organisation: Organisation with Entity,
       `case`: Case with Entity,
       inputObservable: InputObservable,
       observableType: ObservableType with Entity,
@@ -107,11 +114,11 @@ class ObservableCtrl @Inject() (
     db
       .tryTransaction { implicit graph =>
         val observable = fileOrAttachment match {
-          case Left(file) => observableSrv.create(inputObservable.toObservable, observableType, file, inputObservable.tags, Nil)
+          case Left(file) => observableSrv.create(inputObservable.toObservable(organisation._id), observableType, file, inputObservable.tags, Nil)
           case Right(attachment) =>
             for {
               attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
-              obs    <- observableSrv.create(inputObservable.toObservable, observableType, attach, inputObservable.tags, Nil)
+              obs    <- observableSrv.create(inputObservable.toObservable(organisation._id), observableType, attach, inputObservable.tags, Nil)
             } yield obs
         }
         observable.flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
@@ -332,5 +339,6 @@ class PublicObservable @Inject() (
     .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
     .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
     .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
+    .property("relatedId", UMapping.entityId)(_.field.readonly)
     .build
 }

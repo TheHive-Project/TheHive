@@ -1,8 +1,7 @@
 package org.thp.thehive.services
 
 import java.util.Date
-
-import org.thp.scalligraph.{EntityIdOrName, EntityName}
+import org.thp.scalligraph.{EntityId, EntityIdOrName, EntityName}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -102,30 +101,40 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "add an observable if not existing" in testApp { app =>
-      val similarObs = app[Database].tryTransaction { implicit graph =>
-        for {
-          observableType <- app[ObservableTypeSrv].getOrFail(EntityName("domain"))
-          observable <- app[ObservableSrv].create(
-            observable = Observable(Some("if you are lost"), 1, ioc = false, sighted = true, ignoreSimilarity = None),
-            `type` = observableType,
-            dataValue = "perdu.com",
-            tagNames = Set("tag10"),
-            extensions = Nil
-          )
-        } yield observable
-      }.get
+      def similarObs(alertId: EntityId) =
+        app[Database].tryTransaction { implicit graph =>
+          for {
+            organisation   <- app[OrganisationSrv].getOrFail(EntityName("cert"))
+            observableType <- app[ObservableTypeSrv].getOrFail(EntityName("domain"))
+            observable <- app[ObservableSrv].create(
+              observable = Observable(
+                Some("if you are lost"),
+                1,
+                ioc = false,
+                sighted = true,
+                ignoreSimilarity = None,
+                organisationIds = Seq(organisation._id),
+                relatedId = alertId
+              ),
+              `type` = observableType,
+              dataValue = "perdu.com",
+              tagNames = Set("tag10"),
+              extensions = Nil
+            )
+          } yield observable
+        }.get
 
       app[Database].tryTransaction { implicit graph =>
         for {
           alert <- app[AlertSrv].getOrFail(EntityName("testType;testSource;ref4"))
-          _     <- app[AlertSrv].addObservable(alert, similarObs)
+          _     <- app[AlertSrv].addObservable(alert, similarObs(alert._id))
         } yield ()
       } must beASuccessfulTry
 
       app[Database].tryTransaction { implicit graph =>
         for {
           alert <- app[AlertSrv].getOrFail(EntityName("testType;testSource;ref1"))
-          _     <- app[AlertSrv].addObservable(alert, similarObs)
+          _     <- app[AlertSrv].addObservable(alert, similarObs(alert._id))
         } yield ()
       } must beASuccessfulTry
 

@@ -2,6 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.process.traversal.P
 
+import java.lang.{Long => JLong}
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
@@ -16,6 +17,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
+import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.UserOps._
@@ -187,6 +189,7 @@ class CaseCtrl @Inject() (
 class PublicCase @Inject() (
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
+    observableSrv: ObservableSrv,
     userSrv: UserSrv,
     customFieldSrv: CustomFieldSrv,
     implicit val db: Database
@@ -216,7 +219,11 @@ class PublicCase @Inject() (
   )
   override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[Traversal.V[Case], Traversal.V[Observable]]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Observable]](
+      "observables",
+      (caseSteps, authContext) =>
+        observableSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(authContext)
+    ),
     Query[Traversal.V[Case], Traversal.V[Task]]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
   )
   override val publicProperties: PublicProperties =

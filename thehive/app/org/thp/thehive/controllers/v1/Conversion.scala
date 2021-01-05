@@ -330,12 +330,14 @@ object Conversion {
   )
 
   implicit class InputObservableOps(inputObservable: InputObservable) {
-    def toObservable: Observable =
+    def toObservable(relatedId: EntityId, organisationIds: EntityId*): Observable =
       inputObservable
         .into[Observable]
         .withFieldComputed(_.ioc, _.ioc.getOrElse(false))
         .withFieldComputed(_.sighted, _.sighted.getOrElse(false))
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
+        .withFieldConst(_.organisationIds, organisationIds)
+        .withFieldConst(_.relatedId, relatedId)
         .transform
   }
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.toJson[RichObservable, OutputObservable](richObservable =>

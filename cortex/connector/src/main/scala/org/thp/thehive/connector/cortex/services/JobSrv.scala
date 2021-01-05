@@ -212,11 +212,17 @@ class JobSrv @Inject() (
             Future
               .fromTry {
                 db.tryTransaction { implicit graph =>
-                  observableSrv
-                    .create(artifact.toObservable, dataType, artifact.data.get, artifact.tags, Nil)
-                    .flatMap { richObservable =>
-                      addObservable(job, richObservable.observable)
-                    }
+                  for {
+                    origObs <- get(job).observable.getOrFail("Observable")
+                    obs <- observableSrv.create(
+                      artifact.toObservable(job._id, origObs.organisationIds: _*),
+                      dataType,
+                      artifact.data.get,
+                      artifact.tags,
+                      Nil
+                    )
+                    _ <- addObservable(job, obs.observable)
+                  } yield ()
                 }
               }
           case Failure(e) => Future.failed(e)
@@ -258,9 +264,12 @@ class JobSrv @Inject() (
           savedAttachment <- Future.fromTry {
             db.tryTransaction { implicit graph =>
               for {
+                origObs           <- get(job).observable.getOrFail("Observable")
                 createdAttachment <- attachmentSrv.create(fFile)
-                richObservable    <- observableSrv.create(artifact.toObservable, attachmentType, createdAttachment, artifact.tags, Nil)
-                _                 <- reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
+                richObservable <-
+                  observableSrv
+                    .create(artifact.toObservable(job._id, origObs.organisationIds: _*), attachmentType, createdAttachment, artifact.tags, Nil)
+                _ <- reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
               } yield createdAttachment
             }
           }
