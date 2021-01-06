@@ -149,7 +149,7 @@ class ShareSrv @Inject() (
     get(share)
       .`case`
       .tasks
-      .filterNot(_.taskToShares.hasId(share._id))
+      .filterNot(_.shares.hasId(share._id))
       .toIterator
       .toTry(shareTaskSrv.create(ShareTask(), share, _))
 
@@ -213,7 +213,7 @@ class ShareSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (orgsToAdd, orgsToRemove) = taskSrv
       .get(task)
-      .taskToShares
+      .shares
       .organisation
       .toIterator
       .foldLeft((organisations.toSet, Set.empty[Organisation with Entity])) {
@@ -239,7 +239,7 @@ class ShareSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val existingOrgs = taskSrv
       .get(task)
-      .taskToShares
+      .shares
       .organisation
       .toSeq
 
@@ -325,6 +325,8 @@ object ShareOps {
     def relatedTo(organisation: Organisation with Entity): Traversal.V[Share] = traversal.filter(_.organisation.hasId(organisation._id))
 
     def organisation: Traversal.V[Organisation] = traversal.in[OrganisationShare].v[Organisation]
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Share] = traversal.filter(_.organisation.visible)
 
     def tasks: Traversal.V[Task] = traversal.out[ShareTask].v[Task]
 

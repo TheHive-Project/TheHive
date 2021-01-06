@@ -1,15 +1,16 @@
-package org.thp.thehive.controllers.v0
+package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
-import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
-import org.thp.thehive.models.Permissions
+import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.dto.v1.{InputShare, ObservablesFilter, TasksFilter}
+import org.thp.thehive.models.{Case, Observable, Organisation, Permissions, RichShare, Share, Task}
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
@@ -18,19 +19,41 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
 class ShareCtrl @Inject() (
     entrypoint: Entrypoint,
     shareSrv: ShareSrv,
+    properties: Properties,
     organisationSrv: OrganisationSrv,
     caseSrv: CaseSrv,
     taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
     @Named("with-thehive-schema") implicit val db: Database
-) {
+) extends QueryableCtrl {
+  override val entityName: String                 = "share"
+  override val publicProperties: PublicProperties = properties.share
+  override val initialQuery: Query =
+    Query.init[Traversal.V[Share]]("listShare", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext).shares)
+  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Share], IteratorOutput](
+    "page",
+    FieldsParser[OutputParam],
+    (range, shareSteps, _) => shareSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richShare)
+  )
+  override val outputQuery: Query = Query.outputWithContext[RichShare, Traversal.V[Share]]((shareSteps, _) => shareSteps.richShare)
+  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Share]](
+    "getShare",
+    FieldsParser[EntityIdOrName],
+    (idOrName, graph, authContext) => shareSrv.get(idOrName)(graph).visible(authContext)
+  )
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[Traversal.V[Share], Traversal.V[Case]]("case", (shareSteps, _) => shareSteps.`case`),
+    Query[Traversal.V[Share], Traversal.V[Observable]]("observables", (shareSteps, _) => shareSteps.observables),
+    Query[Traversal.V[Share], Traversal.V[Task]]("tasks", (shareSteps, _) => shareSteps.tasks),
+    Query[Traversal.V[Share], Traversal.V[Organisation]]("organisation", (shareSteps, _) => shareSteps.organisation)
+  )
 
   def shareCase(caseId: String): Action[AnyContent] =
     entrypoint("create case shares")
@@ -189,7 +212,8 @@ class ShareCtrl @Inject() (
           .get(EntityIdOrName(caseId))
           .can(Permissions.manageShare)
           .shares
-          .filter(_.organisation.filterNot(_.get(request.organisation)).visible)
+          .visible
+          .filterNot(_.get(request.organisation))
           .byTask(EntityIdOrName(taskId))
           .richShare
           .toSeq
@@ -204,7 +228,8 @@ class ShareCtrl @Inject() (
           .get(EntityIdOrName(caseId))
           .can(Permissions.manageShare)
           .shares
-          .filter(_.organisation.filterNot(_.get(request.organisation)).visible)
+          .visible
+          .filterNot(_.get(request.organisation))
           .byObservable(EntityIdOrName(observableId))
           .richShare
           .toSeq
@@ -238,5 +263,4 @@ class ShareCtrl @Inject() (
           _             <- shareSrv.addObservableShares(observable, organisations)
         } yield Results.NoContent
       }
-
 }

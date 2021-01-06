@@ -21,6 +21,7 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -193,10 +194,7 @@ class Properties @Inject() (
       .property("pap", UMapping.int)(_.field.updatable)
       .property("status", UMapping.enum[CaseStatus.type])(_.field.updatable)
       .property("summary", UMapping.string.optional)(_.field.updatable)
-      .property("actionRequired", UMapping.boolean)(_
-        .authSelect((t, auth) => t.isActionRequired(auth))
-        .readonly
-      )
+      .property("actionRequired", UMapping.boolean)(_.authSelect((t, auth) => t.isActionRequired(auth)).readonly)
       .property("assignee", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, _, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
@@ -407,6 +405,17 @@ class Properties @Inject() (
       .property("permissions", UMapping.string.set)(_.field.updatable)
       .build
 
+  lazy val share: PublicProperties =
+    PublicPropertyListBuilder[Share]
+      .property("caseId", UMapping.entityId)(_.select(_.`case`._id).readonly)
+      .property("caseNumber", UMapping.int)(_.select(_.`case`.value(_.number)).readonly)
+      .property("organisationId", UMapping.entityId)(_.select(_.organisation._id).readonly)
+      .property("organisationName", UMapping.string)(_.select(_.organisation.value(_.name)).readonly)
+      .property("profileId", UMapping.entityId)(_.select(_.profile._id).readonly)
+      .property("profileName", UMapping.string)(_.select(_.profile.value(_.name)).readonly)
+      .property("owner", UMapping.boolean)(_.field.readonly)
+      .build
+
   lazy val task: PublicProperties =
     PublicPropertyListBuilder[Task]
       .property("title", UMapping.string)(_.field.updatable)
@@ -433,12 +442,9 @@ class Properties @Inject() (
             }
             .map(_ => Json.obj("assignee" -> value))
       })
-      .property("actionRequired", UMapping.boolean)(_
-        .authSelect((t, authContext) => {
-          t.actionRequired(authContext)
-        })
-        .readonly
-      )
+      .property("actionRequired", UMapping.boolean)(_.authSelect { (t, authContext) =>
+        t.actionRequired(authContext)
+      }.readonly)
       .build
 
   lazy val log: PublicProperties =

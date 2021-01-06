@@ -59,7 +59,8 @@ class TaskCtrl @Inject() (
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
     Query[Traversal.V[Task], Traversal.V[Case]]("case", (taskSteps, _) => taskSteps.`case`),
     Query[Traversal.V[Task], Traversal.V[CaseTemplate]]("caseTemplate", (taskSteps, _) => taskSteps.caseTemplate),
-    Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
+    Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext)),
+    Query[Traversal.V[Task], Traversal.V[Share]]("shares", (taskSteps, authContext) => taskSteps.shares.visible(authContext))
   )
 
   def create: Action[AnyContent] =
@@ -115,14 +116,14 @@ class TaskCtrl @Inject() (
 
   def isActionRequired(taskId: String): Action[AnyContent] =
     entrypoint("is action required")
-      .authTransaction(db){ implicit request => implicit graph =>
+      .authTransaction(db) { implicit request => implicit graph =>
         val actionTraversal = taskSrv.get(EntityIdOrName(taskId)).visible.actionRequiredMap
         Success(Results.Ok(actionTraversal.toSeq.toMap.toJson))
       }
 
   def actionRequired(taskId: String, orgaId: String, required: Boolean): Action[AnyContent] =
     entrypoint("action required")
-      .authTransaction(db){ implicit request => implicit graph =>
+      .authTransaction(db) { implicit request => implicit graph =>
         for {
           organisation <- organisationSrv.get(EntityIdOrName(orgaId)).visible.getOrFail("Organisation")
           task         <- taskSrv.get(EntityIdOrName(taskId)).visible.getOrFail("Task")

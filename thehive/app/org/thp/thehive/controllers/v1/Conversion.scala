@@ -288,6 +288,14 @@ object Conversion {
         .transform
     }
 
+  implicit val shareOutput: Renderer.Aux[RichShare, OutputShare] = Renderer.toJson[RichShare, OutputShare](
+    _.into[OutputShare]
+      .withFieldComputed(_._id, _.share._id.toString)
+      .withFieldConst(_._type, "Share")
+      .withFieldComputed(_.caseId, _.caseId.toString)
+      .transform
+  )
+
   implicit val profileOutput: Renderer.Aux[Profile with Entity, OutputProfile] = Renderer.toJson[Profile with Entity, OutputProfile](profile =>
     profile
       .asInstanceOf[Profile]
