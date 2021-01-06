@@ -57,7 +57,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":["multi","line","test"]
               }
             """.stripMargin))
-      val result = app[ObservableCtrl].create("1")(request)
+      val result = app[ObservableCtrl].createInCase("1")(request)
 
       status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
       val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
@@ -84,7 +84,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":["observable", "in", "array"]
               }
             """.stripMargin))
-      val result = app[ObservableCtrl].create("1")(request)
+      val result = app[ObservableCtrl].createInCase("1")(request)
 
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
@@ -160,7 +160,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
           Headers("user" -> "certuser@thehive.local"),
           body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
         )
-        val result = app[ObservableCtrl].create("1")(request)
+        val result = app[ObservableCtrl].createInCase("1")(request)
         status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
@@ -219,7 +219,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":"localhost"
               }
             """))
-      val result1 = app[ObservableCtrl].create("1")(request1)
+      val result1 = app[ObservableCtrl].createInCase("1")(request1)
       status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
       getData("localhost", app) must have size 1
@@ -233,7 +233,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":"localhost"
               }
             """))
-      val result2 = app[ObservableCtrl].create("2")(request2)
+      val result2 = app[ObservableCtrl].createInCase("2")(request2)
       status(result2) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       getData("localhost", app) must have size 1
@@ -273,7 +273,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
                 "data":"${UUID.randomUUID()}\\n${UUID.randomUUID()}"
               }
             """))
-    val result = observableCtrl.create("1")(request)
+    val result = observableCtrl.createInCase("1")(request)
 
     status(result) shouldEqual 201
     contentAsJson(result).as[Seq[OutputObservable]]
