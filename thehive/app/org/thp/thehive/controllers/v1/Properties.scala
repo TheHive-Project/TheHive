@@ -125,7 +125,7 @@ class Properties @Inject() (
                 case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
                 case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
               }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
+              .getOrElse((x: JsValue) => x)
           case _ => (x: JsValue) => x
         }
         .custom {
@@ -143,6 +143,11 @@ class Properties @Inject() (
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
       .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
+      .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
+      .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInMinutes", UMapping.long)(_.select(_.handlingDuration.math("_ / 60000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .build
 
   lazy val audit: PublicProperties =
@@ -259,7 +264,7 @@ class Properties @Inject() (
                 case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
                 case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
               }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
+              .getOrElse((x: JsValue) => x)
           case _ => (x: JsValue) => x
         }
         .custom {

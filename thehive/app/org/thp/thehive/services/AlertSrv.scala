@@ -403,6 +403,18 @@ object AlertOps {
     def importDate: Traversal[Date, Date, Converter[Date, Date]] =
       traversal.outE[AlertCase].value(_._createdAt)
 
+    def handlingDuration: Traversal[Long, Long, IdentityConverter[Long]] =
+      traversal.coalesceIdent(
+        _.filter(_.outE[AlertCase])
+          .sack(
+            (_: JLong, importDate: JLong) => importDate,
+            _.by(_.importDate.graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+          )
+          .sack((_: Long) - (_: JLong), _.by(_._createdAt.graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+          .sack[Long],
+        _.constant(0L)
+      )
+
     def similarCases(maybeCaseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
         authContext: AuthContext
     ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] = {
