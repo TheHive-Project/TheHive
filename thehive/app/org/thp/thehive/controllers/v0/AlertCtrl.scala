@@ -450,5 +450,6 @@ class PublicAlert @Inject() (
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })
       .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
+      .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
       .build
 }

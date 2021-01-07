@@ -142,6 +142,7 @@ class Properties @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
+      .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
       .build
 
   lazy val audit: PublicProperties =
@@ -193,10 +194,7 @@ class Properties @Inject() (
       .property("pap", UMapping.int)(_.field.updatable)
       .property("status", UMapping.enum[CaseStatus.type])(_.field.updatable)
       .property("summary", UMapping.string.optional)(_.field.updatable)
-      .property("actionRequired", UMapping.boolean)(_
-        .authSelect((t, auth) => t.isActionRequired(auth))
-        .readonly
-      )
+      .property("actionRequired", UMapping.boolean)(_.authSelect((t, auth) => t.isActionRequired(auth)).readonly)
       .property("assignee", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, _, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
@@ -433,12 +431,9 @@ class Properties @Inject() (
             }
             .map(_ => Json.obj("assignee" -> value))
       })
-      .property("actionRequired", UMapping.boolean)(_
-        .authSelect((t, authContext) => {
-          t.actionRequired(authContext)
-        })
-        .readonly
-      )
+      .property("actionRequired", UMapping.boolean)(_.authSelect { (t, authContext) =>
+        t.actionRequired(authContext)
+      }.readonly)
       .build
 
   lazy val log: PublicProperties =

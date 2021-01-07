@@ -1,6 +1,5 @@
 package org.thp.thehive.services
 
-import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
@@ -399,10 +398,10 @@ object AlertOps {
       else traversal.limit(0)
 
     def imported: Traversal[Boolean, Boolean, IdentityConverter[Boolean]] =
-      traversal
-        .`case`
-        .count
-        .choose(_.is(P.gt(0)), onTrue = true, onFalse = false)
+      traversal.choose(_.outE[AlertCase], onTrue = true, onFalse = false)
+
+    def importDate: Traversal[Date, Date, Converter[Date, Date]] =
+      traversal.outE[AlertCase].value(_._createdAt)
 
     def similarCases(maybeCaseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
         authContext: AuthContext
