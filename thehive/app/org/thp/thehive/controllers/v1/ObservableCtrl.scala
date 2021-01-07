@@ -259,10 +259,7 @@ class ObservableCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
-          .update(
-            _.get(EntityIdOrName(observableId)).can(Permissions.manageObservable),
-            propertyUpdaters
-          )
+          .update(_.get(EntityIdOrName(observableId)).canManage, propertyUpdaters)
           .map(_ => Results.NoContent)
       }
 
@@ -276,7 +273,7 @@ class ObservableCtrl @Inject() (
         ids
           .toTry { id =>
             observableSrv
-              .update(_.get(EntityIdOrName(id)).can(Permissions.manageObservable), properties)
+              .update(_.get(EntityIdOrName(id)).canManage, properties)
           }
           .map(_ => Results.NoContent)
       }

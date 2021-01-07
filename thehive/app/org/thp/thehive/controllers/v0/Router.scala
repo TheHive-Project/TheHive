@@ -78,13 +78,15 @@ class Router @Inject() (
     //    case POST(p"/case/:caseId/artifact/_search")    => observableCtrl.findInCase(caseId)
     case POST(p"/case/artifact/_stats")               => observableCtrl.stats
     case POST(p"/case/$caseId/artifact")              => observableCtrl.createInCase(caseId)   // Audit ok
-    case POST(p"/alert/$alertId/artifact")            => observableCtrl.createInAlert(alertId) // Audit ok
     case GET(p"/case/artifact/$observableId")         => observableCtrl.get(observableId)
     case DELETE(p"/case/artifact/$observableId")      => observableCtrl.delete(observableId)   // Audit ok
     case PATCH(p"/case/artifact/_bulk")               => observableCtrl.bulkUpdate             // Audit ok
     case PATCH(p"/case/artifact/$observableId")       => observableCtrl.update(observableId)   // Audit ok
     case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
     case POST(p"/case/artifact/$observableId/shares") => shareCtrl.shareObservable(observableId)
+    case POST(p"/alert/$alertId/artifact")            => observableCtrl.createInAlert(alertId) // Audit ok
+    case PATCH(p"/alert/artifact/$observableId")      => observableCtrl.update(observableId)   // Audit ok
+    case PATCH(p"/alert/artifact/_bulk")              => observableCtrl.bulkUpdate             // Audit ok
 
     case GET(p"/case")                  => caseCtrl.search
     case POST(p"/case")                 => caseCtrl.create         // Audit ok

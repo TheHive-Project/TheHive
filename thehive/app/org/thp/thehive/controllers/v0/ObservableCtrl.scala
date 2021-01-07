@@ -223,7 +223,7 @@ class ObservableCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.get(EntityIdOrName(observableId)).can(Permissions.manageObservable),
+            _.get(EntityIdOrName(observableId)).canManage,
             propertyUpdaters
           )
           .flatMap {
@@ -259,7 +259,7 @@ class ObservableCtrl @Inject() (
         ids
           .toTry { id =>
             observableSrv
-              .update(_.get(EntityIdOrName(id)).can(Permissions.manageObservable), properties)
+              .update(_.get(EntityIdOrName(id)).canManage, properties)
           }
           .map(_ => Results.NoContent)
       }
