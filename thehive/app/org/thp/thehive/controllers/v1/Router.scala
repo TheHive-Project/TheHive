@@ -27,9 +27,10 @@ class Router @Inject() (
     taskCtrl: TaskCtrl,
     shareCtrl: ShareCtrl,
     userCtrl: UserCtrl,
-    statusCtrl: StatusCtrl
+    statusCtrl: StatusCtrl,
     // streamCtrl: StreamCtrl,
-    // tagCtrl: TagCtrl
+    // tagCtrl: TagCtrl,
+    techniqueCtrl: TechniqueCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -126,10 +127,24 @@ class Router @Inject() (
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
     case GET(p"/audit") => auditCtrl.flow
-//      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
-//    GET      /audit                               controllers.AuditCtrl.find()
-//    POST     /audit/_search                       controllers.AuditCtrl.find()
-//    POST     /audit/_stats                        controllers.AuditCtrl.stats()
+    // GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
+    // GET      /audit                               controllers.AuditCtrl.find()
+    // POST     /audit/_search                       controllers.AuditCtrl.find()
+    // POST     /audit/_stats                        controllers.AuditCtrl.stats()
+
+    // MITRE
+    case POST(p"/technique/mitre/import") => techniqueCtrl.importMitre
+    // list procedures
+    // list patterns
+    //   list tactics
+    //   list techniques
+    //   list subtechniques
+    //   list by id
+    // link to pattern
+    // unlink
+    // fill procedure
+    // Query : pattern name, pattern id
+    // List pattern id associated to a Case
 
     case POST(p"/profile")              => profileCtrl.create
     case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)

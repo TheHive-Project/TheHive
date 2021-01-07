@@ -20,6 +20,7 @@ object Permissions extends Perms {
   lazy val manageAnalyse: PermissionDesc            = PermissionDesc("manageAnalyse", "Run Cortex analyzer", "organisation")
   lazy val managePage: PermissionDesc               = PermissionDesc("managePage", "Manage pages", "organisation")
   lazy val manageObservableTemplate: PermissionDesc = PermissionDesc("manageObservableTemplate", "Manage observable types", "admin")
+  lazy val manageTechnique: PermissionDesc          = PermissionDesc("manageTechnique", "Manage techniques", "admin")
   lazy val accessTheHiveFS: PermissionDesc          = PermissionDesc("accessTheHiveFS", "Access to TheHiveFS", "organisation")
 
   lazy val list: Set[PermissionDesc] =
@@ -41,6 +42,7 @@ object Permissions extends Perms {
       manageAnalyse,
       managePage,
       manageObservableTemplate,
+      manageTechnique,
       accessTheHiveFS
     )
 

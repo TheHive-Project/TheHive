@@ -89,6 +89,10 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.outE[ShareTask].raw.property("actionRequired", false).iterate()
       Success(())
     }
+    .updateGraph("Add manageTechnique permission to admin profile", "Profile") { traversal =>
+      traversal.unsafeHas("name", "admin").raw.property("permissions", "manageTechnique").iterate()
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

@@ -460,4 +460,8 @@ class Properties @Inject() (
       .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
       .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
+
+  lazy val technique: PublicProperties =
+    PublicPropertyListBuilder[Technique].build
+
 }

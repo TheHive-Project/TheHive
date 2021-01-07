@@ -201,7 +201,7 @@ object Conversion {
         .transform
     )
 
-  implicit val organiastionRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
+  implicit val organisationRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
     Renderer.toJson[Organisation with Entity, OutputOrganisation](organisation =>
       OutputOrganisation(
         organisation._id.toString,
@@ -343,6 +343,7 @@ object Conversion {
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
         .transform
   }
+
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.toJson[RichObservable, OutputObservable](richObservable =>
     richObservable
       .into[OutputObservable]
@@ -456,5 +457,43 @@ object Conversion {
         .withFieldComputed(_.isAttachment, _.isAttachment.getOrElse(false))
         .transform
   }
+
+  implicit class InputTechniqueOps(inputTechnique: InputTechnique) {
+    def toTechnique: Technique =
+      inputTechnique
+        .into[Technique]
+        .withFieldRenamed(_.external_id, _.techniqueId)
+        .withFieldComputed(_.tactics, _.kill_chain_phases.map(_.phase_name))
+        .withFieldRenamed(_.`type`, _.techniqueType)
+        .withFieldRenamed(_.x_mitre_platforms, _.platforms)
+        .withFieldRenamed(_.x_mitre_data_sources, _.dataSources)
+        .withFieldRenamed(_.x_mitre_version, _.version)
+        .transform
+  }
+
+  implicit val richTechniqueRenderer: Renderer.Aux[RichTechnique, OutputTechnique] =
+    Renderer.toJson[RichTechnique, OutputTechnique](technique =>
+      technique
+        .into[OutputTechnique]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Technique")
+        .withFieldComputed(_.parent, _.parent.map(_.name))
+        .transform
+    )
+
+  implicit val techniqueRenderer: Renderer.Aux[Technique with Entity, OutputTechnique] =
+    Renderer.toJson[Technique with Entity, OutputTechnique](technique =>
+      OutputTechnique(
+        technique._id.toString,
+        "technique",
+        technique._createdBy,
+        technique._updatedBy,
+        technique._createdAt,
+        technique._updatedAt,
+        technique.name,
+        technique.description,
+        None
+      )
+    )
 
 }
