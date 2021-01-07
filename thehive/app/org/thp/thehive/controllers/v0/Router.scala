@@ -87,6 +87,7 @@ class Router @Inject() (
     case POST(p"/alert/$alertId/artifact")            => observableCtrl.createInAlert(alertId) // Audit ok
     case PATCH(p"/alert/artifact/$observableId")      => observableCtrl.update(observableId)   // Audit ok
     case PATCH(p"/alert/artifact/_bulk")              => observableCtrl.bulkUpdate             // Audit ok
+    case DELETE(p"/alert/artifact/$observableId")     => observableCtrl.delete(observableId)   // Audit ok
 
     case GET(p"/case")                  => caseCtrl.search
     case POST(p"/case")                 => caseCtrl.create         // Audit ok

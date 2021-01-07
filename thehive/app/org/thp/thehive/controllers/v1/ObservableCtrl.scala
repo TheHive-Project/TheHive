@@ -285,7 +285,7 @@ class ObservableCtrl @Inject() (
           observable <-
             observableSrv
               .get(EntityIdOrName(observableId))
-              .can(Permissions.manageObservable)
+              .canManage
               .getOrFail("Observable")
           _ <- observableSrv.remove(observable)
         } yield Results.NoContent
