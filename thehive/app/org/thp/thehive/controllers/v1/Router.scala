@@ -133,7 +133,8 @@ class Router @Inject() (
     // POST     /audit/_stats                        controllers.AuditCtrl.stats()
 
     // MITRE
-    case POST(p"/technique/mitre/import") => techniqueCtrl.importMitre
+    case POST(p"/technique/import/mitre") => techniqueCtrl.importMitre
+    case GET(p"/technique/$techniqueId")  => techniqueCtrl.get(techniqueId)
     // list procedures
     // list patterns
     //   list tactics

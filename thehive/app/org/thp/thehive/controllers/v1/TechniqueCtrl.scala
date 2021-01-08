@@ -72,6 +72,17 @@ class TechniqueCtrl @Inject() (
         } yield Results.Created(richTechniques)
       }
 
+  def get(techniqueId: String): Action[AnyContent] =
+    entrypoint("get technique")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        techniqueSrv
+          .startTraversal
+          .getByTechniqueId(techniqueId)
+          .richTechnique
+          .getOrFail("Technique")
+          .map(richTechnique => Results.Ok(richTechnique.toJson))
+      }
+
   private def parseJsonFile(file: FFile): Try[Seq[InputTechnique]] =
     for {
       stream <- Try(new FileInputStream(file.filepath.toString))
