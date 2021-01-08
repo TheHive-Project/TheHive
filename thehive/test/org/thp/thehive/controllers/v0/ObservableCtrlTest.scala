@@ -139,9 +139,8 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
       resSearchObservables.flatMap(_.data) must contain(exactly("observable", "in", "array", "h.fr"))
     }
 
-    "be able to create and get 2 observables with string data and attachment" in testApp { app =>
+    "be able to create and get 2 observables with string data" in testApp { app =>
       WithFakeTemporaryFile { tempFile =>
-        val hashes    = Hasher(app.apply[Configuration].get[Seq[String]]("attachment.hash"): _*).fromPath(tempFile.path).map(_.toString)
         val files     = Seq(FilePart("attachment", "myfile.txt", Some("text/plain"), tempFile))
         val dataParts = Map("_json" -> Seq("""
               {
@@ -164,20 +163,66 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
         status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
         val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
 
-        createdObservables must have size 3
+        createdObservables must have size 2
         createdObservables.map(_.dataType) must contain(be_==("ip")).forall
         createdObservables.flatMap(_.data) must contain(exactly("127.0.0.1", "127.0.0.2"))
         createdObservables.map(_.sighted) must contain(beFalse).forall
         createdObservables.map(_.message) must contain(beSome("localhost")).forall
         createdObservables.map(_.tags) must contain(be_==(Set("local", "host"))).forall
         val attachmentOption = createdObservables.flatMap(_.attachment).headOption
-        attachmentOption must beSome
-        val attachment = attachmentOption.get
-        attachment.name must beEqualTo("myfile.txt")
-        attachment.hashes must containTheSameElementsAs(hashes)
-        attachment.size must beEqualTo(tempFile.length())
-        attachment.contentType must beEqualTo("text/plain")
+        attachmentOption must beNone
+      }
+    }
 
+    "be able to create and get 2 observables with string data and attachment" in testApp { app =>
+      WithFakeTemporaryFile { tempFile =>
+        val hasher      = Hasher(app.apply[Configuration].get[Seq[String]]("attachment.hash"): _*)
+        val hashes      = hasher.fromPath(tempFile.path).map(_.toString)
+        val helloHashes = hasher.fromString("Hello world").map(_.toString)
+        val files       = Seq(FilePart("attachment", "myfile.txt", Some("text/plain"), tempFile))
+        val dataParts   = Map("_json" -> Seq("""
+              {
+                "dataType":"file",
+                "ioc":false,
+                "sighted":false,
+                "tlp":2,
+                "message":"localhost",
+                "tags":["local", "host"],
+                "data":["hello.txt;text/plain;SGVsbG8gd29ybGQ="]
+              }
+            """))
+        val request = FakeRequest(
+          "POST",
+          s"/api/alert/testType;testSource;ref2/artifact",
+          Headers("user" -> "certuser@thehive.local"),
+          body = AnyContentAsMultipartFormData(MultipartFormData(dataParts, files, Nil))
+        )
+        val result = app[ObservableCtrl].createInAlert("testType;testSource;ref2")(request)
+        status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+        val createdObservables = contentAsJson(result).as[Seq[OutputObservable]]
+
+        createdObservables must have size 2
+        createdObservables.map(_.dataType) must contain(be_==("file")).forall
+        createdObservables.flatMap(_.data) must beEmpty
+        createdObservables.map(_.sighted) must contain(beFalse).forall
+        createdObservables.map(_.message) must contain(beSome("localhost")).forall
+        createdObservables.map(_.tags) must contain(be_==(Set("local", "host"))).forall
+        val attachments = createdObservables.flatMap(_.attachment)
+        attachments must have size 2
+        attachments must contain(beLike[OutputAttachment] {
+          case attachment =>
+            attachment.name must beEqualTo("myfile.txt")
+            attachment.hashes must containTheSameElementsAs(hashes)
+            attachment.size must beEqualTo(tempFile.length())
+            attachment.contentType must beEqualTo("text/plain")
+        })
+        attachments must contain(beLike[OutputAttachment] {
+          case attachment =>
+            attachment.name must beEqualTo("hello.txt")
+            attachment.hashes must containTheSameElementsAs(helloHashes)
+            attachment.size must beEqualTo(11)
+            attachment.contentType must beEqualTo("text/plain")
+        })
         createdObservables.foreach(obs => obs must equalTo(getObservable(obs._id, app[ObservableCtrl])))
         ok
       }
