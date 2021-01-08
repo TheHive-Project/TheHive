@@ -13,6 +13,7 @@ case class InputTechnique(
     `type`: String,
     x_mitre_platforms: Seq[String],
     x_mitre_data_sources: Seq[String],
+    x_mitre_is_subtechnique: Option[Boolean],
     x_mitre_version: Option[String]
 )
 
@@ -62,13 +63,14 @@ object InputTechnique {
     for {
       references <- (json \ "external_references").validate[Seq[InputReference]]
       mitreReference = references.find(_.source_name == "mitre-attack")
-      name                 <- (json \ "name").validate[String]
-      description          <- (json \ "description").validateOpt[String]
-      kill_chain_phases    <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
-      techniqueType        <- (json \ "type").validate[String]
-      x_mitre_platforms    <- (json \ "x_mitre_platforms").validateOpt[Seq[String]]
-      x_mitre_data_sources <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
-      x_mitre_version      <- (json \ "x_mitre_version").validateOpt[String]
+      name                    <- (json \ "name").validate[String]
+      description             <- (json \ "description").validateOpt[String]
+      kill_chain_phases       <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
+      techniqueType           <- (json \ "type").validate[String]
+      x_mitre_platforms       <- (json \ "x_mitre_platforms").validateOpt[Seq[String]]
+      x_mitre_data_sources    <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
+      x_mitre_is_subtechnique <- (json \ "x_mitre_is_subtechnique").validateOpt[Boolean]
+      x_mitre_version         <- (json \ "x_mitre_version").validateOpt[String]
     } yield InputTechnique(
       mitreReference.map(_.external_id).getOrElse(""),
       name,
@@ -78,6 +80,7 @@ object InputTechnique {
       techniqueType,
       x_mitre_platforms.getOrElse(Seq()),
       x_mitre_data_sources.getOrElse(Seq()),
+      x_mitre_is_subtechnique,
       x_mitre_version
     )
   }
@@ -89,11 +92,18 @@ case class OutputTechnique(
     _id: String,
     _type: String,
     _createdBy: String,
-    _updatedBy: Option[String] = None,
+    _updatedBy: Option[String],
     _createdAt: Date,
-    _updatedAt: Option[Date] = None,
+    _updatedAt: Option[Date],
+    techniqueId: String,
     name: String,
     description: Option[String],
+    tactics: Seq[String],
+    url: String,
+    techniqueType: String,
+    platforms: Seq[String],
+    dataSources: Seq[String],
+    version: Option[String],
     parent: Option[String]
 )
 

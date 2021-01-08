@@ -477,23 +477,8 @@ object Conversion {
         .into[OutputTechnique]
         .withFieldComputed(_._id, _._id.toString)
         .withFieldConst(_._type, "Technique")
-        .withFieldComputed(_.parent, _.parent.map(_.name))
+        .withFieldComputed(_.parent, _.parent.map(_.techniqueId))
         .transform
-    )
-
-  implicit val techniqueRenderer: Renderer.Aux[Technique with Entity, OutputTechnique] =
-    Renderer.toJson[Technique with Entity, OutputTechnique](technique =>
-      OutputTechnique(
-        technique._id.toString,
-        "technique",
-        technique._createdBy,
-        technique._updatedBy,
-        technique._createdAt,
-        technique._updatedAt,
-        technique.name,
-        technique.description,
-        None
-      )
     )
 
 }

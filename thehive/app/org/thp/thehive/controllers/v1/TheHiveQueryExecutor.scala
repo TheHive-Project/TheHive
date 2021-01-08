@@ -32,6 +32,7 @@ class TheHiveQueryExecutor @Inject() (
     profileCtrl: ProfileCtrl,
     shareCtrl: ShareCtrl,
     taskCtrl: TaskCtrl,
+    techniqueCtrl: TechniqueCtrl,
     userCtrl: UserCtrl,
     //    dashboardCtrl: DashboardCtrl,
     properties: Properties,
@@ -55,6 +56,7 @@ class TheHiveQueryExecutor @Inject() (
       shareCtrl,
 //      tagCtrl,
       taskCtrl,
+      techniqueCtrl,
       userCtrl
     )
 

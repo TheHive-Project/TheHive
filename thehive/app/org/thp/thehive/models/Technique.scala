@@ -15,7 +15,6 @@ case class Technique(
     techniqueType: String,
     platforms: Seq[String],
     dataSources: Seq[String],
-    // TODO capec id
     version: Option[String]
 )
 

@@ -2,12 +2,12 @@ package org.thp.thehive.controllers.v1
 
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTechnique
 import org.thp.thehive.models.{Permissions, RichTechnique, Technique}
@@ -57,6 +57,7 @@ class TechniqueCtrl @Inject() (
           inputTechniques <- parseJsonFile(file)
           richTechniques =
             inputTechniques
+              .sortBy(_.external_id.length) // sort to create sub-techniques after their parent
               .foldLeft[JsArray](JsArray.empty) { (array, inputTechnique) =>
                 val res = db.tryTransaction { implicit graph =>
                   createFromInput(inputTechnique)
@@ -83,5 +84,16 @@ class TechniqueCtrl @Inject() (
     else if (techniqueSrv.startTraversal.alreadyImported(inputTechnique.external_id))
       Failure(BadRequestError(s"A technique with MITRE id '${inputTechnique.external_id}' already exists in this organisation"))
     else
-      techniqueSrv.createEntity(inputTechnique.toTechnique)
+      for {
+        technique <- techniqueSrv.createEntity(inputTechnique.toTechnique)
+        _ = if (inputTechnique.x_mitre_is_subtechnique.getOrElse(false)) linkTechnique(technique)
+      } yield technique
+
+  private def linkTechnique(child: Technique with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val firstDot = child.techniqueId.indexOf(".")
+    val parentId = child.techniqueId.substring(0, firstDot)
+    for {
+      parent <- techniqueSrv.startTraversal.getByTechniqueId(parentId).getOrFail("Technique")
+    } yield techniqueSrv.setParent(child, parent)
+  }
 }
