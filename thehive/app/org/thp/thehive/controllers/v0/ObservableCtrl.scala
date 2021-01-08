@@ -28,7 +28,10 @@ import java.io.FilterInputStream
 import java.nio.file.Files
 import javax.inject.{Inject, Named, Singleton}
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
+import shapeless._
+
+import java.util.Base64
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -46,6 +49,8 @@ class ObservableCtrl @Inject() (
     temporaryFileCreator: DefaultTemporaryFileCreator
 ) extends ObservableRenderer
     with QueryCtrl {
+
+  type AnyAttachmentType = InputAttachment :+: FFile :+: String :+: CNil
 
   def createInCase(caseId: String): Action[AnyContent] =
     entrypoint("create artifact in case")
@@ -71,11 +76,14 @@ class ObservableCtrl @Inject() (
           }
           .map {
             case (case0, observableType) =>
-              val (successes, failures) = inputAttachObs
-                .flatMap { obs =>
-                  obs.attachment.map(createAttachmentObservableInCase(case0, obs, observableType, _)) ++
-                    obs.data.map(createSimpleObservableInCase(case0, obs, observableType, _))
-                }
+              val successesAndFailures =
+                if (observableType.isAttachment)
+                  inputAttachObs
+                    .flatMap(obs => obs.attachment.map(createAttachmentObservableInCase(case0, obs, observableType, _)))
+                else
+                  inputAttachObs
+                    .flatMap(obs => obs.data.map(createSimpleObservableInCase(case0, obs, observableType, _)))
+              val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
                   case ((s, f), Left(o))  => (s, f :+ o)
@@ -149,11 +157,18 @@ class ObservableCtrl @Inject() (
           }
           .map {
             case (alert, observableType) =>
-              val (successes, failures) = inputAttachObs
-                .flatMap { obs =>
-                  obs.attachment.map(createAttachmentObservableInAlert(alert, obs, observableType, _)) ++
-                    obs.data.map(createSimpleObservableInAlert(alert, obs, observableType, _))
-                }
+              val successesAndFailures =
+                if (observableType.isAttachment)
+                  inputAttachObs
+                    .flatMap { obs =>
+                      (obs.attachment.map(_.fold(Coproduct[AnyAttachmentType](_), Coproduct[AnyAttachmentType](_))) ++
+                        obs.data.map(Coproduct[AnyAttachmentType](_)))
+                        .map(createAttachmentObservableInAlert(alert, obs, observableType, _))
+                    }
+                else
+                  inputAttachObs
+                    .flatMap(obs => obs.data.map(createSimpleObservableInAlert(alert, obs, observableType, _)))
+              val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
                   case ((s, f), Left(o))  => (s, f :+ o)
@@ -183,23 +198,52 @@ class ObservableCtrl @Inject() (
       alert: Alert with Entity,
       inputObservable: InputObservable,
       observableType: ObservableType with Entity,
-      fileOrAttachment: Either[FFile, InputAttachment]
+      attachment: AnyAttachmentType
   )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
     db
       .tryTransaction { implicit graph =>
-        val observable = fileOrAttachment match {
-          case Left(file) => observableSrv.create(inputObservable.toObservable, observableType, file, inputObservable.tags, Nil)
-          case Right(attachment) =>
+        object createAttachment extends Poly1 {
+          implicit val fromFile: Case.Aux[FFile, Try[RichObservable]] = at[FFile] { file =>
+            observableSrv.create(inputObservable.toObservable, observableType, file, inputObservable.tags, Nil)
+          }
+          implicit val fromAttachment: Case.Aux[InputAttachment, Try[RichObservable]] = at[InputAttachment] { attachment =>
             for {
               attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
               obs    <- observableSrv.create(inputObservable.toObservable, observableType, attach, inputObservable.tags, Nil)
             } yield obs
+          }
+
+          implicit val fromString: Case.Aux[String, Try[RichObservable]] = at[String] { data =>
+            data.split(';') match {
+              case Array(filename, contentType, value) =>
+                val data = Base64.getDecoder.decode(value)
+                attachmentSrv
+                  .create(filename, contentType, data)
+                  .flatMap(attachment => observableSrv.create(inputObservable.toObservable, observableType, attachment, inputObservable.tags, Nil))
+              case Array(filename, contentType) =>
+                attachmentSrv
+                  .create(filename, contentType, Array.emptyByteArray)
+                  .flatMap(attachment => observableSrv.create(inputObservable.toObservable, observableType, attachment, inputObservable.tags, Nil))
+              case data =>
+                Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
+            }
+          }
         }
-        observable.flatMap(o => alertSrv.addObservable(alert, o).map(_ => o))
+
+        attachment
+          .fold(createAttachment)
+          .flatMap(o => alertSrv.addObservable(alert, o).map(_ => o))
       } match {
       case Success(o) => Right(o.toJson)
       case _ =>
-        val filename = fileOrAttachment.fold(_.filename, _.name)
+        object attachmentName extends Poly1 {
+          implicit val fromFile: Case.Aux[FFile, String]                 = at[FFile](_.filename)
+          implicit val fromAttachment: Case.Aux[InputAttachment, String] = at[InputAttachment](_.name)
+          implicit val fromString: Case.Aux[String, String] = at[String] { data =>
+            if (data.contains(';')) data.takeWhile(_ != ';') else "no name"
+          }
+        }
+        val filename = attachment.fold(attachmentName)
         Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
     }
 
