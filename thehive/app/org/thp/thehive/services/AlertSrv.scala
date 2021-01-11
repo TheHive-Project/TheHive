@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
@@ -32,7 +33,8 @@ class AlertSrv @Inject() (
     customFieldSrv: CustomFieldSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
-    auditSrv: AuditSrv
+    auditSrv: AuditSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(implicit
     @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Alert] {
@@ -268,6 +270,7 @@ class AlertSrv @Inject() (
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
           _           <- markAsRead(alert._id)
+          _ = integrityCheckActor ! EntityAdded("Alert")
         } yield createdCase
       }
     }(richCase => auditSrv.`case`.create(richCase.`case`, richCase.toJson))
@@ -304,6 +307,7 @@ class AlertSrv @Inject() (
             )
           } yield details
         }(details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
+        .map(_ => integrityCheckActor ! EntityAdded("Alert"))
         .flatMap(_ => caseSrv.getOrFail(`case`._id))
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(implicit
@@ -590,4 +594,19 @@ object AlertOps {
   }
 
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
+}
+
+class AlertIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: AlertSrv) extends IntegrityCheckOps[Alert] {
+  override def check(): Unit = {
+    db.tryTransaction { implicit graph =>
+      service
+        .startTraversal
+        .flatMap(_.outE[AlertCase].range(1, 100))
+        .remove()
+      Success(())
+    }
+    ()
+  }
+
+  override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 }
