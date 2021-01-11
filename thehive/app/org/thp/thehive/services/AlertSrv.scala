@@ -72,8 +72,8 @@ class AlertSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] = {
-    val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).getCount
-    if (alertAlreadyExist > 0)
+    val alertAlreadyExist = startTraversal.getBySourceId(alert.`type`, alert.source, alert.sourceRef).organisation.current.exists
+    if (alertAlreadyExist)
       Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exist in organisation ${organisation.name}"))
     else
       for {
