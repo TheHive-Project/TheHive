@@ -15,6 +15,7 @@ import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
 import org.thp.scalligraph.utils.Hash
 import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
@@ -228,6 +229,12 @@ object ObservableOps {
         traversal.filter(_.shares.filter(_.filter(_.profile.has(_.permissions, permission))).organisation.current)
       else
         traversal.limit(0)
+
+    def canManage(implicit authContext: AuthContext): Traversal.V[Observable] =
+      if (authContext.isPermitted(Permissions.manageAlert))
+        traversal.filter(_.or(_.alert.visible, _.can(Permissions.manageObservable)))
+      else
+        can(Permissions.manageObservable)
 
     def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Vertex, Converter[Set[Permission], Vertex]] =
       traversal

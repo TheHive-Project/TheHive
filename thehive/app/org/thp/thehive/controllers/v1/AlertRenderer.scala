@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.{List => JList, Map => JMap}
-
+import java.util.{Date, List => JList, Map => JMap}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
@@ -39,12 +38,20 @@ trait AlertRenderer extends BaseRenderer[Alert] {
     _.similarCases(None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
-  def alertStatsRenderer(extraData: Set[String])(
-    implicit authContext: AuthContext
+  def importDate: Traversal.V[Alert] => Traversal[JsValue, JList[Date], Converter[JsValue, JList[Date]]] =
+    _.importDate.fold.domainMap(_.headOption.fold[JsValue](JsNull)(d => JsNumber(d.getTime)))
+
+  def alertStatsRenderer(extraData: Set[String])(implicit
+      authContext: AuthContext
   ): Traversal.V[Alert] => JsTraversal = { implicit traversal =>
-    baseRenderer(extraData, traversal, {
-      case (f, "similarCases") => addData("similarCases", f)(similarCasesStats)
-      case (f, _)              => f
-    })
+    baseRenderer(
+      extraData,
+      traversal,
+      {
+        case (f, "similarCases") => addData("similarCases", f)(similarCasesStats)
+        case (f, "importDate")   => addData("importDate", f)(importDate)
+        case (f, _)              => f
+      }
+    )
   }
 }
