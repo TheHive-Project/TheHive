@@ -126,7 +126,7 @@ class Properties @Inject() (
                 case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
                 case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
               }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
+              .getOrElse((x: JsValue) => x)
           case _ => (x: JsValue) => x
         }
         .custom {
@@ -143,6 +143,14 @@ class Properties @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
+      .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
+      .property("imported", UMapping.boolean)(_.select(_.imported).readonly)
+      .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
+      .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
+      .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInMinutes", UMapping.long)(_.select(_.handlingDuration.math("_ / 60000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .build
 
   lazy val audit: PublicProperties =
@@ -259,7 +267,7 @@ class Properties @Inject() (
                 case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
                 case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
               }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
+              .getOrElse((x: JsValue) => x)
           case _ => (x: JsValue) => x
         }
         .custom {
@@ -276,66 +284,11 @@ class Properties @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
-      .property("computed.handlingDurationInDays", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(86400000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInHours", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(3600000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInMinutes", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(60000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInSeconds", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(1000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
+      .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
+      .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInMinutes", UMapping.long)(_.select(_.handlingDuration.math("_ / 60000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .property("viewingOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.organisations.visible(authContext).value(_.name)).readonly
       )
