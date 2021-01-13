@@ -29,10 +29,11 @@ class TheHiveQueryExecutor @Inject() (
     observableCtrl: ObservableCtrl,
     observableTypeCtrl: ObservableTypeCtrl,
     organisationCtrl: OrganisationCtrl,
+    patternCtrl: PatternCtrl,
+    procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
     shareCtrl: ShareCtrl,
     taskCtrl: TaskCtrl,
-    techniqueCtrl: TechniqueCtrl,
     userCtrl: UserCtrl,
     //    dashboardCtrl: DashboardCtrl,
     properties: Properties,
@@ -52,11 +53,12 @@ class TheHiveQueryExecutor @Inject() (
       observableTypeCtrl,
       organisationCtrl,
 //      pageCtrl,
+      patternCtrl,
+      procedureCtrl,
       profileCtrl,
       shareCtrl,
 //      tagCtrl,
       taskCtrl,
-      techniqueCtrl,
       userCtrl
     )
 

@@ -23,14 +23,15 @@ class Router @Inject() (
     organisationCtrl: OrganisationCtrl,
     // pageCtrl: PageCtrl,
     // permissionCtrl: PermissionCtrl,
+    patternCtrl: PatternCtrl,
+    procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
     shareCtrl: ShareCtrl,
     userCtrl: UserCtrl,
-    statusCtrl: StatusCtrl,
+    statusCtrl: StatusCtrl
     // streamCtrl: StreamCtrl,
     // tagCtrl: TagCtrl,
-    techniqueCtrl: TechniqueCtrl
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -132,18 +133,12 @@ class Router @Inject() (
     // POST     /audit/_search                       controllers.AuditCtrl.find()
     // POST     /audit/_stats                        controllers.AuditCtrl.stats()
 
-    // MITRE
-    case POST(p"/technique/import/mitre") => techniqueCtrl.importMitre
-    case GET(p"/technique/$techniqueId")  => techniqueCtrl.get(techniqueId)
-    // list procedures
-    // list patterns
-    //   list tactics
-    //   list techniques
-    //   list subtechniques
-    //   list by id
+    case POST(p"/pattern/import/mitre") => patternCtrl.importMitre
+    case GET(p"/pattern/$patternId")    => patternCtrl.get(patternId)
+    // list tactics
     // link to pattern
     // unlink
-    // fill procedure
+    case POST(p"/procedure") => procedureCtrl.create
     // Query : pattern name, pattern id
     // List pattern id associated to a Case
 

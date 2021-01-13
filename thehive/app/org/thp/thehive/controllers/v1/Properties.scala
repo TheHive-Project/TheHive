@@ -352,6 +352,13 @@ class Properties @Inject() (
       .property("description", UMapping.string)(_.field.updatable)
       .build
 
+  // TODO add fields
+  lazy val pattern: PublicProperties =
+    PublicPropertyListBuilder[Pattern].build
+
+  lazy val procedure: PublicProperties =
+    PublicPropertyListBuilder[Procedure].build
+
   lazy val profile: PublicProperties =
     PublicPropertyListBuilder[Profile]
       .property("name", UMapping.string)(_.field.updatable)
@@ -460,8 +467,4 @@ class Properties @Inject() (
       .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
       .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
-
-  lazy val technique: PublicProperties =
-    PublicPropertyListBuilder[Technique].build
-
 }

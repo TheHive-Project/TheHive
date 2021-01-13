@@ -4,7 +4,7 @@ import play.api.libs.json.{Format, Json, Reads, Writes}
 
 import java.util.Date
 
-case class InputTechnique(
+case class InputPattern(
     external_id: String,
     name: String,
     description: Option[String],
@@ -58,8 +58,8 @@ object InputKillChainPhase {
   implicit val writes: Writes[InputKillChainPhase] = Json.writes[InputKillChainPhase]
 }
 
-object InputTechnique {
-  implicit val reads: Reads[InputTechnique] = Reads[InputTechnique] { json =>
+object InputPattern {
+  implicit val reads: Reads[InputPattern] = Reads[InputPattern] { json =>
     for {
       references <- (json \ "external_references").validate[Seq[InputReference]]
       mitreReference = references.find(_.source_name == "mitre-attack")
@@ -71,7 +71,7 @@ object InputTechnique {
       x_mitre_data_sources    <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
       x_mitre_is_subtechnique <- (json \ "x_mitre_is_subtechnique").validateOpt[Boolean]
       x_mitre_version         <- (json \ "x_mitre_version").validateOpt[String]
-    } yield InputTechnique(
+    } yield InputPattern(
       mitreReference.map(_.external_id).getOrElse(""),
       name,
       description,
@@ -85,28 +85,28 @@ object InputTechnique {
     )
   }
 
-  implicit val writes: Writes[InputTechnique] = Json.writes[InputTechnique]
+  implicit val writes: Writes[InputPattern] = Json.writes[InputPattern]
 }
 
-case class OutputTechnique(
+case class OutputPattern(
     _id: String,
     _type: String,
     _createdBy: String,
     _updatedBy: Option[String],
     _createdAt: Date,
     _updatedAt: Option[Date],
-    techniqueId: String,
+    patternId: String,
     name: String,
     description: Option[String],
     tactics: Seq[String],
     url: String,
-    techniqueType: String,
+    patternType: String,
     platforms: Seq[String],
     dataSources: Seq[String],
     version: Option[String],
     parent: Option[String]
 )
 
-object OutputTechnique {
-  implicit val format: Format[OutputTechnique] = Json.format[OutputTechnique]
+object OutputPattern {
+  implicit val format: Format[OutputPattern] = Json.format[OutputPattern]
 }

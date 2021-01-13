@@ -1,0 +1,17 @@
+[
+  {
+    "id": "testPattern1",
+    "patternId": "T123",
+    "name": "testPattern1",
+    "description": "The testPattern 1",
+    "tactics": [
+      "testTactic1",
+      "testTactic2"
+    ],
+    "url": "http://test.pattern.url",
+    "patternType": "unit-test",
+    "platforms": [],
+    "dataSources": [],
+    "version": "1.0"
+  }
+]

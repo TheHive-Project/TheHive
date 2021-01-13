@@ -89,8 +89,12 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.outE[ShareTask].raw.property("actionRequired", false).iterate()
       Success(())
     }
-    .updateGraph("Add manageTechnique permission to admin profile", "Profile") { traversal =>
-      traversal.unsafeHas("name", "admin").raw.property("permissions", "manageTechnique").iterate()
+    .updateGraph("Add managePattern permission to admin profile", "Profile") { traversal =>
+      traversal.unsafeHas("name", "admin").raw.property("permissions", "managePattern").iterate()
+      Success(())
+    }
+    .updateGraph("Add manageProcedure permission to admin profile", "Profile") { traversal =>
+      traversal.unsafeHas("name", "admin").raw.property("permissions", "manageProcedure").iterate()
       Success(())
     }
 

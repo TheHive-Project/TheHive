@@ -458,26 +458,40 @@ object Conversion {
         .transform
   }
 
-  implicit class InputTechniqueOps(inputTechnique: InputTechnique) {
-    def toTechnique: Technique =
-      inputTechnique
-        .into[Technique]
-        .withFieldRenamed(_.external_id, _.techniqueId)
+  implicit class InputPatternOps(inputPattern: InputPattern) {
+    def toPattern: Pattern =
+      inputPattern
+        .into[Pattern]
+        .withFieldRenamed(_.external_id, _.patternId)
         .withFieldComputed(_.tactics, _.kill_chain_phases.map(_.phase_name))
-        .withFieldRenamed(_.`type`, _.techniqueType)
+        .withFieldRenamed(_.`type`, _.patternType)
         .withFieldRenamed(_.x_mitre_platforms, _.platforms)
         .withFieldRenamed(_.x_mitre_data_sources, _.dataSources)
         .withFieldRenamed(_.x_mitre_version, _.version)
         .transform
   }
 
-  implicit val richTechniqueRenderer: Renderer.Aux[RichTechnique, OutputTechnique] =
-    Renderer.toJson[RichTechnique, OutputTechnique](technique =>
-      technique
-        .into[OutputTechnique]
+  implicit val richPatternRenderer: Renderer.Aux[RichPattern, OutputPattern] =
+    Renderer.toJson[RichPattern, OutputPattern](
+      _.into[OutputPattern]
         .withFieldComputed(_._id, _._id.toString)
-        .withFieldConst(_._type, "Technique")
-        .withFieldComputed(_.parent, _.parent.map(_.techniqueId))
+        .withFieldConst(_._type, "Pattern")
+        .withFieldComputed(_.parent, _.parent.map(_.patternId))
+        .transform
+    )
+
+  implicit class InputProcedureOps(inputProcedure: InputProcedure) {
+    def toProcedure: Procedure =
+      inputProcedure
+        .into[Procedure]
+        .transform
+  }
+
+  implicit val richProcedureRenderer: Renderer.Aux[RichProcedure, OutputProcedure] =
+    Renderer.toJson[RichProcedure, OutputProcedure](
+      _.into[OutputProcedure]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldComputed(_.patternId, _.pattern.patternId)
         .transform
     )
 

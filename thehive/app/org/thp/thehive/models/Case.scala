@@ -77,12 +77,8 @@ case class CaseUser()
 @BuildEdgeEntity[Case, CaseTemplate]
 case class CaseCaseTemplate()
 
-@BuildEdgeEntity[Case, Technique]
-case class CaseTechnique(
-    description: Option[String] = None
-    // date occurence
-    // date sighting
-)
+@BuildEdgeEntity[Case, Procedure]
+case class CaseProcedure()
 
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "number")
