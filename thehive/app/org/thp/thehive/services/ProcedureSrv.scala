@@ -37,6 +37,9 @@ class ProcedureSrv @Inject() (
       _ <- auditSrv.procedure.create(procedure, richProcedure.toJson)
     } yield richProcedure
 
+  override def get(idOrName: EntityIdOrName)(implicit graph: Graph): Traversal.V[Procedure] =
+    idOrName.fold(getByIds(_), _ => startTraversal.limit(0))
+
   def remove(procedure: Procedure with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       organisation <- organisationSrv.getOrFail(authContext.organisation)

@@ -47,19 +47,30 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "delete a procedure" in testApp { app =>
-      val request1 = FakeRequest("GET", "/api/v1/procedure/testProcedure1")
-        .withHeaders("user" -> "certuser@thehive.local")
-      val result1 = app[ProcedureCtrl].get("testProcedure1")(request1)
-      status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
-
-      val request2 = FakeRequest("DELETE", "/api/v1/procedure/testProcedure1")
+      val request1 = FakeRequest("POST", "/api/v1/procedure/testProcedure2")
+        .withJsonBody(
+          Json.toJson(
+            InputProcedure(
+              "testProcedure2",
+              new Date(),
+              "1",
+              "T123"
+            )
+          )
+        )
         .withHeaders("user" -> "admin@thehive.local")
-      val result2 = app[ProcedureCtrl].delete("testProcedure1")(request2)
+      val result1     = app[ProcedureCtrl].create(request1)
+      val procedureId = contentAsJson(result1).as[OutputProcedure]._id
+      status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
+
+      val request2 = FakeRequest("DELETE", "/api/v1/procedure/testProcedure2")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result2 = app[ProcedureCtrl].delete(procedureId)(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
-      val request3 = FakeRequest("GET", "/api/v1/procedure/testProcedure1")
+      val request3 = FakeRequest("GET", "/api/v1/procedure/testProcedure2")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result3 = app[ProcedureCtrl].get("testProcedure1")(request3)
+      val result3 = app[ProcedureCtrl].get(procedureId)(request3)
       status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")
     }
   }

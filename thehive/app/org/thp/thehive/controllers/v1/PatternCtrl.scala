@@ -76,8 +76,7 @@ class PatternCtrl @Inject() (
     entrypoint("get pattern")
       .authRoTransaction(db) { implicit request => implicit graph =>
         patternSrv
-          .startTraversal
-          .getByPatternId(patternId)
+          .get(EntityIdOrName(patternId))
           .richPattern
           .getOrFail("Pattern")
           .map(richPattern => Results.Ok(richPattern.toJson))
