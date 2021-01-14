@@ -52,7 +52,8 @@ class Router @Inject() (
 //    case POST(p"/case/_stats") =>                        caseCtrl.stats()
 //    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
 
-    case POST(p"/case/$caseId/observable")    => observableCtrl.create(caseId)
+    case POST(p"/case/$caseId/observable")    => observableCtrl.createInCase(caseId)
+    case POST(p"/alert/$alertId/artifact")    => observableCtrl.createInAlert(alertId)
     case GET(p"/observable/$observableId")    => observableCtrl.get(observableId)
     case DELETE(p"/observable/$observableId") => observableCtrl.delete(observableId)
     case PATCH(p"/observable/_bulk")          => observableCtrl.bulkUpdate
