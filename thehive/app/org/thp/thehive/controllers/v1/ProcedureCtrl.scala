@@ -52,4 +52,23 @@ class ProcedureCtrl @Inject() (
         } yield Results.Created(richProcedure.toJson)
       }
 
+  def get(procedureId: String): Action[AnyContent] =
+    entrypoint("get procedure")
+      .authRoTransaction(db) { _ => implicit graph =>
+        procedureSrv
+          .get(EntityIdOrName(procedureId))
+          .richProcedure
+          .getOrFail("Procedure")
+          .map(richProcedure => Results.Ok(richProcedure.toJson))
+      }
+
+  def delete(procedureId: String): Action[AnyContent] =
+    entrypoint("delete procedure")
+      .authPermittedTransaction(db, Permissions.manageProcedure) { implicit request => implicit graph =>
+        procedureSrv
+          .getOrFail(EntityIdOrName(procedureId))
+          .flatMap(procedureSrv.remove)
+          .map(_ => Results.NoContent)
+      }
+
 }

@@ -45,5 +45,22 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
         "T123"
       )
     }
+
+    "delete a procedure" in testApp { app =>
+      val request1 = FakeRequest("GET", "/api/v1/procedure/testProcedure1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result1 = app[ProcedureCtrl].get("testProcedure1")(request1)
+      status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
+
+      val request2 = FakeRequest("DELETE", "/api/v1/procedure/testProcedure1")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result2 = app[ProcedureCtrl].delete("testProcedure1")(request2)
+      status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
+
+      val request3 = FakeRequest("GET", "/api/v1/procedure/testProcedure1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result3 = app[ProcedureCtrl].get("testProcedure1")(request3)
+      status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")
+    }
   }
 }

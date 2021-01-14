@@ -135,11 +135,10 @@ class Router @Inject() (
 
     case POST(p"/pattern/import/mitre") => patternCtrl.importMitre
     case GET(p"/pattern/$patternId")    => patternCtrl.get(patternId)
-    // list tactics
-    // link to pattern
-    // unlink
-    case POST(p"/procedure") => procedureCtrl.create
-    // Query : pattern name, pattern id
+
+    case POST(p"/procedure")                => procedureCtrl.create
+    case GET(p"/procedure/$procedureId")    => procedureCtrl.get(procedureId)
+    case DELETE(p"/procedure/$procedureId") => procedureCtrl.delete(procedureId)
     // List pattern id associated to a Case
 
     case POST(p"/profile")              => profileCtrl.create

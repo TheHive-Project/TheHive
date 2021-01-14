@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
@@ -18,6 +18,7 @@ import scala.util.Try
 class ProcedureSrv @Inject() (
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
+    organisationSrv: OrganisationSrv,
     patternSrv: PatternSrv
 )(implicit
     @Named("with-thehive-schema") db: Database
@@ -35,6 +36,12 @@ class ProcedureSrv @Inject() (
       richProcedure = RichProcedure(procedure, pattern)
       _ <- auditSrv.procedure.create(procedure, richProcedure.toJson)
     } yield richProcedure
+
+  def remove(procedure: Procedure with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      _            <- auditSrv.procedure.delete(procedure, organisation)
+    } yield get(procedure).remove()
 
 }
 
