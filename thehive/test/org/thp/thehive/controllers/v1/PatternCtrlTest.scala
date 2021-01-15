@@ -52,5 +52,23 @@ class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
         Some("1.0")
       )
     }
+
+    "delete a pattern" in testApp { app =>
+      val request1 = FakeRequest("GET", "/api/v1/pattern/testPattern1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result1 = app[PatternCtrl].get("T123")(request1)
+      status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
+
+      val request2 = FakeRequest("DELETE", "/api/v1/pattern/testPattern1")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result2 = app[PatternCtrl].delete("T123")(request2)
+      status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
+
+      val request3 = FakeRequest("GET", "/api/v1/pattern/testPattern1")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result3 = app[PatternCtrl].get("T123")(request3)
+      status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")
+    }
+
   }
 }

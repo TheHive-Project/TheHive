@@ -82,6 +82,15 @@ class PatternCtrl @Inject() (
           .map(richPattern => Results.Ok(richPattern.toJson))
       }
 
+  def delete(patternId: String): Action[AnyContent] =
+    entrypoint("delete pattern")
+      .authPermittedTransaction(db, Permissions.managePattern) { implicit request => implicit graph =>
+        patternSrv
+          .getOrFail(EntityIdOrName(patternId))
+          .flatMap(patternSrv.remove)
+          .map(_ => Results.NoContent)
+      }
+
   private def parseJsonFile(file: FFile): Try[Seq[InputPattern]] =
     for {
       stream <- Try(new FileInputStream(file.filepath.toString))

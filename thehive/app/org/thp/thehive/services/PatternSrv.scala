@@ -15,7 +15,10 @@ import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class PatternSrv @Inject() ()(implicit
+class PatternSrv @Inject() (
+    auditSrv: AuditSrv,
+    organisationSrv: OrganisationSrv
+)(implicit
     @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Pattern] {
   val patternPatternSrv = new EdgeSrv[PatternPattern, Pattern, Pattern]
@@ -29,6 +32,12 @@ class PatternSrv @Inject() ()(implicit
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Pattern] =
     Try(startTraversal.getByPatternId(name)).getOrElse(startTraversal.limit(0))
+
+  def remove(pattern: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      organisation <- organisationSrv.getOrFail(authContext.organisation)
+      _            <- auditSrv.pattern.delete(pattern, organisation)
+    } yield get(pattern).remove()
 
 }
 

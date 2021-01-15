@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Long => JLong}
-import java.util.Date
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
@@ -19,13 +15,15 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
+import java.util.Date
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.Failure
 
 @Singleton
@@ -352,12 +350,24 @@ class Properties @Inject() (
       .property("description", UMapping.string)(_.field.updatable)
       .build
 
-  // TODO add fields
   lazy val pattern: PublicProperties =
-    PublicPropertyListBuilder[Pattern].build
+    PublicPropertyListBuilder[Pattern]
+      .property("patternId", UMapping.string)(_.field.readonly)
+      .property("name", UMapping.string)(_.field.readonly)
+      .property("description", UMapping.string.optional)(_.field.updatable)
+      .property("tactics", UMapping.string.sequence)(_.field.readonly)
+      .property("url", UMapping.string)(_.field.updatable)
+      .property("patternType", UMapping.string)(_.field.readonly)
+      .property("platforms", UMapping.string.sequence)(_.field.readonly)
+      .property("dataSources", UMapping.string.sequence)(_.field.readonly)
+      .property("version", UMapping.string.optional)(_.field.readonly)
+      .build
 
   lazy val procedure: PublicProperties =
-    PublicPropertyListBuilder[Procedure].build
+    PublicPropertyListBuilder[Procedure]
+      .property("description", UMapping.string)(_.field.updatable)
+      .property("description", UMapping.string)(_.field.readonly)
+      .build
 
   lazy val profile: PublicProperties =
     PublicPropertyListBuilder[Profile]
