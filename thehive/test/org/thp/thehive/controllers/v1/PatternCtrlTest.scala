@@ -1,9 +1,12 @@
 package org.thp.thehive.controllers.v1
 
 import io.scalaland.chimney.dsl._
-
+import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.OutputPattern
+import play.api.libs.json.JsArray
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestPattern(
@@ -25,12 +28,24 @@ object TestPattern {
 
 class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
   "pattern controller" should {
-    // TODO
-    /*
     "import json patterns" in testApp { app =>
+      val request = FakeRequest("POST", "/api/v1/pattern/import/mitre")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withBody(
+          AnyContentAsMultipartFormData(
+            MultipartFormData(
+              dataParts = Map.empty,
+              files = Seq(FilePart("file", "patterns.json", Option("application/json"), FakeTemporaryFile.fromResource("/patterns.json"))),
+              badParts = Seq()
+            )
+          )
+        )
 
+      val result = app[PatternCtrl].importMitre(request)
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+      contentAsJson(result).as[JsArray].value.size must beEqualTo(8)
     }
-     */
 
     "get a existing pattern" in testApp { app =>
       val request = FakeRequest("GET", "/api/v1/pattern/T123")
