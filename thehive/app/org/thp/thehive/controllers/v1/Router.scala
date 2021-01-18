@@ -141,9 +141,6 @@ class Router @Inject() (
     case POST(p"/procedure")                => procedureCtrl.create
     case GET(p"/procedure/$procedureId")    => procedureCtrl.get(procedureId)
     case DELETE(p"/procedure/$procedureId") => procedureCtrl.delete(procedureId)
-    // List pattern id associated to a Case
-    // Query filter by pattern name
-    // Query filter bu pattern Id
 
     case POST(p"/profile")              => profileCtrl.create
     case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)
