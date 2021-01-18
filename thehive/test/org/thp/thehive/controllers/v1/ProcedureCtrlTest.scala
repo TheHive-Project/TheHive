@@ -24,7 +24,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
     "create a valid procedure" in testApp { app =>
       val procedureDate = new Date()
       val inputProcedure = InputProcedure(
-        "testProcedure2",
+        "testProcedure3",
         procedureDate,
         "1",
         "T123"
@@ -40,18 +40,18 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       val resultProcedure = contentAsJson(result).as[OutputProcedure]
 
       TestProcedure(resultProcedure) must_=== TestProcedure(
-        "testProcedure2",
+        "testProcedure3",
         procedureDate,
         "T123"
       )
     }
 
     "delete a procedure" in testApp { app =>
-      val request1 = FakeRequest("POST", "/api/v1/procedure/testProcedure2")
+      val request1 = FakeRequest("POST", "/api/v1/procedure/testProcedure3")
         .withJsonBody(
           Json.toJson(
             InputProcedure(
-              "testProcedure2",
+              "testProcedure3",
               new Date(),
               "1",
               "T123"
@@ -63,12 +63,12 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       val procedureId = contentAsJson(result1).as[OutputProcedure]._id
       status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
-      val request2 = FakeRequest("DELETE", "/api/v1/procedure/testProcedure2")
+      val request2 = FakeRequest("DELETE", "/api/v1/procedure/testProcedure3")
         .withHeaders("user" -> "admin@thehive.local")
       val result2 = app[ProcedureCtrl].delete(procedureId)(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
-      val request3 = FakeRequest("GET", "/api/v1/procedure/testProcedure2")
+      val request3 = FakeRequest("GET", "/api/v1/procedure/testProcedure3")
         .withHeaders("user" -> "certuser@thehive.local")
       val result3 = app[ProcedureCtrl].get(procedureId)(request3)
       status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")

@@ -82,6 +82,14 @@ class PatternCtrl @Inject() (
           .map(richPattern => Results.Ok(richPattern.toJson))
       }
 
+  def getCasePatterns(caseId: String): Action[AnyContent] =
+    entrypoint("get case patterns")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        for {
+          patternIds <- patternSrv.getCasePatterns(caseId)
+        } yield Results.Ok(patternIds.toJson)
+      }
+
   def delete(patternId: String): Action[AnyContent] =
     entrypoint("delete pattern")
       .authPermittedTransaction(db, Permissions.managePattern) { implicit request => implicit graph =>

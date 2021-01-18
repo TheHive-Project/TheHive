@@ -50,6 +50,10 @@ class ProcedureSrv @Inject() (
 
 object ProcedureOps {
   implicit class ProcedureOpsDefs(traversal: Traversal.V[Procedure]) {
+
+    def pattern: Traversal.V[Pattern] =
+      traversal.out[ProcedurePattern].v[Pattern]
+
     def richProcedure: Traversal[RichProcedure, JMap[String, Any], Converter[RichProcedure, JMap[String, Any]]] = {
       val procedure = StepLabel.v[Procedure]
       val pattern   = StepLabel.v[Pattern]

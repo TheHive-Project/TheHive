@@ -10,7 +10,7 @@ case class Pattern(
     patternId: String,
     name: String,
     description: Option[String],
-    tactics: Seq[String],
+    tactics: Set[String],
     url: String,
     patternType: String,
     platforms: Seq[String],
@@ -25,7 +25,7 @@ case class RichPattern(pattern: Pattern with Entity, parent: Option[Pattern with
   def patternId: String           = pattern.patternId
   def name: String                = pattern.name
   def description: Option[String] = pattern.description
-  def tactics: Seq[String]        = pattern.tactics
+  def tactics: Set[String]        = pattern.tactics
   def url: String                 = pattern.url
   def patternType: String         = pattern.patternType
   def platforms: Seq[String]      = pattern.platforms

@@ -355,7 +355,7 @@ class Properties @Inject() (
       .property("patternId", UMapping.string)(_.field.readonly)
       .property("name", UMapping.string)(_.field.readonly)
       .property("description", UMapping.string.optional)(_.field.updatable)
-      .property("tactics", UMapping.string.sequence)(_.field.readonly)
+      .property("tactics", UMapping.string.set)(_.field.readonly)
       .property("url", UMapping.string)(_.field.updatable)
       .property("patternType", UMapping.string)(_.field.readonly)
       .property("platforms", UMapping.string.sequence)(_.field.readonly)

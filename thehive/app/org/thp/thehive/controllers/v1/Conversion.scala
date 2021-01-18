@@ -463,7 +463,7 @@ object Conversion {
       inputPattern
         .into[Pattern]
         .withFieldRenamed(_.external_id, _.patternId)
-        .withFieldComputed(_.tactics, _.kill_chain_phases.map(_.phase_name))
+        .withFieldComputed(_.tactics, _.kill_chain_phases.map(_.phase_name).toSet)
         .withFieldRenamed(_.`type`, _.patternType)
         .withFieldRenamed(_.x_mitre_platforms, _.platforms)
         .withFieldRenamed(_.x_mitre_data_sources, _.dataSources)

@@ -13,7 +13,7 @@ case class TestPattern(
     patternId: String,
     name: String,
     description: Option[String],
-    tactics: Seq[String],
+    tactics: Set[String],
     url: String,
     patternType: String,
     platforms: Seq[String],
@@ -59,13 +59,23 @@ class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
         "T123",
         "testPattern1",
         Some("The testPattern 1"),
-        Seq("testTactic1", "testTactic2"),
+        Set("testTactic1", "testTactic2"),
         "http://test.pattern.url",
         "unit-test",
         Seq(),
         Seq(),
         Some("1.0")
       )
+    }
+
+    "get patterns linked to case" in testApp { app =>
+      val request = FakeRequest("GET", "/api/v1/pattern/case/1")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result = app[PatternCtrl].getCasePatterns("1")(request)
+      status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+      contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
     "delete a pattern" in testApp { app =>

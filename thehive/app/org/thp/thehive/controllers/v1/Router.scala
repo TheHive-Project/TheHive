@@ -135,6 +135,7 @@ class Router @Inject() (
 
     case POST(p"/pattern/import/mitre") => patternCtrl.importMitre
     case GET(p"/pattern/$patternId")    => patternCtrl.get(patternId)
+    case GET(p"/pattern/case/$caseId")  => patternCtrl.getCasePatterns(caseId)
     case DELETE(p"/pattern/$patternId") => patternCtrl.delete(patternId)
 
     case POST(p"/procedure")                => procedureCtrl.create

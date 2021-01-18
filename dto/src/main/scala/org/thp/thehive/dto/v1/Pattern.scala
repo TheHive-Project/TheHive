@@ -98,7 +98,7 @@ case class OutputPattern(
     patternId: String,
     name: String,
     description: Option[String],
-    tactics: Seq[String],
+    tactics: Set[String],
     url: String,
     patternType: String,
     platforms: Seq[String],

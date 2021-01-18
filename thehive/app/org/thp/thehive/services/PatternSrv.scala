@@ -8,7 +8,9 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models._
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.PatternOps._
+import org.thp.thehive.services.ProcedureOps._
 
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
@@ -17,6 +19,7 @@ import scala.util.{Success, Try}
 @Singleton
 class PatternSrv @Inject() (
     auditSrv: AuditSrv,
+    caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv
 )(implicit
     @Named("with-thehive-schema") db: Database
@@ -28,10 +31,16 @@ class PatternSrv @Inject() (
 
   def setParent(child: Pattern with Entity, parent: Pattern with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
     if (parentExists(child, parent)) Success(())
-    else patternPatternSrv.create(PatternPattern(), child, parent).map(_ => ())
+    else patternPatternSrv.create(PatternPattern(), parent, child).map(_ => ())
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Pattern] =
     Try(startTraversal.getByPatternId(name)).getOrElse(startTraversal.limit(0))
+
+  def getCasePatterns(caseId: String)(implicit graph: Graph): Try[Seq[String]] =
+    for {
+      caze <- caseSrv.get(EntityIdOrName(caseId)).getOrFail("Case")
+      patterns = caseSrv.get(caze).procedure.pattern.richPattern.toSeq
+    } yield patterns.map(_.patternId)
 
   def remove(pattern: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -50,6 +59,9 @@ object PatternOps {
 
     def parent: Traversal.V[Pattern] =
       traversal.in[PatternPattern].v[Pattern]
+
+    def procedure: Traversal.V[Procedure] =
+      traversal.in[ProcedurePattern].v[Procedure]
 
     def alreadyImported(patternId: String): Boolean =
       traversal.getByPatternId(patternId).exists
