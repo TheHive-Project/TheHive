@@ -133,10 +133,10 @@ class Router @Inject() (
     // POST     /audit/_search                       controllers.AuditCtrl.find()
     // POST     /audit/_stats                        controllers.AuditCtrl.stats()
 
-    case POST(p"/pattern/import/mitre") => patternCtrl.importMitre
-    case GET(p"/pattern/$patternId")    => patternCtrl.get(patternId)
-    case GET(p"/pattern/case/$caseId")  => patternCtrl.getCasePatterns(caseId)
-    case DELETE(p"/pattern/$patternId") => patternCtrl.delete(patternId)
+    case POST(p"/pattern/import/attack") => patternCtrl.importMitre
+    case GET(p"/pattern/$patternId")     => patternCtrl.get(patternId)
+    case GET(p"/pattern/case/$caseId")   => patternCtrl.getCasePatterns(caseId)
+    case DELETE(p"/pattern/$patternId")  => patternCtrl.delete(patternId)
 
     case POST(p"/procedure")                => procedureCtrl.create
     case GET(p"/procedure/$procedureId")    => procedureCtrl.get(procedureId)

@@ -29,7 +29,7 @@ object TestPattern {
 class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
   "pattern controller" should {
     "import json patterns" in testApp { app =>
-      val request = FakeRequest("POST", "/api/v1/pattern/import/mitre")
+      val request = FakeRequest("POST", "/api/v1/pattern/import/attack")
         .withHeaders("user" -> "admin@thehive.local")
         .withBody(
           AnyContentAsMultipartFormData(

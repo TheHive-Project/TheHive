@@ -101,9 +101,8 @@ class PatternCtrl @Inject() (
 
   private def parseJsonFile(file: FFile): Try[Seq[InputPattern]] =
     for {
-      stream <- Try(new FileInputStream(file.filepath.toString))
-      json = Json.parse(stream)
-    } yield (json \ "objects").get.as[Seq[InputPattern]]
+      json <- Try(Json.parse(new FileInputStream(file.filepath.toString)))
+    } yield (json \ "objects").as[Seq[InputPattern]]
 
   private def createFromInput(inputPattern: InputPattern)(implicit graph: Graph, authContext: AuthContext): Try[Pattern with Entity] =
     if (inputPattern.external_id.isEmpty)
@@ -118,10 +117,10 @@ class PatternCtrl @Inject() (
 
   private def linkPattern(child: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val firstDot = child.patternId.indexOf(".")
-    val parentId = child.patternId.substring(0, firstDot)
     for {
-      parent <- patternSrv.startTraversal.getByPatternId(parentId).getOrFail("Pattern")
-      _      <- patternSrv.setParent(child, parent)
+      parentId <- Try(child.patternId.substring(0, firstDot))
+      parent   <- patternSrv.startTraversal.getByPatternId(parentId).getOrFail("Pattern")
+      _        <- patternSrv.setParent(child, parent)
     } yield ()
   }
 }

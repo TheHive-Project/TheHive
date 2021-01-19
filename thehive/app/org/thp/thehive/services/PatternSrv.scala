@@ -26,11 +26,11 @@ class PatternSrv @Inject() (
 ) extends VertexSrv[Pattern] {
   val patternPatternSrv = new EdgeSrv[PatternPattern, Pattern, Pattern]
 
-  def parentExists(child: Pattern with Entity, parent: Pattern with Entity)(implicit graph: Graph): Boolean =
+  def cannotBeParent(child: Pattern with Entity, parent: Pattern with Entity)(implicit graph: Graph): Boolean =
     child._id == parent._id || get(child).parent.getEntity(parent).exists
 
   def setParent(child: Pattern with Entity, parent: Pattern with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
-    if (parentExists(child, parent)) Success(())
+    if (cannotBeParent(child, parent)) Success(())
     else patternPatternSrv.create(PatternPattern(), parent, child).map(_ => ())
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Pattern] =
@@ -52,9 +52,6 @@ class PatternSrv @Inject() (
 
 object PatternOps {
   implicit class PatternOpsDefs(traversal: Traversal.V[Pattern]) {
-    def get(idOrName: EntityIdOrName): Traversal.V[Pattern] =
-      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
-
     def getByPatternId(patternId: String): Traversal.V[Pattern] = traversal.has(_.patternId, patternId)
 
     def parent: Traversal.V[Pattern] =

@@ -107,6 +107,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
           Permissions.manageCase,
           Permissions.manageUser,
           Permissions.managePage,
+          Permissions.manageProcedure,
           Permissions.manageObservable,
           Permissions.manageAlert,
           Permissions.manageAction,

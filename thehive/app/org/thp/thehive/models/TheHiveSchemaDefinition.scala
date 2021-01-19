@@ -93,8 +93,12 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.unsafeHas("name", "admin").raw.property("permissions", "managePattern").iterate()
       Success(())
     }
-    .updateGraph("Add manageProcedure permission to admin profile", "Profile") { traversal =>
-      traversal.unsafeHas("name", "admin").raw.property("permissions", "manageProcedure").iterate()
+    .updateGraph("Add manageProcedure permission to org-admin and analyst profiles", "Profile") { traversal =>
+      traversal
+        .unsafeHas("name", P.within("org-admin", "analyst"))
+        .raw
+        .property("permissions", "manageProcedure")
+        .iterate()
       Success(())
     }
 

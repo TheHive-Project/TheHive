@@ -32,7 +32,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val request = FakeRequest("POST", "/api/v1/procedure")
         .withJsonBody(Json.toJson(inputProcedure))
-        .withHeaders("user" -> "admin@thehive.local")
+        .withHeaders("user" -> "certadmin@thehive.local")
 
       val result = app[ProcedureCtrl].create(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -58,13 +58,13 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
             )
           )
         )
-        .withHeaders("user" -> "admin@thehive.local")
+        .withHeaders("user" -> "certadmin@thehive.local")
       val result1     = app[ProcedureCtrl].create(request1)
       val procedureId = contentAsJson(result1).as[OutputProcedure]._id
       status(result1) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
       val request2 = FakeRequest("DELETE", "/api/v1/procedure/testProcedure3")
-        .withHeaders("user" -> "admin@thehive.local")
+        .withHeaders("user" -> "certadmin@thehive.local")
       val result2 = app[ProcedureCtrl].delete(procedureId)(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
