@@ -117,10 +117,14 @@ class PatternCtrl @Inject() (
 
   private def linkPattern(child: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val firstDot = child.patternId.indexOf(".")
-    for {
-      parentId <- Try(child.patternId.substring(0, firstDot))
-      parent   <- patternSrv.startTraversal.getByPatternId(parentId).getOrFail("Pattern")
-      _        <- patternSrv.setParent(child, parent)
-    } yield ()
+    if (firstDot == -1)
+      Failure(BadRequestError("Invalid sub-pattern patternId ${child.patternId} (must contain a dot"))
+    else {
+      val parentId = child.patternId.substring(0, firstDot)
+      for {
+        parent <- patternSrv.startTraversal.getByPatternId(parentId).getOrFail("Pattern")
+        _      <- patternSrv.setParent(child, parent)
+      } yield ()
+    }
   }
 }
