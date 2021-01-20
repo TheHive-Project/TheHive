@@ -47,7 +47,7 @@ class AuditSrv @Inject() (
   val organisation                                          = new SelfContextObjectAudit[Organisation]
   val page                                                  = new SelfContextObjectAudit[Page]
   val pattern                                               = new SelfContextObjectAudit[Pattern]
-  val procedure                                             = new SelfContextObjectAudit[Procedure]
+  val procedure                                             = new ObjectAudit[Procedure, Case]
   val profile                                               = new SelfContextObjectAudit[Profile]
   val share                                                 = new ShareAudit
   val task                                                  = new SelfContextObjectAudit[Task]

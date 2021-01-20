@@ -8,6 +8,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.models._
 
 import java.util.{Map => JMap}
@@ -34,7 +35,7 @@ class ProcedureSrv @Inject() (
       _         <- caseProcedureSrv.create(CaseProcedure(), caze, procedure)
       _         <- procedurePatternSrv.create(ProcedurePattern(), procedure, pattern)
       richProcedure = RichProcedure(procedure, pattern)
-      _ <- auditSrv.procedure.create(procedure, richProcedure.toJson)
+      _ <- auditSrv.procedure.create(procedure, caze, richProcedure.toJson)
     } yield richProcedure
 
   override def get(idOrName: EntityIdOrName)(implicit graph: Graph): Traversal.V[Procedure] =
@@ -42,8 +43,8 @@ class ProcedureSrv @Inject() (
 
   def remove(procedure: Procedure with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      organisation <- organisationSrv.getOrFail(authContext.organisation)
-      _            <- auditSrv.procedure.delete(procedure, organisation)
+      caze <- get(procedure).caze.getOrFail("Case")
+      _    <- auditSrv.procedure.delete(procedure, Some(caze))
     } yield get(procedure).remove()
 
 }
@@ -53,6 +54,9 @@ object ProcedureOps {
 
     def pattern: Traversal.V[Pattern] =
       traversal.out[ProcedurePattern].v[Pattern]
+
+    def caze: Traversal.V[Case] =
+      traversal.in[CaseProcedure].v[Case]
 
     def richProcedure: Traversal[RichProcedure, JMap[String, Any], Converter[RichProcedure, JMap[String, Any]]] = {
       val procedure = StepLabel.v[Procedure]
