@@ -15,7 +15,7 @@ case class Pattern(
     patternType: String,
     platforms: Seq[String],
     dataSources: Seq[String],
-    version: Option[String]
+    revision: Option[String]
 )
 
 @BuildEdgeEntity[Pattern, Pattern]
@@ -30,7 +30,7 @@ case class RichPattern(pattern: Pattern with Entity, parent: Option[Pattern with
   def patternType: String         = pattern.patternType
   def platforms: Seq[String]      = pattern.platforms
   def dataSources: Seq[String]    = pattern.dataSources
-  def version: Option[String]     = pattern.version
+  def version: Option[String]     = pattern.revision
   def _id: EntityId               = pattern._id
   def _createdAt: Date            = pattern._createdAt
   def _createdBy: String          = pattern._createdBy
