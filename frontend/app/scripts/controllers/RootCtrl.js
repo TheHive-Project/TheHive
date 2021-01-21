@@ -55,8 +55,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         });
 
         StreamQuerySrv('v1', [
-            {_name: 'currentUser'},
-            {_name: 'tasks'},
+            {_name: 'myTasks'},
             {_name: 'filter',
                 _in: {
                     _field: 'status',
