@@ -1,6 +1,5 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
@@ -15,6 +14,7 @@ import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
 import play.api.libs.json.{JsValue, Reads}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton

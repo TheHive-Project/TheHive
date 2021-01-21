@@ -1,11 +1,12 @@
 package org.thp.thehive.connector.cortex.models
 
-import java.util.Date
 import org.apache.tinkerpop.gremlin.structure.{Edge, Vertex}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.{Converter, Graph}
 import org.thp.scalligraph.{BuildVertexEntity, EntityId}
 import play.api.libs.json.JsObject
+
+import java.util.Date
 
 @BuildVertexEntity
 case class Action(

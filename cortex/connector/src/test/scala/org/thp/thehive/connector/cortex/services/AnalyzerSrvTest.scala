@@ -5,9 +5,9 @@ import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.test.PlaySpecification
 
 class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {

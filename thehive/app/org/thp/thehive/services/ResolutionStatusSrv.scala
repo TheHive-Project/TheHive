@@ -1,23 +1,20 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName}
 import org.thp.thehive.models.ResolutionStatus
 import org.thp.thehive.services.ResolutionStatusOps._
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    db: Database
-) extends VertexSrv[ResolutionStatus] {
+class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[ResolutionStatus] {
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ResolutionStatus] =
     startTraversal.getByName(name)

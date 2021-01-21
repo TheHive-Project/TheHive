@@ -1,10 +1,8 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList, Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -15,12 +13,12 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.UserOps._
 import play.api.libs.json.{JsObject, Json}
 
+import java.util.{List => JList, Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)(implicit
-    db: Database
-) extends VertexSrv[Dashboard] {
+class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv) extends VertexSrv[Dashboard] {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
   val dashboardUserSrv         = new EdgeSrv[DashboardUser, Dashboard, User]
 
@@ -85,7 +83,7 @@ object DashboardOps {
   implicit class DashboardOpsDefs(traversal: Traversal.V[Dashboard]) {
 
     def get(idOrName: EntityIdOrName): Traversal.V[Dashboard] =
-      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
+      idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
 
     def visible(implicit authContext: AuthContext): Traversal.V[Dashboard] =
       traversal.filter(_.or(_.user.current, _.organisation.current))

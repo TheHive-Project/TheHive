@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.misp.services
 
-import java.util.{Date, UUID}
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
@@ -17,6 +15,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 import play.api.test.PlaySpecification
 
+import java.util.{Date, UUID}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 

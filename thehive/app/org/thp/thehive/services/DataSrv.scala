@@ -1,9 +1,6 @@
 package org.thp.thehive.services
 
-import java.lang.{Long => JLong}
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
@@ -14,6 +11,8 @@ import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.DataOps._
 
+import java.lang.{Long => JLong}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton

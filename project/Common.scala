@@ -1,5 +1,4 @@
 import java.io.File
-
 import scala.util.matching.Regex
 
 object Common {

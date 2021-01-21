@@ -1,14 +1,14 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.RoleOps._
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton

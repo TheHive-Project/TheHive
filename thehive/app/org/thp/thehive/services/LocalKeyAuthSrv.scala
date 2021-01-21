@@ -1,8 +1,5 @@
 package org.thp.thehive.services
 
-import java.util.Base64
-
-import javax.inject.{Inject, Named, Provider, Singleton}
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -11,6 +8,8 @@ import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
+import java.util.Base64
+import javax.inject.{Inject, Provider, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Random, Success, Try}
 

@@ -1,9 +1,10 @@
 package org.thp.thehive.connector.cortex
 
-import javax.inject.{Inject, Provider, Singleton}
 import org.thp.thehive.connector.cortex.controllers.v0
 import play.api.Logger
 import play.api.routing.Router
+
+import javax.inject.{Inject, Provider, Singleton}
 
 @Singleton
 class CortexRouter @Inject() (routerV0: v0.Router) extends Provider[Router] {

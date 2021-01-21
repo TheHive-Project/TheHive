@@ -1,21 +1,21 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models.{Organisation, OrganisationPage, Page}
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PageOps._
 import play.api.libs.json.Json
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
-class PageSrv @Inject() (implicit db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page] {
+class PageSrv @Inject() (organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page] {
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 

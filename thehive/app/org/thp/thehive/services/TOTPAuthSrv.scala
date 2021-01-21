@@ -1,10 +1,5 @@
 package org.thp.thehive.services
 
-import java.net.URI
-import java.util.concurrent.TimeUnit
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.commons.codec.binary.Base32
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
@@ -15,6 +10,11 @@ import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCode
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
+import java.net.URI
+import java.util.concurrent.TimeUnit
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.immutable
 import scala.util.{Failure, Random, Success, Try}
 

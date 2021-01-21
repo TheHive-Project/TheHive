@@ -1,11 +1,12 @@
 package org.thp.thehive.models
 
-import java.util.Date
 import org.apache.tinkerpop.gremlin.structure.{Edge, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.{Converter, Graph}
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
+
+import java.util.Date
 
 @BuildEdgeEntity[Audit, User]
 case class AuditUser()

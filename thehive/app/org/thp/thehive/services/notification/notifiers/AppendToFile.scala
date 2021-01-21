@@ -1,14 +1,14 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.nio.charset.Charset
-import java.nio.file.{Files, Paths, StandardOpenOption}
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.Configuration
 
+import java.nio.charset.Charset
+import java.nio.file.{Files, Paths, StandardOpenOption}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 

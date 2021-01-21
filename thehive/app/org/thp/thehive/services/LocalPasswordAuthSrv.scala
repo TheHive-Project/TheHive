@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
 import io.github.nremond.SecureHash
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -11,6 +10,7 @@ import org.thp.thehive.models.User
 import play.api.mvc.RequestHeader
 import play.api.{Configuration, Logger}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 object LocalPasswordAuthSrv {

@@ -1,6 +1,5 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, User => ScalligraphUser, UserSrv => ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -12,6 +11,7 @@ import play.api.Configuration
 import play.api.libs.json.JsObject
 import play.api.mvc.RequestHeader
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton

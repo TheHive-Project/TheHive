@@ -1,15 +1,10 @@
 package org.thp.thehive.services.th3
 
-import java.lang.{Long => JLong}
-import java.time.temporal.ChronoUnit
-import java.util.{Calendar, Date, List => JList}
-
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.scalactic.Accumulation._
 import org.scalactic._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{Aggregation, PublicProperties}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
@@ -17,6 +12,9 @@ import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
 import play.api.Logger
 import play.api.libs.json.{JsNull, JsNumber, JsObject, Json}
 
+import java.lang.{Long => JLong}
+import java.time.temporal.ChronoUnit
+import java.util.{Calendar, Date, List => JList}
 import scala.reflect.runtime.{universe => ru}
 import scala.util.Try
 import scala.util.matching.Regex

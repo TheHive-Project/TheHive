@@ -1,8 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import com.google.inject.name.Named
-
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -20,6 +18,7 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.ObservableSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton

@@ -1,22 +1,19 @@
 package org.thp.thehive.services
 
-import java.util.{Set => JSet}
-
 import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.google.inject.util.Types
 import com.google.inject.{Injector, Key, TypeLiteral}
-import javax.inject.{Inject, Provider, Singleton}
-import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, IntegrityCheckOps}
 import org.thp.thehive.GuiceAkkaExtension
 import play.api.{Configuration, Logger}
 
+import java.util.{Set => JSet}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.Success
 
 sealed trait IntegrityCheckMessage
 case class EntityAdded(name: String) extends IntegrityCheckMessage

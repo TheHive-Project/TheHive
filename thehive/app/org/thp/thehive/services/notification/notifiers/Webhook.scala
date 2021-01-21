@@ -1,9 +1,6 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.util.{Date, Map => JMap}
 import akka.stream.Materializer
-
-import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.client.{ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, UMapping}
@@ -25,6 +22,8 @@ import play.api.libs.json.Json.WithDefaultValues
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
+import java.util.{Date, Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 

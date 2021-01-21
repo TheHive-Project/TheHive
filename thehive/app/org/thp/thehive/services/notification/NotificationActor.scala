@@ -2,8 +2,6 @@ package org.thp.thehive.services.notification
 
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
-
-import javax.inject.{Inject, Named}
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.traversal.Graph
@@ -20,6 +18,7 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.{Format, JsValue, Json}
 import play.api.{Configuration, Logger}
 
+import javax.inject.Inject
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt

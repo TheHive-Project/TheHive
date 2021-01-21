@@ -1,8 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.{Date, Map => JMap}
-
-import org.apache.tinkerpop.gremlin.structure.{Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.models.UMapping
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
@@ -16,6 +14,8 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsNumber, JsObject, JsString}
+
+import java.util.{Date, Map => JMap}
 
 trait AuditRenderer {
 

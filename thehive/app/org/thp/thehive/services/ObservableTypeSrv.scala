@@ -1,23 +1,20 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.ObservableTypeOps._
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    db: Database
-) extends VertexSrv[ObservableType] {
+class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[ObservableType] {
 
   val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
 

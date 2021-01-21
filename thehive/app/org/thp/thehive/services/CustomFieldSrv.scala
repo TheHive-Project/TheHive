@@ -1,10 +1,7 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Edge}
+import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -17,12 +14,13 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldOps._
 import play.api.libs.json.{JsObject, JsValue}
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
-    implicit db: Database
-) extends VertexSrv[CustomField] {
+class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)
+    extends VertexSrv[CustomField] {
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
     integrityCheckActor ! EntityAdded("CustomField")

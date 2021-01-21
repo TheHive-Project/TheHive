@@ -1,10 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.regex.Pattern
-import java.util.{List => JList, Map => JMap}
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
@@ -25,6 +21,9 @@ import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
+import java.util.regex.Pattern
+import java.util.{List => JList, Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton

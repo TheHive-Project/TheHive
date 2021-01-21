@@ -1,8 +1,8 @@
 package org.thp.misp.dto
 
-import java.util.UUID
-
 import play.api.libs.json.{Json, Reads}
+
+import java.util.UUID
 
 case class Organisation(id: String, name: String, description: String, uuid: UUID)
 

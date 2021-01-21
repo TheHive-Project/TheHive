@@ -3,12 +3,13 @@ package org.thp.thehive.connector.cortex.services
 import akka.actor.ActorRef
 import com.google.inject.Singleton
 import com.google.inject.name.Named
-import javax.inject.{Inject, Provider}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.EventSrv
 import org.thp.thehive.connector.cortex.models.{Action, AnalyzerTemplate, Job}
 import org.thp.thehive.models.Observable
 import org.thp.thehive.services.{AuditSrv, UserSrv}
+
+import javax.inject.{Inject, Provider}
 
 @Singleton
 class CortexAuditSrv @Inject() (

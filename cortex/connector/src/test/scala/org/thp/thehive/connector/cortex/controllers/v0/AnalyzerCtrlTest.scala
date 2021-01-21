@@ -1,9 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.Database
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.dto.v0.OutputWorker
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class AnalyzerCtrlTest extends PlaySpecification with TestAppBuilder {

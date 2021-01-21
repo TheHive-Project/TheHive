@@ -1,13 +1,12 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.util.Date
-
 import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AppBuilder, EntityName}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.models.Permissions
@@ -15,10 +14,10 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.triggers.JobFinished
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
+import java.util.Date
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.io.Source

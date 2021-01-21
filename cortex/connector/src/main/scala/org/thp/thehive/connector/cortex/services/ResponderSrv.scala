@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import com.google.inject.name.Named
-import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
@@ -11,6 +9,7 @@ import org.thp.thehive.models.Permissions
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 

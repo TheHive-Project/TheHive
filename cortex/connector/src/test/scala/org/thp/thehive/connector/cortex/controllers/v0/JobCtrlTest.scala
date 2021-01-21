@@ -5,10 +5,10 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.connector.cortex.services.{Connector, CortexActor, TestConnector}
 import org.thp.thehive.services.ObservableSrv
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 

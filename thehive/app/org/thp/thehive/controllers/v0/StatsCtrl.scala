@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.AttributeCheckingError
 import org.thp.scalligraph.controllers.{Entrypoint, Field, FieldsParser}
@@ -8,6 +7,8 @@ import org.thp.scalligraph.models.Database
 import play.api.Logger
 import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class StatsCtrl @Inject() (

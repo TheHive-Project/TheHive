@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -9,18 +8,18 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.ObservableType
 import org.thp.thehive.services.CustomFieldOps._
-import org.thp.thehive.services.{CustomFieldSrv, ObservableTypeSrv}
+import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success}
 
 @Singleton
 class ListCtrl @Inject() (
     entrypoint: Entrypoint,
     db: Database,
-    customFieldSrv: CustomFieldSrv,
-    observableTypeSrv: ObservableTypeSrv
+    customFieldSrv: CustomFieldSrv
 ) {
 
   def list: Action[AnyContent] =

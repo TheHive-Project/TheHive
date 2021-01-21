@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.services.notification.notifiers
 
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -13,6 +12,7 @@ import org.thp.thehive.services._
 import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import play.api.Configuration
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 

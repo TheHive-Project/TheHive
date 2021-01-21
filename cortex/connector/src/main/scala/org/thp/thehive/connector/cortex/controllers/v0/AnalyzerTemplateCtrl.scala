@@ -1,9 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import java.util.zip.ZipFile
-
 import com.google.inject.name.Named
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -21,6 +18,8 @@ import org.thp.thehive.models.Permissions
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.util.zip.ZipFile
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success}
 
 @Singleton

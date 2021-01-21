@@ -12,7 +12,7 @@ import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Success

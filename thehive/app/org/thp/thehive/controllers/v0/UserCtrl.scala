@@ -226,7 +226,7 @@ class UserCtrl @Inject() (
 }
 
 @Singleton
-class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
+class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "user"
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)

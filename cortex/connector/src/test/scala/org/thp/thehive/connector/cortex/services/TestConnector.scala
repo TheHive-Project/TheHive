@@ -2,10 +2,10 @@ package org.thp.thehive.connector.cortex.services
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.CortexClient
 import org.thp.scalligraph.services.config.ApplicationConfig
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton

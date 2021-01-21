@@ -1,9 +1,9 @@
 package org.thp.thehive.dto.v0
 
-import java.util.Date
-
 import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json._
+
+import java.util.Date
 
 case class InputAlert(
     `type`: String,

@@ -1,12 +1,12 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ConfigContext
 import play.api.libs.json.JsValue
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton

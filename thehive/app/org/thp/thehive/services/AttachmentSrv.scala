@@ -7,10 +7,10 @@ import akka.util.ByteString
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.{StorageSrv, VertexSrv}
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
 import org.thp.thehive.services.AttachmentOps._
@@ -18,13 +18,12 @@ import play.api.Configuration
 
 import java.io.InputStream
 import java.nio.file.Files
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 import scala.util.Try
 
 @Singleton
 class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit
-    db: Database,
     mat: Materializer
 ) extends VertexSrv[Attachment] {
 

@@ -2,13 +2,13 @@ package org.thp.thehive.connector.misp.services
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.thehive.models.{HealthStatus, ObservableType}
+import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 import play.api.libs.json.{JsObject, Json}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 

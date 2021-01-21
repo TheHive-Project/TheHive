@@ -1,6 +1,5 @@
 package org.thp.thehive.services.notification.triggers
 
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
@@ -11,6 +10,7 @@ import org.thp.thehive.services.TaskSrv
 import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton

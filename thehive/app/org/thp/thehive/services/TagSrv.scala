@@ -1,8 +1,6 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -13,12 +11,11 @@ import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Tag}
 import org.thp.thehive.services.TagOps._
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    db: Database
-) extends VertexSrv[Tag] {
+class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[Tag] {
 
   val autoCreateConfig: ConfigItem[Boolean, Boolean] =
     appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")

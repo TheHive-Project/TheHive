@@ -1,9 +1,9 @@
 package org.thp.misp.dto
 
-import java.util.Date
-
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
+import java.util.Date
 
 case class Event(
     id: String,

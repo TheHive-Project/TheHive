@@ -1,15 +1,11 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.util.zip.{ZipEntry, ZipFile}
-import com.google.inject.name.Named
-
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
@@ -18,13 +14,14 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
 
+import java.util.zip.{ZipEntry, ZipFile}
+import javax.inject.{Inject, Singleton}
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Try}
 
 @Singleton
-class AnalyzerTemplateSrv @Inject() (implicit
-    db: Database,
+class AnalyzerTemplateSrv @Inject() (
     auditSrv: CortexAuditSrv,
     organisationSrv: OrganisationSrv
 ) extends VertexSrv[AnalyzerTemplate] {

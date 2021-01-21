@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import com.google.inject.name.Named
-import javax.inject.{Inject, Singleton}
 import org.scalactic.Good
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FieldsParser
@@ -16,6 +14,7 @@ import org.thp.thehive.controllers.v0._
 import org.thp.thehive.models.Observable
 import org.thp.thehive.services.ObservableOps._
 
+import javax.inject.{Inject, Singleton}
 import scala.reflect.runtime.{universe => ru}
 
 @Singleton

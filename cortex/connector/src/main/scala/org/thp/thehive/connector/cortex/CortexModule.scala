@@ -2,7 +2,7 @@ package org.thp.thehive.connector.cortex
 
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
-import org.thp.scalligraph.models.{Schema, UpdatableSchema}
+import org.thp.scalligraph.models.UpdatableSchema
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.thehive.connector.cortex.controllers.v0.{CortexQueryExecutor => CortexQueryExecutorV0}
 import org.thp.thehive.connector.cortex.models.CortexSchemaDefinition

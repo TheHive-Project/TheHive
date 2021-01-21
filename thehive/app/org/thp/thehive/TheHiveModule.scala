@@ -5,7 +5,7 @@ import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.SingleInstance
 import org.thp.scalligraph.auth._
-import org.thp.scalligraph.janus.{JanusDatabase, JanusDatabaseProvider}
+import org.thp.scalligraph.janus.JanusDatabaseProvider
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, HadoopStorageSrv, S3StorageSrv}
 import org.thp.thehive.controllers.v0.QueryExecutorVersion0Provider

@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.nio.file.Files
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser, Renderer}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -17,6 +14,8 @@ import org.thp.thehive.services.TagSrv
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.nio.file.Files
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.Try
 
 class TagCtrl @Inject() (
