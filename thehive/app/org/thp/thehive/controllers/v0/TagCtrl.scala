@@ -17,8 +17,6 @@ import org.thp.thehive.services.TagSrv
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Try
-
 class TagCtrl @Inject() (
     override val entrypoint: Entrypoint,
     @Named("with-thehive-schema") override val db: Database,
@@ -68,12 +66,9 @@ class TagCtrl @Inject() (
       colour =
         (entry \ "colour")
           .asOpt[String]
-          .map(parseColour)
-          .getOrElse(0) // black
+          .getOrElse("#000000")
       e = (entry \ "description").asOpt[String] orElse (entry \ "expanded").asOpt[String]
     } yield Tag(namespace, predicate, Some(v), e, colour)
-
-  def parseColour(colour: String): Int = if (colour(0) == '#') Try(Integer.parseUnsignedInt(colour.tail, 16)).getOrElse(0) else 0
 
   private def distinct(valueOpt: Option[String], acc: (Seq[JsObject], Seq[String]), v: JsObject): (Seq[JsObject], Seq[String]) =
     if (valueOpt.isDefined && acc._2.contains(valueOpt.get)) acc
@@ -90,8 +85,7 @@ class TagCtrl @Inject() (
       colour =
         (predicate \ "colour")
           .asOpt[String]
-          .map(parseColour)
-          .getOrElse(0) // black
+          .getOrElse("#000000")
     } yield Tag(namespace, v, None, e, colour)
 
   def get(tagId: String): Action[AnyContent] =
@@ -142,7 +136,7 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
                 val namespace = UMapping.string.getProperty(v, "namespace")
                 val predicate = UMapping.string.getProperty(v, "predicate")
                 val value     = UMapping.string.optional.getProperty(v, "value")
-                Tag(namespace, predicate, value, None, 0).toString
+                Tag(namespace, predicate, value, None, "#000000").toString
               },
               Converter.identity[String]
             )

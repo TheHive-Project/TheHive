@@ -39,6 +39,7 @@ class DescribeCtrl @Inject() (
 //    pageCtrl: PageCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
+    taxonomyCtrl: TaxonomyCtrl,
     userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     impactStatusSrv: ImpactStatusSrv,
@@ -109,6 +110,7 @@ class DescribeCtrl @Inject() (
         // EntityDescription("page", "listPage", pageCtrl.publicProperties.list.flatMap(propertyToJson("page", _)))
         EntityDescription("profile", "listProfile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _))),
         EntityDescription("task", "listTask", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
+        EntityDescription("taxonomy", "listTaxonomy", taxonomyCtrl.publicProperties.list.flatMap(propertyToJson("taxonomy", _))),
         EntityDescription("user", "listUser", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _)))
       ) ++ describeCortexEntity("job", "listJob", "JobCtrl") ++
         describeCortexEntity("action", "listAction", "ActionCtrl")

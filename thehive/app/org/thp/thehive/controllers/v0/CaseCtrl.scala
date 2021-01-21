@@ -195,13 +195,17 @@ class PublicCase @Inject() (
     with CaseRenderer {
   override val entityName: String = "case"
   override val initialQuery: Query =
-    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
-  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
-    "getCase",
-    FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(authContext)
-  )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
+    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) =>
+      organisationSrv.get(authContext.organisation)(graph).cases
+    )
+  override val getQuery: ParamQuery[EntityIdOrName] =
+    Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
+      "getCase",
+      FieldsParser[EntityIdOrName],
+      (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(authContext)
+    )
+  override val pageQuery: ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     {
@@ -215,7 +219,10 @@ class PublicCase @Inject() (
           }
     }
   )
-  override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
+  override val outputQuery:
+    Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) =>
+      caseSteps.richCase(authContext)
+    )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Case], Traversal.V[Observable]]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
     Query[Traversal.V[Case], Traversal.V[Task]]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
@@ -238,7 +245,7 @@ class PublicCase @Inject() (
                   val namespace = UMapping.string.getProperty(v, "namespace")
                   val predicate = UMapping.string.getProperty(v, "predicate")
                   val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
+                  Tag(namespace, predicate, value, None, "#000000").toString
                 },
                 Converter.identity[String]
               )

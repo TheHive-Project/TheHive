@@ -98,6 +98,12 @@
                                 <span class="hpad5">Case custom fields</span>
                             </a>
                         </li>
+                        <li if-permission="manageTaxonomy">
+                            <a ui-sref="app.administration.taxonomies">
+                                <i class="fa fa-tags"></i>
+                                <span class="hpad5">Taxonomies</span>
+                            </a>
+                        </li>
                         <li if-permission="manageObservableTemplate">
                             <a ui-sref="app.administration.observables">
                                 <i class="glyphicon glyphicon-pushpin"></i>
