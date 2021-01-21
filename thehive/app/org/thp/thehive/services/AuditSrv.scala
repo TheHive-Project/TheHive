@@ -32,25 +32,27 @@ class AuditSrv @Inject() (
 )(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Audit] { auditSrv =>
   lazy val userSrv: UserSrv                                 = userSrvProvider.get
-  val auditUserSrv                                          = new EdgeSrv[AuditUser, Audit, User]
-  val auditedSrv                                            = new EdgeSrv[Audited, Audit, Product]
-  val auditContextSrv                                       = new EdgeSrv[AuditContext, Audit, Product]
-  val `case`                                                = new SelfContextObjectAudit[Case]
-  val task                                                  = new SelfContextObjectAudit[Task]
-  val observable                                            = new SelfContextObjectAudit[Observable]
-  val log                                                   = new ObjectAudit[Log, Task]
-  val caseTemplate                                          = new SelfContextObjectAudit[CaseTemplate]
-  val taskInTemplate                                        = new ObjectAudit[Task, CaseTemplate]
   val alert                                                 = new SelfContextObjectAudit[Alert]
   val alertToCase                                           = new ObjectAudit[Alert, Case]
-  val share                                                 = new ShareAudit
-  val observableInAlert                                     = new ObjectAudit[Observable, Alert]
-  val user                                                  = new UserAudit
-  val dashboard                                             = new SelfContextObjectAudit[Dashboard]
-  val organisation                                          = new SelfContextObjectAudit[Organisation]
-  val profile                                               = new SelfContextObjectAudit[Profile]
+  val auditedSrv                                            = new EdgeSrv[Audited, Audit, Product]
+  val auditContextSrv                                       = new EdgeSrv[AuditContext, Audit, Product]
+  val auditUserSrv                                          = new EdgeSrv[AuditUser, Audit, User]
+  val `case`                                                = new SelfContextObjectAudit[Case]
+  val caseTemplate                                          = new SelfContextObjectAudit[CaseTemplate]
   val customField                                           = new SelfContextObjectAudit[CustomField]
+  val dashboard                                             = new SelfContextObjectAudit[Dashboard]
+  val log                                                   = new ObjectAudit[Log, Task]
+  val observable                                            = new SelfContextObjectAudit[Observable]
+  val observableInAlert                                     = new ObjectAudit[Observable, Alert]
+  val organisation                                          = new SelfContextObjectAudit[Organisation]
   val page                                                  = new SelfContextObjectAudit[Page]
+  val pattern                                               = new SelfContextObjectAudit[Pattern]
+  val procedure                                             = new ObjectAudit[Procedure, Case]
+  val profile                                               = new SelfContextObjectAudit[Profile]
+  val share                                                 = new ShareAudit
+  val task                                                  = new SelfContextObjectAudit[Task]
+  val taskInTemplate                                        = new ObjectAudit[Task, CaseTemplate]
+  val user                                                  = new UserAudit
   private val pendingAuditsLock                             = new Object
   private val transactionAuditIdsLock                       = new Object
   private val unauditedTransactionsLock                     = new Object
@@ -173,7 +175,10 @@ class AuditSrv @Inject() (
     def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
 
-    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
       auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), Some(destination), Some(destination))
   }
 
@@ -186,7 +191,10 @@ class AuditSrv @Inject() (
       if (details == JsObject.empty) Success(())
       else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, details.map(_.toString())), Some(context), None)
   }
 

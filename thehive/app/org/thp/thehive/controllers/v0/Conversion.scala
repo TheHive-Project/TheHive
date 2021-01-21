@@ -344,6 +344,7 @@ object Conversion {
   implicit val reportTagWrites: Writes[ReportTag] = Writes[ReportTag] { tag =>
     Json.obj("level" -> tag.level.toString, "namespace" -> tag.namespace, "predicate" -> tag.predicate, "value" -> tag.value)
   }
+
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.toJson[RichObservable, OutputObservable](
     _.into[OutputObservable]
       .withFieldConst(_._type, "case_artifact")

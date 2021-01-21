@@ -37,6 +37,8 @@ class DescribeCtrl @Inject() (
     observableTypeCtrl: ObservableTypeCtrl,
     organisationCtrl: OrganisationCtrl,
 //    pageCtrl: PageCtrl,
+    patternCtrl: PatternCtrl,
+    procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
     taxonomyCtrl: TaxonomyCtrl,
@@ -108,6 +110,8 @@ class DescribeCtrl @Inject() (
         ),
         EntityDescription("organisation", "listOrganisation", organisationCtrl.publicProperties.list.flatMap(propertyToJson("organisation", _))),
         // EntityDescription("page", "listPage", pageCtrl.publicProperties.list.flatMap(propertyToJson("page", _)))
+        EntityDescription("pattern", "listPattern", patternCtrl.publicProperties.list.flatMap(propertyToJson("pattern", _))),
+        EntityDescription("procedure", "listProcedure", procedureCtrl.publicProperties.list.flatMap(propertyToJson("procedure", _))),
         EntityDescription("profile", "listProfile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _))),
         EntityDescription("task", "listTask", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
         EntityDescription("taxonomy", "listTaxonomy", taxonomyCtrl.publicProperties.list.flatMap(propertyToJson("taxonomy", _))),

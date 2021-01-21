@@ -77,6 +77,9 @@ case class CaseUser()
 @BuildEdgeEntity[Case, CaseTemplate]
 case class CaseCaseTemplate()
 
+@BuildEdgeEntity[Case, Procedure]
+case class CaseProcedure()
+
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "number")
 //@DefineIndex(IndexType.fulltext, "title")

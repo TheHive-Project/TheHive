@@ -1,15 +1,11 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Long => JLong}
-import java.util.Date
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
-import org.thp.scalligraph.{RichSeq, _}
+import org.thp.scalligraph._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
@@ -24,6 +20,8 @@ import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.util.Date
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
 @Singleton
@@ -195,9 +193,7 @@ class PublicCase @Inject() (
     with CaseRenderer {
   override val entityName: String = "case"
   override val initialQuery: Query =
-    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) =>
-      organisationSrv.get(authContext.organisation)(graph).cases
-    )
+    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
   override val getQuery: ParamQuery[EntityIdOrName] =
     Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
       "getCase",
@@ -206,23 +202,20 @@ class PublicCase @Inject() (
     )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
-    "page",
-    FieldsParser[OutputParam],
-    {
-      case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
-        caseSteps
-          .richPage(from, to, withTotal = true) {
-            case c if withStats =>
-              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext))(authContext)
-            case c =>
-              c.richCase(authContext).domainMap(_ -> JsObject.empty)
-          }
-    }
-  )
-  override val outputQuery:
-    Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) =>
-      caseSteps.richCase(authContext)
+      "page",
+      FieldsParser[OutputParam],
+      {
+        case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
+          caseSteps
+            .richPage(from, to, withTotal = true) {
+              case c if withStats =>
+                c.richCaseWithCustomRenderer(caseStatsRenderer(authContext))(authContext)
+              case c =>
+                c.richCase(authContext).domainMap(_ -> JsObject.empty)
+            }
+      }
     )
+  override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Case], Traversal.V[Observable]]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
     Query[Traversal.V[Case], Traversal.V[Task]]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
@@ -335,7 +328,7 @@ class PublicCase @Inject() (
                 case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
                 case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
               }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
+              .getOrElse((x: JsValue) => x)
           case _ => (x: JsValue) => x
         }
         .custom {

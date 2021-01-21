@@ -1,0 +1,12 @@
+[
+  {
+    "id": "testProcedure1",
+    "description": "The testProcedure 1",
+    "occurence": 1531667370000
+  },
+  {
+    "id": "testProcedure2",
+    "description": "The testProcedure 2",
+    "occurence": 1531667370000
+  }
+]

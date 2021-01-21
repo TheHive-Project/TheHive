@@ -23,6 +23,8 @@ class Router @Inject() (
     organisationCtrl: OrganisationCtrl,
     // pageCtrl: PageCtrl,
     // permissionCtrl: PermissionCtrl,
+    patternCtrl: PatternCtrl,
+    procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
     shareCtrl: ShareCtrl,
@@ -31,7 +33,7 @@ class Router @Inject() (
     userCtrl: UserCtrl,
     statusCtrl: StatusCtrl
     // streamCtrl: StreamCtrl,
-    // tagCtrl: TagCtrl
+    // tagCtrl: TagCtrl,
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -135,10 +137,19 @@ class Router @Inject() (
     case DELETE(p"/taxonomy/$taxoId")         => taxonomyCtrl.delete(taxoId)
 
     case GET(p"/audit") => auditCtrl.flow
-//      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
-//    GET      /audit                               controllers.AuditCtrl.find()
-//    POST     /audit/_search                       controllers.AuditCtrl.find()
-//    POST     /audit/_stats                        controllers.AuditCtrl.stats()
+    // GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
+    // GET      /audit                               controllers.AuditCtrl.find()
+    // POST     /audit/_search                       controllers.AuditCtrl.find()
+    // POST     /audit/_stats                        controllers.AuditCtrl.stats()
+
+    case POST(p"/pattern/import/attack") => patternCtrl.importMitre
+    case GET(p"/pattern/$patternId")     => patternCtrl.get(patternId)
+    case GET(p"/pattern/case/$caseId")   => patternCtrl.getCasePatterns(caseId)
+    case DELETE(p"/pattern/$patternId")  => patternCtrl.delete(patternId)
+
+    case POST(p"/procedure")                => procedureCtrl.create
+    case GET(p"/procedure/$procedureId")    => procedureCtrl.get(procedureId)
+    case DELETE(p"/procedure/$procedureId") => procedureCtrl.delete(procedureId)
 
     case POST(p"/profile")              => profileCtrl.create
     case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)

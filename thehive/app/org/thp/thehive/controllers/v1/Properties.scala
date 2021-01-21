@@ -16,15 +16,14 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
-import java.lang.{Long => JLong}
 import java.util.Date
 import javax.inject.{Inject, Named, Singleton}
 import scala.util.Failure
@@ -336,6 +335,25 @@ class Properties @Inject() (
     PublicPropertyListBuilder[Organisation]
       .property("name", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string)(_.field.updatable)
+      .build
+
+  lazy val pattern: PublicProperties =
+    PublicPropertyListBuilder[Pattern]
+      .property("patternId", UMapping.string)(_.field.readonly)
+      .property("name", UMapping.string)(_.field.readonly)
+      .property("description", UMapping.string.optional)(_.field.updatable)
+      .property("tactics", UMapping.string.set)(_.field.readonly)
+      .property("url", UMapping.string)(_.field.updatable)
+      .property("patternType", UMapping.string)(_.field.readonly)
+      .property("platforms", UMapping.string.sequence)(_.field.readonly)
+      .property("dataSources", UMapping.string.sequence)(_.field.readonly)
+      .property("version", UMapping.string.optional)(_.field.readonly)
+      .build
+
+  lazy val procedure: PublicProperties =
+    PublicPropertyListBuilder[Procedure]
+      .property("description", UMapping.string)(_.field.updatable)
+      .property("occurence", UMapping.date)(_.field.readonly)
       .build
 
   lazy val profile: PublicProperties =

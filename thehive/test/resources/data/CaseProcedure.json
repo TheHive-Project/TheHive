@@ -1,0 +1,4 @@
+[
+  {"from": "case1", "to": "testProcedure1"},
+  {"from": "case1", "to": "testProcedure2"}
+]
