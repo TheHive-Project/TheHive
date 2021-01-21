@@ -52,8 +52,20 @@ class TaskCtrl @Inject() (
     Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, _) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[Task]](
+      "waitingTasks",
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(organisationSrv)(authContext)
+    ),
+    Query.init[Traversal.V[Task]]( // DEPRECATED
       "waitingTask",
-      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(authContext)
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(organisationSrv)(authContext)
+    ),
+    Query.init[Traversal.V[Task]](
+      "myTasks",
+      (graph, authContext) =>
+        taskSrv
+          .startTraversal(graph)
+          .assignTo(authContext.userId)
+          .visible(organisationSrv)(authContext)
     ),
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),

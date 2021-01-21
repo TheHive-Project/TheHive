@@ -79,7 +79,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         });
 
         StreamQuerySrv('v1', [
-            {_name: 'waitingTask'},
+            {_name: 'waitingTasks'},
             {_name: 'count'}
         ], {
             scope: $scope,

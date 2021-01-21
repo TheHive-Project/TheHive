@@ -125,8 +125,22 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
     Query.output[(RichTask, Option[RichCase])],
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query.init[Traversal.V[Task]](
+      "waitingTasks",
+      (graph, authContext) =>
+        taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).inOrganisation(organisationSrv.currentId(graph, authContext))
+    ),
+    Query.init[Traversal.V[Task]]( // DEPRECATED
       "waitingTask",
-      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(authContext)
+      (graph, authContext) =>
+        taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).inOrganisation(organisationSrv.currentId(graph, authContext))
+    ),
+    Query.init[Traversal.V[Task]](
+      "myTasks",
+      (graph, authContext) =>
+        taskSrv
+          .startTraversal(graph)
+          .assignTo(authContext.userId)
+          .inOrganisation(organisationSrv.currentId(graph, authContext))
     ),
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
     Query[Traversal.V[Task], Traversal.V[Case]]("case", (taskSteps, _) => taskSteps.`case`),
