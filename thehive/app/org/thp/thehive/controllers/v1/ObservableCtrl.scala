@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.io.FilterInputStream
-import java.nio.file.Files
-import javax.inject.{Inject, Named, Singleton}
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._

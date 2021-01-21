@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
@@ -18,6 +19,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -63,12 +65,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -177,12 +174,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -308,12 +300,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -450,12 +437,7 @@ class Properties @Inject() (
             cases
               .tags
               .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, 0).toString
-                },
+                vertexToTag,
                 Converter.identity[String]
               )
           )
@@ -477,4 +459,20 @@ class Properties @Inject() (
       .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
       .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
+
+  lazy val taxonomy: PublicProperties =
+    PublicPropertyListBuilder[Taxonomy]
+      .property("namespace", UMapping.string)(_.field.readonly)
+      .property("description", UMapping.string)(_.field.readonly)
+      .property("version", UMapping.int)(_.field.readonly)
+      .property("enabled", UMapping.boolean)(_.select(_.enabled).readonly)
+      .build
+
+  private def vertexToTag: Vertex => String = { v =>
+    val namespace = UMapping.string.getProperty(v, "namespace")
+    val predicate = UMapping.string.getProperty(v, "predicate")
+    val value     = UMapping.string.optional.getProperty(v, "value")
+    Tag(namespace, predicate, value, None, "#000000").toString
+  }
+
 }

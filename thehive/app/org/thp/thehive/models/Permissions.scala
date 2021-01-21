@@ -21,6 +21,7 @@ object Permissions extends Perms {
   lazy val manageProfile: PermissionDesc            = PermissionDesc("manageProfile", "Manage user profiles", "admin")
   lazy val manageShare: PermissionDesc              = PermissionDesc("manageShare", "Manage shares", "organisation")
   lazy val manageTag: PermissionDesc                = PermissionDesc("manageTag", "Manage tags", "admin")
+  lazy val manageTaxonomy: PermissionDesc           = PermissionDesc("manageTaxonomy", "Manage taxonomies", "admin")
   lazy val manageTask: PermissionDesc               = PermissionDesc("manageTask", "Manage tasks", "organisation")
   lazy val manageUser: PermissionDesc               = PermissionDesc("manageUser", "Manage users", "organisation", "admin")
 
@@ -45,6 +46,7 @@ object Permissions extends Perms {
       manageShare,
       manageTag,
       manageTask,
+      manageTaxonomy,
       manageUser
     )
 

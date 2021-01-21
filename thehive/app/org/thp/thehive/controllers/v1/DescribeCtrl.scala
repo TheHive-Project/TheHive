@@ -41,6 +41,7 @@ class DescribeCtrl @Inject() (
     procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
+    taxonomyCtrl: TaxonomyCtrl,
     userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     impactStatusSrv: ImpactStatusSrv,
@@ -113,6 +114,7 @@ class DescribeCtrl @Inject() (
         EntityDescription("procedure", "listProcedure", procedureCtrl.publicProperties.list.flatMap(propertyToJson("procedure", _))),
         EntityDescription("profile", "listProfile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _))),
         EntityDescription("task", "listTask", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
+        EntityDescription("taxonomy", "listTaxonomy", taxonomyCtrl.publicProperties.list.flatMap(propertyToJson("taxonomy", _))),
         EntityDescription("user", "listUser", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _)))
       ) ++ describeCortexEntity("job", "listJob", "JobCtrl") ++
         describeCortexEntity("action", "listAction", "ActionCtrl")

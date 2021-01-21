@@ -5,6 +5,7 @@ import java.util.Date
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
+import org.thp.thehive.dto.v1.{InputTaxonomy, OutputTaxonomy}
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -250,6 +251,41 @@ object Conversion {
         .withFieldConst(_.extraData, taskWithExtraData._2)
         .transform
     }
+
+  implicit class InputTaxonomyOps(inputTaxonomy: InputTaxonomy) {
+
+    def toTaxonomy: Taxonomy =
+      inputTaxonomy
+        .into[Taxonomy]
+        .transform
+  }
+
+  implicit val taxonomyOutput: Renderer.Aux[RichTaxonomy, OutputTaxonomy] =
+    Renderer.toJson[RichTaxonomy, OutputTaxonomy](
+      _.into[OutputTaxonomy]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Taxonomy")
+        .withFieldComputed(_.tags, _.tags.map(_.toOutput))
+        .withFieldConst(_.extraData, JsObject.empty)
+        .transform
+    )
+
+  implicit val taxonomyWithStatsOutput: Renderer.Aux[(RichTaxonomy, JsObject), OutputTaxonomy] =
+    Renderer.toJson[(RichTaxonomy, JsObject), OutputTaxonomy] { taxoWithExtraData =>
+      taxoWithExtraData._1
+        .into[OutputTaxonomy]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Taxonomy")
+        .withFieldComputed(_.tags, _.tags.map(_.toOutput))
+        .withFieldConst(_.extraData, taxoWithExtraData._2)
+        .transform
+    }
+
+  implicit val tagOutput: Renderer.Aux[Tag, OutputTag] =
+    Renderer.toJson[Tag, OutputTag](
+      _.into[OutputTag]
+        .transform
+    )
 
   implicit class InputUserOps(inputUser: InputUser) {
 

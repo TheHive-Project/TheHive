@@ -44,6 +44,7 @@ class DatabaseBuilder @Inject() (
     shareSrv: ShareSrv,
     tagSrv: TagSrv,
     taskSrv: TaskSrv,
+    taxonomySrv: TaxonomySrv,
     userSrv: UserSrv,
     integrityChecks: Set[GenIntegrityCheckOps]
 ) {
@@ -87,10 +88,14 @@ class DatabaseBuilder @Inject() (
               createVertex(shareSrv, FieldsParser[Share]) ++
               createVertex(tagSrv, FieldsParser[Tag]) ++
               createVertex(taskSrv, FieldsParser[Task]) ++
+              createVertex(taxonomySrv, FieldsParser[Taxonomy]) ++
               createVertex(userSrv, FieldsParser[User])
 
           createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
           createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
+          createEdge(organisationSrv.organisationTaxonomySrv, organisationSrv, taxonomySrv, FieldsParser[OrganisationTaxonomy], idMap)
+
+          createEdge(taxonomySrv.taxonomyTagSrv, taxonomySrv, tagSrv, FieldsParser[TaxonomyTag], idMap)
 
           createEdge(roleSrv.userRoleSrv, userSrv, roleSrv, FieldsParser[UserRole], idMap)
 

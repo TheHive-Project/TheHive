@@ -8,7 +8,7 @@ steps:
   - name: submodules
     image: alpine/git
     commands:
-      - git submodule update --recursive --init --remote
+      - git submodule update --recursive --init
 
   # Restore cache of downloaded dependencies
   - name: restore-cache
