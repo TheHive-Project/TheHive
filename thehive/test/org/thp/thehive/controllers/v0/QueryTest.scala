@@ -25,9 +25,7 @@ class QueryTest extends PlaySpecification with Mockito {
     mock[Database],
     mock[TaskSrv],
     mock[CaseSrv],
-    mock[UserSrv],
     mock[OrganisationSrv],
-    mock[ShareSrv],
     queryExecutor,
     publicTask
   )

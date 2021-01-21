@@ -27,8 +27,8 @@ class Connector @Inject() (appConfig: ApplicationConfig, system: ActorSystem, ma
   def attributeConverter(attributeCategory: String, attributeType: String): Option[AttributeConverter] =
     attributeConvertersConfig.get.reverseIterator.find(a => a.mispCategory == attributeCategory && a.mispType == attributeType)
 
-  def attributeConverter(`type`: ObservableType): Option[(String, String)] =
-    attributeConvertersConfig.get.reverseIterator.find(_.`type`.value == `type`.name).map(a => a.mispCategory -> a.mispType)
+  def attributeConverter(observableType: String): Option[(String, String)] =
+    attributeConvertersConfig.get.reverseIterator.find(_.`type`.value == observableType).map(a => a.mispCategory -> a.mispType)
 
   val syncIntervalConfig: ConfigItem[FiniteDuration, FiniteDuration] = appConfig.item[FiniteDuration]("misp.syncInterval", "")
   def syncInterval: FiniteDuration                                   = syncIntervalConfig.get

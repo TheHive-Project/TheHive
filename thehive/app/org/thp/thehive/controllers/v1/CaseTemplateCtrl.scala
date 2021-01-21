@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -15,6 +14,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
 @Singleton
@@ -51,11 +51,12 @@ class CaseTemplateCtrl @Inject() (
       .extract("caseTemplate", FieldsParser[InputCaseTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
+        val tasks                                = inputCaseTemplate.tasks.map(_.toTask)
+        val customFields                         = inputCaseTemplate.customFieldValue.map(cf => cf.name -> cf.value)
+
         for {
-          organisation <- organisationSrv.current.getOrFail("Organisation")
-          tasks        = inputCaseTemplate.tasks.map(_.toTask -> None)
-          customFields = inputCaseTemplate.customFieldValue.map(cf => cf.name -> cf.value)
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, inputCaseTemplate.tags, tasks, customFields)
+          organisation     <- organisationSrv.current.getOrFail("Organisation")
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, customFields)
         } yield Results.Created(richCaseTemplate.toJson)
       }
 

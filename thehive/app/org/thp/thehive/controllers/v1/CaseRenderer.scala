@@ -53,24 +53,28 @@ trait CaseRenderer extends BaseRenderer[Case] {
   def shareCountStats: Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
     _.organisations.count.domainMap(c => JsNumber(c - 1))
 
-  def permissions(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Vertex, Converter[JsValue, Vertex]] =
+  def permissions(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JList[String], Converter[JsValue, JList[String]]] =
     _.userPermissions.domainMap(permissions => Json.toJson(permissions))
 
   def actionRequired(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Boolean, Converter[JsValue, Boolean]] =
     _.isActionRequired.domainMap(JsBoolean(_))
 
-  def caseStatsRenderer(extraData: Set[String])(
-    implicit authContext: AuthContext
+  def caseStatsRenderer(extraData: Set[String])(implicit
+      authContext: AuthContext
   ): Traversal.V[Case] => JsTraversal = { implicit traversal =>
-    baseRenderer(extraData, traversal, {
-      case (f, "observableStats") => addData("observableStats", f)(observableStats)
-      case (f, "taskStats")       => addData("taskStats", f)(taskStats)
-      case (f, "alerts")          => addData("alerts", f)(alertStats)
-      case (f, "isOwner")         => addData("isOwner", f)(isOwnerStats)
-      case (f, "shareCount")      => addData("shareCount", f)(shareCountStats)
-      case (f, "permissions")     => addData("permissions", f)(permissions)
-      case (f, "actionRequired")  => addData("actionRequired", f)(actionRequired)
-      case (f, _)                 => f
-    })
+    baseRenderer(
+      extraData,
+      traversal,
+      {
+        case (f, "observableStats") => addData("observableStats", f)(observableStats)
+        case (f, "taskStats")       => addData("taskStats", f)(taskStats)
+        case (f, "alerts")          => addData("alerts", f)(alertStats)
+        case (f, "isOwner")         => addData("isOwner", f)(isOwnerStats)
+        case (f, "shareCount")      => addData("shareCount", f)(shareCountStats)
+        case (f, "permissions")     => addData("permissions", f)(permissions)
+        case (f, "actionRequired")  => addData("actionRequired", f)(actionRequired)
+        case (f, _)                 => f
+      }
+    )
   }
 }

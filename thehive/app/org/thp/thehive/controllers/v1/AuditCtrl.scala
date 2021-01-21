@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Schema}
@@ -10,9 +9,10 @@ import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.{Audit, RichAudit}
 import org.thp.thehive.services.AuditOps._
-import org.thp.thehive.services.AuditSrv
+import org.thp.thehive.services.{AuditSrv, OrganisationSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
 @Singleton
@@ -21,18 +21,19 @@ class AuditCtrl @Inject() (
     db: Database,
     properties: Properties,
     auditSrv: AuditSrv,
+    organisationSrv: OrganisationSrv,
     implicit val schema: Schema
 ) extends QueryableCtrl {
 
   val entityName: String = "audit"
 
   val initialQuery: Query =
-    Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(authContext))
+    Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(organisationSrv)(authContext))
   val publicProperties: PublicProperties = properties.audit
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
     FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
 
   val pageQuery: ParamQuery[OutputParam] =
@@ -48,7 +49,7 @@ class AuditCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         val audits = auditSrv
           .startTraversal
-          .visible
+          .visible(organisationSrv)
           .range(0, 10)
           .richAudit
           .toSeq

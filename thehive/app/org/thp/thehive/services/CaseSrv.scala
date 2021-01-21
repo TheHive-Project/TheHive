@@ -1,46 +1,51 @@
 package org.thp.thehive.services
 
-import java.util.{Date, Map => JMap}
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.controllers.FPathElem
+import org.thp.scalligraph.controllers.{FFile, FPathElem}
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
-import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
-import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
+import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services.UserOps._
+import play.api.cache.SyncCacheApi
 import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
+import java.util.{Date, List => JList, Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CaseSrv @Inject() (
     tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,
-    userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
+    caseTemplateSrv: CaseTemplateSrv,
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
     taskSrv: TaskSrv,
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     impactStatusSrv: ImpactStatusSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+    observableSrv: ObservableSrv,
+    attachmentSrv: AttachmentSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    cache: SyncCacheApi
 ) extends VertexSrv[Case] {
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
@@ -59,24 +64,31 @@ class CaseSrv @Inject() (
 
   def create(
       `case`: Case,
-      user: Option[User with Entity],
+      assignee: Option[User with Entity],
       organisation: Organisation with Entity,
-      tags: Set[Tag with Entity],
       customFields: Seq[InputCustomFieldValue],
       caseTemplate: Option[RichCaseTemplate],
-      additionalTasks: Seq[(Task, Option[User with Entity])]
-  )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
+      additionalTasks: Seq[Task]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
+    val tags       = (`case`.tags ++ caseTemplate.fold[Seq[String]](Nil)(_.tags)).distinct
+    val caseNumber = if (`case`.number == 0) nextCaseNumber else `case`.number
     for {
-      createdCase <- createEntity(if (`case`.number == 0) `case`.copy(number = nextCaseNumber) else `case`)
-      assignee    <- user.fold(userSrv.current.getOrFail("User"))(Success(_))
-      _           <- caseUserSrv.create(CaseUser(), createdCase, assignee)
-      _           <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
-      _           <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
-
-      createdTasks <- caseTemplate.fold(additionalTasks)(_.tasks.map(t => t.task -> t.assignee)).toTry {
-        case (task, owner) => taskSrv.create(task, owner)
-      }
-      _ <- createdTasks.toTry(t => shareSrv.shareTask(t, createdCase, organisation))
+      createdCase <- createEntity(
+        `case`.copy(
+          number = caseNumber,
+          assignee = assignee.map(_.login),
+          organisationIds = Seq(organisation._id),
+          caseTemplate = caseTemplate.map(_.name),
+          impactStatus = None,
+          resolutionStatus = None,
+          tags = tags
+        )
+      )
+      _            <- assignee.map(u => caseUserSrv.create(CaseUser(), createdCase, u)).flip
+      _            <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
+      _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
+      _            <- caseTemplate.fold(additionalTasks)(_.tasks.map(_.task) ++ additionalTasks).toTry(task => createTask(createdCase, task))
+      caseTemplate <- `case`.caseTemplate.map(caseTemplateSrv.getByName(_).richCaseTemplate.getOrFail("CaseTemplate")).flip
 
       caseTemplateCf =
         caseTemplate
@@ -86,13 +98,13 @@ class CaseSrv @Inject() (
         case InputCustomFieldValue(name, value, order) => createCustomField(createdCase, EntityIdOrName(name), value, order)
       }
 
-      caseTemplateTags = caseTemplate.fold[Seq[Tag with Entity]](Nil)(_.tags)
-      allTags          = tags ++ caseTemplateTags
-      _ <- allTags.toTry(t => caseTagSrv.create(CaseTag(), createdCase, t))
-
-      richCase = RichCase(createdCase, allTags.toSeq, None, None, Some(assignee.login), cfs, authContext.permissions)
+      richCase = RichCase(createdCase, cfs, authContext.permissions)
       _ <- auditSrv.`case`.create(createdCase, richCase.toJson)
     } yield richCase
+  }
+
+  def caseId(idOrName: EntityIdOrName)(implicit graph: Graph): EntityId =
+    idOrName.fold(identity, oid => cache.getOrElseUpdate(s"case-$oid")(getByName(oid)._id.getOrFail("Case").get))
 
   private def cleanCustomFields(caseTemplateCf: Seq[InputCustomFieldValue], caseCf: Seq[InputCustomFieldValue]): Seq[InputCustomFieldValue] = {
     val uniqueFields = caseTemplateCf.filter {
@@ -118,8 +130,8 @@ class CaseSrv @Inject() (
         .or(_.has(_.status, TaskStatus.Waiting), _.has(_.status, TaskStatus.InProgress))
         .toIterator
         .toTry {
-          case task if task.status == TaskStatus.InProgress => taskSrv.updateStatus(task, null, TaskStatus.Completed)
-          case task                                         => taskSrv.updateStatus(task, null, TaskStatus.Cancel)
+          case task if task.status == TaskStatus.InProgress => taskSrv.updateStatus(task, TaskStatus.Completed)
+          case task                                         => taskSrv.updateStatus(task, TaskStatus.Cancel)
         }
         .flatMap { _ =>
           vertex.property("endDate", System.currentTimeMillis())
@@ -139,53 +151,73 @@ class CaseSrv @Inject() (
     }
   }
 
-  def updateTagNames(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(`case`, t.toSet))
-
-  def updateTags(`case`: Case with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val (tagsToAdd, tagsToRemove) = get(`case`)
-      .tags
-      .toIterator
-      .foldLeft((tags, Set.empty[Tag with Entity])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove)
-        case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
-      }
-    for {
-      _ <- tagsToAdd.toTry(caseTagSrv.create(CaseTag(), `case`, _))
-      _ = get(`case`).removeTags(tagsToRemove)
-      _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags.map(_.toString)))
-    } yield ()
-  }
-
-  def addTags(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val currentTags = get(`case`)
-      .tags
-      .toSeq
-      .map(_.toString)
-      .toSet
-    for {
-      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate)
-      _           <- createdTags.toTry(caseTagSrv.create(CaseTag(), `case`, _))
-      _           <- auditSrv.`case`.update(`case`, Json.obj("tags" -> (currentTags ++ tags)))
-    } yield ()
-  }
-
-  def addObservable(`case`: Case with Entity, richObservable: RichObservable)(implicit
+  def updateTags(`case`: Case with Entity, tags: Set[String])(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[Unit] = {
-    val alreadyExistInThatCase = richObservable
-      .data
-      .fold(false)(data => get(`case`).observables.data.has(_.data, data.data).exists)
+  ): Try[(Seq[Tag with Entity], Seq[Tag with Entity])] =
+    for {
+      tagsToAdd    <- (tags -- `case`.tags).toTry(tagSrv.getOrCreate)
+      tagsToRemove <- (`case`.tags.toSet -- tags).toTry(tagSrv.getOrCreate)
+      _            <- tagsToAdd.toTry(caseTagSrv.create(CaseTag(), `case`, _))
+      _ = if (tags.nonEmpty) get(`case`).outE[AlertTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ <- get(`case`).update(_.tags, tags).getOrFail("Alert")
+      _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags))
+    } yield (tagsToAdd, tagsToRemove)
 
-    if (alreadyExistInThatCase)
+  def addTags(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    updateTags(`case`, tags ++ `case`.tags).map(_ => ())
+
+  def createTask(`case`: Case with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
+    for {
+      assignee <- task.assignee.map(u => get(`case`).assignableUsers.getByName(u).getOrFail("User")).flip
+      task     <- taskSrv.create(task.copy(relatedId = `case`._id, organisationIds = Seq(organisationSrv.currentId)), assignee)
+      _        <- shareSrv.shareTask(task, `case`, organisationSrv.currentId)
+    } yield task
+
+  def createObservable(`case`: Case with Entity, observable: Observable, data: String)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] = {
+    val alreadyExists = observableSrv
+      .startTraversal
+      .has(_.organisationIds, organisationSrv.currentId)
+      .has(_.relatedId, `case`._id)
+      .has(_.data, data)
+      .exists
+    if (alreadyExists)
       Failure(CreateError("Observable already exists"))
     else
       for {
-        organisation <- organisationSrv.getOrFail(authContext.organisation)
-        _            <- shareSrv.shareObservable(richObservable, `case`, organisation)
-      } yield ()
+        createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), data)
+        _                 <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
+      } yield createdObservable
   }
+
+  def createObservable(`case`: Case with Entity, observable: Observable, attachment: Attachment with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] = {
+    val alreadyExists = observableSrv
+      .startTraversal
+      .has(_.organisationIds, organisationSrv.currentId)
+      .has(_.relatedId, `case`._id)
+      .has(_.attachmentId, attachment.attachmentId)
+      .exists
+    if (alreadyExists)
+      Failure(CreateError("Observable already exists"))
+    else
+      for {
+        createdObservable <-
+          observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), attachment)
+        _ <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
+      } yield createdObservable
+  }
+
+  def createObservable(`case`: Case with Entity, observable: Observable, file: FFile)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
+    attachmentSrv.create(file).flatMap(attachment => createObservable(`case`, observable, attachment))
 
   def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val details = Json.obj("number" -> `case`.number, "title" -> `case`.title)
@@ -199,7 +231,7 @@ class CaseSrv @Inject() (
   }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Case] =
-    Try(startTraversal.getByNumber(name.toInt)).getOrElse(startTraversal.limit(0))
+    Try(startTraversal.getByNumber(name.toInt)).getOrElse(startTraversal.empty)
 
   def getCustomField(`case`: Case with Entity, customFieldIdOrName: EntityIdOrName)(implicit graph: Graph): Option[RichCustomField] =
     get(`case`).customFields(customFieldIdOrName).richCustomField.headOption
@@ -252,13 +284,13 @@ class CaseSrv @Inject() (
       `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).unsetImpactStatus()
+    get(`case`).update(_.impactStatus, impactStatus).outE[CaseImpactStatus].remove()
     caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
     auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> impactStatus.value))
   }
 
   def unsetImpactStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).unsetImpactStatus()
+    get(`case`).update(_.impactStatus, None).outE[CaseImpactStatus].remove()
     auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> JsNull))
   }
 
@@ -272,24 +304,24 @@ class CaseSrv @Inject() (
       `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).unsetResolutionStatus()
+    get(`case`).update(_.resolutionStatus, resolutionStatus).outE[CaseResolutionStatus].remove()
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
     auditSrv.`case`.update(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value))
   }
 
   def unsetResolutionStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).unsetResolutionStatus()
+    get(`case`).update(_.resolutionStatus, None).outE[CaseResolutionStatus].remove()
     auditSrv.`case`.update(`case`, Json.obj("resolutionStatus" -> JsNull))
   }
 
   def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).unassign()
+    get(`case`).update(_.assignee, user.login).outE[CaseUser].remove()
     caseUserSrv.create(CaseUser(), `case`, user)
     auditSrv.`case`.update(`case`, Json.obj("owner" -> user.login))
   }
 
   def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).unassign()
+    get(`case`).update(_.assignee, None).outE[CaseUser].remove()
     auditSrv.`case`.update(`case`, Json.obj("owner" -> JsNull))
   }
 
@@ -359,27 +391,24 @@ object CaseOps {
 
     def getByNumber(caseNumber: Int): Traversal.V[Case] = traversal.has(_.number, caseNumber)
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Case] = visible(authContext.organisation)
-
-    def visible(organisationIdOrName: EntityIdOrName): Traversal.V[Case] =
-      organisationIdOrName.fold(
-        orgId => traversal.has(_.organisationIds, orgId),
-        orgName => {
-          logger.warn(s"Organisation ID is not available, queries become slow")
-          traversal.filter(_.organisations.getByName(orgName))
-        }
-      )
+    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Case] =
+      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
 
     def assignee: Traversal.V[User] = traversal.out[CaseUser].v[User]
 
+    def assignedTo(userLogin: String*): Traversal.V[Case] =
+      if (userLogin.isEmpty) traversal.empty
+      else if (userLogin.size == 1) traversal.has(_.assignee, userLogin.head)
+      else traversal.has(_.assignee, P.within(userLogin: _*))
+
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Case] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(_.shares.filter(_.profile.has(_.permissions, permission)).organisation.current)
+        traversal.filter(_.share.profile.has(_.permissions, permission))
       else
-        traversal.limit(0)
+        traversal.empty
 
     def getLast: Traversal.V[Case] =
-      traversal.sort(_.by("number", Order.desc))
+      traversal.sort(_.by("number", Order.desc)).limit(1)
 
     def richCaseWithCustomRenderer[D, G, C <: Converter[D, G]](
         entityRenderer: Traversal.V[Case] => Traversal[D, G, C]
@@ -387,22 +416,14 @@ object CaseOps {
       traversal
         .project(
           _.by
-            .by(_.tags.v[Tag].fold)
-            .by(_.impactStatus.value(_.value).fold)
-            .by(_.resolutionStatus.value(_.value).fold)
-            .by(_.assignee.value(_.login).fold)
             .by(_.richCustomFields.fold)
             .by(entityRenderer)
             .by(_.userPermissions)
         )
         .domainMap {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, renderedEntity, userPermissions) =>
+          case (caze, customFields, renderedEntity, userPermissions) =>
             RichCase(
               caze,
-              tags,
-              impactStatus.headOption,
-              resolutionStatus.headOption,
-              user.headOption,
               customFields,
               userPermissions
             ) -> renderedEntity
@@ -437,7 +458,7 @@ object CaseOps {
           case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.map(_.as[Int])))
           case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.map(_.as[String])))
         }
-        .getOrElse(traversal.limit(0))
+        .getOrElse(traversal.empty)
 
     def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] = {
       val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
@@ -453,7 +474,7 @@ object CaseOps {
           case CustomFieldType.integer => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.integerValue).inV.v[CustomField]))
           case CustomFieldType.string  => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.stringValue).inV.v[CustomField]))
         }
-        .getOrElse(traversal.limit(0))
+        .getOrElse(traversal.empty)
     }
 
     def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] = {
@@ -470,7 +491,7 @@ object CaseOps {
           case CustomFieldType.integer => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.integerValue).inV.v[CustomField]))
           case CustomFieldType.string  => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.stringValue).inV.v[CustomField]))
         }
-        .getOrElse(traversal.limit(0))
+        .getOrElse(traversal.empty)
     }
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
@@ -485,39 +506,25 @@ object CaseOps {
     def organisations(permission: Permission): Traversal.V[Organisation] =
       shares.filter(_.profile.has(_.permissions, permission)).organisation
 
-    def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Vertex, Converter[Set[Permission], Vertex]] =
+    def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], JList[String], Converter[Set[Permission], JList[String]]] =
       traversal
         .share(authContext.organisation)
         .profile
-        .domainMap(profile => profile.permissions & authContext.permissions)
+        .value(_.permissions)
+        .fold
+        .domainMap(_.toSet & authContext.permissions)
 
     def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
-    def audits(implicit authContext: AuthContext): Traversal.V[Audit] = audits(authContext.organisation)
-
-    def audits(organisationIdOrName: EntityIdOrName): Traversal.V[Audit] =
-      traversal
-        .unionFlat(_.visible(organisationIdOrName), _.observables(organisationIdOrName), _.tasks(organisationIdOrName), _.share(organisationIdOrName))
-        .in[AuditContext]
-        .v[Audit]
-
-    // Warning: this method doesn't generate audit log
-    def unassign(): Unit =
-      traversal.outE[CaseUser].remove()
-
-    def unsetResolutionStatus(): Unit =
-      traversal.outE[CaseResolutionStatus].remove()
-
-    def unsetImpactStatus(): Unit =
-      traversal.outE[CaseImpactStatus].remove()
-
-    def removeTags(tags: Set[Tag with Entity]): Unit =
-      if (tags.nonEmpty)
-        traversal.outE[CaseTag].filter(_.otherV.hasId(tags.map(_._id).toSeq: _*)).remove()
+//    def audits(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Audit] =
+//      traversal
+//        .unionFlat(_.visible(organisationSrv), _.observables(organisationIdOrName), _.tasks(organisationIdOrName), _.share(organisationIdOrName))
+//        .in[AuditContext]
+//        .v[Audit]
 
     def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
       val originCaseLabel = StepLabel.v[Case]
-      val observableLabel = StepLabel.v[Observable]
+      val observableLabel = StepLabel.v[Observable] // TODO add similarity on attachment
       traversal
         .as(originCaseLabel)
         .observables
@@ -540,21 +547,13 @@ object CaseOps {
       traversal
         .project(
           _.by
-            .by(_.tags.fold)
-            .by(_.impactStatus.value(_.value).fold)
-            .by(_.resolutionStatus.value(_.value).fold)
-            .by(_.assignee.value(_.login).fold)
             .by(_.richCustomFields.fold)
             .by(_.userPermissions)
         )
         .domainMap {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields, userPermissions) =>
+          case (caze, customFields, userPermissions) =>
             RichCase(
               caze,
-              tags,
-              impactStatus.headOption,
-              resolutionStatus.headOption,
-              user.headOption,
               customFields,
               userPermissions
             )
@@ -566,20 +565,12 @@ object CaseOps {
       traversal
         .project(
           _.by
-            .by(_.tags.fold)
-            .by(_.impactStatus.value(_.value).fold)
-            .by(_.resolutionStatus.value(_.value).fold)
-            .by(_.assignee.value(_.login).fold)
             .by(_.richCustomFields.fold)
         )
         .domainMap {
-          case (caze, tags, impactStatus, resolutionStatus, user, customFields) =>
+          case (caze, customFields) =>
             RichCase(
               caze,
-              tags,
-              impactStatus.headOption,
-              resolutionStatus.headOption,
-              user.headOption,
               customFields,
               Set.empty
             )

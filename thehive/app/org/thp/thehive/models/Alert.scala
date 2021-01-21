@@ -1,10 +1,9 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
-import io.scalaland.chimney.dsl._
 import org.thp.scalligraph._
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
+
+import java.util.Date
 
 @BuildEdgeEntity[Alert, CustomField]
 case class AlertCustomField(
@@ -52,7 +51,9 @@ case class AlertTag()
 @DefineIndex(IndexType.standard, "pap")
 @DefineIndex(IndexType.standard, "read")
 @DefineIndex(IndexType.standard, "follow")
+@DefineIndex(IndexType.standard, "tags")
 @DefineIndex(IndexType.standard, "organisationId")
+@DefineIndex(IndexType.standard, "caseId")
 case class Alert(
     `type`: String,
     source: String,
@@ -67,13 +68,14 @@ case class Alert(
     pap: Int,
     read: Boolean,
     follow: Boolean,
-    organisationId: EntityId
+    tags: Seq[String],
+    /* filled by the service */
+    organisationId: EntityId = EntityId(""),
+    caseId: Option[EntityId] = None
 )
 
 case class RichAlert(
     alert: Alert with Entity,
-    organisation: String,
-    tags: Seq[Tag with Entity],
     customFields: Seq[RichCustomField],
     caseId: Option[EntityId],
     caseTemplate: Option[String],
@@ -97,28 +99,5 @@ case class RichAlert(
   def pap: Int                     = alert.pap
   def read: Boolean                = alert.read
   def follow: Boolean              = alert.follow
-}
-
-object RichAlert {
-
-  def apply(
-      alert: Alert with Entity,
-      organisation: String,
-      tags: Seq[Tag with Entity],
-      customFields: Seq[RichCustomField],
-      caseId: Option[EntityId],
-      caseTemplate: Option[String],
-      observableCount: Long
-  ): RichAlert =
-    alert
-      .asInstanceOf[Alert]
-      .into[RichAlert]
-      .withFieldConst(_.alert, alert)
-      .withFieldConst(_.organisation, organisation)
-      .withFieldConst(_.tags, tags)
-      .withFieldConst(_.customFields, customFields)
-      .withFieldConst(_.caseId, caseId)
-      .withFieldConst(_.caseTemplate, caseTemplate)
-      .withFieldConst(_.observableCount, observableCount)
-      .transform
+  def tags: Seq[String]            = alert.tags
 }

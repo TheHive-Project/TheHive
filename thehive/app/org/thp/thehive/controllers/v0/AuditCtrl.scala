@@ -36,7 +36,7 @@ class AuditCtrl @Inject() (
   def flow(caseId: Option[String]): Action[AnyContent] =
     entrypoint("audit flow")
       .asyncAuth { implicit request =>
-        (flowActor ? FlowId(request.organisation, caseId.filterNot(_ == "any").map(EntityIdOrName(_)))).map {
+        (flowActor ? FlowId(caseId.filterNot(_ == "any").map(EntityIdOrName(_)))).map {
           case AuditIds(auditIds) if auditIds.isEmpty => Results.Ok(JsArray.empty)
           case AuditIds(auditIds) =>
             val audits = db.roTransaction { implicit graph =>
@@ -64,17 +64,17 @@ class AuditCtrl @Inject() (
 }
 
 @Singleton
-class PublicAudit @Inject() (auditSrv: AuditSrv, db: Database) extends PublicData {
+class PublicAudit @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
     FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
 
   override val entityName: String = "audit"
 
   override val initialQuery: Query =
-    Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(authContext))
+    Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(organisationSrv)(authContext))
 
   override val pageQuery: ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Audit], IteratorOutput](

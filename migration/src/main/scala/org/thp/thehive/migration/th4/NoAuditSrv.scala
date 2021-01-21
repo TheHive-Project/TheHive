@@ -21,7 +21,7 @@ class NoAuditSrv @Inject() (
     db: Database
 ) extends AuditSrv(userSrvProvider, notificationActor, eventSrv, db) {
 
-  override def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(implicit
+  override def create(audit: Audit, context: Product with Entity, `object`: Option[Product with Entity])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =

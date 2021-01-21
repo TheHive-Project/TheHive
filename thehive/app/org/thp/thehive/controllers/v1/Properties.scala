@@ -1,16 +1,11 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Long => JLong}
-import java.util.Date
-
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.Converter
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
-import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
@@ -20,12 +15,13 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, Json}
 
+import java.lang.{Long => JLong}
+import javax.inject.{Inject, Singleton}
 import scala.util.Failure
 
 @Singleton
@@ -60,26 +56,12 @@ class Properties @Inject() (
       .property("date", UMapping.date)(_.field.updatable)
       .property("lastSyncDate", UMapping.date.optional)(_.field.updatable)
       .property("tags", UMapping.string.set)(
-        _.select(_.tags.displayName) // FIXME add filter
-//          .filter((_, cases) =>
-//            cases
-//              .tags
-//              .graphMap[String, String, Converter.Identity[String]](
-//                { v =>
-//                  val namespace = UMapping.string.getProperty(v, "namespace")
-//                  val predicate = UMapping.string.getProperty(v, "predicate")
-//                  val value     = UMapping.string.optional.getProperty(v, "value")
-//                  Tag(namespace, predicate, value, None, 0).toString
-//                },
-//                Converter.identity[String]
-//              )
-//          )
-//          .converter(_ => Converter.identity[String])
+        _.field
           .custom { (_, value, vertex, graph, authContext) =>
             alertSrv
               .get(vertex)(graph)
               .getOrFail("Alert")
-              .flatMap(alert => alertSrv.updateTagNames(alert, value)(graph, authContext))
+              .flatMap(alert => alertSrv.updateTags(alert, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -93,14 +75,14 @@ class Properties @Inject() (
         _.select(_.imported)
           .filter(FieldsParser.boolean)((_, alertTraversal, _, predicate) =>
             predicate.fold(
-              b => if (b) alertTraversal else alertTraversal.limit(0),
+              b => if (b) alertTraversal else alertTraversal.empty,
               p =>
-                if (p.getValue) alertTraversal.filter(_.outE[AlertCase])
-                else alertTraversal.filterNot(_.outE[AlertCase])
+                if (p.getValue) alertTraversal.has(_.caseId)
+                else alertTraversal.hasNot(_.caseId)
             )
           )
           .readonly
-      ) // FIXME
+      )
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
@@ -117,7 +99,7 @@ class Properties @Inject() (
               case Left(true)       => alertTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
               case Left(false)      => alertTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
             }
-          case (_, caseTraversal, _, _) => caseTraversal.limit(0)
+          case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
           case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
@@ -156,28 +138,13 @@ class Properties @Inject() (
       .property("endDate", UMapping.date.optional)(_.field.updatable)
       .property("number", UMapping.int)(_.field.readonly)
       .property("tags", UMapping.string.set)(
-        _.select(_.tags.displayName) // FIXME add filter
-//          .filter((_, cases) =>
-//            cases
-//              .tags
-//              .graphMap[String, String, Converter.Identity[String]](
-//                { v =>
-//                  val namespace = UMapping.string.getProperty(v, "namespace")
-//                  val predicate = UMapping.string.getProperty(v, "predicate")
-//                  val value     = UMapping.string.optional.getProperty(v, "value")
-//                  Tag(namespace, predicate, value, None, 0).toString
-//                },
-//                Converter.identity[String]
-//              )
-//          )
-//          .converter(_ => Converter.identity[String])
-          .custom { (_, value, vertex, graph, authContext) =>
-            caseSrv
-              .get(vertex)(graph)
-              .getOrFail("Case")
-              .flatMap(`case` => caseSrv.updateTagNames(`case`, value)(graph, authContext))
-              .map(_ => Json.obj("tags" -> value))
-          }
+        _.field.custom { (_, value, vertex, graph, authContext) =>
+          caseSrv
+            .get(vertex)(graph)
+            .getOrFail("Case")
+            .flatMap(`case` => caseSrv.updateTags(`case`, value)(graph, authContext))
+            .map(_ => Json.obj("tags" -> value))
+        }
       )
       .property("flag", UMapping.boolean)(_.field.updatable)
       .property("tlp", UMapping.int)(_.field.updatable)
@@ -185,7 +152,7 @@ class Properties @Inject() (
       .property("status", UMapping.enum[CaseStatus.type])(_.field.updatable)
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("actionRequired", UMapping.boolean)(_.authSelect((t, auth) => t.isActionRequired(auth)).readonly)
-      .property("assignee", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, graph, authContext) =>
+      .property("assignee", UMapping.string.optional)(_.field.custom { (_, login, vertex, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
           user <- login.map(u => userSrv.get(EntityIdOrName(u))(graph).getOrFail("User")).flip
@@ -195,7 +162,7 @@ class Properties @Inject() (
           }
         } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property("impactStatus", UMapping.string.optional)(_.select(_.impactStatus.value(_.value)).custom { (_, value, vertex, graph, authContext) =>
+      .property("impactStatus", UMapping.string.optional)(_.field.custom { (_, value, vertex, graph, authContext) =>
         caseSrv
           .get(vertex)(graph)
           .getOrFail("Case")
@@ -204,15 +171,14 @@ class Properties @Inject() (
           }
           .map(_ => Json.obj("impactStatus" -> value))
       })
-      .property("resolutionStatus", UMapping.string.optional)(_.select(_.resolutionStatus.value(_.value)).custom {
-        (_, value, vertex, graph, authContext) =>
-          caseSrv
-            .get(vertex)(graph)
-            .getOrFail("Case")
-            .flatMap { c =>
-              value.fold(caseSrv.unsetResolutionStatus(c)(graph, authContext))(caseSrv.setResolutionStatus(c, _)(graph, authContext))
-            }
-            .map(_ => Json.obj("resolutionStatus" -> value))
+      .property("resolutionStatus", UMapping.string.optional)(_.field.custom { (_, value, vertex, graph, authContext) =>
+        caseSrv
+          .get(vertex)(graph)
+          .getOrFail("Case")
+          .flatMap { c =>
+            value.fold(caseSrv.unsetResolutionStatus(c)(graph, authContext))(caseSrv.setResolutionStatus(c, _)(graph, authContext))
+          }
+          .map(_ => Json.obj("resolutionStatus" -> value))
       })
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
@@ -228,7 +194,7 @@ class Properties @Inject() (
               case Left(true)       => caseTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
               case Left(false)      => caseTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
             }
-          case (_, caseTraversal, _, _) => caseTraversal.limit(0)
+          case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
           case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
@@ -320,26 +286,12 @@ class Properties @Inject() (
       .property("description", UMapping.string.optional)(_.field.updatable)
       .property("severity", UMapping.int.optional)(_.field.updatable)
       .property("tags", UMapping.string.set)(
-        _.select(_.tags.displayName) // FIXME add filter
-//          .filter((_, cases) =>
-//            cases
-//              .tags
-//              .graphMap[String, String, Converter.Identity[String]](
-//                { v =>
-//                  val namespace = UMapping.string.getProperty(v, "namespace")
-//                  val predicate = UMapping.string.getProperty(v, "predicate")
-//                  val value     = UMapping.string.optional.getProperty(v, "value")
-//                  Tag(namespace, predicate, value, None, 0).toString
-//                },
-//                Converter.identity[String]
-//              )
-//          )
-//          .converter(_ => Converter.identity[String])
+        _.field
           .custom { (_, value, vertex, graph, authContext) =>
             caseTemplateSrv
               .get(vertex)(graph)
               .getOrFail("CaseTemplate")
-              .flatMap(caseTemplate => caseTemplateSrv.updateTagNames(caseTemplate, value)(graph, authContext))
+              .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -384,7 +336,7 @@ class Properties @Inject() (
       .property("order", UMapping.int)(_.field.updatable)
       .property("dueDate", UMapping.date.optional)(_.field.updatable)
       .property("group", UMapping.string)(_.field.updatable)
-      .property("assignee", UMapping.string.optional)(_.select(_.assignee.value(_.login)).custom {
+      .property("assignee", UMapping.string.optional)(_.field.custom {
         case (_, value, vertex, graph, authContext) =>
           taskSrv
             .get(vertex)(graph)
@@ -432,27 +384,12 @@ class Properties @Inject() (
       .property("sighted", UMapping.boolean)(_.field.updatable)
       .property("ignoreSimilarity", UMapping.boolean)(_.field.updatable)
       .property("tags", UMapping.string.set)(
-        _.select(_.tags.displayName) // FIXME add filter
-//          .filter((_, cases) =>
-//            cases
-//              .tags
-//              .graphMap[String, String, Converter.Identity[String]](
-//                { v =>
-//                  val namespace = UMapping.string.getProperty(v, "namespace")
-//                  val predicate = UMapping.string.getProperty(v, "predicate")
-//                  val value     = UMapping.string.optional.getProperty(v, "value")
-//                  Tag(namespace, predicate, value, None, 0).toString
-//                },
-//                Converter.identity[String]
-//              )
-//          )
-//          .converter(_ => Converter.identity[String])
-          .custom { (_, value, vertex, graph, authContext) =>
-            observableSrv
-              .getOrFail(vertex)(graph)
-              .flatMap(observable => observableSrv.updateTagNames(observable, value)(graph, authContext))
-              .map(_ => Json.obj("tags" -> value))
-          }
+        _.field.custom { (_, value, vertex, graph, authContext) =>
+          observableSrv
+            .getOrFail(vertex)(graph)
+            .flatMap(observable => observableSrv.updateTagNames(observable, value)(graph, authContext))
+            .map(_ => Json.obj("tags" -> value))
+        }
       )
       .property("message", UMapping.string)(_.field.updatable)
       .property("tlp", UMapping.int)(_.field.updatable)

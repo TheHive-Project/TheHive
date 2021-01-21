@@ -31,7 +31,7 @@ object DBUtils {
       .map {
         case f if f.startsWith("+") => f.drop(1) -> fieldSort(f.drop(1)).order(ASC)
         case f if f.startsWith("-") => f.drop(1) -> fieldSort(f.drop(1)).order(DESC)
-        case f if f.length() > 0    => f         -> fieldSort(f)
+        case f if f.nonEmpty        => f         -> fieldSort(f)
       }
     // then remove duplicates
     // Same as : val fieldSortDefs = byFieldList.groupBy(_._1).map(_._2.head).values.toSeq

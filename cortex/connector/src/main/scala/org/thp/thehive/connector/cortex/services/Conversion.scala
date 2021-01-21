@@ -22,7 +22,10 @@ object Conversion {
 
   implicit class CortexOutputArtifactOps(artifact: OutputArtifact) {
 
-    def toObservable(relatedId: EntityId, organisationIds: EntityId*): Observable =
+    def toObservable(
+        relatedId: EntityId,
+        organisations: Seq[EntityId]
+    ): Observable =
       artifact
         .into[Observable]
         .withFieldComputed(_.message, _.message)
@@ -30,8 +33,10 @@ object Conversion {
         .withFieldConst(_.ioc, false)
         .withFieldConst(_.sighted, false)
         .withFieldConst(_.ignoreSimilarity, None)
-        .withFieldConst(_.organisationIds, organisationIds)
+        .withFieldConst(_.data, None)
+        .withFieldComputed(_.tags, _.tags.toSeq)
         .withFieldConst(_.relatedId, relatedId)
+        .withFieldConst(_.organisationIds, organisations)
         .transform
   }
 

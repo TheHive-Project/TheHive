@@ -1,7 +1,5 @@
 package org.thp.thehive.models
 
-import java.lang.reflect.Modifier
-import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 import org.janusgraph.core.schema.ConsistencyModifier
@@ -9,14 +7,17 @@ import org.janusgraph.graphdb.types.TypeDefinitionCategory
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Converter, Graph}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
+import java.lang.reflect.Modifier
+import javax.inject.{Inject, Singleton}
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Success, Try}
@@ -91,33 +92,131 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       Success(())
     }
     //=====[release 4.0.3]=====
-    .addProperty[String]("Alert", "organisationId")
-    .updateGraph("Add organisation data in alerts", "Alert") { traversal =>
+    /* Alert index  */
+    .addProperty[Seq[String]]("Alert", "tags")
+    .addProperty[EntityId]("Alert", "organisationId")
+    .addProperty[Option[EntityId]]("Alert", "caseId")
+    .updateGraph("Add tags, organisationId and caseId in alerts", "Alert") { traversal =>
       traversal
-        .project(_.by.by(_.out("AlertOrganisation")._id))
-        .toIterator
+        .project(
+          _.by
+            .by(_.out("AlertTag").valueMap("namespace", "predicate", "value").fold)
+            .by(_.out("AlertOrganisation")._id)
+            .by(_.out("AlertCase")._id.option)
+        )
         .foreach {
-          case (vertex, organisationId) =>
+          case (vertex, tagMaps, organisationId, caseId) =>
+            val tags = for {
+              tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
+              namespace = tag.getOrElse("namespace", "_autocreate")
+              predicate <- tag.get("predicate")
+              value = tag.get("value")
+            } yield
+              (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
+                (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
+                value.fold("")(v => f"""="$v"""")
+
+            tags.foreach(vertex.property(Cardinality.list, "tags", _))
             vertex.property("organisationId", organisationId.value)
+            caseId.foreach(vertex.property("caseId", _))
         }
       Success(())
     }
-    .addProperty[Seq[String]]("Case", "organisationIds")
-    .updateGraph("Add organisation data in cases", "Case") { traversal =>
+    /* Case index  */
+    .addProperty[Seq[String]]("Case", "tags")
+    .addProperty[Option[String]]("Case", "assignee")
+    .addProperty[Seq[EntityId]]("Case", "organisationIds")
+    .addProperty[Option[String]]("Case", "impactStatus")
+    .addProperty[Option[String]]("Case", "resolutionStatus")
+    .addProperty[Option[String]]("Case", "caseTemplate")
+    .updateGraph("Add tags, assignee, organisationIds, impactStatus, resolutionStatus and caseTemplate data in cases", "Case") { traversal =>
       traversal
-        .project(_.by.by(_.in("ShareCase").in("OrganisationShare")._id.fold))
-        .toIterator
+        .project(
+          _.by
+            .by(_.out("CaseTag").valueMap("namespace", "predicate", "value").fold)
+            .by(_.out("CaseUser").property("login", Converter.identity[String]).option)
+            .by(_.in("ShareCase").in("OrganisationShare")._id.fold)
+            .by(_.out("CaseImpactStatus").property("value", Converter.identity[String]).option)
+            .by(_.out("CaseResolutionStatus").property("value", Converter.identity[String]).option)
+            .by(_.out("CaseCaseTemplate").property("name", Converter.identity[String]).option)
+        )
         .foreach {
-          case (vertex, organisationIds) =>
+          case (vertex, tagMaps, assignee, organisationIds, impactStatus, resolutionStatus, caseTemplate) =>
+            val tags = for {
+              tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
+              namespace = tag.getOrElse("namespace", "_autocreate")
+              predicate <- tag.get("predicate")
+              value = tag.get("value")
+            } yield
+              (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
+                (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
+                value.fold("")(v => f"""="$v"""")
+
+            tags.foreach(vertex.property(Cardinality.list, "tags", _))
+            assignee.foreach(vertex.property("assignee", _))
+            organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+            impactStatus.foreach(vertex.property("impactStatus", _))
+            resolutionStatus.foreach(vertex.property("resolutionStatus", _))
+            caseTemplate.foreach(vertex.property("caseTemplate", _))
+        }
+      Success(())
+    }
+    /* CaseTemplate index  */
+    .addProperty[Seq[String]]("CaseTemplate", "tags")
+    .updateGraph("Add tags in caseTempates", "CaseTemplate") { traversal =>
+      traversal
+        .project(
+          _.by
+            .by(_.out("CaseTemplateTag").valueMap("namespace", "predicate", "value").fold)
+        )
+        .foreach {
+          case (vertex, tagMaps) =>
+            val tags = for {
+              tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
+              namespace = tag.getOrElse("namespace", "_autocreate")
+              predicate <- tag.get("predicate")
+              value = tag.get("value")
+            } yield
+              (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
+                (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
+                value.fold("")(v => f"""="$v"""")
+
+            tags.foreach(vertex.property(Cardinality.list, "tags", _))
+        }
+      Success(())
+    }
+    /* Log index */
+    .addProperty[String]("Log", "taskId")
+    .addProperty[Seq[EntityId]]("Log", "organisationIds")
+    .updateGraph("Add taskId and organisationIds data in logs", "Log") { traversal =>
+      traversal
+        .project(
+          _.by
+            .by(_.in("TaskLog")._id)
+            .by(_.in("TaskLog").in("ShareTask").in("OrganisationShare")._id.fold)
+        )
+        .foreach {
+          case (vertex, taskId, organisationIds) =>
+            vertex.property("taskId", taskId)
             organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
         }
       Success(())
     }
-    .addProperty[Seq[String]]("Observable", "organisationIds")
-    .updateGraph("Add organisation data in observables", "Observable") { traversal =>
+    /* Observable index */
+    .addProperty[String]("Observable", "dataType")
+    .addProperty[Seq[String]]("Observable", "tags")
+    .addProperty[String]("Observable", "data")
+    .addProperty[EntityId]("Observable", "relatedId")
+    .addProperty[Seq[EntityId]]("Observable", "organisationIds")
+    .updateGraph("Add dataType, tags, data, relatedId and organisationIds data in observables", "Observable") { traversal =>
       traversal
         .project(
           _.by
+            .by(_.out("ObservableObservableType").property("name", Converter.identity[String]))
+            .by(_.out("ObservableTag").valueMap("namespace", "predicate", "value").fold)
+            .by(_.out("ObservableData").property("data", Converter.identity[String]).option)
+            .by(_.out("ObservableAttachment").property("attachmentId", Converter.identity[String]).option)
+            .by(_.coalesceIdent(_.in("ShareObservable").out("ShareCase"), _.in("AlertObservable"), _.in("ReportObservable"))._id)
             .by(
               _.coalesceIdent(
                 _.optional(_.in("ReportObservable").in("ObservableJob")).in("ShareObservable").in("OrganisationShare"),
@@ -127,9 +226,43 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
                 .fold
             )
         )
-        .toIterator
         .foreach {
-          case (vertex, organisationIds) =>
+          case (vertex, dataType, tagMaps, data, attachmentId, relatedId, organisationIds) =>
+            val tags = for {
+              tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
+              namespace = tag.getOrElse("namespace", "_autocreate")
+              predicate <- tag.get("predicate")
+              value = tag.get("value")
+            } yield
+              (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
+                (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
+                value.fold("")(v => f"""="$v"""")
+
+            vertex.property("dataType", dataType)
+            tags.foreach(vertex.property(Cardinality.list, "tags", _))
+            data.foreach(vertex.property("data", _))
+            attachmentId.foreach(vertex.property("attachmentId", _))
+            vertex.property("relatedId", relatedId.value)
+            organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+        }
+      Success(())
+    }
+    /* Task index */
+    .addProperty[Option[String]]("Task", "assignee")
+    .addProperty[Seq[EntityId]]("Task", "organisationIds")
+    .addProperty[EntityId]("Task", "relatedId")
+    .updateGraph("Add assignee, relatedId and organisationIds data in tasks", "Task") { traversal =>
+      traversal
+        .project(
+          _.by
+            .by(_.out("TaskUser").property("login", Converter.identity[String]).option)
+            .by(_.coalesceIdent(_.in("ShareTask").out("ShareCase"), _.in("CaseTemplateTask"))._id)
+            .by(_.coalesceIdent(_.in("ShareTask").in("OrganisationShare"), _.in("CaseTemplateTask").out("CaseTemplateOrganisation"))._id.fold)
+        )
+        .foreach {
+          case (vertex, assignee, relatedId, organisationIds) =>
+            assignee.foreach(vertex.property("assignee", _))
+            vertex.property("relatedId", relatedId.value)
             organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
         }
       Success(())

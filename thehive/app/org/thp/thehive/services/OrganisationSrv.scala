@@ -1,9 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -16,8 +13,11 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.RoleOps._
 import org.thp.thehive.services.UserOps._
+import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -26,9 +26,8 @@ class OrganisationSrv @Inject() (
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
-)(implicit
-    db: Database
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    cache: SyncCacheApi
 ) extends VertexSrv[Organisation] {
 
   val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
@@ -54,6 +53,9 @@ class OrganisationSrv @Inject() (
     } yield createdOrganisation
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
+
+  def currentId(implicit graph: Graph, authContext: AuthContext): EntityId =
+    authContext.organisation.fold(identity, oid => cache.getOrElseUpdate(s"organisation-$oid")(getByName(oid)._id.getOrFail("Organisation").get))
 
   def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
     userSrv.current.organisations.visibleOrganisationsFrom

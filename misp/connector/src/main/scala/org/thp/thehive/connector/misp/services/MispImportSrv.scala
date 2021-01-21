@@ -11,7 +11,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.FunctionalCondition._
-import org.thp.scalligraph.{EntityId, EntityName, RichSeq}
+import org.thp.scalligraph.{CreateError, EntityId, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -35,7 +35,6 @@ class MispImportSrv @Inject() (
     observableSrv: ObservableSrv,
     organisationSrv: OrganisationSrv,
     observableTypeSrv: ObservableTypeSrv,
-    attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
     db: Database,
     auditSrv: AuditSrv,
@@ -71,7 +70,9 @@ class MispImportSrv @Inject() (
           pap = 2,
           read = false,
           follow = true,
-          organisationId = organisationId
+          organisationId = organisationId,
+          tags = event.tags.map(_.name),
+          caseId = None
         )
       }
 
@@ -91,9 +92,9 @@ class MispImportSrv @Inject() (
       .fold(observableTypeSrv.getOrFail(EntityName("other")).map(_ -> Seq.empty[String]))(Success(_))
   }
 
-  def attributeToObservable(alert: Alert with Entity, attribute: Attribute)(implicit
-      graph: Graph
-  ): List[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])] =
+  def attributeToObservable(
+      attribute: Attribute
+  )(implicit graph: Graph): List[(Observable, Either[String, (String, String, Source[ByteString, _])])] =
     attribute
       .`type`
       .split('|')
@@ -115,16 +116,14 @@ class MispImportSrv @Inject() (
           List(
             (
               Observable(
-                attribute.comment,
-                0,
+                message = attribute.comment,
+                tlp = 0,
                 ioc = false,
                 sighted = false,
                 ignoreSimilarity = None,
-                organisationIds = Seq(alert.organisationId),
-                relatedId = alert._id
+                dataType = observableType.name,
+                tags = additionalTags ++ attribute.tags.map(_.name)
               ),
-              observableType,
-              attribute.tags.map(_.name).toSet ++ additionalTags,
               Right(attribute.data.get)
             )
           )
@@ -135,16 +134,14 @@ class MispImportSrv @Inject() (
           List(
             (
               Observable(
-                attribute.comment,
-                0,
+                message = attribute.comment,
+                tlp = 0,
                 ioc = false,
                 sighted = false,
                 ignoreSimilarity = None,
-                organisationIds = Seq(alert.organisationId),
-                relatedId = alert._id
+                dataType = observableType.name,
+                tags = additionalTags ++ attribute.tags.map(_.name)
               ),
-              observableType,
-              attribute.tags.map(_.name).toSet ++ additionalTags,
               Left(attribute.value)
             )
           )
@@ -161,16 +158,14 @@ class MispImportSrv @Inject() (
                 )
                 (
                   Observable(
-                    attribute.comment,
-                    0,
+                    message = attribute.comment,
+                    tlp = 0,
                     ioc = false,
                     sighted = false,
                     ignoreSimilarity = None,
-                    organisationIds = Seq(alert.organisationId),
-                    relatedId = alert._id
+                    dataType = observableType.name,
+                    tags = additionalTags ++ attribute.tags.map(_.name)
                   ),
-                  observableType,
-                  attribute.tags.map(_.name).toSet ++ additionalTags,
                   Left(value)
                 )
             }
@@ -202,56 +197,43 @@ class MispImportSrv @Inject() (
     else None
   }
 
-  def updateOrCreateObservable(
+  def updateOrCreateSimpleObservable(
       alert: Alert with Entity,
       observable: Observable,
-      observableType: ObservableType with Entity,
-      data: String,
-      tags: Set[String],
-      creation: Boolean
-  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+      data: String
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    alertSrv
+      .createObservable(alert, observable, data)
+      .map(_ => ())
+      .recoverWith {
+        case _: CreateError =>
+          for {
+            richObservable <-
+              observableSrv
+                .startTraversal
+                .has(_.organisationIds, organisationSrv.currentId)
+                .has(_.relatedId, observable.relatedId)
+                .has(_.data, observable.data.get)
+                .richObservable
+                .getOrFail("Observable")
+            _ <-
+              observableSrv
+                .get(richObservable.observable)
+                .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
+                .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
+                .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
+                .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
+                .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
+                .getOrFail("Observable")
+          } yield ()
+      }
 
-    val existingObservable =
-      if (creation) None
-      else
-        alertSrv
-          .get(alert)
-          .observables
-          .filterOnType(observableType.name)
-          .filterOnData(data)
-          .richObservable
-          .headOption
-    existingObservable match {
-      case None =>
-        logger.debug(s"Observable ${observableType.name}:$data doesn't exist, create it")
-        for {
-          richObservable <- observableSrv.create(observable, observableType, data, tags, Nil)
-          _              <- alertSrv.addObservable(alert, richObservable)
-        } yield ()
-      case Some(richObservable) =>
-        logger.debug(s"Observable ${observableType.name}:$data exists, update it")
-        for {
-          updatedObservable <-
-            observableSrv
-              .get(richObservable.observable)
-              .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
-              .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
-              .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
-              .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
-              .getOrFail("Observable")
-          _ <- observableSrv.updateTagNames(updatedObservable, tags)
-        } yield ()
-    }
-  }
-
-  def updateOrCreateObservable(
+  def updateOrCreateAttachmentObservable(
       alert: Alert with Entity,
       observable: Observable,
-      observableType: ObservableType with Entity,
       filename: String,
       contentType: String,
       src: Source[ByteString, _],
-      tags: Set[String],
       creation: Boolean
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val existingObservable =
@@ -260,35 +242,32 @@ class MispImportSrv @Inject() (
         alertSrv
           .get(alert)
           .observables
-          .filterOnType(observableType.name)
+          .filterOnType(observable.dataType)
           .filterOnAttachmentName(filename)
           .filterOnAttachmentName(contentType)
           .richObservable
           .headOption
     existingObservable match {
       case None =>
-        logger.debug(s"Observable ${observableType.name}:$filename:$contentType doesn't exist, create it")
+        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType doesn't exist, create it")
         val file = Files.createTempFile("misp-attachment-", "")
         Await.result(src.runWith(FileIO.toPath(file)), 1.hour)
         val fFile = FFile(filename, file, contentType)
-        for {
-          createdAttachment <- attachmentSrv.create(fFile)
-          richObservable    <- observableSrv.create(observable, observableType, createdAttachment, tags, Nil)
-          _                 <- alertSrv.addObservable(alert, richObservable)
-          _ = Files.delete(file)
-        } yield ()
+        val res   = alertSrv.createObservable(alert, observable, fFile).map(_ => ())
+        Files.delete(file)
+        res
       case Some(richObservable) =>
-        logger.debug(s"Observable ${observableType.name}:$filename:$contentType exists, update it")
+        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType exists, update it")
         for {
-          updatedObservable <-
+          _ <-
             observableSrv
               .get(richObservable.observable)
               .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
               .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
               .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
               .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
+              .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
               .getOrFail("Observable")
-          _ <- observableSrv.updateTagNames(updatedObservable, tags)
         } yield ()
     }
   }
@@ -302,32 +281,39 @@ class MispImportSrv @Inject() (
     val queue =
       client
         .searchAttributes(event.id, lastSynchro)
-        .mapConcat(attributeToObservable(alert, _))
+        .mapConcat(attributeToObservable)
         .fold(
           Map.empty[
             (String, String),
-            (Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])
+            (Observable, Either[String, (String, String, Source[ByteString, _])])
           ]
         ) {
-          case (distinctMap, data @ (_, t, _, Left(d)))          => distinctMap + ((t.name, d) -> data)
-          case (distinctMap, data @ (_, t, _, Right((n, _, _)))) => distinctMap + ((t.name, n) -> data)
+          case (distinctMap, data @ (obs, Left(d)))          => distinctMap + ((obs.dataType, d) -> data)
+          case (distinctMap, data @ (obs, Right((n, _, _)))) => distinctMap + ((obs.dataType, n) -> data)
         }
         .mapConcat { m =>
           m.values.toList
         }
-        .runWith(Sink.queue[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])])
+        .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])])
     QueueIterator(queue).foreach {
-      case (observable, observableType, tags, Left(data)) =>
-        updateOrCreateObservable(alert, observable, observableType, data, tags ++ client.observableTags, lastSynchro.isEmpty)
+      case (observable, Left(data)) =>
+        updateOrCreateSimpleObservable(alert, observable, data)
           .recover {
             case error =>
-              logger.error(s"Unable to create observable $observable ${observableType.name}:$data", error)
+              logger.error(s"Unable to create observable $observable", error)
           }
-      case (observable, observableType, tags, Right((filename, contentType, src))) =>
-        updateOrCreateObservable(alert, observable, observableType, filename, contentType, src, tags ++ client.observableTags, lastSynchro.isEmpty)
+      case (observable, Right((filename, contentType, src))) =>
+        updateOrCreateAttachmentObservable(
+          alert,
+          observable,
+          filename,
+          contentType,
+          src,
+          lastSynchro.isEmpty
+        )
           .recover {
             case error =>
-              logger.error(s"Unable to create observable $observable ${observableType.name}:$filename", error)
+              logger.error(s"Unable to create observable $observable: $filename", error)
           }
     }
 
@@ -394,7 +380,7 @@ class MispImportSrv @Inject() (
             )
           val tags = event.tags.map(_.name)
           for {
-            (addedTags, removedTags) <- alertSrv.updateTagNames(richAlert.alert, tags.toSet)
+            (addedTags, removedTags) <- alertSrv.updateTags(richAlert.alert, tags.toSet)
             updatedAlert             <- updatedAlertTraversal.getOrFail("Alert")
             updatedFieldWithTags =
               if (addedTags.nonEmpty || removedTags.nonEmpty) updatedFields + ("tags" -> JsArray(tags.map(JsString))) else updatedFields

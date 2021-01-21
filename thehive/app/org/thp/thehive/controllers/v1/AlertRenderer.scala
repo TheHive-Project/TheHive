@@ -1,13 +1,13 @@
 package org.thp.thehive.controllers.v1
 
 import java.util.{List => JList, Map => JMap}
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.{Alert, RichCase, SimilarStats}
 import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json._
 
 trait AlertRenderer extends BaseRenderer[Alert] {
@@ -22,7 +22,7 @@ trait AlertRenderer extends BaseRenderer[Alert] {
         "observableTypes"        -> similarStats.types
       )
   }
-  def similarCasesStats(implicit
+  def similarCasesStats(organisationSrv: OrganisationSrv)(implicit
       authContext: AuthContext
   ): Traversal.V[Alert] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] = {
     implicit val similarCaseOrdering: Ordering[(RichCase, SimilarStats)] = (x: (RichCase, SimilarStats), y: (RichCase, SimilarStats)) =>
@@ -36,15 +36,19 @@ trait AlertRenderer extends BaseRenderer[Alert] {
       else if (x._2.ioc._2 > y._2.ioc._2) -1
       else if (x._2.ioc._2 < y._2.ioc._2) 1
       else 0
-    _.similarCases(None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
+    _.similarCases(organisationSrv, caseFilter = None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
-  def alertStatsRenderer(extraData: Set[String])(
-    implicit authContext: AuthContext
+  def alertStatsRenderer(organisationSrv: OrganisationSrv, extraData: Set[String])(implicit
+      authContext: AuthContext
   ): Traversal.V[Alert] => JsTraversal = { implicit traversal =>
-    baseRenderer(extraData, traversal, {
-      case (f, "similarCases") => addData("similarCases", f)(similarCasesStats)
-      case (f, _)              => f
-    })
+    baseRenderer(
+      extraData,
+      traversal,
+      {
+        case (f, "similarCases") => addData("similarCases", f)(similarCasesStats(organisationSrv))
+        case (f, _)              => f
+      }
+    )
   }
 }

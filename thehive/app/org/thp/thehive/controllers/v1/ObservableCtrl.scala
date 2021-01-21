@@ -55,7 +55,7 @@ class ObservableCtrl @Inject() (
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
     FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
     "page",
@@ -63,7 +63,7 @@ class ObservableCtrl @Inject() (
     {
       case (OutputParam(from, to, extraData), observableSteps, authContext) =>
         observableSteps.richPage(from, to, extraData.contains("total")) {
-          _.richObservableWithCustomRenderer(observableStatsRenderer(extraData - "total")(authContext))(authContext)
+          _.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv, extraData - "total")(authContext))(authContext)
         }
     }
   )
@@ -76,7 +76,7 @@ class ObservableCtrl @Inject() (
     ),
     Query[Traversal.V[Observable], Traversal.V[Observable]](
       "similar",
-      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
+      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(organisationSrv)(authContext)
     ),
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
@@ -102,18 +102,17 @@ class ObservableCtrl @Inject() (
                   .can(Permissions.manageObservable)
                   .orFail(AuthorizationError("Operation not permitted"))
               observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
-              organisation   <- organisationSrv.current.getOrFail("Organisation")
-            } yield (case0, observableType, organisation)
+            } yield (case0, observableType)
           }
           .map {
-            case (case0, observableType, organisation) =>
+            case (case0, observableType) =>
               val successesAndFailures =
                 if (observableType.isAttachment)
                   inputAttachObs
-                    .flatMap(obs => obs.attachment.map(createAttachmentObservable(organisation, case0, obs, observableType, _)))
+                    .flatMap(obs => obs.attachment.map(createAttachmentObservable(case0, obs, _)))
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservable(organisation, case0, obs, observableType, _)))
+                    .flatMap(obs => obs.data.map(createSimpleObservable(case0, obs, _)))
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -125,40 +124,34 @@ class ObservableCtrl @Inject() (
       }
 
   def createSimpleObservable(
-      organisation: Organisation with Entity,
       `case`: Case with Entity,
       inputObservable: InputObservable,
-      observableType: ObservableType with Entity,
       data: String
   )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
     db
       .tryTransaction { implicit graph =>
-        observableSrv
-          .create(inputObservable.toObservable(organisation._id), observableType, data, inputObservable.tags, Nil)
-          .flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
+        caseSrv.createObservable(`case`, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
       case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
     }
 
   def createAttachmentObservable(
-      organisation: Organisation with Entity,
       `case`: Case with Entity,
       inputObservable: InputObservable,
-      observableType: ObservableType with Entity,
       fileOrAttachment: Either[FFile, InputAttachment]
   )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
     db
       .tryTransaction { implicit graph =>
-        val observable = fileOrAttachment match {
-          case Left(file) => observableSrv.create(inputObservable.toObservable(organisation._id), observableType, file, inputObservable.tags, Nil)
+        fileOrAttachment match {
+          case Left(file) =>
+            caseSrv.createObservable(`case`, inputObservable.toObservable, file)
           case Right(attachment) =>
             for {
               attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
-              obs    <- observableSrv.create(inputObservable.toObservable(organisation._id), observableType, attach, inputObservable.tags, Nil)
+              obs    <- caseSrv.createObservable(`case`, inputObservable.toObservable, attach)
             } yield obs
         }
-        observable.flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
       } match {
       case Success(o) => Right(o.toJson)
       case _ =>

@@ -35,13 +35,24 @@ class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
         app[CaseSrv].create(
-          Case(0, s"case audit", s"desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None, Seq(organisation._id)),
-          None,
-          organisation,
-          Set.empty,
-          Seq.empty,
-          None,
-          Nil
+          Case(
+            title = "case audit",
+            description = "desc audit",
+            severity = 1,
+            startDate = new Date,
+            endDate = None,
+            flag = false,
+            tlp = 1,
+            pap = 1,
+            status = CaseStatus.Open,
+            summary = None,
+            tags = Nil
+          ),
+          assignee = None,
+          organisation = organisation,
+          customFields = Nil,
+          caseTemplate = None,
+          additionalTasks = Nil
         )
       } must beASuccessfulTry
 

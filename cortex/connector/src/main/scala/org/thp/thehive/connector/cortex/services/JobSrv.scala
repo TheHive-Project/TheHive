@@ -1,15 +1,11 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.nio.file.Files
-import java.util.{Date, Map => JMap}
 import akka.Done
 import akka.actor._
 import akka.stream.Materializer
 import akka.stream.scaladsl.FileIO
 import com.google.inject.name.Named
 import io.scalaland.chimney.dsl._
-
-import javax.inject.{Inject, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, JobStatus => CortexJobStatus, OutputJob => CortexJob}
@@ -32,6 +28,9 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableTypeSrv, ReportTagSrv}
 import play.api.libs.json.Json
 
+import java.nio.file.Files
+import java.util.{Date, Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -76,15 +75,15 @@ class JobSrv @Inject() (
       analyzer <- cortexClient.getAnalyzer(workerId).recoverWith {
         case _ => cortexClient.getAnalyzerByName(workerId)
       } // if get analyzer using cortex2 API fails, try using legacy API
-      cortexArtifact <- (observable.attachment, observable.data) match {
-        case (None, Some(data)) =>
+      cortexArtifact <- observable.dataOrAttachment match {
+        case Left(data) =>
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`.number.toString, Some(data.data), None)
+            InputArtifact(observable.tlp, `case`.pap, observable.dataType, `case`.number.toString, Some(data), None)
           )
-        case (Some(a), None) =>
+        case Right(a) =>
           val attachment = CortexAttachment(a.name, a.size, a.contentType, attachmentSrv.source(a))
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.`type`.name, `case`.number.toString, None, Some(attachment))
+            InputArtifact(observable.tlp, `case`.pap, observable.dataType, `case`.number.toString, None, Some(attachment))
           )
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
@@ -207,21 +206,15 @@ class JobSrv @Inject() (
     Future
       .traverse(artifacts) { artifact =>
         db.tryTransaction(graph => observableTypeSrv.getOrFail(EntityIdOrName(artifact.dataType))(graph)) match {
-          case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, attachmentType, cortexClient)
-          case Success(dataType) =>
+          case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, cortexClient)
+          case _: Success[_] =>
             Future
               .fromTry {
                 db.tryTransaction { implicit graph =>
                   for {
                     origObs <- get(job).observable.getOrFail("Observable")
-                    obs <- observableSrv.create(
-                      artifact.toObservable(job._id, origObs.organisationIds: _*),
-                      dataType,
-                      artifact.data.get,
-                      artifact.tags,
-                      Nil
-                    )
-                    _ <- addObservable(job, obs.observable)
+                    obs     <- observableSrv.create(artifact.toObservable(job._id, origObs.organisationIds), artifact.data.get)
+                    _       <- addObservable(job, obs.observable)
                   } yield ()
                 }
               }
@@ -248,7 +241,6 @@ class JobSrv @Inject() (
   private def importCortexAttachment(
       job: Job with Entity,
       artifact: OutputArtifact,
-      attachmentType: ObservableType with Entity,
       cortexClient: CortexClient
   )(implicit
       authContext: AuthContext
@@ -266,10 +258,8 @@ class JobSrv @Inject() (
               for {
                 origObs           <- get(job).observable.getOrFail("Observable")
                 createdAttachment <- attachmentSrv.create(fFile)
-                richObservable <-
-                  observableSrv
-                    .create(artifact.toObservable(job._id, origObs.organisationIds: _*), attachmentType, createdAttachment, artifact.tags, Nil)
-                _ <- reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
+                richObservable    <- observableSrv.create(artifact.toObservable(job._id, origObs.organisationIds), createdAttachment)
+                _                 <- reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
               } yield createdAttachment
             }
           }
@@ -304,7 +294,7 @@ object JobOps {
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Job] =
       if (authContext.permissions.contains(permission))
         traversal.filter(_.observable.can(permission))
-      else traversal.limit(0)
+      else traversal.empty
 
     def observable: Traversal.V[Observable] = traversal.in[ObservableJob].v[Observable]
 

@@ -11,12 +11,12 @@ import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv, ShareSrv, TaskSrv}
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
 @Singleton
@@ -26,15 +26,18 @@ class TaskCtrl @Inject() (
     properties: Properties,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
-    organisationSrv: OrganisationSrv,
-    shareSrv: ShareSrv
+    organisationSrv: OrganisationSrv
 ) extends QueryableCtrl
     with TaskRenderer {
 
   override val entityName: String                 = "task"
   override val publicProperties: PublicProperties = properties.task
   override val initialQuery: Query =
-    Query.init[Traversal.V[Task]]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
+    Query.init[Traversal.V[Task]](
+      "listTask",
+      (graph, authContext) => taskSrv.startTraversal(graph).inOrganisation(organisationSrv.currentId(graph, authContext))
+//        organisationSrv.get(authContext.organisation)(graph).shares.tasks)
+    )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
@@ -46,7 +49,7 @@ class TaskCtrl @Inject() (
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
     "getTask",
     FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val outputQuery: Query =
     Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, _) => taskSteps.richTask)
@@ -70,7 +73,7 @@ class TaskCtrl @Inject() (
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
     Query[Traversal.V[Task], Traversal.V[Case]]("case", (taskSteps, _) => taskSteps.`case`),
-    Query[Traversal.V[Task], Traversal.V[CaseTemplate]]("caseTemplate", (taskSteps, _) => taskSteps.caseTemplate),
+    Query[Traversal.V[Task], Traversal.V[CaseTemplate]]("caseTemplate", (taskSteps, authContext) => taskSteps.caseTemplate.visible(authContext)),
     Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
   )
 
@@ -82,10 +85,8 @@ class TaskCtrl @Inject() (
         val inputTask: InputTask = request.body("task")
         val caseId: String       = request.body("caseId")
         for {
-          case0        <- caseSrv.get(EntityIdOrName(caseId)).can(Permissions.manageTask).getOrFail("Case")
-          createdTask  <- taskSrv.create(inputTask.toTask, None)
-          organisation <- organisationSrv.getOrFail(request.organisation)
-          _            <- shareSrv.shareTask(createdTask, case0, organisation)
+          case0       <- caseSrv.get(EntityIdOrName(caseId)).can(Permissions.manageTask).getOrFail("Case")
+          createdTask <- caseSrv.createTask(case0, inputTask.toTask)
         } yield Results.Created(createdTask.toJson)
       }
 
@@ -94,7 +95,7 @@ class TaskCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .get(EntityIdOrName(taskId))
-          .visible
+          .visible(organisationSrv)
           .richTask
           .getOrFail("Task")
           .map(task => Results.Ok(task.toJson))
@@ -105,7 +106,7 @@ class TaskCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         val tasks = taskSrv
           .startTraversal
-          .visible
+          .visible(organisationSrv)
           .richTask
           .toSeq
         Success(Results.Ok(tasks.toJson))
@@ -127,17 +128,17 @@ class TaskCtrl @Inject() (
 
   def isActionRequired(taskId: String): Action[AnyContent] =
     entrypoint("is action required")
-      .authTransaction(db){ implicit request => implicit graph =>
-        val actionTraversal = taskSrv.get(EntityIdOrName(taskId)).visible.actionRequiredMap
+      .authTransaction(db) { implicit request => implicit graph =>
+        val actionTraversal = taskSrv.get(EntityIdOrName(taskId)).visible(organisationSrv).actionRequiredMap
         Success(Results.Ok(actionTraversal.toSeq.toMap.toJson))
       }
 
   def actionRequired(taskId: String, orgaId: String, required: Boolean): Action[AnyContent] =
     entrypoint("action required")
-      .authTransaction(db){ implicit request => implicit graph =>
+      .authTransaction(db) { implicit request => implicit graph =>
         for {
           organisation <- organisationSrv.get(EntityIdOrName(orgaId)).visible.getOrFail("Organisation")
-          task         <- taskSrv.get(EntityIdOrName(taskId)).visible.getOrFail("Task")
+          task         <- taskSrv.get(EntityIdOrName(taskId)).visible(organisationSrv).getOrFail("Task")
           _            <- taskSrv.actionRequired(task, organisation, required)
         } yield Results.NoContent
       }

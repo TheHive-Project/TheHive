@@ -75,7 +75,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
     "import events" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])
-        app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible.getOrFail("Alert")
+        app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible(app[OrganisationSrv]).getOrFail("Alert")
       } must beSuccessfulTry
         .which { alert: Alert =>
           alert must beEqualTo(
@@ -93,7 +93,9 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
               pap = 2,
               read = false,
               follow = true,
-              organisationId = alert.organisationId
+              tags = Nil,
+              organisationId = alert.organisationId,
+              caseId = None
             )
           )
         }
@@ -109,7 +111,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
             .richObservable
             .toList
         }
-        .map(o => (o.`type`.name, o.data.map(_.data), o.tlp, o.message, o.tags.map(_.toString).toSet))
+        .map(o => (o.dataType, o.data, o.tlp, o.message, o.tags.toSet))
 //        println(observables.mkString("\n"))
       observables must contain(
         ("filename", Some("plop"), 0, Some(""), Set("TEST", "TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))

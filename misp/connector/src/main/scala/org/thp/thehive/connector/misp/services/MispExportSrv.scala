@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.misp.services
 
-import java.util.Date
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.misp.dto.{Attribute, Tag => MispTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -15,6 +13,8 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
 import play.api.Logger
 
+import java.util.Date
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -33,14 +33,14 @@ class MispExportSrv @Inject() (
   def observableToAttribute(observable: RichObservable, exportTags: Boolean): Option[Attribute] = {
     lazy val mispTags =
       if (exportTags)
-        observable.tags.map(t => MispTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(observable.tlp)
+        observable.tags.map(t => MispTag(None, t, None, None)) ++ tlpTags.get(observable.tlp) // FIXME Add colour
       else
         tlpTags.get(observable.tlp).toSeq
 
     observable
       .data
       .collect {
-        case data if observable.`type`.name == "hash" => data.data.length
+        case data if observable.dataType == "hash" => data.length
       }
       .collect {
         case 32  => "md5"
@@ -51,7 +51,7 @@ class MispExportSrv @Inject() (
         case 128 => "sha512"
       }
       .map("Payload delivery" -> _)
-      .orElse(connector.attributeConverter(observable.`type`))
+      .orElse(connector.attributeConverter(observable.dataType))
       .map {
         case (cat, tpe) =>
           Attribute(
@@ -65,7 +65,7 @@ class MispExportSrv @Inject() (
             comment = observable.message,
             deleted = false,
             data = observable.attachment.map(a => (a.name, a.contentType, attachmentSrv.source(a))),
-            value = observable.data.fold(observable.attachment.get.name)(_.data),
+            value = observable.data.getOrElse(observable.attachment.get.name),
             firstSeen = None,
             lastSeen = None,
             tags = mispTags
@@ -73,7 +73,7 @@ class MispExportSrv @Inject() (
       }
       .orElse {
         logger.warn(
-          s"Observable type ${observable.`type`} can't be converted to MISP attribute. You should add a mapping in `misp.attribute.mapping`"
+          s"Observable type ${observable.dataType} can't be converted to MISP attribute. You should add a mapping in `misp.attribute.mapping`"
         )
         None
       }
@@ -161,10 +161,11 @@ class MispExportSrv @Inject() (
           pap = `case`.pap,
           read = false,
           follow = true,
-          org._id
+          tags = Nil,
+          caseId = Some(`case`._id)
         )
       }
-      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Seq.empty[Tag with Entity], Seq(), None)
+      createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Set.empty, Nil, None)
       _            <- alertSrv.alertCaseSrv.create(AlertCase(), createdAlert.alert, `case`)
     } yield createdAlert
 

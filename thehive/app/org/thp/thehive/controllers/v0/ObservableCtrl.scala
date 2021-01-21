@@ -16,7 +16,6 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services._
 import play.api.Configuration
 import play.api.libs.Files.DefaultTemporaryFileCreator
@@ -36,8 +35,8 @@ class ObservableCtrl @Inject() (
     override val db: Database,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
-    organisationSrv: OrganisationSrv,
     caseSrv: CaseSrv,
+    organisationSrv: OrganisationSrv,
     attachmentSrv: AttachmentSrv,
     errorHandler: ErrorHandler,
     @Named("v0") override val queryExecutor: QueryExecutor,
@@ -65,18 +64,17 @@ class ObservableCtrl @Inject() (
                   .can(Permissions.manageObservable)
                   .orFail(AuthorizationError("Operation not permitted"))
               observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
-              organisation   <- organisationSrv.current.getOrFail("Organisation")
-            } yield (case0, observableType, organisation)
+            } yield (case0, observableType)
           }
           .map {
-            case (case0, observableType, organisation) =>
+            case (case0, observableType) =>
               val successesAndFailures =
                 if (observableType.isAttachment)
                   inputAttachObs
-                    .flatMap(obs => obs.attachment.map(createAttachmentObservable(organisation, case0, obs, observableType, _)))
+                    .flatMap(obs => obs.attachment.map(createAttachmentObservable(case0, obs, _)))
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservable(organisation, case0, obs, observableType, _)))
+                    .flatMap(obs => obs.data.map(createSimpleObservable(case0, obs, _)))
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -88,40 +86,34 @@ class ObservableCtrl @Inject() (
       }
 
   def createSimpleObservable(
-      organisation: Organisation with Entity,
       `case`: Case with Entity,
       inputObservable: InputObservable,
-      observableType: ObservableType with Entity,
       data: String
   )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
     db
       .tryTransaction { implicit graph =>
-        observableSrv
-          .create(inputObservable.toObservable(organisation._id), observableType, data, inputObservable.tags, Nil)
-          .flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
+        caseSrv.createObservable(`case`, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
       case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
     }
 
   def createAttachmentObservable(
-      organisation: Organisation with Entity,
       `case`: Case with Entity,
       inputObservable: InputObservable,
-      observableType: ObservableType with Entity,
       fileOrAttachment: Either[FFile, InputAttachment]
   )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
     db
       .tryTransaction { implicit graph =>
-        val observable = fileOrAttachment match {
-          case Left(file) => observableSrv.create(inputObservable.toObservable(organisation._id), observableType, file, inputObservable.tags, Nil)
+        fileOrAttachment match {
+          case Left(file) =>
+            caseSrv.createObservable(`case`, inputObservable.toObservable, file)
           case Right(attachment) =>
             for {
               attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
-              obs    <- observableSrv.create(inputObservable.toObservable(organisation._id), observableType, attach, inputObservable.tags, Nil)
+              obs    <- caseSrv.createObservable(`case`, inputObservable.toObservable, attach)
             } yield obs
         }
-        observable.flatMap(o => caseSrv.addObservable(`case`, o).map(_ => o))
       } match {
       case Success(o) => Right(o.toJson)
       case _ =>
@@ -134,7 +126,7 @@ class ObservableCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
           .get(EntityIdOrName(observableId))
-          .visible
+          .visible(organisationSrv)
           .richObservable
           .getOrFail("Observable")
           .map { observable =>
@@ -166,10 +158,10 @@ class ObservableCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         val observables = observableSrv
           .get(EntityIdOrName(observableId))
-          .visible
+          .visible(organisationSrv)
           .filteredSimilar
-          .visible
-          .richObservableWithCustomRenderer(observableLinkRenderer)
+          .visible(organisationSrv)
+          .richObservableWithCustomRenderer(organisationSrv, observableLinkRenderer)
           .toSeq
 
         Success(Results.Ok(observables.toJson))
@@ -263,7 +255,7 @@ class PublicObservable @Inject() (
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
     FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
@@ -274,14 +266,14 @@ class PublicObservable @Inject() (
           observableSteps
             .richPage(from, to, withTotal = true) {
               case o if withStats =>
-                o.richObservableWithCustomRenderer(observableStatsRenderer(authContext))(authContext)
+                o.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv)(authContext))(authContext)
                   .domainMap(ros => (ros._1, ros._2, None: Option[RichCase]))
               case o =>
                 o.richObservable.domainMap(ro => (ro, JsObject.empty, None))
             }
         case (OutputParam(from, to, _, _), observableSteps, authContext) =>
           observableSteps.richPage(from, to, withTotal = true)(
-            _.richObservableWithCustomRenderer(o => o.`case`.richCase(authContext))(authContext).domainMap(roc =>
+            _.richObservableWithCustomRenderer(organisationSrv, o => o.`case`.richCase(authContext))(authContext).domainMap(roc =>
               (roc._1, JsObject.empty, Some(roc._2): Option[RichCase])
             )
           )
@@ -295,7 +287,7 @@ class PublicObservable @Inject() (
     ),
     Query[Traversal.V[Observable], Traversal.V[Observable]](
       "similar",
-      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
+      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(organisationSrv)(authContext)
     ),
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
@@ -307,21 +299,7 @@ class PublicObservable @Inject() (
     .property("sighted", UMapping.boolean)(_.field.updatable)
     .property("ignoreSimilarity", UMapping.boolean)(_.field.updatable)
     .property("tags", UMapping.string.set)(
-      _.select(_.tags.displayName) // FIXME add filter
-//        .filter((_, cases) =>
-//          cases
-//            .tags
-//            .graphMap[String, String, Converter.Identity[String]](
-//              { v =>
-//                val namespace = UMapping.string.getProperty(v, "namespace")
-//                val predicate = UMapping.string.getProperty(v, "predicate")
-//                val value     = UMapping.string.optional.getProperty(v, "value")
-//                Tag(namespace, predicate, value, None, 0).toString
-//              },
-//              Converter.identity[String]
-//            )
-//        )
-//        .converter(_ => Converter.identity[String])
+      _.field
         .custom { (_, value, vertex, graph, authContext) =>
           observableSrv
             .get(vertex)(graph)

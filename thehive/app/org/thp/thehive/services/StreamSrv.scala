@@ -1,12 +1,9 @@
 package org.thp.thehive.services
 
-import java.io.NotSerializableException
-
 import akka.actor.{actorRef2Scala, Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.serialization.Serializer
 import akka.util.Timeout
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
@@ -18,6 +15,8 @@ import org.thp.thehive.services.AuditOps._
 import play.api.Logger
 import play.api.libs.json.Json
 
+import java.io.NotSerializableException
+import javax.inject.{Inject, Singleton}
 import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,6 +38,7 @@ case object Commit            extends StreamMessage
   * to global stream actor.
   */
 class StreamActor(
+    organisationSrv: OrganisationSrv,
     authContext: AuthContext,
     refresh: FiniteDuration,
     maxWait: FiniteDuration,
@@ -72,7 +72,7 @@ class StreamActor(
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .getByIds(ids: _*)
-          .visible(authContext)
+          .visible(organisationSrv)(authContext)
           .toSeq
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
@@ -112,7 +112,7 @@ class StreamActor(
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .getByIds(ids: _*)
-          .visible(authContext)
+          .visible(organisationSrv)(authContext)
           .toSeq
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
@@ -135,6 +135,7 @@ class StreamActor(
 class StreamSrv @Inject() (
     appConfig: ApplicationConfig,
     eventSrv: EventSrv,
+    organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
     db: Database,
     system: ActorSystem,
@@ -169,7 +170,7 @@ class StreamSrv @Inject() (
     val streamId = generateStreamId()
     val streamActor =
       system.actorOf(
-        Props(classOf[StreamActor], authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db),
+        Props(classOf[StreamActor], organisationSrv, authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db),
         s"stream-$streamId"
       )
     logger.debug(s"Register stream actor ${streamActor.path}")

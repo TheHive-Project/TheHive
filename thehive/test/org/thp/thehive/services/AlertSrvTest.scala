@@ -37,7 +37,9 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
             pap = 2,
             read = false,
             follow = false,
-            organisationId = organisation._id
+            organisationId = organisation._id,
+            tags = Seq("tag1", "tag2"),
+            caseId = None
           ),
           organisation,
           Set("tag1", "tag2"),
@@ -69,9 +71,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       val newTags = app[Database].tryTransaction { implicit graph =>
         for {
           alert <- app[AlertSrv].getOrFail(EntityName("testType;testSource;ref1"))
-          tag3  <- app[TagSrv].getOrCreate("tag3")
-          tag5  <- app[TagSrv].getOrCreate("tag5")
-          _     <- app[AlertSrv].updateTags(alert, Set(tag3, tag5))
+          _     <- app[AlertSrv].updateTags(alert, Set("tag3", "tag5"))
         } yield app[AlertSrv].get(EntityName("testType;testSource;ref1")).tags.toSeq
       }
       newTags must beSuccessfulTry.which(t => t.map(_.toString) must contain(exactly("tag3", "tag5")))
@@ -81,7 +81,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       val tags = app[Database].tryTransaction { implicit graph =>
         for {
           alert <- app[AlertSrv].getOrFail(EntityName("testType;testSource;ref1"))
-          _     <- app[AlertSrv].updateTagNames(alert, Set("tag3", "tag5"))
+          _     <- app[AlertSrv].updateTags(alert, Set("tag3", "tag5"))
         } yield app[AlertSrv].get(EntityName("testType;testSource;ref1")).tags.toSeq
       }
       tags must beSuccessfulTry.which(t => t.map(_.toString) must contain(exactly("tag3", "tag5")))
@@ -104,22 +104,20 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       def similarObs(alertId: EntityId) =
         app[Database].tryTransaction { implicit graph =>
           for {
-            organisation   <- app[OrganisationSrv].getOrFail(EntityName("cert"))
-            observableType <- app[ObservableTypeSrv].getOrFail(EntityName("domain"))
+            organisation <- app[OrganisationSrv].getOrFail(EntityName("cert"))
             observable <- app[ObservableSrv].create(
               observable = Observable(
-                Some("if you are lost"),
-                1,
+                message = Some("if you are lost"),
+                tlp = 1,
                 ioc = false,
                 sighted = true,
                 ignoreSimilarity = None,
+                dataType = "domain",
+                tags = Seq("tag10"),
                 organisationIds = Seq(organisation._id),
                 relatedId = alertId
               ),
-              `type` = observableType,
-              dataValue = "perdu.com",
-              tagNames = Set("tag10"),
-              extensions = Nil
+              "perdu.com"
             )
           } yield observable
         }.get
@@ -222,8 +220,8 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         val observables = app[CaseSrv].get(EntityName("1")).observables.richObservable.toList
         observables must have size 1
         observables must contain { (o: RichObservable) =>
-          o.data must beSome.which((_: Data).data must beEqualTo("h.fr"))
-          o.tags.map(_.toString) must contain("testNamespace:testPredicate=\"testDomain\"", "testNamespace:testPredicate=\"hello\"").exactly
+          o.data must beSome("h.fr")
+          o.tags must contain("testNamespace:testPredicate=\"testDomain\"", "testNamespace:testPredicate=\"hello\"").exactly
         }
       }
     }

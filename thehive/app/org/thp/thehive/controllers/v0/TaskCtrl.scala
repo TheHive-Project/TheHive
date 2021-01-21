@@ -1,5 +1,7 @@
 package org.thp.thehive.controllers.v0
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
+
 import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
@@ -24,9 +26,7 @@ class TaskCtrl @Inject() (
     override val db: Database,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
-    userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
-    shareSrv: ShareSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicTask
 ) extends QueryCtrl {
@@ -37,11 +37,8 @@ class TaskCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
         for {
-          case0        <- caseSrv.get(EntityIdOrName(caseId)).can(Permissions.manageTask).getOrFail("Case")
-          owner        <- inputTask.owner.map(o => userSrv.getOrFail(EntityIdOrName(o))).flip
-          createdTask  <- taskSrv.create(inputTask.toTask, owner)
-          organisation <- organisationSrv.getOrFail(request.organisation)
-          _            <- shareSrv.shareTask(createdTask, case0, organisation)
+          case0       <- caseSrv.get(EntityIdOrName(caseId)).can(Permissions.manageTask).getOrFail("Case")
+          createdTask <- caseSrv.createTask(case0, inputTask.toTask)
         } yield Results.Created(createdTask.toJson)
       }
 
@@ -50,7 +47,7 @@ class TaskCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .get(EntityIdOrName(taskId))
-          .visible
+          .visible(organisationSrv)
           .richTask
           .getOrFail("Task")
           .map { task =>
@@ -78,33 +75,40 @@ class TaskCtrl @Inject() (
           }
       }
 
-  def searchInCase(caseId: String): Action[AnyContent] =
+  def searchInCase(caseId: String): Action[AnyContent] = {
+    val query = Query.init[Traversal.V[Task]](
+      "tasksInCase",
+      (graph, authContext) =>
+        caseSrv
+          .get(EntityIdOrName(caseId))(graph)
+          .visible(organisationSrv)(authContext)
+          ._id
+          .headOption
+          .fold[Traversal.V[Task]](Traversal.empty(graph))(c => taskSrv.startTraversal(graph).relatedTo(c))
+    )
     entrypoint("search task in case")
-      .extract(
-        "query",
-        searchParser(
-          Query.init[Traversal.V[Task]](
-            "tasksInCase",
-            (graph, authContext) => caseSrv.get(EntityIdOrName(caseId))(graph).visible(authContext).tasks(authContext)
-          )
-        )
-      )
+      .extract("query", searchParser(query))
       .auth { implicit request =>
         val query: Query = request.body("query")
         queryExecutor.execute(query, request)
       }
+  }
 }
 
 @Singleton
 class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv) extends PublicData {
   override val entityName: String = "task"
   override val initialQuery: Query =
-    Query.init[Traversal.V[Task]]("listTask", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks)
+    Query.init[Traversal.V[Task]](
+      "listTask",
+      (graph, authContext) => taskSrv.startTraversal(graph).inOrganisation(organisationSrv.currentId(graph, authContext))
+    )
+  //organisationSrv.get(authContext.organisation)(graph).shares.tasks)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
     {
-      case (OutputParam(from, to, _, 0), taskSteps, authContext) =>
+      case (OutputParam(from, to, _, 0), taskSteps, _) =>
         taskSteps.richPage(from, to, withTotal = true)(_.richTask.domainMap(_ -> (None: Option[RichCase])))
       case (OutputParam(from, to, _, _), taskSteps, authContext) =>
         taskSteps.richPage(from, to, withTotal = true)(
@@ -117,10 +121,10 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
     "getTask",
     FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).inOrganisation(organisationSrv.currentId(graph, authContext))
   )
   override val outputQuery: Query =
-    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, authContext) => taskSteps.richTask)
+    Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, _) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.output[(RichTask, Option[RichCase])],
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
@@ -153,11 +157,7 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
     .property("status", UMapping.enum[TaskStatus.type])(_.field.custom { (_, value, vertex, graph, authContext) =>
       for {
         task <- taskSrv.get(vertex)(graph).getOrFail("Task")
-        user <-
-          userSrv
-            .current(graph, authContext)
-            .getOrFail("User")
-        _ <- taskSrv.updateStatus(task, user, value)(graph, authContext)
+        _    <- taskSrv.updateStatus(task, value)(graph, authContext)
       } yield Json.obj("status" -> value)
     })
     .property("flag", UMapping.boolean)(_.field.updatable)

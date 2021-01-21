@@ -22,20 +22,44 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
         val c1 = app[Database]
           .tryTransaction(implicit graph =>
             app[CaseSrv].create(
-              Case(0, "case audit", "desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None, Seq(orgAdmin._id)),
-              None,
+              Case(
+                title = "case audit",
+                description = "desc audit",
+                severity = 1,
+                startDate = new Date(),
+                endDate = None,
+                flag = false,
+                tlp = 1,
+                pap = 1,
+                status = CaseStatus.Open,
+                summary = None,
+                tags = Nil
+              ),
+              assignee = None,
               orgAdmin,
-              Set.empty,
               Seq.empty,
               None,
               Nil
             )
           )
           .get
-        app[CaseSrv].updateTagNames(c1.`case`, Set("lol"))
+        app[CaseSrv].updateTags(c1.`case`, Set("lol"))
         app[Database].tryTransaction { implicit graph =>
-          val t = app[TaskSrv].create(Task("test audit", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)
-          app[ShareSrv].shareTask(t.get, c1.`case`, orgAdmin)
+          app[CaseSrv].createTask(
+            c1.`case`,
+            Task(
+              title = "test audit",
+              group = "",
+              description = None,
+              status = TaskStatus.Waiting,
+              flag = false,
+              startDate = None,
+              endDate = None,
+              order = 0,
+              dueDate = None,
+              assignee = None
+            )
+          )
         }
         val audits = app[AuditSrv].startTraversal.toSeq
 
@@ -48,7 +72,21 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
     "merge audits" in testApp { app =>
       val auditedTask = app[Database]
         .tryTransaction(implicit graph =>
-          app[TaskSrv].create(Task("test audit 1", "", None, TaskStatus.Waiting, flag = false, None, None, 0, None), None)
+          app[TaskSrv].create(
+            Task(
+              title = "test audit 1",
+              group = "",
+              description = None,
+              status = TaskStatus.Waiting,
+              flag = false,
+              startDate = None,
+              endDate = None,
+              order = 0,
+              dueDate = None,
+              assignee = None
+            ),
+            None
+          )
         )
         .get
       app[Database].tryTransaction { implicit graph =>

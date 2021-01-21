@@ -1,14 +1,14 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.Date
-
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.EntityId
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v1._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsValue, Json}
+
+import java.util.Date
 
 object Conversion {
   implicit class RendererOps[V, O](v: V)(implicit renderer: Renderer.Aux[V, O]) {
@@ -67,7 +67,7 @@ object Conversion {
 
   implicit class InputAlertOps(inputAlert: InputAlert) {
 
-    def toAlert(organisationId: EntityId): Alert =
+    def toAlert: Alert =
       inputAlert
         .into[Alert]
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
@@ -76,7 +76,8 @@ object Conversion {
         .withFieldConst(_.read, false)
         .withFieldConst(_.lastSyncDate, new Date)
         .withFieldConst(_.follow, true)
-        .withFieldConst(_.organisationId, organisationId)
+        .withFieldConst(_.tags, inputAlert.tags.toSeq)
+        .withFieldConst(_.caseId, None)
         .transform
   }
 
@@ -85,9 +86,10 @@ object Conversion {
       .withFieldConst(_._type, "Case")
       .withFieldComputed(_._id, _._id.toString)
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_.extraData, JsObject.empty)
+      .withFieldComputed(_.assignee, _.assignee)
       .transform
   )
 
@@ -99,15 +101,16 @@ object Conversion {
         .withFieldConst(_._type, "Case")
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
-        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldComputed(_.tags, _.tags.toSet)
         .withFieldComputed(_.status, _.status.toString)
         .withFieldConst(_.extraData, caseWithExtraData._2)
+        .withFieldComputed(_.assignee, _.assignee)
         .transform
     }
 
   implicit class InputCaseOps(inputCase: InputCase) {
 
-    def toCase(organisationIds: EntityId*): Case =
+    def toCase(implicit authContext: AuthContext): Case =
       inputCase
         .into[Case]
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
@@ -117,7 +120,10 @@ object Conversion {
         .withFieldComputed(_.pap, _.pap.getOrElse(2))
         .withFieldConst(_.status, CaseStatus.Open)
         .withFieldConst(_.number, 0)
-        .withFieldConst(_.organisationIds, organisationIds)
+        .withFieldComputed(_.tags, _.tags.toSeq)
+        .withFieldComputed(_.assignee, c => Some(c.user.getOrElse(authContext.userId)))
+        .withFieldConst(_.impactStatus, None)
+        .withFieldConst(_.resolutionStatus, None)
         .transform
 
     def withCaseTemplate(caseTemplate: RichCaseTemplate): InputCase =
@@ -153,7 +159,7 @@ object Conversion {
       .withFieldConst(_._type, "CaseTemplate")
       .withFieldComputed(_._id, _._id.toString)
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldComputed(_.tasks, _.tasks.map(_.toOutput))
       .transform
   )
@@ -236,7 +242,6 @@ object Conversion {
       .withFieldConst(_._type, "Task")
       .withFieldComputed(_._id, _._id.toString)
       .withFieldComputed(_.status, _.status.toString)
-      .withFieldComputed(_.assignee, _.assignee.map(_.login))
       .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
@@ -249,7 +254,6 @@ object Conversion {
         .withFieldConst(_._type, "Task")
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.status, _.status.toString)
-        .withFieldComputed(_.assignee, _.assignee.map(_.login))
         .withFieldConst(_.extraData, taskWithExtraData._2)
         .transform
     }
@@ -330,14 +334,14 @@ object Conversion {
   )
 
   implicit class InputObservableOps(inputObservable: InputObservable) {
-    def toObservable(relatedId: EntityId, organisationIds: EntityId*): Observable =
+    def toObservable: Observable =
       inputObservable
         .into[Observable]
         .withFieldComputed(_.ioc, _.ioc.getOrElse(false))
         .withFieldComputed(_.sighted, _.sighted.getOrElse(false))
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
-        .withFieldConst(_.organisationIds, organisationIds)
-        .withFieldConst(_.relatedId, relatedId)
+        .withFieldComputed(_.tags, _.tags.toSeq)
+        .withFieldConst(_.data, None)
         .transform
   }
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.toJson[RichObservable, OutputObservable](richObservable =>
@@ -349,10 +353,8 @@ object Conversion {
       .withFieldComputed(_._updatedBy, _.observable._updatedBy)
       .withFieldComputed(_._createdAt, _.observable._createdAt)
       .withFieldComputed(_._createdBy, _.observable._createdBy)
-      .withFieldComputed(_.dataType, _.`type`.name)
       .withFieldComputed(_.startDate, _.observable._createdAt)
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-      .withFieldComputed(_.data, _.data.map(_.data))
+      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
       .withFieldComputed(
         _.reports,
@@ -376,10 +378,8 @@ object Conversion {
           .into[OutputObservable]
           .withFieldConst(_._type, "Observable")
           .withFieldComputed(_._id, _._id.toString)
-          .withFieldComputed(_.dataType, _.`type`.name)
           .withFieldComputed(_.startDate, _.observable._createdAt)
-          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-          .withFieldComputed(_.data, _.data.map(_.data))
+          .withFieldComputed(_.tags, _.tags.toSet)
           .withFieldComputed(_.attachment, _.attachment.map(_.toOutput))
           .withFieldComputed(
             _.reports,

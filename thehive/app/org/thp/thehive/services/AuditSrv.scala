@@ -1,28 +1,33 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-
-import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Transaction.Status
 import org.apache.tinkerpop.gremlin.structure.Vertex
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
-import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.DashboardOps._
+import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.libs.json.{JsObject, JsValue, Json}
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Success, Try}
 
-case class PendingAudit(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])
+case class PendingAudit(audit: Audit, context: Product with Entity, `object`: Option[Product with Entity])
 
 @Singleton
 class AuditSrv @Inject() (
@@ -109,7 +114,7 @@ class AuditSrv @Inject() (
     }
   }
 
-  private def createFromPending(tx: AnyRef, audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(implicit
+  private def createFromPending(tx: AnyRef, audit: Audit, context: Product with Entity, `object`: Option[Product with Entity])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
@@ -119,13 +124,13 @@ class AuditSrv @Inject() (
       createdAudit <- createEntity(audit)
       _            <- auditUserSrv.create(AuditUser(), createdAudit, user)
       _            <- `object`.map(auditedSrv.create(Audited(), createdAudit, _)).flip
-      _ = context.map(auditContextSrv.create(AuditContext(), createdAudit, _)).flip // this could fail on delete (context doesn't exist)
+      _ = auditContextSrv.create(AuditContext(), createdAudit, context) // this could fail on delete (context doesn't exist)
     } yield transactionAuditIdsLock.synchronized {
       transactionAuditIds = (tx -> createdAudit._id) :: transactionAuditIds
     }
   }
 
-  def create(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])(implicit
+  def create(audit: Audit, context: Product with Entity, `object`: Option[Product with Entity])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
@@ -164,47 +169,47 @@ class AuditSrv @Inject() (
   class ObjectAudit[E <: Product, C <: Product] {
 
     def create(entity: E with Entity, context: C with Entity, details: JsValue)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.create, entity, Some(details.toString)), Some(context), Some(entity))
+      auditSrv.create(Audit(Audit.create, entity, Some(details.toString)), context, Some(entity))
 
     def update(entity: E with Entity, context: C with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       if (details == JsObject.empty) Success(())
-      else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(context), Some(entity))
+      else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), context, Some(entity))
 
-    def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def delete(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
 
     def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit
         graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
-      auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), Some(destination), Some(destination))
+      auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), destination, Some(destination))
   }
 
   class SelfContextObjectAudit[E <: Product] {
 
     def create(entity: E with Entity, details: JsValue)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-      auditSrv.create(Audit(Audit.create, entity, Some(details.toString)), Some(entity), Some(entity))
+      auditSrv.create(Audit(Audit.create, entity, Some(details.toString)), entity, Some(entity))
 
     def update(entity: E with Entity, details: JsObject)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       if (details == JsObject.empty) Success(())
-      else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
+      else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), entity, Some(entity))
 
     def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit
         graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
-      auditSrv.create(Audit(Audit.delete, entity, details.map(_.toString())), Some(context), None)
+      auditSrv.create(Audit(Audit.delete, entity, details.map(_.toString())), context, None)
   }
 
   class UserAudit extends SelfContextObjectAudit[User] {
 
-    def changeProfile(user: User with Entity, organisation: Organisation, profile: Profile)(implicit
+    def changeProfile(user: User with Entity, organisation: Organisation with Entity, profile: Profile)(implicit
         graph: Graph,
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(
         Audit(Audit.update, user, Some(Json.obj("organisation" -> organisation.name, "profile" -> profile.name).toString)),
-        Some(user),
+        organisation,
         Some(user)
       )
 
@@ -214,7 +219,7 @@ class AuditSrv @Inject() (
     ): Try[Unit] =
       auditSrv.create(
         Audit(Audit.delete, user, Some(Json.obj("organisation" -> organisation.name).toString)),
-        None,
+        organisation,
         None
       )
   }
@@ -227,7 +232,7 @@ class AuditSrv @Inject() (
     ): Try[Unit] =
       auditSrv.create(
         Audit(Audit.update, `case`, Some(Json.obj("share" -> Json.obj("organisation" -> organisation.name, "profile" -> profile.name)).toString)),
-        Some(`case`),
+        `case`,
         Some(`case`)
       )
 
@@ -237,7 +242,7 @@ class AuditSrv @Inject() (
     ): Try[Unit] =
       auditSrv.create(
         Audit(Audit.update, task, Some(Json.obj("share" -> Json.obj("organisation" -> organisation.name)).toString)),
-        Some(task),
+        task,
         Some(`case`)
       )
 
@@ -247,14 +252,14 @@ class AuditSrv @Inject() (
     ): Try[Unit] =
       auditSrv.create(
         Audit(Audit.update, observable, Some(Json.obj("share" -> Json.obj("organisation" -> organisation.name)).toString)),
-        Some(observable),
+        observable,
         Some(`case`)
       )
 
     def unshareCase(`case`: Case with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(
         Audit(Audit.update, `case`, Some(Json.obj("unshare" -> Json.obj("organisation" -> organisation.name)).toString)),
-        Some(`case`),
+        `case`,
         Some(`case`)
       )
 
@@ -264,7 +269,7 @@ class AuditSrv @Inject() (
     ): Try[Unit] =
       auditSrv.create(
         Audit(Audit.update, task, Some(Json.obj("unshare" -> Json.obj("organisation" -> organisation.name)).toString)),
-        Some(task),
+        task,
         Some(`case`)
       )
 
@@ -274,7 +279,7 @@ class AuditSrv @Inject() (
     ): Try[Unit] =
       auditSrv.create(
         Audit(Audit.update, observable, Some(Json.obj("unshare" -> Json.obj("organisation" -> organisation.name)).toString)),
-        Some(observable),
+        observable,
         Some(`case`)
       )
   }
@@ -357,15 +362,46 @@ object AuditOps {
         )
         .v[Organisation]
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Audit] = visible(authContext.organisation)
+    def organisationIds: Traversal[EntityId, JMap[String, Any], Converter[EntityId, JMap[String, Any]]] =
+      traversal
+        .out[AuditContext]
+        .choose(
+          _.on(_.label)
+            .option("Case", _.v[Case].value(_.organisationIds))
+            .option("Observable", _.v[Observable].value(_.organisationIds))
+            .option("Task", _.v[Task].value(_.organisationIds))
+            .option("Alert", _.v[Alert].value(_.organisationId))
+            .option("Organisation", _.v[Organisation]._id)
+            .option("CaseTemplate", _.v[CaseTemplate].organisation._id)
+            .option("Dashboard", _.v[Dashboard].organisation._id)
+        )
 
-    def visible(organisation: EntityIdOrName): Traversal.V[Audit] = traversal.filter(_.organisation.get(organisation))
+    def caseId: Traversal[EntityId, JMap[String, Any], Converter[EntityId, JMap[String, Any]]] =
+      traversal
+        .out[AuditContext]
+        .choose(
+          _.on(_.label)
+            .option("Case", _.v[Case]._id)
+            .option("Observable", _.v[Observable].value(_.relatedId))
+            .option("Task", _.v[Task].value(_.relatedId))
+        )
+    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Audit] =
+      traversal.filter(
+        _.out[AuditContext].choose(
+          _.on(_.label)
+            .option("Case", _.v[Case].visible(organisationSrv))
+            .option("Observable", _.v[Observable].visible(organisationSrv))
+            .option("Task", _.v[Task].visible(organisationSrv))
+            .option("Alert", _.v[Alert].visible(organisationSrv))
+            .option("Organisation", _.v[Organisation].current)
+            .option("CaseTemplate", _.v[CaseTemplate].visible)
+            .option("Dashboard", _.v[Dashboard].visible)
+        )
+      )
 
     def `object`: Traversal[Vertex, Vertex, IdentityConverter[Vertex]] = traversal.out[Audited]
 
     def context: Traversal[Vertex, Vertex, IdentityConverter[Vertex]] = traversal.out[AuditContext]
-
-    //    Traversal(raw.out[AuditContext].map(_.asEntity))
   }
 
 }

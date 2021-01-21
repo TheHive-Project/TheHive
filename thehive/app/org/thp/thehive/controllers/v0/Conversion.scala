@@ -1,15 +1,14 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.EntityId
-import org.thp.scalligraph.auth.{Permission, PermissionDesc}
+import org.thp.scalligraph.auth.{AuthContext, Permission, PermissionDesc}
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
+
+import java.util.Date
 
 object Conversion {
   implicit class RendererOps[F, O](f: F)(implicit renderer: Renderer.Aux[F, O]) {
@@ -92,7 +91,7 @@ object Conversion {
 
   implicit class InputAlertOps(inputAlert: InputAlert) {
 
-    def toAlert(organisationId: EntityId): Alert =
+    def toAlert: Alert =
       inputAlert
         .into[Alert]
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
@@ -102,7 +101,8 @@ object Conversion {
         .withFieldConst(_.read, false)
         .withFieldConst(_.lastSyncDate, new Date)
         .withFieldConst(_.follow, true)
-        .withFieldConst(_.organisationId, organisationId)
+        .withFieldConst(_.tags, inputAlert.tags.toSeq)
+        .withFieldConst(_.caseId, None)
         .transform
   }
 
@@ -147,12 +147,12 @@ object Conversion {
       .withFieldComputed(_.id, _._id.toString)
       .withFieldComputed(_._id, _._id.toString)
       .withFieldRenamed(_.number, _.caseId)
-      .withFieldRenamed(_.assignee, _.owner)
+      .withFieldComputed(_.owner, _.assignee)
       .withFieldRenamed(_._updatedAt, _.updatedAt)
       .withFieldRenamed(_._updatedBy, _.updatedBy)
       .withFieldRenamed(_._createdAt, _.createdAt)
       .withFieldRenamed(_._createdBy, _.createdBy)
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldConst(_.stats, JsObject.empty)
       .withFieldComputed(_.permissions, _.userPermissions.asInstanceOf[Set[String]]) // Permission is String
       .transform
@@ -160,7 +160,7 @@ object Conversion {
 
   implicit class InputCaseOps(inputCase: InputCase) {
 
-    def toCase(organisationIds: EntityId*): Case =
+    def toCase(implicit authContext: AuthContext): Case =
       inputCase
         .into[Case]
         .withFieldComputed(_.severity, _.severity.getOrElse(2))
@@ -169,8 +169,8 @@ object Conversion {
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
         .withFieldComputed(_.pap, _.pap.getOrElse(2))
         .withFieldConst(_.status, CaseStatus.Open)
-        .withFieldConst(_.number, 0)
-        .withFieldConst(_.organisationIds, organisationIds)
+        .withFieldComputed(_.assignee, c => Some(c.user.getOrElse(authContext.userId)))
+        .withFieldComputed(_.tags, _.tags.toSeq)
         .transform
 
     def withCaseTemplate(caseTemplate: RichCaseTemplate): InputCase =
@@ -202,14 +202,14 @@ object Conversion {
         .withFieldComputed(_.id, _._id.toString)
         .withFieldComputed(_._id, _._id.toString)
         .withFieldRenamed(_.number, _.caseId)
-        .withFieldRenamed(_.assignee, _.owner)
+        .withFieldComputed(_.owner, _.assignee)
         .withFieldRenamed(_._updatedAt, _.updatedAt)
         .withFieldRenamed(_._updatedBy, _.updatedBy)
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
-        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldComputed(_.tags, _.tags.toSet)
         .withFieldConst(_.stats, richCaseWithStats._2)
-        .withFieldComputed(_.permissions, _.userPermissions.map(_.toString))
+        .withFieldComputed(_.permissions, _.userPermissions.asInstanceOf[Set[String]])
         .transform
     )
 
@@ -237,7 +237,7 @@ object Conversion {
       .withFieldRenamed(_._createdBy, _.createdBy)
       .withFieldConst(_.status, "Ok")
       .withFieldConst(_._type, "caseTemplate")
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldComputed(_.tasks, _.tasks.map(_.toValue))
       .withFieldConst(_.metrics, JsObject.empty)
       .transform
@@ -335,14 +335,14 @@ object Conversion {
 
   implicit class InputObservableOps(inputObservable: InputObservable) {
 
-    def toObservable(relatedId: EntityId, organisationIds: EntityId*): Observable =
+    def toObservable: Observable =
       inputObservable
         .into[Observable]
         .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
         .withFieldComputed(_.ioc, _.ioc.getOrElse(false))
         .withFieldComputed(_.sighted, _.sighted.getOrElse(false))
-        .withFieldConst(_.organisationIds, organisationIds)
-        .withFieldConst(_.relatedId, relatedId)
+        .withFieldConst(_.data, None)
+        .withFieldComputed(_.tags, _.tags.toSeq)
         .transform
   }
 
@@ -358,10 +358,7 @@ object Conversion {
       .withFieldComputed(_.updatedBy, _.observable._updatedBy)
       .withFieldComputed(_.createdAt, _.observable._createdAt)
       .withFieldComputed(_.createdBy, _.observable._createdBy)
-      .withFieldComputed(_.dataType, _.`type`.name)
       .withFieldComputed(_.startDate, _.observable._createdAt)
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-      .withFieldComputed(_.data, _.data.map(_.data))
       .withFieldComputed(_.attachment, _.attachment.map(_.toValue))
       .withFieldComputed(
         _.reports,
@@ -396,10 +393,7 @@ object Conversion {
           .withFieldComputed(_.updatedBy, _.observable._updatedBy)
           .withFieldComputed(_.createdAt, _.observable._createdAt)
           .withFieldComputed(_.createdBy, _.observable._createdBy)
-          .withFieldComputed(_.dataType, _.`type`.name)
           .withFieldComputed(_.startDate, _.observable._createdAt)
-          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-          .withFieldComputed(_.data, _.data.map(_.data))
           .withFieldComputed(_.attachment, _.attachment.map(_.toValue))
           .withFieldComputed(
             _.reports,
@@ -429,10 +423,7 @@ object Conversion {
           .withFieldComputed(_.updatedBy, _.observable._updatedBy)
           .withFieldComputed(_.createdAt, _.observable._createdAt)
           .withFieldComputed(_.createdBy, _.observable._createdBy)
-          .withFieldComputed(_.dataType, _.`type`.name)
           .withFieldComputed(_.startDate, _.observable._createdAt)
-          .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
-          .withFieldComputed(_.data, _.data.map(_.data))
           .withFieldComputed(_.attachment, _.attachment.map(_.toValue))
           .withFieldComputed(
             _.reports,
@@ -540,6 +531,7 @@ object Conversion {
         .withFieldComputed(_.order, _.order.getOrElse(0))
         .withFieldComputed(_.flag, _.flag.getOrElse(false))
         .withFieldComputed(_.group, _.group.getOrElse("default"))
+        .withFieldRenamed(_.owner, _.assignee)
         .transform
   }
 
@@ -550,7 +542,7 @@ object Conversion {
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_._type, "case_task")
       .withFieldConst(_.`case`, None)
-      .withFieldComputed(_.owner, _.assignee.map(_.login))
+      .withFieldComputed(_.owner, _.assignee)
       .withFieldRenamed(_._updatedAt, _.updatedAt)
       .withFieldRenamed(_._updatedBy, _.updatedBy)
       .withFieldRenamed(_._createdAt, _.createdAt)
@@ -568,7 +560,7 @@ object Conversion {
           .withFieldComputed(_.status, _.status.toString)
           .withFieldConst(_._type, "case_task")
           .withFieldConst(_.`case`, richCase.map(_.toValue))
-          .withFieldComputed(_.owner, _.assignee.map(_.login))
+          .withFieldComputed(_.owner, _.assignee)
           .withFieldRenamed(_._updatedAt, _.updatedAt)
           .withFieldRenamed(_._updatedBy, _.updatedBy)
           .withFieldRenamed(_._createdAt, _.createdAt)

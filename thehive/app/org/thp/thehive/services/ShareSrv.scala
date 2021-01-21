@@ -1,7 +1,5 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
@@ -9,7 +7,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
-import org.thp.scalligraph.{CreateError, EntityIdOrName}
+import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
@@ -18,6 +16,8 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Try}
 
 @Singleton
@@ -149,7 +149,7 @@ class ShareSrv @Inject() (implicit
     get(share)
       .`case`
       .tasks
-      .filterNot(_.taskToShares.hasId(share._id))
+      .filterNot(_.shares.hasId(share._id))
       .toIterator
       .toTry(shareTaskSrv.create(ShareTask(), share, _))
 
@@ -160,13 +160,13 @@ class ShareSrv @Inject() (implicit
   def shareTask(
       richTask: RichTask,
       `case`: Case with Entity,
-      organisation: Organisation with Entity
+      organisationId: EntityId
   )(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation._id).getOrFail("Case")
+      share <- get(`case`, organisationId).getOrFail("Case")
       _     <- shareTaskSrv.create(ShareTask(), share, richTask.task)
       _     <- auditSrv.task.create(richTask.task, richTask.toJson)
     } yield ()
@@ -175,14 +175,14 @@ class ShareSrv @Inject() (implicit
     * Shares an observable for an already shared case
     * @return
     */
-  def shareObservable(richObservable: RichObservable, `case`: Case with Entity, organisation: Organisation with Entity)(implicit
+  def shareObservable(richObservable: RichObservable, `case`: Case with Entity, organisationId: EntityId)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] =
     for {
-      share <- get(`case`, organisation._id).getOrFail("Case")
+      share <- get(`case`, organisationId).getOrFail("Case")
       _     <- shareObservableSrv.create(ShareObservable(), share, richObservable.observable)
-      _     <- observableSrv.get(richObservable.observable).addValue(_.organisationIds, organisation._id).getOrFail("Observable")
+      _     <- observableSrv.get(richObservable.observable).addValue(_.organisationIds, organisationId).getOrFail("Observable")
       _     <- auditSrv.observable.create(richObservable.observable, richObservable.toJson)
     } yield ()
 
@@ -225,7 +225,7 @@ class ShareSrv @Inject() (implicit
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (orgsToAdd, orgsToRemove) = taskSrv
       .get(task)
-      .taskToShares
+      .shares
       .organisation
       .toIterator
       .foldLeft((organisations.toSet, Set.empty[Organisation with Entity])) {
@@ -251,7 +251,7 @@ class ShareSrv @Inject() (implicit
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val existingOrgs = taskSrv
       .get(task)
-      .taskToShares
+      .shares
       .organisation
       .toSeq
 
@@ -329,7 +329,7 @@ class ShareSrv @Inject() (implicit
 object ShareOps {
   implicit class ShareOpsDefs(traversal: Traversal.V[Share]) {
     def get(idOrName: EntityIdOrName): Traversal.V[Share] =
-      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
+      idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
 
     def relatedTo(`case`: Case with Entity): Traversal.V[Share] = traversal.filter(_.`case`.hasId(`case`._id))
 
