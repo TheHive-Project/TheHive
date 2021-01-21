@@ -139,7 +139,8 @@
                         onUpdate: callback || undefined,
                         operations: [
                             {'_name': 'listAlert'}
-                        ]
+                        ],
+                        extraData: ['importDate']
                     });
                 },
 

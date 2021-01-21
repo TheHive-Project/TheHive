@@ -186,7 +186,8 @@ case class AggAvg(aggName: Option[String], fieldName: String) extends Aggregatio
         property
           .select(fieldPath, t, authContext)
           .mean
-          .domainMap(avg => Output(Json.obj(name -> avg.asInstanceOf[Double]))),
+          .domainMap(avg => Output(Json.obj(name -> avg)))
+          .asInstanceOf[Traversal.Domain[Output[_]]],
       Output(Json.obj(name -> JsNull))
     )
   }

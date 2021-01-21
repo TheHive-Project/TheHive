@@ -25,6 +25,7 @@ class Router @Inject() (
     // permissionCtrl: PermissionCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
+    shareCtrl: ShareCtrl,
     taxonomyCtrl: TaxonomyCtrl,
     // shareCtrl: ShareCtrl,
     userCtrl: UserCtrl,
@@ -53,13 +54,14 @@ class Router @Inject() (
 //    case POST(p"/case/_stats") =>                        caseCtrl.stats()
 //    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
 
-    case POST(p"/case/$caseId/observable")    => observableCtrl.create(caseId)
+    case POST(p"/case/$caseId/observable")    => observableCtrl.createInCase(caseId)
+    case POST(p"/alert/$alertId/artifact")    => observableCtrl.createInAlert(alertId)
     case GET(p"/observable/$observableId")    => observableCtrl.get(observableId)
     case DELETE(p"/observable/$observableId") => observableCtrl.delete(observableId)
     case PATCH(p"/observable/_bulk")          => observableCtrl.bulkUpdate
     case PATCH(p"/observable/$observableId")  => observableCtrl.update(observableId)
 //    case GET(p"/observable/$observableId/similar") => observableCtrl.findSimilar(observableId)
-//    case POST(p"/observable/$observableId/shares") => shareCtrl.shareObservable(observableId)
+    case POST(p"/observable/$observableId/shares") => shareCtrl.shareObservable(observableId)
 
     case GET(p"/caseTemplate")                   => caseTemplateCtrl.list
     case POST(p"/caseTemplate")                  => caseTemplateCtrl.create
@@ -84,10 +86,17 @@ class Router @Inject() (
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
 
-//    case GET(p"/share")            => shareCtrl.list
-//    case POST(p"/share")           => shareCtrl.create
-//    case GET(p"/share/$shareId")   => shareCtrl.get(shareId)
-//    case PATCH(p"/share/$shareId") => shareCtrl.update(shareId)
+    case DELETE(p"/case/shares")                               => shareCtrl.removeShares()
+    case POST(p"/case/$caseId/shares")                         => shareCtrl.shareCase(caseId)
+    case DELETE(p"/case/$caseId/shares")                       => shareCtrl.removeShares(caseId)
+    case DELETE(p"/task/$taskId/shares")                       => shareCtrl.removeTaskShares(taskId)
+    case DELETE(p"/observable/$observableId/shares")           => shareCtrl.removeObservableShares(observableId)
+    case GET(p"/case/$caseId/shares")                          => shareCtrl.listShareCases(caseId)
+    case GET(p"/case/$caseId/task/$taskId/shares")             => shareCtrl.listShareTasks(caseId, taskId)
+    case GET(p"/case/$caseId/observable/$observableId/shares") => shareCtrl.listShareObservables(caseId, observableId)
+    case POST(p"/case/task/$taskId/shares")                    => shareCtrl.shareTask(taskId)
+    case DELETE(p"/case/share/$shareId")                       => shareCtrl.removeShare(shareId)
+    case PATCH(p"/case/share/$shareId")                        => shareCtrl.updateShare(shareId)
 
     case GET(p"/task")                                => taskCtrl.list
     case POST(p"/task")                               => taskCtrl.create

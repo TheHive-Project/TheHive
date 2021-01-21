@@ -47,7 +47,7 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
     get(task).caseTemplate.headOption match {
       case None =>
         get(task)
-          .taskToShares
+          .shares
           .toIterator
           .toTry { share =>
             auditSrv
@@ -145,7 +145,7 @@ object TaskOps {
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Task] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(_.taskToShares.filter(_.profile.has(_.permissions, permission)).organisation.current)
+        traversal.filter(_.shares.filter(_.profile.has(_.permissions, permission)).organisation.current)
       else
         traversal.limit(0)
 
@@ -166,9 +166,9 @@ object TaskOps {
     def organisations: Traversal.V[Organisation] = traversal.in[ShareTask].in[OrganisationShare].v[Organisation]
 
     def organisations(permission: Permission): Traversal.V[Organisation] =
-      taskToShares.filter(_.profile.has(_.permissions, permission)).organisation
+      shares.filter(_.profile.has(_.permissions, permission)).organisation
 
-    def origin: Traversal.V[Organisation] = taskToShares.has(_.owner, true).organisation
+    def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
     def assignableUsers(implicit authContext: AuthContext): Traversal.V[User] =
       organisations(Permissions.manageTask)
@@ -226,7 +226,7 @@ object TaskOps {
 
     def unassign(): Unit = traversal.outE[TaskUser].remove()
 
-    def taskToShares: Traversal.V[Share] = traversal.in[ShareTask].v[Share]
+    def shares: Traversal.V[Share] = traversal.in[ShareTask].v[Share]
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
 
