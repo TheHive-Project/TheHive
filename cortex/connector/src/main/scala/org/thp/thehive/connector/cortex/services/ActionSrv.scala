@@ -1,10 +1,7 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.util.{Date, Map => JMap}
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-
-import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.structure.Element
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
@@ -23,11 +20,13 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.LogSrv
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.{LogSrv, OrganisationSrv}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
+import java.util.{Date, Map => JMap}
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -229,16 +228,16 @@ object ActionOps {
 
     def context: Traversal[Product with Entity, Element, Converter[Product with Entity, Element]] = traversal.out[ActionContext].entity
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Action] =
+    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Action] =
       traversal.filter(
         _.out[ActionContext]
           .choose(
             _.on(_.label)
-              .option("Case", _.v[Case].visible.entity)
-              .option("Task", _.v[Task].visible.entity)
-              .option("Log", _.v[Log].visible.entity)
-              .option("Alert", _.v[Alert].visible.entity)
-              .option("Observable", _.v[Observable].visible.entity)
+              .option("Case", _.v[Case].visible(organisationSrv).entity)
+              .option("Task", _.v[Task].visible(organisationSrv).entity)
+              .option("Log", _.v[Log].visible(organisationSrv).entity)
+              .option("Alert", _.v[Alert].visible(organisationSrv).entity)
+              .option("Observable", _.v[Observable].visible(organisationSrv).entity)
           )
       )
   }

@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -20,6 +19,7 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, Json, OWrites}
 import play.api.mvc.{AnyContent, Results, Action => PlayAction}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.{universe => ru}
 
@@ -76,15 +76,15 @@ class ActionCtrl @Inject() (
 }
 
 @Singleton
-class PublicAction @Inject() (actionSrv: ActionSrv, db: Database) extends PublicData {
+class PublicAction @Inject() (actionSrv: ActionSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
 
   override val entityName: String = "action"
   override val initialQuery: Query =
-    Query.init[Traversal.V[Action]]("listAction", (graph, authContext) => actionSrv.startTraversal(graph).visible(authContext))
+    Query.init[Traversal.V[Action]]("listAction", (graph, authContext) => actionSrv.startTraversal(graph).visible(organisationSrv)(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Action]](
     "getAction",
     FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => actionSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => actionSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Action], IteratorOutput](
     "page",

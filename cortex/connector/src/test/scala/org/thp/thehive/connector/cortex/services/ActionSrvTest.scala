@@ -6,13 +6,13 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AppBuilder, EntityName}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
 import org.thp.thehive.connector.cortex.models.{JobStatus, TheHiveCortexSchemaProvider}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.{AlertSrv, LogSrv, TaskSrv}
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
+import org.thp.thehive.services.{AlertSrv, LogSrv, OrganisationSrv, TaskSrv}
 import play.api.libs.json._
 import play.api.test.PlaySpecification
 
@@ -109,7 +109,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
     "handle action related to an Alert" in testApp { app =>
       implicit val entityWrites: OWrites[Entity] = app[ActionCtrl].entityWrites
       val alert = app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible.head
+        app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible(app[OrganisationSrv]).head
       }
       alert.read must beFalse
       val richAction = await(app[ActionSrv].execute(alert, None, "respTest1", JsObject.empty))
@@ -122,15 +122,15 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
       updatedActionTry must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        val updatedAlert = app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible.richAlert.head // FIXME
+        val updatedAlert = app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible(app[OrganisationSrv]).richAlert.head // FIXME
         updatedAlert.read must beTrue
-        updatedAlert.tags.map(_.toString) must contain("test tag from action") // TODO
+        updatedAlert.tags must contain("test tag from action") // TODO
       }
     }
   }
 
   def readJsonResource(resourceName: String): JsValue = {
-    val dataSource = Source.fromResource("cortex-jobs.json")
+    val dataSource = Source.fromResource(resourceName)
     try {
       val data = dataSource.mkString
       Json.parse(data)

@@ -7,7 +7,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.{AlertSrv, ObservableSrv, TaskSrv}
+import org.thp.thehive.services.{AlertSrv, ObservableSrv, OrganisationSrv, TaskSrv}
 import play.api.test.PlaySpecification
 
 class EntityHelperTest extends PlaySpecification with TestAppBuilder {
@@ -55,7 +55,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
     "find a manageable entity only (alert)" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
         for {
-          alert <- app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible.getOrFail("Alert")
+          alert <- app[AlertSrv].get(EntityName("testType;testSource;ref2")).visible(app[OrganisationSrv]).getOrFail("Alert")
           t     <- app[EntityHelper].get("Alert", alert._id, Permissions.manageAction)
         } yield t
       } must beSuccessfulTry

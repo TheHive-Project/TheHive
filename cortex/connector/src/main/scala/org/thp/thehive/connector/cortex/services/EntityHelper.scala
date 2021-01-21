@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
@@ -15,6 +14,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Try}
 
 @Singleton
@@ -23,7 +23,8 @@ class EntityHelper @Inject() (
     caseSrv: CaseSrv,
     alertSrv: AlertSrv,
     observableSrv: ObservableSrv,
-    logSrv: LogSrv
+    logSrv: LogSrv,
+    organisationSrv: OrganisationSrv
 ) {
 
   lazy val logger: Logger = Logger(getClass)
@@ -47,7 +48,7 @@ class EntityHelper @Inject() (
       case "Case"       => caseSrv.get(objectId).can(permission).getOrFail("Case")
       case "Observable" => observableSrv.get(objectId).can(permission).getOrFail("Observable")
       case "Log"        => logSrv.get(objectId).can(permission).getOrFail("Log")
-      case "Alert"      => alertSrv.get(objectId).can(permission).getOrFail("Alert")
+      case "Alert"      => alertSrv.get(objectId).can(organisationSrv, permission).getOrFail("Alert")
       case _            => Failure(BadRequestError(s"objectType $objectType is not recognised"))
     }
 
@@ -88,14 +89,15 @@ class EntityHelper @Inject() (
     */
   def entityInfo(entity: Entity)(implicit graph: Graph, authContext: AuthContext): Try[(String, Int, Int)] =
     entity match {
-      case t: Task  => taskSrv.get(t).visible.`case`.getOrFail("Case").map(c => (s"${t.title} (${t.status})", c.tlp, c.pap))
-      case c: Case  => caseSrv.get(c).visible.getOrFail("Case").map(c => (s"#${c.number} ${c.title}", c.tlp, c.pap))
-      case l: Log   => logSrv.get(l).visible.`case`.getOrFail("Case").map(c => (s"${l.message} from ${l._createdBy}", c.tlp, c.pap))
-      case a: Alert => alertSrv.get(a).visible.getOrFail("Alert").map(a => (s"[${a.source}:${a.sourceRef}] ${a.title}", a.tlp, a.pap))
+      case t: Task => taskSrv.get(t).visible(organisationSrv).`case`.getOrFail("Case").map(c => (s"${t.title} (${t.status})", c.tlp, c.pap))
+      case c: Case => caseSrv.get(c).visible(organisationSrv).getOrFail("Case").map(c => (s"#${c.number} ${c.title}", c.tlp, c.pap))
+      case l: Log  => logSrv.get(l).visible(organisationSrv).`case`.getOrFail("Case").map(c => (s"${l.message} from ${l._createdBy}", c.tlp, c.pap))
+      case a: Alert =>
+        alertSrv.get(a).visible(organisationSrv).getOrFail("Alert").map(a => (s"[${a.source}:${a.sourceRef}] ${a.title}", a.tlp, a.pap))
       case o: Observable =>
         for {
-          ro <- observableSrv.get(o).visible.richObservable.getOrFail("Observable")
+          ro <- observableSrv.get(o).visible(organisationSrv).richObservable.getOrFail("Observable")
           c  <- observableSrv.get(o).`case`.getOrFail("Case")
-        } yield (s"[${ro.`type`.name}] ${ro.data.map(_.data).getOrElse("<no data>")}", ro.tlp, c.pap) // TODO add attachment info
+        } yield (s"[${ro.dataType}] ${ro.data.getOrElse("<no data>")}", ro.tlp, c.pap) // TODO add attachment info
     }
 }
