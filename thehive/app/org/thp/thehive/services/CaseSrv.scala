@@ -16,7 +16,6 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.ObservableOps._
@@ -35,7 +34,6 @@ class CaseSrv @Inject() (
     tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,
     organisationSrv: OrganisationSrv,
-    caseTemplateSrv: CaseTemplateSrv,
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
     taskSrv: TaskSrv,
@@ -70,9 +68,10 @@ class CaseSrv @Inject() (
       caseTemplate: Option[RichCaseTemplate],
       additionalTasks: Seq[Task]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
-    val tags       = (`case`.tags ++ caseTemplate.fold[Seq[String]](Nil)(_.tags)).distinct
     val caseNumber = if (`case`.number == 0) nextCaseNumber else `case`.number
+    val tagNames   = (`case`.tags ++ caseTemplate.fold[Seq[String]](Nil)(_.tags)).distinct
     for {
+      tags <- tagNames.toTry(tagSrv.getOrCreate)
       createdCase <- createEntity(
         `case`.copy(
           number = caseNumber,
@@ -81,14 +80,14 @@ class CaseSrv @Inject() (
           caseTemplate = caseTemplate.map(_.name),
           impactStatus = None,
           resolutionStatus = None,
-          tags = tags
+          tags = tagNames
         )
       )
-      _            <- assignee.map(u => caseUserSrv.create(CaseUser(), createdCase, u)).flip
-      _            <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
-      _            <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
-      _            <- caseTemplate.fold(additionalTasks)(_.tasks.map(_.task) ++ additionalTasks).toTry(task => createTask(createdCase, task))
-      caseTemplate <- `case`.caseTemplate.map(caseTemplateSrv.getByName(_).richCaseTemplate.getOrFail("CaseTemplate")).flip
+      _ <- assignee.map(u => caseUserSrv.create(CaseUser(), createdCase, u)).flip
+      _ <- shareSrv.shareCase(owner = true, createdCase, organisation, profileSrv.orgAdmin)
+      _ <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
+      _ <- caseTemplate.fold(additionalTasks)(_.tasks.map(_.task) ++ additionalTasks).toTry(task => createTask(createdCase, task))
+      _ <- tags.toTry(caseTagSrv.create(CaseTag(), createdCase, _))
 
       caseTemplateCf =
         caseTemplate
@@ -177,41 +176,20 @@ class CaseSrv @Inject() (
   def createObservable(`case`: Case with Entity, observable: Observable, data: String)(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] = {
-    val alreadyExists = observableSrv
-      .startTraversal
-      .has(_.organisationIds, organisationSrv.currentId)
-      .has(_.relatedId, `case`._id)
-      .has(_.data, data)
-      .exists
-    if (alreadyExists)
-      Failure(CreateError("Observable already exists"))
-    else
-      for {
-        createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), data)
-        _                 <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
-      } yield createdObservable
-  }
+  ): Try[RichObservable] =
+    for {
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), data)
+      _                 <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
+    } yield createdObservable
 
   def createObservable(`case`: Case with Entity, observable: Observable, attachment: Attachment with Entity)(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] = {
-    val alreadyExists = observableSrv
-      .startTraversal
-      .has(_.organisationIds, organisationSrv.currentId)
-      .has(_.relatedId, `case`._id)
-      .has(_.attachmentId, attachment.attachmentId)
-      .exists
-    if (alreadyExists)
-      Failure(CreateError("Observable already exists"))
-    else
-      for {
-        createdObservable <-
-          observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), attachment)
-        _ <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
-      } yield createdObservable
-  }
+  ): Try[RichObservable] =
+    for {
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), attachment)
+      _                 <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
+    } yield createdObservable
 
   def createObservable(`case`: Case with Entity, observable: Observable, file: FFile)(implicit
       graph: Graph,

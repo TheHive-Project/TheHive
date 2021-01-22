@@ -107,12 +107,12 @@ case class Case(
     status: CaseStatus.Value,
     summary: Option[String],
     tags: Seq[String],
+    impactStatus: Option[String] = None,
+    resolutionStatus: Option[String] = None,
     /* filled by the service */
     assignee: Option[String] = None,
     number: Int = 0,
     organisationIds: Seq[EntityId] = Nil,
-    impactStatus: Option[String] = None,
-    resolutionStatus: Option[String] = None,
     caseTemplate: Option[String] = None
 )
 

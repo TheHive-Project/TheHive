@@ -129,41 +129,22 @@ class AlertSrv @Inject() (
   def createObservable(alert: Alert with Entity, observable: Observable, data: String)(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] = {
-    val alreadyExists = observableSrv
-      .startTraversal
-      .has(_.relatedId, alert._id)
-      .has(_.data, data)
-      .exists
-    if (alreadyExists)
-      Failure(CreateError("Observable already exists"))
-    else
-      for {
-        createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = alert._id), data)
-        _                 <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
-        _                 <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
-      } yield createdObservable
-  }
+  ): Try[RichObservable] =
+    for {
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = alert._id), data)
+      _                 <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
+      _                 <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
+    } yield createdObservable
 
   def createObservable(alert: Alert with Entity, observable: Observable, attachment: Attachment with Entity)(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] = {
-    val alreadyExists = observableSrv
-      .startTraversal
-      .has(_.relatedId, alert._id)
-      .has(_.attachmentId, attachment.attachmentId)
-      .exists
-    if (alreadyExists)
-      Failure(CreateError("Observable already exists"))
-    else
-      for {
-        createdObservable <-
-          observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = alert._id), attachment)
-        _ <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
-        _ <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
-      } yield createdObservable
-  }
+  ): Try[RichObservable] =
+    for {
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = alert._id), attachment)
+      _                 <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
+      _                 <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
+    } yield createdObservable
 
   def createObservable(alert: Alert with Entity, observable: Observable, file: FFile)(implicit
       graph: Graph,

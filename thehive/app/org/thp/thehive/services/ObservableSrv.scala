@@ -10,7 +10,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.utils.Hash
-import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
@@ -60,17 +60,19 @@ class ObservableSrv @Inject() (
       .has(_.dataType, observable.dataType)
       .filterOnAttachmentId(attachment.attachmentId)
       .exists
-    if (alreadyExists)
+    if (alreadyExists) Failure(CreateError("Observable already exists"))
+    else
       for {
-        observableType <- observableTypeSrv.getOrFail(EntityIdOrName(observable.dataType))
+        observableType <- observableTypeSrv.getOrFail(EntityName(observable.dataType))
         _ <-
           if (!observableType.isAttachment) Failure(BadRequestError("A text observable doesn't accept attachment"))
           else Success(())
+        tags              <- observable.tags.toTry(tagSrv.getOrCreate)
         createdObservable <- createEntity(observable.copy(data = None))
         _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+        _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       } yield RichObservable(createdObservable, Some(attachment), None, Nil)
-    else Failure(CreateError("Observable already exists"))
   }
 
   def create(
@@ -86,18 +88,20 @@ class ObservableSrv @Inject() (
       .has(_.data, observable.data.get)
       .has(_.dataType, observable.dataType)
       .exists
-    if (alreadyExists)
+    if (alreadyExists) Failure(CreateError("Observable already exists"))
+    else
       for {
-        observableType <- observableTypeSrv.getOrFail(EntityIdOrName(observable.dataType))
+        observableType <- observableTypeSrv.getOrFail(EntityName(observable.dataType))
         _ <-
           if (observableType.isAttachment) Failure(BadRequestError("A attachment observable doesn't accept string value"))
           else Success(())
+        tags              <- observable.tags.toTry(tagSrv.getOrCreate)
         data              <- dataSrv.create(Data(dataValue))
         createdObservable <- createEntity(observable.copy(data = Some(dataValue)))
         _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
+        _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       } yield RichObservable(createdObservable, None, None, Nil)
-    else Failure(CreateError("Observable already exists"))
   }
 
   def addTags(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Seq[Tag with Entity]] = {

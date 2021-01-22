@@ -1,21 +1,19 @@
 package org.thp.thehive.services
 
-import java.util.Date
-
 import org.specs2.matcher.Matcher
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{CreateError, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
+import java.util.Date
 import scala.util.Success
 
 class CaseSrvTest extends PlaySpecification with TestAppBuilder {
