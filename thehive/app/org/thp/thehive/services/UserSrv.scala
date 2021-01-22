@@ -41,11 +41,6 @@ class UserSrv @Inject() (
 
   val userAttachmentSrv = new EdgeSrv[UserAttachment, User, Attachment]
 
-  override def createEntity(e: User)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] = {
-    integrityCheckActor ! EntityAdded("User")
-    super.createEntity(e)
-  }
-
   def checkUser(user: User): Try[User] = {
     val login =
       if (!user.login.contains('@') && defaultUserDomain.isDefined) s"${user.login}@${defaultUserDomain.get}".toLowerCase
@@ -64,6 +59,7 @@ class UserSrv @Inject() (
        roleSrv.create(user, organisation, profile)
      else
        Success(())).flatMap { _ =>
+      integrityCheckActor ! EntityAdded("User")
       for {
         richUser <- get(user).richUser(authContext, organisation._id).getOrFail("User")
         _        <- auditSrv.user.create(user, richUser.toJson)
