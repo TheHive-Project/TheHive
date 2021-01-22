@@ -1,11 +1,8 @@
 package org.thp.thehive.migration.th3
 
-import java.util.{Base64, Date}
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.connector.cortex.models.{Action, Job, JobStatus}
 import org.thp.thehive.controllers.v0
@@ -14,6 +11,8 @@ import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
+import java.util.{Base64, Date}
 
 case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
@@ -64,7 +63,7 @@ trait Conversion {
       status      <- (json \ "status").validate[CaseStatus.Value]
       summary     <- (json \ "summary").validateOpt[String]
       user        <- (json \ "owner").validateOpt[String]
-      tags             = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      tags             = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
       metrics          = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       resolutionStatus = (json \ "resolutionStatus").asOpt[String]
       impactStatus     = (json \ "impactStatus").asOpt[String]
@@ -91,18 +90,13 @@ trait Conversion {
         tags = tags.toSeq,
         number = number,
         organisationIds = Nil,
-        assignee = None,
+        assignee = user.map(normaliseLogin),
         impactStatus = impactStatus,
         resolutionStatus = resolutionStatus,
         caseTemplate = None
       ), // organisation Ids are filled by output
-      user.map(normaliseLogin),
       Map(mainOrganisation -> Profile.orgAdmin.name),
-      tags,
       (metricsValue ++ customFieldsValue).toMap,
-      None,
-      resolutionStatus,
-      impactStatus,
       metaData
     )
   }
@@ -133,13 +127,10 @@ trait Conversion {
         ioc = ioc,
         sighted = sighted,
         ignoreSimilarity = None,
-        data = dataOrAttachment.swap.toOption,
         dataType = dataType,
         tags = tags.toSeq
       ),
       Seq(mainOrganisation),
-      dataType,
-      tags,
       dataOrAttachment
     )
   }
@@ -207,7 +198,7 @@ trait Conversion {
       read = status == "Ignored" || status == "Imported"
       follow <- (json \ "follow").validate[Boolean]
       caseId <- (json \ "case").validateOpt[String]
-      tags         = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      tags         = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
       customFields = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       customFieldsValue = customFields.value.map {
         case (name, value) =>
@@ -234,7 +225,6 @@ trait Conversion {
       ),
       caseId,
       mainOrganisation,
-      tags,
       customFieldsValue.toMap,
       caseTemplate: Option[String]
     )
@@ -265,15 +255,10 @@ trait Conversion {
           ioc = ioc.getOrElse(false),
           sighted = false,
           ignoreSimilarity = None,
-          data = dataOrAttachment.swap.toOption,
           dataType = dataType,
-          tags = tags.toSeq,
-          organisationIds = Nil,
-          relatedId = EntityId("")
+          tags = tags.toSeq
         ),
-        Nil,
-        dataType,
-        tags,
+        Seq(mainOrganisation),
         dataOrAttachment
       )
 
@@ -497,13 +482,10 @@ trait Conversion {
           ioc = ioc,
           sighted = sighted,
           ignoreSimilarity = None,
-          data = dataOrAttachment.swap.toOption,
           dataType = dataType,
           tags = tags.toSeq
         ),
         Seq(mainOrganisation),
-        dataType,
-        tags,
         dataOrAttachment
       )
     }

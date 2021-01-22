@@ -3,13 +3,14 @@ import sbt._
 object Dependencies {
   val janusVersion        = "0.5.2"
   val akkaVersion: String = play.core.PlayVersion.akkaVersion
-  val elastic4sVersion    = "6.7.4"
+  val elastic4sVersion    = "7.10.2"
 
   lazy val specs                   = "com.typesafe.play"        %% "play-specs2"                        % play.core.PlayVersion.current
   lazy val playLogback             = "com.typesafe.play"        %% "play-logback"                       % play.core.PlayVersion.current
   lazy val playGuice               = "com.typesafe.play"        %% "play-guice"                         % play.core.PlayVersion.current
   lazy val playFilters             = "com.typesafe.play"        %% "filters-helpers"                    % play.core.PlayVersion.current
   lazy val playMockws              = "de.leanovate.play-mockws" %% "play-mockws"                        % "2.8.0"
+  lazy val akkaActor               = "com.typesafe.akka"        %% "akka-actor"                         % akkaVersion
   lazy val akkaCluster             = "com.typesafe.akka"        %% "akka-cluster"                       % akkaVersion
   lazy val akkaClusterTools        = "com.typesafe.akka"        %% "akka-cluster-tools"                 % akkaVersion
   lazy val akkaClusterTyped        = "com.typesafe.akka"        %% "akka-cluster-typed"                 % akkaVersion
@@ -42,7 +43,7 @@ object Dependencies {
   lazy val chimney                 = "io.scalaland"             %% "chimney"                            % "0.4.0"
   lazy val elastic4sCore           = "com.sksamuel.elastic4s"   %% "elastic4s-core"                     % elastic4sVersion
   lazy val elastic4sHttpStreams    = "com.sksamuel.elastic4s"   %% "elastic4s-http-streams"             % elastic4sVersion
-  lazy val elastic4sHttp           = "com.sksamuel.elastic4s"   %% "elastic4s-http"                     % elastic4sVersion
+  lazy val elastic4sClient         = "com.sksamuel.elastic4s"   %% "elastic4s-client-esjava"            % elastic4sVersion
   lazy val log4jOverSlf4j          = "org.slf4j"                 % "log4j-over-slf4j"                   % "1.7.25"
   lazy val log4jToSlf4j            = "org.apache.logging.log4j"  % "log4j-to-slf4j"                     % "2.9.1"
   lazy val reflections             = "org.reflections"           % "reflections"                        % "0.9.12"
