@@ -10,8 +10,8 @@ import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
-import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
+import org.thp.scalligraph.traversal._
+import org.thp.scalligraph.{EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -25,9 +25,10 @@ import org.thp.thehive.services.UserOps._
 import play.api.cache.SyncCacheApi
 import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
+import java.lang.{Long => JLong}
 import java.util.{Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseSrv @Inject() (
@@ -576,12 +577,23 @@ object CaseOps {
 
     def alert: Traversal.V[Alert] = traversal.in[AlertCase].v[Alert]
 
+    def procedure: Traversal.V[Procedure] = traversal.out[CaseProcedure].v[Procedure]
+
     def isActionRequired(implicit authContext: AuthContext): Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
       traversal.choose(_.share(authContext).outE[ShareTask].has(_.actionRequired, true), true, false)
 
+    def handlingDuration: Traversal[Long, Long, IdentityConverter[Long]] =
+      traversal.coalesceIdent(
+        _.has(_.endDate)
+          .sack(
+            (_: JLong, importDate: JLong) => importDate,
+            _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+          )
+          .sack((_: Long) - (_: JLong), _.by(_._createdAt.graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+          .sack[Long],
+        _.constant(0L)
+      )
   }
-
-//  implicit class CaseCustomFieldsOpsDefs(traversal: Traversal.E[CaseCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
 class CaseIntegrityCheckOps @Inject() (val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {

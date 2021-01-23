@@ -16,6 +16,7 @@
                         'manageCustomField',
                         'manageConfig',
                         'manageTag',
+                        'manageTaxonomy',
                         'manageProfile',
                         'manageAnalyzerTemplate',
                         'manageObservableTemplate'
@@ -25,6 +26,7 @@
                         manageOrganisation: 'Manage organisations',
                         manageCustomField: 'Manage custom fields',
                         manageConfig: 'Manage configurations',
+                        manageTaxonomy: 'Manage taxonomies',
                         manageTag: 'Manage tags',
                         manageProfile: 'Manage profiles',
                         manageAnalyzerTemplate: 'Manage analyzer templates',
@@ -61,7 +63,9 @@
             };
 
             this.list = function() {
-                return $http.get(baseUrl);
+                return $http.get(baseUrl, {params: {
+                    range: 'all'
+                }});
             };
 
             this.get = function(name) {

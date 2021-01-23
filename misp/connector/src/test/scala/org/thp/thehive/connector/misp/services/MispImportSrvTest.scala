@@ -64,7 +64,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
           attributeCount = Some(11),
           distribution = 1,
           attributes = Nil,
-          tags = Seq(Tag(Some("1"), "TH-test", Some(0x36a3a3), None), Tag(Some("2"), "TH-test-2", Some(0x1ac7c7), None))
+          tags = Seq(Tag(Some("1"), "TH-test", Some("#36a3a3"), None), Tag(Some("2"), "TH-test-2", Some("#1ac7c7"), None))
         )
       )
     }

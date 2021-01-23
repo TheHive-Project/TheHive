@@ -32,7 +32,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr ng-repeat="observable in $cmp.list.values" class="clickable">
+                    <tr ng-repeat="observable in $cmp.list.values">
                         <td class="nowrap">
                             <observable-flags observable="observable" inline="true" on-filter="$cmp.addFilterValue(fieldName, value)"></observable-flags>
                         </td>

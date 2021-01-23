@@ -136,6 +136,9 @@
                                     <td class="text-center">{{::event.observableCount || 0}}</td>
                                     <td>
                                         <a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | shortDate}}</a>
+                                        <div ng-if="!!event.caseId">
+                                            <alert-duration start="event._createdAt" end="event.extraData.importDate" icon="fa-clock-o"></alert-duration>
+                                        </div>
                                     </td>
                                     <td class="clearfix">
                                         <div class="pull-right" if-permission="manageAlert">

@@ -1,7 +1,5 @@
 package org.thp.thehive
 
-import java.io.File
-import javax.inject.{Inject, Singleton}
 import org.scalactic.Or
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
@@ -14,6 +12,8 @@ import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
+import java.io.File
+import javax.inject.{Inject, Singleton}
 import scala.io.Source
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Failure, Success, Try}
@@ -21,27 +21,30 @@ import scala.util.{Failure, Success, Try}
 @Singleton
 class DatabaseBuilder @Inject() (
     schema: Schema,
-    userSrv: UserSrv,
-    organisationSrv: OrganisationSrv,
-    profileSrv: ProfileSrv,
-    caseSrv: CaseSrv,
-    customFieldSrv: CustomFieldSrv,
-    caseTemplateSrv: CaseTemplateSrv,
-    impactStatusSrv: ImpactStatusSrv,
-    resolutionStatusSrv: ResolutionStatusSrv,
-    shareSrv: ShareSrv,
-    roleSrv: RoleSrv,
-    observableSrv: ObservableSrv,
-    observableTypeSrv: ObservableTypeSrv,
-    taskSrv: TaskSrv,
-    tagSrv: TagSrv,
-    keyValueSrv: KeyValueSrv,
-    dataSrv: DataSrv,
-    logSrv: LogSrv,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
+    caseSrv: CaseSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    customFieldSrv: CustomFieldSrv,
     dashboardSrv: DashboardSrv,
+    dataSrv: DataSrv,
+    impactStatusSrv: ImpactStatusSrv,
+    keyValueSrv: KeyValueSrv,
+    logSrv: LogSrv,
+    observableSrv: ObservableSrv,
+    observableTypeSrv: ObservableTypeSrv,
+    organisationSrv: OrganisationSrv,
     pageSrv: PageSrv,
+    patternSrv: PatternSrv,
+    procedureSrv: ProcedureSrv,
+    profileSrv: ProfileSrv,
+    resolutionStatusSrv: ResolutionStatusSrv,
+    roleSrv: RoleSrv,
+    shareSrv: ShareSrv,
+    tagSrv: TagSrv,
+    taskSrv: TaskSrv,
+    taxonomySrv: TaxonomySrv,
+    userSrv: UserSrv,
     integrityChecks: Set[GenIntegrityCheckOps]
 ) {
 
@@ -63,29 +66,35 @@ class DatabaseBuilder @Inject() (
         db.tryTransaction { implicit graph =>
           val idMap =
             createVertex(caseSrv, FieldsParser[Case]) ++
-              createVertex(userSrv, FieldsParser[User]) ++
-              createVertex(customFieldSrv, FieldsParser[CustomField]) ++
-              createVertex(organisationSrv, FieldsParser[Organisation]) ++
+              createVertex(alertSrv, FieldsParser[Alert]) ++
+              createVertex(attachmentSrv, FieldsParser[Attachment]) ++
               createVertex(caseTemplateSrv, FieldsParser[CaseTemplate]) ++
-              createVertex(shareSrv, FieldsParser[Share]) ++
-              createVertex(roleSrv, FieldsParser[Role]) ++
-              createVertex(profileSrv, FieldsParser[Profile]) ++
+              createVertex(customFieldSrv, FieldsParser[CustomField]) ++
+              createVertex(dashboardSrv, FieldsParser[Dashboard]) ++
+              createVertex(dataSrv, FieldsParser[Data]) ++
+              createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
+              createVertex(keyValueSrv, FieldsParser[KeyValue]) ++
+              createVertex(logSrv, FieldsParser[Log]) ++
               createVertex(observableSrv, FieldsParser[Observable]) ++
               createVertex(observableTypeSrv, FieldsParser[ObservableType]) ++
-              createVertex(taskSrv, FieldsParser[Task]) ++
-              createVertex(keyValueSrv, FieldsParser[KeyValue]) ++
-              createVertex(dataSrv, FieldsParser[Data]) ++
-              createVertex(logSrv, FieldsParser[Log]) ++
-              createVertex(alertSrv, FieldsParser[Alert]) ++
-              createVertex(resolutionStatusSrv, FieldsParser[ResolutionStatus]) ++
-              createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
-              createVertex(attachmentSrv, FieldsParser[Attachment]) ++
-              createVertex(tagSrv, FieldsParser[Tag]) ++
+              createVertex(organisationSrv, FieldsParser[Organisation]) ++
               createVertex(pageSrv, FieldsParser[Page]) ++
-              createVertex(dashboardSrv, FieldsParser[Dashboard])
+              createVertex(patternSrv, FieldsParser[Pattern]) ++
+              createVertex(procedureSrv, FieldsParser[Procedure]) ++
+              createVertex(profileSrv, FieldsParser[Profile]) ++
+              createVertex(resolutionStatusSrv, FieldsParser[ResolutionStatus]) ++
+              createVertex(roleSrv, FieldsParser[Role]) ++
+              createVertex(shareSrv, FieldsParser[Share]) ++
+              createVertex(tagSrv, FieldsParser[Tag]) ++
+              createVertex(taskSrv, FieldsParser[Task]) ++
+              createVertex(taxonomySrv, FieldsParser[Taxonomy]) ++
+              createVertex(userSrv, FieldsParser[User])
 
           createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
           createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
+          createEdge(organisationSrv.organisationTaxonomySrv, organisationSrv, taxonomySrv, FieldsParser[OrganisationTaxonomy], idMap)
+
+          createEdge(taxonomySrv.taxonomyTagSrv, taxonomySrv, tagSrv, FieldsParser[TaxonomyTag], idMap)
 
           createEdge(roleSrv.userRoleSrv, userSrv, roleSrv, FieldsParser[UserRole], idMap)
 
@@ -130,6 +139,12 @@ class DatabaseBuilder @Inject() (
 
           createEdge(dashboardSrv.dashboardUserSrv, dashboardSrv, userSrv, FieldsParser[DashboardUser], idMap)
           createEdge(dashboardSrv.organisationDashboardSrv, organisationSrv, dashboardSrv, FieldsParser[OrganisationDashboard], idMap)
+
+          createEdge(patternSrv.patternPatternSrv, patternSrv, patternSrv, FieldsParser[PatternPattern], idMap)
+
+          createEdge(procedureSrv.caseProcedureSrv, caseSrv, procedureSrv, FieldsParser[CaseProcedure], idMap)
+          createEdge(procedureSrv.procedurePatternSrv, procedureSrv, patternSrv, FieldsParser[ProcedurePattern], idMap)
+
           Success(())
         }
       }

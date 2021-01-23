@@ -20,6 +20,9 @@ case class OrganisationShare()
 @BuildEdgeEntity[Organisation, Organisation]
 case class OrganisationOrganisation()
 
+@BuildEdgeEntity[Organisation, Taxonomy]
+case class OrganisationTaxonomy()
+
 case class RichOrganisation(organisation: Organisation with Entity, links: Seq[Organisation with Entity]) {
   def name: String               = organisation.name
   def description: String        = organisation.description

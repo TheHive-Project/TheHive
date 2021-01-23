@@ -17,26 +17,20 @@ import scala.util.{Success, Try}
 @Singleton
 class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[Tag] {
 
-  val autoCreateConfig: ConfigItem[Boolean, Boolean] =
+  private val autoCreateConfig: ConfigItem[Boolean, Boolean] =
     appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
 
   def autoCreate: Boolean = autoCreateConfig.get
 
-  val defaultNamespaceConfig: ConfigItem[String, String] =
+  private val defaultNamespaceConfig: ConfigItem[String, String] =
     appConfig.item[String]("tags.defaultNamespace", "Default namespace of the automatically created tags")
 
   def defaultNamespace: String = defaultNamespaceConfig.get
 
-  val defaultColourConfig: ConfigItem[String, Int] =
-    appConfig.mapItem[String, Int](
-      "tags.defaultColour",
-      "Default colour of the automatically created tags",
-      {
-        case s if s(0) == '#' => Try(Integer.parseUnsignedInt(s.tail, 16)).getOrElse(defaultColour)
-        case _                => defaultColour
-      }
-    )
-  def defaultColour: Int = defaultColourConfig.get
+  private val defaultColourConfig: ConfigItem[String, String] =
+    appConfig.item[String]("tags.defaultColour", "Default colour of the automatically created tags")
+
+  def defaultColour: String = defaultColourConfig.get
 
   def parseString(tagName: String): Tag =
     Tag.fromString(tagName, defaultNamespace, defaultColour)

@@ -174,7 +174,8 @@ class ShareCtrl @Inject() (
         val shares = caseSrv
           .get(EntityIdOrName(caseId))
           .shares
-          .filter(_.organisation.filterNot(_.get(request.organisation)).visible)
+          .visible
+          .filterNot(_.get(request.organisation))
           .richShare
           .toSeq
 

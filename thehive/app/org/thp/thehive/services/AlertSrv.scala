@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
@@ -9,7 +10,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
-import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -20,8 +21,9 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
+import java.lang.{Long => JLong}
 import java.util.{Date, Map => JMap}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -33,7 +35,8 @@ class AlertSrv @Inject() (
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv,
-    attachmentSrv: AttachmentSrv
+    attachmentSrv: AttachmentSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[Alert] {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
@@ -272,6 +275,7 @@ class AlertSrv @Inject() (
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
           _           <- markAsRead(alert._id)
+          _ = integrityCheckActor ! EntityAdded("Alert")
         } yield createdCase
       }
     }(richCase => auditSrv.`case`.create(richCase.`case`, richCase.toJson))
@@ -284,28 +288,32 @@ class AlertSrv @Inject() (
     } yield updatedCase
 
   def mergeInCase(alert: Alert with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
-    auditSrv
-      .mergeAudits {
-        // No audit for markAsRead and observables
-        // Audits for customFields, description and tags
-        val description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-        for {
-          _ <- markAsRead(alert._id)
-          _ <- importObservables(alert, `case`)
-          _ <- importCustomFields(alert, `case`)
-          _ <- caseSrv.addTags(`case`, alert.tags.toSet)
-          _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
-          c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
-          details <- Success(
-            Json.obj(
-              "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),
-              "description"  -> c.description,
-              "tags"         -> (`case`.tags ++ alert.tags).distinct
+    if (get(alert).isImported)
+      Failure(BadRequestError("Alert is already imported"))
+    else
+      auditSrv
+        .mergeAudits {
+          // No audit for markAsRead and observables
+          // Audits for customFields, description and tags
+          val description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
+          for {
+            _ <- markAsRead(alert._id)
+            _ <- importObservables(alert, `case`)
+            _ <- importCustomFields(alert, `case`)
+            _ <- caseSrv.addTags(`case`, alert.tags.toSet)
+            _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
+            c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
+            details <- Success(
+              Json.obj(
+                "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),
+                "description"  -> c.description,
+                "tags"         -> (`case`.tags ++ alert.tags).distinct
+              )
             )
-          )
-        } yield details
-      }(details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
-      .flatMap(_ => caseSrv.getOrFail(`case`._id))
+          } yield details
+        }(details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
+        .map(_ => integrityCheckActor ! EntityAdded("Alert"))
+        .flatMap(_ => caseSrv.getOrFail(`case`._id))
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(implicit
       graph: Graph,
@@ -405,6 +413,24 @@ object AlertOps {
 
     def imported: Traversal[Boolean, Boolean, IdentityConverter[Boolean]] =
       traversal.choose(_.has(_.caseId), onTrue = true, onFalse = false)
+
+    def isImported: Boolean =
+      traversal.has(_.caseId).exists
+
+    def importDate: Traversal[Date, Date, Converter[Date, Date]] =
+      traversal.outE[AlertCase].value(_._createdAt)
+
+    def handlingDuration: Traversal[Long, Long, IdentityConverter[Long]] =
+      traversal.coalesceIdent(
+        _.filter(_.outE[AlertCase])
+          .sack(
+            (_: JLong, importDate: JLong) => importDate,
+            _.by(_.importDate.graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+          )
+          .sack((_: Long) - (_: JLong), _.by(_._createdAt.graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+          .sack[Long],
+        _.constant(0L)
+      )
 
     def similarCases(organisationSrv: OrganisationSrv, caseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
         authContext: AuthContext
@@ -558,4 +584,19 @@ object AlertOps {
   }
 
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
+}
+
+class AlertIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: AlertSrv) extends IntegrityCheckOps[Alert] {
+  override def check(): Unit = {
+    db.tryTransaction { implicit graph =>
+      service
+        .startTraversal
+        .flatMap(_.outE[AlertCase].range(1, 100))
+        .remove()
+      Success(())
+    }
+    ()
+  }
+
+  override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 }

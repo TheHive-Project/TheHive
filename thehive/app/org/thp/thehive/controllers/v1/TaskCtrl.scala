@@ -10,8 +10,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -74,7 +75,8 @@ class TaskCtrl @Inject() (
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
     Query[Traversal.V[Task], Traversal.V[Case]]("case", (taskSteps, _) => taskSteps.`case`),
     Query[Traversal.V[Task], Traversal.V[CaseTemplate]]("caseTemplate", (taskSteps, authContext) => taskSteps.caseTemplate.visible(authContext)),
-    Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
+    Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext)),
+    Query[Traversal.V[Task], Traversal.V[Share]]("shares", (taskSteps, authContext) => taskSteps.shares.visible(authContext))
   )
 
   def create: Action[AnyContent] =

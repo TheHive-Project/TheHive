@@ -4,7 +4,6 @@ import org.thp.scalligraph.BuildVertexEntity
 import org.thp.scalligraph.models.{DefineIndex, IndexType}
 import play.api.Logger
 
-import scala.util.Try
 import scala.util.matching.Regex
 
 @DefineIndex(IndexType.unique, "namespace", "predicate", "value")
@@ -14,7 +13,7 @@ case class Tag(
     predicate: String,
     value: Option[String],
     description: Option[String],
-    colour: Int
+    colour: String
 ) {
   override def hashCode(): Int = 31 * (31 * value.## + predicate.##) + namespace.##
 
@@ -33,15 +32,15 @@ case class Tag(
 
 object Tag {
   lazy val logger: Logger            = Logger(getClass)
-  val tagColour: Regex               = "(.*)#(\\p{XDigit}{6})".r
+  val tagColour: Regex               = "(.*)(#\\p{XDigit}{6})".r
   val namespacePredicateValue: Regex = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
   val namespacePredicate: Regex      = "([^\".:=]+)[.]([^\".=]+)".r
   val PredicateValue: Regex          = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
   val predicate: Regex               = "([^\".:=]+)".r
 
-  def fromString(tagName: String, defaultNamespace: String, defaultColour: Int = 0): Tag = {
+  def fromString(tagName: String, defaultNamespace: String, defaultColour: String = "#000000"): Tag = {
     val (name, colour) = tagName match {
-      case tagColour(n, c) => n       -> Try(Integer.parseUnsignedInt(c, 16)).getOrElse(defaultColour)
+      case tagColour(n, c) => n       -> c
       case _               => tagName -> defaultColour
     }
     name match {

@@ -1,9 +1,9 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
-import org.thp.scalligraph.traversal.Converter
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
@@ -15,12 +15,13 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, Json}
 
-import java.lang.{Long => JLong}
 import javax.inject.{Inject, Singleton}
 import scala.util.Failure
 
@@ -115,6 +116,14 @@ class Properties @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
+      .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
+      .property("imported", UMapping.boolean)(_.select(_.imported).readonly)
+      .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
+      .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
+      .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInMinutes", UMapping.long)(_.select(_.handlingDuration.math("_ / 60000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .build
 
   lazy val audit: PublicProperties =
@@ -210,66 +219,11 @@ class Properties @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
-      .property("computed.handlingDurationInDays", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(86400000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInHours", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(3600000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInMinutes", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(60000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInSeconds", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(1000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
+      .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
+      .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInMinutes", UMapping.long)(_.select(_.handlingDuration.math("_ / 60000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .property("viewingOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.organisations.visible(authContext).value(_.name)).readonly
       )
@@ -319,10 +273,40 @@ class Properties @Inject() (
       .property("description", UMapping.string)(_.field.updatable)
       .build
 
+  lazy val pattern: PublicProperties =
+    PublicPropertyListBuilder[Pattern]
+      .property("patternId", UMapping.string)(_.field.readonly)
+      .property("name", UMapping.string)(_.field.readonly)
+      .property("description", UMapping.string.optional)(_.field.updatable)
+      .property("tactics", UMapping.string.set)(_.field.readonly)
+      .property("url", UMapping.string)(_.field.updatable)
+      .property("patternType", UMapping.string)(_.field.readonly)
+      .property("platforms", UMapping.string.sequence)(_.field.readonly)
+      .property("dataSources", UMapping.string.sequence)(_.field.readonly)
+      .property("version", UMapping.string.optional)(_.field.readonly)
+      .build
+
+  lazy val procedure: PublicProperties =
+    PublicPropertyListBuilder[Procedure]
+      .property("description", UMapping.string)(_.field.updatable)
+      .property("occurence", UMapping.date)(_.field.readonly)
+      .build
+
   lazy val profile: PublicProperties =
     PublicPropertyListBuilder[Profile]
       .property("name", UMapping.string)(_.field.updatable)
       .property("permissions", UMapping.string.set)(_.field.updatable)
+      .build
+
+  lazy val share: PublicProperties =
+    PublicPropertyListBuilder[Share]
+      .property("caseId", UMapping.entityId)(_.select(_.`case`._id).readonly)
+      .property("caseNumber", UMapping.int)(_.select(_.`case`.value(_.number)).readonly)
+      .property("organisationId", UMapping.entityId)(_.select(_.organisation._id).readonly)
+      .property("organisationName", UMapping.string)(_.select(_.organisation.value(_.name)).readonly)
+      .property("profileId", UMapping.entityId)(_.select(_.profile._id).readonly)
+      .property("profileName", UMapping.string)(_.select(_.profile.value(_.name)).readonly)
+      .property("owner", UMapping.boolean)(_.field.readonly)
       .build
 
   lazy val task: PublicProperties =
@@ -401,4 +385,20 @@ class Properties @Inject() (
       .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
       .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
       .build
+
+  lazy val taxonomy: PublicProperties =
+    PublicPropertyListBuilder[Taxonomy]
+      .property("namespace", UMapping.string)(_.field.readonly)
+      .property("description", UMapping.string)(_.field.readonly)
+      .property("version", UMapping.int)(_.field.readonly)
+      .property("enabled", UMapping.boolean)(_.select(_.enabled).readonly)
+      .build
+
+  private def vertexToTag: Vertex => String = { v =>
+    val namespace = UMapping.string.getProperty(v, "namespace")
+    val predicate = UMapping.string.getProperty(v, "predicate")
+    val value     = UMapping.string.optional.getProperty(v, "value")
+    Tag(namespace, predicate, value, None, "#000000").toString
+  }
+
 }

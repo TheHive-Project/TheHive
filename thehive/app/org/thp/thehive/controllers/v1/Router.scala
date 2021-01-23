@@ -1,9 +1,10 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class Router @Inject() (
@@ -23,13 +24,17 @@ class Router @Inject() (
     organisationCtrl: OrganisationCtrl,
     // pageCtrl: PageCtrl,
     // permissionCtrl: PermissionCtrl,
+    patternCtrl: PatternCtrl,
+    procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
+    shareCtrl: ShareCtrl,
+    taxonomyCtrl: TaxonomyCtrl,
     // shareCtrl: ShareCtrl,
     userCtrl: UserCtrl,
     statusCtrl: StatusCtrl
     // streamCtrl: StreamCtrl,
-    // tagCtrl: TagCtrl
+    // tagCtrl: TagCtrl,
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -52,13 +57,14 @@ class Router @Inject() (
 //    case POST(p"/case/_stats") =>                        caseCtrl.stats()
 //    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
 
-    case POST(p"/case/$caseId/observable")    => observableCtrl.create(caseId)
+    case POST(p"/case/$caseId/observable")    => observableCtrl.createInCase(caseId)
+    case POST(p"/alert/$alertId/artifact")    => observableCtrl.createInAlert(alertId)
     case GET(p"/observable/$observableId")    => observableCtrl.get(observableId)
     case DELETE(p"/observable/$observableId") => observableCtrl.delete(observableId)
     case PATCH(p"/observable/_bulk")          => observableCtrl.bulkUpdate
     case PATCH(p"/observable/$observableId")  => observableCtrl.update(observableId)
 //    case GET(p"/observable/$observableId/similar") => observableCtrl.findSimilar(observableId)
-//    case POST(p"/observable/$observableId/shares") => shareCtrl.shareObservable(observableId)
+    case POST(p"/observable/$observableId/shares") => shareCtrl.shareObservable(observableId)
 
     case GET(p"/caseTemplate")                   => caseTemplateCtrl.list
     case POST(p"/caseTemplate")                  => caseTemplateCtrl.create
@@ -83,18 +89,25 @@ class Router @Inject() (
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
 
-//    case GET(p"/share")            => shareCtrl.list
-//    case POST(p"/share")           => shareCtrl.create
-//    case GET(p"/share/$shareId")   => shareCtrl.get(shareId)
-//    case PATCH(p"/share/$shareId") => shareCtrl.update(shareId)
+    case DELETE(p"/case/shares")                               => shareCtrl.removeShares()
+    case POST(p"/case/$caseId/shares")                         => shareCtrl.shareCase(caseId)
+    case DELETE(p"/case/$caseId/shares")                       => shareCtrl.removeShares(caseId)
+    case DELETE(p"/task/$taskId/shares")                       => shareCtrl.removeTaskShares(taskId)
+    case DELETE(p"/observable/$observableId/shares")           => shareCtrl.removeObservableShares(observableId)
+    case GET(p"/case/$caseId/shares")                          => shareCtrl.listShareCases(caseId)
+    case GET(p"/case/$caseId/task/$taskId/shares")             => shareCtrl.listShareTasks(caseId, taskId)
+    case GET(p"/case/$caseId/observable/$observableId/shares") => shareCtrl.listShareObservables(caseId, observableId)
+    case POST(p"/case/task/$taskId/shares")                    => shareCtrl.shareTask(taskId)
+    case DELETE(p"/case/share/$shareId")                       => shareCtrl.removeShare(shareId)
+    case PATCH(p"/case/share/$shareId")                        => shareCtrl.updateShare(shareId)
 
-    case GET(p"/task")                                 => taskCtrl.list
-    case POST(p"/task")                                => taskCtrl.create
-    case GET(p"/task/$taskId")                         => taskCtrl.get(taskId)
-    case PATCH(p"/task/$taskId")                       => taskCtrl.update(taskId)
-    case GET(p"/task/$taskId/actionRequired")          => taskCtrl.isActionRequired(taskId)
-    case PUT(p"/task/$taskId/actionRequired/$orgaId")  => taskCtrl.actionRequired(taskId, orgaId, required = true)
-    case PUT(p"/task/$taskId/actionDone/$orgaId")      => taskCtrl.actionRequired(taskId, orgaId, required = false)
+    case GET(p"/task")                                => taskCtrl.list
+    case POST(p"/task")                               => taskCtrl.create
+    case GET(p"/task/$taskId")                        => taskCtrl.get(taskId)
+    case PATCH(p"/task/$taskId")                      => taskCtrl.update(taskId)
+    case GET(p"/task/$taskId/actionRequired")         => taskCtrl.isActionRequired(taskId)
+    case PUT(p"/task/$taskId/actionRequired/$orgaId") => taskCtrl.actionRequired(taskId, orgaId, required = true)
+    case PUT(p"/task/$taskId/actionDone/$orgaId")     => taskCtrl.actionRequired(taskId, orgaId, required = false)
     // POST     /case/:caseId/task/_search           controllers.TaskCtrl.findInCase(caseId)
     // POST     /case/task/_stats                    controllers.TaskCtrl.stats()
 
@@ -117,11 +130,27 @@ class Router @Inject() (
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)
 
+    case POST(p"/taxonomy")                   => taxonomyCtrl.create
+    case POST(p"/taxonomy/import-zip")        => taxonomyCtrl.importZip
+    case GET(p"/taxonomy/$taxoId")            => taxonomyCtrl.get(taxoId)
+    case PUT(p"/taxonomy/$taxoId/activate")   => taxonomyCtrl.toggleActivation(taxoId, isActive = true)
+    case PUT(p"/taxonomy/$taxoId/deactivate") => taxonomyCtrl.toggleActivation(taxoId, isActive = false)
+    case DELETE(p"/taxonomy/$taxoId")         => taxonomyCtrl.delete(taxoId)
+
     case GET(p"/audit") => auditCtrl.flow
-//      GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
-//    GET      /audit                               controllers.AuditCtrl.find()
-//    POST     /audit/_search                       controllers.AuditCtrl.find()
-//    POST     /audit/_stats                        controllers.AuditCtrl.stats()
+    // GET      /flow                                controllers.AuditCtrl.flow(rootId: Option[String], count: Option[Int])
+    // GET      /audit                               controllers.AuditCtrl.find()
+    // POST     /audit/_search                       controllers.AuditCtrl.find()
+    // POST     /audit/_stats                        controllers.AuditCtrl.stats()
+
+    case POST(p"/pattern/import/attack") => patternCtrl.importMitre
+    case GET(p"/pattern/$patternId")     => patternCtrl.get(patternId)
+    case GET(p"/pattern/case/$caseId")   => patternCtrl.getCasePatterns(caseId)
+    case DELETE(p"/pattern/$patternId")  => patternCtrl.delete(patternId)
+
+    case POST(p"/procedure")                => procedureCtrl.create
+    case GET(p"/procedure/$procedureId")    => procedureCtrl.get(procedureId)
+    case DELETE(p"/procedure/$procedureId") => procedureCtrl.delete(procedureId)
 
     case POST(p"/profile")              => profileCtrl.create
     case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)

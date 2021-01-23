@@ -339,6 +339,8 @@ object ShareOps {
 
     def organisation: Traversal.V[Organisation] = traversal.in[OrganisationShare].v[Organisation]
 
+    def visible(implicit authContext: AuthContext): Traversal.V[Share] = traversal.filter(_.organisation.visible)
+
     def tasks: Traversal.V[Task] = traversal.out[ShareTask].v[Task]
 
     def byTask(taskId: EntityIdOrName): Traversal.V[Share] =

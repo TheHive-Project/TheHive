@@ -17,11 +17,12 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class OrganisationSrv @Inject() (
+    taxonomySrvProvider: Provider[TaxonomySrv],
     roleSrv: RoleSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
@@ -29,9 +30,10 @@ class OrganisationSrv @Inject() (
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
     cache: SyncCacheApi
 ) extends VertexSrv[Organisation] {
-
-  val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
-  val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
+  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
+  val organisationOrganisationSrv   = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
+  val organisationShareSrv          = new EdgeSrv[OrganisationShare, Organisation, Share]
+  val organisationTaxonomySrv       = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
     integrityCheckActor ! EntityAdded("Organisation")
@@ -46,11 +48,15 @@ class OrganisationSrv @Inject() (
       _                   <- roleSrv.create(user, createdOrganisation, profileSrv.orgAdmin)
     } yield createdOrganisation
 
-  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
+  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
+    val activeTaxos = getByName("admin").taxonomies.toSeq
     for {
-      createdOrganisation <- createEntity(e)
-      _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
-    } yield createdOrganisation
+      newOrga <- createEntity(e)
+      _       <- taxonomySrv.createFreetag(newOrga)
+      _       <- activeTaxos.toTry(t => organisationTaxonomySrv.create(OrganisationTaxonomy(), newOrga, t))
+      _       <- auditSrv.organisation.create(newOrga, newOrga.toJson)
+    } yield newOrga
+  }
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
 
@@ -138,6 +144,8 @@ object OrganisationOps {
     def cases: Traversal.V[Case] = traversal.out[OrganisationShare].out[ShareCase].v[Case]
 
     def shares: Traversal.V[Share] = traversal.out[OrganisationShare].v[Share]
+
+    def taxonomies: Traversal.V[Taxonomy] = traversal.out[OrganisationTaxonomy].v[Taxonomy]
 
     def caseTemplates: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateOrganisation].v[CaseTemplate]
 

@@ -1,29 +1,27 @@
 package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.thp.scalligraph._
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
-import org.thp.scalligraph.{RichSeq, _}
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
-import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import java.lang.{Long => JLong}
 import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
@@ -196,25 +194,27 @@ class PublicCase @Inject() (
   override val entityName: String = "case"
   override val initialQuery: Query =
     Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => caseSrv.startTraversal(graph).visible(organisationSrv)(authContext))
-  override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
-    "getCase",
-    FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
-  )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
-    "page",
-    FieldsParser[OutputParam],
-    {
-      case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
-        caseSteps
-          .richPage(from, to, withTotal = true) {
-            case c if withStats =>
-              c.richCaseWithCustomRenderer(caseStatsRenderer(authContext))(authContext)
-            case c =>
-              c.richCase(authContext).domainMap(_ -> JsObject.empty)
-          }
-    }
-  )
+  override val getQuery: ParamQuery[EntityIdOrName] =
+    Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
+      "getCase",
+      FieldsParser[EntityIdOrName],
+      (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
+    )
+  override val pageQuery: ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
+      "page",
+      FieldsParser[OutputParam],
+      {
+        case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
+          caseSteps
+            .richPage(from, to, withTotal = true) {
+              case c if withStats =>
+                c.richCaseWithCustomRenderer(caseStatsRenderer(authContext))(authContext)
+              case c =>
+                c.richCase(authContext).domainMap(_ -> JsObject.empty)
+            }
+      }
+    )
   override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Case], Traversal.V[Observable]](
@@ -320,66 +320,11 @@ class PublicCase @Inject() (
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
-      .property("computed.handlingDurationInDays", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(86400000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInHours", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(3600000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInMinutes", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(60000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
-      .property("computed.handlingDurationInSeconds", UMapping.long)(
-        _.select(
-          _.coalesceIdent(
-            _.has(_.endDate)
-              .sack(
-                (_: JLong, endDate: JLong) => endDate,
-                _.by(_.value(_.endDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
-              )
-              .sack((_: Long) - (_: JLong), _.by(_.value(_.startDate).graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
-              .sack((_: Long) / (_: Long), _.by(_.constant(1000L)))
-              .sack[Long],
-            _.constant(0L)
-          )
-        ).readonly
-      )
+      .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
+      .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInMinutes", UMapping.long)(_.select(_.handlingDuration.math("_ / 60000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .property("viewingOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.organisations.visible(authContext).value(_.name)).readonly
       )

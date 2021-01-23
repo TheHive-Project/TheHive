@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.{List => JList, Map => JMap}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
@@ -9,6 +8,8 @@ import org.thp.thehive.models.{Alert, RichCase, SimilarStats}
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json._
+
+import java.util.{Date, List => JList, Map => JMap}
 
 trait AlertRenderer extends BaseRenderer[Alert] {
   implicit val similarCaseWrites: Writes[(RichCase, SimilarStats)] = Writes[(RichCase, SimilarStats)] {
@@ -39,6 +40,9 @@ trait AlertRenderer extends BaseRenderer[Alert] {
     _.similarCases(organisationSrv, caseFilter = None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
+  def importDate: Traversal.V[Alert] => Traversal[JsValue, JList[Date], Converter[JsValue, JList[Date]]] =
+    _.importDate.fold.domainMap(_.headOption.fold[JsValue](JsNull)(d => JsNumber(d.getTime)))
+
   def alertStatsRenderer(organisationSrv: OrganisationSrv, extraData: Set[String])(implicit
       authContext: AuthContext
   ): Traversal.V[Alert] => JsTraversal = { implicit traversal =>
@@ -47,6 +51,7 @@ trait AlertRenderer extends BaseRenderer[Alert] {
       traversal,
       {
         case (f, "similarCases") => addData("similarCases", f)(similarCasesStats(organisationSrv))
+        case (f, "importDate")   => addData("importDate", f)(importDate)
         case (f, _)              => f
       }
     )

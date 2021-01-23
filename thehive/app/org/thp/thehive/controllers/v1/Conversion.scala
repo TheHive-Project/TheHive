@@ -4,7 +4,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.dto.v1._
+import org.thp.thehive.dto.v1.{InputTaxonomy, OutputTaxonomy, _}
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
@@ -210,7 +210,7 @@ object Conversion {
         .transform
     )
 
-  implicit val organiastionRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
+  implicit val organisationRenderer: Renderer.Aux[Organisation with Entity, OutputOrganisation] =
     Renderer.toJson[Organisation with Entity, OutputOrganisation](organisation =>
       OutputOrganisation(
         organisation._id.toString,
@@ -258,6 +258,41 @@ object Conversion {
         .transform
     }
 
+  implicit class InputTaxonomyOps(inputTaxonomy: InputTaxonomy) {
+
+    def toTaxonomy: Taxonomy =
+      inputTaxonomy
+        .into[Taxonomy]
+        .transform
+  }
+
+  implicit val taxonomyOutput: Renderer.Aux[RichTaxonomy, OutputTaxonomy] =
+    Renderer.toJson[RichTaxonomy, OutputTaxonomy](
+      _.into[OutputTaxonomy]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Taxonomy")
+        .withFieldComputed(_.tags, _.tags.map(_.toOutput))
+        .withFieldConst(_.extraData, JsObject.empty)
+        .transform
+    )
+
+  implicit val taxonomyWithStatsOutput: Renderer.Aux[(RichTaxonomy, JsObject), OutputTaxonomy] =
+    Renderer.toJson[(RichTaxonomy, JsObject), OutputTaxonomy] { taxoWithExtraData =>
+      taxoWithExtraData
+        ._1
+        .into[OutputTaxonomy]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Taxonomy")
+        .withFieldComputed(_.tags, _.tags.map(_.toOutput))
+        .withFieldConst(_.extraData, taxoWithExtraData._2)
+        .transform
+    }
+
+  implicit val tagOutput: Renderer.Aux[Tag, OutputTag] =
+    Renderer.toJson[Tag, OutputTag](
+      _.into[OutputTag].transform
+    )
+
   implicit class InputUserOps(inputUser: InputUser) {
 
     def toUser: User =
@@ -294,6 +329,14 @@ object Conversion {
         .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
         .transform
     }
+
+  implicit val shareOutput: Renderer.Aux[RichShare, OutputShare] = Renderer.toJson[RichShare, OutputShare](
+    _.into[OutputShare]
+      .withFieldComputed(_._id, _.share._id.toString)
+      .withFieldConst(_._type, "Share")
+      .withFieldComputed(_.caseId, _.caseId.toString)
+      .transform
+  )
 
   implicit val profileOutput: Renderer.Aux[Profile with Entity, OutputProfile] = Renderer.toJson[Profile with Entity, OutputProfile](profile =>
     profile
@@ -344,6 +387,7 @@ object Conversion {
         .withFieldConst(_.data, None)
         .transform
   }
+
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.toJson[RichObservable, OutputObservable](richObservable =>
     richObservable
       .into[OutputObservable]
@@ -453,5 +497,42 @@ object Conversion {
         .withFieldComputed(_.isAttachment, _.isAttachment.getOrElse(false))
         .transform
   }
+
+  implicit class InputPatternOps(inputPattern: InputPattern) {
+    def toPattern: Pattern =
+      inputPattern
+        .into[Pattern]
+        .withFieldRenamed(_.external_id, _.patternId)
+        .withFieldComputed(_.tactics, _.kill_chain_phases.map(_.phase_name).toSet)
+        .withFieldRenamed(_.`type`, _.patternType)
+        .withFieldRenamed(_.x_mitre_platforms, _.platforms)
+        .withFieldRenamed(_.x_mitre_data_sources, _.dataSources)
+        .withFieldRenamed(_.x_mitre_version, _.revision)
+        .transform
+  }
+
+  implicit val richPatternRenderer: Renderer.Aux[RichPattern, OutputPattern] =
+    Renderer.toJson[RichPattern, OutputPattern](
+      _.into[OutputPattern]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Pattern")
+        .withFieldComputed(_.parent, _.parent.map(_.patternId))
+        .transform
+    )
+
+  implicit class InputProcedureOps(inputProcedure: InputProcedure) {
+    def toProcedure: Procedure =
+      inputProcedure
+        .into[Procedure]
+        .transform
+  }
+
+  implicit val richProcedureRenderer: Renderer.Aux[RichProcedure, OutputProcedure] =
+    Renderer.toJson[RichProcedure, OutputProcedure](
+      _.into[OutputProcedure]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldComputed(_.patternId, _.pattern.patternId)
+        .transform
+    )
 
 }

@@ -12,6 +12,7 @@ import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
@@ -21,12 +22,14 @@ import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 import play.api.{Configuration, Logger}
+import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 import java.io.FilterInputStream
 import java.nio.file.Files
+import java.util.Base64
 import javax.inject.{Inject, Singleton}
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ObservableCtrl @Inject() (
@@ -36,6 +39,7 @@ class ObservableCtrl @Inject() (
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
+    alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
     attachmentSrv: AttachmentSrv,
     errorHandler: ErrorHandler,
@@ -43,6 +47,8 @@ class ObservableCtrl @Inject() (
     configuration: Configuration
 ) extends QueryableCtrl
     with ObservableRenderer {
+
+  type AnyAttachmentType = InputAttachment :+: FFile :+: String :+: CNil
 
   lazy val logger: Logger                         = Logger(getClass)
   override val entityName: String                 = "observable"
@@ -79,11 +85,12 @@ class ObservableCtrl @Inject() (
       (observableSteps, authContext) => observableSteps.filteredSimilar.visible(organisationSrv)(authContext)
     ),
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
-    Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
+    Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert),
+    Query[Traversal.V[Observable], Traversal.V[Share]]("shares", (observableSteps, authContext) => observableSteps.shares.visible(authContext))
   )
 
-  def create(caseId: String): Action[AnyContent] =
-    entrypoint("create observable")
+  def createInCase(caseId: String): Action[AnyContent] =
+    entrypoint("create observable in case")
       .extract("observable", FieldsParser[InputObservable])
       .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
       .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
@@ -109,10 +116,10 @@ class ObservableCtrl @Inject() (
               val successesAndFailures =
                 if (observableType.isAttachment)
                   inputAttachObs
-                    .flatMap(obs => obs.attachment.map(createAttachmentObservable(case0, obs, _)))
+                    .flatMap(obs => obs.attachment.map(createAttachmentObservableInCase(case0, obs, _)))
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservable(case0, obs, _)))
+                    .flatMap(obs => obs.data.map(createSimpleObservableInCase(case0, obs, _)))
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -123,7 +130,7 @@ class ObservableCtrl @Inject() (
           }
       }
 
-  def createSimpleObservable(
+  private def createSimpleObservableInCase(
       `case`: Case with Entity,
       inputObservable: InputObservable,
       data: String
@@ -136,7 +143,7 @@ class ObservableCtrl @Inject() (
       case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
     }
 
-  def createAttachmentObservable(
+  private def createAttachmentObservableInCase(
       `case`: Case with Entity,
       inputObservable: InputObservable,
       fileOrAttachment: Either[FFile, InputAttachment]
@@ -159,12 +166,119 @@ class ObservableCtrl @Inject() (
         Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
     }
 
+  def createInAlert(alertId: String): Action[AnyContent] =
+    entrypoint("create artifact in alert")
+      .extract("artifact", FieldsParser[InputObservable])
+      .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
+      .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
+      .auth { implicit request =>
+        val inputObservable: InputObservable = request.body("artifact")
+        val isZip: Option[Boolean]           = request.body("isZip")
+        val zipPassword: Option[String]      = request.body("zipPassword")
+        val inputAttachObs                   = if (isZip.contains(true)) getZipFiles(inputObservable, zipPassword) else Seq(inputObservable)
+
+        db
+          .roTransaction { implicit graph =>
+            for {
+              alert <-
+                alertSrv
+                  .get(EntityIdOrName(alertId))
+                  .can(organisationSrv, Permissions.manageAlert)
+                  .orFail(AuthorizationError("Operation not permitted"))
+              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
+            } yield (alert, observableType)
+          }
+          .map {
+            case (alert, observableType) =>
+              val successesAndFailures =
+                if (observableType.isAttachment)
+                  inputAttachObs
+                    .flatMap { obs =>
+                      (obs.attachment.map(_.fold(Coproduct[AnyAttachmentType](_), Coproduct[AnyAttachmentType](_))) ++
+                        obs.data.map(Coproduct[AnyAttachmentType](_)))
+                        .map(createAttachmentObservableInAlert(alert, obs, _))
+                    }
+                else
+                  inputAttachObs
+                    .flatMap(obs => obs.data.map(createSimpleObservableInAlert(alert, obs, _)))
+              val (successes, failures) = successesAndFailures
+                .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
+                  case ((s, f), Right(o)) => (s :+ o, f)
+                  case ((s, f), Left(o))  => (s, f :+ o)
+                }
+              if (failures.isEmpty) Results.Created(JsArray(successes))
+              else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
+          }
+      }
+
+  private def createSimpleObservableInAlert(
+      alert: Alert with Entity,
+      inputObservable: InputObservable,
+      data: String
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        alertSrv.createObservable(alert, inputObservable.toObservable, data)
+      } match {
+      case Success(o)     => Right(o.toJson)
+      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+    }
+
+  private def createAttachmentObservableInAlert(
+      alert: Alert with Entity,
+      inputObservable: InputObservable,
+      attachment: AnyAttachmentType
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        object createAttachment extends Poly1 {
+          implicit val fromFile: Case.Aux[FFile, Try[RichObservable]] = at[FFile] { file =>
+            alertSrv.createObservable(alert, inputObservable.toObservable, file)
+          }
+          implicit val fromAttachment: Case.Aux[InputAttachment, Try[RichObservable]] = at[InputAttachment] { attachment =>
+            for {
+              attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
+              obs    <- alertSrv.createObservable(alert, inputObservable.toObservable, attach)
+            } yield obs
+          }
+
+          implicit val fromString: Case.Aux[String, Try[RichObservable]] = at[String] { data =>
+            data.split(';') match {
+              case Array(filename, contentType, value) =>
+                val data = Base64.getDecoder.decode(value)
+                attachmentSrv
+                  .create(filename, contentType, data)
+                  .flatMap(attachment => alertSrv.createObservable(alert, inputObservable.toObservable, attachment))
+              case Array(filename, contentType) =>
+                attachmentSrv
+                  .create(filename, contentType, Array.emptyByteArray)
+                  .flatMap(attachment => alertSrv.createObservable(alert, inputObservable.toObservable, attachment))
+              case data =>
+                Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
+            }
+          }
+        }
+        attachment.fold(createAttachment)
+      } match {
+      case Success(o) => Right(o.toJson)
+      case _ =>
+        object attachmentName extends Poly1 {
+          implicit val fromFile: Case.Aux[FFile, String]                 = at[FFile](_.filename)
+          implicit val fromAttachment: Case.Aux[InputAttachment, String] = at[InputAttachment](_.name)
+          implicit val fromString: Case.Aux[String, String] = at[String] { data =>
+            if (data.contains(';')) data.takeWhile(_ != ';') else "no name"
+          }
+        }
+        val filename = attachment.fold(attachmentName)
+        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+    }
+
   def get(observableId: String): Action[AnyContent] =
     entrypoint("get observable")
-      .authRoTransaction(db) { _ => implicit graph =>
+      .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
           .get(EntityIdOrName(observableId))
-          //            .availableFor(request.organisation)
+          .visible(organisationSrv)
           .richObservable
           .getOrFail("Observable")
           .map { observable =>
@@ -178,10 +292,7 @@ class ObservableCtrl @Inject() (
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
-          .update(
-            _.get(EntityIdOrName(observableId)).can(Permissions.manageObservable),
-            propertyUpdaters
-          )
+          .update(_.get(EntityIdOrName(observableId)).canManage(organisationSrv), propertyUpdaters)
           .map(_ => Results.NoContent)
       }
 
@@ -195,19 +306,19 @@ class ObservableCtrl @Inject() (
         ids
           .toTry { id =>
             observableSrv
-              .update(_.get(EntityIdOrName(id)).can(Permissions.manageObservable), properties)
+              .update(_.get(EntityIdOrName(id)).canManage(organisationSrv), properties)
           }
           .map(_ => Results.NoContent)
       }
 
-  def delete(obsId: String): Action[AnyContent] =
+  def delete(observableId: String): Action[AnyContent] =
     entrypoint("delete")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           observable <-
             observableSrv
-              .get(EntityIdOrName(obsId))
-              .can(Permissions.manageObservable)
+              .get(EntityIdOrName(observableId))
+              .canManage(organisationSrv)
               .getOrFail("Observable")
           _ <- observableSrv.remove(observable)
         } yield Results.NoContent

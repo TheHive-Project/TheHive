@@ -8,8 +8,6 @@ import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
-
-import scala.collection.JavaConverters._
 import org.thp.scalligraph.{
   AuthorizationError,
   BadRequestError,
@@ -37,6 +35,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 import java.util.function.BiPredicate
 import java.util.{Base64, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -488,5 +487,12 @@ class PublicAlert @Inject() (
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })
       .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
+      .property("imported", UMapping.boolean)(_.select(_.imported).readonly)
+      .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
+      .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
+      .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInMinutes", UMapping.long)(_.select(_.handlingDuration.math("_ / 60000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
+      .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .build
 }

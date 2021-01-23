@@ -70,6 +70,7 @@ object InputCustomFieldValue {
         }
     case _ => Good(Nil)
   }
+
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {
       case InputCustomFieldValue(name, Some(s: String), _)  => name -> JsString(s)

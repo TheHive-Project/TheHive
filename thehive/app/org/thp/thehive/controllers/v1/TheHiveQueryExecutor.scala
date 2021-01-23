@@ -30,9 +30,13 @@ class TheHiveQueryExecutor @Inject() (
     observableCtrl: ObservableCtrl,
     observableTypeCtrl: ObservableTypeCtrl,
     organisationCtrl: OrganisationCtrl,
+    patternCtrl: PatternCtrl,
+    procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
+    shareCtrl: ShareCtrl,
     taskCtrl: TaskCtrl,
     userCtrl: UserCtrl,
+    taxonomyCtrl: TaxonomyCtrl,
     //    dashboardCtrl: DashboardCtrl,
     properties: Properties,
     implicit val db: Database
@@ -51,10 +55,14 @@ class TheHiveQueryExecutor @Inject() (
       observableTypeCtrl,
       organisationCtrl,
 //      pageCtrl,
+      patternCtrl,
+      procedureCtrl,
       profileCtrl,
+      shareCtrl,
 //      tagCtrl,
       taskCtrl,
-      userCtrl
+      userCtrl,
+      taxonomyCtrl
     )
 
   override val version: (Int, Int) = 1 -> 1
