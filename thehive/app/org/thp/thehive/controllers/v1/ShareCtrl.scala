@@ -18,7 +18,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named}
+import javax.inject.Inject
 import scala.util.{Failure, Success, Try}
 
 class ShareCtrl @Inject() (
@@ -30,7 +30,7 @@ class ShareCtrl @Inject() (
     taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl {
   override val entityName: String                 = "share"
   override val publicProperties: PublicProperties = properties.share

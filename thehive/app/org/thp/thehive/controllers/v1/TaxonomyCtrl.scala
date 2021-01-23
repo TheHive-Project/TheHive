@@ -17,7 +17,7 @@ import org.thp.thehive.services.{TagSrv, TaxonomySrv}
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named}
+import javax.inject.Inject
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -26,7 +26,7 @@ class TaxonomyCtrl @Inject() (
     properties: Properties,
     taxonomySrv: TaxonomySrv,
     tagSrv: TagSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl
     with TaxonomyRenderer {
 

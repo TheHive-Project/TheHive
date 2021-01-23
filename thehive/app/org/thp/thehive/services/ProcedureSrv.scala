@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
@@ -11,17 +11,14 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.ProcedureOps._
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
 class ProcedureSrv @Inject() (
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
-    organisationSrv: OrganisationSrv,
     patternSrv: PatternSrv
-)(implicit
-    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Procedure] {
   val caseProcedureSrv    = new EdgeSrv[CaseProcedure, Case, Procedure]
   val procedurePatternSrv = new EdgeSrv[ProcedurePattern, Procedure, Pattern]

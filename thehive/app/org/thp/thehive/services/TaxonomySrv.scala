@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
@@ -13,17 +13,15 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaxonomyOps._
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class TaxonomySrv @Inject() (
-    organisationSrv: OrganisationSrv
-)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Taxonomy] {
+class TaxonomySrv @Inject() (organisationSrvProvider: Provider[OrganisationSrv]) extends VertexSrv[Taxonomy] {
 
-  val taxonomyTagSrv          = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
-  val organisationTaxonomySrv = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
+  lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
+  val taxonomyTagSrv                        = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
+  val organisationTaxonomySrv               = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {

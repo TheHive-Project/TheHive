@@ -586,7 +586,7 @@ object AlertOps {
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-class AlertIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: AlertSrv) extends IntegrityCheckOps[Alert] {
+class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv) extends IntegrityCheckOps[Alert] {
   override def check(): Unit = {
     db.tryTransaction { implicit graph =>
       service

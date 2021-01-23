@@ -13,14 +13,14 @@ import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.ProcedureSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class ProcedureCtrl @Inject() (
     entrypoint: Entrypoint,
     properties: Properties,
     procedureSrv: ProcedureSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl {
   override val entityName: String                 = "procedure"
   override val publicProperties: PublicProperties = properties.procedure

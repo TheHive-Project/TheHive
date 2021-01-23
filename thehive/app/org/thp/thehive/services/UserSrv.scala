@@ -32,8 +32,7 @@ class UserSrv @Inject() (
     roleSrv: RoleSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
-    implicit val db: Database
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[User] {
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern

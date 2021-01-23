@@ -12,7 +12,7 @@ import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
-class RoleSrv @Inject() (implicit val db: Database) extends VertexSrv[Role] {
+class RoleSrv @Inject() extends VertexSrv[Role] {
 
   val roleOrganisationSrv = new EdgeSrv[RoleOrganisation, Role, Organisation]
   val userRoleSrv         = new EdgeSrv[UserRole, User, Role]
