@@ -128,7 +128,7 @@
                 }
 
                 if(value.to && value.to !== null) {
-                    end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.getTime();
+                    end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.setHours(23, 59, 59, 999);
                 } else {
                     end = null;
                 }
