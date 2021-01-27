@@ -79,7 +79,6 @@ class PublicAudit @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSr
   override val pageQuery: ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Audit], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
     )
   override val outputQuery: Query = Query.output[RichAudit, Traversal.V[Audit]](_.richAudit)

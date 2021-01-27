@@ -48,7 +48,6 @@ class CaseCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, extraData), caseSteps, authContext) =>
         caseSteps.richPage(from, to, extraData.contains("total")) {

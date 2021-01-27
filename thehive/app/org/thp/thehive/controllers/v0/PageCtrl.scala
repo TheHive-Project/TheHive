@@ -78,7 +78,6 @@ class PublicPage @Inject() (pageSrv: PageSrv, organisationSrv: OrganisationSrv) 
   )
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Page], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, pageSteps, _) => pageSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Page with Entity]

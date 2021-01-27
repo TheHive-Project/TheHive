@@ -237,7 +237,6 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv) 
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query =

@@ -105,7 +105,6 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
   override val initialQuery: Query = Query.init[Traversal.V[Tag]]("listTag", (graph, _) => tagSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Tag with Entity]

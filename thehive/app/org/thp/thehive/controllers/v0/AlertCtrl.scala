@@ -363,7 +363,6 @@ class PublicAlert @Inject() (
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       (range, alertSteps, _) =>
         alertSteps
           .richPage(range.from, range.to, withTotal = true) { alerts =>

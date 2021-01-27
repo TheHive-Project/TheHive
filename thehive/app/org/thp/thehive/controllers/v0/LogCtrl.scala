@@ -83,7 +83,6 @@ class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) ext
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog)
   )
   override val outputQuery: Query = Query.output[RichLog, Traversal.V[Log]](_.richLog)

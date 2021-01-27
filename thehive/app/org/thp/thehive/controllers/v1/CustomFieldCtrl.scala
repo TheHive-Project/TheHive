@@ -21,7 +21,6 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFie
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, _), customFieldSteps, _) =>
         customFieldSteps.page(from, to, withTotal = true)

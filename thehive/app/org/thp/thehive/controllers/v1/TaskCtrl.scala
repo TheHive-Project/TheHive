@@ -41,7 +41,6 @@ class TaskCtrl @Inject() (
     )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, taskSteps, authContext) =>
       taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
         _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))

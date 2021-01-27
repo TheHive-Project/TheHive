@@ -36,7 +36,6 @@ class PatternCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Pattern], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, patternSteps, _) => patternSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richPattern)
   )
   override val outputQuery: Query = Query.output[RichPattern, Traversal.V[Pattern]](_.richPattern)

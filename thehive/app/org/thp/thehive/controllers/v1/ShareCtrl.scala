@@ -38,7 +38,6 @@ class ShareCtrl @Inject() (
     Query.init[Traversal.V[Share]]("listShare", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext).shares)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Share], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, shareSteps, _) => shareSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richShare)
   )
   override val outputQuery: Query = Query.outputWithContext[RichShare, Traversal.V[Share]]((shareSteps, _) => shareSteps.richShare)

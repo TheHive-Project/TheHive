@@ -84,7 +84,6 @@ class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Job], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, _, withParents), jobSteps, authContext) if withParents > 0 =>
           jobSteps.richPage(from, to, withTotal = true)(_.richJobWithCustomRenderer(jobParents(_)(authContext))(authContext))

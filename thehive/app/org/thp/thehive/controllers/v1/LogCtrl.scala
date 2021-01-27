@@ -10,8 +10,6 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputLog
 import org.thp.thehive.models.{Log, Permissions, RichLog}
 import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{LogSrv, OrganisationSrv, TaskSrv}
 import play.api.Logger
@@ -41,7 +39,6 @@ class LogCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, logSteps, authContext) =>
       logSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
         _.richLogWithCustomRenderer(logStatsRenderer(range.extraData - "total")(authContext))

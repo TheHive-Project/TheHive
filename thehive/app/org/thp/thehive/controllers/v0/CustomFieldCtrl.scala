@@ -92,7 +92,6 @@ class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends Publi
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, _, _), customFieldSteps, _) =>
         customFieldSteps.page(from, to, withTotal = true)

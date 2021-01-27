@@ -203,7 +203,6 @@ class PublicCase @Inject() (
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
           caseSteps

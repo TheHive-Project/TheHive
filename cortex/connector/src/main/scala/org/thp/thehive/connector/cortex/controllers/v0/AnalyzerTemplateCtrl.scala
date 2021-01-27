@@ -105,7 +105,6 @@ class PublicAnalyzerTemplate @Inject() (analyzerTemplateSrv: AnalyzerTemplateSrv
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[AnalyzerTemplate], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       (range, analyzerTemplateTraversal, _) => analyzerTemplateTraversal.page(range.from, range.to, withTotal = true)
     )
   override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]

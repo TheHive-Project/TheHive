@@ -46,7 +46,6 @@ class AlertCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, alertSteps, authContext) =>
       alertSteps
         .richPage(range.from, range.to, range.extraData.contains("total"))(
@@ -55,7 +54,7 @@ class AlertCtrl @Inject() (
   )
   override val outputQuery: Query      = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
   val caseProperties: PublicProperties = properties.`case` ++ properties.metaProperties
-  val caseFilterParser: FieldsParser[Option[InputQuery[Traversal.Unk, Traversal.Unk]]] =
+  implicit val caseFilterParser: FieldsParser[Option[InputQuery[Traversal.Unk, Traversal.Unk]]] =
     FilterQuery.default(caseProperties).paramParser(ru.typeOf[Traversal.V[Case]]).optional.on("caseFilter")
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
@@ -66,7 +65,6 @@ class AlertCtrl @Inject() (
       Converter[JsValue, JMap[String, Any]]
     ]](
       "similarCases",
-      caseFilterParser,
       { (maybeCaseFilterQuery, alertSteps, authContext) =>
         val caseFilter: Option[Traversal.V[Case] => Traversal.V[Case]] =
           maybeCaseFilterQuery.map(f => cases => f(caseProperties, ru.typeOf[Traversal.V[Case]], cases.cast, authContext).cast)

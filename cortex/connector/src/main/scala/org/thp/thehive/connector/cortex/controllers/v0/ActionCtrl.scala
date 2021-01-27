@@ -88,7 +88,6 @@ class PublicAction @Inject() (actionSrv: ActionSrv, organisationSrv: Organisatio
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Action], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
   )
   override val outputQuery: Query = Query.output[RichAction, Traversal.V[Action]](_.richAction)

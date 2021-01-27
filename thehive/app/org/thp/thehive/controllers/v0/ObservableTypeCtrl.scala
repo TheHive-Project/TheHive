@@ -54,7 +54,6 @@ class PublicObservableType @Inject() (observableTypeSrv: ObservableTypeSrv) exte
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[ObservableType], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       (range, observableTypeSteps, _) => observableTypeSteps.richPage(range.from, range.to, withTotal = true)(identity)
     )
   override val outputQuery: Query = Query.output[ObservableType with Entity]

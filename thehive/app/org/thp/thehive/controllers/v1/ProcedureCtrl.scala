@@ -32,7 +32,6 @@ class ProcedureCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Procedure], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, procedureSteps, _) => procedureSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richProcedure)
   )
   override val outputQuery: Query = Query.output[RichProcedure, Traversal.V[Procedure]](_.richProcedure)

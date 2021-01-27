@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import org.apache.tinkerpop.gremlin.process.traversal.P
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -14,11 +11,12 @@ import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
+
+import javax.inject.{Inject, Named, Singleton}
 
 @Singleton
 class TaskCtrl @Inject() (
@@ -106,7 +104,6 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
   //organisationSrv.get(authContext.organisation)(graph).shares.tasks)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, _, 0), taskSteps, _) =>
         taskSteps.richPage(from, to, withTotal = true)(_.richTask.domainMap(_ -> (None: Option[RichCase])))

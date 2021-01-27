@@ -133,7 +133,6 @@ class PublicOrganisation @Inject() (organisationSrv: OrganisationSrv) extends Pu
     Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Organisation with Entity]

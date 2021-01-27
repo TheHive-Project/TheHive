@@ -83,7 +83,6 @@ class PublicProfile @Inject() (profileSrv: ProfileSrv) extends PublicData {
 
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Profile], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, profileSteps, _) => profileSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Profile with Entity]
