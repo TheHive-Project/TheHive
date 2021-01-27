@@ -17,12 +17,12 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class OrganisationSrv @Inject() (
-//    taxonomySrvProvider: Provider[TaxonomySrv],
+    taxonomySrvProvider: Provider[TaxonomySrv],
     roleSrv: RoleSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
@@ -30,7 +30,7 @@ class OrganisationSrv @Inject() (
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
     cache: SyncCacheApi
 ) extends VertexSrv[Organisation] {
-  lazy val taxonomySrv: TaxonomySrv = ??? //taxonomySrvProvider.get
+  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
   val organisationOrganisationSrv   = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv          = new EdgeSrv[OrganisationShare, Organisation, Share]
   val organisationTaxonomySrv       = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
