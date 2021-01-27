@@ -71,7 +71,7 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Tags</dt>
             <dd ng-if="canEdit">
-                <updatable-tags on-update="updateField('tags', getTags(newValue))" value="caze.tags" source="getCaseTags"></updatable-tags>
+                <updatable-tag-list on-update="updateField('tags', getTags(newValue))" value="caze.tags" source="getCaseTags"></updatable-tag-list>
             </dd>
             <dd ng-if="!canEdit">
                 <tag-list data="caze.tags"></tag-list>
