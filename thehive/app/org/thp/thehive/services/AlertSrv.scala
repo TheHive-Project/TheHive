@@ -110,7 +110,7 @@ class AlertSrv @Inject() (
       tagsToRemove <- (alert.tags.toSet -- tags).toTry(tagSrv.getOrCreate)
       _            <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
       _ = if (tags.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
-      _ <- get(alert).update(_.tags, tags).getOrFail("Alert")
+      _ <- get(alert).update(_.tags, tags.toSeq).getOrFail("Alert")
       _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 

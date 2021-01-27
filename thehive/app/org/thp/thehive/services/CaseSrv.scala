@@ -263,7 +263,7 @@ class CaseSrv @Inject() (
       `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.impactStatus, impactStatus).outE[CaseImpactStatus].remove()
+    get(`case`).update(_.impactStatus, Some(impactStatus.value)).outE[CaseImpactStatus].remove()
     caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
     auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> impactStatus.value))
   }
@@ -283,7 +283,7 @@ class CaseSrv @Inject() (
       `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.resolutionStatus, resolutionStatus).outE[CaseResolutionStatus].remove()
+    get(`case`).update(_.resolutionStatus, Some(resolutionStatus.value)).outE[CaseResolutionStatus].remove()
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
     auditSrv.`case`.update(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value))
   }
@@ -294,7 +294,7 @@ class CaseSrv @Inject() (
   }
 
   def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.assignee, user.login).outE[CaseUser].remove()
+    get(`case`).update(_.assignee, Some(user.login)).outE[CaseUser].remove()
     caseUserSrv.create(CaseUser(), `case`, user)
     auditSrv.`case`.update(`case`, Json.obj("owner" -> user.login))
   }
