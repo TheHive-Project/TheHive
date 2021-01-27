@@ -118,17 +118,17 @@ class Router @Inject() (
     case GET(p"/case/artifact/$observableId/similar") => observableCtrl.findSimilar(observableId)
     //    case POST(p"/case/:caseId/artifact/_search")    => observableCtrl.findInCase(caseId)
 
-    case GET(p"/case")                  => caseCtrl.search
-    case POST(p"/case/_search")         => caseCtrl.search
-    case POST(p"/case/_stats")          => caseCtrl.stats
-    case POST(p"/case")                 => caseCtrl.create
-    case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
-    case PATCH(p"/case/_bulk")          => caseCtrl.bulkUpdate     // Not used by the frontend
-    case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)
-    case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId) // Not used by the frontend
-    case DELETE(p"/case/$caseId/force") => caseCtrl.delete(caseId)
-    case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds) // Not implemented in backend and not used by frontend
-    case GET(p"/case/$caseId/links")    => caseCtrl.linkedCases(caseId)
+    case GET(p"/case")                          => caseCtrl.search
+    case POST(p"/case")                         => caseCtrl.create         // Audit ok
+    case GET(p"/case/$caseId")                  => caseCtrl.get(caseId)
+    case PATCH(p"/case/_bulk")                  => caseCtrl.bulkUpdate     // Not used by the frontend
+    case PATCH(p"/case/$caseId")                => caseCtrl.update(caseId) // Audit ok
+    case POST(p"/case/$caseId/_merge/$toMerge") => caseCtrl.merge(caseId, toMerge)
+    case POST(p"/case/_search")                 => caseCtrl.search
+    case POST(p"/case/_stats")                  => caseCtrl.stats
+    case DELETE(p"/case/$caseId")               => caseCtrl.delete(caseId) // Not used by the frontend
+    case DELETE(p"/case/$caseId/force")         => caseCtrl.delete(caseId) // Audit ok
+    case GET(p"/case/$caseId/links")            => caseCtrl.linkedCases(caseId)
 
     case GET(p"/config/user")               => configCtrl.userList
     case GET(p"/config/user/$path")         => configCtrl.userGet(path)

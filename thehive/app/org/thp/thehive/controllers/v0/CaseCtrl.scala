@@ -1,7 +1,8 @@
 package org.thp.thehive.controllers.v0
 
+import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
@@ -14,6 +15,7 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
@@ -22,7 +24,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.Date
 import javax.inject.{Inject, Named, Singleton}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CaseCtrl @Inject() (
@@ -146,23 +148,39 @@ class CaseCtrl @Inject() (
         } yield Results.NoContent
       }
 
-  def merge(caseIdsOrNumbers: String): Action[AnyContent] =
+  def merge(caseId: String, caseToMerge: String): Action[AnyContent] =
     entrypoint("merge cases")
       .authTransaction(db) { implicit request => implicit graph =>
-        caseIdsOrNumbers
-          .split(',')
-          .toSeq
-          .toTry(c =>
-            caseSrv
-              .get(EntityIdOrName(c))
-              .visible
-              .getOrFail("Case")
-          )
-          .map { cases =>
-            val mergedCase = caseSrv.merge(cases)
-            Results.Ok(mergedCase.toJson)
-          }
+        for {
+          caze    <- caseSrv.get(EntityIdOrName(caseId)).visible.getOrFail("Case")
+          toMerge <- caseSrv.get(EntityIdOrName(caseToMerge)).visible.getOrFail("Case")
+          _       <- sameOrga(Seq(caze, toMerge))
+          _       <- sameProfile(Seq(caze, toMerge))
+          merged  <- caseSrv.merge(Seq(caze, toMerge))
+        } yield Results.Ok(merged.toJson)
       }
+
+  private def sameOrga(cases: Seq[Case with Entity])(implicit graph: Graph): Try[Seq[Case with Entity]] =
+    for {
+      orgas <- cases.toTry(c => caseSrv.get(c).organisations.getOrFail("Organisation"))
+      firstOrga <- orgas.headOption match {
+        case Some(o) => Success(o)
+        case None    => Failure(BadRequestError("No organisations found"))
+      }
+      sameOrga = orgas.forall(_.name == firstOrga.name)
+      res <- if (sameOrga) Success(cases) else Failure(BadRequestError(s"Cases to merge have different organisations"))
+    } yield res
+
+  private def sameProfile(cases: Seq[Case with Entity])(implicit graph: Graph): Try[Seq[Case with Entity]] =
+    for {
+      profiles <- cases.toTry(c => caseSrv.get(c).shares.profile.getOrFail("Profile"))
+      firstProfile <- profiles.headOption match {
+        case Some(o) => Success(o)
+        case None    => Failure(BadRequestError("No profiles found"))
+      }
+      sameProfile = profiles.forall(_.name == firstProfile.name)
+      res <- if (sameProfile) Success(cases) else Failure(BadRequestError(s"Cases to merge have different profiles"))
+    } yield res
 
   def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("case link")
@@ -238,7 +256,7 @@ class PublicCase @Inject() (
                   val namespace = UMapping.string.getProperty(v, "namespace")
                   val predicate = UMapping.string.getProperty(v, "predicate")
                   val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, "#000000").toString
+                  Tag(namespace, predicate, value, None, 0).toString
                 },
                 Converter.identity[String]
               )
