@@ -39,7 +39,7 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
 
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      app[TagSrv].defaultColour must beEqualTo("#00FF00")
+      app[TagSrv].freeTagColour must beEqualTo("#00FF00")
     }
 // TODO leave unused tests ?
 //

@@ -7,6 +7,7 @@ import play.api.Logger
 import scala.util.matching.Regex
 
 @DefineIndex(IndexType.unique, "namespace", "predicate", "value")
+@DefineIndex(IndexType.fulltext, "namespace", "predicate", "value", "description")
 @BuildVertexEntity
 case class Tag(
     namespace: String,
@@ -17,10 +18,13 @@ case class Tag(
 ) {
   override def hashCode(): Int = 31 * (31 * value.## + predicate.##) + namespace.##
 
-  override def equals(obj: Any): Boolean = obj match {
-    case Tag(n, p, v, _, _) => n == namespace && p == predicate && v == value
-    case _                  => false
-  }
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case Tag(n, p, v, _, _) => n == namespace && p == predicate && v == value
+      case _                  => false
+    }
+
+  lazy val isFreeTag: Boolean = namespace.startsWith("_freetags_")
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Tag]
 
@@ -35,8 +39,8 @@ object Tag {
   val tagColour: Regex               = "(.*)(#\\p{XDigit}{6})".r
   val namespacePredicateValue: Regex = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
   val namespacePredicate: Regex      = "([^\".:=]+)[.]([^\".=]+)".r
-  val PredicateValue: Regex          = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
-  val predicate: Regex               = "([^\".:=]+)".r
+//  val PredicateValue: Regex          = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
+  val predicate: Regex = "([^\".:=]+)".r
 
   def fromString(tagName: String, defaultNamespace: String, defaultColour: String = "#000000"): Tag = {
     val (name, colour) = tagName match {
@@ -47,9 +51,9 @@ object Tag {
       case namespacePredicateValue(namespace, predicate, value) if value.exists(_ != '=') =>
         Tag(namespace.trim, predicate.trim, Some(value.trim), None, colour)
       case namespacePredicate(namespace, predicate) => Tag(namespace.trim, predicate.trim, None, None, colour)
-      case PredicateValue(predicate, value)         => Tag(defaultNamespace, predicate.trim, Some(value.trim), None, colour)
-      case predicate(predicate)                     => Tag(defaultNamespace, predicate.trim, None, None, colour)
-      case _                                        => Tag(defaultNamespace, name, None, None, colour)
+//      case PredicateValue(predicate, value)         => Tag(defaultNamespace, predicate.trim, Some(value.trim), None, colour)
+      case predicate(predicate) => Tag(defaultNamespace, predicate.trim, None, None, colour)
+      case _                    => Tag(defaultNamespace, name, None, None, colour)
     }
   }
 }

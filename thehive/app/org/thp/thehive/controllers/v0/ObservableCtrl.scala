@@ -374,7 +374,6 @@ class PublicObservable @Inject() (
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, withStats, 0), observableSteps, authContext) =>
           observableSteps
@@ -418,7 +417,7 @@ class PublicObservable @Inject() (
           observableSrv
             .get(vertex)(graph)
             .getOrFail("Observable")
-            .flatMap(observable => observableSrv.updateTagNames(observable, value)(graph, authContext))
+            .flatMap(observable => observableSrv.updateTags(observable, value)(graph, authContext))
             .map(_ => Json.obj("tags" -> value))
         }
     )

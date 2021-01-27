@@ -31,7 +31,7 @@ class TaxonomySrv @Inject() (organisationSrvProvider: Provider[OrganisationSrv])
     } yield richTaxonomy
 
   def createFreetag(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
-    val customTaxo = Taxonomy(s"_freetags_${organisation._id}", "Custom taxonomy", 1)
+    val customTaxo = Taxonomy(s"_freetags_${organisation._id.value}", "Custom taxonomy", 1)
     for {
       taxonomy     <- createEntity(customTaxo)
       richTaxonomy <- Try(RichTaxonomy(taxonomy, Seq()))

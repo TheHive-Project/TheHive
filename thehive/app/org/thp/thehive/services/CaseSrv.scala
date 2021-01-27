@@ -159,8 +159,8 @@ class CaseSrv @Inject() (
       tagsToAdd    <- (tags -- `case`.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove <- (`case`.tags.toSet -- tags).toTry(tagSrv.getOrCreate)
       _            <- tagsToAdd.toTry(caseTagSrv.create(CaseTag(), `case`, _))
-      _ = if (tags.nonEmpty) get(`case`).outE[AlertTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
-      _ <- get(`case`).update(_.tags, tags).getOrFail("Alert")
+      _ = if (tags.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ <- get(`case`).update(_.tags, tags.toSeq).getOrFail("Case")
       _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 

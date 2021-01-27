@@ -1,18 +1,18 @@
 package org.thp.thehive.models
 
-import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P, TextP}
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 import org.janusgraph.core.schema.ConsistencyModifier
 import org.janusgraph.graphdb.types.TypeDefinitionCategory
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
-import org.thp.scalligraph.{EntityId, RichSeq}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
@@ -94,59 +94,70 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       Success(())
     }
     //=====[release 4.0.3]=====
+    //=====[release 4.0.4]=====
     // Taxonomies
-    .addVertexModel[String]("Taxonomy", Seq("namespace"))
+    .addVertexModel[String]("Taxonomy")
+    .addProperty[String]("Taxonomy", "namespace")
+    .addProperty[String]("Taxonomy", "description")
+    .addProperty[Int]("Taxonomy", "version")
     .dbOperation[Database]("Add Custom taxonomy vertex for each Organisation") { db =>
       db.tryTransaction { implicit g =>
         // For each organisation, if there is no custom taxonomy, create it
-        db.labelFilter("Organisation", Traversal.V()).unsafeHas("name", P.neq("admin")).toIterator.toTry { o =>
-          Traversal.V(EntityId(o.id)).out[OrganisationTaxonomy].v[Taxonomy].unsafeHas("namespace", s"_freetags_${o.id()}").headOption match {
-            case None =>
-              val taxoVertex = g.addVertex("Taxonomy")
-              taxoVertex.property("_label", "Taxonomy")
-              taxoVertex.property("_createdBy", "system@thehive.local")
-              taxoVertex.property("_createdAt", new Date())
-              taxoVertex.property("namespace", s"_freetags_${o.id()}")
-              taxoVertex.property("description", "Custom taxonomy")
-              taxoVertex.property("version", 1)
-              o.addEdge("OrganisationTaxonomy", taxoVertex)
-              Success(())
-            case _ => Success(())
+        db.labelFilter("Organisation", Traversal.V()).unsafeHas("name", P.neq("admin")).foreach { o =>
+          val hasFreetagsTaxonomy = Traversal
+            .V(EntityId(o.id))
+            .out[OrganisationTaxonomy]
+            .v[Taxonomy]
+            .unsafeHas("namespace", s"_freetags_${o.id()}")
+            .exists
+          if (!hasFreetagsTaxonomy) {
+            val taxoVertex = g.addVertex("Taxonomy")
+            taxoVertex.property("_label", "Taxonomy")
+            taxoVertex.property("_createdBy", "system@thehive.local")
+            taxoVertex.property("_createdAt", new Date())
+            taxoVertex.property("namespace", s"_freetags_${o.id()}")
+            taxoVertex.property("description", "Custom taxonomy")
+            taxoVertex.property("version", 1)
+            o.addEdge("OrganisationTaxonomy", taxoVertex)
           }
         }
-      }.map(_ => ())
+        Success(())
+      }
     }
-    .dbOperation[Database]("Add each tag to its Organisation's Custom taxonomy") { db =>
-      db.tryTransaction { implicit g =>
-        db.labelFilter("Organisation", Traversal.V()).unsafeHas("name", P.neq("admin")).toIterator.toTry { o =>
-          val customTaxo = Traversal.V(EntityId(o.id())).out("OrganisationTaxonomy").unsafeHas("namespace", s"_freetags_${o.id()}").head
-          Traversal
-            .V(EntityId(o.id()))
-            .unionFlat(
-              _.out("OrganisationShare").out("ShareCase").out("CaseTag"),
-              _.out("OrganisationShare").out("ShareObservable").out("ObservableTag"),
-              _.in("AlertOrganisation").out("AlertTag"),
-              _.in("CaseTemplateOrganisation").out("CaseTemplateTag")
+    .updateGraph("Add each tag to its Organisation's FreeTags taxonomy", "Tag") { tags =>
+      tags
+        .project(
+          _.by.by(
+            _.unionFlat(
+              _.in("CaseTag").in("ShareCase").in("OrganisationShare"),
+              _.in("ObservableTag").unionFlat(_.in("ShareObservable").in("OrganisationShare"), _.in("AlertObservable").out("AlertOrganisation")),
+              _.in("AlertTag").out("AlertOrganisation"),
+              _.in("CaseTemplateTag").out("CaseTemplateOrganisation")
             )
-            .toSeq
-            .foreach { tag =>
-              // Create a freetext tag and store it into predicate
-              val tagStr = tagString(
-                tag.property("namespace").value().toString,
-                tag.property("predicate").value().toString,
-                tag.property("value").orElse("")
-              )
-              tag.property("namespace", s"_freetags_${o.id()}")
-              tag.property("predicate", tagStr)
-              tag.property("value").remove()
-              customTaxo.addEdge("TaxonomyTag", tag)
-            }
-          Success(())
+              .dedup
+              .sort(_.by("_createdAt", Order.desc))
+              .limit(1)
+              .out("OrganisationTaxonomy")
+              .unsafeHas("namespace", TextP.startingWith("_freetags_"))
+              .option
+          )
+        )
+        .foreach {
+          case (tag, Some(freeTagsTaxo)) =>
+            val tagStr = tagString(
+              tag.property[String]("namespace").value(),
+              tag.property[String]("predicate").value(),
+              tag.property[String]("value").orElse("")
+            )
+            tag.property("namespace", freeTagsTaxo.property[String]("namespace").value)
+            tag.property("predicate", tagStr)
+            tag.property("value").remove()
+            freeTagsTaxo.addEdge("TaxonomyTag", tag)
         }
-      }.map(_ => ())
+      Success(())
     }
     .updateGraph("Add manageTaxonomy to admin profile", "Profile") { traversal =>
-      Try(traversal.unsafeHas("name", "admin").raw.property("permissions", "manageTaxonomy").iterate())
+      traversal.unsafeHas("name", "admin").raw.property("permissions", "manageTaxonomy").iterate()
       Success(())
     }
     .updateGraph("Remove colour property for Tags", "Tag") { traversal =>
@@ -159,6 +170,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.raw.property("colour", "#000000").iterate()
       Success(())
     }
+    // Patterns
     .updateGraph("Add managePattern permission to admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "admin").raw.property("permissions", "managePattern").iterate()
       Success(())
@@ -171,7 +183,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .iterate()
       Success(())
     }
-    //=====[release 4.0.3]=====
+    // Index backend
     /* Alert index  */
     .addProperty[Seq[String]]("Alert", "tags")
     .addProperty[EntityId]("Alert", "organisationId")

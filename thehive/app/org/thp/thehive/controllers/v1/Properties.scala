@@ -371,7 +371,7 @@ class Properties @Inject() (
         _.field.custom { (_, value, vertex, graph, authContext) =>
           observableSrv
             .getOrFail(vertex)(graph)
-            .flatMap(observable => observableSrv.updateTagNames(observable, value)(graph, authContext))
+            .flatMap(observable => observableSrv.updateTags(observable, value)(graph, authContext))
             .map(_ => Json.obj("tags" -> value))
         }
       )
@@ -393,12 +393,4 @@ class Properties @Inject() (
       .property("version", UMapping.int)(_.field.readonly)
       .property("enabled", UMapping.boolean)(_.select(_.enabled).readonly)
       .build
-
-  private def vertexToTag: Vertex => String = { v =>
-    val namespace = UMapping.string.getProperty(v, "namespace")
-    val predicate = UMapping.string.getProperty(v, "predicate")
-    val value     = UMapping.string.optional.getProperty(v, "value")
-    Tag(namespace, predicate, value, None, "#000000").toString
-  }
-
 }

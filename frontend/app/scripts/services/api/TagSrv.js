@@ -5,28 +5,13 @@
 
             var self = this;
 
-            var getTags = function(objectType, term) {
+            var getTags = function(objectType, term) { // TODO remove objectType parameter (not used anymore)
                 var defer = $q.defer();
-                var operations = [
-                    { _name: 'listTag' }
-                ];
-
-                if(objectType) {
-                    operations.push({ _name: objectType });
-                }
-
-                operations.push({
-                    _name: 'filter',
-                    _like: {
-                        _field: 'text',
-                        _value: '*' + term + '*'
-                    }
-                });
-
-                operations.push({ _name: 'text' });
-
-                // Get the list
-                QuerySrv.call('v0', operations, {name: 'tags-auto-complete'})
+                QuerySrv.call('v0', [
+                    { _name: 'listTag' },
+                    { _name: 'autoComplete', freeTag: term, limit: 10 },
+                    { _name: 'text' }
+                ], {name: 'tags-auto-complete'})
                     .then(function(data) {
                         defer.resolve(_.map(_.unique(data), function(tag) {
                             return {text: tag};

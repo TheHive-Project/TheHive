@@ -43,7 +43,6 @@ class TaxonomyCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Taxonomy], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, extraData), taxoSteps, authContext) =>
           taxoSteps.richPage(from, to, extraData.contains("total")) {
@@ -105,12 +104,12 @@ class TaxonomyCtrl @Inject() (
     // Create tags
     val tagValues = inputTaxo.values.getOrElse(Seq())
     val tags = tagValues.flatMap { value =>
-      value.entry.map(e => Tag(inputTaxo.namespace, value.predicate, Some(e.value), e.expanded, e.colour.getOrElse(tagSrv.defaultColour)))
+      value.entry.map(e => Tag(inputTaxo.namespace, value.predicate, Some(e.value), e.expanded, e.colour.getOrElse(tagSrv.freeTagColour)))
     }
 
     // Create a tag for predicates with no tags associated
     val predicateWithNoTags = inputTaxo.predicates.map(_.value).diff(tagValues.map(_.predicate))
-    val allTags             = tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace, p, None, None, tagSrv.defaultColour))
+    val allTags             = tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace, p, None, None, tagSrv.freeTagColour))
 
     if (inputTaxo.namespace.isEmpty)
       Failure(BadRequestError(s"A taxonomy with no namespace cannot be imported"))

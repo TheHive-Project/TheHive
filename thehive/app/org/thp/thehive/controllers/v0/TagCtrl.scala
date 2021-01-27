@@ -6,11 +6,12 @@ import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
 import org.thp.thehive.services.TagOps._
-import org.thp.thehive.services.TagSrv
+import org.thp.thehive.services.{OrganisationSrv, TagSrv}
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -99,8 +100,10 @@ class TagCtrl @Inject() (
       }
 }
 
+case class TagHint(freeTag: Option[String], namespace: Option[String], predicate: Option[String], value: Option[String], limit: Option[Long])
+
 @Singleton
-class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
+class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String  = "tag"
   override val initialQuery: Query = Query.init[Traversal.V[Tag]]("listTag", (graph, _) => tagSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
@@ -118,6 +121,16 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromCase", (tagSteps, _) => tagSteps.fromCase),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromAlert", (tagSteps, _) => tagSteps.fromAlert),
+    Query.withParam[TagHint, Traversal.V[Tag], Traversal.V[Tag]](
+      "autoComplete",
+      (tagHint, tags, authContext) =>
+        tagHint
+          .freeTag
+          .fold(tags.autoComplete(tagHint.namespace, tagHint.predicate, tagHint.value)(authContext))(
+            tags.autoComplete(organisationSrv, _)(authContext)
+          )
+          .merge(tagHint.limit)(_.limit(_))
+    ),
     Query[Traversal.V[Tag], Traversal[String, Vertex, Converter[String, Vertex]]]("text", (tagSteps, _) => tagSteps.displayName),
     Query.output[String, Traversal[String, Vertex, Converter[String, Vertex]]]
   )

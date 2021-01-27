@@ -16,7 +16,7 @@ import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, Json}
 
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
@@ -118,23 +118,18 @@ class ObservableSrv @Inject() (
     } yield createdTags
   }
 
-  def updateTagNames(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(observable, t.toSet))
-
-  def updateTags(observable: Observable with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val (tagsToAdd, tagsToRemove) = get(observable)
-      .tags
-      .toIterator
-      .foldLeft((tags, Set.empty[Tag with Entity])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove)
-        case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
-      }
+  def updateTags(observable: Observable with Entity, tags: Set[String])(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[(Seq[Tag with Entity], Seq[Tag with Entity])] =
     for {
-      _ <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
-      _ = get(observable).removeTags(tagsToRemove)
-      //      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags)) TODO add context (case or alert ?)
-    } yield ()
-  }
+      tagsToAdd    <- (tags -- observable.tags).toTry(tagSrv.getOrCreate)
+      tagsToRemove <- (observable.tags.toSet -- tags).toTry(tagSrv.getOrCreate)
+      _            <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
+      _ = if (tags.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ <- get(observable).update(_.tags, tags.toSeq).getOrFail("Observable")
+      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))
+    } yield (tagsToAdd, tagsToRemove)
 
   def remove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(observable).alert.headOption match {

@@ -281,8 +281,10 @@ class Output @Inject() (
       body(graph)(getAuthContext(userId))
     }
 
-  def getTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    cache.getOrElseUpdate(s"tag-$tagName")(tagSrv.createEntity(Tag.fromString(tagName, tagSrv.defaultNamespace, tagSrv.defaultColour)))
+  def getTag(tagName: String, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    cache.getOrElseUpdate(s"tag-$tagName")(
+      tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour))
+    )
 
   override def organisationExists(inputOrganisation: InputOrganisation): Boolean = organisations.contains(inputOrganisation.organisation.name)
 
@@ -540,7 +542,7 @@ class Output @Inject() (
               .logFailure(s"Unable to set case template ${ct.name} to case #${createdCase.number}")
           }
         inputCase.`case`.tags.foreach { tagName =>
-          getTag(tagName)
+          getTag(tagName, organisationIds.head.value)
             .flatMap(tag => caseSrv.caseTagSrv.create(CaseTag(), createdCase, tag))
             .logFailure(s"Unable to add tag $tagName to case #${createdCase.number}")
         }
@@ -667,7 +669,7 @@ class Output @Inject() (
       _ = updateMetaData(observable, inputObservable.metaData)
       _ <- observableSrv.observableObservableType.create(ObservableObservableType(), observable, observableType)
       _ = inputObservable.observable.tags.foreach { tagName =>
-        getTag(tagName)
+        getTag(tagName, organisationIds.head.value)
           .foreach(tag => observableSrv.observableTagSrv.create(ObservableTag(), observable, tag))
       }
     } yield observable
@@ -711,11 +713,11 @@ class Output @Inject() (
     authTransaction(inputAlert.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
       val `case` = inputAlert.caseId.flatMap(c => getCase(EntityId.read(c)).toOption)
-      val tags   = inputAlert.alert.tags.flatMap(getTag(_).toOption)
       for {
         organisation <- getOrganisation(inputAlert.organisation)
         createdAlert <- alertSrv.createEntity(inputAlert.alert.copy(organisationId = organisation._id, caseId = `case`.map(_._id)))
-        _ = updateMetaData(createdAlert, inputAlert.metaData)
+        tags = inputAlert.alert.tags.flatMap(getTag(_, organisation._id.value).toOption)
+        _    = updateMetaData(createdAlert, inputAlert.metaData)
         _ <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _ <-
           inputAlert

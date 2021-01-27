@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -8,40 +9,38 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
-import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Tag}
+import org.thp.scalligraph.utils.FunctionalCondition.When
+import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Organisation, OrganisationTaxonomy, Tag, Taxonomy, TaxonomyTag}
 import org.thp.thehive.services.TagOps._
+import org.thp.thehive.services.OrganisationOps._
 
 import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[Tag] {
+class TagSrv @Inject() (organisationSrv: OrganisationSrv, appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)
+    extends VertexSrv[Tag] {
 
-  private val autoCreateConfig: ConfigItem[Boolean, Boolean] =
-    appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
+  private val freeTagColourConfig: ConfigItem[String, String] =
+    appConfig.item[String]("tags.freeTagColour", "Default colour for free tags")
 
-  def autoCreate: Boolean = autoCreateConfig.get
+  def freeTagColour: String = freeTagColourConfig.get
 
-  private val defaultNamespaceConfig: ConfigItem[String, String] =
-    appConfig.item[String]("tags.defaultNamespace", "Default namespace of the automatically created tags")
+  def freeTagNamespace(implicit graph: Graph, authContext: AuthContext): String =
+    s"_freetags_${organisationSrv.currentId(graph, authContext).value}"
 
-  def defaultNamespace: String = defaultNamespaceConfig.get
-
-  private val defaultColourConfig: ConfigItem[String, String] =
-    appConfig.item[String]("tags.defaultColour", "Default colour of the automatically created tags")
-
-  def defaultColour: String = defaultColourConfig.get
-
-  def parseString(tagName: String): Tag =
-    Tag.fromString(tagName, defaultNamespace, defaultColour)
+  def parseString(tagName: String)(implicit graph: Graph, authContext: AuthContext): Tag = {
+    val ns  = freeTagNamespace
+    val tag = Tag.fromString(tagName, ns, freeTagColour)
+    if (tag.isFreeTag) Tag(ns, tagName, None, None, freeTagColour)
+    else tag
+  }
 
   def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     val tag = parseString(tagName)
-    getTag(tag).getOrFail("Tag").recoverWith {
-      case _ if autoCreate => create(tag)
-    }
+    getTag(tag).headOption.fold(create(tag))(Success(_))
   }
 
   override def createEntity(e: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
@@ -67,6 +66,9 @@ object TagOps {
       value.fold(t.hasNot(_.value))(v => t.has(_.value, v))
     }
 
+    def taxonomy: Traversal.V[Taxonomy] = traversal.in[TaxonomyTag].v[Taxonomy]
+
+    def organisation: Traversal.V[Organisation]                           = traversal.in[TaxonomyTag].in[OrganisationTaxonomy].v[Organisation]
     def displayName: Traversal[String, Vertex, Converter[String, Vertex]] = traversal.domainMap(_.toString)
 
     def fromCase: Traversal.V[Tag] = traversal.filter(_.in[CaseTag])
@@ -74,8 +76,27 @@ object TagOps {
     def fromObservable: Traversal.V[Tag] = traversal.filter(_.in[ObservableTag])
 
     def fromAlert: Traversal.V[Tag] = traversal.filter(_.in[AlertTag])
-  }
 
+    def autoComplete(organisationSrv: OrganisationSrv, freeTag: String)(implicit authContext: AuthContext): Traversal.V[Tag] = {
+      val freeTagNamespace: String = s"_freetags_${organisationSrv.currentId(traversal.graph, authContext).value}"
+      traversal
+        .has(_.namespace, freeTagNamespace)
+        .has(_.predicate, TextP.containing(freeTag))
+    }
+    def autoComplete(namespace: Option[String], predicate: Option[String], value: Option[String])(implicit
+        authContext: AuthContext
+    ): Traversal.V[Tag] = {
+      traversal.graph.db.mapPredicate(TextP.containing(""))
+      traversal
+        .merge(namespace)((t, ns) => t.has(_.namespace, TextP.containing(ns)))
+        .merge(predicate)((t, p) => t.has(_.predicate, TextP.containing(p)))
+        .merge(value)((t, v) => t.has(_.value, TextP.containing(v)))
+        .visible
+    }
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Tag] =
+      traversal.filter(_.organisation.current)
+  }
 }
 
 class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {

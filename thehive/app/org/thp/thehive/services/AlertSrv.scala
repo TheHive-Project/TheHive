@@ -175,7 +175,7 @@ class AlertSrv @Inject() (
       } { existingObservable =>
         val tags = (existingObservable.tags ++ richObservable.tags).toSet
         if ((tags -- existingObservable.tags).nonEmpty)
-          observableSrv.updateTagNames(existingObservable.observable, tags)
+          observableSrv.updateTags(existingObservable.observable, tags)
         Success(())
       }
   }
@@ -344,7 +344,7 @@ class AlertSrv @Inject() (
                 .headOption
                 .foreach { observable =>
                   val newTags = (observable.tags ++ richObservable.tags).toSet
-                  observableSrv.updateTagNames(observable, newTags)
+                  observableSrv.updateTags(observable, newTags)
                 }
           }
       }
