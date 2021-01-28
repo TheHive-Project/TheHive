@@ -20,7 +20,7 @@ case class InputPattern(
 case class InputReference(
     source_name: String,
     external_id: Option[String],
-    url: String
+    url: Option[String]
 )
 
 case class InputKillChainPhase(
@@ -33,7 +33,7 @@ object InputReference {
     for {
       source_name <- (json \ "source_name").validate[String]
       external_id <- (json \ "external_id").validateOpt[String]
-      url         <- (json \ "url").validate[String]
+      url         <- (json \ "url").validateOpt[String]
     } yield InputReference(
       source_name,
       external_id,
@@ -68,7 +68,7 @@ object InputPattern {
       name,
       description,
       kill_chain_phases.getOrElse(Seq()),
-      mitreReference.map(_.url).getOrElse(""),
+      mitreReference.flatMap(_.url).getOrElse(""),
       techniqueType,
       x_mitre_platforms.getOrElse(Seq()),
       x_mitre_data_sources.getOrElse(Seq()),
