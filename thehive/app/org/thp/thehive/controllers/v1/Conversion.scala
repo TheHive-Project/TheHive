@@ -22,7 +22,7 @@ object Conversion {
       .withFieldComputed(_._id, _._id.toString)
       .withFieldComputed(_.caseId, _.caseId.map(_.toString))
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldConst(_.extraData, JsObject.empty)
       .transform
   )
@@ -36,7 +36,7 @@ object Conversion {
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.caseId, _.caseId.map(_.toString))
         .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
-        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldComputed(_.tags, _.tags.toSet)
         .withFieldConst(_.extraData, alertWithExtraData._2)
         .transform
     }
@@ -290,7 +290,9 @@ object Conversion {
 
   implicit val tagOutput: Renderer.Aux[Tag, OutputTag] =
     Renderer.toJson[Tag, OutputTag](
-      _.into[OutputTag].transform
+      _.into[OutputTag]
+        .withFieldComputed(_.namespace, t => if (t.isFreeTag) "_freetags_" else t.namespace)
+        .transform
     )
 
   implicit class InputUserOps(inputUser: InputUser) {
