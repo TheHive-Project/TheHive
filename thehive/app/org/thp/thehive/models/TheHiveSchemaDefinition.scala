@@ -143,16 +143,23 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
           )
         )
         .foreach {
-          case (tag, Some(freeTagsTaxo)) =>
+          case (tag, Some(freetagsTaxo)) =>
             val tagStr = tagString(
               tag.property[String]("namespace").value(),
               tag.property[String]("predicate").value(),
               tag.property[String]("value").orElse("")
             )
-            tag.property("namespace", freeTagsTaxo.property[String]("namespace").value)
+            tag.property("namespace", freetagsTaxo.property[String]("namespace").value)
             tag.property("predicate", tagStr)
             tag.property("value").remove()
-            freeTagsTaxo.addEdge("TaxonomyTag", tag)
+            freetagsTaxo.addEdge("TaxonomyTag", tag)
+          case (tag, None) =>
+            val tagStr = tagString(
+              tag.property[String]("namespace").value(),
+              tag.property[String]("predicate").value(),
+              tag.property[String]("value").orElse("")
+            )
+            logger.warn(s"Tag $tagStr is not linked to any organisation")
         }
       Success(())
     }

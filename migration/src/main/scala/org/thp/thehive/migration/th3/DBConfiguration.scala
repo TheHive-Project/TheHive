@@ -155,13 +155,13 @@ class DBConfiguration @Inject() (
   /**
     * Creates a Source (akka stream) from the result of the search
     */
-  def source(searchRequest: SearchRequest)(implicit ec: ExecutionContext): Source[SearchHit, NotUsed] =
+  def source(searchRequest: SearchRequest): Source[SearchHit, NotUsed] =
     Source.fromPublisher(client.publisher(searchRequest))
 
   /**
     * Create a Sink (akka stream) that create entity in ElasticSearch
     */
-  def sink[T](implicit builder: RequestBuilder[T], ec: ExecutionContext): Sink[T, Future[Unit]] = {
+  def sink[T](implicit builder: RequestBuilder[T]): Sink[T, Future[Unit]] = {
     val sinkListener = new ResponseListener[T] {
       override def onAck(resp: BulkResponseItem, original: T): Unit = ()
 
