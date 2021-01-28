@@ -8,9 +8,7 @@
             var getTags = function(objectType, term) { // TODO remove objectType parameter (not used anymore)
                 var defer = $q.defer();
                 QuerySrv.call('v0', [
-                    { _name: 'listTag' },
                     { _name: 'autoComplete', freeTag: term, limit: 10 },
-                    { _name: 'text' }
                 ], {name: 'tags-auto-complete'})
                     .then(function(data) {
                         defer.resolve(_.map(_.unique(data), function(tag) {

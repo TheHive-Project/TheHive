@@ -104,8 +104,9 @@ case class TagHint(freeTag: Option[String], namespace: Option[String], predicate
 
 @Singleton
 class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData {
-  override val entityName: String  = "tag"
-  override val initialQuery: Query = Query.init[Traversal.V[Tag]]("listTag", (graph, _) => tagSrv.startTraversal(graph))
+  override val entityName: String = "tag"
+  override val initialQuery: Query =
+    Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
     "page",
     (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
@@ -120,15 +121,16 @@ class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) ext
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromCase", (tagSteps, _) => tagSteps.fromCase),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromAlert", (tagSteps, _) => tagSteps.fromAlert),
-    Query.withParam[TagHint, Traversal.V[Tag], Traversal.V[Tag]](
+    Query.initWithParam[TagHint, Traversal[String, Vertex, Converter[String, Vertex]]](
       "autoComplete",
-      (tagHint, tags, authContext) =>
+      (tagHint, graph, authContext) =>
         tagHint
           .freeTag
-          .fold(tags.autoComplete(tagHint.namespace, tagHint.predicate, tagHint.value)(authContext))(
-            tags.autoComplete(organisationSrv, _)(authContext)
+          .fold(tagSrv.startTraversal(graph).autoComplete(tagHint.namespace, tagHint.predicate, tagHint.value)(authContext).visible(authContext))(
+            tagSrv.startTraversal(graph).autoComplete(organisationSrv, _)(authContext)
           )
           .merge(tagHint.limit)(_.limit(_))
+          .displayName
     ),
     Query[Traversal.V[Tag], Traversal[String, Vertex, Converter[String, Vertex]]]("text", (tagSteps, _) => tagSteps.displayName),
     Query.output[String, Traversal[String, Vertex, Converter[String, Vertex]]]
@@ -139,20 +141,12 @@ class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) ext
     .property("value", UMapping.string.optional)(_.field.readonly)
     .property("description", UMapping.string.optional)(_.field.readonly)
     .property("text", UMapping.string)(
-      _.select(_.displayName) // FIXME add filter
-//        .filter((_, tags) =>
-//          tags
-//            .graphMap[String, String, Converter.Identity[String]](
-//              { v =>
-//                val namespace = UMapping.string.getProperty(v, "namespace")
-//                val predicate = UMapping.string.getProperty(v, "predicate")
-//                val value     = UMapping.string.optional.getProperty(v, "value")
-//                Tag(namespace, predicate, value, None, "#000000").toString
-//              },
-//              Converter.identity[String]
-//            )
-//        )
-//        .converter(_ => Converter.identity[String])
+      _.select(_.displayName)
+        .filter[String] {
+          case (_, tags, authContext, Right(predicate)) => tags.freetags(organisationSrv)(authContext).has(_.predicate, predicate)
+          case (_, tags, _, Left(true))                 => tags
+          case (_, tags, _, Left(false))                => tags.empty
+        }
         .readonly
     )
     .build

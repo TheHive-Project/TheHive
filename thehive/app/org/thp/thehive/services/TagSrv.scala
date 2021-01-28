@@ -77,12 +77,16 @@ object TagOps {
 
     def fromAlert: Traversal.V[Tag] = traversal.filter(_.in[AlertTag])
 
-    def autoComplete(organisationSrv: OrganisationSrv, freeTag: String)(implicit authContext: AuthContext): Traversal.V[Tag] = {
+    def freetags(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Tag] = {
       val freeTagNamespace: String = s"_freetags_${organisationSrv.currentId(traversal.graph, authContext).value}"
       traversal
         .has(_.namespace, freeTagNamespace)
-        .has(_.predicate, TextP.containing(freeTag))
     }
+
+    def autoComplete(organisationSrv: OrganisationSrv, freeTag: String)(implicit authContext: AuthContext): Traversal.V[Tag] =
+      freetags(organisationSrv)
+        .has(_.predicate, TextP.containing(freeTag))
+
     def autoComplete(namespace: Option[String], predicate: Option[String], value: Option[String])(implicit
         authContext: AuthContext
     ): Traversal.V[Tag] = {
