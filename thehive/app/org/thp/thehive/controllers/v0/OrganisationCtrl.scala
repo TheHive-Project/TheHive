@@ -138,7 +138,6 @@ class PublicOrganisation @Inject() (organisationSrv: OrganisationSrv) extends Pu
   override val outputQuery: Query = Query.output[Organisation with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => organisationSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

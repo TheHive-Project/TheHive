@@ -59,7 +59,6 @@ class PublicObservableType @Inject() (observableTypeSrv: ObservableTypeSrv) exte
   override val outputQuery: Query = Query.output[ObservableType with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[ObservableType]](
     "getObservableType",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => observableTypeSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[ObservableType]

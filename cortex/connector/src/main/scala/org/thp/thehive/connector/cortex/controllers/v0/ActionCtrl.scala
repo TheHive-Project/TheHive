@@ -83,7 +83,6 @@ class PublicAction @Inject() (actionSrv: ActionSrv, organisationSrv: Organisatio
     Query.init[Traversal.V[Action]]("listAction", (graph, authContext) => actionSrv.startTraversal(graph).visible(organisationSrv)(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Action]](
     "getAction",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => actionSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Action], IteratorOutput](

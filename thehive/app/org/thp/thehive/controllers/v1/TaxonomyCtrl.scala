@@ -37,7 +37,6 @@ class TaxonomyCtrl @Inject() (
   override val getQuery: ParamQuery[EntityIdOrName] =
     Query.initWithParam[EntityIdOrName, Traversal.V[Taxonomy]](
       "getTaxonomy",
-      FieldsParser[EntityIdOrName],
       (idOrName, graph, authContext) => taxonomySrv.get(idOrName)(graph).visible(authContext)
     )
   override val pageQuery: ParamQuery[OutputParam] =

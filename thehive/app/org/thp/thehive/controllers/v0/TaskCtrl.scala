@@ -117,7 +117,6 @@ class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, 
   )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
     "getTask",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).inOrganisation(organisationSrv.currentId(graph, authContext))
   )
   override val outputQuery: Query =

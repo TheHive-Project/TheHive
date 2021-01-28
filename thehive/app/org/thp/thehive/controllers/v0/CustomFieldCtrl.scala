@@ -100,7 +100,6 @@ class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends Publi
   override val outputQuery: Query = Query.output[CustomField with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[CustomField]](
     "getCustomField",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => customFieldSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties =

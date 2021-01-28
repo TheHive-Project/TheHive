@@ -78,7 +78,6 @@ class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
     Query.init[Traversal.V[Job]]("listJob", (graph, authContext) => jobSrv.startTraversal(graph).visible(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Job]](
     "getJob",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => jobSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =

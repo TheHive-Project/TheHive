@@ -43,7 +43,6 @@ class ShareCtrl @Inject() (
   override val outputQuery: Query = Query.outputWithContext[RichShare, Traversal.V[Share]]((shareSteps, _) => shareSteps.richShare)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Share]](
     "getShare",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => shareSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

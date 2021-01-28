@@ -37,7 +37,6 @@ class ProcedureCtrl @Inject() (
   override val outputQuery: Query = Query.output[RichProcedure, Traversal.V[Procedure]](_.richProcedure)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Procedure]](
     "getProcedure",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => procedureSrv.get(idOrName)(graph)
   )
 

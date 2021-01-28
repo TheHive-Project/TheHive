@@ -113,7 +113,6 @@ class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) ext
   override val outputQuery: Query = Query.output[Tag with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Tag]](
     "getTag",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => tagSrv.get(idOrName)(graph)
   )
   implicit val stringRenderer: Renderer[String] = Renderer.toJson[String, String](identity)

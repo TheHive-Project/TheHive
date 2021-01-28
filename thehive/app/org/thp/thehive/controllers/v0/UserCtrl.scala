@@ -232,7 +232,6 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv) 
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[User]](
     "getUser",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](

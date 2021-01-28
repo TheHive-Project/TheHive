@@ -75,7 +75,6 @@ class PublicProfile @Inject() (profileSrv: ProfileSrv) extends PublicData {
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](
     "getProfile",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => profileSrv.get(idOrName)(graph)
   )
   val initialQuery: Query =

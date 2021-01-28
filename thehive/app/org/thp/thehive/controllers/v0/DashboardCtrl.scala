@@ -95,7 +95,6 @@ class PublicDashboard @Inject() (
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Dashboard]](
     "getDashboard",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => dashboardSrv.get(idOrName)(graph).visible(authContext)
   )
 

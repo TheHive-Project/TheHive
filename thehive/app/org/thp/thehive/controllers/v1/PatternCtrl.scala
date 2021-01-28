@@ -41,7 +41,6 @@ class PatternCtrl @Inject() (
   override val outputQuery: Query = Query.output[RichPattern, Traversal.V[Pattern]](_.richPattern)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Pattern]](
     "getPattern",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => patternSrv.get(idOrName)(graph)
   )
 
@@ -72,7 +71,7 @@ class PatternCtrl @Inject() (
 
   def get(patternId: String): Action[AnyContent] =
     entrypoint("get pattern")
-      .authRoTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { _ => implicit graph =>
         patternSrv
           .get(EntityIdOrName(patternId))
           .richPattern

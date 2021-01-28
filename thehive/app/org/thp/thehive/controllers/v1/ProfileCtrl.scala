@@ -26,7 +26,6 @@ class ProfileCtrl @Inject() (
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](
     "getProfile",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => profileSrv.get(idOrName)(graph)
   )
   val entityName: String                 = "profile"

@@ -357,7 +357,6 @@ class PublicAlert @Inject() (
       )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Alert]](
     "getAlert",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => alertSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =

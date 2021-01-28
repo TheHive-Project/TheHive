@@ -3,9 +3,8 @@ package org.thp.thehive.controllers.v0
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
-import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
+import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -17,6 +16,7 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
@@ -67,7 +67,6 @@ class AuditCtrl @Inject() (
 class PublicAudit @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
 

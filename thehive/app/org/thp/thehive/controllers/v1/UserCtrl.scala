@@ -45,7 +45,6 @@ class UserCtrl @Inject() (
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[User]](
     "getUser",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
 

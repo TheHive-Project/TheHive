@@ -99,7 +99,6 @@ class PublicAnalyzerTemplate @Inject() (analyzerTemplateSrv: AnalyzerTemplateSrv
     Query.init[Traversal.V[AnalyzerTemplate]]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.startTraversal(graph))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[AnalyzerTemplate]](
     "getReportTemplate",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => analyzerTemplateSrv.get(idOrName)(graph)
   )
   override val pageQuery: ParamQuery[OutputParam] =
