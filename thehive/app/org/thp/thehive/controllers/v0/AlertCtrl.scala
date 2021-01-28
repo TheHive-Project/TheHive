@@ -448,7 +448,7 @@ class PublicAlert @Inject() (
             Converter.identity[String]
           )
         }
-          .filter(FieldsParser.string) {
+          .filter[String] {
             case (_, alerts, _, Right(predicate)) =>
               predicate.getBiPredicate.asInstanceOf[BiPredicate[_, _]] match {
                 case Compare.eq       => statusFilter(predicate.getValue)(alerts)

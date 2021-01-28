@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FieldsParser}
+import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -20,7 +19,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 import javax.inject.{Inject, Singleton}
 import scala.util.Failure
@@ -74,7 +73,7 @@ class Properties @Inject() (
       .property("read", UMapping.boolean)(_.field.updatable)
       .property("imported", UMapping.boolean)(
         _.select(_.imported)
-          .filter(FieldsParser.boolean)((_, alertTraversal, _, predicate) =>
+          .filter[Boolean]((_, alertTraversal, _, predicate) =>
             predicate.fold(
               b => if (b) alertTraversal else alertTraversal.empty,
               p =>
@@ -93,7 +92,7 @@ class Properties @Inject() (
             .jsonValue
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
-        .filter(FieldsParser.json) {
+        .filter[JsValue] {
           case (FPathElem(_, FPathElem(name, _)), alertTraversal, _, predicate) =>
             predicate match {
               case Right(predicate) => alertTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
@@ -196,7 +195,7 @@ class Properties @Inject() (
             .jsonValue
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
-        .filter(FieldsParser.json) {
+        .filter[JsValue] {
           case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
             predicate match {
               case Right(predicate) => caseTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)

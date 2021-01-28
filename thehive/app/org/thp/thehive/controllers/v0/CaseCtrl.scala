@@ -296,7 +296,7 @@ class PublicCase @Inject() (
             .getOrElse(caseTraversal.constant2(null))
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
-        .filter(FieldsParser.json) {
+        .filter[JsValue] {
           case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
             predicate match {
               case Right(predicate) => caseTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
