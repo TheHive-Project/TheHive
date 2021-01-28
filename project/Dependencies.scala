@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val janusVersion        = "0.5.2"
+  val janusVersion        = "0.5.3"
   val akkaVersion: String = play.core.PlayVersion.akkaVersion
   val elastic4sVersion    = "7.10.2"
 
