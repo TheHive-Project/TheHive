@@ -33,7 +33,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
   override def configure(): Unit = {
 //    bind[UserSrv].to[LocalUserSrv]
     bind(classOf[UserSrv]).to(classOf[LocalUserSrv])
-//    bind[AuthSrv].toProvider[MultuAuthSrvProvider]
+//    bind[AuthSrv].toProvider[MultiAuthSrvProvider]
     bind(classOf[AuthSrv]).toProvider(classOf[TOTPAuthSrvProvider])
 
     val authBindings = ScalaMultibinder.newSetBinder[AuthSrvProvider](binder)
@@ -106,9 +106,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
 
     bind[ActorRef].annotatedWithName("flow-actor").toProvider[FlowActorProvider]
 
-    bind[SingleInstance].toProvider[SingleInstanceProvider]
-
-    bind[ClusterSetup].asEagerSingleton()
+    bind[SingleInstance].to[ClusterSetup].asEagerSingleton()
     ()
   }
 }
