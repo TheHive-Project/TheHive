@@ -24,6 +24,7 @@ object Conversion {
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
       .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldConst(_.extraData, JsObject.empty)
+      .enableMethodAccessors
       .transform
   )
 
@@ -38,6 +39,7 @@ object Conversion {
         .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
         .withFieldComputed(_.tags, _.tags.toSet)
         .withFieldConst(_.extraData, alertWithExtraData._2)
+        .enableMethodAccessors
         .transform
     }
 
@@ -90,6 +92,7 @@ object Conversion {
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_.extraData, JsObject.empty)
       .withFieldComputed(_.assignee, _.assignee)
+      .enableMethodAccessors
       .transform
   )
 
@@ -105,6 +108,7 @@ object Conversion {
         .withFieldComputed(_.status, _.status.toString)
         .withFieldConst(_.extraData, caseWithExtraData._2)
         .withFieldComputed(_.assignee, _.assignee)
+        .enableMethodAccessors
         .transform
     }
 
@@ -161,6 +165,7 @@ object Conversion {
       .withFieldComputed(_.customFields, _.customFields.map(_.toOutput).sortBy(_.order))
       .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldComputed(_.tasks, _.tasks.map(_.toOutput))
+      .enableMethodAccessors
       .transform
   )
 
@@ -171,6 +176,7 @@ object Conversion {
         .withFieldComputed(_.value, _.jsValue)
         .withFieldComputed(_.`type`, _.typeName)
         .withFieldComputed(_.order, _.order.getOrElse(0))
+        .enableMethodAccessors
         .transform
     )
 
@@ -207,6 +213,7 @@ object Conversion {
         .withFieldConst(_.name, organisation.name)
         .withFieldConst(_.description, organisation.description)
         .withFieldComputed(_.links, _.links.map(_.name))
+        .enableMethodAccessors
         .transform
     )
 
@@ -243,6 +250,7 @@ object Conversion {
       .withFieldComputed(_._id, _._id.toString)
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_.extraData, JsObject.empty)
+      .enableMethodAccessors
       .transform
   )
 
@@ -255,6 +263,7 @@ object Conversion {
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.status, _.status.toString)
         .withFieldConst(_.extraData, taskWithExtraData._2)
+        .enableMethodAccessors
         .transform
     }
 
@@ -273,6 +282,7 @@ object Conversion {
         .withFieldConst(_._type, "Taxonomy")
         .withFieldComputed(_.tags, _.tags.map(_.toOutput))
         .withFieldConst(_.extraData, JsObject.empty)
+        .enableMethodAccessors
         .transform
     )
 
@@ -285,6 +295,7 @@ object Conversion {
         .withFieldConst(_._type, "Taxonomy")
         .withFieldComputed(_.tags, _.tags.map(_.toOutput))
         .withFieldConst(_.extraData, taxoWithExtraData._2)
+        .enableMethodAccessors
         .transform
     }
 
@@ -316,6 +327,7 @@ object Conversion {
       .withFieldComputed(_._id, _._id.toString)
       .withFieldConst(_.organisations, Nil)
       .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
+      .enableMethodAccessors
       .transform
   )
 
@@ -329,6 +341,7 @@ object Conversion {
         .withFieldComputed(_.hasKey, _.apikey.isDefined)
         .withFieldConst(_.organisations, organisations.map { case (org, role) => OutputOrganisationProfile(org, role) })
         .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
+        .enableMethodAccessors
         .transform
     }
 
@@ -337,6 +350,7 @@ object Conversion {
       .withFieldComputed(_._id, _.share._id.toString)
       .withFieldConst(_._type, "Share")
       .withFieldComputed(_.caseId, _.caseId.toString)
+      .enableMethodAccessors
       .transform
   )
 
@@ -367,6 +381,7 @@ object Conversion {
       .withFieldConst(_._createdAt, dashboard._createdAt)
       .withFieldConst(_._createdBy, dashboard._createdBy)
       .withFieldComputed(_.definition, _.definition.toString)
+      .enableMethodAccessors
       .transform
   )
 
@@ -414,6 +429,7 @@ object Conversion {
           })
       )
       .withFieldConst(_.extraData, JsObject.empty)
+      .enableMethodAccessors
       .transform
   )
 
@@ -439,6 +455,7 @@ object Conversion {
               })
           )
           .withFieldConst(_.extraData, extraData)
+          .enableMethodAccessors
           .transform
     }
 
@@ -451,6 +468,7 @@ object Conversion {
       .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
       .withFieldRenamed(_._createdBy, _.owner)
       .withFieldConst(_.extraData, JsObject.empty)
+      .enableMethodAccessors
       .transform
   )
 
@@ -465,6 +483,7 @@ object Conversion {
         .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toOutput))
         .withFieldRenamed(_._createdBy, _.owner)
         .withFieldConst(_.extraData, logWithExtraData._2)
+        .enableMethodAccessors
         .transform
     }
 
@@ -519,6 +538,7 @@ object Conversion {
         .withFieldComputed(_._id, _._id.toString)
         .withFieldConst(_._type, "Pattern")
         .withFieldComputed(_.parent, _.parent.map(_.patternId))
+        .enableMethodAccessors
         .transform
     )
 
@@ -534,6 +554,7 @@ object Conversion {
       _.into[OutputProcedure]
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.patternId, _.pattern.patternId)
+        .enableMethodAccessors
         .transform
     )
 

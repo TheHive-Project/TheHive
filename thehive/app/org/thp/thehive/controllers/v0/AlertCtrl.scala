@@ -97,6 +97,7 @@ class AlertCtrl @Inject() (
                 .withFieldRenamed(_.number, _.caseId)
                 .withFieldComputed(_.status, _.status.toString)
                 .withFieldComputed(_.tags, _.tags.toSet)
+                .enableMethodAccessors
                 .transform
               Json.toJson(similarCase)
           }

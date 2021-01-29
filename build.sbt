@@ -320,6 +320,7 @@ lazy val mispClient = (project in file("misp/client"))
     libraryDependencies ++= Seq(
       ws,
       alpakka,
+      akkaHttp,
       specs      % Test,
       playMockws % Test
     )

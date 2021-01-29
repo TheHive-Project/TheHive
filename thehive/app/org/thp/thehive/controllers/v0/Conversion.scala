@@ -58,6 +58,7 @@ object Conversion {
           }
       )
       .withFieldConst(_.similarCases, Nil)
+      .enableMethodAccessors
       .transform
   )
 
@@ -86,6 +87,7 @@ object Conversion {
         )
         .withFieldConst(_.artifacts, richAlertWithObservables._2.map(_.toValue))
         .withFieldConst(_.similarCases, Nil)
+        .enableMethodAccessors
         .transform
     )
 
@@ -155,6 +157,7 @@ object Conversion {
       .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldConst(_.stats, JsObject.empty)
       .withFieldComputed(_.permissions, _.userPermissions.asInstanceOf[Set[String]]) // Permission is String
+      .enableMethodAccessors
       .transform
   )
 
@@ -210,6 +213,7 @@ object Conversion {
         .withFieldComputed(_.tags, _.tags.toSet)
         .withFieldConst(_.stats, richCaseWithStats._2)
         .withFieldComputed(_.permissions, _.userPermissions.asInstanceOf[Set[String]])
+        .enableMethodAccessors
         .transform
     )
 
@@ -240,6 +244,7 @@ object Conversion {
       .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldComputed(_.tasks, _.tasks.map(_.toValue))
       .withFieldConst(_.metrics, JsObject.empty)
+      .enableMethodAccessors
       .transform
   )
 
@@ -254,6 +259,7 @@ object Conversion {
           }
         )
         .withFieldComputed(_.tpe, _.typeName)
+        .enableMethodAccessors
         .transform
     )
 
@@ -293,6 +299,7 @@ object Conversion {
       .withFieldConst(_.createdAt, dashboard._createdAt)
       .withFieldConst(_.createdBy, dashboard._createdBy)
       .withFieldComputed(_.definition, _.definition.toString)
+      .enableMethodAccessors
       .transform
   )
 
@@ -379,6 +386,7 @@ object Conversion {
       )
       .withFieldConst(_.stats, JsObject.empty)
       .withFieldConst(_.`case`, None)
+      .enableMethodAccessors
       .transform
   )
 
@@ -409,6 +417,7 @@ object Conversion {
           )
           .withFieldConst(_.stats, stats)
           .withFieldConst(_.`case`, richCase.map(_.toValue))
+          .enableMethodAccessors
           .transform
     }
 
@@ -439,6 +448,7 @@ object Conversion {
           )
           .withFieldConst(_.stats, stats)
           .withFieldConst(_.`case`, None)
+          .enableMethodAccessors
           .transform
     }
 
@@ -514,6 +524,7 @@ object Conversion {
       .withFieldComputed(_.caseId, _.caseId.toString)
       .withFieldComputed(_.createdAt, _.share._createdAt)
       .withFieldComputed(_.createdBy, _.share._createdBy)
+      .enableMethodAccessors
       .transform
   )
 
@@ -549,6 +560,7 @@ object Conversion {
       .withFieldRenamed(_._updatedBy, _.updatedBy)
       .withFieldRenamed(_._createdAt, _.createdAt)
       .withFieldRenamed(_._createdBy, _.createdBy)
+      .enableMethodAccessors
       .transform
   )
 
@@ -567,6 +579,7 @@ object Conversion {
           .withFieldRenamed(_._updatedBy, _.updatedBy)
           .withFieldRenamed(_._createdAt, _.createdAt)
           .withFieldRenamed(_._createdBy, _.createdBy)
+          .enableMethodAccessors
           .transform
     }
 
@@ -596,6 +609,7 @@ object Conversion {
       .withFieldRenamed(_._updatedBy, _.updatedBy)
       .withFieldRenamed(_._updatedAt, _.updatedAt)
       .withFieldConst(_._type, "user")
+      .enableMethodAccessors
       .transform
   )
 
