@@ -1,45 +1,47 @@
 package org.thp.thehive.dto.v1
 
+import play.api.libs.json.Json.WithDefaultValues
+
 import java.util.Date
 import play.api.libs.json.{JsObject, Json, OFormat}
 
 /*
 Format based on :
 https://tools.ietf.org/id/draft-dulaunoy-misp-taxonomy-format-04.html
-*/
+ */
 
 case class InputTaxonomy(
-  namespace: String,
-  description: String,
-  version: Int,
-  `type`: Option[Seq[String]],
-  exclusive: Option[Boolean],
-  predicates: Seq[InputPredicate],
-  values: Option[Seq[InputValue]]
+    namespace: String,
+    description: String,
+    version: Int,
+    exclusive: Option[Boolean],
+    predicates: Seq[InputPredicate],
+    values: Seq[InputValue] = Nil
 )
 
 case class InputPredicate(
-  value: String,
-  expanded: Option[String],
-  exclusive: Option[Boolean],
-  description: Option[String]
+    value: String,
+    expanded: Option[String],
+    exclusive: Option[Boolean],
+    description: Option[String],
+    colour: Option[String]
 )
 
 case class InputValue(
-  predicate: String,
-  entry: Seq[InputEntry]
+    predicate: String,
+    entry: Seq[InputEntry]
 )
 
 case class InputEntry(
-  value: String,
-  expanded: Option[String],
-  colour: Option[String],
-  description: Option[String],
-  numerical_value: Option[Int]
+    value: String,
+    expanded: Option[String],
+    colour: Option[String],
+    description: Option[String],
+    numerical_value: Option[Int]
 )
 
 object InputTaxonomy {
-  implicit val format: OFormat[InputTaxonomy] = Json.format[InputTaxonomy]
+  implicit val format: OFormat[InputTaxonomy] = Json.configured[WithDefaultValues].format[InputTaxonomy]
 }
 
 object InputPredicate {
@@ -55,17 +57,17 @@ object InputEntry {
 }
 
 case class OutputTaxonomy(
-  _id: String,
-  _type: String,
-  _createdBy: String,
-  _updatedBy: Option[String] = None,
-  _createdAt: Date,
-  _updatedAt: Option[Date] = None,
-  namespace: String,
-  description: String,
-  version: Int,
-  tags: Seq[OutputTag],
-  extraData: JsObject
+    _id: String,
+    _type: String,
+    _createdBy: String,
+    _updatedBy: Option[String] = None,
+    _createdAt: Date,
+    _updatedAt: Option[Date] = None,
+    namespace: String,
+    description: String,
+    version: Int,
+    tags: Seq[OutputTag],
+    extraData: JsObject
 )
 
 object OutputTaxonomy {

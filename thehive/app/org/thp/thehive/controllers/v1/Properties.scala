@@ -472,7 +472,8 @@ class Properties @Inject() (
     val namespace = UMapping.string.getProperty(v, "namespace")
     val predicate = UMapping.string.getProperty(v, "predicate")
     val value     = UMapping.string.optional.getProperty(v, "value")
-    Tag(namespace, predicate, value, None, "#000000").toString
+    val colour    = UMapping.string.optional.getProperty(v, "colour")
+    Tag(namespace, predicate, value, None, colour.getOrElse("#000000")).toString
   }
 
 }
