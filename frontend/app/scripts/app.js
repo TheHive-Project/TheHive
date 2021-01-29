@@ -232,6 +232,21 @@ angular.module('thehive', [
                     permissions: ['manageTaxonomy']
                 }
             })
+            .state('app.administration.attackPatterns', {
+                url: '/attack-patterns',
+                templateUrl: 'views/partials/admin/attack/list.html',
+                controller: 'AttackPatternListCtrl',
+                controllerAs: '$vm',
+                title: 'ATT&CK patterns administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                }
+                // guard: {
+                //     permissions: ['manageTaxonomy']
+                // }
+            })
             .state('app.administration.organisations', {
                 url: '/organisations',
                 templateUrl: 'views/partials/admin/organisation/list.html',
