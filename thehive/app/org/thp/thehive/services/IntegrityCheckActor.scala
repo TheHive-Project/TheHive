@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.google.inject.util.Types
 import com.google.inject.{Injector, Key, TypeLiteral}
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, IntegrityCheckOps}
 import org.thp.thehive.GuiceAkkaExtension
@@ -14,6 +15,7 @@ import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.Success
 
 sealed trait IntegrityCheckMessage
 case class EntityAdded(name: String) extends IntegrityCheckMessage
@@ -44,16 +46,15 @@ class IntegrityCheckActor() extends Actor {
   def check(name: String): Unit = integrityCheckMap.get(name).foreach(_.check())
 
   override def preStart(): Unit = {
-    // FIXME disabled to speed-up develop start
-//    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-//    integrityCheckOps.foreach { integrityCheck =>
-//      db.tryTransaction { implicit graph =>
-//        Success(integrityCheck.initialCheck())
-//      }
-//    }
-//    integrityCheckOps.foreach { integrityCheck =>
-//      Success(integrityCheck.check())
-//    }
+    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+    integrityCheckOps.foreach { integrityCheck =>
+      db.tryTransaction { implicit graph =>
+        Success(integrityCheck.initialCheck())
+      }
+    }
+    integrityCheckOps.foreach { integrityCheck =>
+      Success(integrityCheck.check())
+    }
   }
   override def receive: Receive = receive(Map.empty)
   def receive(states: Map[String, (Boolean, Cancellable)]): Receive = {
@@ -78,7 +79,7 @@ class IntegrityCheckActor() extends Actor {
       context.become(receive(states + (name -> (false -> timer))))
     case Check(name) =>
       logger.debug(s"Pause integrity checks of $name, wait new add")
-      states(name)._2.cancel()
+      states.get(name).foreach(_._2.cancel())
       context.become(receive(states - name))
   }
 }

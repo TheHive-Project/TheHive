@@ -269,27 +269,6 @@ object UserOps {
               }
         }
 
-    /*
-    def richUser(organisationId: EntityId): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
-      traversal
-        .project(
-          _.by
-            .by(_.profile(organisation).fold)
-            .by(_.avatar.fold)
-        )
-        .domainMap {
-          case (user, profiles, attachment) =>
-            RichUser(
-              user,
-              attachment.headOption.map(_.attachmentId),
-              profiles.headOption.fold("")(_.name),
-              profiles.headOption.fold(Set.empty[Permission])(_.permissions),
-              organisation
-            )
-        }
-
-     */
-
     def richUserWithCustomRenderer[D, G, C <: Converter[D, G]](
         organisation: EntityIdOrName,
         entityRenderer: Traversal.V[User] => Traversal[D, G, C]
@@ -306,7 +285,7 @@ object UserOps {
             organisation
               .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
               .orElse(profileOrganisations.headOption)
-              .fold(throw InternalError(s"")) { // FIXME
+              .fold(RichUser(user, avatar, Profile.admin.name, Set.empty, "no org")) { // fake user (probably "system")
                 case (profile, organisationIdAndName) =>
                   val avatar = attachment.headOption.map(_.attachmentId)
                   RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("***")(_._2)) -> renderedEntity
