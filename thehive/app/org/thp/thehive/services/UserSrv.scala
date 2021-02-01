@@ -11,7 +11,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.CList
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, InternalError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
@@ -254,12 +254,11 @@ object UserOps {
       traversal
         .project(
           _.by
-            .by(_.avatar.fold)
+            .by(_.avatar.value(_.attachmentId).option)
             .by(_.role.project(_.by(_.profile).by(_.organisation.visible(authContext).project(_.by(_._id).byValue(_.name)).fold)).fold)
         )
         .domainMap {
-          case (user, attachment, profileOrganisations) =>
-            val avatar = attachment.headOption.map(_.attachmentId)
+          case (user, avatar, profileOrganisations) =>
             organisation
               .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
               .orElse(profileOrganisations.headOption)
@@ -276,18 +275,17 @@ object UserOps {
       traversal
         .project(
           _.by
-            .by(_.avatar.fold)
+            .by(_.avatar.value(_.attachmentId).option)
             .by(_.role.project(_.by(_.profile).by(_.organisation.visible.project(_.by(_._id).byValue(_.name)).fold)).fold)
             .by(entityRenderer)
         )
         .domainMap {
-          case (user, attachment, profileOrganisations, renderedEntity) =>
+          case (user, avatar, profileOrganisations, renderedEntity) =>
             organisation
               .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
               .orElse(profileOrganisations.headOption)
-              .fold(RichUser(user, avatar, Profile.admin.name, Set.empty, "no org")) { // fake user (probably "system")
+              .fold(RichUser(user, avatar, Profile.admin.name, Set.empty, "no org") -> renderedEntity) { // fake user (probably "system")
                 case (profile, organisationIdAndName) =>
-                  val avatar = attachment.headOption.map(_.attachmentId)
                   RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("***")(_._2)) -> renderedEntity
               }
         }
