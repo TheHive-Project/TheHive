@@ -2,16 +2,17 @@ package org.thp.thehive
 
 import java.io.File
 import java.nio.file.{Files, Paths}
-
 import akka.actor.ActorSystem
 import com.google.inject.Injector
+
 import javax.inject.{Inject, Provider, Singleton}
 import org.apache.commons.io.FileUtils
 import org.thp.scalligraph.auth._
+import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.scalligraph.{janus, AppBuilder}
+import org.thp.scalligraph.AppBuilder
 import org.thp.thehive.controllers.v0.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
@@ -80,7 +81,7 @@ trait TestAppBuilder {
                                |}
                                |akka.cluster.jmx.multi-mbeans-in-same-jvm: on
                                |""".stripMargin)
-          .bind[Database, janus.JanusDatabase]
+          .bind[Database, JanusDatabase]
 
         app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
         app[Database].close()
@@ -88,7 +89,7 @@ trait TestAppBuilder {
       FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
     }
     val app = appConfigure
-      .bind[Database, janus.JanusDatabase]
+      .bind[Database, JanusDatabase]
       .addConfiguration(s"""
                            |db {
                            |  provider: janusgraph
