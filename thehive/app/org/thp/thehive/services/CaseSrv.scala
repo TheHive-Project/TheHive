@@ -296,16 +296,6 @@ class CaseSrv @Inject() (
   }
 
   def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
-    // TODO all case class fields
-    //    impactStatus: Option[String],
-    //    resolutionStatus: Option[String],
-    //    assignee: Option[String],
-    //    customFields: Seq[RichCustomField],
-    //    userPermissions: Set[Permission]
-    //
-    // TODO ShareCase link
-    // TODO Procedure link
-    // TODO Audit
     val mergedCase = Case(
       nextCaseNumber,
       cases.map(_.title).mkString(" / "),
@@ -326,13 +316,14 @@ class CaseSrv @Inject() (
       orga     <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
       tags     <- tryTags
       richCase <- create(mergedCase, Some(user), orga, tags.toSet, Seq(), None, Seq())
+      // TODO customFields: Seq[RichCustomField],
+      // TODO ShareCase link
+      // TODO Procedure link
+      // TODO tasks
+      // TODO cascadeRemove cases
       // TODO link to share(s) of original cases
     } yield richCase
     //  {
-    //    val summaries         = cases.flatMap(_.summary)
-    //    val caseTaskSrv       = new EdgeSrv[CaseTask, Case, Task]
-    //    val caseObservableSrv = new EdgeSrv[CaseObservable, Case, Observable] nop
-    //
     //    caseUserSrv.create(CaseUser(), mergedCase, user)
     //    caseOrganisationSrv.create(CaseOrganisation(), mergedCase, organisation)
     //    cases
