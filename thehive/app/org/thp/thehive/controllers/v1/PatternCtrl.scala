@@ -112,7 +112,7 @@ class PatternCtrl @Inject() (
     else
       for {
         pattern <- patternSrv.createEntity(inputPattern.toPattern)
-        _ = if (inputPattern.x_mitre_is_subtechnique.getOrElse(false)) linkPattern(pattern)
+        _ = if (inputPattern.x_mitre_is_subtechnique) linkPattern(pattern)
       } yield pattern
 
   private def linkPattern(child: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {

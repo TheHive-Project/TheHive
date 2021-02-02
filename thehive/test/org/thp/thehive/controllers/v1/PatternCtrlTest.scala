@@ -16,8 +16,13 @@ case class TestPattern(
     tactics: Set[String],
     url: String,
     patternType: String,
-    platforms: Seq[String],
+    revoked: Boolean,
     dataSources: Seq[String],
+    defenseBypassed: Seq[String],
+    detection: Option[String],
+    platforms: Seq[String],
+    remoteSupport: Boolean,
+    systemRequirements: Seq[String],
     version: Option[String]
 )
 
@@ -62,7 +67,12 @@ class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
         Set("testTactic1", "testTactic2"),
         "http://test.pattern.url",
         "unit-test",
+        revoked = false,
         Seq(),
+        Seq(),
+        None,
+        Seq(),
+        remoteSupport = true,
         Seq(),
         Some("1.0")
       )

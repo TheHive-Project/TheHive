@@ -11,9 +11,16 @@ case class InputPattern(
     kill_chain_phases: Seq[InputKillChainPhase],
     url: String,
     `type`: String,
-    x_mitre_platforms: Seq[String],
+    revoked: Boolean,
     x_mitre_data_sources: Seq[String],
-    x_mitre_is_subtechnique: Option[Boolean],
+    x_mitre_defense_bypassed: Seq[String],
+    x_mitre_detection: Option[String],
+    x_mitre_is_subtechnique: Boolean,
+    // TODO x_mitre_tactic_type ?
+    // TODO x_mitre_permissions_required ?
+    x_mitre_platforms: Seq[String],
+    x_mitre_remote_support: Boolean,
+    x_mitre_system_requirements: Seq[String],
     x_mitre_version: Option[String]
 )
 
@@ -55,14 +62,19 @@ object InputPattern {
     for {
       references <- (json \ "external_references").validate[Seq[InputReference]]
       mitreReference = references.find(ref => isSourceNameValid(ref.source_name))
-      name                    <- (json \ "name").validate[String]
-      description             <- (json \ "description").validateOpt[String]
-      kill_chain_phases       <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
-      techniqueType           <- (json \ "type").validate[String]
-      x_mitre_platforms       <- (json \ "x_mitre_platforms").validateOpt[Seq[String]]
-      x_mitre_data_sources    <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
-      x_mitre_is_subtechnique <- (json \ "x_mitre_is_subtechnique").validateOpt[Boolean]
-      x_mitre_version         <- (json \ "x_mitre_version").validateOpt[String]
+      name                        <- (json \ "name").validate[String]
+      description                 <- (json \ "description").validateOpt[String]
+      kill_chain_phases           <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
+      techniqueType               <- (json \ "type").validate[String]
+      revoked                     <- (json \ "revoked").validateOpt[Boolean]
+      x_mitre_data_sources        <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
+      x_mitre_defense_bypassed    <- (json \ "x_mitre_defense_bypassed").validateOpt[Seq[String]]
+      x_mitre_detection           <- (json \ "x_mitre_detection").validateOpt[String]
+      x_mitre_is_subtechnique     <- (json \ "x_mitre_is_subtechnique").validateOpt[Boolean]
+      x_mitre_platforms           <- (json \ "x_mitre_platforms").validateOpt[Seq[String]]
+      x_mitre_remote_support      <- (json \ "x_mitre_remote_support").validateOpt[Boolean]
+      x_mitre_system_requirements <- (json \ "x_mitre_system_requirements").validateOpt[Seq[String]]
+      x_mitre_version             <- (json \ "x_mitre_version").validateOpt[String]
     } yield InputPattern(
       mitreReference.flatMap(_.external_id).getOrElse(""),
       name,
@@ -70,9 +82,14 @@ object InputPattern {
       kill_chain_phases.getOrElse(Seq()),
       mitreReference.flatMap(_.url).getOrElse(""),
       techniqueType,
-      x_mitre_platforms.getOrElse(Seq()),
+      revoked.getOrElse(false),
       x_mitre_data_sources.getOrElse(Seq()),
-      x_mitre_is_subtechnique,
+      x_mitre_defense_bypassed.getOrElse(Seq()),
+      x_mitre_detection,
+      x_mitre_is_subtechnique.getOrElse(false),
+      x_mitre_platforms.getOrElse(Seq()),
+      x_mitre_remote_support.getOrElse(false),
+      x_mitre_system_requirements.getOrElse(Seq()),
       x_mitre_version
     )
   }
@@ -96,8 +113,13 @@ case class OutputPattern(
     tactics: Set[String],
     url: String,
     patternType: String,
-    platforms: Seq[String],
+    revoked: Boolean,
     dataSources: Seq[String],
+    defenseBypassed: Seq[String],
+    detection: Option[String],
+    platforms: Seq[String],
+    remoteSupport: Boolean,
+    systemRequirements: Seq[String],
     version: Option[String],
     parent: Option[String]
 )
