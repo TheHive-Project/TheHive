@@ -46,6 +46,7 @@ class UserCtrl @Inject() (
               .getOrFail("User")
           )
           .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation.toString))
+          .recover { case _ => Results.Unauthorized.withHeaders("X-Logout" -> "1") }
       }
 
   def create: Action[AnyContent] =

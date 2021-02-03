@@ -77,6 +77,7 @@ class UserCtrl @Inject() (
               .withHeaders("X-Organisation" -> request.organisation.toString)
               .withHeaders("X-Permissions" -> user._1.permissions.mkString(","))
           )
+          .recover { case _ => Results.Unauthorized.withHeaders("X-Logout" -> "1") }
       }
 
   def create: Action[AnyContent] =
