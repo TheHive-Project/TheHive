@@ -92,8 +92,9 @@ class ShareSrv @Inject() (implicit
     for {
       organisation <- get(shareId).organisation.getOrFail("Organisation")
       case0        <- get(shareId).`case`.removeValue(_.organisationIds, organisation._id).getOrFail("Case")
-      _            <- auditSrv.share.unshareCase(case0, organisation)
-      // TODO delete all descendant of share linked only to this share
+      _ = get(shareId).observables.removeValue(_.organisationIds, organisation._id).iterate()
+      _ = get(shareId).tasks.removeValue(_.organisationIds, organisation._id).iterate()
+      _ <- auditSrv.share.unshareCase(case0, organisation)
     } yield get(shareId).remove()
 
   /**
@@ -110,6 +111,7 @@ class ShareSrv @Inject() (implicit
       shareTask <-
         taskSrv
           .get(task)
+          .removeValue(_.organisationIds, organisation._id)
           .inE[ShareTask]
           .filter(_.outV.v[Share].byOrganisation(organisation._id))
           .getOrFail("Task")
@@ -131,6 +133,7 @@ class ShareSrv @Inject() (implicit
       shareObservable <-
         observableSrv
           .get(observable)
+          .removeValue(_.organisationIds, organisation._id)
           .inE[ShareObservable]
           .filter(_.outV.in[OrganisationShare].hasId(organisation._id))
           .getOrFail("Share")
@@ -146,12 +149,22 @@ class ShareSrv @Inject() (implicit
   def shareCaseTasks(
       share: Share with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareTask with Entity]] =
-    get(share)
-      .`case`
-      .tasks
-      .filterNot(_.shares.hasId(share._id))
-      .toIterator
-      .toTry(shareTaskSrv.create(ShareTask(), share, _))
+    for {
+      organisation <- get(share).organisation.getOrFail("Share")
+      shareTask <-
+        get(share)
+          .`case`
+          .tasks
+          .filter(_.shares.has(T.id, P.neq(share._id)))
+          .toIterator
+          .toTry { task =>
+            taskSrv
+              .get(task)
+              .addValue(_.organisationIds, organisation._id)
+              .getOrFail("Task")
+              .flatMap(shareTaskSrv.create(ShareTask(), share, _))
+          }
+    } yield shareTask
 
   /**
     * Shares a task for an already shared case
@@ -168,6 +181,7 @@ class ShareSrv @Inject() (implicit
     for {
       share <- get(`case`, organisationId).getOrFail("Case")
       _     <- shareTaskSrv.create(ShareTask(), share, richTask.task)
+      _     <- taskSrv.get(richTask.task).addValue(_.organisationIds, organisationId).getOrFail("Task")
       _     <- auditSrv.task.create(richTask.task, richTask.toJson)
     } yield ()
 
@@ -196,7 +210,7 @@ class ShareSrv @Inject() (implicit
   )(implicit graph: Graph, authContext: AuthContext): Try[Seq[ShareObservable with Entity]] =
     for {
       organisation <- get(share).organisation.getOrFail("Share")
-      shareObservables <-
+      shareObservable <-
         get(share)
           .`case`
           .observables // list observables related to authContext
@@ -210,7 +224,7 @@ class ShareSrv @Inject() (implicit
               .flatMap(_ => shareObservableSrv.create(ShareObservable(), share, obs))
 
           }
-    } yield shareObservables
+    } yield shareObservable
 
   /**
     * Does a full rebuild of the share status of a task,
@@ -221,14 +235,15 @@ class ShareSrv @Inject() (implicit
     */
   def updateTaskShares(
       task: Task with Entity,
-      organisations: Seq[Organisation with Entity]
+      organisations: Set[Organisation with Entity]
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (orgsToAdd, orgsToRemove) = taskSrv
       .get(task)
+      .update(_.organisationIds, organisations.map(_._id))
       .shares
       .organisation
       .toIterator
-      .foldLeft((organisations.toSet, Set.empty[Organisation with Entity])) {
+      .foldLeft((organisations, Set.empty[Organisation with Entity])) {
         case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
         case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
       }
@@ -259,7 +274,7 @@ class ShareSrv @Inject() (implicit
       .filterNot(existingOrgs.contains)
       .toTry { organisation =>
         for {
-          case0 <- taskSrv.get(task).`case`.getOrFail("Task")
+          case0 <- taskSrv.get(task).addValue(_.organisationIds, organisation._id).`case`.getOrFail("Task")
           share <- caseSrv.get(case0).share(organisation._id).getOrFail("Case")
           _     <- shareTaskSrv.create(ShareTask(), share, task)
           _     <- auditSrv.share.shareTask(task, case0, organisation)
@@ -282,10 +297,9 @@ class ShareSrv @Inject() (implicit
       .filterNot(existingOrgs.contains)
       .toTry { organisation =>
         for {
-          case0 <- observableSrv.get(observable).`case`.getOrFail("Observable")
+          case0 <- observableSrv.get(observable).addValue(_.organisationIds, organisation._id).`case`.getOrFail("Observable")
           share <- caseSrv.get(case0).share(organisation._id).getOrFail("Case")
           _     <- shareObservableSrv.create(ShareObservable(), share, observable)
-          _     <- observableSrv.get(observable).addValue(_.organisationIds, organisation._id).getOrFail("Observable")
           _     <- auditSrv.share.shareObservable(observable, case0, organisation)
         } yield ()
       }
@@ -301,14 +315,15 @@ class ShareSrv @Inject() (implicit
     */
   def updateObservableShares(
       observable: Observable with Entity,
-      organisations: Seq[Organisation with Entity]
+      organisations: Set[Organisation with Entity]
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (orgsToAdd, orgsToRemove) = observableSrv
       .get(observable)
+      .update(_.organisationIds, organisations.map(_._id))
       .shares
       .organisation
       .toIterator
-      .foldLeft((organisations.toSet, Set.empty[Organisation with Entity])) {
+      .foldLeft((organisations, Set.empty[Organisation with Entity])) {
         case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
         case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
       }
