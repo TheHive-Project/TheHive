@@ -116,6 +116,9 @@ angular.module('thehive', [
                     },
                     uiConfig: function($q, UiSettingsSrv) {
                         return UiSettingsSrv.all();
+                    },
+                    taxonomyCache: function(TaxonomyCacheSrv) {
+                        return TaxonomyCacheSrv.all();
                     }
                 }
             })

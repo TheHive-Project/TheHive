@@ -3,9 +3,7 @@
         ng-class="{'tags-list flexwrap': value.length > 0}">
         <span class="updatable-value text-warning" ng-show="!value || value.length === 0"><em>Not Specified</em></span>
 
-        <!-- <span ng-repeat="tag in value" class="label label-primary mb-xxxs mr-xxxs">{{tag.text}}</span> -->
-        <!-- <span ng-repeat="tag in value" class="label label-primary mb-xxxs mr-xxxs">{{tag.text}}</span> -->
-        <tag class=" mb-xxxs mr-xxxs" ng-repeat="tag in value" value="tag.text"></tag>
+        <tag-item ng-repeat="tag in value" value="tag.text"></tag-item>
 
         <small class="updatable-input-icon" ng-class="{'lg': value.length > 0}">
             <i class="glyphicon glyphicon-pencil"></i>
@@ -14,7 +12,8 @@
 
     <span ng-show="updatable.updating">
         <div class="form-group">
-            <tags-input class="ti-input-sm" min-length="2" ng-model="value" placeholder="Add labels" replace-spaces-with-dashes="false">
+            <tags-input class="ti-input-sm ti-tag-selector" min-length="2" ng-model="value" placeholder="Add labels" replace-spaces-with-dashes="false"
+                template="views/directives/tag-input-item.html" tag-class="label-primary">
                 <auto-complete ng-if="source" min-length="3" debounce-delay="400" source="source($query)"></auto-complete>
             </tags-input>
         </div>

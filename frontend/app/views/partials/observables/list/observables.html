@@ -80,11 +80,8 @@
                     <div class="case-tags flexwrap mt-xxs">
                         <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
                         <strong class="text-muted mr-xxxs" ng-if="!artifact.tags || artifact.tags.length === 0">None</strong>
-                        <span class="label label-primary mb-xxxs mr-xxxs pointer"
-                            ng-repeat="tag in artifact.tags track by $index"
-                            ng-click="addFilterValue('tags', tag)">
-                            {{tag}}
-                        </span>
+                        <tag-item class="pointer" ng-repeat="tag in artifact.tags track by $index"
+                            ng-click="addFilterValue('tags', tag)" value="tag"></tag-item>
                     </div>
 
                     <mini-report-list observable="artifact" reports="artifact.reports" on-item-clicked="showReport(observable, analyzerId)"></mini-report-list>

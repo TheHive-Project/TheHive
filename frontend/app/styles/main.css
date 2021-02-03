@@ -779,3 +779,28 @@ table.tbody-stripped > tbody > tr > td {
     overflow: hidden;
 	text-overflow: ellipsis;
 }
+
+/* Customise tags input */
+
+tags-input.ti-tag-selector .tags .tag-item {
+    background-color: #d2d6de;
+    color: #444;
+    border: none;
+    padding: 0;
+    padding-right: 5px;
+    line-height: 22px;
+}
+
+tags-input.ti-tag-selector .tags .tag-item ti-tag-item{
+
+}
+
+tags-input.ti-tag-selector .tags .tag-item span.tag-item-border{
+    position: relative;
+    left:0;
+    width: 8px;
+    background-color: red;
+    display: inline-block;
+    border-top-left-radius: .25em;
+    border-bottom-left-radius: .25em;
+}
