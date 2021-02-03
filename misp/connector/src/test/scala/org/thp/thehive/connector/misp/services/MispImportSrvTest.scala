@@ -1,24 +1,17 @@
 package org.thp.thehive.connector.misp.services
 
-import java.util.{Date, UUID}
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
+import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv}
-import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{AppBuilder, EntityName}
+import org.thp.scalligraph.models.DummyUserSrv
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.models.{Alert, Permissions}
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
+import org.thp.thehive.models.Permissions
 import play.api.test.PlaySpecification
 
+import java.util.{Date, UUID}
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
 
 class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with TestAppBuilder {
   sequential
@@ -37,7 +30,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
     "get organisation" in testApp { app =>
       await(app[TheHiveMispClient].getOrganisation("1")) must beEqualTo(
-        Organisation("1", "ORGNAME", "Automatically generated admin organisation", UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
+        Organisation("1", "ORGNAME", Some("Automatically generated admin organisation"), UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
       )
     }
 
