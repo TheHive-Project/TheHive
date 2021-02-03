@@ -350,6 +350,7 @@ class Properties @Inject() (
       .property("dataSources", UMapping.string.sequence)(_.field.readonly)
       .property("defenseBypassed", UMapping.string.sequence)(_.field.readonly)
       .property("detection", UMapping.string.optional)(_.field.readonly)
+      .property("permissionsRequired", UMapping.string.sequence)(_.field.readonly)
       .property("platforms", UMapping.string.sequence)(_.field.readonly)
       .property("remoteSupport", UMapping.boolean)(_.field.readonly)
       .property("systemRequirements", UMapping.string.sequence)(_.field.readonly)
