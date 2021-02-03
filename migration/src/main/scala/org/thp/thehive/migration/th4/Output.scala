@@ -499,7 +499,7 @@ class Output @Inject() (
         .flatMap {
           case (orgName, _) => getOrganisation(orgName).map(_._id).toOption
         }
-        .toSeq
+        .toSet
       val assignee = inputCase
         .`case`
         .assignee
@@ -643,7 +643,7 @@ class Output @Inject() (
       _                 <- observableSrv.observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
     } yield createdObservable
 
-  private def createObservable(relatedId: EntityId, inputObservable: InputObservable, organisationIds: Seq[EntityId])(implicit
+  private def createObservable(relatedId: EntityId, inputObservable: InputObservable, organisationIds: Set[EntityId])(implicit
       graph: Graph,
       authContext: AuthContext
   ) =
@@ -679,7 +679,7 @@ class Output @Inject() (
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
       for {
         organisations  <- inputObservable.organisations.toTry(getOrganisation)
-        richObservable <- createObservable(caseId, inputObservable, organisations.map(_._id))
+        richObservable <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
         case0          <- getCase(caseId)
         _              <- organisations.toTry(o => shareSrv.shareObservable(RichObservable(richObservable, None, None, Nil), case0, o._id))
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
@@ -700,7 +700,7 @@ class Output @Inject() (
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in job $jobId")
       for {
         organisations <- inputObservable.organisations.toTry(getOrganisation)
-        observable    <- createObservable(jobId, inputObservable, organisations.map(_._id))
+        observable    <- createObservable(jobId, inputObservable, organisations.map(_._id).toSet)
         job           <- jobSrv.getOrFail(jobId)
         _             <- jobSrv.addObservable(job, observable)
       } yield IdMapping(inputObservable.metaData.id, observable._id)
@@ -746,7 +746,7 @@ class Output @Inject() (
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
       for {
         alert      <- alertSrv.getOrFail(alertId)
-        observable <- createObservable(alert._id, inputObservable, Seq(alert.organisationId))
+        observable <- createObservable(alert._id, inputObservable, Set(alert.organisationId))
         _          <- alertSrv.alertObservableSrv.create(AlertObservable(), alert, observable)
       } yield IdMapping(inputObservable.metaData.id, observable._id)
     }

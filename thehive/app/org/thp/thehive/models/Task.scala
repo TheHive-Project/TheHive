@@ -43,7 +43,7 @@ case class Task(
     /* filled by the service */
     assignee: Option[String],
     relatedId: EntityId = EntityId(""),
-    organisationIds: Seq[EntityId] = Nil
+    organisationIds: Set[EntityId] = Set.empty
 )
 
 case class RichTask(

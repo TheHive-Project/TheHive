@@ -24,7 +24,7 @@ object Conversion {
 
     def toObservable(
         relatedId: EntityId,
-        organisations: Seq[EntityId]
+        organisations: Set[EntityId]
     ): Observable =
       artifact
         .into[Observable]

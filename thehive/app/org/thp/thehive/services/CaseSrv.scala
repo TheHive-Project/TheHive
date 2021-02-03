@@ -77,7 +77,7 @@ class CaseSrv @Inject() (
         `case`.copy(
           number = caseNumber,
           assignee = assignee.map(_.login),
-          organisationIds = Seq(organisation._id),
+          organisationIds = Set(organisation._id),
           caseTemplate = caseTemplate.map(_.name),
           impactStatus = None,
           resolutionStatus = None,
@@ -170,7 +170,7 @@ class CaseSrv @Inject() (
   def createTask(`case`: Case with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
     for {
       assignee <- task.assignee.map(u => get(`case`).assignableUsers.getByName(u).getOrFail("User")).flip
-      task     <- taskSrv.create(task.copy(relatedId = `case`._id, organisationIds = Seq(organisationSrv.currentId)), assignee)
+      task     <- taskSrv.create(task.copy(relatedId = `case`._id, organisationIds = Set(organisationSrv.currentId)), assignee)
       _        <- shareSrv.shareTask(task, `case`, organisationSrv.currentId)
     } yield task
 
@@ -179,7 +179,7 @@ class CaseSrv @Inject() (
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
-      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), data)
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Set(organisationSrv.currentId), relatedId = `case`._id), data)
       _                 <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
     } yield createdObservable
 
@@ -188,7 +188,7 @@ class CaseSrv @Inject() (
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
-      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = `case`._id), attachment)
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Set(organisationSrv.currentId), relatedId = `case`._id), attachment)
       _                 <- shareSrv.shareObservable(createdObservable, `case`, organisationSrv.currentId)
     } yield createdObservable
 

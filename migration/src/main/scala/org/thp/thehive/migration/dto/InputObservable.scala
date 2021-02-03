@@ -5,6 +5,6 @@ import org.thp.thehive.models.Observable
 case class InputObservable(
     metaData: MetaData,
     observable: Observable,
-    organisations: Seq[String],
+    organisations: Set[String],
     dataOrAttachment: Either[String, InputAttachment]
 )

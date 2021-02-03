@@ -69,7 +69,7 @@ class CaseTemplateSrv @Inject() (
   def createTask(caseTemplate: CaseTemplate with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
     for {
       assignee <- task.assignee.map(u => organisationSrv.current.users(Permissions.manageTask).getByName(u).getOrFail("User")).flip
-      richTask <- taskSrv.create(task.copy(relatedId = caseTemplate._id, organisationIds = Seq(organisationSrv.currentId)), assignee)
+      richTask <- taskSrv.create(task.copy(relatedId = caseTemplate._id, organisationIds = Set(organisationSrv.currentId)), assignee)
       _        <- caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, richTask.task)
       _        <- auditSrv.taskInTemplate.create(richTask.task, caseTemplate, richTask.toJson)
     } yield richTask

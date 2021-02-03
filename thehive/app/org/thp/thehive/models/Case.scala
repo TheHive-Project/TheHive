@@ -115,7 +115,7 @@ case class Case(
     /* filled by the service */
     assignee: Option[String] = None,
     number: Int = 0,
-    organisationIds: Seq[EntityId] = Nil,
+    organisationIds: Set[EntityId] = Set.empty,
     caseTemplate: Option[String] = None
 )
 
@@ -172,7 +172,7 @@ object RichCase {
       assignee: Option[String],
       customFields: Seq[RichCustomField],
       userPermissions: Set[Permission],
-      organisationIds: Seq[EntityId]
+      organisationIds: Set[EntityId]
   ): RichCase = {
     val `case`: Case with Entity =
       new Case(

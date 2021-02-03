@@ -19,7 +19,7 @@ case class Log(
     deleted: Boolean,
     /* filled by the service */
     taskId: EntityId = EntityId(""),
-    organisationIds: Seq[EntityId] = Nil
+    organisationIds: Set[EntityId] = Set.empty
 )
 
 case class RichLog(log: Log with Entity, attachments: Seq[Attachment with Entity]) {

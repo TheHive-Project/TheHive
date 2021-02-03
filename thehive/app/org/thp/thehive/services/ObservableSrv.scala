@@ -86,7 +86,7 @@ class ObservableSrv @Inject() (
     val alreadyExists = startTraversal
       .has(_.organisationIds, organisationSrv.currentId)
       .has(_.relatedId, observable.relatedId)
-      .has(_.data, observable.data.get)
+      .has(_.data, dataValue)
       .has(_.dataType, observable.dataType)
       .exists
     if (alreadyExists) Failure(CreateError("Observable already exists"))

@@ -114,7 +114,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
                 ignoreSimilarity = None,
                 dataType = "domain",
                 tags = Seq("tag10"),
-                organisationIds = Seq(organisation._id),
+                organisationIds = Set(organisation._id),
                 relatedId = alertId
               ),
               "perdu.com"

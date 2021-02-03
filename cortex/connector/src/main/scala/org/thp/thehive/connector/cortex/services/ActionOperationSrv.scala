@@ -102,7 +102,7 @@ class ActionOperationSrv @Inject() (
               dataType = dataType,
               tags = Nil,
               relatedId = c._id,
-              organisationIds = Seq(organisation._id)
+              organisationIds = Set(organisation._id)
             ),
             data
           )

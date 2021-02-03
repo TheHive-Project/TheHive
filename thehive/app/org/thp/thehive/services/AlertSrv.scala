@@ -134,7 +134,7 @@ class AlertSrv @Inject() (
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
-      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = alert._id), data)
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Set(organisationSrv.currentId), relatedId = alert._id), data)
       _                 <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
       _                 <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
     } yield createdObservable
@@ -144,7 +144,7 @@ class AlertSrv @Inject() (
       authContext: AuthContext
   ): Try[RichObservable] =
     for {
-      createdObservable <- observableSrv.create(observable.copy(organisationIds = Seq(organisationSrv.currentId), relatedId = alert._id), attachment)
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Set(organisationSrv.currentId), relatedId = alert._id), attachment)
       _                 <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
       _                 <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
     } yield createdObservable

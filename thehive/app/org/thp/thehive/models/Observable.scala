@@ -41,7 +41,7 @@ case class Observable(
     data: Option[String] = None,
     attachmentId: Option[String] = None,
     relatedId: EntityId = EntityId(""),
-    organisationIds: Seq[EntityId] = Nil
+    organisationIds: Set[EntityId] = Set.empty
 )
 
 case class RichObservable(

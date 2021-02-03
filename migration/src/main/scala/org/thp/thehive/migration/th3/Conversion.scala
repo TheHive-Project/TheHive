@@ -89,7 +89,7 @@ trait Conversion {
         summary = summary,
         tags = tags.toSeq,
         number = number,
-        organisationIds = Nil,
+        organisationIds = Set.empty,
         assignee = user.map(normaliseLogin),
         impactStatus = impactStatus,
         resolutionStatus = resolutionStatus,
@@ -130,7 +130,7 @@ trait Conversion {
         dataType = dataType,
         tags = tags.toSeq
       ),
-      Seq(mainOrganisation),
+      Set(mainOrganisation),
       dataOrAttachment
     )
   }
@@ -163,7 +163,7 @@ trait Conversion {
         assignee = owner.map(normaliseLogin)
       ),
       owner.map(normaliseLogin),
-      Seq(mainOrganisation)
+      Set(mainOrganisation)
     )
   }
 
@@ -258,7 +258,7 @@ trait Conversion {
           dataType = dataType,
           tags = tags.toSeq
         ),
-        Seq(mainOrganisation),
+        Set(mainOrganisation),
         dataOrAttachment
       )
 
@@ -423,7 +423,7 @@ trait Conversion {
           assignee = owner.map(normaliseLogin)
         ),
         owner.map(normaliseLogin),
-        Seq(mainOrganisation)
+        Set(mainOrganisation)
       )
     }
 
@@ -485,7 +485,7 @@ trait Conversion {
           dataType = dataType,
           tags = tags.toSeq
         ),
-        Seq(mainOrganisation),
+        Set(mainOrganisation),
         dataOrAttachment
       )
     }
