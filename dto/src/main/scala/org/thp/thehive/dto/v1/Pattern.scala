@@ -1,6 +1,6 @@
 package org.thp.thehive.dto.v1
 
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json.{Format, JsObject, Json, Reads, Writes}
 
 import java.util.Date
 
@@ -121,7 +121,7 @@ case class OutputPattern(
     remoteSupport: Boolean,
     systemRequirements: Seq[String],
     version: Option[String],
-    parent: Option[String]
+    extraData: JsObject
 )
 
 object OutputPattern {

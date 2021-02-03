@@ -46,6 +46,9 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       )
     }
 
+    // TODO test update of fields
+    //   description
+
     "delete a procedure" in testApp { app =>
       val request1 = FakeRequest("POST", "/api/v1/procedure/testProcedure3")
         .withJsonBody(

@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v1
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
+import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -60,6 +60,19 @@ class ProcedureCtrl @Inject() (
           .richProcedure
           .getOrFail("Procedure")
           .map(richProcedure => Results.Ok(richProcedure.toJson))
+      }
+
+  def update(procedureId: String): Action[AnyContent] =
+    entrypoint("update procedure")
+      .extract("procedure", FieldsParser.update("procedure", properties.procedure))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val propertyUpdaters: Seq[PropertyUpdater] = request.body("procedure")
+        procedureSrv
+          .update(
+            _.get(EntityIdOrName(procedureId)),
+            propertyUpdaters
+          )
+          .map(_ => Results.NoContent)
       }
 
   def delete(procedureId: String): Action[AnyContent] =

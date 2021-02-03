@@ -511,14 +511,25 @@ object Conversion {
         .transform
   }
 
-  implicit val richPatternRenderer: Renderer.Aux[RichPattern, OutputPattern] =
+  implicit val patternOutput: Renderer.Aux[RichPattern, OutputPattern] =
     Renderer.toJson[RichPattern, OutputPattern](
       _.into[OutputPattern]
         .withFieldComputed(_._id, _._id.toString)
         .withFieldConst(_._type, "Pattern")
-        .withFieldComputed(_.parent, _.parent.map(_.patternId))
+        .withFieldConst(_.extraData, JsObject.empty)
         .transform
     )
+
+  implicit val patternWithStatsOutput: Renderer.Aux[(RichPattern, JsObject), OutputPattern] =
+    Renderer.toJson[(RichPattern, JsObject), OutputPattern] { patternWithExtraData =>
+      patternWithExtraData
+        ._1
+        .into[OutputPattern]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_._type, "Pattern")
+        .withFieldConst(_.extraData, patternWithExtraData._2)
+        .transform
+    }
 
   implicit class InputProcedureOps(inputProcedure: InputProcedure) {
     def toProcedure: Procedure =

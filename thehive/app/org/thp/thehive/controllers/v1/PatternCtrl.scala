@@ -26,7 +26,8 @@ class PatternCtrl @Inject() (
     properties: Properties,
     patternSrv: PatternSrv,
     @Named("with-thehive-schema") implicit val db: Database
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with PatternRenderer {
   override val entityName: String                 = "pattern"
   override val publicProperties: PublicProperties = properties.pattern
   override val initialQuery: Query = Query.init[Traversal.V[Pattern]](
@@ -38,7 +39,10 @@ class PatternCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Pattern], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, patternSteps, _) => patternSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richPattern)
+    {
+      case (OutputParam(from, to, extraData), patternSteps, _) =>
+        patternSteps.richPage(from, to, extraData.contains("total"))(_.richPatternWithCustomRenderer(patternRenderer(extraData - "total")))
+    }
   )
   override val outputQuery: Query = Query.output[RichPattern, Traversal.V[Pattern]](_.richPattern)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Pattern]](
