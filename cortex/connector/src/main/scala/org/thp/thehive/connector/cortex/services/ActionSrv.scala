@@ -231,13 +231,13 @@ object ActionOps {
     def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Action] =
       traversal.filter(
         _.out[ActionContext]
-          .choose(
+          .chooseBranch[String, Any](
             _.on(_.label)
-              .option("Case", _.v[Case].visible(organisationSrv).entity)
-              .option("Task", _.v[Task].visible(organisationSrv).entity)
-              .option("Log", _.v[Log].visible(organisationSrv).entity)
-              .option("Alert", _.v[Alert].visible(organisationSrv).entity)
-              .option("Observable", _.v[Observable].visible(organisationSrv).entity)
+              .option("Case", _.v[Case].visible(organisationSrv).widen[Any])
+              .option("Task", _.v[Task].visible(organisationSrv).widen[Any])
+              .option("Log", _.v[Log].visible(organisationSrv).widen[Any])
+              .option("Alert", _.v[Alert].visible(organisationSrv).widen[Any])
+              .option("Observable", _.v[Observable].visible(organisationSrv).widen[Any])
           )
       )
   }

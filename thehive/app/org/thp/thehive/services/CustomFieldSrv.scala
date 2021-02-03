@@ -133,16 +133,16 @@ object CustomFieldOps {
         }
 
     def selectValue: Traversal[Any, JMap[String, Any], Converter[Any, JMap[String, Any]]] =
-      traversal.choose[String, Any](
+      traversal.chooseValue(
         _.on(
           _.inV
             .v[CustomField]
             .value(_.`type`)
-        ).option("boolean", _.value(_.booleanValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("date", _.value(_.dateValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("float", _.value(_.floatValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("integer", _.value(_.integerValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("string", _.value(_.stringValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+        ).option("boolean", _.value(_.booleanValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("date", _.value(_.dateValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("float", _.value(_.floatValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("integer", _.value(_.integerValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("string", _.value(_.stringValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
       )
 
 //    def value: Traversal[Any, JMap[String, Any], Converter[Any, JMap[String, Any]]] =

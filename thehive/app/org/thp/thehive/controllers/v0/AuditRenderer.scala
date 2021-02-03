@@ -84,7 +84,7 @@ trait AuditRenderer {
   def auditRenderer: Traversal.V[Audit] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     (_: Traversal.V[Audit])
       .coalesceIdent[Vertex](_.`object`, _.identity)
-      .choose(
+      .chooseValue(
         _.on(_.label)
           .option("Case", t => caseToJson(t.v[Case]))
           .option("Task", t => taskToJson(t.v[Task]))

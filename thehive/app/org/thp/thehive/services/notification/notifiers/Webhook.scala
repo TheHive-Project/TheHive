@@ -154,7 +154,7 @@ class Webhook(
       (_: Traversal.V[Audit])
         .coalesce(
           _.`object` //.out[Audited]
-            .choose(
+            .chooseValue(
               _.on(_.label)
                 .option("Case", t => caseToJson(t.v[Case]))
                 .option("Task", t => taskToJson(t.v[Task]))

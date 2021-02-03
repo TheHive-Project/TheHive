@@ -364,40 +364,43 @@ object AuditOps {
         )
         .v[Organisation]
 
-    def organisationIds: Traversal[EntityId, JMap[String, Any], Converter[EntityId, JMap[String, Any]]] =
+    def organisationIds: Traversal[EntityId, AnyRef, Converter[EntityId, AnyRef]] =
       traversal
         .out[AuditContext]
-        .choose(
+        .chooseBranch[String, AnyRef](
           _.on(_.label)
-            .option("Case", _.v[Case].value(_.organisationIds))
-            .option("Observable", _.v[Observable].value(_.organisationIds))
-            .option("Task", _.v[Task].value(_.organisationIds))
-            .option("Alert", _.v[Alert].value(_.organisationId))
+            .option("Case", _.v[Case].value(_.organisationIds).widen[AnyRef])
+            .option("Observable", _.v[Observable].value(_.organisationIds).widen[AnyRef])
+            .option("Task", _.v[Task].value(_.organisationIds).widen[AnyRef])
+            .option("Alert", _.v[Alert].value(_.organisationId).widen[AnyRef])
             .option("Organisation", _.v[Organisation]._id)
             .option("CaseTemplate", _.v[CaseTemplate].organisation._id)
             .option("Dashboard", _.v[Dashboard].organisation._id)
         )
+        .domainMap(EntityId.apply)
 
-    def caseId: Traversal[EntityId, JMap[String, Any], Converter[EntityId, JMap[String, Any]]] =
+    def caseId: Traversal[EntityId, AnyRef, Converter[EntityId, AnyRef]] =
       traversal
         .out[AuditContext]
-        .choose(
+        .chooseBranch[String, AnyRef](
           _.on(_.label)
             .option("Case", _.v[Case]._id)
-            .option("Observable", _.v[Observable].value(_.relatedId))
-            .option("Task", _.v[Task].value(_.relatedId))
+            .option("Observable", _.v[Observable].value(_.relatedId).widen[AnyRef])
+            .option("Task", _.v[Task].value(_.relatedId).widen[AnyRef])
         )
+        .domainMap(EntityId.apply)
+
     def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Audit] =
       traversal.filter(
-        _.out[AuditContext].choose(
+        _.out[AuditContext].chooseBranch[String, Any](
           _.on(_.label)
-            .option("Case", _.v[Case].visible(organisationSrv))
-            .option("Observable", _.v[Observable].visible(organisationSrv))
-            .option("Task", _.v[Task].visible(organisationSrv))
-            .option("Alert", _.v[Alert].visible(organisationSrv))
-            .option("Organisation", _.v[Organisation].current)
-            .option("CaseTemplate", _.v[CaseTemplate].visible)
-            .option("Dashboard", _.v[Dashboard].visible)
+            .option("Case", _.v[Case].visible(organisationSrv).widen[Any])
+            .option("Observable", _.v[Observable].visible(organisationSrv).widen[Any])
+            .option("Task", _.v[Task].visible(organisationSrv).widen[Any])
+            .option("Alert", _.v[Alert].visible(organisationSrv).widen[Any])
+            .option("Organisation", _.v[Organisation].current.widen[Any])
+            .option("CaseTemplate", _.v[CaseTemplate].visible.widen[Any])
+            .option("Dashboard", _.v[Dashboard].visible.widen[Any])
         )
       )
 
