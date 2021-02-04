@@ -1,10 +1,7 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-import javax.inject.{Inject, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Transaction.Status
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
@@ -20,6 +17,8 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.libs.json.{JsObject, JsValue, Json}
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Option[Product with Entity], `object`: Option[Product with Entity])
@@ -31,18 +30,18 @@ class AuditSrv @Inject() (
     eventSrv: EventSrv
 )(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Audit] { auditSrv =>
-  lazy val userSrv: UserSrv                                 = userSrvProvider.get
-  val auditUserSrv                                          = new EdgeSrv[AuditUser, Audit, User]
-  val auditedSrv                                            = new EdgeSrv[Audited, Audit, Product]
-  val auditContextSrv                                       = new EdgeSrv[AuditContext, Audit, Product]
-  val `case`                                                = new SelfContextObjectAudit[Case]
-  val task                                                  = new SelfContextObjectAudit[Task]
-  val observable                                            = new SelfContextObjectAudit[Observable]
-  val log                                                   = new ObjectAudit[Log, Task]
-  val caseTemplate                                          = new SelfContextObjectAudit[CaseTemplate]
-  val taskInTemplate                                        = new ObjectAudit[Task, CaseTemplate]
-  val alert                                                 = new SelfContextObjectAudit[Alert]
-  val alertToCase                                           = new ObjectAudit[Alert, Case]
+  lazy val userSrv: UserSrv = userSrvProvider.get
+  val auditUserSrv          = new EdgeSrv[AuditUser, Audit, User]
+  val auditedSrv            = new EdgeSrv[Audited, Audit, Product]
+  val auditContextSrv       = new EdgeSrv[AuditContext, Audit, Product]
+  val `case`                = new SelfContextObjectAudit[Case]
+  val task                  = new SelfContextObjectAudit[Task]
+  val observable            = new SelfContextObjectAudit[Observable]
+  val log                   = new ObjectAudit[Log, Task]
+  val caseTemplate          = new SelfContextObjectAudit[CaseTemplate]
+  val taskInTemplate        = new ObjectAudit[Task, CaseTemplate]
+  val alert                 = new AlertAudit
+//  val alertToCase                                           = new ObjectAudit[Alert, Case]
   val share                                                 = new ShareAudit
   val observableInAlert                                     = new ObjectAudit[Observable, Alert]
   val user                                                  = new UserAudit
@@ -173,7 +172,10 @@ class AuditSrv @Inject() (
     def delete(entity: E with Entity, context: Option[C with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
 
-    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
       auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), Some(destination), Some(destination))
   }
 
@@ -186,7 +188,10 @@ class AuditSrv @Inject() (
       if (details == JsObject.empty) Success(())
       else auditSrv.create(Audit(Audit.update, entity, Some(details.toString)), Some(entity), Some(entity))
 
-    def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    def delete(entity: E with Entity, context: Product with Entity, details: Option[JsObject] = None)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, details.map(_.toString())), Some(context), None)
   }
 
@@ -271,6 +276,34 @@ class AuditSrv @Inject() (
         Some(observable),
         Some(`case`)
       )
+  }
+
+  class AlertAudit extends SelfContextObjectAudit[Alert] {
+    def createCase(alert: Alert with Entity, `case`: Case with Entity, details: JsObject)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] = {
+      val detailsWithAlert = details + ("fromAlert" -> Json.obj(
+        "_id"       -> alert._id.toString,
+        "type"      -> alert.`type`,
+        "source"    -> alert.source,
+        "sourceRef" -> alert.sourceRef
+      ))
+      auditSrv.create(Audit(Audit.create, `case`, Some(detailsWithAlert.toString)), Some(`case`), Some(`case`))
+    }
+
+    def mergeToCase(alert: Alert with Entity, `case`: Case with Entity, details: JsObject)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] = {
+      val detailsWithAlert = details + ("fromAlert" -> Json.obj(
+        "_id"       -> alert._id.toString,
+        "type"      -> alert.`type`,
+        "source"    -> alert.source,
+        "sourceRef" -> alert.sourceRef
+      ))
+      auditSrv.create(Audit(Audit.merge, `case`, Some(detailsWithAlert.toString)), Some(`case`), Some(`case`))
+    }
   }
 }
 
