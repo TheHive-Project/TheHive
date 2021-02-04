@@ -315,7 +315,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
             .by(_.out("ObservableTag").valueMap("namespace", "predicate", "value").fold)
             .by(_.out("ObservableData").property("data", Converter.identity[String]).option)
             .by(_.out("ObservableAttachment").property("attachmentId", Converter.identity[String]).option)
-            .by(_.coalesceIdent(_.in("ShareObservable").out("ShareCase"), _.in("AlertObservable"), _.in("ReportObservable"))._id)
+            .by(_.coalesceIdent(_.in("ShareObservable").out("ShareCase"), _.in("AlertObservable"), _.in("ReportObservable"))._id.option)
             .by(
               _.coalesceIdent(
                 _.optional(_.in("ReportObservable").in("ObservableJob")).in("ShareObservable").in("OrganisationShare"),
@@ -326,7 +326,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
             )
         )
         .foreach {
-          case (vertex, dataType, tagMaps, data, attachmentId, relatedId, organisationIds) =>
+          case (vertex, dataType, tagMaps, data, attachmentId, Some(relatedId), organisationIds) =>
             val tags = for {
               tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
               namespace = tag.getOrElse("namespace", "_autocreate")
@@ -343,6 +343,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
             attachmentId.foreach(vertex.property("attachmentId", _))
             vertex.property("relatedId", relatedId.value)
             organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+          case _ =>
         }
       Success(())
     }
