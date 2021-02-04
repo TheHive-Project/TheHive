@@ -107,6 +107,8 @@ class Router @Inject() (
     case PATCH(p"/case/template/$caseTemplateId")  => caseTemplateCtrl.update(caseTemplateId) // Audit ok
     case POST(p"/case/template/_search")           => caseTemplateCtrl.search
     case DELETE(p"/case/template/$caseTemplateId") => caseTemplateCtrl.delete(caseTemplateId) // Audit ok
+    case POST(p"/case/template/_search")           => caseTemplateCtrl.search
+    case POST(p"/case/template/_stats")            => caseTemplateCtrl.stats
 
     case GET(p"/user")                          => userCtrl.search
     case POST(p"/user")                         => userCtrl.create                 // Audit ok
@@ -121,6 +123,7 @@ class Router @Inject() (
     case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId)      // Audit ok
     case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)       // Audit ok
     case POST(p"/user/_search")                 => userCtrl.search
+    case POST(p"/user/_stats")                  => userCtrl.stats
 
     case GET(p"/list")                    => listCtrl.list
     case DELETE(p"/list/$itemId")         => listCtrl.deleteItem(itemId)
@@ -131,6 +134,8 @@ class Router @Inject() (
 
     case GET(p"/organisation")                                           => organisationCtrl.list
     case POST(p"/organisation")                                          => organisationCtrl.create                 // Audit ok
+    case POST(p"/organisation/type/_search")                             => organisationCtrl.search
+    case POST(p"/organisation/type/_stats")                              => organisationCtrl.stats
     case GET(p"/organisation/$organisationId")                           => organisationCtrl.get(organisationId)
     case GET(p"/organisation/$organisationId/links")                     => organisationCtrl.listLinks(organisationId)
     case PATCH(p"/organisation/$organisationId")                         => organisationCtrl.update(organisationId) // Audit ok
@@ -138,12 +143,14 @@ class Router @Inject() (
     case PUT(p"/organisation/$organisationId1/links")                    => organisationCtrl.bulkLink(organisationId1)
     case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
 
-    case GET(p"/customField")          => customFieldCtrl.list
-    case POST(p"/customField")         => customFieldCtrl.create
-    case GET(p"/customField/$id")      => customFieldCtrl.get(id)
-    case DELETE(p"/customField/$id")   => customFieldCtrl.delete(id)
-    case PATCH(p"/customField/$id")    => customFieldCtrl.update(id)
-    case GET(p"/customFields/$id/use") => customFieldCtrl.useCount(id)
+    case GET(p"/customField")           => customFieldCtrl.list
+    case POST(p"/customField")          => customFieldCtrl.create
+    case GET(p"/customField/$id")       => customFieldCtrl.get(id)
+    case DELETE(p"/customField/$id")    => customFieldCtrl.delete(id)
+    case PATCH(p"/customField/$id")     => customFieldCtrl.update(id)
+    case GET(p"/customFields/$id/use")  => customFieldCtrl.useCount(id)
+    case POST(p"/customFields/_search") => customFieldCtrl.search
+    case POST(p"/customFields/_stats")  => customFieldCtrl.stats
 
     case GET(p"/alert")                        => alertCtrl.search
     case POST(p"/alert")                       => alertCtrl.create                 // Audit ok
@@ -217,6 +224,8 @@ class Router @Inject() (
 
     case GET(p"/permission") => permissionCtrl.list
 
+    case POST(p"/observable/type/_search")     => observableTypeCtrl.search
+    case POST(p"/observable/type/_stats")      => observableTypeCtrl.stats
     case GET(p"/observable/type")              => observableTypeCtrl.search
     case GET(p"/observable/type/$idOrName")    => observableTypeCtrl.get(idOrName)
     case POST(p"/observable/type")             => observableTypeCtrl.create
