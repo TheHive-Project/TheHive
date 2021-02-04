@@ -46,10 +46,8 @@ class TaxonomyCtrl @Inject() (
       "page",
       FieldsParser[OutputParam],
       {
-        case (OutputParam(from, to, extraData), taxoSteps, authContext) =>
-          taxoSteps.richPage(from, to, extraData.contains("total")) {
-            _.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total"))
-          }
+        case (OutputParam(from, to, extraData), taxoSteps, _) =>
+          taxoSteps.richPage(from, to, extraData.contains("total"))(_.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total")))
       }
     )
   override val outputQuery: Query =

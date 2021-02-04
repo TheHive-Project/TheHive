@@ -5,7 +5,7 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
@@ -52,10 +52,14 @@ class PatternSrv @Inject() (
 
 object PatternOps {
   implicit class PatternOpsDefs(traversal: Traversal.V[Pattern]) {
+
     def getByPatternId(patternId: String): Traversal.V[Pattern] = traversal.has(_.patternId, patternId)
 
     def parent: Traversal.V[Pattern] =
       traversal.in[PatternPattern].v[Pattern]
+
+    def children: Traversal.V[Pattern] =
+      traversal.out[PatternPattern].v[Pattern]
 
     def procedure: Traversal.V[Procedure] =
       traversal.in[ProcedurePattern].v[Procedure]
@@ -72,6 +76,20 @@ object PatternOps {
         .domainMap {
           case (pattern, parent) =>
             RichPattern(pattern, parent.headOption)
+        }
+
+    def richPatternWithCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Pattern] => Traversal[D, G, C]
+    ): Traversal[(RichPattern, D), JMap[String, Any], Converter[(RichPattern, D), JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.in[PatternPattern].v[Pattern].fold)
+            .by(entityRenderer)
+        )
+        .domainMap {
+          case (pattern, parent, renderedEntity) =>
+            RichPattern(pattern, parent.headOption) -> renderedEntity
         }
 
   }

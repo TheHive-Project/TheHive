@@ -149,6 +149,7 @@ class Router @Inject() (
 
     case POST(p"/procedure")                => procedureCtrl.create
     case GET(p"/procedure/$procedureId")    => procedureCtrl.get(procedureId)
+    case PATCH(p"/procedure/$procedureId")  => procedureCtrl.update(procedureId)
     case DELETE(p"/procedure/$procedureId") => procedureCtrl.delete(procedureId)
 
     case POST(p"/profile")              => profileCtrl.create

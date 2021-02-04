@@ -20,11 +20,11 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaxonomySrv @Inject() (
-  organisationSrv: OrganisationSrv
-)(implicit @Named("with-thehive-schema") db: Database
-) extends VertexSrv[Taxonomy] {
+    organisationSrv: OrganisationSrv
+)(implicit @Named("with-thehive-schema") db: Database)
+    extends VertexSrv[Taxonomy] {
 
-  val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
+  val taxonomyTagSrv          = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   val organisationTaxonomySrv = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
@@ -49,21 +49,24 @@ class TaxonomySrv @Inject() (
   def activate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       taxo <- get(taxonomyId).getOrFail("Taxonomy")
-      _    <- if (taxo.namespace.startsWith("_freetags")) Failure(BadRequestError("Cannot activate a freetags taxonomy"))
-              else Success(())
-      _    <- organisationSrv.startTraversal
-                .filterNot(_.out[OrganisationTaxonomy].v[Taxonomy].has(_.namespace, taxo.namespace))
-                .toSeq
-                .toTry(o => organisationTaxonomySrv.create(OrganisationTaxonomy(), o, taxo))
+      _ <-
+        if (taxo.namespace.startsWith("_freetags")) Failure(BadRequestError("Cannot activate a freetags taxonomy"))
+        else Success(())
+      _ <-
+        organisationSrv
+          .startTraversal
+          .filterNot(_.out[OrganisationTaxonomy].v[Taxonomy].has(_.namespace, taxo.namespace))
+          .toSeq
+          .toTry(o => organisationTaxonomySrv.create(OrganisationTaxonomy(), o, taxo))
     } yield ()
 
-  def deactivate(taxonomyId: EntityIdOrName)(implicit graph: Graph): Try[Unit] = {
+  def deactivate(taxonomyId: EntityIdOrName)(implicit graph: Graph): Try[Unit] =
     for {
       taxo <- getOrFail(taxonomyId)
-      _ <- if (taxo.namespace.startsWith("_freetags")) Failure(BadRequestError("Cannot deactivate a freetags taxonomy"))
-           else Success(())
+      _ <-
+        if (taxo.namespace.startsWith("_freetags")) Failure(BadRequestError("Cannot deactivate a freetags taxonomy"))
+        else Success(())
     } yield get(taxonomyId).inE[OrganisationTaxonomy].remove()
-  }
 
 }
 
@@ -75,12 +78,11 @@ object TaxonomyOps {
 
     def getByNamespace(namespace: String): Traversal.V[Taxonomy] = traversal.has(_.namespace, namespace)
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Taxonomy] = {
+    def visible(implicit authContext: AuthContext): Traversal.V[Taxonomy] =
       if (authContext.isPermitted(Permissions.manageTaxonomy))
         noFreetags
       else
         traversal.filter(_.organisations.get(authContext.organisation))
-    }
 
     private def noFreetags: Traversal.V[Taxonomy] =
       traversal.filterNot(_.has(_.namespace, TextP.startingWith("_freetags")))
@@ -103,17 +105,17 @@ object TaxonomyOps {
         )
         .domainMap { case (taxonomy, tags) => RichTaxonomy(taxonomy, tags) }
 
-    def richTaxonomyWithCustomRenderer[D, G, C <: Converter[D, G]](entityRenderer: Traversal.V[Taxonomy] => Traversal[D, G, C]):
-      Traversal[(RichTaxonomy, D), JMap[String, Any], Converter[(RichTaxonomy, D), JMap[String, Any]]] =
+    def richTaxonomyWithCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Taxonomy] => Traversal[D, G, C]
+    ): Traversal[(RichTaxonomy, D), JMap[String, Any], Converter[(RichTaxonomy, D), JMap[String, Any]]] =
       traversal
         .project(
           _.by
             .by(_.tags.fold)
-            .by(_.enabled)
             .by(entityRenderer)
         )
         .domainMap {
-          case (taxo, tags, _, renderedEntity) =>
+          case (taxo, tags, renderedEntity) =>
             RichTaxonomy(
               taxo,
               tags

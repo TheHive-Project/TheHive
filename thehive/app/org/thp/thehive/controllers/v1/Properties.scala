@@ -16,6 +16,7 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
@@ -285,6 +286,7 @@ class Properties @Inject() (
       .property("owningOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
       )
+      .property("procedures", UMapping.entityId.sequence)(_.select(_.procedure.value(_._id)).readonly)
       .build
 
   lazy val caseTemplate: PublicProperties =
@@ -345,15 +347,22 @@ class Properties @Inject() (
       .property("tactics", UMapping.string.set)(_.field.readonly)
       .property("url", UMapping.string)(_.field.updatable)
       .property("patternType", UMapping.string)(_.field.readonly)
-      .property("platforms", UMapping.string.sequence)(_.field.readonly)
+      .property("revoked", UMapping.boolean)(_.field.readonly)
       .property("dataSources", UMapping.string.sequence)(_.field.readonly)
+      .property("defenseBypassed", UMapping.string.sequence)(_.field.readonly)
+      .property("detection", UMapping.string.optional)(_.field.readonly)
+      .property("permissionsRequired", UMapping.string.sequence)(_.field.readonly)
+      .property("platforms", UMapping.string.sequence)(_.field.readonly)
+      .property("remoteSupport", UMapping.boolean)(_.field.readonly)
+      .property("systemRequirements", UMapping.string.sequence)(_.field.readonly)
       .property("version", UMapping.string.optional)(_.field.readonly)
+      .property("parent", UMapping.string.optional)(_.select(_.parent.value(_.patternId)).readonly)
       .build
 
   lazy val procedure: PublicProperties =
     PublicPropertyListBuilder[Procedure]
       .property("description", UMapping.string)(_.field.updatable)
-      .property("occurence", UMapping.date)(_.field.readonly)
+      .property("occurence", UMapping.date)(_.field.updatable)
       .build
 
   lazy val profile: PublicProperties =
