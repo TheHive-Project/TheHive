@@ -113,6 +113,8 @@ class PatternCtrl @Inject() (
       Failure(BadRequestError(s"A pattern with no MITRE id cannot be imported"))
     else if (patternSrv.startTraversal.alreadyImported(inputPattern.external_id))
       Failure(BadRequestError(s"A pattern with MITRE id '${inputPattern.external_id}' already exists in this organisation"))
+    else if (inputPattern.`type` != "attack-pattern")
+      Failure(BadRequestError(s"Only patterns with type attack-pattern are imported, this one is ${inputPattern.`type`}"))
     else
       for {
         pattern <- patternSrv.createEntity(inputPattern.toPattern)

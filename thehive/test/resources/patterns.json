@@ -442,6 +442,40 @@
     "type": "attack-pattern",
     "modified": "2020-05-13T20:37:30.008Z",
     "created": "2017-05-31T21:30:26.946Z"
-  }
+  },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "url": "https://attack.mitre.org/software/S0066",
+          "external_id": "S0066"
+        },
+        {
+          "source_name": "CrowdStrike Putter Panda",
+          "description": "Crowdstrike Global Intelligence Team. (2014, June 9). CrowdStrike Intelligence Report: Putter Panda. Retrieved January 22, 2016.",
+          "url": "http://cdn0.vox-cdn.com/assets/4589853/crowdstrike-intelligence-report-putter-panda.original.pdf"
+        }
+      ],
+      "description": "[3PARA RAT](https://attack.mitre.org/software/S0066) is a remote access tool (RAT) programmed in C++ that has been used by [Putter Panda](https://attack.mitre.org/groups/G0024). (Citation: CrowdStrike Putter Panda)",
+      "name": "3PARA RAT",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "id": "malware--7bec698a-7e20-4fd3-bb6a-12787770fb1a",
+      "type": "malware",
+      "labels": [
+        "malware"
+      ],
+      "modified": "2020-03-30T18:34:04.031Z",
+      "created": "2017-05-31T21:32:44.131Z",
+      "x_mitre_version": "1.1",
+      "x_mitre_aliases": [
+        "3PARA RAT"
+      ],
+      "x_mitre_platforms": [
+        "Windows"
+      ]
+    }
 ]
 }
