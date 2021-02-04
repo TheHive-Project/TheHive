@@ -286,6 +286,7 @@ class Properties @Inject() (
       .property("owningOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
       )
+      .property("procedures", UMapping.entityId.sequence)(_.select(_.procedure.value(_._id)).readonly)
       .build
 
   lazy val caseTemplate: PublicProperties =
@@ -361,7 +362,7 @@ class Properties @Inject() (
   lazy val procedure: PublicProperties =
     PublicPropertyListBuilder[Procedure]
       .property("description", UMapping.string)(_.field.updatable)
-      .property("occurence", UMapping.date)(_.field.readonly)
+      .property("occurence", UMapping.date)(_.field.updatable)
       .build
 
   lazy val profile: PublicProperties =

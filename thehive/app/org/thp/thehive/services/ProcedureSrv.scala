@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.ProcedureOps._
@@ -73,16 +73,12 @@ object ProcedureOps {
     def get(idOrName: EntityIdOrName): Traversal.V[Procedure] =
       idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
 
-    def richProcedure: Traversal[RichProcedure, JMap[String, Any], Converter[RichProcedure, JMap[String, Any]]] = {
-      val procedure = StepLabel.v[Procedure]
-      val pattern   = StepLabel.v[Pattern]
+    def richProcedure: Traversal[RichProcedure, JMap[String, Any], Converter[RichProcedure, JMap[String, Any]]] =
       traversal
-        .as(procedure)
-        .in[ProcedurePattern]
-        .v[Pattern]
-        .as(pattern)
-        .select((procedure, pattern))
+        .project(
+          _.by
+            .by(_.pattern)
+        )
         .domainMap { case (procedure, pattern) => RichProcedure(procedure, pattern) }
-    }
   }
 }
