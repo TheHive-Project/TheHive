@@ -81,7 +81,7 @@ case "$1" in
     addUser thehive "" thehive "thehive daemon-user" "/bin/false"
     # Generate secret key
     if ! test -e /etc/thehive/secret.conf; then
-      key=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 64 | head -n 1)
+      key=$(dd if=/dev/urandom bs=1024 count=1 | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
       echo "play.http.secret.key=\"$key\"" > /etc/thehive/secret.conf
     fi
 
