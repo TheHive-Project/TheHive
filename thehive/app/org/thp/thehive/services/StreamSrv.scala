@@ -174,7 +174,7 @@ class StreamSrv @Inject() (
   def maxBackoff: FiniteDuration = maxBackoffConfig.get
 
   val randomFactorConfig: ConfigItem[Double, Double] =
-    appConfig.item[Double]("stream.get.maxBackoff", "Random factor for stream attempts backoff")
+    appConfig.item[Double]("stream.get.randomFactor", "Random factor for stream attempts backoff")
   def randomFactor: Double = randomFactorConfig.get
 
   def generateStreamId(): String = Seq.fill(streamLength)(alphanumeric(Random.nextInt(alphanumeric.size))).mkString
