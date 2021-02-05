@@ -21,7 +21,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.{Base64, Date, List => JList, Map => JMap}
@@ -430,9 +430,18 @@ class PublicAlert @Inject() (
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) =>
-          alertSteps.customFields(EntityIdOrName(name)).jsonValue
-        case (_, alertSteps) => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (FPathElem(_, FPathElem(name, _)), alerts) =>
+          db
+            .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField"))
+            .map {
+              case CustomFieldType.boolean => alerts.customFields(EntityIdOrName(name)).value(_.booleanValue).domainMap(v => JsBoolean(v))
+              case CustomFieldType.date    => alerts.customFields(EntityIdOrName(name)).value(_.dateValue).domainMap(v => JsNumber(v.getTime))
+              case CustomFieldType.float   => alerts.customFields(EntityIdOrName(name)).value(_.floatValue).domainMap(v => JsNumber(v))
+              case CustomFieldType.integer => alerts.customFields(EntityIdOrName(name)).value(_.integerValue).domainMap(v => JsNumber(v))
+              case CustomFieldType.string  => alerts.customFields(EntityIdOrName(name)).value(_.stringValue).domainMap(v => JsString(v))
+            }
+            .getOrElse(alerts.constant2(null))
+        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter {
           case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>

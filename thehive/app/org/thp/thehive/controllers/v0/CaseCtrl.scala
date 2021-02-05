@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Long => JLong}
-import java.util.Date
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -24,6 +20,8 @@ import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.util.Date
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
 @Singleton
@@ -328,7 +326,7 @@ class PublicCase @Inject() (
                 case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
                 case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
               }
-              .getOrElse(new Converter[Any, JsValue] { def apply(x: JsValue): Any = x })
+              .getOrElse((x: JsValue) => x)
           case _ => (x: JsValue) => x
         }
         .custom {
