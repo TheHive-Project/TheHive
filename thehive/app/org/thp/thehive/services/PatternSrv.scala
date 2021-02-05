@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Traversal}
@@ -11,6 +12,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ProcedureOps._
+import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
@@ -41,6 +43,15 @@ class PatternSrv @Inject() (
       caze <- caseSrv.get(EntityIdOrName(caseId)).getOrFail("Case")
       patterns = caseSrv.get(caze).procedure.pattern.richPattern.toSeq
     } yield patterns.map(_.patternId)
+
+  override def update(
+      traversal: Traversal.V[Pattern],
+      propertyUpdaters: Seq[PropertyUpdater]
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Pattern], JsObject)] =
+    auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
+      case (patternSteps, updatedFields) =>
+        patternSteps.clone().getOrFail("Pattern").flatMap(pattern => auditSrv.pattern.update(pattern, updatedFields))
+    }
 
   def remove(pattern: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {

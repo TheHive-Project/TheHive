@@ -111,9 +111,17 @@ class PatternCtrl @Inject() (
   private def createFromInput(inputPattern: InputPattern)(implicit graph: Graph, authContext: AuthContext): Try[Pattern with Entity] =
     if (inputPattern.external_id.isEmpty)
       Failure(BadRequestError(s"A pattern with no MITRE id cannot be imported"))
-    else if (patternSrv.startTraversal.alreadyImported(inputPattern.external_id))
-      Failure(BadRequestError(s"A pattern with MITRE id '${inputPattern.external_id}' already exists in this organisation"))
-    else if (inputPattern.`type` != "attack-pattern")
+    else if (patternSrv.startTraversal.alreadyImported(inputPattern.external_id)) {
+      // TODO update pattern
+      def patternTraversal = patternSrv.get(EntityIdOrName(inputPattern.external_id))
+      for {
+        pattern <-
+          patternSrv
+            .update(patternTraversal, Seq())
+            .flatMap(_ => patternTraversal.getOrFail("Pattern"))
+        _ = if (inputPattern.x_mitre_is_subtechnique) linkPattern(pattern)
+      } yield pattern
+    } else if (inputPattern.`type` != "attack-pattern")
       Failure(BadRequestError(s"Only patterns with type attack-pattern are imported, this one is ${inputPattern.`type`}"))
     else
       for {

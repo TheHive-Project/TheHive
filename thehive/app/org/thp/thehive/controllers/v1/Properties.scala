@@ -347,6 +347,8 @@ class Properties @Inject() (
       .property("tactics", UMapping.string.set)(_.field.readonly)
       .property("url", UMapping.string)(_.field.updatable)
       .property("patternType", UMapping.string)(_.field.readonly)
+      .property("capecId", UMapping.string.optional)(_.field.readonly)
+      .property("capecUrl", UMapping.string.optional)(_.field.readonly)
       .property("revoked", UMapping.boolean)(_.field.readonly)
       .property("dataSources", UMapping.string.sequence)(_.field.readonly)
       .property("defenseBypassed", UMapping.string.sequence)(_.field.readonly)

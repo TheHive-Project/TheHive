@@ -4,7 +4,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.OutputPattern
-import play.api.libs.json.JsArray
+import play.api.libs.json.{JsArray, JsString}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -16,6 +16,8 @@ case class TestPattern(
     tactics: Set[String],
     url: String,
     patternType: String,
+    capecId: Option[String],
+    capecUrl: Option[String],
     revoked: Boolean,
     dataSources: Seq[String],
     defenseBypassed: Seq[String],
@@ -50,7 +52,10 @@ class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[PatternCtrl].importMitre(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsJson(result).as[JsArray].value.size must beEqualTo(8)
+      contentAsJson(result)
+        .as[JsArray]
+        .value
+        .count(jsValue => (jsValue \ "status").get == JsString("Success")) must beEqualTo(8)
     }
 
     "get a existing pattern" in testApp { app =>
@@ -68,6 +73,8 @@ class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
         Set("testTactic1", "testTactic2"),
         "http://test.pattern.url",
         "unit-test",
+        None,
+        None,
         revoked = false,
         Seq(),
         Seq(),

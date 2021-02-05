@@ -501,6 +501,8 @@ object Conversion {
         .withFieldRenamed(_.external_id, _.patternId)
         .withFieldComputed(_.tactics, _.kill_chain_phases.map(_.phase_name).toSet)
         .withFieldRenamed(_.`type`, _.patternType)
+        .withFieldRenamed(_.capec_id, _.capecId)
+        .withFieldRenamed(_.capec_url, _.capecUrl)
         .withFieldRenamed(_.x_mitre_data_sources, _.dataSources)
         .withFieldRenamed(_.x_mitre_defense_bypassed, _.defenseBypassed)
         .withFieldRenamed(_.x_mitre_detection, _.detection)

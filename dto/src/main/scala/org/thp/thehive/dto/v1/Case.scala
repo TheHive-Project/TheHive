@@ -1,7 +1,9 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
+import ai.x.play.json.Encoders.encoder
+import ai.x.play.json.Jsonx
 
+import java.util.Date
 import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json._
 
@@ -53,86 +55,5 @@ case class OutputCase(
 )
 
 object OutputCase {
-
-  val reads: Reads[OutputCase] = Reads[OutputCase] { json =>
-    for {
-      _id              <- (json \ "_id").validate[String]
-      _type            <- (json \ "_type").validate[String]
-      _createdBy       <- (json \ "_createdBy").validate[String]
-      _updatedBy       <- (json \ "_updatedBy").validateOpt[String]
-      _createdAt       <- (json \ "_createdAt").validate[Date]
-      _updatedAt       <- (json \ "_updatedAt").validateOpt[Date]
-      number           <- (json \ "number").validate[Int]
-      title            <- (json \ "title").validate[String]
-      description      <- (json \ "description").validate[String]
-      severity         <- (json \ "severity").validate[Int]
-      startDate        <- (json \ "startDate").validate[Date]
-      endDate          <- (json \ "endDate").validateOpt[Date]
-      tags             <- (json \ "tags").validate[Set[String]]
-      flag             <- (json \ "flag").validate[Boolean]
-      tlp              <- (json \ "tlp").validate[Int]
-      pap              <- (json \ "pap").validate[Int]
-      status           <- (json \ "status").validate[String]
-      summary          <- (json \ "summary").validateOpt[String]
-      impactStatus     <- (json \ "impactStatus").validateOpt[String]
-      resolutionStatus <- (json \ "resolutionStatus").validateOpt[String]
-      assignee         <- (json \ "assignee").validateOpt[String]
-      customFields     <- (json \ "customFields").validate[Seq[OutputCustomFieldValue]]
-      extraData        <- (json \ "extraData").validate[JsObject]
-    } yield OutputCase(
-      _id,
-      _type,
-      _createdBy,
-      _updatedBy,
-      _createdAt,
-      _updatedAt,
-      number,
-      title,
-      description,
-      severity,
-      startDate,
-      endDate,
-      tags,
-      flag,
-      tlp,
-      pap,
-      status,
-      summary,
-      impactStatus,
-      resolutionStatus,
-      assignee,
-      customFields,
-      extraData
-    )
-  }
-
-  val writes: OWrites[OutputCase] = OWrites[OutputCase] { outputCase =>
-    Json.obj(
-      "_id"              -> outputCase._id,
-      "_type"            -> outputCase._type,
-      "_createdBy"       -> outputCase._createdBy,
-      "_updatedBy"       -> outputCase._updatedBy,
-      "_createdAt"       -> outputCase._createdAt,
-      "_updatedAt"       -> outputCase._updatedAt,
-      "number"           -> outputCase.number,
-      "title"            -> outputCase.title,
-      "description"      -> outputCase.description,
-      "severity"         -> outputCase.severity,
-      "startDate"        -> outputCase.startDate,
-      "endDate"          -> outputCase.endDate,
-      "tags"             -> outputCase.tags,
-      "flag"             -> outputCase.flag,
-      "tlp"              -> outputCase.tlp,
-      "pap"              -> outputCase.pap,
-      "status"           -> outputCase.status,
-      "summary"          -> outputCase.summary,
-      "impactStatus"     -> outputCase.impactStatus,
-      "resolutionStatus" -> outputCase.resolutionStatus,
-      "assignee"         -> outputCase.assignee,
-      "customFields"     -> outputCase.customFields,
-      "extraData"        -> outputCase.extraData
-    )
-  }
-
-  implicit val format: OFormat[OutputCase] = OFormat(reads, writes)
+  implicit val format: OFormat[OutputCase] = Jsonx.formatCaseClass[OutputCase]
 }

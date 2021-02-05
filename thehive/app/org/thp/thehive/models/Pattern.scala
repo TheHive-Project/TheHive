@@ -13,6 +13,8 @@ case class Pattern(
     tactics: Set[String],
     url: String,
     patternType: String,
+    capecId: Option[String],
+    capecUrl: Option[String],
     revoked: Boolean,
     dataSources: Seq[String],
     defenseBypassed: Seq[String],
@@ -34,6 +36,8 @@ case class RichPattern(pattern: Pattern with Entity, parent: Option[Pattern with
   def tactics: Set[String]             = pattern.tactics
   def url: String                      = pattern.url
   def patternType: String              = pattern.patternType
+  def capecId: Option[String]          = pattern.capecId
+  def capecUrl: Option[String]         = pattern.capecUrl
   def revoked: Boolean                 = pattern.revoked
   def dataSources: Seq[String]         = pattern.dataSources
   def defenseBypassed: Seq[String]     = pattern.defenseBypassed

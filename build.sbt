@@ -170,7 +170,10 @@ lazy val thehiveDto = (project in file("dto"))
   .dependsOn(scalligraph)
   .settings(
     name := "thehive-dto",
-    version := thehiveVersion
+    version := thehiveVersion,
+    libraryDependencies ++= Seq(
+      aix
+    )
   )
 
 lazy val thehiveClient = (project in file("client"))
