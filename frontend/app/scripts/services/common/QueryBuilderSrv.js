@@ -54,11 +54,10 @@
 
             if(values.length > 0) {
                 var criterions = _.map(values, function(val) {
-                    var v = {_like: {}};
-
-                    v._like[filter.field] = val;
-
-                    return v;
+                    return {_like: {
+                        _field: filter.field,
+                        _value: val
+                    }};
                 });
 
                 var criteria = {};
