@@ -80,6 +80,44 @@
             return null;
         };
 
+        this._buildQueryFromTagsFilter = function(fieldDef, filter) {
+            if (!filter || !filter.value) {
+                return null;
+            }
+            var operator = filter.value.operator || 'any';
+            var values = _.pluck(filter.value.list, 'text');
+
+            if(values.length > 0) {
+                var criterions = _.map(values, function(val) {
+                    return {
+                        _like: {
+                            _field: filter.field,
+                            _value: val
+                        }
+                    };
+                });
+
+                var criteria = {};
+                switch(operator) {
+                    case 'all':
+                        criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
+                        break;
+                    case 'none':
+                        criteria = {
+                            _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
+                        };
+                        break;
+                    //case 'any':
+                    default:
+                        criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                }
+
+                return criteria;
+            }
+
+            return null;
+        };
+
         this._buildQueryFromListFilter = function(fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
@@ -166,6 +204,8 @@
                 return this._buildQueryFromDateFilter(fieldDef, filter);
             } else if(filter.type === 'boolean') {
                 return this._buildQueryFromBooleanFilter(fieldDef, filter);
+            } else if(filter.field === 'tags') {
+                return this._buildQueryFromTagsFilter(fieldDef, filter);
             } else if(filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration') {
                 return this._buildQueryFromListFilter(fieldDef, filter);
             } else if(filter.type === 'string' && fieldDef.values.length === 0) {
