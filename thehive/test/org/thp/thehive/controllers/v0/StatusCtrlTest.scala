@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v0
 
+import org.thp.scalligraph.models.SchemaStatus
 import org.thp.scalligraph.{AppBuilder, ScalligraphApplicationLoader}
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.Connector
@@ -28,6 +29,8 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
       )
 
     override def health: HealthStatus.Value = HealthStatus.Warning
+
+    override def schemaStatus: Option[SchemaStatus] = None
   }
 
   override def appConfigure: AppBuilder = super.appConfigure.multiBindInstance[Connector](fakeCortexConnector)

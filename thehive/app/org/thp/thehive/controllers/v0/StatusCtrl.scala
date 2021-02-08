@@ -7,7 +7,7 @@ import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationForma
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.{EntityName, ScalligraphApplicationLoader}
 import org.thp.thehive.TheHiveModule
-import org.thp.thehive.models.{HealthStatus, User}
+import org.thp.thehive.models.{HealthStatus, TheHiveSchemaDefinition, User}
 import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
@@ -24,6 +24,7 @@ class StatusCtrl @Inject() (
     authSrv: AuthSrv,
     userSrv: UserSrv,
     connectors: immutable.Set[Connector],
+    theHiveSchemaDefinition: TheHiveSchemaDefinition,
     @Named("with-thehive-schema") db: Database
 ) {
 
@@ -55,7 +56,15 @@ class StatusCtrl @Inject() (
               "capabilities"    -> authSrv.capabilities.map(c => JsString(c.toString)),
               "ssoAutoLogin"    -> authSrv.capabilities.contains(AuthCapability.sso),
               "pollingDuration" -> streamPollingDuration.toMillis
-            )
+            ),
+            "schemaStatus" -> (connectors.flatMap(_.schemaStatus) ++ theHiveSchemaDefinition.schemaStatus).map { schemaStatus =>
+              Json.obj(
+                "name"            -> schemaStatus.name,
+                "currentVersion"  -> schemaStatus.currentVersion,
+                "expectedVersion" -> schemaStatus.expectedVersion,
+                "error"           -> schemaStatus.error.map(_.getMessage)
+              )
+            }
           )
         )
       )
