@@ -21,10 +21,10 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsBoolean, JsNumber, JsObject, JsString, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import java.util.{Base64, List => JList, Map => JMap}
+import java.util.{Base64, Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
@@ -430,24 +430,64 @@ class PublicAlert @Inject() (
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) =>
-          alertSteps.customFields(EntityIdOrName(name)).jsonValue
-        case (_, alertSteps) => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
-      }.custom {
-        case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
-          for {
-            c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
-            _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
-          } yield Json.obj(s"customField.$name" -> value)
-        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
-          for {
-            c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
-            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
-            _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
-          } yield Json.obj("customFields" -> values)
+        case (FPathElem(_, FPathElem(name, _)), alerts) =>
+          db
+            .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField"))
+            .map {
+              case CustomFieldType.boolean => alerts.customFields(EntityIdOrName(name)).value(_.booleanValue).domainMap(v => JsBoolean(v))
+              case CustomFieldType.date    => alerts.customFields(EntityIdOrName(name)).value(_.dateValue).domainMap(v => JsNumber(v.getTime))
+              case CustomFieldType.float   => alerts.customFields(EntityIdOrName(name)).value(_.floatValue).domainMap(v => JsNumber(v))
+              case CustomFieldType.integer => alerts.customFields(EntityIdOrName(name)).value(_.integerValue).domainMap(v => JsNumber(v))
+              case CustomFieldType.string  => alerts.customFields(EntityIdOrName(name)).value(_.stringValue).domainMap(v => JsString(v))
+            }
+            .getOrElse(alerts.constant2(null))
+        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+      }
+        .filter {
+          case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
+            db
+              .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(idOrName)).value(_.`type`).getOrFail("CustomField"))
+              .map {
+                case CustomFieldType.boolean => alerts.customFields(EntityIdOrName(idOrName)).value(_.booleanValue)
+                case CustomFieldType.date    => alerts.customFields(EntityIdOrName(idOrName)).value(_.dateValue)
+                case CustomFieldType.float   => alerts.customFields(EntityIdOrName(idOrName)).value(_.floatValue)
+                case CustomFieldType.integer => alerts.customFields(EntityIdOrName(idOrName)).value(_.integerValue)
+                case CustomFieldType.string  => alerts.customFields(EntityIdOrName(idOrName)).value(_.stringValue)
+              }
+              .getOrElse(alerts.constant2(null))
+          case (_, alerts) => alerts.constant2(null)
+        }
+        .converter {
+          case FPathElem(_, FPathElem(idOrName, _)) =>
+            db
+              .roTransaction { implicit graph =>
+                customFieldSrv.get(EntityIdOrName(idOrName)).value(_.`type`).getOrFail("CustomField")
+              }
+              .map {
+                case CustomFieldType.boolean => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Boolean] }
+                case CustomFieldType.date    => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Date] }
+                case CustomFieldType.float   => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Double] }
+                case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
+                case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
+              }
+              .getOrElse((x: JsValue) => x)
+          case _ => (x: JsValue) => x
+        }
+        .custom {
+          case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+            for {
+              c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
+              _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
+            } yield Json.obj(s"customField.$name" -> value)
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+            for {
+              c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
+              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
+              _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
+            } yield Json.obj("customFields" -> values)
 
-        case _ => Failure(BadRequestError("Invalid custom fields format"))
-      })
+          case _ => Failure(BadRequestError("Invalid custom fields format"))
+        })
       .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
       .property("imported", UMapping.boolean)(_.select(_.imported).readonly)
       .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)

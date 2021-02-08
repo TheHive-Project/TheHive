@@ -9,15 +9,25 @@ import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
+import org.thp.thehive.models.TheHiveSchemaDefinition
+import org.thp.thehive.services.Connector
 import play.api.libs.json.{JsObject, JsString, Json, Writes}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
 
 @Singleton
-class StatusCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationConfig, authSrv: AuthSrv, system: ActorSystem) {
+class StatusCtrl @Inject() (
+    entrypoint: Entrypoint,
+    appConfig: ApplicationConfig,
+    authSrv: AuthSrv,
+    connectors: immutable.Set[Connector],
+    theHiveSchemaDefinition: TheHiveSchemaDefinition,
+    system: ActorSystem
+) {
 
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
@@ -67,10 +77,17 @@ class StatusCtrl @Inject() (entrypoint: Entrypoint, appConfig: ApplicationConfig
               "ssoAutoLogin"    -> authSrv.capabilities.contains(AuthCapability.sso),
               "pollingDuration" -> streamPollingDuration.toMillis
             ),
-            "cluster" -> cluster.state
+            "cluster" -> cluster.state,
+            "schemaStatus" -> (connectors.flatMap(_.schemaStatus) ++ theHiveSchemaDefinition.schemaStatus).map { schemaStatus =>
+              Json.obj(
+                "name"            -> schemaStatus.name,
+                "currentVersion"  -> schemaStatus.currentVersion,
+                "expectedVersion" -> schemaStatus.expectedVersion,
+                "error"           -> schemaStatus.error.map(_.getMessage)
+              )
+            }
           )
         )
       )
     }
-
 }

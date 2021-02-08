@@ -1,5 +1,34 @@
 # Change Log
 
+## [4.0.5](https://github.com/TheHive-Project/TheHive/milestone/68) (2021-02-08)
+
+**Implemented enhancements:**
+
+- Support for using asterisks by tag-filtering [\#933](https://github.com/TheHive-Project/TheHive/issues/933)
+- "Close tasks and case" deletes tasks instead of closing them [\#1755](https://github.com/TheHive-Project/TheHive/issues/1755)
+- [Enhancement] Add schema update status in status API [\#1782](https://github.com/TheHive-Project/TheHive/issues/1782)
+
+**Closed issues:**
+
+- Running TheHive 4.0.1-1 it appears that application.log is no longer rotated. [\#1746](https://github.com/TheHive-Project/TheHive/issues/1746)
+
+**Fixed bugs:**
+
+- [Bug] RPM package does not create secret.conf file [\#1248](https://github.com/TheHive-Project/TheHive/issues/1248)
+- [Bug] More webhooks or more detailed webhook events [\#1739](https://github.com/TheHive-Project/TheHive/issues/1739)
+- [Bug] Webhooks opening infinite amount of files [\#1743](https://github.com/TheHive-Project/TheHive/issues/1743)
+- [Bug] Dashboards are always created as private [\#1754](https://github.com/TheHive-Project/TheHive/issues/1754)
+- [Bug]/Unable to get MISP organisation [\#1758](https://github.com/TheHive-Project/TheHive/issues/1758)
+- [Bug] TheHive 4 Cluster and Haproxy with roundrobin [\#1760](https://github.com/TheHive-Project/TheHive/issues/1760)
+- [Bug] TheHive -> MISP works. MISP -> TheHive not. [\#1761](https://github.com/TheHive-Project/TheHive/issues/1761)
+- [Bug] TheHive 4.0.4 cannot show tasks created in previous versions [\#1763](https://github.com/TheHive-Project/TheHive/issues/1763)
+- [Bug] `Imported` property in Alerts not taken into account  [\#1769](https://github.com/TheHive-Project/TheHive/issues/1769)
+- [Bug] Sort field list in dashboard widget filters [\#1771](https://github.com/TheHive-Project/TheHive/issues/1771)
+- [Bug] Dashboard on organisation (and other) doesn't work [\#1772](https://github.com/TheHive-Project/TheHive/issues/1772)
+- [BUG] Cannot link multiple organisations together [\#1773](https://github.com/TheHive-Project/TheHive/issues/1773)
+- [Bug] Fix pivoting from donuts to search pages on custom fields based widgets [\#1777](https://github.com/TheHive-Project/TheHive/issues/1777)
+- [Bug] Fix custom field filters in v0 APIs [\#1779](https://github.com/TheHive-Project/TheHive/issues/1779)
+
 ## [4.0.4](https://github.com/TheHive-Project/TheHive/milestone/67) (2021-01-12)
 
 **Implemented enhancements:**
@@ -269,7 +298,6 @@
 - SearchSrv.NotFoundError  [\#1242](https://github.com/TheHive-Project/TheHive/issues/1242)
 - Assignee is not changeable [\#1243](https://github.com/TheHive-Project/TheHive/issues/1243)
 - [Bug] In TheHive, a user is a member of one or more organisations. One user has a profile for each organisation and can have different profiles for different organisations.  [\#1247](https://github.com/TheHive-Project/TheHive/issues/1247)
-- [Bug] RPM package does not create secret.conf file [\#1248](https://github.com/TheHive-Project/TheHive/issues/1248)
 - [Bug] Unable to save new or imported dashboards in 4.0-RC1 [\#1250](https://github.com/TheHive-Project/TheHive/issues/1250)
 - [Bug] Header Variable authentication does not work [\#1251](https://github.com/TheHive-Project/TheHive/issues/1251)
 - Filtering by custom fields returns no results [\#1252](https://github.com/TheHive-Project/TheHive/issues/1252)

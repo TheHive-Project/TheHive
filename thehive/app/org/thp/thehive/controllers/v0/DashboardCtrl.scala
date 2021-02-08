@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -17,7 +16,8 @@ import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.util.Failure
+import javax.inject.{Inject, Named, Singleton}
+import scala.util.{Failure, Success}
 
 @Singleton
 class DashboardCtrl @Inject() (
@@ -33,7 +33,16 @@ class DashboardCtrl @Inject() (
       .extract("dashboard", FieldsParser[InputDashboard])
       .authTransaction(db) { implicit request => implicit graph =>
         val dashboard: InputDashboard = request.body("dashboard")
-        dashboardSrv.create(dashboard.toDashboard).map(d => Results.Created(d.toJson))
+        dashboardSrv
+          .create(dashboard.toDashboard)
+          .flatMap {
+            case richDashboard if dashboard.status == "Shared" =>
+              dashboardSrv
+                .share(richDashboard.dashboard, request.organisation, writable = false)
+                .flatMap(_ => dashboardSrv.get(richDashboard.dashboard).richDashboard.getOrFail("Dashboard"))
+            case richDashboard => Success(richDashboard)
+          }
+          .map(richDashboard => Results.Created(richDashboard.toJson))
       }
 
   def get(dashboardId: String): Action[AnyContent] =
