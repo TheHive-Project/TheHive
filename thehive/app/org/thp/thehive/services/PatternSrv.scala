@@ -4,15 +4,14 @@ import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ProcedureOps._
-import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
@@ -44,14 +43,31 @@ class PatternSrv @Inject() (
       patterns = caseSrv.get(caze).procedure.pattern.richPattern.toSeq
     } yield patterns.map(_.patternId)
 
-  override def update(
-      traversal: Traversal.V[Pattern],
-      propertyUpdaters: Seq[PropertyUpdater]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Pattern], JsObject)] =
-    auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
-      case (patternSteps, updatedFields) =>
-        patternSteps.clone().getOrFail("Pattern").flatMap(pattern => auditSrv.pattern.update(pattern, updatedFields))
-    }
+  def update(
+      pattern: Pattern with Entity,
+      input: Pattern
+  )(implicit graph: Graph, authContext: AuthContext): Try[Pattern with Entity] =
+    for {
+      updatedPattern <- get(pattern)
+        .when(pattern.patternId != input.patternId)(_.update(_.patternId, input.patternId))
+        .when(pattern.name != input.name)(_.update(_.name, input.name))
+        .when(pattern.description != input.description)(_.update(_.description, input.description))
+        .when(pattern.tactics != input.tactics)(_.update(_.tactics, input.tactics))
+        .when(pattern.url != input.url)(_.update(_.url, input.url))
+        .when(pattern.patternType != input.patternType)(_.update(_.patternType, input.patternType))
+        .when(pattern.capecId != input.capecId)(_.update(_.capecId, input.capecId))
+        .when(pattern.capecUrl != input.capecUrl)(_.update(_.capecUrl, input.capecUrl))
+        .when(pattern.revoked != input.revoked)(_.update(_.revoked, input.revoked))
+        .when(pattern.dataSources != input.dataSources)(_.update(_.dataSources, input.dataSources))
+        .when(pattern.defenseBypassed != input.defenseBypassed)(_.update(_.defenseBypassed, input.defenseBypassed))
+        .when(pattern.detection != input.detection)(_.update(_.detection, input.detection))
+        .when(pattern.permissionsRequired != input.permissionsRequired)(_.update(_.permissionsRequired, input.permissionsRequired))
+        .when(pattern.platforms != input.platforms)(_.update(_.platforms, input.platforms))
+        .when(pattern.remoteSupport != input.remoteSupport)(_.update(_.remoteSupport, input.remoteSupport))
+        .when(pattern.systemRequirements != input.systemRequirements)(_.update(_.systemRequirements, input.systemRequirements))
+        .when(pattern.revision != input.revision)(_.update(_.revision, input.revision))
+        .getOrFail("Pattern")
+    } yield updatedPattern
 
   def remove(pattern: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
