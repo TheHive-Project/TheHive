@@ -12,8 +12,7 @@ case object Synchro extends MispMessage
 
 class MispActor @Inject() (
     connector: Connector,
-    mispImportSrv: MispImportSrv,
-    userSrv: UserSrv
+    mispImportSrv: MispImportSrv
 ) extends Actor {
   import context.dispatcher
 
@@ -34,7 +33,7 @@ class MispActor @Inject() (
       scheduledSynchronisation.cancel()
       logger.info(s"Synchronising MISP events for ${connector.clients.map(_.name).mkString(",")}")
       connector.clients.filter(_.canImport).foreach { mispClient =>
-        mispImportSrv.syncMispEvents(mispClient)(userSrv.getSystemAuthContext)
+        mispImportSrv.syncMispEvents(mispClient)
       }
       logger.info("MISP synchronisation is complete")
       context.become(receive(context.system.scheduler.scheduleOnce(connector.syncInterval, self, Synchro)))

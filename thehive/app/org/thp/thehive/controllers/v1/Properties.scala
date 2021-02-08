@@ -7,6 +7,7 @@ import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.Converter
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
@@ -62,8 +63,8 @@ class Properties @Inject() (
       .property("lastSyncDate", UMapping.date.optional)(_.field.updatable)
       .property("tags", UMapping.string.set)(
         _.select(_.tags.displayName)
-          .filter((_, cases) =>
-            cases
+          .filter((_, alerts) =>
+            alerts
               .tags
               .graphMap[String, String, Converter.Identity[String]](
                 vertexToTag,
@@ -93,21 +94,21 @@ class Properties @Inject() (
           alerts
             .customFields(EntityIdOrName(idOrName))
             .jsonValue
-        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter {
-          case (FPathElem(_, FPathElem(idOrName, _)), caseTraversal) =>
+          case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
             db
               .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(idOrName)).value(_.`type`).getOrFail("CustomField"))
               .map {
-                case CustomFieldType.boolean => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.booleanValue)
-                case CustomFieldType.date    => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.dateValue)
-                case CustomFieldType.float   => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.floatValue)
-                case CustomFieldType.integer => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.integerValue)
-                case CustomFieldType.string  => caseTraversal.customFields(EntityIdOrName(idOrName)).value(_.stringValue)
+                case CustomFieldType.boolean => alerts.customFields(EntityIdOrName(idOrName)).value(_.booleanValue)
+                case CustomFieldType.date    => alerts.customFields(EntityIdOrName(idOrName)).value(_.dateValue)
+                case CustomFieldType.float   => alerts.customFields(EntityIdOrName(idOrName)).value(_.floatValue)
+                case CustomFieldType.integer => alerts.customFields(EntityIdOrName(idOrName)).value(_.integerValue)
+                case CustomFieldType.string  => alerts.customFields(EntityIdOrName(idOrName)).value(_.stringValue)
               }
-              .getOrElse(caseTraversal.constant2(null))
-          case (_, caseTraversal) => caseTraversal.constant2(null)
+              .getOrElse(alerts.constant2(null))
+          case (_, alerts) => alerts.constant2(null)
         }
         .converter {
           case FPathElem(_, FPathElem(idOrName, _)) =>
@@ -128,14 +129,14 @@ class Properties @Inject() (
         .custom {
           case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, _, graph, authContext) =>
             for {
-              c <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
+              a <- alertSrv.get(vertex)(graph).getOrFail("Alert")
+              _ <- alertSrv.setOrCreateCustomField(a, InputCustomFieldValue(idOrName, Some(value), None))(graph, authContext)
             } yield Json.obj(s"customField.$idOrName" -> value)
           case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
             for {
-              c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
-              _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
+              c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
+              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
+              _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })

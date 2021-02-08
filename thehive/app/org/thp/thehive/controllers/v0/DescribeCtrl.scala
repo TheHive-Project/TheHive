@@ -35,7 +35,7 @@ class DescribeCtrl @Inject() (
     observableCtrl: ObservableCtrl,
     observableTypeCtrl: ObservableTypeCtrl,
     organisationCtrl: OrganisationCtrl,
-    pageCtrl: PageCtrl,
+//    pageCtrl: PageCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
     userCtrl: UserCtrl,
@@ -118,8 +118,8 @@ class DescribeCtrl @Inject() (
           organisationCtrl.publicData.publicProperties.list.flatMap(propertyToJson("organisation", _))
         ),
         EntityDescription("profile", "/profile", profileCtrl.publicData.publicProperties.list.flatMap(propertyToJson("profile", _))),
-        EntityDescription("dashboard", "/dashboard", dashboardCtrl.publicData.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
-        EntityDescription("page", "/page", pageCtrl.publicData.publicProperties.list.flatMap(propertyToJson("page", _)))
+        EntityDescription("dashboard", "/dashboard", dashboardCtrl.publicData.publicProperties.list.flatMap(propertyToJson("dashboard", _)))
+//        EntityDescription("page", "/page", pageCtrl.publicData.publicProperties.list.flatMap(propertyToJson("page", _)))
       ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
         describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
     }
