@@ -9,17 +9,29 @@ import scala.util.{Failure, Success, Try}
 import play.api.{Configuration, Logger}
 import play.api.libs.json.JsObject
 import play.api.libs.ws.WSRequest
+import play.api.http.HeaderNames
 
 import org.elastic4play.services.AuxSrv
 
-case class WebHook(name: String, ws: WSRequest)(implicit ec: ExecutionContext) {
+case class WebHook(name: String, ws: WSRequest, wsToken: Option[String] = None)(implicit ec: ExecutionContext) {
   private[WebHook] lazy val logger = Logger(getClass.getName + "." + name)
 
-  def send(obj: JsObject): Unit = ws.post(obj).onComplete {
-    case Success(resp) if resp.status / 100 != 2 ⇒ logger.error(s"WebHook returns status ${resp.status} ${resp.statusText}")
-    case Failure(_: ConnectException)            ⇒ logger.error(s"Connection to WebHook $name error")
-    case Failure(error)                          ⇒ logger.error("WebHook call error", error)
-    case _                                       ⇒
+  def send(obj: JsObject): Unit = {
+    if (wsToken != None) { 
+      ws.withHttpHeaders(HeaderNames.AUTHORIZATION -> s"Bearer ${wsToken.get}").post(obj).onComplete {
+        case Success(resp) if resp.status / 100 != 2 ⇒ logger.error(s"WebHook returns status ${resp.status} ${resp.statusText}")
+        case Failure(_: ConnectException)            ⇒ logger.error(s"Connection to WebHook $name error")
+        case Failure(error)                          ⇒ logger.error("WebHook call error", error)
+        case _                                       ⇒
+      }
+    } else {
+      ws.post(obj).onComplete {
+        case Success(resp) if resp.status / 100 != 2 ⇒ logger.error(s"WebHook returns status ${resp.status} ${resp.statusText}")
+        case Failure(_: ConnectException)            ⇒ logger.error(s"Connection to WebHook $name error")
+        case Failure(error)                          ⇒ logger.error("WebHook call error", error)
+        case _                                       ⇒
+      }
+    }
   }
 }
 
@@ -31,8 +43,9 @@ class WebHooks(webhooks: Seq[WebHook], auxSrv: AuxSrv, implicit val ec: Executio
       name     ← cfg.subKeys
       whConfig ← Try(cfg.get[Configuration](name)).toOption
       url      ← whConfig.getOptional[String]("url")
+      token      ← Some(whConfig.getOptional[String]("token"))
       instanceWS = whWS.withConfig(whConfig).url(url)
-    } yield WebHook(name, instanceWS)(ec), auxSrv, ec)
+    } yield WebHook(name, instanceWS, token)(ec), auxSrv, ec)
   }
 
   def send(obj: JsObject): Unit =
