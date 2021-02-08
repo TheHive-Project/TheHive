@@ -70,7 +70,8 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
           "authType"             -> Seq("local", "key", "header"),
           "capabilities"         -> Seq("changePassword", "setPassword", "authByKey"),
           "ssoAutoLogin"         -> config.get[Boolean]("user.autoCreateOnSso"),
-          "pollingDuration"      -> 1000
+          "pollingDuration"      -> 1000,
+          "schemaStatus"         -> Json.arr()
         )
       )
 
