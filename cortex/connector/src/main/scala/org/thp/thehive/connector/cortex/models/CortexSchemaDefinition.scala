@@ -14,8 +14,7 @@ import scala.reflect.runtime.{universe => ru}
 class CortexSchemaDefinition @Inject() () extends Schema with UpdatableSchema {
 
   lazy val logger: Logger    = Logger(getClass)
-  val name: String           = "thehive-cortex"
-  val operations: Operations = Operations(name)
+  val operations: Operations = Operations("thehive-cortex")
 
   lazy val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

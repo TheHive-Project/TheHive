@@ -255,13 +255,14 @@ class Webhook(
       Future.failed(BadConfigurationError(s"The organisation ${organisation.name} is not authorised to use the webhook ${config.name}"))
     else if (user.isDefined)
       Future.failed(BadConfigurationError("The notification webhook must not be applied on user"))
-    else
-      for {
+    else {
+      val ws = new ProxyWS(config.wsConfig, mat)
+      val async = for {
         message <- Future.fromTry(buildMessage(config.version, audit))
         _ = logger.debug(s"Request webhook with message $message")
-        resp <- new ProxyWS(config.wsConfig, mat)
-          .url(config.url)
-          .post(message)
+        resp <- ws.url(config.url).post(message)
       } yield if (resp.status >= 400) logger.warn(s"Webhook call on ${config.url} returns ${resp.status} ${resp.statusText}") else ()
+      async.andThen { case _ => ws.close() }
+    }
 
 }

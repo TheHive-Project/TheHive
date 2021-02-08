@@ -6,7 +6,7 @@ import akka.util.ByteString
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, UserSrv}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -17,7 +17,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services._
+import org.thp.thehive.services.{UserSrv => _, _}
 import play.api.Logger
 import play.api.libs.json._
 
@@ -38,6 +38,7 @@ class MispImportSrv @Inject() (
     attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
     auditSrv: AuditSrv,
+    userSrv: UserSrv,
     @Named("with-thehive-schema") db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
@@ -378,13 +379,12 @@ class MispImportSrv @Inject() (
     }
   }
 
-  def syncMispEvents(client: TheHiveMispClient)(implicit authContext: AuthContext): Unit =
+  def syncMispEvents(client: TheHiveMispClient): Unit =
     client
       .currentOrganisationName
       .fold(
         error => logger.error("Unable to get MISP organisation", error),
         mispOrganisation => {
-
           val caseTemplate = client.caseTemplate.flatMap { caseTemplateName =>
             db.roTransaction { implicit graph =>
               caseTemplateSrv.get(EntityName(caseTemplateName)).headOption
@@ -406,6 +406,7 @@ class MispImportSrv @Inject() (
           QueueIterator(queue).foreach { event =>
             logger.debug(s"Importing event ${client.name}#${event.id} in organisation(s): ${organisations.mkString(",")}")
             organisations.foreach { organisation =>
+              implicit val authContext: AuthContext = userSrv.getSystemAuthContext.changeOrganisation(organisation._id, Profile.admin.permissions)
               db.tryTransaction { implicit graph =>
                 auditSrv.mergeAudits {
                   updateOrCreateAlert(client, organisation, mispOrganisation, event, caseTemplate)

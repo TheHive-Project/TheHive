@@ -81,7 +81,7 @@ then
   then
     if test -z "${SECRET}"
     then
-      SECRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
+      SECRET=$(dd if=/dev/urandom bs=1024 count=1 | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
       test "${SHOW_SECRET}" = 1 && echo Using secret: ${SECRET}
     fi
     echo "play.http.secret.key = \"${SECRET}\"" >> ${CONFIG_FILE}

@@ -233,6 +233,7 @@
                         _.each(metadata.entities, function(entity) {
                             metadata[entity] = _.omit(data[entity], 'attributes');
                             metadata[entity].attributes = self._objectifyBy(data[entity].attributes, 'name');
+                            metadata[entity].attributeKeys = _.keys(metadata[entity].attributes).sort();
                         });
 
                         self.metadata[version] = metadata;
