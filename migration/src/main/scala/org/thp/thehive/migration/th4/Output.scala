@@ -249,7 +249,7 @@ class Output @Inject() (
         .flatMap(_ => cortexSchema.update(db))
         .map { _ =>
           retrieveExistingData()
-          db.removeAllIndexes()
+          db.rebuildIndexes()
         }
 
   def endMigration(): Try[Unit] = {

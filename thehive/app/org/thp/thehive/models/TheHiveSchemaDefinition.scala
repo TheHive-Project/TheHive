@@ -12,7 +12,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
@@ -95,6 +95,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     }
     //=====[release 4.0.3]=====
     //=====[release 4.0.4]=====
+    //=====[release 4.0.5]=====
     // Taxonomies
     .addVertexModel[String]("Taxonomy")
     .addProperty[String]("Taxonomy", "namespace")
@@ -200,11 +201,11 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .project(
           _.by
             .by(_.out("AlertTag").valueMap("namespace", "predicate", "value").fold)
-            .by(_.out("AlertOrganisation")._id)
+            .by(_.out("AlertOrganisation")._id.option)
             .by(_.out("AlertCase")._id.option)
         )
         .foreach {
-          case (vertex, tagMaps, organisationId, caseId) =>
+          case (vertex, tagMaps, Some(organisationId), caseId) =>
             val tags = for {
               tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
               namespace = tag.getOrElse("namespace", "_autocreate")
@@ -218,6 +219,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
             tags.foreach(vertex.property(Cardinality.list, "tags", _))
             vertex.property("organisationId", organisationId.value)
             caseId.foreach(vertex.property("caseId", _))
+          case _ =>
         }
       Success(())
     }
@@ -233,11 +235,11 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .project(
           _.by
             .by(_.out("CaseTag").valueMap("namespace", "predicate", "value").fold)
-            .by(_.out("CaseUser").property("login", Converter.identity[String]).option)
+            .by(_.out("CaseUser").property("login", UMapping.string).option)
             .by(_.in("ShareCase").in("OrganisationShare")._id.fold)
-            .by(_.out("CaseImpactStatus").property("value", Converter.identity[String]).option)
-            .by(_.out("CaseResolutionStatus").property("value", Converter.identity[String]).option)
-            .by(_.out("CaseCaseTemplate").property("name", Converter.identity[String]).option)
+            .by(_.out("CaseImpactStatus").property("value", UMapping.string).option)
+            .by(_.out("CaseResolutionStatus").property("value", UMapping.string).option)
+            .by(_.out("CaseCaseTemplate").property("name", UMapping.string).option)
         )
         .foreach {
           case (vertex, tagMaps, assignee, organisationIds, impactStatus, resolutionStatus, caseTemplate) =>
@@ -311,10 +313,10 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal
         .project(
           _.by
-            .by(_.out("ObservableObservableType").property("name", Converter.identity[String]))
+            .by(_.out("ObservableObservableType").property("name", UMapping.string))
             .by(_.out("ObservableTag").valueMap("namespace", "predicate", "value").fold)
-            .by(_.out("ObservableData").property("data", Converter.identity[String]).option)
-            .by(_.out("ObservableAttachment").property("attachmentId", Converter.identity[String]).option)
+            .by(_.out("ObservableData").property("data", UMapping.string).option)
+            .by(_.out("ObservableAttachment").property("attachmentId", UMapping.string).option)
             .by(_.coalesceIdent(_.in("ShareObservable").out("ShareCase"), _.in("AlertObservable"), _.in("ReportObservable"))._id.option)
             .by(
               _.coalesceIdent(
@@ -355,7 +357,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal
         .project(
           _.by
-            .by(_.out("TaskUser").property("login", Converter.identity[String]).option)
+            .by(_.out("TaskUser").property("login", UMapping.string).option)
             .by(_.coalesceIdent(_.in("ShareTask").out("ShareCase"), _.in("CaseTemplateTask"))._id)
             .by(_.coalesceIdent(_.in("ShareTask").in("OrganisationShare"), _.in("CaseTemplateTask").out("CaseTemplateOrganisation"))._id.fold)
         )
