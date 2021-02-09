@@ -41,7 +41,7 @@ trait QueryCtrl {
     .paramParser(queryType)
 
   val aggregationParser: FieldsParser[Aggregation] =
-    TH3Aggregation.fieldsParser
+    TH3Aggregation.fieldsParser(inputFilterParser)
 
   val sortParser: FieldsParser[InputSort] = FieldsParser("sort") {
     case (_, FAny(s))    => Good(s.flatMap(_.split(',')))

@@ -98,12 +98,6 @@
                                 <span class="hpad5">Case custom fields</span>
                             </a>
                         </li>
-                        <li if-permission="manageTaxonomy">
-                            <a ui-sref="app.administration.taxonomies">
-                                <i class="fa fa-tags"></i>
-                                <span class="hpad5">Taxonomies</span>
-                            </a>
-                        </li>
                         <li if-permission="manageObservableTemplate">
                             <a ui-sref="app.administration.observables">
                                 <i class="glyphicon glyphicon-pushpin"></i>
@@ -114,6 +108,19 @@
                             <a ui-sref="app.administration.analyzer-templates">
                                 <i class="fa fa-file-text"></i>
                                 <span class="hpad5">Analyzer templates</span>
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li if-permission="manageTaxonomy">
+                            <a ui-sref="app.administration.taxonomies">
+                                <i class="fa fa-tags"></i>
+                                <span class="hpad5">Taxonomies</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a ui-sref="app.administration.attackPatterns">
+                                <i class="fa fa-tags"></i>
+                                <span class="hpad5">ATT&CK Patterns</span>
                             </a>
                         </li>
                         <!-- <li>

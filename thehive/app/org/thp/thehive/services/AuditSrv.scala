@@ -37,27 +37,26 @@ class AuditSrv @Inject() (
     db: Database
 ) extends VertexSrv[Audit] { auditSrv =>
   lazy val userSrv: UserSrv                                 = userSrvProvider.get
-  val alert                                                 = new SelfContextObjectAudit[Alert]
-  val alertToCase                                           = new ObjectAudit[Alert, Case]
+  val auditUserSrv                                          = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv                                            = new EdgeSrv[Audited, Audit, Product]
   val auditContextSrv                                       = new EdgeSrv[AuditContext, Audit, Product]
-  val auditUserSrv                                          = new EdgeSrv[AuditUser, Audit, User]
   val `case`                                                = new SelfContextObjectAudit[Case]
-  val caseTemplate                                          = new SelfContextObjectAudit[CaseTemplate]
-  val customField                                           = new SelfContextObjectAudit[CustomField]
-  val dashboard                                             = new SelfContextObjectAudit[Dashboard]
-  val log                                                   = new ObjectAudit[Log, Task]
+  val task                                                  = new SelfContextObjectAudit[Task]
   val observable                                            = new SelfContextObjectAudit[Observable]
+  val log                                                   = new ObjectAudit[Log, Task]
+  val caseTemplate                                          = new SelfContextObjectAudit[CaseTemplate]
+  val taskInTemplate                                        = new ObjectAudit[Task, CaseTemplate]
+  val alert                                                 = new AlertAudit
+  val share                                                 = new ShareAudit
   val observableInAlert                                     = new ObjectAudit[Observable, Alert]
+  val user                                                  = new UserAudit
+  val dashboard                                             = new SelfContextObjectAudit[Dashboard]
   val organisation                                          = new SelfContextObjectAudit[Organisation]
-  val page                                                  = new SelfContextObjectAudit[Page]
+  val profile                                               = new SelfContextObjectAudit[Profile]
   val pattern                                               = new SelfContextObjectAudit[Pattern]
   val procedure                                             = new ObjectAudit[Procedure, Case]
-  val profile                                               = new SelfContextObjectAudit[Profile]
-  val share                                                 = new ShareAudit
-  val task                                                  = new SelfContextObjectAudit[Task]
-  val taskInTemplate                                        = new ObjectAudit[Task, CaseTemplate]
-  val user                                                  = new UserAudit
+  val customField                                           = new SelfContextObjectAudit[CustomField]
+  val page                                                  = new SelfContextObjectAudit[Page]
   private val pendingAuditsLock                             = new Object
   private val transactionAuditIdsLock                       = new Object
   private val unauditedTransactionsLock                     = new Object
@@ -284,6 +283,34 @@ class AuditSrv @Inject() (
         observable,
         Some(`case`)
       )
+  }
+
+  class AlertAudit extends SelfContextObjectAudit[Alert] {
+    def createCase(alert: Alert with Entity, `case`: Case with Entity, details: JsObject)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] = {
+      val detailsWithAlert = details + ("fromAlert" -> Json.obj(
+        "_id"       -> alert._id.toString,
+        "type"      -> alert.`type`,
+        "source"    -> alert.source,
+        "sourceRef" -> alert.sourceRef
+      ))
+      auditSrv.create(Audit(Audit.create, `case`, Some(detailsWithAlert.toString)), `case`, Some(`case`))
+    }
+
+    def mergeToCase(alert: Alert with Entity, `case`: Case with Entity, details: JsObject)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] = {
+      val detailsWithAlert = details + ("fromAlert" -> Json.obj(
+        "_id"       -> alert._id.toString,
+        "type"      -> alert.`type`,
+        "source"    -> alert.source,
+        "sourceRef" -> alert.sourceRef
+      ))
+      auditSrv.create(Audit(Audit.merge, `case`, Some(detailsWithAlert.toString)), `case`, Some(`case`))
+    }
   }
 }
 

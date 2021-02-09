@@ -43,10 +43,8 @@ class TaxonomyCtrl @Inject() (
     Query.withParam[OutputParam, Traversal.V[Taxonomy], IteratorOutput](
       "page",
       {
-        case (OutputParam(from, to, extraData), taxoSteps, authContext) =>
-          taxoSteps.richPage(from, to, extraData.contains("total")) {
-            _.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total"))
-          }
+        case (OutputParam(from, to, extraData), taxoSteps, _) =>
+          taxoSteps.richPage(from, to, extraData.contains("total"))(_.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total")))
       }
     )
   override val outputQuery: Query =
@@ -101,14 +99,25 @@ class TaxonomyCtrl @Inject() (
 
   private def createFromInput(inputTaxo: InputTaxonomy)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
     // Create tags
-    val tagValues = inputTaxo.values.getOrElse(Seq())
-    val tags = tagValues.flatMap { value =>
-      value.entry.map(e => Tag(inputTaxo.namespace, value.predicate, Some(e.value), e.expanded, e.colour.getOrElse(tagSrv.freeTagColour)))
-    }
+    val predicatesWithValue = inputTaxo.values.map(_.predicate).distinct
+    val predicateWithNoTags = inputTaxo.predicates.filterNot(p => predicatesWithValue.contains(p.value))
 
+    val tags = inputTaxo.values.flatMap { value =>
+      value
+        .entry
+        .map { e =>
+          Tag(
+            inputTaxo.namespace,
+            value.predicate,
+            Some(e.value),
+            e.expanded,
+            e.colour.getOrElse(tagSrv.freeTagColour)
+          )
+        }
+    }
     // Create a tag for predicates with no tags associated
-    val predicateWithNoTags = inputTaxo.predicates.map(_.value).diff(tagValues.map(_.predicate))
-    val allTags             = tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace, p, None, None, tagSrv.freeTagColour))
+
+    val allTags = tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace, p.value, None, None, p.colour.getOrElse(tagSrv.freeTagColour)))
 
     if (inputTaxo.namespace.isEmpty)
       Failure(BadRequestError(s"A taxonomy with no namespace cannot be imported"))

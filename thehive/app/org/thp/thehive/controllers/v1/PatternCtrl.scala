@@ -25,7 +25,8 @@ class PatternCtrl @Inject() (
     properties: Properties,
     patternSrv: PatternSrv,
     db: Database
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with PatternRenderer {
   override val entityName: String                 = "pattern"
   override val publicProperties: PublicProperties = properties.pattern
   override val initialQuery: Query = Query.init[Traversal.V[Pattern]](
@@ -36,7 +37,10 @@ class PatternCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Pattern], IteratorOutput](
     "page",
-    (range, patternSteps, _) => patternSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richPattern)
+    {
+      case (OutputParam(from, to, extraData), patternSteps, _) =>
+        patternSteps.richPage(from, to, extraData.contains("total"))(_.richPatternWithCustomRenderer(patternRenderer(extraData - "total")))
+    }
   )
   override val outputQuery: Query = Query.output[RichPattern, Traversal.V[Pattern]](_.richPattern)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Pattern]](
@@ -104,12 +108,22 @@ class PatternCtrl @Inject() (
   private def createFromInput(inputPattern: InputPattern)(implicit graph: Graph, authContext: AuthContext): Try[Pattern with Entity] =
     if (inputPattern.external_id.isEmpty)
       Failure(BadRequestError(s"A pattern with no MITRE id cannot be imported"))
-    else if (patternSrv.startTraversal.alreadyImported(inputPattern.external_id))
-      Failure(BadRequestError(s"A pattern with MITRE id '${inputPattern.external_id}' already exists in this organisation"))
+    else if (patternSrv.startTraversal.alreadyImported(inputPattern.external_id)) {
+      // TODO update pattern
+      def patternTraversal = patternSrv.get(EntityIdOrName(inputPattern.external_id))
+      for {
+        pattern <-
+          patternSrv
+            .update(patternTraversal, Seq())
+            .flatMap(_ => patternTraversal.getOrFail("Pattern"))
+        _ = if (inputPattern.x_mitre_is_subtechnique) linkPattern(pattern)
+      } yield pattern
+    } else if (inputPattern.`type` != "attack-pattern")
+      Failure(BadRequestError(s"Only patterns with type attack-pattern are imported, this one is ${inputPattern.`type`}"))
     else
       for {
         pattern <- patternSrv.createEntity(inputPattern.toPattern)
-        _ = if (inputPattern.x_mitre_is_subtechnique.getOrElse(false)) linkPattern(pattern)
+        _ = if (inputPattern.x_mitre_is_subtechnique) linkPattern(pattern)
       } yield pattern
 
   private def linkPattern(child: Pattern with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {

@@ -29,7 +29,7 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.function.BiPredicate
@@ -467,24 +467,35 @@ class PublicAlert @Inject() (
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) =>
-          alertSteps.customFields(EntityIdOrName(name)).jsonValue
-        case (_, alertSteps) => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
-      }.custom {
-        case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
-          for {
-            c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
-            _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
-          } yield Json.obj(s"customField.$name" -> value)
-        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-          for {
-            c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
-            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
-            _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
-          } yield Json.obj("customFields" -> values)
-
-        case _ => Failure(BadRequestError("Invalid custom fields format"))
-      })
+        case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
+          alerts
+            .customFields(EntityIdOrName(idOrName))
+            .jsonValue
+        case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+      }
+        .filter[JsValue] {
+          case (FPathElem(_, FPathElem(name, _)), alerts, _, predicate) =>
+            predicate match {
+              case Right(predicate) => alerts.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+              case Left(true)       => alerts.hasCustomField(customFieldSrv, EntityIdOrName(name))
+              case Left(false)      => alerts.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+            }
+          case (_, caseTraversal, _, _) => caseTraversal.empty
+        }
+        .custom {
+          case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
+            for {
+              c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
+              _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
+            } yield Json.obj(s"customField.$name" -> value)
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
+            for {
+              c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
+              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
+              _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
+            } yield Json.obj("customFields" -> values)
+          case _ => Failure(BadRequestError("Invalid custom fields format"))
+        })
       .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
       .property("imported", UMapping.boolean)(_.select(_.imported).readonly)
       .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)

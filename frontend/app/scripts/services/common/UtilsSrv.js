@@ -124,8 +124,7 @@
                 },
 
                 getDateRange: function(operator) {
-                    var from,
-                        to = moment();
+                    var from;
 
                     switch(operator) {
                         case 'last7days':
@@ -148,6 +147,8 @@
                             from = moment();
                             break;
                     }
+
+                    var to = moment();
 
                     return {
                         from: from.hour(0).minutes(0).seconds(0).toDate(),

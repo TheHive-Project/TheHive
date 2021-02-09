@@ -29,8 +29,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
   // Make sure TypeDefinitionCategory has been initialised before ModifierType to prevent ExceptionInInitializerError
   TypeDefinitionCategory.BACKING_INDEX
   lazy val logger: Logger = Logger(getClass)
-  val name: String        = "thehive"
-  val operations: Operations = Operations(name)
+  val operations: Operations = Operations("thehive")
     .addProperty[Option[Boolean]]("Observable", "seen")
     .updateGraph("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageConfig").iterate()

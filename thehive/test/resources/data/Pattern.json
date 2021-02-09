@@ -10,8 +10,11 @@
     ],
     "url": "http://test.pattern.url",
     "patternType": "unit-test",
-    "platforms": [],
+    "revoked": false,
     "dataSources": [],
+    "defenseBypassed": [],
+    "platforms": [],
+    "remoteSupport": true,
     "revision": "1.0"
   },
   {
@@ -25,8 +28,11 @@
     ],
     "url": "http://test.pattern2.url",
     "patternType": "unit-test",
-    "platforms": [],
+    "revoked": false,
     "dataSources": [],
+    "defenseBypassed": [],
+    "platforms": [],
+    "remoteSupport": false,
     "revision": "1.1"
   }
 ]

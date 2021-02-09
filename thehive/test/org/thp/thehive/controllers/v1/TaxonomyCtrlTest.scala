@@ -10,10 +10,10 @@ import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 case class TestTaxonomy(
-  namespace: String,
-  description: String,
-  version: Int,
-  tags: List[OutputTag]
+    namespace: String,
+    description: String,
+    version: Int,
+    tags: List[OutputTag]
 )
 
 object TestTaxonomy {
@@ -34,20 +34,17 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       "A test taxonomy",
       1,
       None,
-      None,
       List(
-        InputPredicate("pred1", None, None, None),
-        InputPredicate("pred2", None, None, None)
+        InputPredicate("pred1", None, None, None, None),
+        InputPredicate("pred2", None, None, None, None)
       ),
-      Some(
-        List(
-          InputValue("pred1", List(InputEntry("entry1", None, None, None, None))),
-          InputValue(
-            "pred2",
-            List(
-              InputEntry("entry2", None, None, None, None),
-              InputEntry("entry21", None, None, None, None)
-            )
+      List(
+        InputValue("pred1", List(InputEntry("entry1", None, Some("#ffa800"), None, None))),
+        InputValue(
+          "pred2",
+          List(
+            InputEntry("entry2", None, Some("#00ad1c"), None, None),
+            InputEntry("entry21", None, Some("#00ad1c"), None, None)
           )
         )
       )
@@ -61,16 +58,16 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].create(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      val resultCase = contentAsJson(result).as[OutputTaxonomy]
+      val resultTaxo = contentAsJson(result).as[OutputTaxonomy]
 
-      TestTaxonomy(resultCase) must_=== TestTaxonomy(
+      TestTaxonomy(resultTaxo) must_=== TestTaxonomy(
         "test-taxo",
         "A test taxonomy",
         1,
         List(
-          OutputTag("test-taxo", "pred1", Some("entry1"), None, "#000000"),
-          OutputTag("test-taxo", "pred2", Some("entry2"), None, "#000000"),
-          OutputTag("test-taxo", "pred2", Some("entry21"), None, "#000000")
+          OutputTag("test-taxo", "pred1", Some("entry1"), None, "#ffa800"),
+          OutputTag("test-taxo", "pred2", Some("entry2"), None, "#00ad1c"),
+          OutputTag("test-taxo", "pred2", Some("entry21"), None, "#00ad1c")
         )
       )
     }
@@ -123,7 +120,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "taxonomy1",
         "The taxonomy 1",
         1,
-        List(OutputTag("taxonomy1", "pred1", Some("value1"), None, "#000000"))
+        List(OutputTag("taxonomy1", "pred1", Some("value1"), None, "#00f300"))
       )
     }
 

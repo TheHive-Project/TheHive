@@ -108,11 +108,10 @@ object TaxonomyOps {
         .project(
           _.by
             .by(_.tags.fold)
-            .by(_.enabled)
             .by(entityRenderer)
         )
         .domainMap {
-          case (taxo, tags, _, renderedEntity) =>
+          case (taxo, tags, renderedEntity) =>
             RichTaxonomy(
               taxo,
               tags

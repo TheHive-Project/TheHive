@@ -5,6 +5,7 @@ import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
@@ -14,6 +15,7 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.TaxonomyOps._
@@ -90,28 +92,28 @@ class Properties @Inject() (
           alerts
             .customFields(EntityIdOrName(idOrName))
             .jsonValue
-        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter[JsValue] {
-          case (FPathElem(_, FPathElem(name, _)), alertTraversal, _, predicate) =>
+          case (FPathElem(_, FPathElem(name, _)), alerts, _, predicate) =>
             predicate match {
-              case Right(predicate) => alertTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
-              case Left(true)       => alertTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
-              case Left(false)      => alertTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+              case Right(predicate) => alerts.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+              case Left(true)       => alerts.hasCustomField(customFieldSrv, EntityIdOrName(name))
+              case Left(false)      => alerts.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
             }
           case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
           case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
             for {
-              c <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
+              a <- alertSrv.get(vertex)(graph).getOrFail("Alert")
+              _ <- alertSrv.setOrCreateCustomField(a, InputCustomFieldValue(idOrName, Some(value), None))(graph, authContext)
             } yield Json.obj(s"customField.$idOrName" -> value)
           case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
             for {
-              c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
-              _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
+              c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
+              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
+              _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
             } yield Json.obj("customFields" -> values)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
@@ -229,6 +231,7 @@ class Properties @Inject() (
       .property("owningOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
       )
+      .property("procedures", UMapping.entityId.sequence)(_.select(_.procedure.value(_._id)).readonly)
       .build
 
   lazy val caseTemplate: PublicProperties =
@@ -280,15 +283,24 @@ class Properties @Inject() (
       .property("tactics", UMapping.string.set)(_.field.readonly)
       .property("url", UMapping.string)(_.field.updatable)
       .property("patternType", UMapping.string)(_.field.readonly)
-      .property("platforms", UMapping.string.sequence)(_.field.readonly)
+      .property("capecId", UMapping.string.optional)(_.field.readonly)
+      .property("capecUrl", UMapping.string.optional)(_.field.readonly)
+      .property("revoked", UMapping.boolean)(_.field.readonly)
       .property("dataSources", UMapping.string.sequence)(_.field.readonly)
+      .property("defenseBypassed", UMapping.string.sequence)(_.field.readonly)
+      .property("detection", UMapping.string.optional)(_.field.readonly)
+      .property("permissionsRequired", UMapping.string.sequence)(_.field.readonly)
+      .property("platforms", UMapping.string.sequence)(_.field.readonly)
+      .property("remoteSupport", UMapping.boolean)(_.field.readonly)
+      .property("systemRequirements", UMapping.string.sequence)(_.field.readonly)
       .property("version", UMapping.string.optional)(_.field.readonly)
+      .property("parent", UMapping.string.optional)(_.select(_.parent.value(_.patternId)).readonly)
       .build
 
   lazy val procedure: PublicProperties =
     PublicPropertyListBuilder[Procedure]
       .property("description", UMapping.string)(_.field.updatable)
-      .property("occurence", UMapping.date)(_.field.readonly)
+      .property("occurence", UMapping.date)(_.field.updatable)
       .build
 
   lazy val profile: PublicProperties =

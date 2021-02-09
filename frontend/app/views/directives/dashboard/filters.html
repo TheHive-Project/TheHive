@@ -10,7 +10,7 @@
                 </button>
             </span>
             <select class="form-control" ng-model="filter.field"
-                ng-options="item.name as item.name for (key, item) in metadata[component.options.entity].attributes"
+                ng-options="item for item in metadata[component.options.entity].attributeKeys"
                 ng-change="setFilterField(filter, component.options.entity)"></select>
         </div>
     </div>

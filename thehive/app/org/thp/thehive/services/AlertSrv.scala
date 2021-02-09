@@ -278,7 +278,7 @@ class AlertSrv @Inject() (
           _ = integrityCheckActor ! EntityAdded("Alert")
         } yield createdCase
       }
-    }(richCase => auditSrv.`case`.create(richCase.`case`, richCase.toJson))
+    }(richCase => auditSrv.alert.createCase(alert.alert, richCase.`case`, richCase.toJson.as[JsObject]))
 
   def mergeInCase(alertId: EntityIdOrName, caseId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     for {
@@ -311,7 +311,7 @@ class AlertSrv @Inject() (
               )
             )
           } yield details
-        }(details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
+        }(details => auditSrv.alert.mergeToCase(alert, `case`, details.as[JsObject]))
         .map(_ => integrityCheckActor ! EntityAdded("Alert"))
         .flatMap(_ => caseSrv.getOrFail(`case`._id))
 

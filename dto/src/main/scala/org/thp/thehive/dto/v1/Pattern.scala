@@ -1,6 +1,8 @@
 package org.thp.thehive.dto.v1
 
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import ai.x.play.json.Encoders.encoder
+import ai.x.play.json.Jsonx
+import play.api.libs.json._
 
 import java.util.Date
 
@@ -11,16 +13,24 @@ case class InputPattern(
     kill_chain_phases: Seq[InputKillChainPhase],
     url: String,
     `type`: String,
-    x_mitre_platforms: Seq[String],
+    capec_id: Option[String],
+    capec_url: Option[String],
+    revoked: Boolean,
     x_mitre_data_sources: Seq[String],
-    x_mitre_is_subtechnique: Option[Boolean],
+    x_mitre_defense_bypassed: Seq[String],
+    x_mitre_detection: Option[String],
+    x_mitre_is_subtechnique: Boolean,
+    x_mitre_permissions_required: Seq[String],
+    x_mitre_platforms: Seq[String],
+    x_mitre_remote_support: Boolean,
+    x_mitre_system_requirements: Seq[String],
     x_mitre_version: Option[String]
 )
 
 case class InputReference(
     source_name: String,
     external_id: Option[String],
-    url: String
+    url: Option[String]
 )
 
 case class InputKillChainPhase(
@@ -33,7 +43,7 @@ object InputReference {
     for {
       source_name <- (json \ "source_name").validate[String]
       external_id <- (json \ "external_id").validateOpt[String]
-      url         <- (json \ "url").validate[String]
+      url         <- (json \ "url").validateOpt[String]
     } yield InputReference(
       source_name,
       external_id,
@@ -54,31 +64,49 @@ object InputPattern {
   implicit val reads: Reads[InputPattern] = Reads[InputPattern] { json =>
     for {
       references <- (json \ "external_references").validate[Seq[InputReference]]
-      mitreReference = references.find(ref => isSourceNameValid(ref.source_name))
-      name                    <- (json \ "name").validate[String]
-      description             <- (json \ "description").validateOpt[String]
-      kill_chain_phases       <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
-      techniqueType           <- (json \ "type").validate[String]
-      x_mitre_platforms       <- (json \ "x_mitre_platforms").validateOpt[Seq[String]]
-      x_mitre_data_sources    <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
-      x_mitre_is_subtechnique <- (json \ "x_mitre_is_subtechnique").validateOpt[Boolean]
-      x_mitre_version         <- (json \ "x_mitre_version").validateOpt[String]
+      mitreReference = references.find(ref => isSourceNameMitre(ref.source_name))
+      capecReference = references.find(ref => isSourceNameCapec(ref.source_name))
+      name                         <- (json \ "name").validate[String]
+      description                  <- (json \ "description").validateOpt[String]
+      kill_chain_phases            <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
+      techniqueType                <- (json \ "type").validate[String]
+      revoked                      <- (json \ "revoked").validateOpt[Boolean]
+      x_mitre_data_sources         <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
+      x_mitre_defense_bypassed     <- (json \ "x_mitre_defense_bypassed").validateOpt[Seq[String]]
+      x_mitre_detection            <- (json \ "x_mitre_detection").validateOpt[String]
+      x_mitre_is_subtechnique      <- (json \ "x_mitre_is_subtechnique").validateOpt[Boolean]
+      x_mitre_permissions_required <- (json \ "x_mitre_permissions_required").validateOpt[Seq[String]]
+      x_mitre_platforms            <- (json \ "x_mitre_platforms").validateOpt[Seq[String]]
+      x_mitre_remote_support       <- (json \ "x_mitre_remote_support").validateOpt[Boolean]
+      x_mitre_system_requirements  <- (json \ "x_mitre_system_requirements").validateOpt[Seq[String]]
+      x_mitre_version              <- (json \ "x_mitre_version").validateOpt[String]
     } yield InputPattern(
       mitreReference.flatMap(_.external_id).getOrElse(""),
       name,
       description,
       kill_chain_phases.getOrElse(Seq()),
-      mitreReference.map(_.url).getOrElse(""),
+      mitreReference.flatMap(_.url).getOrElse(""),
       techniqueType,
-      x_mitre_platforms.getOrElse(Seq()),
+      capecReference.flatMap(_.external_id),
+      capecReference.flatMap(_.url),
+      revoked.getOrElse(false),
       x_mitre_data_sources.getOrElse(Seq()),
-      x_mitre_is_subtechnique,
+      x_mitre_defense_bypassed.getOrElse(Seq()),
+      x_mitre_detection,
+      x_mitre_is_subtechnique.getOrElse(false),
+      x_mitre_permissions_required.getOrElse(Seq()),
+      x_mitre_platforms.getOrElse(Seq()),
+      x_mitre_remote_support.getOrElse(false),
+      x_mitre_system_requirements.getOrElse(Seq()),
       x_mitre_version
     )
   }
 
-  private def isSourceNameValid(reference: String): Boolean =
+  private def isSourceNameMitre(reference: String): Boolean =
     reference == "mitre-attack"
+
+  private def isSourceNameCapec(reference: String): Boolean =
+    reference == "capec"
 
   implicit val writes: Writes[InputPattern] = Json.writes[InputPattern]
 }
@@ -96,12 +124,20 @@ case class OutputPattern(
     tactics: Set[String],
     url: String,
     patternType: String,
-    platforms: Seq[String],
+    capecId: Option[String],
+    capecUrl: Option[String],
+    revoked: Boolean,
     dataSources: Seq[String],
+    defenseBypassed: Seq[String],
+    detection: Option[String],
+    permissionsRequired: Seq[String],
+    platforms: Seq[String],
+    remoteSupport: Boolean,
+    systemRequirements: Seq[String],
     version: Option[String],
-    parent: Option[String]
+    extraData: JsObject
 )
 
 object OutputPattern {
-  implicit val format: Format[OutputPattern] = Json.format[OutputPattern]
+  implicit val format: OFormat[OutputPattern] = Jsonx.formatCaseClass[OutputPattern]
 }

@@ -36,7 +36,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
     "get organisation" in testApp { app =>
       await(app[TheHiveMispClient].getOrganisation("1")) must beEqualTo(
-        Organisation("1", "ORGNAME", "Automatically generated admin organisation", UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
+        Organisation("1", "ORGNAME", Some("Automatically generated admin organisation"), UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
       )
     }
 

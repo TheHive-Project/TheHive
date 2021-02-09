@@ -115,11 +115,12 @@ class OrganisationSrv @Inject() (
       authContext: AuthContext,
       graph: Graph
   ): Try[Unit] = {
+    val toOrgIds = toOrganisations.map(_.fold(identity, getByName(_)._id.getOrFail("Organisation").get)).toSet
     val (orgToAdd, orgToRemove) = get(fromOrg)
       .links
       ._id
       .toIterator
-      .foldLeft((toOrganisations.toSet, Set.empty[EntityId])) {
+      .foldLeft((toOrgIds, Set.empty[EntityId])) {
         case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
         case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
       }

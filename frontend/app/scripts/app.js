@@ -116,6 +116,9 @@ angular.module('thehive', [
                     },
                     uiConfig: function($q, UiSettingsSrv) {
                         return UiSettingsSrv.all();
+                    },
+                    taxonomyCache: function(TaxonomyCacheSrv) {
+                        return TaxonomyCacheSrv.all();
                     }
                 }
             })
@@ -231,6 +234,21 @@ angular.module('thehive', [
                 guard: {
                     permissions: ['manageTaxonomy']
                 }
+            })
+            .state('app.administration.attackPatterns', {
+                url: '/attack-patterns',
+                templateUrl: 'views/partials/admin/attack/list.html',
+                controller: 'AttackPatternListCtrl',
+                controllerAs: '$vm',
+                title: 'ATT&CK patterns administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                }
+                // guard: {
+                //     permissions: ['manageTaxonomy']
+                // }
             })
             .state('app.administration.organisations', {
                 url: '/organisations',

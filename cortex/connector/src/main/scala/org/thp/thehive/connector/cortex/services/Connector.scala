@@ -2,9 +2,13 @@ package org.thp.thehive.connector.cortex.services
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+
+import javax.inject.{Inject, Singleton}
 import org.thp.cortex.client.{CortexClient, CortexClientConfig}
+import org.thp.scalligraph.models.SchemaStatus
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.thehive.connector.cortex.models.CortexSchemaDefinition
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 import play.api.libs.json.{JsObject, Json}
@@ -17,6 +21,7 @@ import scala.util.{Failure, Success}
 @Singleton
 class Connector @Inject() (
     appConfig: ApplicationConfig,
+    schemaDefinition: CortexSchemaDefinition,
     mat: Materializer,
     implicit val system: ActorSystem,
     implicit val ec: ExecutionContext
@@ -85,4 +90,5 @@ class Connector @Inject() (
       }
   updateStatus()
 
+  override def schemaStatus: Option[SchemaStatus] = schemaDefinition.schemaStatus
 }

@@ -1,5 +1,8 @@
 package org.thp.thehive.dto.v1
 
+import play.api.libs.json.Json.WithDefaultValues
+
+import java.util.Date
 import play.api.libs.json.{JsObject, Json, OFormat}
 
 import java.util.Date
@@ -13,17 +16,17 @@ case class InputTaxonomy(
     namespace: String,
     description: String,
     version: Int,
-    `type`: Option[Seq[String]],
     exclusive: Option[Boolean],
     predicates: Seq[InputPredicate],
-    values: Option[Seq[InputValue]]
+    values: Seq[InputValue] = Nil
 )
 
 case class InputPredicate(
     value: String,
     expanded: Option[String],
     exclusive: Option[Boolean],
-    description: Option[String]
+    description: Option[String],
+    colour: Option[String]
 )
 
 case class InputValue(
@@ -40,7 +43,7 @@ case class InputEntry(
 )
 
 object InputTaxonomy {
-  implicit val format: OFormat[InputTaxonomy] = Json.format[InputTaxonomy]
+  implicit val format: OFormat[InputTaxonomy] = Json.configured[WithDefaultValues].format[InputTaxonomy]
 }
 
 object InputPredicate {

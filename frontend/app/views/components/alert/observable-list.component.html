@@ -51,7 +51,7 @@
                           </div>
                           <div class="case-tags flexwrap mt-xxs" ng-if="observable.tags.length > 0">
                               <strong><i class="fa fa-tags mr-xxxs"></i></strong>
-                              <span ng-repeat="tag in observable.tags track by $index" class="label label-primary mb-xxxs mr-xxxs" ng-click="$cmp.addFilterValue('tags', tag)">{{tag}}</span>
+                              <tag-item ng-repeat="tag in observable.tags track by $index" ng-click="$cmp.addFilterValue('tags', tag)" value="tag"></tag-item>
                           </div>
                         </td>
                         <td>

@@ -53,6 +53,7 @@
     <link rel="stylesheet" href="styles/custom-fields.css"/>
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <link rel="stylesheet" href="styles/directives/user.css"/>
+    <link rel="stylesheet" href="styles/components/tag.css"/>
     <!-- endbuild -->
 
     <style>
@@ -158,6 +159,7 @@
     <script src="scripts/controllers/admin/AdminCustomFieldsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminObservablesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminUiSettingsCtrl.js"></script>
+    <script src="scripts/controllers/admin/attack/AttackPatternListCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/case-template/AdminCaseTemplateImportCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/case-template/AdminCaseTemplateTasksCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/OrgDetailsCtrl.js"></script>
@@ -245,6 +247,8 @@
     <script src="scripts/directives/responder-actions.js"></script>
     <script src="scripts/directives/search/search-item.js"></script>
     <script src="scripts/directives/severity.js"></script>
+    <script src="scripts/directives/tag-colour.js"></script>
+    <script src="scripts/directives/tag-item.js"></script>
     <script src="scripts/directives/tag-list.js"></script>
     <script src="scripts/directives/task-progress.js"></script>
     <script src="scripts/directives/tlp.js"></script>
@@ -254,6 +258,7 @@
     <script src="scripts/directives/updatableDate.js"></script>
     <script src="scripts/directives/updatableSelect.js"></script>
     <script src="scripts/directives/updatableSimpleText.js"></script>
+    <script src="scripts/directives/updatableTagList.js"></script>
     <script src="scripts/directives/updatableTags.js"></script>
     <script src="scripts/directives/updatableText.js"></script>
     <script src="scripts/directives/updatableUser.js"></script>
@@ -276,11 +281,13 @@
     <script src="scripts/filters/sha256.js"></script>
     <script src="scripts/filters/shortDate.js"></script>
     <script src="scripts/filters/showDate.js"></script>
+    <script src="scripts/filters/tag-value.js"></script>
     <script src="scripts/filters/urlencode.js"></script>
     <script src="scripts/services/AnalyzerInfoSrv.js"></script>
     <script src="scripts/services/api/AlertingSrv.js"></script>
     <script src="scripts/services/api/AnalyzerSrv.js"></script>
     <script src="scripts/services/api/AnalyzerTemplateSrv.js"></script>
+    <script src="scripts/services/api/AttackPatternSrv.js"></script>
     <script src="scripts/services/api/AuditSrv.js"></script>
     <script src="scripts/services/api/AuthenticationSrv.js"></script>
     <script src="scripts/services/api/CaseSrv.js"></script>
@@ -297,6 +304,7 @@
     <script src="scripts/services/api/ProfileSrv.js"></script>
     <script src="scripts/services/api/TagSrv.js"></script>
     <script src="scripts/services/api/TaskLogSrv.js"></script>
+    <script src="scripts/services/api/TaxonomyCacheSrv.js"></script>
     <script src="scripts/services/api/TaxonomySrv.js"></script>
     <script src="scripts/services/api/UiSettingsSrv.js"></script>
     <script src="scripts/services/api/UserSrv.js"></script>
