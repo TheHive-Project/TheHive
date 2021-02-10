@@ -46,7 +46,7 @@ class PatternSrv @Inject() (
   def update(
       pattern: Pattern with Entity,
       input: Pattern
-  )(implicit graph: Graph, authContext: AuthContext): Try[Pattern with Entity] =
+  )(implicit graph: Graph): Try[Pattern with Entity] =
     for {
       updatedPattern <- get(pattern)
         .when(pattern.patternId != input.patternId)(_.update(_.patternId, input.patternId))

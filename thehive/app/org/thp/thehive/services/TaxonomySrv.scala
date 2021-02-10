@@ -11,16 +11,19 @@ import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaxonomyOps._
+import org.thp.thehive.services.TagOps._
 
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaxonomySrv @Inject() (
-    organisationSrv: OrganisationSrv
+    organisationSrv: OrganisationSrv,
+    tagSrv: TagSrv
 )(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Taxonomy] {
 
@@ -45,6 +48,30 @@ class TaxonomySrv @Inject() (
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
     Try(startTraversal.getByNamespace(name)).getOrElse(startTraversal.limit(0))
+
+  def update(taxonomy: Taxonomy with Entity, input: Taxonomy)(implicit graph: Graph): Try[RichTaxonomy] =
+    for {
+      updatedTaxonomy <-
+        get(taxonomy)
+          .when(taxonomy.namespace != input.namespace)(_.update(_.namespace, input.namespace))
+          .when(taxonomy.description != input.description)(_.update(_.description, input.description))
+          .when(taxonomy.version != input.version)(_.update(_.version, input.version))
+          .richTaxonomy
+          .getOrFail("Taxonomy")
+    } yield updatedTaxonomy
+
+  def updateOrCreateTag(namespace: String, t: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    if (getByName(namespace).doesTagExists(t))
+      for {
+        tag        <- tagSrv.getTag(t).getOrFail("Tag")
+        updatedTag <- tagSrv.update(tag, t)
+      } yield updatedTag
+    else
+      for {
+        tag  <- tagSrv.create(t)
+        taxo <- getByName(namespace).getOrFail("Taxonomy")
+        _    <- taxonomyTagSrv.create(TaxonomyTag(), taxo, tag)
+      } yield tag
 
   def activate(taxonomyId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -96,6 +123,8 @@ object TaxonomyOps {
       traversal.choose(_.organisations, true, false)
 
     def tags: Traversal.V[Tag] = traversal.out[TaxonomyTag].v[Tag]
+
+    def doesTagExists(tag: Tag): Boolean = traversal.tags.getTag(tag).exists
 
     def richTaxonomy: Traversal[RichTaxonomy, JMap[String, Any], Converter[RichTaxonomy, JMap[String, Any]]] =
       traversal

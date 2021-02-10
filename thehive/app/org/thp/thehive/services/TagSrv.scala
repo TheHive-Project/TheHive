@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -9,9 +8,11 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Tag}
 import org.thp.thehive.services.TagOps._
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
@@ -46,6 +47,9 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
     }
   }
 
+  def getOrCreate(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    getTag(tag).getOrFail("Tag").recoverWith { case _ => create(tag) }
+
   override def createEntity(e: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     integrityCheckActor ! EntityAdded("Tag")
     super.createEntity(e)
@@ -54,6 +58,17 @@ class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-ac
   def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = createEntity(tag)
 
   override def exists(e: Tag)(implicit graph: Graph): Boolean = startTraversal.getByName(e.namespace, e.predicate, e.value).exists
+
+  def update(
+      tag: Tag with Entity,
+      input: Tag
+  )(implicit graph: Graph): Try[Tag with Entity] =
+    for {
+      updatedTag <- get(tag)
+        .when(tag.description != input.description)(_.update(_.description, input.description))
+        .when(tag.colour != input.colour)(_.update(_.colour, input.colour))
+        .getOrFail("Tag")
+    } yield updatedTag
 }
 
 object TagOps {
