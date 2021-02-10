@@ -2,12 +2,12 @@ package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.{EntityName, ScalligraphApplicationLoader}
 import org.thp.thehive.TheHiveModule
-import org.thp.thehive.models.{HealthStatus, TheHiveSchemaDefinition, User}
+import org.thp.thehive.models.{HealthStatus, User}
 import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
@@ -24,7 +24,7 @@ class StatusCtrl @Inject() (
     authSrv: AuthSrv,
     userSrv: UserSrv,
     connectors: immutable.Set[Connector],
-    theHiveSchemaDefinition: TheHiveSchemaDefinition,
+    schemas: immutable.Set[UpdatableSchema],
     db: Database
 ) {
 
@@ -57,7 +57,7 @@ class StatusCtrl @Inject() (
               "ssoAutoLogin"    -> authSrv.capabilities.contains(AuthCapability.sso),
               "pollingDuration" -> streamPollingDuration.toMillis
             ),
-            "schemaStatus" -> (connectors.flatMap(_.schemaStatus) ++ theHiveSchemaDefinition.schemaStatus).map { schemaStatus =>
+            "schemaStatus" -> schemas.flatMap(_.schemaStatus).map { schemaStatus =>
               Json.obj(
                 "name"            -> schemaStatus.name,
                 "currentVersion"  -> schemaStatus.currentVersion,
