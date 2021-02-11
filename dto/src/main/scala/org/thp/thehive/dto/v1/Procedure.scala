@@ -1,6 +1,6 @@
 package org.thp.thehive.dto.v1
 
-import play.api.libs.json.{Format, Json, Reads, Writes}
+import play.api.libs.json.{Format, JsObject, Json, Reads, Writes}
 
 import java.util.Date
 
@@ -37,7 +37,8 @@ case class OutputProcedure(
     _updatedBy: Option[String],
     description: String,
     occurence: Date,
-    patternId: String
+    patternId: String,
+    extraData: JsObject
 )
 
 object OutputProcedure {

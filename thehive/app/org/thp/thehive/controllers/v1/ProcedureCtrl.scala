@@ -21,7 +21,8 @@ class ProcedureCtrl @Inject() (
     properties: Properties,
     procedureSrv: ProcedureSrv,
     @Named("with-thehive-schema") implicit val db: Database
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with ProcedureRenderer {
   override val entityName: String                 = "procedure"
   override val publicProperties: PublicProperties = properties.procedure
   override val initialQuery: Query = Query.init[Traversal.V[Procedure]](
@@ -33,7 +34,10 @@ class ProcedureCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Procedure], IteratorOutput](
     "page",
     FieldsParser[OutputParam],
-    (range, procedureSteps, _) => procedureSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richProcedure)
+    (range, procedureSteps, _) =>
+      procedureSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
+        _.richProcedureWithCustomRenderer(procedureStatsRenderer(range.extraData - "total"))
+      )
   )
   override val outputQuery: Query = Query.output[RichProcedure, Traversal.V[Procedure]](_.richProcedure)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Procedure]](
