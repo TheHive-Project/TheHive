@@ -1,7 +1,7 @@
 <form class="form">
-    <div class="modal-header" ng-class="{'bg-primary': !!!modal.pattern.revoked, 'bg-danger': !!modal.pattern.revoked}">
+    <div class="modal-header" ng-class="{'bg-primary': !!!$modal.pattern.revoked, 'bg-danger': !!$modal.pattern.revoked}">
         <h3 class="modal-title">{{$modal.pattern.isSubTechnique ? ($modal.pattern.parentName + ': ') : ''}}{{::$modal.pattern.name}}
-            <small class="text-white ml-xxxs">(Version: {{::$modal.pattern.version}})</small>
+            <span ng-if="$modal.pattern.revoked" class="label label-danger">Revoked</span>
         </h3>
     </div>
 
@@ -113,16 +113,24 @@
             <div class="col-sm-4">
                 <div class="form-group">
                     <label>Capec ID</label>
-                    <div>{{::$modal.pattern.capecId || '-'}}</div>
+                    <div ng-if="$modal.pattern.capecId">
+                        {{::$modal.pattern.capecId}}
+                    </div>
+                    <div ng-if="!$modal.pattern.capecId">
+                        <em class="text-muted">None</em>
+                    </div>
                 </div>
             </div>
             <div class="col-sm-4">
                 <div class="form-group">
                     <label>Capec URL</label>
-                    <div>
+                    <div ng-if="$modal.pattern.capecUrl">
                         <a href="{{::$modal.pattern.capecUrl}}" target="_blank">
-                            {{::$modal.pattern.capecUrl}}<i class="fa fa-external-link ml-xxxs"></i>
+                            {{::$modal.pattern.capecUrl}} <i class="fa fa-external-link ml-xxxs"></i>
                         </a>
+                    </div>
+                    <div ng-if="!$modal.pattern.capecUrl">
+                        <em class="text-muted">None</em>
                     </div>
                 </div>
             </div>
@@ -130,10 +138,15 @@
 
         <div class="form-group">
             <label>Description</label>
-            <div>{{::$modal.pattern.description}}</div>
+            <div ng-if="$modal.pattern.description">
+                {{::$modal.pattern.description}}
+            </div>
+            <div ng-if="!$modal.pattern.description">
+                <em class="text-muted">None</em>
+            </div>
         </div>
 
-        <div class="row" ng-if="!$modal.pattern.isSubTechnique">
+        <div class="row" ng-if="$modal.pattern.extraData.children.length > 0">
             <div class="col-sm-12">
                 <table class="table table-striped">
                     <thead>
@@ -162,7 +175,8 @@
         </div>
     </div>
     <div class="modal-footer">
-        <button class="btn btn-default pull-left" type="button" ng-click="$modal.cancel()">Cancel</button>
-        <button class="btn btn-primary pull-right" type="button" ng-click="$modal.cancel()">Close</button>
+        <button class="btn btn-primary pull-right"
+            ng-class="{'btn-primary': !!!$modal.pattern.revoked, 'btn-danger': !!$modal.pattern.revoked}"
+            type="button" ng-click="$modal.cancel()">Close</button>
     </div>
 </form>
