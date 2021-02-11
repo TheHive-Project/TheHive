@@ -17,10 +17,11 @@ case class Tag(
 ) {
   override def hashCode(): Int = 31 * (31 * value.## + predicate.##) + namespace.##
 
-  override def equals(obj: Any): Boolean = obj match {
-    case Tag(n, p, v, _, _) => n == namespace && p == predicate && v == value
-    case _                  => false
-  }
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case Tag(n, p, v, _, _) => n == namespace && p == predicate && v == value
+      case _                  => false
+    }
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Tag]
 
@@ -34,7 +35,7 @@ object Tag {
   lazy val logger: Logger            = Logger(getClass)
   val tagColour: Regex               = "(.*)(#\\p{XDigit}{6})".r
   val namespacePredicateValue: Regex = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
-  val namespacePredicate: Regex      = "([^\".:=]+)[.]([^\".=]+)".r
+  val namespacePredicate: Regex      = "([^\".:=]+)[.:]([^\".=]+)".r
   val PredicateValue: Regex          = "([^\".:=]+)[=:]\"?([^\"]+)\"?".r
   val predicate: Regex               = "([^\".:=]+)".r
 

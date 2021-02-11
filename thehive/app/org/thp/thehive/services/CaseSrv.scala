@@ -144,7 +144,7 @@ class CaseSrv @Inject() (
   def updateTagNames(`case`: Case with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(`case`, t.toSet))
 
-  def updateTags(`case`: Case with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  private def updateTags(`case`: Case with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val (tagsToAdd, tagsToRemove) = get(`case`)
       .tags
       .toIterator
