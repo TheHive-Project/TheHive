@@ -335,19 +335,26 @@ class UserIntegrityCheckOps @Inject() (
     ()
   }
 
-  override def check(): Unit = {
-    super.check()
+  override def duplicationCheck(): Map[String, Long] = {
+    super.duplicationCheck()
     db.tryTransaction { implicit graph =>
-      duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
-      duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
-      duplicateLinks[Vertex, Vertex](
+      val duplicateTaskAssignments =
+        duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement(_)).map(e => removeEdges(e._2)).size.toLong
+      val duplicateCaseAssignments =
+        duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement(_)).map(e => removeEdges(e._2)).size.toLong
+      val duplicateUsers = duplicateLinks[Vertex, Vertex](
         service.startTraversal,
         (_.out("UserRole"), _.in("UserRole")),
         (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
-      ).flatMap(firstCreatedElement(_)).foreach(e => removeVertices(e._2))
-      Success(())
-    }
-    ()
+      ).flatMap(firstCreatedElement(_)).map(e => removeVertices(e._2)).size.toLong
+      Success(
+        Map(
+          "duplicateTaskAssignments" -> duplicateTaskAssignments,
+          "duplicateCaseAssignments" -> duplicateCaseAssignments,
+          "duplicateUsers"           -> duplicateUsers
+        )
+      )
+    }.getOrElse(Map("globalFailure" -> 1L))
   }
 
   override def resolve(entities: Seq[User with Entity])(implicit graph: Graph): Try[Unit] = {

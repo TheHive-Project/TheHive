@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -586,17 +586,114 @@ object AlertOps {
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv) extends IntegrityCheckOps[Alert] {
-  override def check(): Unit = {
-    db.tryTransaction { implicit graph =>
-      service
-        .startTraversal
-        .flatMap(_.outE[AlertCase].range(1, 100))
-        .remove()
-      Success(())
-    }
-    ()
+class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Alert] {
+
+  override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = {
+    val (imported, notImported) = entities.partition(_.caseId.isDefined)
+    if (imported.nonEmpty && notImported.nonEmpty)
+      // Remove all non imported alerts
+      service.getByIds(notImported.map(_._id): _*).remove()
+    // Keep the last created alert
+    lastCreatedEntity(entities).foreach(e => service.getByIds(e._2.map(_._id): _*).remove())
+    Success(())
   }
 
-  override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = Success(())
+  override def globalCheck(): Map[String, Long] = {
+    val metrics                           = super.globalCheck()
+    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+    val multiImport = db.tryTransaction { implicit graph =>
+      // Remove extra link with case
+      val linkIds = service
+        .startTraversal
+        .flatMap(_.outE[AlertCase].range(1, 100)._id)
+        .toSeq
+      if (linkIds.nonEmpty)
+        graph.E[AlertCase](linkIds: _*).remove()
+      Success(linkIds.length.toLong)
+    }
+
+    val orgMetrics: Map[String, Long] = db
+      .tryTransaction { implicit graph =>
+        // Check links with organisation
+        Success {
+          service
+            .startTraversal
+            .project(
+              _.by
+                .by(_.organisation._id.fold)
+            )
+            .toIterator
+            .flatMap {
+              case (alert, Seq(organisationId)) if alert.organisationId == organisationId => None // It's OK
+
+              case (alert, Seq(organisationId)) =>
+                logger.warn(
+                  s"Invalid organisationId in alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}), " +
+                    s"got ${alert.organisationId}, should be $organisationId. Fixing it."
+                )
+                service.get(alert).update(_.organisationId, organisationId).iterate()
+                Some("invalid")
+
+              case (alert, organisationIds) if organisationIds.isEmpty =>
+                organisationSrv.getOrFail(alert.organisationId) match {
+                  case Success(organisation) =>
+                    logger.warn(
+                      s"Link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) and " +
+                        s"organisation ${alert.organisationId} has disappeared. Fixing it."
+                    )
+                    service.alertOrganisationSrv.create(AlertOrganisation(), alert, organisation).failed.foreach { error =>
+                      logger.error(
+                        s"Fail to create link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) " +
+                          s"and organisation ${alert.organisationId}",
+                        error
+                      )
+                    }
+                    Some("missing")
+                  case _ =>
+                    logger.warn(
+                      s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is not linked to " +
+                        s"existing organisation. Fixing it."
+                    )
+                    service.get(alert).remove()
+                    Some("missingAndFail")
+                }
+
+              case (alert, organisationIds) if organisationIds.contains(alert.organisationId) =>
+                val (extraLinks, extraOrganisationIds) = organisationIds.partition(_ == alert.organisationId)
+                if (extraOrganisationIds.nonEmpty) {
+                  logger.warn(
+                    s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is not linked to " +
+                      s"extra organisation(s): ${extraOrganisationIds.mkString(",")}. Fixing it."
+                  )
+                  service.get(alert).outE[AlertOrganisation].filter(_.inV.hasId(extraOrganisationIds: _*)).remove()
+                }
+                if (extraLinks.length > 1) {
+                  logger.warn(
+                    s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is linked more than once to " +
+                      s"organisation: ${alert.organisationId}. Fixing it."
+                  )
+                  service.get(alert).flatMap(_.outE[AlertOrganisation].range(1, 100)).remove()
+                }
+                Some("extraLink")
+
+              case (alert, organisationIds) =>
+                logger.warn(
+                  s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) has inconsistent organisation links: " +
+                    s"organisation is ${alert.organisationId} but links are ${organisationIds.mkString(",")}. Fixing it."
+                )
+                service.get(alert).flatMap(_.outE[AlertOrganisation].sort(_.by("_createdAt", Order.asc)).range(1, 100)).remove()
+                service.get(alert).organisation._id.getOrFail("Organisation").foreach { organisationId =>
+                  service.get(alert).update(_.organisationId, organisationId).iterate()
+                }
+                Some("incoherent")
+            }
+            .toSeq
+        }
+      }
+      .getOrElse(Seq("globalFailure"))
+      .groupBy(identity)
+      .mapValues(_.size.toLong)
+
+    orgMetrics ++ metrics + ("multiImport" -> multiImport.getOrElse(0L))
+  }
 }

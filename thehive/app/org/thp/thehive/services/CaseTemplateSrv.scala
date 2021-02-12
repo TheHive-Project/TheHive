@@ -212,7 +212,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
     val service: CaseTemplateSrv,
     organisationSrv: OrganisationSrv
 ) extends IntegrityCheckOps[CaseTemplate] {
-  override def duplicateEntities: Seq[Seq[CaseTemplate with Entity]] =
+  override def findDuplicates: Seq[Seq[CaseTemplate with Entity]] =
     db.roTransaction { implicit graph =>
       organisationSrv
         .startTraversal
@@ -236,5 +236,10 @@ class CaseTemplateIntegrityCheckOps @Inject() (
         service.getByIds(tail.map(_._id): _*).remove()
         Success(())
       case _ => Success(())
+    }
+
+  override def findOrphans(): Seq[CaseTemplate with Entity] =
+    db.roTransaction { implicit graph =>
+      service.startTraversal.filterNot(_.organisation).toSeq
     }
 }

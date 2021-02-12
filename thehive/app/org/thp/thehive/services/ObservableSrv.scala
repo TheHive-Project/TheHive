@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -331,4 +331,13 @@ object ObservableOps {
     def share(organisationName: EntityIdOrName): Traversal.V[Share] =
       shares.filter(_.byOrganisation(organisationName))
   }
+}
+
+class ObservableIntegrityCheckOps @Inject() (val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] {
+  override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
+
+  override def findOrphans(): Seq[Observable with Entity] =
+    db.roTransaction { implicit graph =>
+      service.startTraversal.filterNot(_.or(_.shares, _.alert, _.in("ReportObservable"))).toSeq
+    }
 }

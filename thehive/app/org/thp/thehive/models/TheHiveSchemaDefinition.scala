@@ -357,18 +357,22 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .project(
           _.by
             .by(_.out("TaskUser").property("login", UMapping.string).option)
-            .by(_.coalesceIdent(_.in("ShareTask").out("ShareCase"), _.in("CaseTemplateTask"))._id)
+            .by(_.coalesceIdent(_.in("ShareTask").out("ShareCase"), _.in("CaseTemplateTask"))._id.option)
             .by(_.coalesceIdent(_.in("ShareTask").in("OrganisationShare"), _.in("CaseTemplateTask").out("CaseTemplateOrganisation"))._id.fold)
         )
         .foreach {
-          case (vertex, assignee, relatedId, organisationIds) =>
+          case (vertex, assignee, Some(relatedId), organisationIds) =>
             assignee.foreach(vertex.property("assignee", _))
             vertex.property("relatedId", relatedId.value)
             organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+          case _ =>
         }
       Success(())
     }
-    .rebuildIndexes
+    .updateGraph("Add managePlatform permission to admin profile", "Profile") { traversal =>
+      traversal.unsafeHas("name", "admin").raw.property("permissions", "managePlatform").iterate()
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

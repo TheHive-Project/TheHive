@@ -598,7 +598,7 @@ object CaseOps {
 
 class CaseIntegrityCheckOps @Inject() (val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {
   def removeDuplicates(): Unit =
-    duplicateEntities
+    findDuplicates()
       .foreach { entities =>
         db.tryTransaction { implicit graph =>
           resolve(entities)
