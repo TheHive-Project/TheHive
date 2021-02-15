@@ -92,7 +92,7 @@ class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
     )
   override val outputQuery: Query = Query.outputWithContext[RichJob, Traversal.V[Job]]((jobSteps, authContext) => jobSteps.richJob(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[Traversal.V[Observable], Traversal.V[Job]]("jobs", (jobTraversal, _) => jobTraversal.jobs)
+    Query[Traversal.V[Observable], Traversal.V[Job]]("jobs", (observables, _) => observables.jobs)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Job]
     .property("analyzerId", UMapping.string)(_.rename("workerId").readonly)
