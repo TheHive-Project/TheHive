@@ -18,6 +18,7 @@ import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PatternOps._
+import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
@@ -367,6 +368,7 @@ class Properties @Inject() (
       .property("description", UMapping.string)(_.field.updatable)
       .property("occurDate", UMapping.date)(_.field.updatable)
       .property("tactic", UMapping.string)(_.field.updatable)
+      .property("patternId", UMapping.string)(_.select(_.pattern.value(_.patternId)).readonly)
       .build
 
   lazy val profile: PublicProperties =
