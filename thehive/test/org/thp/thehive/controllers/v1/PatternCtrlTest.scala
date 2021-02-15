@@ -94,7 +94,7 @@ class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[PatternCtrl].getCasePatterns("1")(request)
       status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
+      contentAsJson(result).as[Seq[OutputPattern]].size must beEqualTo(2)
     }
 
     "import & update a pattern" in testApp { app =>
