@@ -9,7 +9,7 @@ import play.api.test.{FakeRequest, PlaySpecification}
 import java.util.Date
 
 case class TestProcedure(
-    description: String,
+    description: Option[String],
     occurDate: Date,
     tactic: String,
     patternId: String
@@ -25,7 +25,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
     "create a valid procedure" in testApp { app =>
       val procedureDate = new Date()
       val inputProcedure = InputProcedure(
-        "testProcedure3",
+        Some("testProcedure3"),
         procedureDate,
         "tactic1",
         "1",
@@ -42,7 +42,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       val resultProcedure = contentAsJson(result).as[OutputProcedure]
 
       TestProcedure(resultProcedure) must_=== TestProcedure(
-        "testProcedure3",
+        Some("testProcedure3"),
         procedureDate,
         "tactic1",
         "T123"
@@ -54,7 +54,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(
           Json.toJson(
             InputProcedure(
-              "an old description",
+              Some("an old description"),
               new Date(),
               "tactic1",
               "1",
@@ -81,7 +81,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val resultProcedure = contentAsJson(result3).as[OutputProcedure]
       TestProcedure(resultProcedure) must_=== TestProcedure(
-        "a new description",
+        Some("a new description"),
         updatedDate,
         "tactic2",
         "T123"
@@ -93,7 +93,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(
           Json.toJson(
             InputProcedure(
-              "testProcedure3",
+              Some("testProcedure3"),
               new Date(),
               "tactic1",
               "1",
