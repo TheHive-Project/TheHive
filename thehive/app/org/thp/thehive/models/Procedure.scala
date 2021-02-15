@@ -8,7 +8,8 @@ import java.util.Date
 @BuildVertexEntity
 case class Procedure(
     description: String,
-    occurDate: Date
+    occurDate: Date,
+    tactic: String
     // metadata
 )
 
@@ -18,6 +19,7 @@ case class ProcedurePattern()
 case class RichProcedure(procedure: Procedure with Entity, pattern: Pattern with Entity) {
   def description: String        = procedure.description
   def occurDate: Date            = procedure.occurDate
+  def tactic: String             = procedure.tactic
   def _id: EntityId              = procedure._id
   def _createdAt: Date           = procedure._createdAt
   def _createdBy: String         = procedure._createdBy

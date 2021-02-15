@@ -366,6 +366,7 @@ class Properties @Inject() (
     PublicPropertyListBuilder[Procedure]
       .property("description", UMapping.string)(_.field.updatable)
       .property("occurDate", UMapping.date)(_.field.updatable)
+      .property("tactic", UMapping.string)(_.field.updatable)
       .build
 
   lazy val profile: PublicProperties =

@@ -7,6 +7,7 @@ import java.util.Date
 case class InputProcedure(
     description: String,
     occurDate: Date,
+    tactic: String,
     caseId: String,
     patternId: String
 )
@@ -16,11 +17,13 @@ object InputProcedure {
     for {
       description <- (json \ "description").validate[String]
       occurDate   <- (json \ "occurDate").validate[Date]
+      tactic      <- (json \ "tactic").validate[String]
       caseId      <- (json \ "caseId").validate[String]
       patternId   <- (json \ "patternId").validate[String]
     } yield InputProcedure(
       description,
       occurDate,
+      tactic,
       caseId,
       patternId
     )
@@ -38,6 +41,7 @@ case class OutputProcedure(
     description: String,
     occurDate: Date,
     patternId: String,
+    tactic: String,
     extraData: JsObject
 )
 

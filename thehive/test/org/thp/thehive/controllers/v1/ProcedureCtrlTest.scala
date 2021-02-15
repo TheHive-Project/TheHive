@@ -11,6 +11,7 @@ import java.util.Date
 case class TestProcedure(
     description: String,
     occurDate: Date,
+    tactic: String,
     patternId: String
 )
 
@@ -26,6 +27,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       val inputProcedure = InputProcedure(
         "testProcedure3",
         procedureDate,
+        "tactic1",
         "1",
         "T123"
       )
@@ -42,6 +44,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       TestProcedure(resultProcedure) must_=== TestProcedure(
         "testProcedure3",
         procedureDate,
+        "tactic1",
         "T123"
       )
     }
@@ -53,6 +56,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
             InputProcedure(
               "an old description",
               new Date(),
+              "tactic1",
               "1",
               "T123"
             )
@@ -66,7 +70,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       val updatedDate = new Date()
       val request2 = FakeRequest("PATCH", "/api/v1/procedure/testProcedure3")
         .withHeaders("user" -> "certadmin@thehive.local")
-        .withJsonBody(Json.obj("description" -> "a new description", "occurDate" -> updatedDate))
+        .withJsonBody(Json.obj("description" -> "a new description", "occurDate" -> updatedDate, "tactic" -> "tactic2"))
       val result2 = app[ProcedureCtrl].update(procedureId)(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
@@ -79,6 +83,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       TestProcedure(resultProcedure) must_=== TestProcedure(
         "a new description",
         updatedDate,
+        "tactic2",
         "T123"
       )
     }
@@ -90,6 +95,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
             InputProcedure(
               "testProcedure3",
               new Date(),
+              "tactic1",
               "1",
               "T123"
             )
