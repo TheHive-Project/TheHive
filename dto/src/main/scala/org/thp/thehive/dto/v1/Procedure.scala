@@ -6,7 +6,7 @@ import java.util.Date
 
 case class InputProcedure(
     description: String,
-    occurence: Date,
+    occurDate: Date,
     caseId: String,
     patternId: String
 )
@@ -15,12 +15,12 @@ object InputProcedure {
   implicit val reads: Reads[InputProcedure] = Reads[InputProcedure] { json =>
     for {
       description <- (json \ "description").validate[String]
-      occurence   <- (json \ "occurence").validate[Date]
+      occurDate   <- (json \ "occurDate").validate[Date]
       caseId      <- (json \ "caseId").validate[String]
       patternId   <- (json \ "patternId").validate[String]
     } yield InputProcedure(
       description,
-      occurence,
+      occurDate,
       caseId,
       patternId
     )
@@ -36,7 +36,7 @@ case class OutputProcedure(
     _updatedAt: Option[Date],
     _updatedBy: Option[String],
     description: String,
-    occurence: Date,
+    occurDate: Date,
     patternId: String,
     extraData: JsObject
 )

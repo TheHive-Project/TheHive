@@ -10,7 +10,7 @@ import java.util.Date
 
 case class TestProcedure(
     description: String,
-    occurence: Date,
+    occurDate: Date,
     patternId: String
 )
 
@@ -66,7 +66,7 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
       val updatedDate = new Date()
       val request2 = FakeRequest("PATCH", "/api/v1/procedure/testProcedure3")
         .withHeaders("user" -> "certadmin@thehive.local")
-        .withJsonBody(Json.obj("description" -> "a new description", "occurence" -> updatedDate))
+        .withJsonBody(Json.obj("description" -> "a new description", "occurDate" -> updatedDate))
       val result2 = app[ProcedureCtrl].update(procedureId)(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
