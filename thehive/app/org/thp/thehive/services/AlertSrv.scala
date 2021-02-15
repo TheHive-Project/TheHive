@@ -599,8 +599,8 @@ class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv,
   }
 
   override def globalCheck(): Map[String, Long] = {
-    val metrics                           = super.globalCheck()
     implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+
     val multiImport = db.tryTransaction { implicit graph =>
       // Remove extra link with case
       val linkIds = service
@@ -615,7 +615,7 @@ class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv,
     val orgMetrics: Map[String, Long] = db
       .tryTransaction { implicit graph =>
         // Check links with organisation
-        Success {
+        Try {
           service
             .startTraversal
             .project(
@@ -632,7 +632,7 @@ class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv,
                     s"got ${alert.organisationId}, should be $organisationId. Fixing it."
                 )
                 service.get(alert).update(_.organisationId, organisationId).iterate()
-                Some("invalid")
+                Some("invalidOrganisationId")
 
               case (alert, organisationIds) if organisationIds.isEmpty =>
                 organisationSrv.getOrFail(alert.organisationId) match {
@@ -641,21 +641,27 @@ class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv,
                       s"Link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) and " +
                         s"organisation ${alert.organisationId} has disappeared. Fixing it."
                     )
-                    service.alertOrganisationSrv.create(AlertOrganisation(), alert, organisation).failed.foreach { error =>
-                      logger.error(
-                        s"Fail to create link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) " +
-                          s"and organisation ${alert.organisationId}",
-                        error
+                    service
+                      .alertOrganisationSrv
+                      .create(AlertOrganisation(), alert, organisation)
+                      .fold(
+                        error => {
+                          logger.error(
+                            s"Fail to create link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) " +
+                              s"and organisation ${alert.organisationId}",
+                            error
+                          )
+                          Some("missingOrganisationAndFail")
+                        },
+                        _ => Some("missingOrganisation")
                       )
-                    }
-                    Some("missing")
                   case _ =>
                     logger.warn(
                       s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is not linked to " +
                         s"existing organisation. Fixing it."
                     )
                     service.get(alert).remove()
-                    Some("missingAndFail")
+                    Some("nonExistentOrganisation")
                 }
 
               case (alert, organisationIds) if organisationIds.contains(alert.organisationId) =>
@@ -674,7 +680,7 @@ class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv,
                   )
                   service.get(alert).flatMap(_.outE[AlertOrganisation].range(1, 100)).remove()
                 }
-                Some("extraLink")
+                Some("extraOrganisation")
 
               case (alert, organisationIds) =>
                 logger.warn(
@@ -694,6 +700,6 @@ class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv,
       .groupBy(identity)
       .mapValues(_.size.toLong)
 
-    orgMetrics ++ metrics + ("multiImport" -> multiImport.getOrElse(0L))
+    orgMetrics + ("multiImport" -> multiImport.getOrElse(0L))
   }
 }

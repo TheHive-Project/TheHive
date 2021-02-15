@@ -336,8 +336,15 @@ object ObservableOps {
 class ObservableIntegrityCheckOps @Inject() (val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] {
   override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
-  override def findOrphans(): Seq[Observable with Entity] =
-    db.roTransaction { implicit graph =>
-      service.startTraversal.filterNot(_.or(_.shares, _.alert, _.in("ReportObservable"))).toSeq
-    }
+  override def globalCheck(): Map[String, Long] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        val orphanIds = service.startTraversal.filterNot(_.or(_.shares, _.alert, _.in("ReportObservable")))._id.toSeq
+        if (orphanIds.nonEmpty) {
+          logger.warn(s"Found ${orphanIds.length} observables orphan(s) (${orphanIds.mkString(",")})")
+          service.getByIds(orphanIds: _*).remove()
+        }
+        Map("orphans" -> orphanIds.size.toLong)
+      }
+    }.getOrElse(Map("globalFailure" -> 1L))
 }

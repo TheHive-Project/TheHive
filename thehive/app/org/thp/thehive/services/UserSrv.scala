@@ -365,4 +365,6 @@ class UserIntegrityCheckOps @Inject() (
     }
     Success(())
   }
+
+  override def globalCheck(): Map[String, Long] = Map.empty
 }

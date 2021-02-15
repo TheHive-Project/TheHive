@@ -238,8 +238,15 @@ class CaseTemplateIntegrityCheckOps @Inject() (
       case _ => Success(())
     }
 
-  override def findOrphans(): Seq[CaseTemplate with Entity] =
-    db.roTransaction { implicit graph =>
-      service.startTraversal.filterNot(_.organisation).toSeq
-    }
+  override def globalCheck(): Map[String, Long] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        val orphanIds = service.startTraversal.filterNot(_.organisation)._id.toSeq
+        if (orphanIds.nonEmpty) {
+          logger.warn(s"Found ${orphanIds.length} caseTemplate orphan(s) (${orphanIds.mkString(",")})")
+          service.getByIds(orphanIds: _*).remove()
+        }
+        Map("orphans" -> orphanIds.size.toLong)
+      }
+    }.getOrElse(Map("globalFailure" -> 1L))
 }

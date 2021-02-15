@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -19,7 +19,7 @@ import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSrv: TaskSrv, userSrv: UserSrv) extends VertexSrv[Log] {
+class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSrv: TaskSrv) extends VertexSrv[Log] {
   val taskLogSrv       = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv = new EdgeSrv[LogAttachment, Log, Attachment]
 
@@ -105,5 +105,65 @@ object LogOps {
               attachments
             ) -> renderedEntity
         }
+  }
+}
+
+class LogIntegrityCheckOps @Inject() (val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] {
+  override def resolve(entities: Seq[Log with Entity])(implicit graph: Graph): Try[Unit] = Success(())
+
+  override def globalCheck(): Map[String, Long] = {
+    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+
+    db.tryTransaction { implicit graph =>
+      Try {
+        service
+          .startTraversal
+          .project(_.by.by(_.task.fold))
+          .toIterator
+          .flatMap {
+            case (log, tasks) =>
+              val (extraLinks, extraTasks) = tasks.partition(_._id == log.taskId)
+              if (extraLinks.nonEmpty)
+                (if (extraLinks.length == 1) Nil
+                 else {
+                   service.get(log).inE[TaskLog].flatMap(_.range(1, 100)).remove()
+                   Seq("extraTaskLink")
+                 }) ++
+                  (if (extraTasks.isEmpty) Nil
+                   else {
+                     service.get(log).inE[TaskLog].filterNot(_.outV.hasId(log.taskId)).remove()
+                     Seq("extraTask")
+                   }) ++
+                  (if (log.organisationIds != extraLinks.head.organisationIds) {
+                     service.get(log).update(_.organisationIds, extraLinks.head.organisationIds).iterate()
+                     Seq("invalidOrganisationIds")
+                   } else Nil)
+              else if (extraTasks.nonEmpty)
+                if (extraTasks.size == 1) {
+                  service.get(log).update(_.taskId, extraTasks.head._id).update(_.organisationIds, extraTasks.head.organisationIds).iterate()
+                  Seq("invalidTaskId")
+                } else {
+                  service.get(log).remove()
+                  Seq("incoherent")
+                }
+              else {
+                taskSrv.getOrFail(log.taskId) match {
+                  case Success(task) =>
+                    service
+                      .taskLogSrv
+                      .create(TaskLog(), task, log)
+                    service.get(log).update(_.organisationIds, task.organisationIds).iterate()
+                    Seq("taskMissing")
+                  case _ => Seq("nonExistentTask")
+                }
+                service.get(log).remove()
+                Seq("incoherent")
+              }
+          }
+          .toSeq
+      }
+    }.getOrElse(Seq("globalFailure"))
+      .groupBy(identity)
+      .mapValues(_.size.toLong)
   }
 }

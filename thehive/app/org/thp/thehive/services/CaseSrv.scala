@@ -380,6 +380,8 @@ object CaseOps {
       else if (userLogin.size == 1) traversal.has(_.assignee, userLogin.head)
       else traversal.has(_.assignee, P.within(userLogin: _*))
 
+    def caseTemplate: Traversal.V[CaseTemplate] = traversal.out[CaseCaseTemplate].v[CaseTemplate]
+
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Case] =
       if (authContext.permissions.contains(permission))
         traversal.filter(_.share.profile.has(_.permissions, permission))
@@ -596,7 +598,8 @@ object CaseOps {
   }
 }
 
-class CaseIntegrityCheckOps @Inject() (val db: Database, val service: CaseSrv) extends IntegrityCheckOps[Case] {
+class CaseIntegrityCheckOps @Inject() (val db: Database, val service: CaseSrv, userSrv: UserSrv, caseTemplateSrv: CaseTemplateSrv)
+    extends IntegrityCheckOps[Case] {
   def removeDuplicates(): Unit =
     findDuplicates()
       .foreach { entities =>
@@ -617,5 +620,89 @@ class CaseIntegrityCheckOps @Inject() (val db: Database, val service: CaseSrv) e
         }
     )
     Success(())
+  }
+
+  private def organisationCheck(`case`: Case with Entity, organisationIds: Set[EntityId])(implicit graph: Graph): Seq[String] =
+    if (`case`.organisationIds == organisationIds) Nil
+    else {
+      service.get(`case`).update(_.organisationIds, organisationIds).iterate()
+      Seq("invalidOrganisationIds")
+    }
+
+  private def assigneeCheck(`case`: Case with Entity, assignees: Seq[String])(implicit graph: Graph, authContext: AuthContext): Seq[String] =
+    `case`.assignee match {
+      case None if assignees.isEmpty      => Nil
+      case Some(a) if assignees == Seq(a) => Nil
+      case None if assignees.size == 1 =>
+        service.get(`case`).update(_.assignee, assignees.headOption).iterate()
+        Seq("invalidAssigneeLink")
+      case Some(a) if assignees.isEmpty =>
+        userSrv.getByName(a).getOrFail("User") match {
+          case Success(user) =>
+            service.caseUserSrv.create(CaseUser(), `case`, user)
+            Seq("missingAssigneeLink")
+          case _ =>
+            service.get(`case`).update(_.assignee, None).iterate()
+            Seq("invalidAssignee")
+        }
+      case None if assignees.toSet.size == 1 =>
+        service.get(`case`).update(_.assignee, assignees.headOption).flatMap(_.outE[CaseUser].range(1, 100)).remove()
+        Seq("multiAssignment")
+      case _ =>
+        service.get(`case`).flatMap(_.outE[CaseUser].sort(_.by("_createdAt", Order.desc)).range(1, 100)).remove()
+        service.get(`case`).update(_.assignee, service.get(`case`).assignee.value(_.login).headOption).iterate()
+        Seq("incoherentAssignee")
+    }
+
+  def caseTemplateCheck(`case`: Case with Entity, caseTemplates: Seq[String])(implicit graph: Graph, authContext: AuthContext): Seq[String] =
+    `case`.caseTemplate match {
+      case None if caseTemplates.isEmpty        => Nil
+      case Some(ct) if caseTemplates == Seq(ct) => Nil
+      case None if caseTemplates.size == 1 =>
+        service.get(`case`).update(_.caseTemplate, caseTemplates.headOption).iterate()
+        Seq("invalidCaseTemplateLink")
+      case Some(ct) if caseTemplates.isEmpty =>
+        caseTemplateSrv.getByName(ct).getOrFail("User") match {
+          case Success(caseTemplate) =>
+            service.caseCaseTemplateSrv.create(CaseCaseTemplate(), `case`, caseTemplate)
+            Seq("missingCaseTemplateLink")
+          case _ =>
+            service.get(`case`).update(_.caseTemplate, None).iterate()
+            Seq("invalidCaseTemplate")
+        }
+      case None if caseTemplates.toSet.size == 1 =>
+        service.get(`case`).update(_.caseTemplate, caseTemplates.headOption).flatMap(_.outE[CaseCaseTemplate].range(1, 100)).remove()
+        Seq("multiCaseTemplate")
+      case _ =>
+        service.get(`case`).flatMap(_.outE[CaseCaseTemplate].sort(_.by("_createdAt", Order.asc)).range(1, 100)).remove()
+        service.get(`case`).update(_.caseTemplate, service.get(`case`).caseTemplate.value(_.name).headOption).iterate()
+        Seq("incoherentCaseTemplate")
+    }
+  override def globalCheck(): Map[String, Long] = {
+    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+
+    db.tryTransaction { implicit graph =>
+      Try {
+        service
+          .startTraversal
+          .project(
+            _.by
+              .by(_.organisations._id.fold)
+              .by(_.assignee.value(_.login).fold)
+              .by(_.caseTemplate.value(_.name).fold)
+          )
+          .toIterator
+          .flatMap {
+            case (case0, organisationIds, assigneeIds, caseTemplateNames) if organisationIds.nonEmpty =>
+              organisationCheck(case0, organisationIds.toSet) ++ assigneeCheck(case0, assigneeIds) ++ caseTemplateCheck(case0, caseTemplateNames)
+            case (case0, _, _, _) =>
+              service.get(case0).remove()
+              Seq("orphan")
+          }
+          .toSeq
+      }
+    }.getOrElse(Seq("globalFailure"))
+      .groupBy(identity)
+      .mapValues(_.size.toLong)
   }
 }

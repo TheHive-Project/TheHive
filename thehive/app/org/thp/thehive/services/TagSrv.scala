@@ -10,9 +10,9 @@ import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
-import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Organisation, OrganisationTaxonomy, Tag, Taxonomy, TaxonomyTag}
-import org.thp.thehive.services.TagOps._
+import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.TagOps._
 
 import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
@@ -115,4 +115,20 @@ class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) ext
     }
     Success(())
   }
+
+  override def globalCheck(): Map[String, Long] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        val orphans = service
+          .startTraversal
+          .filter(_.taxonomy.has(_.namespace, TextP.startingWith("_freetags_")))
+          .filterNot(_.or(_.inE[AlertTag], _.inE[ObservableTag], _.inE[CaseTag], _.inE[CaseTemplateTag]))
+          ._id
+          .toSeq
+        if (orphans.nonEmpty) {
+          service.getByIds(orphans: _*).remove()
+          Map("orphan" -> orphans.size.toLong)
+        } else Map.empty[String, Long]
+      }
+    }.getOrElse(Map("globalFailure" -> 1L))
 }

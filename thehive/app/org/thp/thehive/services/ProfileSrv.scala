@@ -91,4 +91,6 @@ class ProfileIntegrityCheckOps @Inject() (val db: Database, val service: Profile
         Success(())
       case _ => Success(())
     }
+
+  override def globalCheck(): Map[String, Long] = Map.empty
 }
