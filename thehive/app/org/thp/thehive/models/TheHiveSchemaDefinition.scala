@@ -225,7 +225,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     /* Case index  */
     .addProperty[Seq[String]]("Case", "tags")
     .addProperty[Option[String]]("Case", "assignee")
-    .addProperty[Seq[EntityId]]("Case", "organisationIds")
+    .addProperty[Set[EntityId]]("Case", "organisationIds")
     .addProperty[Option[String]]("Case", "impactStatus")
     .addProperty[Option[String]]("Case", "resolutionStatus")
     .addProperty[Option[String]]("Case", "caseTemplate")
@@ -254,7 +254,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
 
             tags.foreach(vertex.property(Cardinality.list, "tags", _))
             assignee.foreach(vertex.property("assignee", _))
-            organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
             impactStatus.foreach(vertex.property("impactStatus", _))
             resolutionStatus.foreach(vertex.property("resolutionStatus", _))
             caseTemplate.foreach(vertex.property("caseTemplate", _))
@@ -287,7 +287,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     }
     /* Log index */
     .addProperty[String]("Log", "taskId")
-    .addProperty[Seq[EntityId]]("Log", "organisationIds")
+    .addProperty[Set[EntityId]]("Log", "organisationIds")
     .updateGraph("Add taskId and organisationIds data in logs", "Log") { traversal =>
       traversal
         .project(
@@ -298,7 +298,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .foreach {
           case (vertex, taskId, organisationIds) =>
             vertex.property("taskId", taskId)
-            organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
         }
       Success(())
     }
@@ -307,7 +307,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .addProperty[Seq[String]]("Observable", "tags")
     .addProperty[String]("Observable", "data")
     .addProperty[EntityId]("Observable", "relatedId")
-    .addProperty[Seq[EntityId]]("Observable", "organisationIds")
+    .addProperty[Set[EntityId]]("Observable", "organisationIds")
     .updateGraph("Add dataType, tags, data, relatedId and organisationIds data in observables", "Observable") { traversal =>
       traversal
         .project(
@@ -343,14 +343,14 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
             data.foreach(vertex.property("data", _))
             attachmentId.foreach(vertex.property("attachmentId", _))
             vertex.property("relatedId", relatedId.value)
-            organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
           case _ =>
         }
       Success(())
     }
     /* Task index */
     .addProperty[Option[String]]("Task", "assignee")
-    .addProperty[Seq[EntityId]]("Task", "organisationIds")
+    .addProperty[Set[EntityId]]("Task", "organisationIds")
     .addProperty[EntityId]("Task", "relatedId")
     .updateGraph("Add assignee, relatedId and organisationIds data in tasks", "Task") { traversal =>
       traversal
@@ -364,7 +364,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
           case (vertex, assignee, Some(relatedId), organisationIds) =>
             assignee.foreach(vertex.property("assignee", _))
             vertex.property("relatedId", relatedId.value)
-            organisationIds.foreach(id => vertex.property(Cardinality.list, "organisationIds", id.value))
+            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
           case _ =>
         }
       Success(())
