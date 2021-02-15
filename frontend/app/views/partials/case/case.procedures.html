@@ -1,0 +1,289 @@
+<div ng-include="'views/partials/case/procedures/toolbar.html'"></div>
+
+<div class="mt-xs filter-panel" ng-include="'views/partials/case/procedures/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+<!-- Filters preview  -->
+<div class="row mt-xs">
+    <div class="col-md-12 clearfix">
+        <div class="pull-left">
+            <h4>
+                Tactics, Techniques and Procedures ({{$vm.list.values.length || 0}} of {{$vm.list.total}})
+            </h4>
+        </div>
+
+        <filters-preview filters="$vm.filtering.context.filters" on-clear-item="$vm.removeFilter(field)" on-clear-all="$vm.clearFilters()"></filters-preview>
+    </div>
+</div>
+
+<!-- Datalist  -->
+<div class="row mt-xs">
+    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+        <div class="empty-message">No records</div>
+    </div>
+
+    <div class="col-md-12" ng-show="$vm.list.total > 0">
+        <psearch control="$vm.list"></psearch>
+
+        <div class="ttp-item-header">
+            <div class="ttp-tactic">
+                <a href class="text-default" ng-click="$vm.sortByField('tactic')">
+                    Tactic
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+tactic') === -1 && $vm.filtering.context.sort.indexOf('-tactic') === -1" class="fa fa-sort"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+tactic') !== -1" class="fa fa-caret-up"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('-tactic') !== -1" class="fa fa-caret-down"></i>
+                </a>
+            </div>
+            <div class="ttp-name">
+                <a href class="text-default" ng-click="$vm.sortByField('patternId')">
+                    Technique
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+patternId') === -1 && $vm.filtering.context.sort.indexOf('-patternId') === -1" class="fa fa-sort"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+patternId') !== -1" class="fa fa-caret-up"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('-patternId') !== -1" class="fa fa-caret-down"></i>
+                </a>
+            </div>
+            <div class="ttp-user">Created By</div>
+            <div class="ttp-date">
+                <a href class="text-default" ng-click="$vm.sortByField('occurDate')">
+                    Occur Date
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+occurDate') === -1 && $vm.filtering.context.sort.indexOf('-occurDate') === -1" class="fa fa-sort"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+occurDate') !== -1" class="fa fa-caret-up"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('-occurDate') !== -1" class="fa fa-caret-down"></i>
+                </a>
+            </div>
+            <div class="ttp-action text-right">Actions</div>
+        </div>
+
+        <div class="ttp-item" ng-repeat="proc in $vm.list.values">
+            <div class="ttp-header">
+                <div class="ttp-tactic clickable" ng-click="proc.expanded = !proc.expanded">
+                    <div>
+                        <a class="mr-xxs">
+                            <i class="fa" ng-class="{true: 'fa-chevron-up', false: 'fa-chevron-down'}[!!proc.expanded]"></i>
+                        </a>
+
+                        {{$vm.tactics[proc.tactic].label}}
+
+                        <a href class="pull-right" ng-click="$vm.addFilterValue('tactic', proc.tactic)"><i class="fa fa-filter"></i></a>
+                    </div>
+                </div>
+                <div class="ttp-name" ng-if="proc.extraData.pattern.parent">
+                    <div>
+                        <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.parent}}:{{proc.extraData.pattern.name}}
+
+                        <a href class="pull-right" ng-click="$vm.addFilterValue('patternId', proc.patternId)"><i class="fa fa-filter"></i></a>
+                    </div>                    
+                </div>
+                <div class="ttp-name" ng-if="!proc.extraData.pattern.parent">
+                    <div>
+                        <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.pattern.name}}
+
+                        <a href class="pull-right" ng-click="$vm.addFilterValue('patternId', proc.patternId)"><i class="fa fa-filter"></i></a>
+                    </div>
+                </div>
+
+                <div class="ttp-user">
+                    <user user-id="proc._createdBy" icon-only="false" icon-size="m"></user>
+                </div>
+                <div class="ttp-date">
+                    <a href ng-click="$vm.addFilterValue('occurDate', proc.occurDate)">
+                        <span uib-tooltip="{{proc.occurDate | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{proc.occurDate | shortDate}}</span>
+                    </a>
+                </div>
+                <div class="ttp-action">
+                    <!-- <span if-permission="manageCase" allowed="{{userPermissions}}">
+                        <a href ng-click="$vm.deleteProcedure()" uib-tooltip="Delete" class="text-danger">
+                            <i class="fa fa-trash"></i> Delete
+                        </a>
+                    </span> -->
+
+
+
+                    <a class="btn btn-icon btn-clear" href ng-click="$vm.edit(proc)" uib-tooltip="Edit TTP" if-permission="manageCase" allowed="{{userPermissions}}">
+                        <i class="text-info fa fa-edit"></i>
+                    </a>
+                    <a class="btn btn-icon btn-clear text-danger" href ng-click="$vm.deleteProcedure()" uib-tooltip="Delete TTP" if-permission="manageCase" allowed="{{userPermissions}}">
+                        <i class="fa fa-trash"></i>
+                    </a>
+
+                </div>
+            </div>
+            <div class="ttp-body" ng-show="proc.expanded">
+                <label>Procedure</label>
+                <div class="description-pane" if-permission="manageCase" allowed="{{userPermissions}}">
+                    <updatable-text on-update="$vm.updateDescription(proc)" value="proc.description"></updatable-text>
+                </div>
+                <div class="description-pane" if-not-permission="manageCase" allowed="{{userPermissions}}">
+                    <div marked="proc.description" class="markdown"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- <div ng-repeat="proc in $vm.list.values" class="box box-default">
+            <div class="box-header with-border">
+                <h3 class="box-title">
+                    <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
+                    </button>
+                    <span class="label label-primary">{{proc.tactic}}</span> {{proc.patternId}}: {{proc.extraData.pattern.name}}
+                </h3>
+
+                <div class="box-tools pull-right">
+                    <span class="text-muted mr-xs">
+                        <i class="glyphicon glyphicon-user"></i>
+                        <user-info value="proc._createdBy" field="organisation"></user-info>/<user-info value="proc._createdBy" field="name"></user-info>
+                    </span>
+
+                    <span class="text-muted mr-xs">
+                        <i class="fa fa-calendar"></i>
+                        {{proc.occurDate | shortDate}}
+                    </span>
+
+                    <span if-permission="manageCase" allowed="{{userPermissions}}">
+                        <a href ng-click="$vm.deleteProcedure()" uib-tooltip="Delete" class="text-danger">
+                            <i class="fa fa-trash"></i> Delete
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="box-body">
+                <div>
+                    <h4 class="text-primary">Procedure</h4>
+                    <div class="description-pane" if-permission="manageCase" allowed="{{userPermissions}}">
+                        <updatable-text on-update="$vm.updateDescription(proc)" value="proc.description"></updatable-text>
+                    </div>
+                    <div class="description-pane" if-not-permission="manageCase" allowed="{{userPermissions}}">
+                        <div marked="proc.description" class="markdown"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div> -->
+
+        <psearch control="$vm.list"></psearch>
+    </div>
+
+    <!-- <div class="col-md-12" ng-show="$vm.list.total > 0">
+        <psearch control="$vm.list"></psearch>
+
+        <table class="table tbody-stripped case-list">
+            <thead>
+                <tr>
+                    <th width="20px" if-permission="manageAlert">
+                        <input type="checkbox" ng-model="$vm.menu.selectAll" ng-change="$vm.selectAll()">
+                    </th>
+                    <th width="150px">
+                        <a href class="text-default" ng-click="$vm.sortByField('id')">
+                            ID
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+id') === -1 && $vm.filtering.context.sort.indexOf('-id') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+id') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('-id') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th width="80px">
+                        Name
+                    </th>
+                    <th style="width: 120px">
+                        <a href class="text-default" ng-click="$vm.sortByField('occurence')">
+                            Occur Date
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+occurence') === -1 && $vm.filtering.context.sort.indexOf('-occurence') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+occurence') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('-occurence') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th style="width: 160px"></th>
+                </tr>
+            </thead>
+
+            <tbody ng-repeat="event in $vm.list.values">
+                <tr>
+                    <td if-permission="manageAlert">
+                        <input type="checkbox" ng-model="event.selected" ng-change="$vm.select(event)">
+                    </td>
+                    <td>
+                        <span>
+                            <a href ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a>
+                        </span>
+                    </td>
+
+                    <td align="center">
+                        <span class="clickable label label-default" ng-class="{'label-danger': !event.caseId}" ng-click="$vm.addFilterValue('imported', !!event.caseId)">{{event.caseId ? 'Imported' : 'New'}}</span>
+                    </td>
+
+                    <td align="center">
+                        <span class="clickable label label-default" ng-click="$vm.addFilterValue('read', !!event.read)">{{event.read ? 'Read' : 'Unread'}}</span>
+                    </td>
+
+                    <td class="wrap">
+                        <div class="case-title">
+                            <span>
+                                <span ng-if="!event.caseId">{{::event.title}}</span>
+                                <span ng-if="event.caseId" ui-sref="app.case.details({caseId: event.caseId})">
+                                    <a href>{{::event.title}}</a>
+                                </span>
+                            </span>
+                        </div>
+                    </td>
+                    <td><a href ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a></td>
+                    <td class="text-center">
+                        <div class="clickable" ng-click="$vm.addFilterValue('severity', event.severity)">
+                            <severity active="false" value="event.severity"></severity>
+                        </div>
+                    </td>
+                    <td class="text-center">{{::event.observableCount || 0}}</td>
+                    <td>
+                        <a href ng-click="$vm.addFilterValue('date', event.date)">{{event.date | shortDate}}</a>
+                        <div ng-if="!!event.caseId">
+                            <alert-duration start="event._createdAt" end="event.extraData.importDate" icon="fa-clock-o"></alert-duration>
+                        </div>
+                    </td>
+                    <td class="clearfix">
+                        <div class="pull-right" if-permission="manageAlert">
+                            <a class="btn btn-icon btn-clear" href ng-click="$vm.follow(event)" uib-tooltip="{{event.follow ? 'Ignore new updates' : 'Track new updates'}}">
+                                <i class="text-info fa" ng-class="{'fa-eye': event.follow, 'fa-eye-slash': !event.follow}"></i>
+                            </a>
+                            <a class="btn btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as read" ng-if="$vm.canMarkAsRead(event)">
+                                <i class="text-info fa fa-envelope"></i>
+                            </a>
+                            <a class="btn btn-icon btn-clear" href ng-click="$vm.markAsRead(event)" uib-tooltip="Mark as unread" ng-if="$vm.canMarkAsUnread(event)">
+                                <i class="text-info fa fa-envelope-open-o"></i>
+                            </a>
+                            <a class="btn btn-icon btn-clear" href ng-click="$vm.getResponders(event, true)" uib-tooltip="Run responders" ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction">
+                                <i class="text-info fa fa-cog"></i>
+                            </a>
+                        </div>
+
+                        <div class="pull-right">
+                            <a class="btn btn-icon btn-clear" href ng-click="$vm.import(event)" uib-tooltip="Preview and Import" ng-if="!event.caseId">
+                                <i class="text-info fa fa-file-text-o"></i>
+                            </a>
+                            <a class="btn btn-icon btn-clear" href ui-sref="app.case.details({caseId: event.caseId})" uib-tooltip="View case" ng-if="event.caseId">
+                                <i class="text-info fa fa-search"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td colspan="9">
+                        <div class="case-tags flexwrap">
+                            <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                            <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
+                            <tag-item ng-repeat="tag in event.tags track by $index" class="pointer" ng-click="$vm.addFilterValue('tags', tag)" value="tag"></tag-item>
+                        </div>
+                    </td>
+                    <td></td>
+                </tr>
+                <tr ng-if="$vm.filtering.context.showAdvanced">
+                    <td></td>
+                    <td colspan="9">
+                        <custom-field-labels custom-fields="event.customFields" on-field-click="$vm.addFilterValue(name, value)">
+                            <custom-field-labels>
+                    </td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <psearch control="$vm.list"></psearch>
+    </div> -->
+</div>

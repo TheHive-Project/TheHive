@@ -1,0 +1,80 @@
+.ttp-item {
+    margin-bottom: 10px;
+    border: 1px solid #f5f5f5;
+}
+
+.ttp-tactic {
+    width: 200px;
+    vertical-align: middle;
+}
+.ttp-name {
+    flex: 1;
+}
+.ttp-action {
+    width: 100px;
+    text-align: right
+}
+.ttp-date {
+    width: 140px;
+}
+.ttp-user {
+    width: 200px;
+}
+
+.ttp-item .ttp-header {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    flex-direction: row;
+    border-bottom: 1px solid #f5f5f5;
+    background-color: #fcfcfc;
+}
+.ttp-item .ttp-header > div {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+.ttp-item .ttp-header .ttp-tactic {
+    background-color: #f5f5f5;
+    border-left: 4px solid #337ab7;
+    color: #337ab7;
+    display: flex;
+    align-items: center;
+}
+.ttp-item .ttp-header .ttp-tactic > div {
+    flex: 1
+}
+.ttp-item .ttp-header .ttp-name {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+.ttp-item .ttp-header .ttp-name > div {
+    flex: 1
+}
+.ttp-item .ttp-header .ttp-date {
+    display: flex;
+    align-items: center;
+}
+.ttp-item .ttp-header .ttp-actions {
+    display: flex;
+    align-items: center;
+}
+
+.ttp-item .ttp-body {
+    padding: 10px;
+}
+
+.ttp-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.ttp-item-header > div {
+    font-weight: bold;
+    padding: 10px;
+}

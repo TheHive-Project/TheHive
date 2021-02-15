@@ -513,6 +513,18 @@ angular.module('thehive', [
                     isSuperAdmin: false
                 }
             })
+            .state('app.case.procedures', {
+                url: '/procedures',
+                templateUrl: 'views/partials/case/case.procedures.html',
+                controller: 'CaseProceduresCtrl',
+                controllerAs: '$vm',
+                data: {
+                    tab: 'procedures'
+                },
+                guard: {
+                    isSuperAdmin: false
+                }
+            })
             .state('app.alert-list', {
                 url: 'alert/list',
                 templateUrl: 'views/partials/alert/list.html',
