@@ -9,6 +9,28 @@
                 </button>
             </div>
 
+            <div class="btn-group" uib-dropdown>
+                <button class="btn btn-sm btn-primary dropdown-toggle" uib-dropdown-toggle type="button">
+                    <i class="fa fa-sort"></i>
+                    Sort by
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" uib-dropdown-menu>
+                    <li>
+                        <a ng-click="$vm.sortBy(['-created_at'])">Newest first</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.sortBy(['+created_at'])">Oldest first</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.sortBy(['-updated_at'])">Recently updated</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.sortBy(['+updated_at'])">Least recently updated</a>
+                    </li>
+                </ul>
+            </div>
+
             <div class="btn-group pull-right" role="group">
                 <page-sizer collection="$vm.list" sizes="[10, 15, 30, 100]"></page-sizer>
             </div>

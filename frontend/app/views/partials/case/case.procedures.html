@@ -71,7 +71,7 @@
                         <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.parent}}:{{proc.extraData.pattern.name}}
 
                         <a href class="pull-right" ng-click="$vm.addFilterValue('patternId', proc.patternId)"><i class="fa fa-filter"></i></a>
-                    </div>                    
+                    </div>
                 </div>
                 <div class="ttp-name" ng-if="!proc.extraData.pattern.parent">
                     <div>
@@ -101,7 +101,7 @@
                     <a class="btn btn-icon btn-clear" href ng-click="$vm.edit(proc)" uib-tooltip="Edit TTP" if-permission="manageCase" allowed="{{userPermissions}}">
                         <i class="text-info fa fa-edit"></i>
                     </a>
-                    <a class="btn btn-icon btn-clear text-danger" href ng-click="$vm.deleteProcedure()" uib-tooltip="Delete TTP" if-permission="manageCase" allowed="{{userPermissions}}">
+                    <a class="btn btn-icon btn-clear text-danger" href ng-click="$vm.remove(proc)" uib-tooltip="Delete TTP" if-permission="manageCase" allowed="{{userPermissions}}">
                         <i class="fa fa-trash"></i>
                     </a>
 
