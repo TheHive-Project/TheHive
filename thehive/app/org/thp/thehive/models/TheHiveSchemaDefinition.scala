@@ -11,8 +11,8 @@ import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
@@ -101,17 +101,17 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .addProperty[String]("Taxonomy", "description")
     .addProperty[Int]("Taxonomy", "version")
     .dbOperation[Database]("Add Custom taxonomy vertex for each Organisation") { db =>
-      db.tryTransaction { implicit g =>
+      db.tryTransaction { implicit graph =>
         // For each organisation, if there is no custom taxonomy, create it
-        db.labelFilter("Organisation", Traversal.V()).unsafeHas("name", P.neq("admin")).foreach { o =>
-          val hasFreetagsTaxonomy = Traversal
-            .V(EntityId(o.id))
+        graph.V("Organisation").unsafeHas("name", P.neq("admin")).foreach { o =>
+          val hasFreetagsTaxonomy = graph
+            .V("Organisation", EntityId(o.id))
             .out[OrganisationTaxonomy]
             .v[Taxonomy]
             .unsafeHas("namespace", s"_freetags_${o.id()}")
             .exists
           if (!hasFreetagsTaxonomy) {
-            val taxoVertex = g.addVertex("Taxonomy")
+            val taxoVertex = graph.addVertex("Taxonomy")
             taxoVertex.property("_label", "Taxonomy")
             taxoVertex.property("_createdBy", "system@thehive.local")
             taxoVertex.property("_createdAt", new Date())

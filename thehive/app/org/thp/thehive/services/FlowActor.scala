@@ -66,7 +66,7 @@ class FlowActor extends Actor {
           .limit(10)
           ._id
       case Some(cid) =>
-        Traversal
+        graph
           .union(
             caseSrv.filterTraversal(_).get(cid).visible(organisationSrv).in[AuditContext],
             observableSrv.filterTraversal(_).visible(organisationSrv).relatedTo(caseSrv.caseId(cid)).in[AuditContext],

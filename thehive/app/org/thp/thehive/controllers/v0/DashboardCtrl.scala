@@ -94,11 +94,11 @@ class PublicDashboard @Inject() (
     Query.init[Traversal.V[Dashboard]](
       "listDashboard",
       (graph, authContext) =>
-        Traversal
+        graph
           .union(
             organisationSrv.filterTraversal(_).get(authContext.organisation).dashboards,
             userSrv.filterTraversal(_).getByName(authContext.userId).dashboards
-          )(graph)
+          )
           .dedup
     )
 

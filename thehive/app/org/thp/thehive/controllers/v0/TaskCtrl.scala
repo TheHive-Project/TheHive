@@ -82,7 +82,7 @@ class TaskCtrl @Inject() (
           .visible(organisationSrv)(authContext)
           ._id
           .headOption
-          .fold[Traversal.V[Task]](Traversal.empty(graph))(c => taskSrv.startTraversal(graph).relatedTo(c))
+          .fold[Traversal.V[Task]](graph.empty)(c => taskSrv.startTraversal(graph).relatedTo(c))
     )
     entrypoint("search task in case")
       .extract("query", searchParser(query))

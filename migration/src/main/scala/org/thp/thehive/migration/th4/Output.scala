@@ -11,16 +11,16 @@ import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.connector.cortex.models.{CortexSchemaDefinition, TheHiveCortexSchemaProvider}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
-import org.thp.thehive.{migration, ClusterSetup}
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
+import org.thp.thehive.{migration, ClusterSetup}
 import play.api.cache.SyncCacheApi
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
@@ -143,8 +143,8 @@ class Output @Inject() (
     val alertsBuilder             = Set.newBuilder[(String, String, String)]
 
     db.roTransaction { implicit graph =>
-      Traversal
-        .V()
+      graph
+        .VV()
         .unsafeHas(
           "_label",
           P.within(
@@ -265,7 +265,7 @@ class Output @Inject() (
   }
 
   def updateMetaData(entity: Entity, metaData: MetaData)(implicit graph: Graph): Unit = {
-    val vertex = Traversal.V(entity._id).head
+    val vertex = graph.VV(entity._id).head
     UMapping.date.setProperty(vertex, "_createdAt", metaData.createdAt)
     UMapping.date.optional.setProperty(vertex, "_updatedAt", metaData.updatedAt)
   }
