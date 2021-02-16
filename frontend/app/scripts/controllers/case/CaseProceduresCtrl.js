@@ -10,6 +10,7 @@
 
         this.caseId = $stateParams.caseId;
         this.tactics = AttackPatternSrv.tactics.values;
+        this.expanded = {};
 
         this.$onInit = function() {
             self.filtering = new FilteringSrv('procedure', 'procedure.list', {
@@ -33,7 +34,7 @@
                 });
         };
 
-        this.addProcedure = function() {
+        this.showProcedure = function(procedure) {
             var modalInstance = $uibModal.open({
                 animation: true,
                 templateUrl: 'views/partials/case/procedures/add-procedure.modal.html',
@@ -43,6 +44,9 @@
                 resolve: {
                     caseId: function() {
                         return self.caseId;
+                    },
+                    procedure: function() {
+                        return angular.copy(procedure);
                     }
                 }
             });
@@ -58,14 +62,19 @@
                 });
         };
 
-        this.updateDescription = function(procedure) {
-            ProcedureSrv.update(procedure._id, {
-                description: procedure.description
-            }).then(function(response) {
-                console.log(response);
-            }).catch(function(err) {
-                NotificationSrv.error('ProcedureCtrl', err.data, err.status);
-            });
+        this.updateField = function(procedure, field, reload) {
+            var data = {};
+            data[field] = procedure[field];
+
+            ProcedureSrv.update(procedure._id, data)
+                .then(function(response) {
+                    if(reload) {
+                        self.load();
+                    }
+                    console.log(response);
+                }).catch(function(err) {
+                    NotificationSrv.error('ProcedureCtrl', err.data, err.status);
+                });
         };
 
         this.load = function() {

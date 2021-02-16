@@ -17,16 +17,16 @@
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
                     <li>
-                        <a ng-click="$vm.sortBy(['-created_at'])">Newest first</a>
+                        <a ng-click="$vm.sortBy(['-_createdAt'])">Newest first</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.sortBy(['+created_at'])">Oldest first</a>
+                        <a ng-click="$vm.sortBy(['+_createdAt'])">Oldest first</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.sortBy(['-updated_at'])">Recently updated</a>
+                        <a ng-click="$vm.sortBy(['-_updatedAt'])">Recently updated</a>
                     </li>
                     <li>
-                        <a ng-click="$vm.sortBy(['+updated_at'])">Least recently updated</a>
+                        <a ng-click="$vm.sortBy(['+_updatedAt'])">Least recently updated</a>
                     </li>
                 </ul>
             </div>
