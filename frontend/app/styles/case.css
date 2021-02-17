@@ -95,12 +95,3 @@ pre.error-trace {
     white-space: pre-wrap;
     background-color: #f9f1f1;
 }
-
-.procedure-techniques-list {
-    height: 200px;
-    overflow-y: scroll;
-    border-radius: 0;
-    box-shadow: none;
-    border: 1px solid #d2d6de;
-
-}

@@ -4,7 +4,7 @@
 }
 
 .ttp-tactic {
-    width: 200px;
+    width: 250px;
     vertical-align: middle;
 }
 .ttp-name {
@@ -77,4 +77,48 @@
 .ttp-item-header > div {
     font-weight: bold;
     padding: 10px;
+}
+
+.procedure-techniques-list {
+    /* height: 400px;
+    overflow-y: scroll; */
+    border-radius: 0;
+    box-shadow: none;
+    border: 1px solid #d2d6de;
+}
+
+.procedure-techniques-list .tooltip {
+    width: 600px;
+    text-align: left;
+}
+.procedure-techniques-list .tooltip-inner {
+    max-width: 100%;
+    text-align: left;
+}
+
+.procedure-techniques-list .procedure-techniques-item {
+    display: block;
+    padding: 2px 5px;
+}
+
+.procedure-techniques-list .procedure-techniques-item:hover {
+    background-color: #f5f5f5;
+}
+
+.procedure-techniques-list .procedure-techniques-item.active,
+.procedure-techniques-list .procedure-techniques-item.active:hover {
+    background-color: #3c8dbc;
+    color: #fff;
+}
+
+.procedure-techniques-list .procedure-techniques-item.active a{
+    color: #fff;
+}
+
+.procedure-technique {
+    display: block;
+}
+
+.procedure-technique.sub-technique {
+    margin-left: 30px;
 }

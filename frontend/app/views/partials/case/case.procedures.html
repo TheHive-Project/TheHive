@@ -66,14 +66,14 @@
                         <a href class="pull-right" ng-click="$vm.addFilterValue('tactic', proc.tactic)"><i class="fa fa-filter"></i></a>
                     </div>
                 </div>
-                <div class="ttp-name" ng-if="proc.extraData.pattern.parent">
+                <div class="ttp-name" ng-if="proc.extraData.patternParent">
                     <div>
-                        <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.parent}}:{{proc.extraData.pattern.name}}
+                        <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.patternParent.name}}:{{proc.extraData.pattern.name}}
 
                         <a href class="pull-right" ng-click="$vm.addFilterValue('patternId', proc.patternId)"><i class="fa fa-filter"></i></a>
                     </div>
                 </div>
-                <div class="ttp-name" ng-if="!proc.extraData.pattern.parent">
+                <div class="ttp-name" ng-if="!proc.extraData.patternParent">
                     <div>
                         <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.pattern.name}}
 

@@ -34,7 +34,7 @@
                 });
         };
 
-        this.showProcedure = function(procedure) {
+        this.addProcedure = function(procedure) {
             var modalInstance = $uibModal.open({
                 animation: true,
                 templateUrl: 'views/partials/case/procedures/add-procedure.modal.html',
@@ -91,7 +91,7 @@
                     {'_name': 'getCase', "idOrName": self.caseId},
                     {'_name': 'procedures'}
                 ],
-                extraData: ['pattern']
+                extraData: ['pattern', 'patternParent']
             });
         };
 

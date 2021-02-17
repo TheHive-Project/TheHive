@@ -107,11 +107,6 @@
                                 {
                                     _field: 'revoked',
                                     _value: false
-                                },
-                                {
-                                    _not: {
-                                        _contains: 'parent'
-                                    }
                                 }
                             ]
                         },
@@ -119,9 +114,14 @@
                         page: {
                             from: 0,
                             to: 100,
-                            extraData: ['children']
+                            extraData: ['parent']
                         }
                     }).then(function(techniques) {
+
+                        _.each(techniques, function(technique) {
+                            technique.isSubTechnique = !!technique.extraData.parent;
+                        });                        
+
                         self.tacticsCache[tactic] = techniques;
 
                         defer.resolve(techniques);

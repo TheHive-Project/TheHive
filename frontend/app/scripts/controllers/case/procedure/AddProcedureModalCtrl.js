@@ -14,7 +14,9 @@
             };
 
             this.cancel = function() {
-                $rootScope.markdownEditorObjects.procedure.hidePreview();
+                if($rootScope.markdownEditorObjects.procedure) {
+                    $rootScope.markdownEditorObjects.procedure.hidePreview();                    
+                }
 
                 $uibModalInstance.dismiss();
             };
