@@ -175,7 +175,7 @@ class ShareCtrl @Inject() (
           .get(EntityIdOrName(caseId))
           .shares
           .visible
-          .filterNot(_.get(request.organisation))
+          .filterNot(_.organisation.current)
           .richShare
           .toSeq
 
