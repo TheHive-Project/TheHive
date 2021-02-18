@@ -6,8 +6,8 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.TagOps._
+import org.thp.thehive.services.CaseTemplateOps._
 import play.api.libs.json.{JsNumber, JsString, JsTrue, JsValue}
 import play.api.test.PlaySpecification
 
@@ -42,7 +42,8 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
       } must beASuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
-        app[TagSrv].startTraversal.getByName("testNamespace", "testPredicate", Some("newOne")).exists must beTrue
+        val orgId = app[OrganisationSrv].currentId.value
+        app[TagSrv].startTraversal.getByName(s"_freetags_$orgId", "testNamespace:testPredicate=\"newOne\"", None).exists must beTrue
         app[TaskSrv].startTraversal.has(_.title, "task case template case template test 1").exists must beTrue
         val richCT = app[CaseTemplateSrv].startTraversal.getByName("case template test 1").richCaseTemplate.getOrFail("CaseTemplate").get
         richCT.customFields.length shouldEqual 2
@@ -69,7 +70,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
           caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
           _ <- app[CaseTemplateSrv].updateTagNames(
             caseTemplate,
-            Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne2"""", """newNspc.newPred="newOne3"""")
+            Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne2"""", """newNspc:newPred="newOne3"""")
           )
         } yield ()
       } must beSuccessfulTry

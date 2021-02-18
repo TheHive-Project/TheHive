@@ -1,9 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
@@ -17,8 +14,11 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.RoleOps._
 import org.thp.thehive.services.UserOps._
+import play.api.cache._
 import play.api.libs.json.JsObject
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -28,6 +28,7 @@ class OrganisationSrv @Inject() (
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
+    cache: SyncCacheApi,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(implicit
     @Named("with-thehive-schema") db: Database
@@ -61,6 +62,11 @@ class OrganisationSrv @Inject() (
   }
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
+
+  def currentId(implicit graph: Graph, authContext: AuthContext): EntityId =
+    authContext
+      .organisation
+      .fold(identity, oid => cache.getOrElseUpdate(s"organisation-$oid")(getByName(oid)._id.getOrFail("Organisation").get))
 
   def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
     userSrv.current.organisations.visibleOrganisationsFrom

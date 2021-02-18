@@ -284,7 +284,7 @@ class Output @Inject() (
     }
 
   def getTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    cache.getOrElseUpdate(s"tag-$tagName")(tagSrv.createEntity(Tag.fromString(tagName, tagSrv.defaultNamespace, tagSrv.defaultColour)))
+    cache.getOrElseUpdate(s"tag-$tagName")(tagSrv.getOrCreate(tagName))
 
   override def organisationExists(inputOrganisation: InputOrganisation): Boolean = organisations.contains(inputOrganisation.organisation.name)
 
