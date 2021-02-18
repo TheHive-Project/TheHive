@@ -8,6 +8,7 @@
   {"from": "case21-merge-cert", "to": "caseMerge21"},
   {"from": "case22-merge-cert", "to": "caseMerge22"},
   {"from": "case23-merge-cert", "to": "caseMerge23"},
+  {"from": "case24-merge-cert", "to": "caseMerge24"},
   {"from": "case24-merge-soc", "to": "caseMerge24"},
   {"from": "case25-merge-cert", "to": "caseMerge25"}
 ]

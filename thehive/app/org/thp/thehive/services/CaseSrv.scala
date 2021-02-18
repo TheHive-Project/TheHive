@@ -310,12 +310,12 @@ class CaseSrv @Inject() (
       cases.map(_.summary).fold(None)((s1, s2) => (s1 ++ s2).reduceOption(_ + "\n\n" + _))
     )
 
-    val tryTags = cases.toTry(c => get(c).tags.getOrFail("Tag"))
+    val tags = cases.flatMap(c => get(c).tags.toSeq)
     for {
       user     <- userSrv.get(EntityIdOrName(authContext.userId)).getOrFail("User")
       orga     <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
-      tags     <- tryTags
       richCase <- create(mergedCase, Some(user), orga, tags.toSet, Seq(), None, Seq())
+      _ = cases.map(remove(_))
       // TODO customFields: Seq[RichCustomField],
       // TODO ShareCase link
       // TODO Procedure link

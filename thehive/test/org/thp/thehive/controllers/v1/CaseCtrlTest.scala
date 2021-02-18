@@ -198,14 +198,14 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "merge 3 cases correctly" in testApp { app =>
-      val request21 = FakeRequest("GET", s"/api/v0/case/#21")
+      val request21 = FakeRequest("GET", s"/api/v1/case/#21")
         .withHeaders("user" -> "certuser@thehive.local")
       val case21 = app[CaseCtrl].get("21")(request21)
       status(case21) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(case21)}")
       val output21 = contentAsJson(case21).as[OutputCase]
 
-      val request = FakeRequest("GET", "/api/v1/case/21/_merge/22")
-        .withHeaders("user" -> "admin@thehive.local")
+      val request = FakeRequest("GET", "/api/v1/case/_merge/21,22,23")
+        .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21,22,23")(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -227,7 +227,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           pap = 3,
           status = "Open",
           None,
-          None,
+          Some("certuser@thehive.local"),
           Seq()
         )
       )
@@ -243,7 +243,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "merge two cases error, not same organisation" in testApp { app =>
       val request = FakeRequest("GET", "/api/v1/case/_merge/21,24")
-        .withHeaders("user" -> "admin@thehive.local")
+        .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21,24")(request)
       status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -253,7 +253,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "merge two cases error, not same profile" in testApp { app =>
       val request = FakeRequest("GET", "/api/v1/case/_merge/21,25")
-        .withHeaders("user" -> "admin@thehive.local")
+        .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21,25")(request)
       status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")

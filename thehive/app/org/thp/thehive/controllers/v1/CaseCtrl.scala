@@ -142,7 +142,7 @@ class CaseCtrl @Inject() (
           _          <- sameOrga(cases)
           _          <- sameProfile(cases)
           mergedCase <- caseSrv.merge(cases)
-        } yield Results.Ok(mergedCase.toJson)
+        } yield Results.Created(mergedCase.toJson)
       }
 
   private def sameOrga(cases: Seq[Case with Entity])(implicit graph: Graph): Try[Seq[Case with Entity]] =
