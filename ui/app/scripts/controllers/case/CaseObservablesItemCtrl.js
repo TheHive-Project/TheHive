@@ -240,33 +240,34 @@
                     });
             };
 
-            $scope.getObsResponders = function(observableId, force) {
+            $scope.getObsResponders = function(observable, force) {
                 if(!force && $scope.obsResponders !== null) {
                    return;
                 }
 
                 $scope.obsResponders = null;
-                CortexSrv.getResponders('case_artifact', observableId)
+                CortexSrv.getResponders('case_artifact', observable.id)
                   .then(function(responders) {
                       $scope.obsResponders = responders;
+                      return CortexSrv.promntForResponder(responders);
                   })
-                  .catch(function(err) {
-                      NotificationSrv.error('observablesList', err.data, err.status);
-                  });
-            };
-
-            $scope.runResponder = function(responderId, responderName, artifact) {
-                CortexSrv.runResponder(responderId, responderName, 'case_artifact', _.pick(artifact, 'id'))
                   .then(function(response) {
-                      var data = '['+$filter('fang')(artifact.data || artifact.attachment.name)+']';
+                      if(response && _.isString(response)) {
+                          NotificationSrv.log(response, 'warning');
+                      } else {
+                          return CortexSrv.runResponder(response.id, response.name, 'case_artifact', _.pick(observable, 'id'));
+                      }
+                  })
+                  .then(function(response){
+                      var data = '['+$filter('fang')(observable.data || observable.attachment.name)+']';
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on observable', data].join(' '), 'success');
                   })
-                  .catch(function(response) {
-                      if(response && !_.isString(response)) {
-                          NotificationSrv.error('observablesList', response.data, response.status);
+                  .catch(function(err) {
+                      if(err && !_.isString(err)) {
+                          NotificationSrv.error('Observable Details', err.data, err.status);
                       }
                   });
-            };
+            };            
 
             $scope.getTags = function(query) {
                 return TagSrv.fromObservables(query);

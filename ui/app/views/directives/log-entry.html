@@ -7,22 +7,9 @@
         </div>
         <div class="col-md-6">
             <span class="pull-right ml-xs" uib-dropdown ng-if="appConfig.connectors.cortex.enabled">
-                <a href class="text-primary noline nowrap" ng-click="getLogResponders(log.id, true)" uib-dropdown-toggle>
+                <a href class="text-primary noline nowrap" ng-click="getLogResponders(log, true)" uib-dropdown-toggle>
                     <i class="text-primary fa fa-cog"></i>
                 </a>
-                <ul class="dropdown-menu align-right" uib-dropdown-menu>
-                  <li ng-if="logResponders && logResponders.length === 0">
-                    <a href ng-click="getLogResponders(task.id, true)">
-                      <strong><i class="fa fa-refresh mr-xxs"></i> No responders available</strong>
-                    </a>
-                  </li>
-                  <li ng-repeat="responder in logResponders">
-                    <a href ng-click="runResponder(responder.id, responder.name, log)">
-                      <strong>{{responder.name}}</strong>
-                      <br>
-                      <small>{{responder.description}}</small></a>
-                  </li>
-                </ul>
             </span>
             <span class="pull-right">
                 <a href ng-click="dropLog()" uib-tooltip="Delete log">
