@@ -148,7 +148,7 @@ class Migration(
         renameAttribute("reportTemplate", "analyzerId", "analyzers"), // reportTemplate refers only one analyzer
         renameAttribute("reportTemplate", "reportType", "flavor"),    // rename flavor into reportType
         removeAttribute("case", "isIncident"),                        // this information is now stored in resolutionStatus
-        mapEntity("case") { c =>                                       // add case owner
+        mapEntity("case") { c =>                                      // add case owner
           val owner = (c \ "createdBy")
             .asOpt[JsString]
             .getOrElse(JsString("init"))
@@ -375,6 +375,7 @@ class Migration(
         }
       )
     case DatabaseState(15) => Nil
+    case DatabaseState(16) => Nil
   }
 
   private def generateAlertId(alert: JsObject): String = {
