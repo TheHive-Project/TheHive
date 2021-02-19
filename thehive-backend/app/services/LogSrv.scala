@@ -34,7 +34,7 @@ class LogSrv @Inject()(
 
   def create(taskId: String, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Log] =
     getSrv[TaskModel, Task](taskModel, taskId)
-      .flatMap { task ⇒
+      .flatMap { task =>
         create(task, fields)
       }
 
@@ -57,18 +57,18 @@ class LogSrv @Inject()(
 
   def realDelete(log: Log)(implicit ec: ExecutionContext): Future[Unit] =
     for {
-      _ ← auditSrv
+      _ <- auditSrv
         .findFor(log, Some("all"), Nil)
         ._1
         .mapAsync(1)(auditSrv.realDelete)
         .runWith(Sink.ignore)
-      _ ← log.attachment().fold[Future[Unit]](Future.successful(())) { attachment ⇒
+      _ <- log.attachment().fold[Future[Unit]](Future.successful(())) { attachment =>
         attachmentSrv.attachmentUseCount(attachment.id).flatMap {
-          case 1 ⇒ attachmentSrv.delete(attachment.id)
-          case _ ⇒ Future.successful(())
+          case 1 => attachmentSrv.delete(attachment.id)
+          case _ => Future.successful(())
         }
       }
-      _ ← dbRemove(log)
+      _ <- dbRemove(log)
     } yield ()
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Log, NotUsed], Future[Long]) =

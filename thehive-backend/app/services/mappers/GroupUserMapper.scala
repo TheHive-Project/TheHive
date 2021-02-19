@@ -46,26 +46,26 @@ class GroupUserMapper(
 
     def expr: Parser[Seq[String]] =
       "[" ~ opt(realStr ~ rep("," ~ realStr)) ~ "]" ^^ {
-        case _ ~ Some(firstRole ~ list) ~ _ ⇒
+        case _ ~ Some(firstRole ~ list) ~ _ =>
           list.foldLeft(Seq(firstRole)) {
-            case (queue, _ ~ role) ⇒ role +: queue
+            case (queue, _ ~ role) => role +: queue
           }
-        case _ ~ _ ⇒ Seq.empty[String]
+        case _ ~ _ => Seq.empty[String]
       } | opt(realStr) ^^ {
-        case Some(role) ⇒ Seq(role)
-        case None       ⇒ Seq.empty[String]
+        case Some(role) => Seq(role)
+        case None       => Seq.empty[String]
       }
   }
 
   override def getUserFields(jsValue: JsValue, authHeader: Option[(String, String)]): Future[Fields] =
     groupsUrl match {
-      case Some(groupsEndpointUrl) ⇒
+      case Some(groupsEndpointUrl) =>
         logger.debug(s"Retreiving groups from $groupsEndpointUrl")
-        val apiCall = authHeader.fold(ws.url(groupsEndpointUrl))(headers ⇒ ws.url(groupsEndpointUrl).addHttpHeaders(headers))
-        apiCall.get.flatMap { r ⇒
+        val apiCall = authHeader.fold(ws.url(groupsEndpointUrl))(headers => ws.url(groupsEndpointUrl).addHttpHeaders(headers))
+        apiCall.get.flatMap { r =>
           extractGroupsThenBuildUserFields(jsValue, r.json)
         }
-      case None ⇒
+      case None =>
         logger.debug(s"Extracting groups from user info")
         extractGroupsThenBuildUserFields(jsValue, jsValue)
     }
@@ -73,22 +73,22 @@ class GroupUserMapper(
   private def extractGroupsThenBuildUserFields(jsValue: JsValue, groupsContainer: JsValue): Future[Fields] =
     groupsContainer \ groupsAttrName match {
       // Groups received as valid JSON array
-      case JsDefined(JsArray(groupsList)) ⇒ mapGroupsAndBuildUserFields(jsValue, groupsList.map(_.as[String]).toList)
+      case JsDefined(JsArray(groupsList)) => mapGroupsAndBuildUserFields(jsValue, groupsList.map(_.as[String]).toList)
 
       // Groups list received as string (invalid JSON, for example: "ROLE" or "['Role 1', ROLE2, 'Role_3']")
-      case JsDefined(JsString(groupsStr)) ⇒
+      case JsDefined(JsString(groupsStr)) =>
         val parser = new RoleListParser
         parser.parseAll(parser.expr, groupsStr) match {
-          case parser.Success(result, _) ⇒ mapGroupsAndBuildUserFields(jsValue, result)
-          case err: parser.NoSuccess     ⇒ Future.failed(AuthenticationError(s"User info fails: can't parse groups list (${err.msg})"))
+          case parser.Success(result, _) => mapGroupsAndBuildUserFields(jsValue, result)
+          case err: parser.NoSuccess     => Future.failed(AuthenticationError(s"User info fails: can't parse groups list (${err.msg})"))
         }
 
       // Invalid group list
-      case JsDefined(error) ⇒
+      case JsDefined(error) =>
         Future.failed(AuthenticationError(s"User info fails: invalid groups list received in user info ('$error' of type ${error.getClass})"))
 
       // Groups field is undefined
-      case _: JsUndefined ⇒
+      case _: JsUndefined =>
         Future.failed(AuthenticationError(s"User info fails: groups attribute $groupsAttrName doesn't exist in user info"))
     }
 
@@ -103,12 +103,12 @@ class GroupUserMapper(
       logger.debug(s"Computed roles: ${roles.mkString(", ")}")
 
       val fields = for {
-        login ← (jsValue \ loginAttrName).validate[String]
-        name  ← (jsValue \ nameAttrName).validate[String]
-      } yield Fields(Json.obj("login" → login.toLowerCase, "name" → name, "roles" → roles))
+        login <- (jsValue \ loginAttrName).validate[String]
+        name  <- (jsValue \ nameAttrName).validate[String]
+      } yield Fields(Json.obj("login" -> login.toLowerCase, "name" -> name, "roles" -> roles))
       fields match {
-        case JsSuccess(f, _) ⇒ Future.successful(f)
-        case JsError(errors) ⇒
+        case JsSuccess(f, _) => Future.successful(f)
+        case JsError(errors) =>
           Future.failed(AuthenticationError(s"User info fails: ${errors.map(_._2).map(_.map(_.messages.mkString(", ")).mkString("; ")).mkString}"))
       }
     }

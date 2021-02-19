@@ -26,22 +26,22 @@ object SeverityAttributeFormat extends NumberAttributeFormat {
 
   override def checkJson(subNames: Seq[String], value: JsValue): Or[JsValue, One[InvalidFormatAttributeError]] =
     value match {
-      case JsNumber(v) if subNames.isEmpty && isValidValue(v.toLong) ⇒ Good(value)
-      case _                                                         ⇒ formatError(JsonInputValue(value))
+      case JsNumber(v) if subNames.isEmpty && isValidValue(v.toLong) => Good(value)
+      case _                                                         => formatError(JsonInputValue(value))
     }
 
   override def fromInputValue(subNames: Seq[String], value: InputValue): Long Or Every[AttributeError] =
     value match {
-      case StringInputValue(Seq(v)) if subNames.isEmpty ⇒
+      case StringInputValue(Seq(v)) if subNames.isEmpty =>
         try {
           val longValue = v.toLong
           if (isValidValue(longValue)) Good(longValue)
           else formatError(value)
         } catch {
-          case _: Throwable ⇒ formatError(value)
+          case _: Throwable => formatError(value)
         }
-      case JsonInputValue(JsNumber(v)) ⇒ Good(v.longValue)
-      case _                           ⇒ formatError(value)
+      case JsonInputValue(JsNumber(v)) => Good(v.longValue)
+      case _                           => formatError(value)
     }
 }
 
@@ -61,21 +61,21 @@ object TlpAttributeFormat extends NumberAttributeFormat {
     )
 
   override def checkJson(subNames: Seq[String], value: JsValue): Or[JsValue, One[InvalidFormatAttributeError]] = value match {
-    case JsNumber(v) if subNames.isEmpty && isValidValue(v.toLong) ⇒ Good(value)
-    case _                                                         ⇒ formatError(JsonInputValue(value))
+    case JsNumber(v) if subNames.isEmpty && isValidValue(v.toLong) => Good(value)
+    case _                                                         => formatError(JsonInputValue(value))
   }
 
   override def fromInputValue(subNames: Seq[String], value: InputValue): Long Or Every[AttributeError] =
     value match {
-      case StringInputValue(Seq(v)) if subNames.isEmpty ⇒
+      case StringInputValue(Seq(v)) if subNames.isEmpty =>
         try {
           val longValue = v.toLong
           if (isValidValue(longValue)) Good(longValue)
           else formatError(value)
         } catch {
-          case _: Throwable ⇒ formatError(value)
+          case _: Throwable => formatError(value)
         }
-      case JsonInputValue(JsNumber(v)) ⇒ Good(v.longValue)
-      case _                           ⇒ formatError(value)
+      case JsonInputValue(JsNumber(v)) => Good(v.longValue)
+      case _                           => formatError(value)
     }
 }

@@ -21,7 +21,7 @@ import services.mappers.{MultiUserMapperSrv, UserMapper}
 
 import org.elastic4play.models.BaseModelDef
 import org.elastic4play.services.auth.MultiAuthSrv
-import org.elastic4play.services.{AuthSrv, MigrationOperations, UserSrv ⇒ EUserSrv}
+import org.elastic4play.services.{AuthSrv, MigrationOperations, UserSrv => EUserSrv}
 
 class TheHive(environment: Environment, val configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
   private[TheHive] lazy val logger = Logger(s"module")
@@ -50,8 +50,8 @@ class TheHive(environment: Environment, val configuration: Configuration) extend
     reflectionClasses
       .getSubTypesOf(classOf[BaseModelDef])
       .asScala
-      .filterNot(c ⇒ Modifier.isAbstract(c.getModifiers))
-      .foreach { modelClass ⇒
+      .filterNot(c => Modifier.isAbstract(c.getModifiers))
+      .foreach { modelClass =>
         logger.info(s"Loading model $modelClass")
         modelBindings.addBinding.to(modelClass)
         if (classOf[AuditedModel].isAssignableFrom(modelClass)) {
@@ -62,18 +62,18 @@ class TheHive(environment: Environment, val configuration: Configuration) extend
     reflectionClasses
       .getSubTypesOf(classOf[AuthSrv])
       .asScala
-      .filterNot(c ⇒ Modifier.isAbstract(c.getModifiers) || c.isMemberClass)
-      .filterNot(c ⇒ c == classOf[MultiAuthSrv] || c == classOf[TheHiveAuthSrv])
-      .foreach { authSrvClass ⇒
+      .filterNot(c => Modifier.isAbstract(c.getModifiers) || c.isMemberClass)
+      .filterNot(c => c == classOf[MultiAuthSrv] || c == classOf[TheHiveAuthSrv])
+      .foreach { authSrvClass =>
         authBindings.addBinding.to(authSrvClass)
       }
 
     reflectionClasses
       .getSubTypesOf(classOf[UserMapper])
       .asScala
-      .filterNot(c ⇒ Modifier.isAbstract(c.getModifiers) || c.isMemberClass)
-      .filterNot(c ⇒ c == classOf[MultiUserMapperSrv])
-      .foreach(mapperCls ⇒ ssoMapperBindings.addBinding.to(mapperCls))
+      .filterNot(c => Modifier.isAbstract(c.getModifiers) || c.isMemberClass)
+      .filterNot(c => c == classOf[MultiUserMapperSrv])
+      .foreach(mapperCls => ssoMapperBindings.addBinding.to(mapperCls))
 
     bind[MigrationOperations].to[Migration]
     bind[AuthSrv].to[TheHiveAuthSrv]

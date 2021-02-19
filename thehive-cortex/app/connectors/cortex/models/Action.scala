@@ -7,12 +7,12 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 import play.api.libs.json.JsObject
 import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O}
+import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, ModelDef, AttributeFormat => F, AttributeOption => O}
 import org.elastic4play.utils.RichJson
 import connectors.cortex.models.JsonFormat.jobStatusFormat
 import services.AuditedModel
 
-trait ActionAttributes { _: AttributeDef ⇒
+trait ActionAttributes { _: AttributeDef =>
   val responderId         = attribute("responderId", F.stringFmt, "Analyzer", O.readonly)
   val responderName       = optionalAttribute("responderName", F.stringFmt, "Name of the responder", O.readonly)
   val responderDefinition = optionalAttribute("responderDefinition", F.stringFmt, "Name of the responder definition", O.readonly)

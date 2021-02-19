@@ -29,35 +29,35 @@ class CaseTemplateCtrl @Inject()(
     with Status {
 
   @Timed
-  def create: Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+  def create: Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request =>
     caseTemplateSrv
       .create(request.body)
-      .map(caze ⇒ renderer.toOutput(CREATED, caze))
+      .map(caze => renderer.toOutput(CREATED, caze))
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ =>
     caseTemplateSrv
       .get(id)
-      .map(caze ⇒ renderer.toOutput(OK, caze))
+      .map(caze => renderer.toOutput(OK, caze))
   }
 
   @Timed
-  def update(id: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request =>
     caseTemplateSrv
       .update(id, request.body)
-      .map(caze ⇒ renderer.toOutput(OK, caze))
+      .map(caze => renderer.toOutput(OK, caze))
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
     caseTemplateSrv
       .delete(id)
-      .map(_ ⇒ NoContent)
+      .map(_ => NoContent)
   }
 
   @Timed
-  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range     = request.body.getString("range")
     val sort      = request.body.getStrings("sort").getOrElse(Nil)

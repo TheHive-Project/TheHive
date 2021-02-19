@@ -24,7 +24,7 @@ import services.UserSrv
 import org.elastic4play.controllers.Fields
 import org.elastic4play.database.ModifyConfig
 import org.elastic4play.models.{AttributeOption, BaseEntity}
-import org.elastic4play.services.{User ⇒ _, _}
+import org.elastic4play.services.{User => _, _}
 import org.elastic4play.{BadRequestError, MissingAttributeError, NotFoundError}
 
 @Singleton
@@ -48,25 +48,25 @@ class CortexActionSrv @Inject()(
 
   def getResponderById(id: String): Future[Responder] =
     id match {
-      case responderIdRegex(instanceId, responderId) ⇒
+      case responderIdRegex(instanceId, responderId) =>
         cortexConfig
           .instances
           .find(_.name == instanceId)
           .map(_.getResponderById(responderId))
           .getOrElse(Future.failed(NotFoundError(s"Responder $id not found")))
-      case _ ⇒ Future.firstCompletedOf(cortexConfig.instances.map(_.getResponderById(id)))
+      case _ => Future.firstCompletedOf(cortexConfig.instances.map(_.getResponderById(id)))
     }
 
-  def askRespondersOnAllCortex(f: CortexClient ⇒ Future[Seq[Responder]]): Future[Seq[Responder]] =
+  def askRespondersOnAllCortex(f: CortexClient => Future[Seq[Responder]]): Future[Seq[Responder]] =
     Future
-      .traverse(cortexConfig.instances) { cortex ⇒
-        f(cortex).recover { case NonFatal(t) ⇒ logger.error("Request to Cortex fails", t); Nil }
+      .traverse(cortexConfig.instances) { cortex =>
+        f(cortex).recover { case NonFatal(t) => logger.error("Request to Cortex fails", t); Nil }
       }
       .map(_.flatten)
 
   def findResponders(query: JsObject): Future[Seq[Responder]] =
     askRespondersOnAllCortex(_.findResponders(query))
-      .map { responders ⇒
+      .map { responders =>
         responders
           .groupBy(_.name)
           .values
@@ -76,20 +76,20 @@ class CortexActionSrv @Inject()(
 
   def findResponderFor(entityType: String, entityId: String): Future[Seq[Responder]] =
     for {
-      entity ← getEntity(entityType, entityId)
-      artifactTlp ← actionOperationSrv
+      entity <- getEntity(entityType, entityId)
+      artifactTlp <- actionOperationSrv
         .findArtifactEntity(entity)
-        .map(a ⇒ Some(a.tlp()))
-        .recover { case _ ⇒ None }
-      (tlp, pap) ← actionOperationSrv
+        .map(a => Some(a.tlp()))
+        .recover { case _ => None }
+      (tlp, pap) <- actionOperationSrv
         .findCaseEntity(entity)
-        .map { caze ⇒
+        .map { caze =>
           (artifactTlp.getOrElse(caze.tlp()), caze.pap())
         }
-        .recover { case _ ⇒ (artifactTlp.getOrElse(0L), 0L) }
-      query = Json.obj("dataTypeList" → s"thehive:$entityType")
-      responders ← findResponders(query)
-      applicableResponders = responders.filter(w ⇒ w.maxTlp.fold(true)(_ >= tlp) && w.maxPap.fold(true)(_ >= pap))
+        .recover { case _ => (artifactTlp.getOrElse(0L), 0L) }
+      query = Json.obj("dataTypeList" -> s"thehive:$entityType")
+      responders <- findResponders(query)
+      applicableResponders = responders.filter(w => w.maxTlp.fold(true)(_ >= tlp) && w.maxPap.fold(true)(_ >= pap))
     } yield applicableResponders
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String]): (Source[Action, NotUsed], Future[Long]) =
@@ -104,7 +104,7 @@ class CortexActionSrv @Inject()(
     update(actionId, fields, ModifyConfig.default)
 
   private def update(actionId: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext): Future[Action] =
-    getAction(actionId).flatMap(action ⇒ update(action, fields, modifyConfig))
+    getAction(actionId).flatMap(action => update(action, fields, modifyConfig))
 
   private def update(action: Action, fields: Fields)(implicit authContext: AuthContext): Future[Action] =
     update(action, fields, ModifyConfig.default)
@@ -123,7 +123,7 @@ class CortexActionSrv @Inject()(
     logger.debug(s"Requesting status of job $cortexJobId in cortex ${cortex.name} in order to update action $actionId")
     cortex
       .waitReport(cortexJobId, retryDelay)
-      .flatMap { j ⇒
+      .flatMap { j =>
         val status = (j \ "status").asOpt[JobStatus.Type].getOrElse(JobStatus.Failure)
         if (status == JobStatus.InProgress || status == JobStatus.Waiting)
           updateActionWithCortex(actionId, cortexJobId, entity, cortex)
@@ -132,9 +132,9 @@ class CortexActionSrv @Inject()(
           val operations = (report \ "operations").asOpt[Seq[ActionOperation]].getOrElse(Nil)
           logger.debug(s"Job $cortexJobId in cortex ${cortex.name} has finished with status $status, updating action $actionId")
           val updatedAction = for {
-            action ← getSrv[ActionModel, Action](actionModel, actionId)
-            updatedOperations ← Future.traverse(operations) { op ⇒
-              userSrv.extraAuthContext(ac ⇒ actionOperationSrv.execute(entity, op)(ac))
+            action <- getSrv[ActionModel, Action](actionModel, actionId)
+            updatedOperations <- Future.traverse(operations) { op =>
+              userSrv.extraAuthContext(ac => actionOperationSrv.execute(entity, op)(ac))
             }
             actionFields = Fields
               .empty
@@ -142,28 +142,28 @@ class CortexActionSrv @Inject()(
               .set("report", (report - "operations").toString)
               .set("endDate", Json.toJson(new Date))
               .set("operations", Json.toJson(updatedOperations).toString)
-            updatedAction ← update(action, actionFields)
+            updatedAction <- update(action, actionFields)
           } yield updatedAction
           updatedAction.failed.foreach(logger.error(s"Update action fails", _))
           updatedAction
         }
       }
       .recoverWith {
-        case CortexError(404, _, _) ⇒
+        case CortexError(404, _, _) =>
           logger.debug(s"The job $cortexJobId not found")
           val actionFields = Fields
             .empty
             .set("status", JobStatus.Failure.toString)
             .set("endDate", Json.toJson(new Date))
           update(actionId, actionFields)
-        case _ if maxRetryOnError > 0 ⇒
+        case _ if maxRetryOnError > 0 =>
           logger.debug(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails, restarting ...")
           val result = Promise[Action]
           system.scheduler.scheduleOnce(retryDelay) {
             updateActionWithCortex(actionId, cortexJobId, entity, cortex, retryDelay, maxRetryOnError - 1).onComplete(result.complete)
           }
           result.future
-        case _ ⇒
+        case _ =>
           logger.error(s"Request of status of job $cortexJobId in cortex ${cortex.name} fails and the number of errors reaches the limit, aborting")
           update(
             actionId,
@@ -183,25 +183,25 @@ class CortexActionSrv @Inject()(
       ._1
       .runWith(Sink.headOption)
       .flatMap {
-        case Some(entity) ⇒ Future.successful(entity)
-        case None         ⇒ Future.failed(NotFoundError(s"$objectType $objectId not found"))
+        case Some(entity) => Future.successful(entity)
+        case None         => Future.failed(NotFoundError(s"$objectType $objectId not found"))
       }
   }
 
   def getEntityLabel(entity: BaseEntity): String =
     entity match {
-      case c: Case            ⇒ s"#${c.caseId()} ${c.title()}"
-      case a: Artifact        ⇒ s"[${a.dataType()}] ${a.data().getOrElse(a.attachment().get.name)}"
-      case a: Alert           ⇒ s"[${a.source()}:${a.sourceRef()}] ${a.title()}"
-      case l: Log             ⇒ s"${l.message()} from ${l.createdBy}"
-      case t: Task            ⇒ s"${t.title()} (${t.status()})"
-      case j: Job             ⇒ s"${j.analyzerName()} (${j.status()})"
-      case a: Action          ⇒ s"${a.responderName()} on ${a.objectType()}:${a.objectId()}"
-      case u: User            ⇒ s"${u.userName()} (${u.userId()})"
-      case a: Audit           ⇒ s"${a.operation()} on ${a.objectType()}:${a.objectId()}"
-      case ct: CaseTemplate   ⇒ s"${ct.templateName()}"
-      case d: Dashboard       ⇒ s"${d.title()}"
-      case rt: ReportTemplate ⇒ s"${rt.analyzerId()}/${rt.reportType()}"
+      case c: Case            => s"#${c.caseId()} ${c.title()}"
+      case a: Artifact        => s"[${a.dataType()}] ${a.data().getOrElse(a.attachment().get.name)}"
+      case a: Alert           => s"[${a.source()}:${a.sourceRef()}] ${a.title()}"
+      case l: Log             => s"${l.message()} from ${l.createdBy}"
+      case t: Task            => s"${t.title()} (${t.status()})"
+      case j: Job             => s"${j.analyzerName()} (${j.status()})"
+      case a: Action          => s"${a.responderName()} on ${a.objectType()}:${a.objectId()}"
+      case u: User            => s"${u.userName()} (${u.userId()})"
+      case a: Audit           => s"${a.operation()} on ${a.objectType()}:${a.objectId()}"
+      case ct: CaseTemplate   => s"${ct.templateName()}"
+      case d: Dashboard       => s"${d.title()}"
+      case rt: ReportTemplate => s"${rt.analyzerId()}/${rt.reportType()}"
     }
 
   def executeAction(fields: Fields)(implicit authContext: AuthContext): Future[Action] = {
@@ -213,24 +213,24 @@ class CortexActionSrv @Inject()(
     def getCortexClient: Future[(CortexClient, Responder)] =
       fields
         .getString("cortexId")
-        .map { cortexId ⇒
+        .map { cortexId =>
           cortexConfig
             .instances
             .find(_.name == cortexId)
-            .fold[Future[(CortexClient, Responder)]](Future.failed(NotFoundError(s"cortex $cortexId not found"))) { c ⇒
-              getResponder(c).map(c → _)
+            .fold[Future[(CortexClient, Responder)]](Future.failed(NotFoundError(s"cortex $cortexId not found"))) { c =>
+              getResponder(c).map(c -> _)
             }
         }
         .getOrElse {
           Future
-            .traverse(cortexConfig.instances) { c ⇒
+            .traverse(cortexConfig.instances) { c =>
               getResponder(c)
                 .transform {
-                  case Success(w) ⇒ Success(Some(c → w))
-                  case _          ⇒ Success(None)
+                  case Success(w) => Success(Some(c -> w))
+                  case _          => Success(None)
                 }
             }
-            .flatMap { responders ⇒
+            .flatMap { responders =>
               responders
                 .flatten
                 .headOption
@@ -239,20 +239,20 @@ class CortexActionSrv @Inject()(
         }
 
     for {
-      objectType                ← fields.getString("objectType").fold[Future[String]](Future.failed(MissingAttributeError("action.objectType")))(Future.successful)
-      objectId                  ← fields.getString("objectId").fold[Future[String]](Future.failed(MissingAttributeError("action.objectId")))(Future.successful)
-      (cortexClient, responder) ← getCortexClient
+      objectType                <- fields.getString("objectType").fold[Future[String]](Future.failed(MissingAttributeError("action.objectType")))(Future.successful)
+      objectId                  <- fields.getString("objectId").fold[Future[String]](Future.failed(MissingAttributeError("action.objectId")))(Future.successful)
+      (cortexClient, responder) <- getCortexClient
       message = fields.getString("message").getOrElse("")
       parameters = fields.getValue("parameters") match {
-        case Some(o: JsObject) ⇒ o
-        case _                 ⇒ JsObject.empty
+        case Some(o: JsObject) => o
+        case _                 => JsObject.empty
       }
-      entity     ← getEntity(objectType, objectId)
-      entityJson ← auxSrv(entity, 10, withStats = false, !_.contains(AttributeOption.sensitive))
-      caze       ← actionOperationSrv.findCaseEntity(entity).map(Some(_)).recover { case _ ⇒ None }
+      entity     <- getEntity(objectType, objectId)
+      entityJson <- auxSrv(entity, 10, withStats = false, !_.contains(AttributeOption.sensitive))
+      caze       <- actionOperationSrv.findCaseEntity(entity).map(Some(_)).recover { case _ => None }
       tlp = fields.getLong("tlp").orElse(caze.map(_.tlp())).getOrElse(2L)
       pap = caze.map(_.pap()).getOrElse(2L)
-      jobJson ← cortexClient.execute(
+      jobJson <- cortexClient.execute(
         responder.id,
         getEntityLabel(entity),
         s"thehive:$objectType",
@@ -260,10 +260,10 @@ class CortexActionSrv @Inject()(
         tlp,
         pap,
         message,
-        parameters + ("user" → JsString(authContext.userId))
+        parameters + ("user" -> JsString(authContext.userId))
       )
       job = jobJson.as[CortexJob] //(cortexActionJobReads(cortexClient.name))
-      action ← createSrv[ActionModel, Action](
+      action <- createSrv[ActionModel, Action](
         actionModel,
         Fields
           .empty
@@ -279,7 +279,7 @@ class CortexActionSrv @Inject()(
           .set("cortexId", cortexClient.name)
           .set("cortexJobId", job.id)
       )
-      _ = userSrv.extraAuthContext { extraAuthContext ⇒
+      _ = userSrv.extraAuthContext { extraAuthContext =>
         updateActionWithCortex(action.id, job.id, entity, cortexClient)(extraAuthContext)
       }
     } yield action

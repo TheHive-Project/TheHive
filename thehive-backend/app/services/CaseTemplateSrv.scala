@@ -48,6 +48,8 @@ class CaseTemplateSrv @Inject()(
   def delete(id: String)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Unit] =
     deleteSrv.realDelete[CaseTemplateModel, CaseTemplate](caseTemplateModel, id)
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[CaseTemplate, NotUsed], Future[Long]) =
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(
+      implicit ec: ExecutionContext
+  ): (Source[CaseTemplate, NotUsed], Future[Long]) =
     findSrv[CaseTemplateModel, CaseTemplate](caseTemplateModel, queryDef, range, sortBy)
 }

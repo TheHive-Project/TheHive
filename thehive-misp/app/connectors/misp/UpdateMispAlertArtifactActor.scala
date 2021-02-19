@@ -38,18 +38,18 @@ class UpdateMispAlertArtifactActor @Inject()(eventSrv: EventSrv, userSrv: UserSr
   }
 
   override def receive: Receive = {
-    case UpdateMispAlertArtifact() ⇒
+    case UpdateMispAlertArtifact() =>
       logger.info("UpdateMispAlertArtifact")
       userSrv
-        .inInitAuthContext { implicit authContext ⇒
+        .inInitAuthContext { implicit authContext =>
           mispSrv.updateMispAlertArtifact()
         }
         .onComplete {
-          case Success(_)     ⇒ logger.info("Artifacts in MISP alerts updated")
-          case Failure(error) ⇒ logger.error("Update MISP alert artifacts error :", error)
+          case Success(_)     => logger.info("Artifacts in MISP alerts updated")
+          case Failure(error) => logger.error("Update MISP alert artifacts error :", error)
         }
       ()
-    case msg ⇒
+    case msg =>
       logger.info(s"Receiving unexpected message: $msg (${msg.getClass})")
   }
 }

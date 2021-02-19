@@ -15,7 +15,7 @@ class MispConnector extends ConnectorModule with AkkaGuiceSupport {
       bindActor[UpdateMispAlertArtifactActor]("UpdateMispAlertArtifactActor")
       registerController[MispCtrl]
     } catch {
-      case t: Throwable ⇒ logger.error("MISP connector is disabled because its configuration is invalid", t)
+      case t: Throwable => logger.error("MISP connector is disabled because its configuration is invalid", t)
     }
   }
 }

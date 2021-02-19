@@ -26,16 +26,16 @@ class DescribeCtrl @Inject()(
 
   private def modelToJson(model: BaseModelDef): JsObject = {
     val attributeDefinitions = model.attributes.flatMap {
-      case attribute: Attribute[t] ⇒ attribute.format.definition(dblists, attribute)
-    } ++ model.computedMetrics.keys.map { computedMetricName ⇒
+      case attribute: Attribute[t] => attribute.format.definition(dblists, attribute)
+    } ++ model.computedMetrics.keys.map { computedMetricName =>
       AttributeDefinition(s"computed.$computedMetricName", "number", s"Computed metric $computedMetricName", Nil, Nil)
     }
-    Json.obj("label" → model.label, "path" → model.path, "attributes" → attributeDefinitions)
+    Json.obj("label" -> model.label, "path" -> model.path, "attributes" -> attributeDefinitions)
   }
 
-  def describe(modelName: String): Action[AnyContent] = authenticated(Roles.read) { _ ⇒
+  def describe(modelName: String): Action[AnyContent] = authenticated(Roles.read) { _ =>
     modelSrv(modelName)
-      .map { model ⇒
+      .map { model =>
         renderer.toOutput(OK, modelToJson(model))
       }
       .getOrElse(NotFound(s"Model $modelName not found"))
@@ -43,11 +43,11 @@ class DescribeCtrl @Inject()(
 
   private val allModels: Seq[String] = Seq("case", "case_artifact", "case_task", "case_task_log", "alert", "case_artifact_job", "audit", "action")
 
-  def describeAll: Action[AnyContent] = authenticated(Roles.read) { _ ⇒
+  def describeAll: Action[AnyContent] = authenticated(Roles.read) { _ =>
     val entityDefinitions = modelSrv
       .list
       .collect {
-        case model if allModels.contains(model.modelName) ⇒ model.modelName → modelToJson(model)
+        case model if allModels.contains(model.modelName) => model.modelName -> modelToJson(model)
       }
     renderer.toOutput(OK, JsObject(entityDefinitions))
   }

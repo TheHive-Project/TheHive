@@ -21,13 +21,13 @@ case class AggregatedAuditMessage(auxSrv: AuxSrv, message: Future[JsObject], sum
     val modelSummary = summary.getOrElse(operation.entity.model.modelName, Map.empty[String, Int])
     val actionCount  = modelSummary.getOrElse(operation.action.toString, 0)
     copy(
-      summary = summary + (operation.entity.model.modelName → (modelSummary +
-        (operation.action.toString                          → (actionCount + 1))))
+      summary = summary + (operation.entity.model.modelName -> (modelSummary +
+        (operation.action.toString                          -> (actionCount + 1))))
     )
   }
 
-  def toJson(implicit ec: ExecutionContext): Future[JsObject] = message.map { msg ⇒
-    Json.obj("base" → msg, "summary" → summary)
+  def toJson(implicit ec: ExecutionContext): Future[JsObject] = message.map { msg =>
+    Json.obj("base" -> msg, "summary" -> summary)
   }
 }
 
@@ -38,26 +38,26 @@ object AggregatedAuditMessage {
     // First operation of the group
     val msg = auxSrv(operation.entity, 10, withStats = false, removeUnaudited = true)
       .recover {
-        case error ⇒
+        case error =>
           logger.error("auxSrv fails", error)
           JsObject.empty
       }
-      .map { obj ⇒
+      .map { obj =>
         Json.obj(
-          "objectId"   → operation.entity.id,
-          "objectType" → operation.entity.model.modelName,
-          "operation"  → operation.action,
-          "startDate"  → operation.date,
-          "rootId"     → operation.entity.routing,
-          "user"       → operation.authContext.userId,
-          "createdBy"  → operation.authContext.userId,
-          "createdAt"  → operation.date,
-          "requestId"  → operation.authContext.requestId,
-          "object"     → obj,
-          "details"    → operation.details
+          "objectId"   -> operation.entity.id,
+          "objectType" -> operation.entity.model.modelName,
+          "operation"  -> operation.action,
+          "startDate"  -> operation.date,
+          "rootId"     -> operation.entity.routing,
+          "user"       -> operation.authContext.userId,
+          "createdBy"  -> operation.authContext.userId,
+          "createdAt"  -> operation.date,
+          "requestId"  -> operation.authContext.requestId,
+          "object"     -> obj,
+          "details"    -> operation.details
         )
       }
-    new AggregatedAuditMessage(auxSrv, msg, Map(operation.entity.model.modelName → Map(operation.action.toString → 1)))
+    new AggregatedAuditMessage(auxSrv, msg, Map(operation.entity.model.modelName -> Map(operation.action.toString -> 1)))
   }
 }
 
@@ -71,7 +71,7 @@ case class AggregatedMigrationMessage(tableName: String, current: Long, total: L
 
   def toJson(implicit ec: ExecutionContext): Future[JsObject] =
     Future.successful(
-      Json.obj("base" → Json.obj("rootId" → current, "objectType" → "migration", "tableName" → tableName, "current" → current, "total" → total))
+      Json.obj("base" -> Json.obj("rootId" -> current, "objectType" -> "migration", "tableName" -> tableName, "current" -> current, "total" -> total))
     )
 }
 

@@ -19,7 +19,7 @@ object CustomWSAPI {
       .parse()
 
   def parseProxyConfig(config: Configuration): Option[WSProxyServer] =
-    config.getOptional[Configuration]("play.ws.proxy").map { proxyConfig ⇒
+    config.getOptional[Configuration]("play.ws.proxy").map { proxyConfig =>
       DefaultWSProxyServer(
         proxyConfig.get[String]("host"),
         proxyConfig.get[Int]("port"),
@@ -35,7 +35,7 @@ object CustomWSAPI {
   def getWS(config: Configuration)(implicit mat: Materializer): AhcWSClient = {
     val clientConfig = parseWSConfig(config)
     val clientConfigWithTruststore = config.getOptional[String]("play.cert") match {
-      case Some(p) ⇒
+      case Some(p) =>
         logger.warn("""Use of "cert" parameter in configuration file is deprecated. Please use:
                       | ws.ssl {
                       |   trustManager = {
@@ -67,7 +67,7 @@ object CustomWSAPI {
                 )
             )
         )
-      case None ⇒ clientConfig
+      case None => clientConfig
     }
     AhcWSClient(clientConfigWithTruststore, None)
   }
@@ -110,7 +110,7 @@ class CustomWSAPI(
     try {
       new CustomWSAPI(Configuration(subConfig.underlying.atKey("play").withFallback(config.underlying)), environment, lifecycle, mat)
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         logger.error(s"WSAPI configuration error, use default values", e)
         this
     }
