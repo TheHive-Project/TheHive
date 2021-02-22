@@ -1,0 +1,26 @@
+<div class="flow-task" ng-switch="base.operation">
+    <!-- <pre>{{base | json}}</pre> -->
+    <div class="flow-item-title">
+        <i class="glyphicon glyphicon-knight"></i>{{tactics[base.details.tactic].label}} - {{base.details.patternId}}
+    </div>
+    <div class="flow-item-updates" ng-switch-when="Creation">
+        <div>
+            occureDate: <span><em>{{base.details.occurDate | showDate}}</em></span>
+        </div>
+        <div>
+            description: <span><em>{{(base.details.procedure || '-')| limitTo: 250}}</em></span>
+        </div>
+    </div>
+    <div class="flow-item-updates" ng-switch-default>
+        <span ng-repeat="(k, v) in base.details" ng-switch="k">
+            <div ng-switch-when="occurDate">
+                {{k}}:
+                <em>{{v | showDate}}</em>
+            </div>
+            <div ng-switch-default>
+                {{k}}:
+                <em>{{v | limitTo: 250}}</em>
+            </div>
+        </span>
+    </div>
+</div>
