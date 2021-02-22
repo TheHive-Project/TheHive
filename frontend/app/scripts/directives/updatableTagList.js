@@ -1,36 +1,6 @@
 (function() {
     'use strict';
     angular.module('theHiveDirectives')
-        .controller('UpdatableTagListModalCtrl', function($uibModalInstance, taxonomies) {
-            var self = this;
-
-            this.taxonomies = angular.copy(taxonomies);
-
-            this.formData = {
-                selectedTaxonomy: null,
-                selectedTags: null
-            };
-
-            this.addSelectedTags = function() {
-                if (!self.formData.selectedTaxonomy) {
-                    return;
-                }
-
-                var selection = _.filter(self.formData.selectedTaxonomy.tags, function(tag) {
-                    return tag.selected;
-                });
-
-                if (selection.length === 0) {
-                    return;
-                }
-
-                $uibModalInstance.close(selection);
-            };
-
-            this.cancel = function() {
-                $uibModalInstance.dismiss();
-            };
-        })
         .directive('updatableTagList', function(UtilsSrv, $uibModal, $filter, NotificationSrv, TaxonomyCacheSrv) {
             return {
                 restrict: 'E',
@@ -53,10 +23,10 @@
                         this.state.type = 'library';
 
                         var modalInstance = $uibModal.open({
-                            controller: 'UpdatableTagListModalCtrl',
+                            controller: 'TaxonomySelectionModalCtrl',
                             controllerAs: '$modal',
                             animation: true,
-                            templateUrl: 'views/directives/updatable-tag-list-modal.html',
+                            templateUrl: 'views/partials/misc/taxonomy-selection.modal.html',
                             size: 'lg',
                             resolve: {
                                 taxonomies: function() {

@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgCaseTemplateList', {
-            controller: function($uibModal, $scope, CaseTemplateSrv, TagSrv, UserSrv, AuthenticationSrv, NotificationSrv, UtilsSrv, ModalUtilsSrv) {
+            controller: function($uibModal, $scope, $filter, CaseTemplateSrv, TagSrv, UserSrv, TaxonomyCacheSrv, AuthenticationSrv, NotificationSrv, UtilsSrv, ModalUtilsSrv) {
                 var self = this;
 
                 self.task = '';
@@ -119,6 +119,40 @@
                     CaseTemplateSrv.get(id).then(function(template) {
                         self.loadTemplate(template);
                     });
+                };
+
+                self.fromTagLibrary = function() {
+                    var modalInstance = $uibModal.open({
+                        controller: 'TaxonomySelectionModalCtrl',
+                        controllerAs: '$modal',
+                        animation: true,
+                        templateUrl: 'views/partials/misc/taxonomy-selection.modal.html',
+                        size: 'lg',
+                        resolve: {
+                            taxonomies: function() {
+                                return TaxonomyCacheSrv.all();
+                            }
+                        }
+                    });
+
+                    modalInstance.result
+                        .then(function(selectedTags) {
+                            var filterFn = $filter('tagValue'),
+                                tags = [];
+
+                            _.each(selectedTags, function(tag) {
+                                tags.push({
+                                    text: filterFn(tag)
+                                });
+                            });
+
+                            self.tags = self.tags.concat(tags);
+                        })
+                        .catch(function(err) {
+                            if (err && !_.isString(err)) {
+                                NotificationSrv.error('Tag selection', err.data, err.status);
+                            }
+                        });
                 };
 
                 self.newTemplate = function() {
