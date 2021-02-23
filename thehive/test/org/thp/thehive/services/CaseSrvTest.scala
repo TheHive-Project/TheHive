@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
 import java.util.Date
-
 import org.specs2.matcher.Matcher
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FPathElem
@@ -16,11 +15,12 @@ import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class CaseSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Profile.analyst.permissions).authContext
+
   "case service" should {
 
     "list all cases" in testApp { app =>
@@ -142,34 +142,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       }
     }
 
-    "merge two cases" in testApp { app =>
-      pending
-    //      app[Database].transaction { implicit graph =>
-    //        Seq("#2", "#3").toTry(app[CaseSrv].getOrFail) must beSuccessfulTry.which { cases: Seq[Case with Entity] =>
-    //          val mergedCase = app[CaseSrv].merge(cases)(graph, dummyUserSrv.getSystemAuthContext)
-    //
-    //          mergedCase.title must_=== "case#2 / case#3"
-    //          mergedCase.description must_=== "description of case #2\n\ndescription of case #3"
-    //          mergedCase.severity must_=== 2
-    //          mergedCase.startDate must_=== new Date(1531667370000L)
-    //          mergedCase.endDate must beNone
-    //          mergedCase.tags must_=== Nil
-    //          mergedCase.flag must_=== false
-    //          mergedCase.tlp must_=== 2
-    //          mergedCase.pap must_=== 2
-    //          mergedCase.status must_=== CaseStatus.Open
-    //          mergedCase.summary must beNone
-    //          mergedCase.impactStatus must beNone
-    //          mergedCase.user must beSome("test")
-    //          mergedCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
-    //            allOf[(String, String, Option[Any])](
-    //              ("boolean1", "boolean", Some(true)),
-    //              ("string1", "string", Some("string1 custom field"))
-    //            ))
-    //        }
-    //      }
-    }
-
     "add custom field with wrong type" in testApp { app =>
       app[Database].transaction { implicit graph =>
         app[CaseSrv].getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
@@ -207,7 +179,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "get correct next case number" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].nextCaseNumber shouldEqual 6
+        app[CaseSrv].nextCaseNumber shouldEqual 26
       }
     }
 
@@ -419,5 +391,40 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityName("1")).linkedCases must not(beEmpty))
       }
     }
+
+    "merge cases" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        val case21 = app[CaseSrv].get(EntityName("21"))
+        val case22 = app[CaseSrv].get(EntityName("22"))
+        val case23 = app[CaseSrv].get(EntityName("23"))
+        // Tasks
+        case21.clone().tasks.toSeq.size mustEqual 2
+        case22.clone().tasks.toSeq.size mustEqual 0
+        case23.clone().tasks.toSeq.size mustEqual 1
+        // Observables
+        case21.clone().observables.toSeq.size mustEqual 1
+        case22.clone().observables.toSeq.size mustEqual 0
+        case23.clone().observables.toSeq.size mustEqual 2
+        // Procedures
+        case21.clone().procedure.toSeq.size mustEqual 1
+        case22.clone().procedure.toSeq.size mustEqual 2
+        case23.clone().procedure.toSeq.size mustEqual 0
+        // TODO CustomFields
+
+        for {
+          c21     <- case21.clone().getOrFail("Case")
+          c22     <- case22.clone().getOrFail("Case")
+          c23     <- case23.clone().getOrFail("Case")
+          newCase <- app[CaseSrv].merge(Seq(c21, c22, c23))
+        } yield newCase
+      } must beASuccessfulTry.which { richCase =>
+        app[Database].roTransaction { implicit graph =>
+          app[CaseSrv].get(EntityName(richCase.number.toString)).tasks.toSeq.size mustEqual 3
+          app[CaseSrv].get(EntityName(richCase.number.toString)).observables.toSeq.size mustEqual 3
+          app[CaseSrv].get(EntityName(richCase.number.toString)).procedure.toSeq.size mustEqual 3
+        }
+      }
+    }
+
   }
 }

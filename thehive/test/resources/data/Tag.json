@@ -75,5 +75,19 @@
     "predicate": "pred1",
     "value": "value1",
     "colour": "#00f300"
+  },
+  {
+    "id": "tagMerge1",
+    "namespace": "toMerge",
+    "predicate": "pred1",
+    "value": "value1",
+    "colour": "#00f300"
+  },
+  {
+    "id": "tagMerge2",
+    "namespace": "toMerge",
+    "predicate": "pred2",
+    "value": "value2",
+    "colour": "#00f300"
   }
 ]

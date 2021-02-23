@@ -33,7 +33,6 @@ case class TestCase(
 )
 
 object TestCase {
-
   def apply(outputCase: OutputCase): TestCase =
     outputCase.into[TestCase].transform
 }
@@ -327,7 +326,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      (resultCase \ "count").asOpt[Int] must beSome(3)
+      (resultCase \ "count").asOpt[Int] must beSome(7)
       (resultCase \ "testNamespace:testPredicate=\"t1\"" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "testNamespace:testPredicate=\"t2\"" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "testNamespace:testPredicate=\"t3\"" \ "count").asOpt[Int] must beSome(1)
@@ -370,14 +369,13 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(case21) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(case21)}")
       val output21 = contentAsJson(case21).as[OutputCase]
 
-      val request = FakeRequest("GET", "/api/v1/case/21/_merge/22")
+      val request = FakeRequest("GET", "/api/v0/case/21/_merge/22")
         .withHeaders("user" -> "admin@thehive.local")
 
       val result = app[CaseCtrl].merge("21", "22")(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val outputCase = contentAsJson(result).as[OutputCase]
-      // TODO Tags / CustomFields / ResolutionStatus / ImpactStatus / Alerts / Share / CaseTemplate ?
 
       // Merge result
       TestCase(outputCase) must equalTo(
@@ -405,17 +403,16 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "merge two cases error, not same organisation" in testApp { app =>
-      val request = FakeRequest("GET", "/api/v1/case/21/_merge/24")
+      val request = FakeRequest("GET", "/api/v0/case/21/_merge/24")
         .withHeaders("user" -> "admin@thehive.local")
 
       val result = app[CaseCtrl].merge("21", "24")(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
-      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
-      (contentAsJson(result) \ "message").as[String] must contain("different organisations")
+      // User shouldn't be able to see others cases, resulting in 404
+      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
 
     "merge two cases error, not same profile" in testApp { app =>
-      val request = FakeRequest("GET", "/api/v1/case/21/_merge/25")
+      val request = FakeRequest("GET", "/api/v0/case/21/_merge/25")
         .withHeaders("user" -> "admin@thehive.local")
 
       val result = app[CaseCtrl].merge("21", "25")(request)

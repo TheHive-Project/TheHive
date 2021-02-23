@@ -33,5 +33,26 @@
     "tlp": 1,
     "ioc": true,
     "sighted": true
+  },
+  {
+    "id": "mergeObs211",
+    "message": "merge Obs 211",
+    "tlp": 1,
+    "ioc": true,
+    "sighted": false
+  },
+  {
+    "id": "mergeObs231",
+    "message": "merge Obs 231",
+    "tlp": 2,
+    "ioc": false,
+    "sighted": true
+  },
+  {
+    "id": "mergeObs232",
+    "message": "merge Obs 211",
+    "tlp": 4,
+    "ioc": true,
+    "sighted": true
   }
 ]

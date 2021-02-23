@@ -1,11 +1,19 @@
 package org.thp.thehive.controllers.v1
 
+import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
 import play.api.libs.json.{JsNull, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
+
+case class TestCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
+
+object TestCustomFieldValue {
+  def apply(outputCustomFieldValue: OutputCustomFieldValue): TestCustomFieldValue =
+    outputCustomFieldValue.into[TestCustomFieldValue].transform
+}
 
 case class TestCase(
     title: String,
@@ -19,40 +27,19 @@ case class TestCase(
     pap: Int,
     status: String,
     summary: Option[String] = None,
+    impactStatus: Option[String] = None,
+    resolutionStatus: Option[String] = None,
     user: Option[String],
     customFields: Seq[TestCustomFieldValue] = Seq.empty
 )
 
 object TestCase {
   def apply(outputCase: OutputCase): TestCase =
-    TestCase(
-      outputCase.title,
-      outputCase.description,
-      outputCase.severity,
-      outputCase.startDate,
-      outputCase.endDate,
-      outputCase.tags,
-      outputCase.flag,
-      outputCase.tlp,
-      outputCase.pap,
-      outputCase.status,
-      outputCase.summary,
-      outputCase.assignee,
-      outputCase.customFields.map(TestCustomFieldValue.apply).sortBy(_.order)
-    )
-}
-
-case class TestCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
-
-object TestCustomFieldValue {
-  def apply(outputCustomFieldValue: OutputCustomFieldValue): TestCustomFieldValue =
-    TestCustomFieldValue(
-      outputCustomFieldValue.name,
-      outputCustomFieldValue.description,
-      outputCustomFieldValue.`type`,
-      outputCustomFieldValue.value,
-      outputCustomFieldValue.order
-    )
+    outputCase
+      .into[TestCase]
+      .withFieldRenamed(_.assignee, _.user)
+      .withFieldComputed(_.customFields, _.customFields.map(TestCustomFieldValue.apply).sortBy(_.order))
+      .transform
 }
 
 class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
@@ -211,7 +198,6 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val outputCase = contentAsJson(result).as[OutputCase]
-      // TODO Tags / CustomFields / ResolutionStatus / ImpactStatus / Alerts / Share / CaseTemplate ?
 
       // Merge result
       TestCase(outputCase) must equalTo(
@@ -221,11 +207,13 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           severity = 3,
           startDate = output21.startDate,
           endDate = output21.endDate,
-          Set.empty,
+          Set("toMerge:pred1=\"value1\"", "toMerge:pred2=\"value2\""),
           flag = true,
           tlp = 4,
           pap = 3,
           status = "Open",
+          None,
+          None,
           None,
           Some("certuser@thehive.local"),
           Seq()
@@ -246,9 +234,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21,24")(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
-      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
-      (contentAsJson(result) \ "message").as[String] must contain("different organisations")
+      // User shouldn't be able to see others cases, resulting in 404
+      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
 
     "merge two cases error, not same profile" in testApp { app =>

@@ -1,5 +1,8 @@
 [
   {"from": "case1-cert", "to": "h.fr"},
   {"from": "case2-cert", "to": "helloworld"},
-  {"from": "case2-soc", "to": "helloworld"}
+  {"from": "case2-soc", "to": "helloworld"},
+  {"from": "case21-merge-cert", "to": "mergeObs211"},
+  {"from": "case23-merge-cert", "to": "mergeObs231"},
+  {"from": "case23-merge-cert", "to": "mergeObs232"}
 ]

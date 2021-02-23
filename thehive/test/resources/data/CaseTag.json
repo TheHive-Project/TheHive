@@ -4,5 +4,7 @@
   {"from": "case2", "to": "tagt1"},
   {"from": "case2", "to": "tagt2"},
   {"from": "case1", "to": "tagt1"},
-  {"from": "case1", "to": "tagt3"}
+  {"from": "case1", "to": "tagt3"},
+  {"from": "caseMerge21", "to": "tagMerge1"},
+  {"from": "caseMerge22", "to": "tagMerge2"}
 ]

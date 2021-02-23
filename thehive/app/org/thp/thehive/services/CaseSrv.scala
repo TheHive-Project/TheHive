@@ -51,6 +51,8 @@ class CaseSrv @Inject() (
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
   val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
+  val caseProcedureSrv        = new EdgeSrv[CaseProcedure, Case, Procedure]
+  val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
   val mergedFromSrv           = new EdgeSrv[MergedFrom, Case, Case]
 
   override def createEntity(e: Case)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
@@ -315,44 +317,28 @@ class CaseSrv @Inject() (
       user     <- userSrv.get(EntityIdOrName(authContext.userId)).getOrFail("User")
       orga     <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
       richCase <- create(mergedCase, Some(user), orga, tags.toSet, Seq(), None, Seq())
+      _ <- cases.toTry(c =>
+        get(c)
+          .shares
+          .toList
+          .toTry(s => shareCaseSrv.create(ShareCase(), s, richCase.`case`))
+      )
+      _ <- cases.toTry(c =>
+        get(c)
+          .procedure
+          .toList
+          .toTry(p => caseProcedureSrv.create(CaseProcedure(), richCase.`case`, p))
+      )
+      _ <- cases.toTry(c =>
+        get(c)
+          .richCustomFields
+          .toList
+          .toTry { c =>
+            caseCustomFieldSrv.create(CaseCustomField(), richCase.`case`, c.customField)
+          }
+      )
       _ = cases.map(remove(_))
-      // TODO customFields: Seq[RichCustomField],
-      // TODO ShareCase link
-      // TODO Procedure link
-      // TODO tasks
-      // TODO cascadeRemove cases
-      // TODO link to share(s) of original cases
     } yield richCase
-    //  {
-    //    caseUserSrv.create(CaseUser(), mergedCase, user)
-    //    caseOrganisationSrv.create(CaseOrganisation(), mergedCase, organisation)
-    //    cases
-    //      .map(get)
-    //      .flatMap(_.customFields().toList
-    //      .groupBy(_.name)
-    //      .foreach {
-    //        case (name, l) =>
-    //          val values = l.collect { case cfwv: CustomFieldWithValue if cfwv.value.isDefined => cfwv.value.get }
-    //          val cf     = customFieldSrv.getOrFail(name)
-    //          val caseCustomField =
-    //            if (values.size == 1) cf.`type`.setValue(CaseCustomField(), values.head)
-    //            else CaseCustomField()
-    //          caseCustomFieldSrv.create(caseCustomField, mergedCase, cf)
-    //      }
-    //
-    //    cases.foreach(mergedFromSrv.create(MergedFrom(), mergedCase, _))
-    //
-    //    cases
-    //      .map(get)
-    //      .flatMap(_.tasks.toList
-    //      .foreach(task => caseTaskSrv.create(CaseTask(), task, mergedCase))
-    //
-    //    cases
-    //      .map(get)
-    //      .flatMap(_.observables.toList
-    //      .foreach(observable => observableCaseSrv.create(ObservableCase(), observable, mergedCase))
-    //
-    //    get(mergedCase).richCase.head
   }
 }
 
