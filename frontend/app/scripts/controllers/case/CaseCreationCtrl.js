@@ -4,7 +4,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $uibModal, $filter, $uibModalInstance, CaseSrv, TaxonomyCacheSrv, NotificationSrv, TagSrv, template) {
+        function ($rootScope, $scope, $uibModalInstance, CaseSrv, TaxonomyCacheSrv, NotificationSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
@@ -89,37 +89,10 @@
             };
 
             $scope.fromTagLibrary = function() {
-                var modalInstance = $uibModal.open({
-                    controller: 'TaxonomySelectionModalCtrl',
-                    controllerAs: '$modal',
-                    animation: true,
-                    templateUrl: 'views/partials/misc/taxonomy-selection.modal.html',
-                    size: 'lg',
-                    resolve: {
-                        taxonomies: function() {
-                            return TaxonomyCacheSrv.all();
-                        }
-                    }
-                });
-
-                modalInstance.result
-                    .then(function(selectedTags) {
-                        var filterFn = $filter('tagValue'),
-                            tags = [];
-
-                        _.each(selectedTags, function(tag) {
-                            tags.push({
-                                text: filterFn(tag)
-                            });
-                        });
-
+                TaxonomyCacheSrv.openTagLibrary()
+                    .then(function(tags){
                         $scope.tags = $scope.tags.concat(tags);
                     })
-                    .catch(function(err) {
-                        if (err && !_.isString(err)) {
-                            NotificationSrv.error('Tag selection', err.data, err.status);
-                        }
-                    });
             };
 
             $scope.addTask = function (task) {

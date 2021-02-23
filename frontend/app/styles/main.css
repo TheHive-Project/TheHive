@@ -788,11 +788,11 @@ tags-input.ti-tag-selector .tags .tag-item {
     border: none;
     padding: 0;
     padding-right: 5px;
-    line-height: 22px;
+    line-height: 26px;
 }
 
-tags-input.ti-tag-selector .tags .tag-item ti-tag-item{
-
+tags-input.ti-tag-selector.ti-input-sm .tags .tag-item {
+    line-height: 22px;
 }
 
 tags-input.ti-tag-selector .tags .tag-item span.tag-item-border{
@@ -803,4 +803,18 @@ tags-input.ti-tag-selector .tags .tag-item span.tag-item-border{
     display: inline-block;
     border-top-left-radius: .25em;
     border-bottom-left-radius: .25em;
+}
+
+tags-input.ti-tag-selector.ti-input-sm .tags .tag-item span.tag-item-border{
+    position: relative;
+    left:0;
+    width: 8px;
+    background-color: red;
+    display: inline-block;
+    border-top-left-radius: .25em;
+    border-bottom-left-radius: .25em;
+}
+
+.vtop {
+    vertical-align: top;
 }

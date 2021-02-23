@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModal, $uibModalInstance, $filter, TaxonomyCacheSrv, clipboard, CaseArtifactSrv, ObservableTypeSrv, NotificationSrv, TagSrv, params) {
+        function($scope, $stateParams, $uibModalInstance, TaxonomyCacheSrv, clipboard, CaseArtifactSrv, ObservableTypeSrv, NotificationSrv, TagSrv, params) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
@@ -65,37 +65,10 @@
             };
 
             $scope.fromTagLibrary = function() {
-                var modalInstance = $uibModal.open({
-                    controller: 'TaxonomySelectionModalCtrl',
-                    controllerAs: '$modal',
-                    animation: true,
-                    templateUrl: 'views/partials/misc/taxonomy-selection.modal.html',
-                    size: 'lg',
-                    resolve: {
-                        taxonomies: function() {
-                            return TaxonomyCacheSrv.all();
-                        }
-                    }
-                });
-
-                modalInstance.result
-                    .then(function(selectedTags) {
-                        var filterFn = $filter('tagValue'),
-                            tags = [];
-
-                        _.each(selectedTags, function(tag) {
-                            tags.push({
-                                text: filterFn(tag)
-                            });
-                        });
-
+                TaxonomyCacheSrv.openTagLibrary()
+                    .then(function(tags){
                         $scope.params.tags = $scope.params.tags.concat(tags);
                     })
-                    .catch(function(err) {
-                        if (err && !_.isString(err)) {
-                            NotificationSrv.error('Tag selection', err.data, err.status);
-                        }
-                    });
             };
 
             $scope.add = function(form) {

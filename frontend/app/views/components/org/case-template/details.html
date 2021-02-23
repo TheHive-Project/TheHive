@@ -61,29 +61,18 @@
 <div class="form-group">
     <label class="col-md-3 control-label">Tags</label>
     <div class="col-md-9">
-        <tags-input class="ti-tag-selector" min-length="2" name="tags" ng-model="$vm.tags" placeholder="Tags" replace-spaces-with-dashes="false" template="views/directives/tag-input-item.html">
-            <auto-complete min-length="3" debounce-delay="400" source="$vm.getTags($query)"></auto-complete>
-        </tags-input>
+        <div class="input-group">
+            <tags-input class="ti-tag-selector" min-length="2" name="tags" ng-model="$vm.tags" placeholder="Tags" replace-spaces-with-dashes="false" template="views/directives/tag-input-item.html">
+                <auto-complete min-length="3" debounce-delay="400" source="$vm.getTags($query)"></auto-complete>
+            </tags-input>
 
-        <div class="btn-toolbar mt-xxs">
-            <div class="btn-group btn-group-sm">
-                <span class="help-block small">
-                    These will be the default case tags
-                </span>
-            </div>
-
-            <div class="btn-group btn-group-sm pull-right">
-                <button class="btn btn-sm btn-default" type="button" ng-click="$vm.fromTagLibrary()">
-                    <i class="glyphicon glyphicon-plus"></i> Add from Library
+            <span class="input-group-btn vtop">
+                <button type="button" class="btn btn-block btn-primary" ng-click="$vm.fromTagLibrary()" uib-tooltip="Add tag from library" tooltip-placement="left">
+                    <span class="fa fa-plus"></span>
                 </button>
-            </div>
+            </span>
         </div>
-
-        <!-- <tags-input name="tagsInput" template="views/directives/tag-input-item.html" ng-model="params.tags" class="ti-input-sm ti-tag-selector" placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2">
-            <auto-complete min-length="3" debounce-delay="400" source="getTags($query)"></auto-complete>
-        </tags-input> -->
-
-
+        <p class="help-block small">These will be the default case tags</p>
     </div>
 </div>
 <div class="form-group" ng-class="{ 'has-error' : templateEditForm.description.$invalid && !templateEditForm.description.$pristine }">
