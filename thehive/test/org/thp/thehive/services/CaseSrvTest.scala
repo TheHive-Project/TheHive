@@ -419,9 +419,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         } yield newCase
       } must beASuccessfulTry.which { richCase =>
         app[Database].roTransaction { implicit graph =>
-          app[CaseSrv].get(EntityName(richCase.number.toString)).tasks.toSeq.size mustEqual 3
-          app[CaseSrv].get(EntityName(richCase.number.toString)).observables.toSeq.size mustEqual 3
-          app[CaseSrv].get(EntityName(richCase.number.toString)).procedure.toSeq.size mustEqual 3
+          val mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString))
+          mergedCase.clone().tasks.toSeq.size mustEqual 3
+          mergedCase.clone().observables.toSeq.size mustEqual 3
+          mergedCase.clone().procedure.toSeq.size mustEqual 3
         }
       }
     }

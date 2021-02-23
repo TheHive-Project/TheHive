@@ -369,8 +369,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(case21) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(case21)}")
       val output21 = contentAsJson(case21).as[OutputCase]
 
-      val request = FakeRequest("GET", "/api/v0/case/21/_merge/22")
-        .withHeaders("user" -> "admin@thehive.local")
+      val request = FakeRequest("POST", "/api/v0/case/21/_merge/22")
+        .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21", "22")(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -389,8 +389,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           tlp = 4,
           pap = 3,
           status = "Open",
-          tags = Set.empty,
-          owner = None,
+          tags = Set("toMerge:pred1=\"value1\"", "toMerge:pred2=\"value2\""),
+          owner = Some("certuser@thehive.local"),
           stats = JsObject.empty
         )
       )
@@ -403,8 +403,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "merge two cases error, not same organisation" in testApp { app =>
-      val request = FakeRequest("GET", "/api/v0/case/21/_merge/24")
-        .withHeaders("user" -> "admin@thehive.local")
+      val request = FakeRequest("POST", "/api/v0/case/21/_merge/24")
+        .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21", "24")(request)
       // User shouldn't be able to see others cases, resulting in 404
@@ -412,8 +412,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "merge two cases error, not same profile" in testApp { app =>
-      val request = FakeRequest("GET", "/api/v0/case/21/_merge/25")
-        .withHeaders("user" -> "admin@thehive.local")
+      val request = FakeRequest("POST", "/api/v0/case/21/_merge/25")
+        .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21", "25")(request)
       status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
