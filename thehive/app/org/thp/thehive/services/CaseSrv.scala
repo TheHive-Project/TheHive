@@ -24,6 +24,7 @@ import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
 import scala.util.{Failure, Success, Try}
@@ -37,7 +38,6 @@ class CaseSrv @Inject() (
     profileSrv: ProfileSrv,
     shareSrv: ShareSrv,
     taskSrv: TaskSrv,
-    observableSrv: ObservableSrv,
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     impactStatusSrv: ImpactStatusSrv,
@@ -317,25 +317,31 @@ class CaseSrv @Inject() (
       user     <- userSrv.get(EntityIdOrName(authContext.userId)).getOrFail("User")
       orga     <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
       richCase <- create(mergedCase, Some(user), orga, tags.toSet, Seq(), None, Seq())
-      _ <- cases.toTry(c =>
-        get(c)
-          .shares
+      _ <- cases.toTry(
+        get(_)
+          .tasks
+          .richTask
           .toList
-          .toTry(s => shareCaseSrv.create(ShareCase(), s, richCase.`case`))
+          .toTry(shareSrv.shareTask(_, richCase.`case`, orga))
       )
-      _ <- cases.toTry(c =>
-        get(c)
+      _ <- cases.toTry(
+        get(_)
+          .observables
+          .richObservable
+          .toList
+          .toTry(shareSrv.shareObservable(_, richCase.`case`, orga))
+      )
+      _ <- cases.toTry(
+        get(_)
           .procedure
           .toList
-          .toTry(p => caseProcedureSrv.create(CaseProcedure(), richCase.`case`, p))
+          .toTry(caseProcedureSrv.create(CaseProcedure(), richCase.`case`, _))
       )
-      _ <- cases.toTry(c =>
-        get(c)
+      _ <- cases.toTry(
+        get(_)
           .richCustomFields
           .toList
-          .toTry { c =>
-            createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order)
-          }
+          .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
       )
       _ = cases.map(remove(_))
     } yield richCase

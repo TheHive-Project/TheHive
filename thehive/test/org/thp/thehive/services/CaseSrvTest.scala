@@ -15,7 +15,7 @@ import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 class CaseSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext =
@@ -394,25 +394,25 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "merge cases" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
-        val case21 = app[CaseSrv].get(EntityName("21"))
-        val case22 = app[CaseSrv].get(EntityName("22"))
-        val case23 = app[CaseSrv].get(EntityName("23"))
-        // Tasks
-        case21.clone().tasks.toSeq.size mustEqual 2
-        case22.clone().tasks.toSeq.size mustEqual 0
-        case23.clone().tasks.toSeq.size mustEqual 1
-        // Observables
-        case21.clone().observables.toSeq.size mustEqual 1
-        case22.clone().observables.toSeq.size mustEqual 0
-        case23.clone().observables.toSeq.size mustEqual 2
+        def case21 = app[CaseSrv].get(EntityName("21")).clone()
+        def case22 = app[CaseSrv].get(EntityName("22")).clone()
+        def case23 = app[CaseSrv].get(EntityName("23")).clone()
         // Procedures
-        case21.clone().procedure.toSeq.size mustEqual 1
-        case22.clone().procedure.toSeq.size mustEqual 2
-        case23.clone().procedure.toSeq.size mustEqual 0
+        case21.procedure.toSeq.size mustEqual 1
+        case22.procedure.toSeq.size mustEqual 2
+        case23.procedure.toSeq.size mustEqual 0
         // CustomFields
-        case21.clone().customFields.toSeq.size mustEqual 0
-        case22.clone().customFields.toSeq.size mustEqual 1
-        case23.clone().customFields.toSeq.size mustEqual 1
+        case21.customFields.toSeq.size mustEqual 0
+        case22.customFields.toSeq.size mustEqual 1
+        case23.customFields.toSeq.size mustEqual 1
+        // Tasks
+        case21.tasks.toSeq.size mustEqual 2
+        case22.tasks.toSeq.size mustEqual 0
+        case23.tasks.toSeq.size mustEqual 1
+        // Observables
+        case21.observables.toSeq.size mustEqual 1
+        case22.observables.toSeq.size mustEqual 0
+        case23.observables.toSeq.size mustEqual 2
 
         for {
           c21     <- case21.clone().getOrFail("Case")
@@ -422,11 +422,11 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         } yield newCase
       } must beASuccessfulTry.which { richCase =>
         app[Database].roTransaction { implicit graph =>
-          val mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString))
-          mergedCase.clone().tasks.toSeq.size mustEqual 3
-          mergedCase.clone().observables.toSeq.size mustEqual 3
-          mergedCase.clone().procedure.toSeq.size mustEqual 3
-          mergedCase.clone().customFields.toSeq.size mustEqual 2
+          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
+          mergedCase.procedure.toSeq.size mustEqual 3
+          mergedCase.customFields.toSeq.size mustEqual 2
+          mergedCase.tasks.toSeq.size mustEqual 3
+          mergedCase.observables.toSeq.size mustEqual 3
         }
       }
     }
