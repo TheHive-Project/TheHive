@@ -334,7 +334,7 @@ class CaseSrv @Inject() (
           .richCustomFields
           .toList
           .toTry { c =>
-            caseCustomFieldSrv.create(CaseCustomField(), richCase.`case`, c.customField)
+            createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order)
           }
       )
       _ = cases.map(remove(_))

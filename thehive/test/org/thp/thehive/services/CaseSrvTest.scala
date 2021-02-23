@@ -409,7 +409,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         case21.clone().procedure.toSeq.size mustEqual 1
         case22.clone().procedure.toSeq.size mustEqual 2
         case23.clone().procedure.toSeq.size mustEqual 0
-        // TODO CustomFields
+        // CustomFields
+        case21.clone().customFields.toSeq.size mustEqual 0
+        case22.clone().customFields.toSeq.size mustEqual 1
+        case23.clone().customFields.toSeq.size mustEqual 1
 
         for {
           c21     <- case21.clone().getOrFail("Case")
@@ -423,6 +426,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           mergedCase.clone().tasks.toSeq.size mustEqual 3
           mergedCase.clone().observables.toSeq.size mustEqual 3
           mergedCase.clone().procedure.toSeq.size mustEqual 3
+          mergedCase.clone().customFields.toSeq.size mustEqual 2
         }
       }
     }
