@@ -1,0 +1,47 @@
+<form name="templateEditForm" ng-submit="$vm.saveTemplate()" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">{{$vm.action}} case template</h3>
+    </div>
+    <div class="modal-body">
+        <uib-tabset active="active" class="nav-tabs-custom">
+            <uib-tab index="0">
+                <uib-tab-heading>
+                    <span>
+                        <i class="mr-xxs glyphicon glyphicon-folder-open"></i>
+                        Basic Information
+                    </span>
+                </uib-tab-heading>
+                <div>
+                    <div class="mt-xs" ng-include="'views/components/org/case-template/details.html'"></div>
+                </div>
+            </uib-tab>
+            <uib-tab index="1">
+                <uib-tab-heading>
+                    <span>
+                        <i class="mr-xxs glyphicon glyphicon-tasks"></i>
+                        Tasks <span class="badge badge-default">{{$vm.template.tasks.length || 0}}</span>
+                    </span>
+                </uib-tab-heading>
+                <div>
+                    <div class="mt-xs" ng-include="'views/components/org/case-template/tasks.html'"></div>
+                </div>
+            </uib-tab>
+            <uib-tab index="2">
+                <uib-tab-heading>
+                    <span>
+                        <i class="mr-xxs fa fa-tags"></i>
+                        Custom Fields <span class="badge badge-default">{{$vm.templateCustomFields.length || 0}}</span>
+                    </span>
+                </uib-tab-heading>
+                <div>
+                    <div class="mt-xs" ng-include="'views/components/org/case-template/custom-fields.html'"></div>
+                </div>
+            </uib-tab>
+        </uib-tabset>
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="$vm.cancel()" type="button">Cancel</button>
+        <span class="ml-xxs"><i class="fa fa-asterisk text-danger mr-xxxs"></i>Required field</span>
+        <button class="btn btn-primary pull-right" ng-disabled="templateEditForm.$invalid" type="submit">Save template</button>
+    </div>
+</form>

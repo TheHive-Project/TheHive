@@ -1,72 +1,134 @@
-<div class="row mb-xs">
-    <div class="col-md-12">
-        <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group">
-                <button class="btn btn-sm btn-primary" ng-click="$vm.newTemplate()">
-                    <i class="mr-xxs fa fa-plus"></i>New template
-                </button>
-            </div>
-            <div class="btn-group">
-                <button class="btn btn-sm btn-default" ng-click="$vm.importTemplate()">
-                    <i class="mr-xxs fa fa-upload"></i>Import template
-                </button>
-            </div>
+<div ng-include="'views/components/org/case-template/toolbar.html'"></div>
+
+<div class="mt-xs filter-panel" ng-include="'views/components/org/case-template/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+<!-- Filters preview  -->
+<div class="row mt-xs">
+    <div class="col-md-12 clearfix">
+        <div class="pull-left">
+            <h4>
+                Case Template List ({{$vm.list.values.length || 0}} of {{$vm.list.total}})
+            </h4>
         </div>
+
+        <filters-preview filters="$vm.filtering.context.filters"
+            on-clear-item="$vm.removeFilter(field)"
+            on-clear-all="$vm.clearFilters()"></filters-preview>
     </div>
 </div>
 
-
-<div class="row" ng-if="!$vm.template && $vm.templates.length === 0">
-    <div class="col-md-12">
-        <div class="empty-message">No case templates defined.</div>
+<!-- Datalist  -->
+<div class="row mt-xs">
+    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+        <div class="empty-message">No records</div>
     </div>
-</div>
 
-<div class="row" ng-if="$vm.template || $vm.templates.length > 0">
-    <div class="col-md-3">
-        <h4 class="mv-s text-primary">Current templates</h4>
-        <ul class="nav nav-pills nav-stacked" ng-show="$vm.templates">
-            <div class="list-group">
-                <a href ng-click="$vm.loadTemplate(template)" class="list-group-item" ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
-                    <h4 class="list-group-item-heading">{{template.name}}</h4>
-                    <p class="list-group-item-text">{{template.displayName}}</p>
-                </a>
-            </div>
-            <!-- <li ng-class="{'active': $index === $vm.templateIndex}" ng-repeat="template in $vm.templates">
-                <a href ng-click="$vm.loadTemplate(template)">
-                    <div>{{template.name}}</div>
-                    <div class="help-block small">{{template.displayName}}</div>
-                </a>
-            </li> -->
-        </ul>
-        <div ng-hide="$vm.templates.length != 0">
-            There are no templates
-        </div>
-    </div>
-    <div class="col-md-9 left-border">
-        <form class="form-horizontal" name="templateEditForm" ng-submit="$vm.saveTemplate()" novalidate>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mt-xs" ng-include="'views/components/org/case-template/details.html'"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mt-xs" ng-include="'views/components/org/case-template/tasks.html'"></div>
-                    <div class="mt-xs" ng-include="'views/components/org/case-template/custom-fields.html'"></div>
-                </div>
-            </div>
+    <div class="col-md-12" ng-show="$vm.list.total > 0">
+        <psearch control="$vm.list"></psearch>
 
-            <div class="vpad10"></div>
-            <div class="vpad10"></div>
+        <table class="table table-striped case-list">
+            <thead>
+                <tr>
+                    <th style="width: 10px;" class="p-0"></th>
+                    <th>
+                      <a href class="text-default" ng-click="$vm.sortByField('displayName')">
+                        Display Name
+                        <i ng-show="$vm.filtering.context.sort.indexOf('+displayName') === -1 && $vm.filtering.context.sort.indexOf('-displayName') === -1" class="fa fa-sort"></i>
+                        <i ng-show="$vm.filtering.context.sort.indexOf('+displayName') !== -1" class="fa fa-caret-up"></i>
+                        <i ng-show="$vm.filtering.context.sort.indexOf('-displayName') !== -1" class="fa fa-caret-down"></i>
+                      </a>
+                    </th>
+                    <th width="150px">
+                        <a href class="text-default" ng-click="$vm.sortByField('name')">
+                          Name
+                          <i ng-show="$vm.filtering.context.sort.indexOf('+name') === -1 && $vm.filtering.context.sort.indexOf('-name') === -1" class="fa fa-sort"></i>
+                          <i ng-show="$vm.filtering.context.sort.indexOf('+name') !== -1" class="fa fa-caret-up"></i>
+                          <i ng-show="$vm.filtering.context.sort.indexOf('-name') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th width="80px">
+                        <a href class="text-default" ng-click="$vm.sortByField('severity')">
+                          Severity
+                          <i ng-show="$vm.filtering.context.sort.indexOf('+severity') === -1 && $vm.filtering.context.sort.indexOf('-severity') === -1" class="fa fa-sort"></i>
+                          <i ng-show="$vm.filtering.context.sort.indexOf('+severity') !== -1" class="fa fa-caret-up"></i>
+                          <i ng-show="$vm.filtering.context.sort.indexOf('-severity') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
 
-            <div class="text-left">
-                <button class="btn btn-sm btn-danger" ng-click="$vm.deleteTemplate()" ng-disabled="!$vm.template.id" type="button">Delete case template</button>
-                <span class="hpad10">
-                    <i class="fa fa-asterisk text-danger"></i>&nbsp;Required field</span>
-                <button class="btn btn-sm btn-primary pull-right" ng-disabled="templateEditForm.$invalid" type="submit">
-                    <i class="fa fa-plus"></i>&nbsp;Save case template</button>
-                <button class="btn btn-sm btn-default pull-right mr-xxxs" ng-disabled="templateEditForm.$invalid" type="button" ng-click="$vm.exportTemplate()">
-                    <i class="fa fa-download"></i>&nbsp;Export case template</button>
-            </div>
-        </form>
+                    <th width="80px">
+                        Tasks
+                    </th>
+                    <th width="120px">
+                        Custom Fields
+                    </th>
+                    <th style="width: 60px;">By</th>
+                    <th style="width: 120px">
+                      <a href class="text-default" ng-click="$vm.sortByField('_createdAt')">
+                        Creation Date
+                        <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') === -1 && $vm.filtering.context.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
+                        <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
+                        <i ng-show="$vm.filtering.context.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
+                      </a>
+                    </th>
+                    <th style="width: 120px">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr ng-class="{true:'tr-warning'}[template.flag]" ng-repeat="template in $vm.list.values">
+                    <td class="p-0 bg-tlp-{{template.tlp}} clickable" ng-click="$vm.addFilterValue('tlp', template.tlp)"></td>
+                    <td>
+                        <span>{{template.displayName || template.name}}</span>
+                        <div class="case-tags flexwrap mt-xxs">
+                            <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
+                            <strong class="text-muted mr-xxxs" ng-if="!template.tags || template.tags.length === 0">None</strong>
+                            <tag-item ng-repeat="tag in template.tags track by $index" class="pointer"
+                                ng-click="$vm.addFilterValue('tags', tag)" value="tag"></tag-item>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="case-title wrap">
+                            <a ng-click="">{{template.name}}</a>
+                        </div>
+                        <!-- <custom-field-labels ng-if="$vm.filtering.context.showAdvanced" custom-fields="template.customFields" on-field-click="$vm.addFilterValue(name, value)"></custom-field-labels> -->
+                    </td>
+
+                    <td class="center">
+                        <div class="clickable" ng-click="$vm.addFilterValue('severity', template.severity)">
+                            <severity active="false" value="template.severity"></severity>
+                        </div>
+                    </td>
+                    <td>
+                        <span>{{template.tasks.length || 0}}</span>
+                    </td>
+                    <td>
+                        <span>{{template.customFields.length || 0}}</span>
+                    </td>
+                    <td class="nowrap">
+                        <user user-id="template._createdBy" icon-only="true" icon-size="m"></user>
+                    </td>
+                    <td>
+                        <div>
+                            <a href ng-click="$vm.addFilterValue('_createdAt', template._createdAt)">
+                                <span uib-tooltip="{{template._createdAt | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{template._createdAt | shortDate}}</span>
+                            </a>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <a href class="btn btn-icon btn-clear" ng-click="$vm.showTemplate(template)">
+                            <i class="text-info fa fa-edit"></i>
+                        </a>
+                        <a href class="btn btn-icon btn-clear" ng-click="$vm.exportTemplate(template)">
+                            <i class="fa fa-download"></i>
+                        </a>
+                        <a href class="btn btn-icon btn-clear" ng-click="$vm.deleteTemplate(template)">
+                            <i class="text-info fa fa-trash text-danger"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <psearch control="$vm.list"></psearch>
     </div>
 </div>

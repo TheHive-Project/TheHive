@@ -1,66 +1,80 @@
-<h4 class="vpad10 text-primary">Case basic information</h4>
-<div class="form-group">
-    <label class="col-md-3 control-label">Template name
-        <i class="fa fa-asterisk text-danger"></i>
-    </label>
-    <div class="col-md-9">
-        <input autocomplete="off" class="form-control" name="name" ng-model="$vm.template.name" placeholder="Template name" required type="text" />
-        <p class="help-block small">This name should be unique</p>
+<div class="row">
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">Template name<i class="fa fa-asterisk text-danger"></i></label>
+            <input autocomplete="off" class="form-control" name="name" ng-model="$vm.template.name" placeholder="Template name" required type="text" />
+            <p class="help-block small">This name should be unique</p>
+        </div>
+
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">Display name</label>
+            <input autocomplete="off" class="form-control" name="displayName" ng-model="$vm.template.displayName" placeholder="Display name" type="text" />
+            <p class="help-block small">This is a display name of the template</p>
+        </div>
+
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">Title prefix</label>
+            <input class="form-control" name="titlePrefix" ng-model="$vm.template.titlePrefix" placeholder="Case title prefix" type="text" />
+            <p class="help-block small">This is used to prefix the case name</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">Severity
+                <i class="fa fa10asterisk text-danger"></i>
+            </label>
+            <div>
+                <a class="clearfix" href ng-click="activeSev = true" ng-init="activeSev = true">
+                    <severity active="activeSev" style="float:left; font-size:16px" value="$vm.template.severity"></severity>
+                </a>
+                <p class="help-block small vpad5">This will be the default case severity</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">TLP
+                <i class="fa fa10asterisk text-danger"></i>
+            </label>
+            <div>
+                <a class="clearfix" href ng-click="activeTlp='active'" ng-init="activeTlp='active'">
+                    <tlp format="activeTlp" on-update="updateTlp(newValue)" style="float:left; font-size:16px" value="$vm.template.tlp"></tlp>
+                </a>
+            </div>
+            <div>
+                <p class="help-block small vpad5">This will be the default case TLP</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">PAP
+                <i class="fa fa10asterisk text-danger"></i>
+            </label>
+                <div>
+                    <a class="clearfix" href ng-click="activePap='active'" ng-init="activePap='active'">
+                        <tlp format="activePap" on-update="updatePap(newValue)" style="float:left; font-size:16px" value="$vm.template.pap" namespace="PAP"></tlp>
+                    </a>
+                </div>
+                <div>
+                    <p class="help-block small vpad5">This will be the default case PAP</p>
+                </div>
+
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="form-group">
-    <label class="col-md-3 control-label">Display name</label>
-    <div class="col-md-9">
-        <input autocomplete="off" class="form-control" name="displayName" ng-model="$vm.template.displayName" placeholder="Display name" type="text" />
-        <p class="help-block small">This is a display name of the template</p>
-    </div>
-</div>
+    <label class="control-label">Tags</label>
 
-<div class="form-group">
-    <label class="col-md-3 control-label">Title prefix</label>
-    <div class="col-md-9">
-        <input class="form-control" name="titlePrefix" ng-model="$vm.template.titlePrefix" placeholder="Case title prefix" type="text" />
-        <p class="help-block small">This is used to prefix the case name</p>
-    </div>
-</div>
-<div class="form-group">
-    <label class="col-md-3 control-label">Severity
-        <i class="fa fa10asterisk text-danger"></i>
-    </label>
-    <div class="col-md-9">
-        <a class="clearfix" href ng-click="activeSev = true" ng-init="activeSev = false">
-            <!-- <severity value="caze.severity" active="activeSev" on-update="updateField('severity', newValue)"></severity> -->
-            <severity active="activeSev" style="float:left; font-size:16px" value="$vm.template.severity"></severity>
-        </a>
-        <p class="help-block small vpad5">This will be the default case severity</p>
-    </div>
-</div>
-<div class="form-group">
-    <label class="col-md-3 control-label">TLP
-        <i class="fa fa10asterisk text-danger"></i>
-    </label>
-    <div class="col-md-9">
-        <a class="clearfix" href ng-click="activeTlp = 'active'" ng-init="activeTlp = 'static'">
-            <tlp format="activeTlp" on-update="updateTlp(newValue)" style="float:left; font-size:16px" value="$vm.template.tlp"></tlp>
-        </a>
-        <p class="help-block small vpad5">This will be the default case TLP</p>
-    </div>
-</div>
-<div class="form-group">
-    <label class="col-md-3 control-label">PAP
-        <i class="fa fa10asterisk text-danger"></i>
-    </label>
-    <div class="col-md-9">
-        <a class="clearfix" href ng-click="activePap = 'active'" ng-init="activePap = 'static'">
-            <tlp format="activePap" on-update="updatePap(newValue)" style="float:left; font-size:16px" value="$vm.template.pap" namespace="PAP"></tlp>
-        </a>
-        <p class="help-block small vpad5">This will be the default case PAP</p>
-    </div>
-</div>
-<div class="form-group">
-    <label class="col-md-3 control-label">Tags</label>
-    <div class="col-md-9">
         <div class="input-group">
             <tags-input class="ti-tag-selector" min-length="2" name="tags" ng-model="$vm.tags" placeholder="Tags" replace-spaces-with-dashes="false" template="views/directives/tag-input-item.html">
                 <auto-complete min-length="3" debounce-delay="400" source="$vm.getTags($query)"></auto-complete>
@@ -76,11 +90,10 @@
     </div>
 </div>
 <div class="form-group" ng-class="{ 'has-error' : templateEditForm.description.$invalid && !templateEditForm.description.$pristine }">
-    <label class="col-md-3 control-label">Description
+    <label class="control-label">Description
         <i class="fa fa-asterisk text-danger"></i>
     </label>
-    <div class="col-md-9">
-        <textarea class="form-control" name="description" ng-model="$vm.template.description" placeholder="Case description" required rows="3"></textarea>
-        <p class="help-block" ng-show="templateEditForm.description.$invalid && !templateEditForm.description.$pristine">The case description is required.</p>
-    </div>
+    <textarea class="form-control" name="description" ng-model="$vm.template.description" placeholder="Case description" required rows="3"></textarea>
+    <p class="help-block small">This will be the default case description</p>
+    <p class="help-block" ng-show="templateEditForm.description.$invalid && !templateEditForm.description.$pristine">The case description is required.</p>
 </div>

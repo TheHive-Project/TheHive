@@ -274,9 +274,6 @@ angular.module('thehive', [
                     organisation: function($stateParams, OrganisationSrv) {
                         return OrganisationSrv.get($stateParams.organisation);
                     },
-                    templates: function($stateParams, OrganisationSrv) {
-                        return OrganisationSrv.caseTemplates($stateParams.organisation);
-                    },
                     fields: function(CustomFieldsSrv){
                         return CustomFieldsSrv.all();
                     },

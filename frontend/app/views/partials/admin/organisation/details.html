@@ -121,7 +121,7 @@
                             </span>
                         </uib-tab-heading>
                         <div if-permission="manageCaseTemplate">
-                            <org-case-template-list fields="$vm.fields" templates="$vm.templates"></org-case-template-list>
+                            <org-case-template-list fields="$vm.fields" templates="$vm.templates" organisation="$vm.org"></org-case-template-list>
                         </div>
                     </uib-tab>
                     <uib-tab index="2" if-permission="manageConfig">
