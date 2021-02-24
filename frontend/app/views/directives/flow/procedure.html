@@ -5,7 +5,7 @@
     </div>
     <div class="flow-item-updates" ng-switch-when="Creation">
         <div>
-            occureDate: <span><em>{{base.details.occurDate | showDate}}</em></span>
+            occureDate: <span><em>{{base.details.occurDate | shortDate}}</em></span>
         </div>
         <div>
             description: <span><em>{{(base.details.procedure || '-')| limitTo: 250}}</em></span>
@@ -15,7 +15,7 @@
         <span ng-repeat="(k, v) in base.details" ng-switch="k">
             <div ng-switch-when="occurDate">
                 {{k}}:
-                <em>{{v | showDate}}</em>
+                <em>{{v | shortDate}}</em>
             </div>
             <div ng-switch-default>
                 {{k}}:

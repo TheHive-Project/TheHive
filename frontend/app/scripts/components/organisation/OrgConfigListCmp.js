@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgConfigList', {
-            controller: function($scope, $q, NotificationSrv, AlertingSrv, UiSettingsSrv) {
+            controller: function($scope, $q, $interval, NotificationSrv, AlertingSrv, UiSettingsSrv) {
                 var self = this;
 
                 self.alertSimilarityFilters = [];
@@ -66,7 +66,19 @@
                     self.loadSettings(this.uiConfig);
 
                     self.alertSimilarityFilters = AlertingSrv.getSimilarityFilters();
+
+
+                    self.timer = $interval(function() {
+                        self.date = new moment();
+                      }, 1000);
+
                 };
+
+                self.$onDestroy = function() {
+                    if(self.timer) {
+                        $interval.cancel(self.timer);
+                    }
+                }
             },
             controllerAs: '$ctrl',
             templateUrl: 'views/components/org/config.list.html',

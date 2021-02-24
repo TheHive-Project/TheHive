@@ -2,8 +2,8 @@
     <div class="col-md-12">
         <form name="settingsForm" class="mt-xs form-horizontal" ng-submit="$ctrl.save(settingsForm)" novalidate>
             <div class="form-group">
-                <label class="col-md-3 control-label">Hide <em>Empty Case</em> button</label>
-                <div class="col-md-9">
+                <label class="col-lg-3 col-md-4 control-label">Hide <em>Empty Case</em> button</label>
+                <div class="col-lg-9 col-md-8">
                     <div class="checkbox">
                         <label>
                           <input name="hideEmptyCaseButton" type="checkbox" ng-model="$ctrl.configs['hideEmptyCaseButton']"> Check this to disallow creating empty cases
@@ -13,8 +13,8 @@
             </div>
 
             <div class="form-group">
-                <label class="col-md-3 control-label">Merge alerts into closed cases</label>
-                <div class="col-md-9">
+                <label class="col-lg-3 col-md-4 control-label">Merge alerts into closed cases</label>
+                <div class="col-lg-9 col-md-6">
                     <div class="checkbox">
                         <label>
                           <input name="disallowMergeAlertInResolvedSimilarCases" type="checkbox"
@@ -25,14 +25,34 @@
             </div>
 
             <div class="form-group">
-                <label class="col-md-3 control-label">Select the default filter of alert case similarity panel</label>
-                <div class="col-md-3">
+                <label class="col-lg-3 col-md-4 control-label">Select the default filter of alert case similarity panel</label>
+                <div class="col-lg-6 col-md-8">
                     <select class="form-control" name="defaultAlertSimilarCaseFilter"
                         ng-options="k as o.label for (k, o) in $ctrl.alertSimilarityFilters"
                         ng-model="$ctrl.configs['defaultAlertSimilarCaseFilter']">
                     </select>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label class="col-lg-3 col-md-4 control-label">Define the default date format used to display dates</label>
+                <div class="col-lg-6 col-md-8">
+                    <input class="form-control" type="text" name="defaultDateFormat" ng-model="$ctrl.configs['defaultDateFormat']">
+                    <span>Result: <code>{{$ctrl.date | amDateFormat:$ctrl.configs['defaultDateFormat']}}</code></span>
+
+                    <div class="mt-xxs">
+                        <label>More examples:</label>
+                        <ul class="list-unstyled">
+                            <li><em class="text-bold">YYYY-MM-DD HH:mm</em> results in <code>{{$ctrl.date | amDateFormat:'YYYY-MM-DD HH:mm'}}</code></li>
+                            <li><em class="text-bold">DD/MM/YYYY HH:mm</em> results in <code>{{$ctrl.date | amDateFormat:'DD/MM/YYYY HH:mm'}}</code></li>
+                            <li><em class="text-bold">DD.MM.YY HH:mm:ss</em> results in <code>{{$ctrl.date | amDateFormat:'DD.MM.YY HH:mm:ss'}}</code></li>
+                            <li><em class="text-bold">MM-DD-YYYY HH:mm:ss</em> results in <code>{{$ctrl.date | amDateFormat:'MM-DD-YYYY HH:mm:ss'}}</code></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- defaultDateFormat -->
 
             <div class="mt-s">
                 <button class="btn btn-primary pull-right" ng-disabled="settingsForm.$invalid" type="submit">Save</button>
