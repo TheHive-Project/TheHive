@@ -82,9 +82,10 @@
                 </div>
             </div>
 
-            <div class="case-date">
+            <div class="case-date" ng-switch="item.status">
                 <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span><br/>
-                <case-duration start="item.startDate" end="item.endDate" icon="fa-clock-o"></case-duration>
+                <case-duration ng-switch-when="Resolved" start="item.startDate" end="item.endDate" icon="fa-clock-o"></case-duration>
+                <case-duration ng-switch-when="Open" start="item.startDate" icon="fa-clock-o"></case-duration>
             </div>
 
             <div class="case-observables-count">
