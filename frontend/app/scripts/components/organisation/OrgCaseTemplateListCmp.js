@@ -102,12 +102,18 @@
                         });
                 };
 
+                this.sortBy = function(sort) {
+                    self.list.sort = sort;
+                    self.list.update();
+                    self.filtering.setSort(sort);
+                };
+
                 this.sortByField = function(field) {
                     var context = this.filtering.context;
                     var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
                     var sort = null;
 
-                    if(currentSort && currentSort.substr(1) !== field) {
+                    if(currentSort.substr(1) !== field) {
                         sort = ['+' + field];
                     } else {
                         sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
