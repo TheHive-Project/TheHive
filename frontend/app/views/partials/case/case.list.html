@@ -135,8 +135,9 @@
                                                 <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
                                             </a>
                                         </div>
-                                        <div>
-                                            <case-duration start="currentCase.startDate" end="currentCase.endDate" icon="fa-clock-o"></case-duration>
+                                        <div ng-switch="currentCase.status">
+                                            <case-duration ng-switch-when="Resolved" start="currentCase.startDate" end="currentCase.endDate" icon="fa-clock-o"></case-duration>
+                                            <case-duration ng-switch-when="Open" start="currentCase.startDate" icon="fa-clock-o"></case-duration>
                                         </div>
                                     </td>
                                     <td class="text-center">
