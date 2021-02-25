@@ -79,7 +79,7 @@
 
                                         <div class="text-success" ng-show="currentCase.status !== 'Open'">
                                             <small>
-                                                (Closed at {{currentCase.endDate | showDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)
+                                                (Closed at {{currentCase.endDate | shortDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)
                                             </small>
                                         </div>
                                         <div class="text-danger" ng-if="currentCase.mergeFrom">
@@ -132,7 +132,7 @@
                                     <td>
                                         <div>
                                             <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
-                                                <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
+                                                <span uib-tooltip="{{currentCase.startDate | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
                                             </a>
                                         </div>
                                         <div ng-switch="currentCase.status">

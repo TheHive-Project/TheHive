@@ -38,7 +38,7 @@
                 <label class="col-lg-3 col-md-4 control-label">Define the default date format used to display dates</label>
                 <div class="col-lg-6 col-md-8">
                     <input class="form-control" type="text" name="defaultDateFormat" ng-model="$ctrl.configs['defaultDateFormat']">
-                    <span>Result: <code>{{$ctrl.date | amDateFormat:$ctrl.configs['defaultDateFormat']}}</code></span>
+                    <span>Result preview: <code>{{$ctrl.date | amDateFormat:$ctrl.configs['defaultDateFormat']}}</code></span>
 
                     <div class="mt-xxs">
                         <label>More examples:</label>
@@ -46,8 +46,13 @@
                             <li><em class="text-bold">YYYY-MM-DD HH:mm</em> results in <code>{{$ctrl.date | amDateFormat:'YYYY-MM-DD HH:mm'}}</code></li>
                             <li><em class="text-bold">DD/MM/YYYY HH:mm</em> results in <code>{{$ctrl.date | amDateFormat:'DD/MM/YYYY HH:mm'}}</code></li>
                             <li><em class="text-bold">DD.MM.YY HH:mm:ss</em> results in <code>{{$ctrl.date | amDateFormat:'DD.MM.YY HH:mm:ss'}}</code></li>
-                            <li><em class="text-bold">MM-DD-YYYY HH:mm:ss</em> results in <code>{{$ctrl.date | amDateFormat:'MM-DD-YYYY HH:mm:ss'}}</code></li>
+                            <li><em class="text-bold">MM-DD-YYYY HH:mm:ssZ</em> results in <code>{{$ctrl.date | amDateFormat:'MM-DD-YYYY HH:mm:ssZ'}}</code></li>
+                            <li><em class="text-bold">ddd, MMM Do, YYYY H:mm Z</em> results in <code>{{$ctrl.date | amDateFormat:'ddd, MMM Do, YYYY H:mm Z'}}</code></li>
                         </ul>
+                        <div class="mt-xxs">
+                            <span>For more details about the format <a href="https://momentjs.com/docs/#/displaying/format/" target="_blank">click here</a></span>
+                        </div>
+
                     </div>
                 </div>
             </div>

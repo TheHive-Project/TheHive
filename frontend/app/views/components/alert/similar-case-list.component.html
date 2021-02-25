@@ -118,7 +118,7 @@
                         </div>
                         <div class="text-success" ng-show="item.case.status !== 'Open'">
                             <small>
-                                (Closed at {{item.case.endDate | showDate}} as <strong>{{$cmp.CaseResolutionStatus[item.case.resolutionStatus]}}</strong>)
+                                (Closed at {{item.case.endDate | shortDate}} as <strong>{{$cmp.CaseResolutionStatus[item.case.resolutionStatus]}}</strong>)
                             </small>
                         </div>
                         <div class="text-danger" ng-if="item.case.mergeFrom">
@@ -137,7 +137,7 @@
 
                     <div class="case-date">
                         <a href ng-click="$cmp.addFilterValue('_createdAt', item.case._createdAt)">
-                            <span uib-tooltip="{{item.case._createdAt | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
+                            <span uib-tooltip="{{item.case._createdAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
                         </a>
                     </div>
 

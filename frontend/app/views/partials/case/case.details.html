@@ -64,7 +64,7 @@
                 <updatable-date on-update="updateField('startDate', newValue)" value="caze.startDate"></updatable-date>
             </dd>
             <dd ng-if="!canEdit">
-                {{caze.startDate | showDate}}
+                {{caze.startDate | shortDate}}
             </dd>
         </dl>
 
@@ -84,7 +84,7 @@
                 <updatable-date on-update="updateField('endDate', newValue)" value="caze.endDate"></updatable-date>
             </dd>
             <dd class="text-success" ng-if="!canEdit">
-                {{caze.endDate | showDate}}
+                {{caze.endDate | shortDate}}
             </dd>
         </dl>
     </div>

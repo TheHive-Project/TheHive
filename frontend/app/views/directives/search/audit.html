@@ -3,7 +3,7 @@
     by <user-info value="value.createdBy" field="name"></user-info>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
-    Occurred on <span ng-bind="value.startDate | showDate"> </span>
+    Occurred on <span ng-bind="value.startDate | shortDate"> </span>
 </div>
 
 <div ng-switch="value.objectType">
@@ -23,17 +23,17 @@
             </a>
         </div>
         <div>
-            <i class="glyphicon glyphicon-user"></i>            
+            <i class="glyphicon glyphicon-user"></i>
             <user-info value="value.stats.owner" field="name"></user-info>
 
             <i class="glyphicon glyphicon-calendar ml-xxs"></i>
-            <span ng-bind="value.stats.startDate | showDate"></span>
+            <span ng-bind="value.stats.startDate | shortDate"></span>
 
             <span ng-if="value.stats.endDate" class="text-success">
                 (
                 <strong>Closed</strong>
                 on
-                {{value.stats.endDate | showDate}}
+                {{value.stats.endDate | shortDate}}
                 as
                 <strong>{{value.stats.resolutionStatus}}</strong>)
             </span>
@@ -80,7 +80,7 @@
         <div>
             <span>
                 <i class="fa fa-calendar"></i> Date:
-                <strong class="text-muted">{{value.stats.date | showDate}}</strong>
+                <strong class="text-muted">{{value.stats.date | shortDate}}</strong>
             </span>
             <span class="ml-xxs">
                 <i class="fa fa-certificate"></i> Type:

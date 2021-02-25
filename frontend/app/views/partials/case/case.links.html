@@ -65,7 +65,7 @@
                 </div>
                 <div class="text-success" ng-show="item.status !== 'Open'">
                     <small>
-                        (Closed at {{item.endDate | showDate}} as <strong>{{CaseResolutionStatus[item.resolutionStatus]}}</strong>)
+                        (Closed at {{item.endDate | shortDate}} as <strong>{{CaseResolutionStatus[item.resolutionStatus]}}</strong>)
                     </small>
                 </div>
                 <div class="text-danger" ng-if="item.mergeFrom">
@@ -83,7 +83,7 @@
             </div>
 
             <div class="case-date" ng-switch="item.status">
-                <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span><br/>
+                <span uib-tooltip="{{item.startDate | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span><br/>
                 <case-duration ng-switch-when="Resolved" start="item.startDate" end="item.endDate" icon="fa-clock-o"></case-duration>
                 <case-duration ng-switch-when="Open" start="item.startDate" icon="fa-clock-o"></case-duration>
             </div>
