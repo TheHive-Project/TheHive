@@ -1,10 +1,6 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-import java.lang.{Long => JLong}
 import akka.actor.ActorRef
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -27,6 +23,9 @@ import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
+import java.lang.{Long => JLong}
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -317,32 +316,32 @@ class CaseSrv @Inject() (
       user     <- userSrv.get(EntityIdOrName(authContext.userId)).getOrFail("User")
       orga     <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
       richCase <- create(mergedCase, Some(user), orga, tags.toSet, Seq(), None, Seq())
-      _ <- cases.toTry(
-        get(_)
-          .tasks
-          .richTask
-          .toList
-          .toTry(shareSrv.shareTask(_, richCase.`case`, orga))
-      )
-      _ <- cases.toTry(
-        get(_)
-          .observables
-          .richObservable
-          .toList
-          .toTry(shareSrv.shareObservable(_, richCase.`case`, orga))
-      )
-      _ <- cases.toTry(
-        get(_)
-          .procedure
-          .toList
-          .toTry(caseProcedureSrv.create(CaseProcedure(), richCase.`case`, _))
-      )
-      _ <- cases.toTry(
-        get(_)
-          .richCustomFields
-          .toList
-          .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
-      )
+      _ <- cases.toTry { c =>
+        for {
+          _ <-
+            get(c)
+              .tasks
+              .richTask
+              .toList
+              .toTry(shareSrv.shareTask(_, richCase.`case`, orga))
+          _ <-
+            get(c)
+              .observables
+              .richObservable
+              .toList
+              .toTry(shareSrv.shareObservable(_, richCase.`case`, orga))
+          _ <-
+            get(c)
+              .procedure
+              .toList
+              .toTry(caseProcedureSrv.create(CaseProcedure(), richCase.`case`, _))
+          _ <-
+            get(c)
+              .richCustomFields
+              .toList
+              .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
+        } yield Success(())
+      }
       _ = cases.map(remove(_))
     } yield richCase
   }

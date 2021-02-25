@@ -427,6 +427,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           mergedCase.customFields.toSeq.size mustEqual 2
           mergedCase.tasks.toSeq.size mustEqual 3
           mergedCase.observables.toSeq.size mustEqual 3
+
+          app[CaseSrv].get(EntityName("21")).getOrFail("Case") must beAFailedTry
+          app[CaseSrv].get(EntityName("22")).getOrFail("Case") must beAFailedTry
+          app[CaseSrv].get(EntityName("23")).getOrFail("Case") must beAFailedTry
         }
       }
     }
