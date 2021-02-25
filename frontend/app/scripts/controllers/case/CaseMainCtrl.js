@@ -253,20 +253,25 @@
                 });
 
                 caseModal.result.then(function(selectedCase) {
-                    CaseSrv.merge({}, {
-                        caseId: $scope.caze.id,
-                        mergedCaseId: selectedCase.id
-                    }, function (merged) {
+                    CaseSrv.merge([$scope.caze._id, selectedCase._id])
+                        .then(function (response) {
+                            var merged = response.data;
 
-                        $state.go('app.case.details', {
-                            caseId: merged.id
-                        });
+                            $state.go('app.case.details', {
+                                caseId: merged._id
+                            });
 
-                        NotificationSrv.log('The cases have been successfully merged into a new case #' + merged.caseId, 'success');
-                    }, function (response) {
-                        //this.pendingAsync = false;
-                        NotificationSrv.error('Case Merge', response.data, response.status);
-                    });
+                            NotificationSrv.log('The cases have been successfully merged into a new case #' + merged.number, 'success');
+                        })
+                        .catch(function (response) {
+                            //this.pendingAsync = false;
+                            NotificationSrv.error('Case Merge', response.data, response.status);
+                        })
+
+                    // CaseSrv.merge({}, {
+                    //     caseId: $scope.caze.id,
+                    //     mergedCaseId: selectedCase.id
+                    // }, , );
                 }).catch(function(err) {
                     if(err && !_.isString(err)) {
                         NotificationSrv.error('Case Merge', err.data, err.status);
