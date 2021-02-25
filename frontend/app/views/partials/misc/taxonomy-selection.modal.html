@@ -49,7 +49,7 @@
 
             <div>
                 <div class="list-group">
-                    <a href class="list-group-item" ng-repeat="tag in $modal.formData.selectedTaxonomy.tags | orderBy:'predicate' | orderBy:'value'"
+                    <a href class="list-group-item" ng-repeat="tag in $modal.formData.selectedTaxonomy.tags"
                         ng-click="$modal.selectTag(tag)">
                         <span class="mr-xs" ng-class="{'text-primary': !!tag.selected, 'text-disabled': !!!tag.selected}">
                             <i class="fa fa-check"></i>
