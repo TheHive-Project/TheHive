@@ -277,6 +277,10 @@ pre.clearpre {
     font-weight: normal !important;
 }
 
+.list-group-item .label.label-lg {
+    font-size: 12px !important;
+}
+
 .progress.progress-bar-sm {
     height: 10px;
 }
