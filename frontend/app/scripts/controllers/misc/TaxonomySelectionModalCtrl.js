@@ -14,6 +14,7 @@
 
             this.selectTaxonomy = function(taxonomy) {
                 self.formData.selectedTaxonomy = taxonomy;
+                self.search = '';
             }
 
             this.selectTag = function(tag) {
