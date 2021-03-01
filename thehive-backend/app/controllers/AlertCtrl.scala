@@ -35,8 +35,8 @@ class AlertCtrl @Inject()(
   private[AlertCtrl] lazy val logger = Logger(getClass)
 
   @Timed
-  def create(): Action[Fields] = authenticated(Roles.alert).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def create(): Action[Fields] = authenticated(Roles.alert).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       alertSrv
         .create(
           request
@@ -46,61 +46,61 @@ class AlertCtrl @Inject()(
             .unset("status")
             .unset("follow")
         )
-        .map(alert ⇒ renderer.toOutput(CREATED, alert))
+        .map(alert => renderer.toOutput(CREATED, alert))
     }
   }
 
   @Timed
-  def mergeWithCase(alertId: String, caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withCustom("longTask") { implicit ec ⇒
+  def mergeWithCase(alertId: String, caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withCustom("longTask") { implicit ec =>
       for {
-        alert       ← alertSrv.get(alertId)
-        caze        ← caseSrv.get(caseId)
-        updatedCaze ← alertSrv.mergeWithCase(alert, caze)
+        alert       <- alertSrv.get(alertId)
+        caze        <- caseSrv.get(caseId)
+        updatedCaze <- alertSrv.mergeWithCase(alert, caze)
       } yield renderer.toOutput(CREATED, updatedCaze)
     }
   }
 
   @Timed
-  def bulkMergeWithCase: Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withCustom("longTask") { implicit ec ⇒
+  def bulkMergeWithCase: Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withCustom("longTask") { implicit ec =>
       val caseId   = request.body.getString("caseId").getOrElse(throw BadRequestError("Parameter \"caseId\" is missing"))
       val alertIds = request.body.getStrings("alertIds").getOrElse(throw BadRequestError("Parameter \"alertIds\" is missing"))
       for {
-        alerts      ← Future.traverse(alertIds)(alertSrv.get)
-        caze        ← caseSrv.get(caseId)
-        updatedCaze ← alertSrv.bulkMergeWithCase(alerts, caze)
+        alerts      <- Future.traverse(alertIds)(alertSrv.get)
+        caze        <- caseSrv.get(caseId)
+        updatedCaze <- alertSrv.bulkMergeWithCase(alerts, caze)
       } yield renderer.toOutput(CREATED, updatedCaze)
     }
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       val withStats = request
         .queryString
         .get("nstats")
         .flatMap(_.headOption)
-        .exists(v ⇒ Try(v.toBoolean).getOrElse(v == "1"))
+        .exists(v => Try(v.toBoolean).getOrElse(v == "1"))
 
       val withSimilarity = request
         .queryString
         .get("similarity")
         .flatMap(_.headOption)
-        .exists(v ⇒ Try(v.toBoolean).getOrElse(v == "1"))
+        .exists(v => Try(v.toBoolean).getOrElse(v == "1"))
 
       for {
-        alert           ← alertSrv.get(id)
-        alertsWithStats ← auxSrv.apply(alert, 0, withStats, removeUnaudited = false)
-        similarCases ← if (withSimilarity)
+        alert           <- alertSrv.get(id)
+        alertsWithStats <- auxSrv.apply(alert, 0, withStats, removeUnaudited = false)
+        similarCases <- if (withSimilarity)
           alertSrv
             .similarCases(alert)
-            .map(sc ⇒ Json.obj("similarCases" → Json.toJson(sc)))
+            .map(sc => Json.obj("similarCases" -> Json.toJson(sc)))
         else Future.successful(JsObject.empty)
-        similarArtifacts ← if (withSimilarity)
+        similarArtifacts <- if (withSimilarity)
           alertSrv
             .alertArtifactsWithSeen(alert)
-            .map(aws ⇒ Json.obj("artifacts" → aws))
+            .map(aws => Json.obj("artifacts" -> aws))
         else Future.successful(JsObject.empty)
       } yield {
         renderer.toOutput(OK, alertsWithStats ++ similarCases ++ similarArtifacts)
@@ -109,48 +109,48 @@ class AlertCtrl @Inject()(
   }
 
   @Timed
-  def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       alertSrv
         .update(id, request.body)
-        .map { alert ⇒
+        .map { alert =>
           renderer.toOutput(OK, alert)
         }
     }
   }
 
   @Timed
-  def bulkUpdate(): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withCustom("longTask") { implicit ec ⇒
-      request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids ⇒
-        alertSrv.bulkUpdate(ids, request.body.unset("ids")).map(multiResult ⇒ renderer.toMultiOutput(OK, multiResult))
+  def bulkUpdate(): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withCustom("longTask") { implicit ec =>
+      request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids =>
+        alertSrv.bulkUpdate(ids, request.body.unset("ids")).map(multiResult => renderer.toMultiOutput(OK, multiResult))
       }
     }
   }
 
   @Timed
-  def delete(id: String, force: Option[Boolean]): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def delete(id: String, force: Option[Boolean]): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       alertSrv
         .delete(id, force.getOrElse(false))
-        .map(_ ⇒ NoContent)
+        .map(_ => NoContent)
     }
   }
 
   @Timed
-  def bulkDelete(): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withCustom("longTask") { implicit ec ⇒
-      request.body.getStrings("ids").fold(Future.successful(NoContent)) { ids ⇒
+  def bulkDelete(): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withCustom("longTask") { implicit ec =>
+      request.body.getStrings("ids").fold(Future.successful(NoContent)) { ids =>
         Future
           .traverse(ids)(alertSrv.delete(_, request.body.getBoolean("force").getOrElse(false)))
-          .map(_ ⇒ NoContent)
+          .map(_ => NoContent)
       }
     }
   }
 
   @Timed
-  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
       val range     = request.body.getString("range")
       val sort      = request.body.getStrings("sort").getOrElse(Nil)
@@ -164,8 +164,8 @@ class AlertCtrl @Inject()(
   }
 
   @Timed
-  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       val query = request
         .body
         .getValue("query")
@@ -175,73 +175,73 @@ class AlertCtrl @Inject()(
         .getValue("stats")
         .getOrElse(throw BadRequestError("Parameter \"stats\" is missing"))
         .as[Seq[Agg]]
-      alertSrv.stats(query, aggs).map(s ⇒ Ok(s))
+      alertSrv.stats(query, aggs).map(s => Ok(s))
     }
   }
 
   @Timed
-  def markAsRead(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def markAsRead(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       for {
-        alert        ← alertSrv.get(id)
-        updatedAlert ← alertSrv.markAsRead(alert)
+        alert        <- alertSrv.get(id)
+        updatedAlert <- alertSrv.markAsRead(alert)
       } yield renderer.toOutput(OK, updatedAlert)
     }
   }
 
   @Timed
-  def markAsUnread(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def markAsUnread(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       for {
-        alert        ← alertSrv.get(id)
-        updatedAlert ← alertSrv.markAsUnread(alert)
+        alert        <- alertSrv.get(id)
+        updatedAlert <- alertSrv.markAsUnread(alert)
       } yield renderer.toOutput(OK, updatedAlert)
     }
 
   }
 
   @Timed
-  def createCase(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def createCase(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       for {
-        alert ← alertSrv.get(id)
+        alert <- alertSrv.get(id)
         customCaseTemplate = request
           .body
           .getString("caseTemplate")
           .orElse(alert.caseTemplate())
-        caze ← alertSrv.createCase(alert, customCaseTemplate)
+        caze <- alertSrv.createCase(alert, customCaseTemplate)
       } yield renderer.toOutput(CREATED, caze)
     }
   }
 
   @Timed
-  def followAlert(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def followAlert(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       alertSrv
         .setFollowAlert(id, follow = true)
-        .map { alert ⇒
+        .map { alert =>
           renderer.toOutput(OK, alert)
         }
     }
   }
 
   @Timed
-  def unfollowAlert(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def unfollowAlert(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       alertSrv
         .setFollowAlert(id, follow = false)
-        .map { alert ⇒
+        .map { alert =>
           renderer.toOutput(OK, alert)
         }
     }
   }
 
   @Timed
-  def fixStatus(): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
-    executionContextSrv.withDefault { implicit ec ⇒
+  def fixStatus(): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
+    executionContextSrv.withDefault { implicit ec =>
       alertSrv
         .fixStatus()
-        .map(_ ⇒ NoContent)
+        .map(_ => NoContent)
     }
   }
 

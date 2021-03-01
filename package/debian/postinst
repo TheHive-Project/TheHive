@@ -82,8 +82,8 @@ case "$1" in
     addUser thehive "" thehive "thehive daemon-user" "/bin/false"
 
     # Chown definitions created by SBT Native Packager
-
-    chown thehive:thehive /var/log/thehive
+    touch /var/log/thehive/application.log
+    chown -R thehive:thehive /var/log/thehive
     chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml
     chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml
     mkdir -p /opt/thehive/conf

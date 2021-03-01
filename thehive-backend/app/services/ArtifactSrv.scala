@@ -42,25 +42,26 @@ class ArtifactSrv @Inject()(
 
   def create(caseId: String, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Artifact] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze ⇒
+      .flatMap { caze =>
         create(caze, fields)
       }
 
   def create(caze: Case, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Artifact] =
     createSrv[ArtifactModel, Artifact, Case](artifactModel, caze, fields)
       .recoverWith {
-        case _: ConflictError ⇒ updateIfDeleted(caze, fields) // if the artifact already exists, search it and update it
+        case _: ConflictError => updateIfDeleted(caze, fields) // if the artifact already exists, search it and update it
       }
 
   private def updateIfDeleted(caze: Case, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
-      implicit authContext: AuthContext, ec: ExecutionContext
+      implicit authContext: AuthContext,
+      ec: ExecutionContext
   ): Future[Artifact] =
-    fieldsSrv.parse(fields, artifactModel).toFuture.flatMap { attrs ⇒
+    fieldsSrv.parse(fields, artifactModel).toFuture.flatMap { attrs =>
       val updatedArtifact = for {
-        id       ← artifactModel.computeId(caze, attrs)
-        artifact ← getSrv[ArtifactModel, Artifact](artifactModel, id)
+        id       <- artifactModel.computeId(caze, attrs)
+        artifact <- getSrv[ArtifactModel, Artifact](artifactModel, id)
         if artifact.status() == ArtifactStatus.Deleted
-        updatedArtifact ← updateSrv[ArtifactModel, Artifact](
+        updatedArtifact <- updateSrv[ArtifactModel, Artifact](
           artifactModel,
           artifact.id,
           fields
@@ -71,36 +72,40 @@ class ArtifactSrv @Inject()(
         )
       } yield updatedArtifact
       updatedArtifact.recoverWith {
-        case _ ⇒ Future.failed(ConflictError("Artifact already exists", attrs))
+        case _ => Future.failed(ConflictError("Artifact already exists", attrs))
       }
     }
 
   def create(caseId: String, fieldSet: Seq[Fields])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Artifact]]] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze ⇒
+      .flatMap { caze =>
         create(caze, fieldSet)
       }
 
   def create(caze: Case, fieldSet: Seq[Fields])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Artifact]]] =
-    createSrv[ArtifactModel, Artifact, Case](artifactModel, fieldSet.map(caze → _))
+    createSrv[ArtifactModel, Artifact, Case](artifactModel, fieldSet.map(caze -> _))
       .flatMap {
         // if there is failure
-        case t if t.exists(_.isFailure) ⇒
+        case t if t.exists(_.isFailure) =>
           Future.traverse(t.zip(fieldSet)) {
-            case (Failure(ConflictError(_, _)), fields) ⇒ updateIfDeleted(caze, fields).toTry
-            case (r, _)                                 ⇒ Future.successful(r)
+            case (Failure(ConflictError(_, _)), fields) => updateIfDeleted(caze, fields).toTry
+            case (r, _)                                 => Future.successful(r)
           }
-        case t ⇒ Future.successful(t)
+        case t => Future.successful(t)
       }
 
   def get(id: String)(implicit ec: ExecutionContext): Future[Artifact] =
     getSrv[ArtifactModel, Artifact](artifactModel, id)
 
-  def update(id: String, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Artifact] =
+  def update(id: String, fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
+      implicit authContext: AuthContext,
+      ec: ExecutionContext
+  ): Future[Artifact] =
     updateSrv[ArtifactModel, Artifact](artifactModel, id, fields, modifyConfig)
 
   def bulkUpdate(ids: Seq[String], fields: Fields, modifyConfig: ModifyConfig = ModifyConfig.default)(
-      implicit authContext: AuthContext, ec: ExecutionContext
+      implicit authContext: AuthContext,
+      ec: ExecutionContext
   ): Future[Seq[Try[Artifact]]] =
     updateSrv.apply[ArtifactModel, Artifact](artifactModel, ids, fields, modifyConfig)
 
@@ -109,13 +114,13 @@ class ArtifactSrv @Inject()(
 
   def realDelete(artifact: Artifact)(implicit ec: ExecutionContext): Future[Unit] =
     for {
-      _ ← auditSrv
+      _ <- auditSrv
         .findFor(artifact, Some("all"), Nil)
         ._1
         .mapAsync(1)(auditSrv.realDelete)
         .runWith(Sink.ignore)
       _ = eventSrv.publish(RemoveJobsOf(artifact.id))
-      _ ← dbRemove(artifact)
+      _ <- dbRemove(artifact)
     } yield ()
 
   def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Artifact, NotUsed], Future[Long]) =
@@ -125,12 +130,14 @@ class ArtifactSrv @Inject()(
 
   def isSeen(artifact: Artifact)(implicit ec: ExecutionContext): Future[Long] = {
     import org.elastic4play.services.QueryDSL._
-    findSrv(artifactModel, similarArtifactFilter(artifact), selectCount).map { stats ⇒
+    findSrv(artifactModel, similarArtifactFilter(artifact), selectCount).map { stats =>
       (stats \ "count").asOpt[Long].getOrElse(1L)
     }
   }
 
-  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Artifact, NotUsed], Future[Long]) =
+  def findSimilar(artifact: Artifact, range: Option[String], sortBy: Seq[String])(
+      implicit ec: ExecutionContext
+  ): (Source[Artifact, NotUsed], Future[Long]) =
     find(similarArtifactFilter(artifact), range, sortBy)
 
   def findSimilar(
@@ -145,9 +152,9 @@ class ArtifactSrv @Inject()(
   private[services] def similarArtifactFilter(artifact: Artifact): QueryDef = {
     import org.elastic4play.services.QueryDSL._
     val data = (artifact.data(), artifact.attachment()) match {
-      case (Some(_data), None)      ⇒ Left(_data)
-      case (None, Some(attachment)) ⇒ Right(attachment)
-      case _                        ⇒ sys.error("")
+      case (Some(_data), None)      => Left(_data)
+      case (None, Some(attachment)) => Right(attachment)
+      case _                        => sys.error("")
     }
     val filter = parent("case", not(withId(artifact.parentId.get)))
     similarArtifactFilter(artifact.dataType(), data, filter)
@@ -157,7 +164,7 @@ class ArtifactSrv @Inject()(
     import org.elastic4play.services.QueryDSL._
     data match {
       // artifact is an hash
-      case Left(d) if dataType == "hash" ⇒
+      case Left(d) if dataType == "hash" =>
         and(
           filter,
           parent("case", and("status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
@@ -165,7 +172,7 @@ class ArtifactSrv @Inject()(
           or(and("data" ~= d, "dataType" ~= dataType), "attachment.hashes" ~= d)
         )
       // artifact contains data but not an hash
-      case Left(d) ⇒
+      case Left(d) =>
         and(
           filter,
           parent("case", and("status" ~!= CaseStatus.Deleted, "resolutionStatus" ~!= CaseResolutionStatus.Duplicated)),
@@ -174,9 +181,9 @@ class ArtifactSrv @Inject()(
           "dataType" ~= dataType
         )
       // artifact is a file
-      case Right(attachment) ⇒
+      case Right(attachment) =>
         val hashes = attachment.hashes.map(_.toString)
-        val hashFilter = hashes.map { h ⇒
+        val hashFilter = hashes.map { h =>
           "attachment.hashes" ~= h
         }
         and(
@@ -185,7 +192,7 @@ class ArtifactSrv @Inject()(
           "status" ~= "Ok",
           or(
             hashFilter :+
-              and("dataType" ~= "hash", or(hashes.map { h ⇒
+              and("dataType" ~= "hash", or(hashes.map { h =>
                 "data" ~= h
               }))
           )

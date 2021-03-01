@@ -18,10 +18,10 @@ class StreamSerializer extends Serializer {
     */
   def toBinary(o: AnyRef): Array[Byte] =
     o match {
-      case GetOperations       ⇒ "GetOperations".getBytes
-      case StreamMessages(msg) ⇒ JsArray(msg).toString.getBytes
-      case Submit              ⇒ "Submit".getBytes
-      case _                   ⇒ Array.empty[Byte] // Not serializable
+      case GetOperations       => "GetOperations".getBytes
+      case StreamMessages(msg) => JsArray(msg).toString.getBytes
+      case Submit              => "Submit".getBytes
+      case _                   => Array.empty[Byte] // Not serializable
     }
 
   /**
@@ -31,8 +31,8 @@ class StreamSerializer extends Serializer {
   @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
     new String(bytes) match {
-      case "GetOperations" ⇒ GetOperations
-      case "Submit"        ⇒ Submit
-      case s               ⇒ Try(StreamMessages(Json.parse(s).as[Seq[JsObject]])).getOrElse(throw new NotSerializableException)
+      case "GetOperations" => GetOperations
+      case "Submit"        => Submit
+      case s               => Try(StreamMessages(Json.parse(s).as[Seq[JsObject]])).getOrElse(throw new NotSerializableException)
     }
 }

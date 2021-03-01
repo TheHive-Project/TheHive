@@ -1,5 +1,21 @@
 # Change Log
 
+## [3.5.1](https://github.com/TheHive-Project/TheHive/milestone/65) (2021-03-01)
+
+**Fixed bugs:**
+
+- [Bug] Init Script Syntax Error in Bash Switch-Case [\#1646](https://github.com/TheHive-Project/TheHive/issues/1646)
+- [Bug] Issues with case attachments section [\#1651](https://github.com/TheHive-Project/TheHive/issues/1651)
+- [Bug] Fix the severity component [\#1654](https://github.com/TheHive-Project/TheHive/issues/1654)
+- [Bug] Display problem TH [\#1688](https://github.com/TheHive-Project/TheHive/issues/1688)
+- [Bug] Update doesn't work on Elasticsearch 7.11 [\#1799](https://github.com/TheHive-Project/TheHive/issues/1799)
+
+## [3.4.4](https://github.com/TheHive-Project/TheHive/milestone/63) (2020-10-30)
+
+**Fixed bugs:**
+
+- [Security] Update Playframework [\#1604](https://github.com/TheHive-Project/TheHive/issues/1604)
+
 ## [3.5.0](https://github.com/TheHive-Project/TheHive/milestone/61) (2020-10-29)
 
 **Implemented enhancements:**

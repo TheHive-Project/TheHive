@@ -235,19 +235,32 @@
             this.uiSrv.setSort(sort);
         };
 
-        this.getCaseResponders = function(caseId, force) {
+        this.getCaseResponders = function(caze, force) {
             if(!force && this.caseResponders !== null) {
                return;
             }
 
             this.caseResponders = null;
-            CortexSrv.getResponders('case', caseId)
-              .then(function(responders) {
-                  self.caseResponders = responders;
-              })
-              .catch(function(err) {
-                  NotificationSrv.error('CaseList', err.data, err.status);
-              });
+            CortexSrv.getResponders('case', caze.id)
+                .then(function(responders) {
+                    self.caseResponders = responders;
+                    return CortexSrv.promntForResponder(responders);
+                })
+                .then(function(response) {
+                    if(response && _.isString(response)) {
+                        NotificationSrv.log(response, 'warning');
+                    } else {
+                        return CortexSrv.runResponder(response.id, response.name, 'case', _.pick(caze, 'id', 'tlp', 'pap'));
+                    }
+                })
+                .then(function(response){
+                    NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('CaseList', err.data, err.status);
+                    }
+                });
         };
 
         this.runResponder = function(responderId, responderName, caze) {

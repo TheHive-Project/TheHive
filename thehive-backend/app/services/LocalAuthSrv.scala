@@ -23,20 +23,20 @@ class LocalAuthSrv @Inject()(userSrv: UserSrv, implicit val ec: ExecutionContext
 
   private[services] def doAuthenticate(user: User, password: String): Boolean =
     user.password().map(_.split(",", 2)).fold(false) {
-      case Array(seed, pwd) ⇒
+      case Array(seed, pwd) =>
         val hash = Hasher("SHA-256").fromString(seed + password).head.toString
         hash == pwd
-      case _ ⇒ false
+      case _ => false
     }
 
   override def authenticate(username: String, password: String)(implicit request: RequestHeader): Future[AuthContext] =
-    userSrv.get(username).flatMap { user ⇒
+    userSrv.get(username).flatMap { user =>
       if (doAuthenticate(user, password)) userSrv.getFromUser(request, user, name)
       else Future.failed(AuthenticationError("Authentication failure"))
     }
 
   override def changePassword(username: String, oldPassword: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] =
-    userSrv.get(username).flatMap { user ⇒
+    userSrv.get(username).flatMap { user =>
       if (doAuthenticate(user, oldPassword)) setPassword(username, newPassword)
       else Future.failed(AuthorizationError("Authentication failure"))
     }
@@ -44,6 +44,6 @@ class LocalAuthSrv @Inject()(userSrv: UserSrv, implicit val ec: ExecutionContext
   override def setPassword(username: String, newPassword: String)(implicit authContext: AuthContext): Future[Unit] = {
     val seed    = Random.nextString(10).replace(',', '!')
     val newHash = seed + "," + Hasher("SHA-256").fromString(seed + newPassword).head.toString
-    userSrv.update(username, Fields.empty.set("password", newHash)).map(_ ⇒ ())
+    userSrv.update(username, Fields.empty.set("password", newHash)).map(_ => ())
   }
 }

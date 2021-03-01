@@ -42,10 +42,13 @@ check_requirements() {
   INIT=$(readlink /proc/1/exe 2> /dev/null)
   case ${INIT} in
     *systemd*)
-      echo echo "Your are using systemd. This script should not be used"
+      echo  "Your are using systemd. This script should not be used"
+      return 1
+      ;;
     *upstart*)
-      echo echo "Your are using upstart. This script should not be used"
-      return 1;;
+      echo  "Your are using upstart. This script should not be used"
+      return 1
+      ;;
   esac
   return 0
 }

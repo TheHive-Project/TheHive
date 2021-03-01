@@ -216,20 +216,21 @@
                 CortexSrv.getResponders('case_task', $scope.task.id)
                   .then(function(responders) {
                       $scope.taskResponders = responders;
+                      return CortexSrv.promntForResponder(responders);
                   })
-                  .catch(function(err) {
-                      NotificationSrv.error('taskDetails', response.data, response.status);
-                  })
-            };
-
-            $scope.runResponder = function(responderId, responderName) {
-                CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick($scope.task, 'id'))
                   .then(function(response) {
+                      if(response && _.isString(response)) {
+                          NotificationSrv.log(response, 'warning');
+                      } else {
+                          return CortexSrv.runResponder(response.id, response.name, 'case_task', _.pick($scope.task, 'id'));
+                      }
+                  })
+                  .then(function(response){
                       NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', $scope.task.title].join(' '), 'success');
                   })
-                  .catch(function(response) {
-                      if(response && !_.isString(response)) {
-                          NotificationSrv.error('taskDetails', response.data, response.status);
+                  .catch(function(err) {
+                      if(err && !_.isString(err)) {
+                          NotificationSrv.error('taskDetails', err.data, err.status);
                       }
                   });
             };
@@ -242,7 +243,7 @@
                 }, function(response) {
                     NotificationSrv.error('taskDetails', response.data, response.status);
                 });
-            }
+            };
 
             // Add tabs
             CaseTabsSrv.addTab($scope.tabName, {

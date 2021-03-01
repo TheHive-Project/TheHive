@@ -29,35 +29,35 @@ class TaskCtrl @Inject()(
     with Status {
 
   @Timed
-  def create(caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
+  def create(caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
     taskSrv
       .create(caseId, request.body)
-      .map(task ⇒ renderer.toOutput(CREATED, task))
+      .map(task => renderer.toOutput(CREATED, task))
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ =>
     taskSrv
       .get(id)
-      .map(task ⇒ renderer.toOutput(OK, task))
+      .map(task => renderer.toOutput(OK, task))
   }
 
   @Timed
-  def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
     taskSrv
       .update(id, request.body)
-      .map(task ⇒ renderer.toOutput(OK, task))
+      .map(task => renderer.toOutput(OK, task))
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
     taskSrv
       .delete(id)
-      .map(_ ⇒ NoContent)
+      .map(_ => NoContent)
   }
 
   @Timed
-  def findInCase(caseId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def findInCase(caseId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     import org.elastic4play.services.QueryDSL._
     val childQuery = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val query      = and(childQuery, withParent("case", caseId))
@@ -69,7 +69,7 @@ class TaskCtrl @Inject()(
   }
 
   @Timed
-  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range     = request.body.getString("range")
     val sort      = request.body.getStrings("sort").getOrElse(Nil)
@@ -82,9 +82,9 @@ class TaskCtrl @Inject()(
   }
 
   @Timed
-  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val aggs  = request.body.getValue("stats").getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
-    taskSrv.stats(query, aggs).map(s ⇒ Ok(s))
+    taskSrv.stats(query, aggs).map(s => Ok(s))
   }
 }

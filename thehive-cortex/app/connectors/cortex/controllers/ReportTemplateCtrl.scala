@@ -38,50 +38,50 @@ class ReportTemplateCtrl @Inject()(
   private[ReportTemplateCtrl] lazy val logger = Logger(getClass)
 
   @Timed
-  def create: Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+  def create: Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request =>
     reportTemplateSrv
       .create(request.body)
-      .map(reportTemplate ⇒ renderer.toOutput(CREATED, reportTemplate))
+      .map(reportTemplate => renderer.toOutput(CREATED, reportTemplate))
   }
 
   @Timed
-  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
+  def get(id: String): Action[AnyContent] = authenticated(Roles.read).async { _ =>
     reportTemplateSrv
       .get(id)
-      .map(reportTemplate ⇒ renderer.toOutput(OK, reportTemplate))
+      .map(reportTemplate => renderer.toOutput(OK, reportTemplate))
   }
 
   @Timed
-  def getContent(analyzerId: String, reportType: String): Action[AnyContent] = authenticated(Roles.read).async { _ ⇒
+  def getContent(analyzerId: String, reportType: String): Action[AnyContent] = authenticated(Roles.read).async { _ =>
     import org.elastic4play.services.QueryDSL._
     val (reportTemplates, total) = reportTemplateSrv.find(and("analyzerId" ~= analyzerId, "reportType" ~= reportType), Some("0-1"), Nil)
-    total.foreach { t ⇒
+    total.foreach { t =>
       if (t > 1) logger.warn(s"Multiple report templates match for analyzer $analyzerId with type $reportType")
     }
     reportTemplates
       .runWith(Sink.headOption)
       .map {
-        case Some(reportTemplate) ⇒ Ok(reportTemplate.content()).as("text/html")
-        case None                 ⇒ NotFound("")
+        case Some(reportTemplate) => Ok(reportTemplate.content()).as("text/html")
+        case None                 => NotFound("")
       }
   }
 
   @Timed
-  def update(id: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Roles.admin).async(fieldsBodyParser) { implicit request =>
     reportTemplateSrv
       .update(id, request.body)
-      .map(reportTemplate ⇒ renderer.toOutput(OK, reportTemplate))
+      .map(reportTemplate => renderer.toOutput(OK, reportTemplate))
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
     reportTemplateSrv
       .delete(id)
-      .map(_ ⇒ NoContent)
+      .map(_ => NoContent)
   }
 
   @Timed
-  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find: Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range     = request.body.getString("range")
     val sort      = request.body.getStrings("sort").getOrElse(Nil)
@@ -94,13 +94,13 @@ class ReportTemplateCtrl @Inject()(
   }
 
   @Timed
-  def importTemplatePackage: Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
+  def importTemplatePackage: Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
     val zipFile = request.body.get("templates") match {
-      case Some(FileInputValue(_, filepath, _)) ⇒ new ZipFile(filepath.toFile)
-      case _                                    ⇒ throw BadRequestError("")
+      case Some(FileInputValue(_, filepath, _)) => new ZipFile(filepath.toFile)
+      case _                                    => throw BadRequestError("")
     }
     val importedReportTemplates: Seq[Future[(String, JsBoolean)]] = zipFile.getFileHeaders.asScala.filter(_ != null).collect {
-      case fileHeader: FileHeader if !fileHeader.isDirectory ⇒
+      case fileHeader: FileHeader if !fileHeader.isDirectory =>
         val Array(analyzerId, reportTypeHtml, _*) = (fileHeader.getFileName + "/").split("/", 3)
         val inputStream                           = zipFile.getInputStream(fileHeader)
         val content                               = Source.fromInputStream(inputStream).mkString
@@ -116,20 +116,20 @@ class ReportTemplateCtrl @Inject()(
         reportTemplateSrv
           .create(reportTemplateFields)
           .recoverWith { // if creation fails, try to update
-            case NonFatal(_) ⇒
+            case NonFatal(_) =>
               val reportTemplateId = analyzerId + "_" + reportType
               reportTemplateSrv.update(reportTemplateId, Fields.empty.set("content", content))
           }
-          .map(_.id → JsTrue)
+          .map(_.id -> JsTrue)
           .recoverWith {
-            case NonFatal(e) ⇒
+            case NonFatal(e) =>
               logger.error(s"The import of the report template $analyzerId ($reportType) has failed", e)
               val reportTemplateId = analyzerId + "_" + reportType
-              Future.successful(reportTemplateId → JsFalse)
+              Future.successful(reportTemplateId -> JsFalse)
           }
     }
 
-    Future.sequence(importedReportTemplates).map { result ⇒
+    Future.sequence(importedReportTemplates).map { result =>
       renderer.toOutput(OK, JsObject(result))
     }
   }

@@ -74,17 +74,17 @@ class MispCtrl(
   private var _status = JsObject.empty
   private def updateStatus(): Unit =
     Future
-      .traverse(mispConfig.connections)(instance ⇒ instance.status())
+      .traverse(mispConfig.connections)(instance => instance.status())
       .onComplete {
-        case Success(statusDetails) ⇒
-          val distinctStatus = statusDetails.map(s ⇒ (s \ "status").as[String]).toSet
+        case Success(statusDetails) =>
+          val distinctStatus = statusDetails.map(s => (s \ "status").as[String]).toSet
           val healthStatus = if (distinctStatus.contains("OK")) {
             if (distinctStatus.size > 1) "WARNING" else "OK"
           } else "ERROR"
-          _status = Json.obj("enabled" → true, "servers" → statusDetails, "status" → healthStatus)
+          _status = Json.obj("enabled" -> true, "servers" -> statusDetails, "status" -> healthStatus)
           system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
-        case _: Failure[_] ⇒
-          _status = Json.obj("enabled" → true, "servers" → JsObject.empty, "status" → "ERROR")
+        case _: Failure[_] =>
+          _status = Json.obj("enabled" -> true, "servers" -> JsObject.empty, "status" -> "ERROR")
           system.scheduler.scheduleOnce(checkStatusInterval)(updateStatus())
       }
   updateStatus()
@@ -96,14 +96,14 @@ class MispCtrl(
     Future
       .traverse(mispConfig.connections)(_.healthStatus())
       .onComplete {
-        case Success(healthStatus) ⇒
+        case Success(healthStatus) =>
           val distinctStatus = healthStatus.toSet
           _health = if (distinctStatus.contains(HealthStatus.Ok)) {
             if (distinctStatus.size > 1) HealthStatus.Warning else HealthStatus.Ok
           } else if (distinctStatus.contains(HealthStatus.Error)) HealthStatus.Error
           else HealthStatus.Warning
           system.scheduler.scheduleOnce(checkStatusInterval)(updateHealth())
-        case _: Failure[_] ⇒
+        case _: Failure[_] =>
           _health = HealthStatus.Error
           system.scheduler.scheduleOnce(checkStatusInterval)(updateHealth())
       }
@@ -114,27 +114,27 @@ class MispCtrl(
   private[MispCtrl] lazy val logger = Logger(getClass)
 
   val router: Router = SimpleRouter {
-    case GET(p"/_syncAlerts")               ⇒ syncAlerts
-    case GET(p"/_syncAllAlerts")            ⇒ syncAllAlerts
-    case GET(p"/_syncArtifacts")            ⇒ syncArtifacts
-    case POST(p"/export/$caseId/$mispName") ⇒ exportCase(mispName, caseId)
-    case r                                  ⇒ throw NotFoundError(s"${r.uri} not found")
+    case GET(p"/_syncAlerts")               => syncAlerts
+    case GET(p"/_syncAllAlerts")            => syncAllAlerts
+    case GET(p"/_syncArtifacts")            => syncArtifacts
+    case POST(p"/export/$caseId/$mispName") => exportCase(mispName, caseId)
+    case r                                  => throw NotFoundError(s"${r.uri} not found")
   }
 
   @Timed
-  def syncAlerts: Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+  def syncAlerts: Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
     mispSynchro
       .synchronize()
-      .map { m ⇒
+      .map { m =>
         Ok(Json.toJson(m))
       }
   }
 
   @Timed
-  def syncAllAlerts: Action[AnyContent] = authenticated(Roles.admin).async { implicit request ⇒
+  def syncAllAlerts: Action[AnyContent] = authenticated(Roles.admin).async { implicit request =>
     mispSynchro
       .fullSynchronize()
-      .map { m ⇒
+      .map { m =>
         Ok(Json.toJson(m))
       }
   }
@@ -146,14 +146,14 @@ class MispCtrl(
   }
 
   @Timed
-  def exportCase(mispName: String, caseId: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
+  def exportCase(mispName: String, caseId: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
     caseSrv
       .get(caseId)
-      .flatMap { caze ⇒
+      .flatMap { caze =>
         mispExport.export(mispName, caze)
       }
       .map {
-        case (_, exportedAttributes) ⇒
+        case (_, exportedAttributes) =>
           renderer.toMultiOutput(CREATED, exportedAttributes)
       }
   }

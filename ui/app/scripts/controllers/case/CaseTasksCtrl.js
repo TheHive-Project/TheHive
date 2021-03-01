@@ -174,32 +174,33 @@
             return defer.promise;
         };
 
-        $scope.getTaskResponders = function(taskId, force) {
+        $scope.getTaskResponders = function(task, force) {
             if(!force && $scope.taskResponders !== null) {
                return;
             }
 
             $scope.taskResponders = null;
-            CortexSrv.getResponders('case_task', taskId)
-              .then(function(responders) {
-                  $scope.taskResponders = responders;
-              })
-              .catch(function(err) {
-                  NotificationSrv.error('taskList', response.data, response.status);
-              })
-        };
-
-        $scope.runResponder = function(responderId, responderName, task) {
-            CortexSrv.runResponder(responderId, responderName, 'case_task', _.pick(task, 'id'))
-              .then(function(response) {
-                  NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '), 'success');
-              })
-              .catch(function(response) {
-                  if(response && !_.isString(response)) {
-                      NotificationSrv.error('taskList', response.data, response.status);
-                  }
-              });
-        };
+            CortexSrv.getResponders('case_task', task.id)
+                .then(function(responders) {
+                    $scope.taskResponders = responders;
+                    return CortexSrv.promntForResponder(responders);
+                })
+                .then(function(response) {
+                    if (response && _.isString(response)) {
+                        NotificationSrv.log(response, 'warning');
+                    } else {
+                        return CortexSrv.runResponder(response.id, response.name, 'case_task', _.pick(task, 'id'));
+                    }
+                })
+                .then(function(response) {
+                    NotificationSrv.success(['Responder', response.data.responderName, 'started successfully on task', task.title].join(' '));
+                })
+                .catch(function(err) {
+                    if (err && !_.isString(err)) {
+                        NotificationSrv.error('taskList', err.data, err.status);
+                    }
+                });
+        };    
     }
 
     function CaseTaskDeleteCtrl($uibModalInstance, title) {

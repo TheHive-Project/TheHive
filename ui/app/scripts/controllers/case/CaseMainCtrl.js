@@ -332,24 +332,25 @@
 
                 $scope.caseResponders = null;
                 CortexSrv.getResponders('case', $scope.caseId)
-                  .then(function(responders) {
-                      $scope.caseResponders = responders;
-                  })
-                  .catch(function(response) {
-                      NotificationSrv.error('caseDetails', response.data, response.status);
-                  });
-            };
-
-            $scope.runResponder = function(responderId, responderName) {
-                CortexSrv.runResponder(responderId, responderName, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'))
-                  .then(function(response) {
-                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
-                  })
-                  .catch(function(response) {
-                      if(response && !_.isString(response)) {
-                          NotificationSrv.error('caseDetails', response.data, response.status);
-                      }
-                  });
+                    .then(function(responders){
+                        $scope.caseResponders = responders;
+                        return CortexSrv.promntForResponder(responders);
+                    })
+                    .then(function(response) {
+                        if(response && _.isString(response)) {
+                            NotificationSrv.log(response, 'warning');
+                        } else {
+                            return CortexSrv.runResponder(response.id, response.name, 'case', _.pick($scope.caze, 'id', 'tlp', 'pap'));
+                        }
+                    })
+                    .then(function(response){
+                        NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', $scope.caze.title].join(' '), 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('caseDetails', err.data, err.status);
+                        }
+                    });
             };
 
             /**

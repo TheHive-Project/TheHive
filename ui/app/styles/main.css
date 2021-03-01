@@ -249,6 +249,10 @@ pre.clearpre {
     font-weight: normal !important;
 }
 
+.label-critical {
+    background-color: #8a0000 !important;
+}
+
 .progress.progress-bar-sm {
     height: 10px;
 }

@@ -5,7 +5,7 @@ import play.api.http.SessionConfiguration
 import play.api.libs.crypto.CSRFTokenSigner
 import play.api.mvc.RequestHeader
 import play.filters.csrf.CSRF.{ErrorHandler, TokenProvider}
-import play.filters.csrf.{CSRFConfig, CSRFFilter ⇒ PlayCSRFFilter}
+import play.filters.csrf.{CSRFConfig, CSRFFilter => PlayCSRFFilter}
 
 import akka.stream.Materializer
 import javax.inject.{Inject, Provider, Singleton}

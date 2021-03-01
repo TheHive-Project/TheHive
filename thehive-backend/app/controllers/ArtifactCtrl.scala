@@ -85,7 +85,7 @@ class ArtifactCtrl @Inject()(
     files
       .filterNot(_.isDirectory)
       .flatMap(extractAndCheckSize(zipFile, _))
-      .map { fiv ⇒
+      .map { fiv =>
         fields
           .unset("isZip")
           .unset("zipPassword")
@@ -96,22 +96,22 @@ class ArtifactCtrl @Inject()(
 
   def getFieldsFromAttachment(fields: Fields, attachment: JsValue): Future[Seq[Fields]] = {
     val artifactFields = for {
-      attachmentId ← (attachment \ "id").asOpt[String]
-      name         ← (attachment \ "name").asOpt[String]
-      contentType  ← (attachment \ "contentType").asOpt[String]
+      attachmentId <- (attachment \ "id").asOpt[String]
+      name         <- (attachment \ "name").asOpt[String]
+      contentType  <- (attachment \ "contentType").asOpt[String]
     } yield {
       for {
-        hashes ← attachmentSrv.getHashes(attachmentId)
-        size ← attachmentSrv.getSize(attachmentId).recover {
-          case _: NoSuchElementException ⇒ 0 // workaround until elastic4play#93 is fixed
+        hashes <- attachmentSrv.getHashes(attachmentId)
+        size <- attachmentSrv.getSize(attachmentId).recover {
+          case _: NoSuchElementException => 0 // workaround until elastic4play#93 is fixed
         }
       } yield fields.set("attachment", AttachmentInputValue(name, hashes, size.toLong, contentType, attachmentId))
     }
-    artifactFields.fold[Future[Seq[Fields]]](Future.successful(Nil))(_.map(f ⇒ Seq(f)))
+    artifactFields.fold[Future[Seq[Fields]]](Future.successful(Nil))(_.map(f => Seq(f)))
   }
 
   @Timed
-  def create(caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
+  def create(caseId: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
     val fields = request.body
     val data = fields
       .getStrings("data")
@@ -123,66 +123,66 @@ class ArtifactCtrl @Inject()(
       fields
         .get("attachment")
         .map {
-          case FileInputValue(_, filepath, _) if fields.getBoolean("isZip").getOrElse(false) ⇒
+          case FileInputValue(_, filepath, _) if fields.getBoolean("isZip").getOrElse(false) =>
             Future.successful(getFieldsFromZipFile(fields, filepath))
-          case _: FileInputValue ⇒ Future.successful(Seq(fields))
-          case JsonInputValue(JsArray(attachments)) ⇒
-            Future.traverse(attachments)(attachment ⇒ getFieldsFromAttachment(fields, attachment)).map(_.flatten)
-          case JsonInputValue(attachment) ⇒ getFieldsFromAttachment(fields, attachment)
-          case other                      ⇒ Future.failed(InvalidFormatAttributeError("attachment", "attachment/file", other))
+          case _: FileInputValue => Future.successful(Seq(fields))
+          case JsonInputValue(JsArray(attachments)) =>
+            Future.traverse(attachments)(attachment => getFieldsFromAttachment(fields, attachment)).map(_.flatten)
+          case JsonInputValue(attachment) => getFieldsFromAttachment(fields, attachment)
+          case other                      => Future.failed(InvalidFormatAttributeError("attachment", "attachment/file", other))
         }
-        .map { fields ⇒
+        .map { fields =>
           fields
-            .flatMap(f ⇒ artifactSrv.create(caseId, f))
-            .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult))
+            .flatMap(f => artifactSrv.create(caseId, f))
+            .map(multiResult => renderer.toMultiOutput(CREATED, multiResult))
         }
         .getOrElse {
           artifactSrv
             .create(caseId, fields.unset("isZip").unset("zipPassword"))
-            .map(artifact ⇒ renderer.toOutput(CREATED, artifact))
+            .map(artifact => renderer.toOutput(CREATED, artifact))
         }
     } else if (data.length == 1) {
       artifactSrv
         .create(caseId, fields.set("data", data.head).unset("isZip").unset("zipPassword"))
-        .map(artifact ⇒ renderer.toOutput(CREATED, artifact))
+        .map(artifact => renderer.toOutput(CREATED, artifact))
     } else {
       val multiFields = data.map(fields.set("data", _).unset("isZip").unset("zipPassword"))
       artifactSrv
         .create(caseId, multiFields)
-        .map(multiResult ⇒ renderer.toMultiOutput(CREATED, multiResult))
+        .map(multiResult => renderer.toMultiOutput(CREATED, multiResult))
     }
   }
 
   @Timed
-  def get(id: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { _ ⇒
+  def get(id: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { _ =>
     artifactSrv
       .get(id)
-      .map(artifact ⇒ renderer.toOutput(OK, artifact))
+      .map(artifact => renderer.toOutput(OK, artifact))
   }
 
   @Timed
-  def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
+  def update(id: String): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
     artifactSrv
       .update(id, request.body.unset("attachment"))
-      .map(artifact ⇒ renderer.toOutput(OK, artifact))
+      .map(artifact => renderer.toOutput(OK, artifact))
   }
 
   @Timed
-  def bulkUpdate(): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request ⇒
-    request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids ⇒
-      artifactSrv.bulkUpdate(ids, request.body.unset("ids").unset("attachment")).map(multiResult ⇒ renderer.toMultiOutput(OK, multiResult))
+  def bulkUpdate(): Action[Fields] = authenticated(Roles.write).async(fieldsBodyParser) { implicit request =>
+    request.body.getStrings("ids").fold(Future.successful(Ok(JsArray()))) { ids =>
+      artifactSrv.bulkUpdate(ids, request.body.unset("ids").unset("attachment")).map(multiResult => renderer.toMultiOutput(OK, multiResult))
     }
   }
 
   @Timed
-  def delete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request ⇒
+  def delete(id: String): Action[AnyContent] = authenticated(Roles.write).async { implicit request =>
     artifactSrv
       .delete(id)
-      .map(_ ⇒ NoContent)
+      .map(_ => NoContent)
   }
 
   @Timed
-  def findInCase(caseId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def findInCase(caseId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     import org.elastic4play.services.QueryDSL._
     val childQuery = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val query      = and(childQuery, withParent("case", caseId))
@@ -194,7 +194,7 @@ class ArtifactCtrl @Inject()(
   }
 
   @Timed
-  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def find(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query     = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val range     = request.body.getString("range")
     val sort      = request.body.getStrings("sort").getOrElse(Nil)
@@ -207,8 +207,8 @@ class ArtifactCtrl @Inject()(
   }
 
   @Timed
-  def findSimilar(artifactId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
-    artifactSrv.get(artifactId).flatMap { artifact ⇒
+  def findSimilar(artifactId: String): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
+    artifactSrv.get(artifactId).flatMap { artifact =>
       val range = request.body.getString("range")
       val sort  = request.body.getStrings("sort").getOrElse(Nil)
 
@@ -219,9 +219,9 @@ class ArtifactCtrl @Inject()(
   }
 
   @Timed
-  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request ⇒
+  def stats(): Action[Fields] = authenticated(Roles.read).async(fieldsBodyParser) { implicit request =>
     val query = request.body.getValue("query").fold[QueryDef](QueryDSL.any)(_.as[QueryDef])
     val aggs  = request.body.getValue("stats").getOrElse(throw BadRequestError("Parameter \"stats\" is missing")).as[Seq[Agg]]
-    artifactSrv.stats(query, aggs).map(s ⇒ Ok(s))
+    artifactSrv.stats(query, aggs).map(s => Ok(s))
   }
 }

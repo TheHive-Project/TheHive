@@ -99,61 +99,61 @@ case class AssignCase(owner: String, status: ActionOperationStatus.Type = Action
 }
 
 object ActionOperation {
-  val addTagToCaseWrites: OWrites[AddTagToCase] = Json.writes[AddTagToCase]
-  val addTagToArtifactWrites: OWrites[AddTagToArtifact] = Json.writes[AddTagToArtifact]
-  val createTaskWrites: OWrites[CreateTask] = Json.writes[CreateTask]
-  val addCustomFieldsWrites: OWrites[AddCustomFields] = Json.writes[AddCustomFields]
-  val closeTaskWrites: OWrites[CloseTask] = Json.writes[CloseTask]
-  val markAlertAsReadWrites: OWrites[MarkAlertAsRead] = Json.writes[MarkAlertAsRead]
-  val addLogToTaskWrites: OWrites[AddLogToTask] = Json.writes[AddLogToTask]
-  val addTagToAlertWrites: OWrites[AddTagToAlert] = Json.writes[AddTagToAlert]
+  val addTagToCaseWrites: OWrites[AddTagToCase]           = Json.writes[AddTagToCase]
+  val addTagToArtifactWrites: OWrites[AddTagToArtifact]   = Json.writes[AddTagToArtifact]
+  val createTaskWrites: OWrites[CreateTask]               = Json.writes[CreateTask]
+  val addCustomFieldsWrites: OWrites[AddCustomFields]     = Json.writes[AddCustomFields]
+  val closeTaskWrites: OWrites[CloseTask]                 = Json.writes[CloseTask]
+  val markAlertAsReadWrites: OWrites[MarkAlertAsRead]     = Json.writes[MarkAlertAsRead]
+  val addLogToTaskWrites: OWrites[AddLogToTask]           = Json.writes[AddLogToTask]
+  val addTagToAlertWrites: OWrites[AddTagToAlert]         = Json.writes[AddTagToAlert]
   val addArtifactToCaseWrites: OWrites[AddArtifactToCase] = Json.writes[AddArtifactToCase]
-  val assignCaseWrites: OWrites[AssignCase] = Json.writes[AssignCase]
+  val assignCaseWrites: OWrites[AssignCase]               = Json.writes[AssignCase]
   implicit val actionOperationReads: Reads[ActionOperation] = Reads[ActionOperation](
-    json ⇒
+    json =>
       (json \ "type").asOpt[String].fold[JsResult[ActionOperation]](JsError("type is missing in action operation")) {
-        case "AddTagToCase"     ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToCase(tag))
-        case "AddTagToArtifact" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToArtifact(tag))
-        case "CreateTask"       ⇒ JsSuccess(CreateTask(json.as[JsObject] - "type"))
-        case "AddCustomFields" ⇒
+        case "AddTagToCase"     => (json \ "tag").validate[String].map(tag => AddTagToCase(tag))
+        case "AddTagToArtifact" => (json \ "tag").validate[String].map(tag => AddTagToArtifact(tag))
+        case "CreateTask"       => JsSuccess(CreateTask(json.as[JsObject] - "type"))
+        case "AddCustomFields" =>
           for {
-            name  ← (json \ "name").validate[String]
-            tpe   ← (json \ "tpe").validate[String]
-            value ← (json \ "value").validate[JsValue]
+            name  <- (json \ "name").validate[String]
+            tpe   <- (json \ "tpe").validate[String]
+            value <- (json \ "value").validate[JsValue]
           } yield AddCustomFields(name, tpe, value)
-        case "CloseTask"       ⇒ JsSuccess(CloseTask())
-        case "MarkAlertAsRead" ⇒ JsSuccess(MarkAlertAsRead())
-        case "AddLogToTask" ⇒
+        case "CloseTask"       => JsSuccess(CloseTask())
+        case "MarkAlertAsRead" => JsSuccess(MarkAlertAsRead())
+        case "AddLogToTask" =>
           for {
-            content ← (json \ "content").validate[String]
-            owner   ← (json \ "owner").validateOpt[String]
+            content <- (json \ "content").validate[String]
+            owner   <- (json \ "owner").validateOpt[String]
           } yield AddLogToTask(content, owner)
-        case "AddArtifactToCase" ⇒
+        case "AddArtifactToCase" =>
           for {
-            data        ← (json \ "data").validate[String]
-            dataType    ← (json \ "dataType").validate[String]
-            dataMessage ← (json \ "message").validate[String]
+            data        <- (json \ "data").validate[String]
+            dataType    <- (json \ "dataType").validate[String]
+            dataMessage <- (json \ "message").validate[String]
           } yield AddArtifactToCase(data, dataType, dataMessage)
-        case "AssignCase" ⇒
+        case "AssignCase" =>
           for {
-            owner ← (json \ "owner").validate[String]
+            owner <- (json \ "owner").validate[String]
           } yield AssignCase(owner)
-        case "AddTagToAlert" ⇒ (json \ "tag").validate[String].map(tag ⇒ AddTagToAlert(tag))
-        case other           ⇒ JsError(s"Unknown operation $other")
+        case "AddTagToAlert" => (json \ "tag").validate[String].map(tag => AddTagToAlert(tag))
+        case other           => JsError(s"Unknown operation $other")
       }
   )
   implicit val actionOperationWrites: Writes[ActionOperation] = Writes[ActionOperation] {
-    case a: AddTagToCase      ⇒ addTagToCaseWrites.writes(a)
-    case a: AddTagToArtifact  ⇒ addTagToArtifactWrites.writes(a)
-    case a: CreateTask        ⇒ createTaskWrites.writes(a)
-    case a: AddCustomFields   ⇒ addCustomFieldsWrites.writes(a)
-    case a: CloseTask         ⇒ closeTaskWrites.writes(a)
-    case a: MarkAlertAsRead   ⇒ markAlertAsReadWrites.writes(a)
-    case a: AddLogToTask      ⇒ addLogToTaskWrites.writes(a)
-    case a: AddTagToAlert     ⇒ addTagToAlertWrites.writes(a)
-    case a: AddArtifactToCase ⇒ addArtifactToCaseWrites.writes(a)
-    case a: AssignCase        ⇒ assignCaseWrites.writes(a)
-    case a                    ⇒ Json.obj("unsupported operation" → a.toString)
+    case a: AddTagToCase      => addTagToCaseWrites.writes(a)
+    case a: AddTagToArtifact  => addTagToArtifactWrites.writes(a)
+    case a: CreateTask        => createTaskWrites.writes(a)
+    case a: AddCustomFields   => addCustomFieldsWrites.writes(a)
+    case a: CloseTask         => closeTaskWrites.writes(a)
+    case a: MarkAlertAsRead   => markAlertAsReadWrites.writes(a)
+    case a: AddLogToTask      => addLogToTaskWrites.writes(a)
+    case a: AddTagToAlert     => addTagToAlertWrites.writes(a)
+    case a: AddArtifactToCase => addArtifactToCaseWrites.writes(a)
+    case a: AssignCase        => assignCaseWrites.writes(a)
+    case a                    => Json.obj("unsupported operation" -> a.toString)
   }
 }
 
@@ -170,16 +170,16 @@ class ActionOperationSrv @Inject()(
     implicit val mat: Materializer
 ) {
 
-  lazy val logger: Logger = Logger(getClass)
+  lazy val logger: Logger     = Logger(getClass)
   lazy val alertSrv: AlertSrv = alertSrvProvider.get
 
   def findCaseEntity(entity: BaseEntity): Future[Case] = {
     import org.elastic4play.services.QueryDSL._
 
     (entity, entity.model) match {
-      case (c: Case, _)  ⇒ Future.successful(c)
-      case (a: Alert, _) ⇒ a.caze().fold(Future.failed[Case](BadRequestError("Alert hasn't been imported to case")))(caseSrv.get)
-      case (_, model: ChildModelDef[_, _, _, _]) ⇒
+      case (c: Case, _)  => Future.successful(c)
+      case (a: Alert, _) => a.caze().fold(Future.failed[Case](BadRequestError("Alert hasn't been imported to case")))(caseSrv.get)
+      case (_, model: ChildModelDef[_, _, _, _]) =>
         findSrv(
           model.parentModel,
           "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")),
@@ -188,7 +188,7 @@ class ActionOperationSrv @Inject()(
         )._1
           .runWith(Sink.head)
           .flatMap(findCaseEntity _)
-      case _ ⇒ Future.failed(BadRequestError("Case not found"))
+      case _ => Future.failed(BadRequestError("Case not found"))
     }
   }
 
@@ -196,8 +196,8 @@ class ActionOperationSrv @Inject()(
     import org.elastic4play.services.QueryDSL._
 
     (entity, entity.model) match {
-      case (a: Task, _) ⇒ Future.successful(a)
-      case (_, model: ChildModelDef[_, _, _, _]) ⇒
+      case (a: Task, _) => Future.successful(a)
+      case (_, model: ChildModelDef[_, _, _, _]) =>
         findSrv(
           model.parentModel,
           "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")),
@@ -206,7 +206,7 @@ class ActionOperationSrv @Inject()(
         )._1
           .runWith(Sink.head)
           .flatMap(findTaskEntity _)
-      case _ ⇒ Future.failed(BadRequestError("Task not found"))
+      case _ => Future.failed(BadRequestError("Task not found"))
     }
   }
 
@@ -214,8 +214,8 @@ class ActionOperationSrv @Inject()(
     import org.elastic4play.services.QueryDSL._
 
     (entity, entity.model) match {
-      case (a: Artifact, _) ⇒ Future.successful(a)
-      case (_, model: ChildModelDef[_, _, _, _]) ⇒
+      case (a: Artifact, _) => Future.successful(a)
+      case (_, model: ChildModelDef[_, _, _, _]) =>
         findSrv(
           model.parentModel,
           "_id" ~= entity.parentId.getOrElse(throw InternalError(s"Child entity $entity has no parent ID")),
@@ -224,7 +224,7 @@ class ActionOperationSrv @Inject()(
         )._1
           .runWith(Sink.head)
           .flatMap(findArtifactEntity _)
-      case _ ⇒ Future.failed(BadRequestError("Artifact not found"))
+      case _ => Future.failed(BadRequestError("Artifact not found"))
     }
   }
 
@@ -232,93 +232,97 @@ class ActionOperationSrv @Inject()(
     if (operation.status == ActionOperationStatus.Waiting) {
       Retry()(classOf[ConflictError]) {
         operation match {
-          case AddTagToCase(tag, _, _) ⇒
+          case AddTagToCase(tag, _, _) =>
             for {
-              initialCase ← findCaseEntity(entity)
-              caze        ← caseSrv.get(initialCase.id)
-              _ ← caseSrv.update(
+              initialCase <- findCaseEntity(entity)
+              caze        <- caseSrv.get(initialCase.id)
+              _ <- caseSrv.update(
                 caze,
                 Fields.empty.set("tags", Json.toJson((caze.tags() :+ tag).distinct)),
                 ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(caze.seqNo -> caze.primaryTerm))
               )
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddTagToArtifact(tag, _, _) ⇒
+          case AddTagToArtifact(tag, _, _) =>
             entity match {
-              case initialArtifact: Artifact ⇒
+              case initialArtifact: Artifact =>
                 for {
-                  artifact ← artifactSrv.get(initialArtifact.artifactId())
-                  _ ← artifactSrv.update(
+                  artifact <- artifactSrv.get(initialArtifact.artifactId())
+                  _ <- artifactSrv.update(
                     artifact.artifactId(),
                     Fields.empty.set("tags", Json.toJson((artifact.tags() :+ tag).distinct)),
                     ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(artifact.seqNo -> artifact.primaryTerm))
                   )
                 } yield operation.updateStatus(ActionOperationStatus.Success, "")
-              case _ ⇒ Future.failed(BadRequestError("Artifact not found"))
+              case _ => Future.failed(BadRequestError("Artifact not found"))
             }
-          case CreateTask(fields, _, _) ⇒
+          case CreateTask(fields, _, _) =>
             for {
-              caze ← findCaseEntity(entity)
-              _    ← taskSrv.create(caze, Fields(fields))
+              caze <- findCaseEntity(entity)
+              _    <- taskSrv.create(caze, Fields(fields))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddCustomFields(name, tpe, value, _, _) ⇒
+          case AddCustomFields(name, tpe, value, _, _) =>
             for {
-              initialCase ← findCaseEntity(entity)
-              caze        ← caseSrv.get(initialCase.id)
-              customFields = caze.customFields().asOpt[JsObject].getOrElse(JsObject.empty) ++ Json.obj(name → Json.obj(tpe → value))
-              _ ← caseSrv.update(
+              initialCase <- findCaseEntity(entity)
+              caze        <- caseSrv.get(initialCase.id)
+              customFields = caze.customFields().asOpt[JsObject].getOrElse(JsObject.empty) ++ Json.obj(name -> Json.obj(tpe -> value))
+              _ <- caseSrv.update(
                 caze,
                 Fields.empty.set("customFields", customFields),
                 ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(caze.seqNo -> caze.primaryTerm))
               )
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case CloseTask(_, _) ⇒
+          case CloseTask(_, _) =>
             for {
-              initialTask ← findTaskEntity(entity)
-              task        ← taskSrv.get(initialTask.id)
-              _ ← taskSrv.update(
+              initialTask <- findTaskEntity(entity)
+              task        <- taskSrv.get(initialTask.id)
+              _ <- taskSrv.update(
                 task,
                 Fields.empty.set("status", TaskStatus.Completed.toString).set("flag", JsFalse),
                 ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(task.seqNo -> task.primaryTerm))
               )
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case MarkAlertAsRead(_, _) ⇒
+          case MarkAlertAsRead(_, _) =>
             entity match {
-              case alert: Alert ⇒ alertSrv.markAsRead(alert).map(_ ⇒ operation.updateStatus(ActionOperationStatus.Success, ""))
-              case _            ⇒ Future.failed(BadRequestError("Alert not found"))
+              case alert: Alert => alertSrv.markAsRead(alert).map(_ => operation.updateStatus(ActionOperationStatus.Success, ""))
+              case _            => Future.failed(BadRequestError("Alert not found"))
             }
-          case AddLogToTask(content, owner, _, _) ⇒
+          case AddLogToTask(content, owner, _, _) =>
             for {
-              task ← findTaskEntity(entity)
-              _    ← logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
+              task <- findTaskEntity(entity)
+              _    <- logSrv.create(task, Fields.empty.set("message", content).set("owner", owner.map(JsString)))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddArtifactToCase(data, dataType, dataMessage, _, _) ⇒
+          case AddArtifactToCase(data, dataType, dataMessage, _, _) =>
             for {
-              initialCase ← findCaseEntity(entity)
-              _    ← artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", dataMessage))
+              initialCase <- findCaseEntity(entity)
+              _           <- artifactSrv.create(initialCase.id, Fields.empty.set("data", data).set("dataType", dataType).set("message", dataMessage))
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AssignCase(owner, _, _) ⇒
+          case AssignCase(owner, _, _) =>
             for {
-              initialCase ← findCaseEntity(entity)
-              caze        ← caseSrv.get(initialCase.id)
-              _           ← caseSrv.update(caze, Fields.empty.set("owner", owner), ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(caze.seqNo -> caze.primaryTerm)))
+              initialCase <- findCaseEntity(entity)
+              caze        <- caseSrv.get(initialCase.id)
+              _ <- caseSrv.update(
+                caze,
+                Fields.empty.set("owner", owner),
+                ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(caze.seqNo -> caze.primaryTerm))
+              )
             } yield operation.updateStatus(ActionOperationStatus.Success, "")
-          case AddTagToAlert(tag, _, _) ⇒
+          case AddTagToAlert(tag, _, _) =>
             entity match {
-              case initialAlert: Alert ⇒
+              case initialAlert: Alert =>
                 for {
-                  alert ← alertSrv.get(initialAlert.id)
-                  _ ← alertSrv.update(
+                  alert <- alertSrv.get(initialAlert.id)
+                  _ <- alertSrv.update(
                     alert.id,
                     Fields.empty.set("tags", Json.toJson((alert.tags() :+ tag).distinct)),
                     ModifyConfig(retryOnConflict = 0, seqNoAndPrimaryTerm = Some(alert.seqNo -> alert.primaryTerm))
                   )
                 } yield operation.updateStatus(ActionOperationStatus.Success, "")
-              case _ ⇒ Future.failed(BadRequestError("Alert not found"))
+              case _ => Future.failed(BadRequestError("Alert not found"))
             }
-          case o ⇒ Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
+          case o => Future.successful(operation.updateStatus(ActionOperationStatus.Failure, s"Operation $o not supported"))
         }
       }.recover {
-        case error ⇒
+        case error =>
           logger.error("Operation execution fails", error)
           operation.updateStatus(ActionOperationStatus.Failure, error.getMessage)
       }

@@ -33,7 +33,7 @@ class TaskSrv @Inject()(
 
   def create(caseId: String, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Task] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze ⇒
+      .flatMap { caze =>
         create(caze, fields)
       }
 
@@ -42,12 +42,12 @@ class TaskSrv @Inject()(
 
   def create(caseId: String, fields: Seq[Fields])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Task]]] =
     getSrv[CaseModel, Case](caseModel, caseId)
-      .flatMap { caze ⇒
+      .flatMap { caze =>
         create(caze, fields)
       }
 
   def create(caze: Case, fields: Seq[Fields])(implicit authContext: AuthContext, ec: ExecutionContext): Future[Seq[Try[Task]]] =
-    createSrv[TaskModel, Task, Case](taskModel, fields.map(caze → _))
+    createSrv[TaskModel, Task, Case](taskModel, fields.map(caze -> _))
 
   def get(id: String)(implicit ec: ExecutionContext): Future[Task] =
     getSrv[TaskModel, Task](taskModel, id)
@@ -57,7 +57,7 @@ class TaskSrv @Inject()(
 
   def update(id: String, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Task] =
     getSrv[TaskModel, Task](taskModel, id)
-      .flatMap { task ⇒
+      .flatMap { task =>
         update(task, fields, modifyConfig)
       }
 
@@ -86,11 +86,11 @@ class TaskSrv @Inject()(
     find(filter, range, Nil)
       ._1
       .map {
-        case task if task.status() == TaskStatus.Waiting ⇒ (task, cancelTask)
-        case task                                        ⇒ (task, completeTask)
+        case task if task.status() == TaskStatus.Waiting => (task, cancelTask)
+        case task                                        => (task, completeTask)
       }
       .runWith(Sink.seq)
-      .flatMap { taskUpdate ⇒
+      .flatMap { taskUpdate =>
         updateSrv(taskUpdate, ModifyConfig.default)
       }
   }
@@ -101,17 +101,17 @@ class TaskSrv @Inject()(
   def realDelete(task: Task)(implicit ec: ExecutionContext): Future[Unit] = {
     import org.elastic4play.services.QueryDSL._
     for {
-      _ ← auditSrv
+      _ <- auditSrv
         .findFor(task, Some("all"), Nil)
         ._1
         .mapAsync(1)(auditSrv.realDelete)
         .runWith(Sink.ignore)
-      _ ← logSrv
+      _ <- logSrv
         .find(withParent(task), Some("all"), Nil)
         ._1
         .mapAsync(1)(logSrv.realDelete)
         .runWith(Sink.ignore)
-      _ ← dbRemove(task)
+      _ <- dbRemove(task)
     } yield ()
   }
 

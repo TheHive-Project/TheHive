@@ -12,7 +12,7 @@ import models.{Artifact, ArtifactModel}
 import services.AuditedModel
 
 import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O}
+import org.elastic4play.models.{AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat => F, AttributeOption => O}
 import org.elastic4play.utils.RichJson
 
 object JobStatus extends Enumeration with HiveEnumeration {
@@ -20,7 +20,7 @@ object JobStatus extends Enumeration with HiveEnumeration {
   val InProgress, Success, Failure, Waiting = Value
 }
 
-trait JobAttributes { _: AttributeDef ⇒
+trait JobAttributes { _: AttributeDef =>
   val analyzerId         = attribute("analyzerId", F.stringFmt, "Analyzer", O.readonly)
   val analyzerName       = optionalAttribute("analyzerName", F.stringFmt, "Name of the analyzer", O.readonly)
   val analyzerDefinition = optionalAttribute("analyzerDefinition", F.stringFmt, "Name of the analyzer definition", O.readonly)
@@ -51,13 +51,14 @@ object Job {
 
   def fixJobAttr(attr: JsObject): JsObject = {
     val analyzerId           = (attr \ "analyzerId").as[String]
-    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" → JsString(analyzerId)))(_ ⇒ attr)
-    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" → JsString(analyzerId)))(_ ⇒ attrWithAnalyzerName)
+    val attrWithAnalyzerName = (attr \ "analyzerName").asOpt[String].fold(attr + ("analyzerName" -> JsString(analyzerId)))(_ => attr)
+    (attr \ "analyzerDefinition").asOpt[String].fold(attrWithAnalyzerName + ("analyzerDefinition" -> JsString(analyzerId)))(_ => attrWithAnalyzerName)
   }
 }
 
 class Job(model: JobModel, attributes: JsObject) extends EntityDef[JobModel, Job](model, Job.fixJobAttr(attributes)) with JobAttributes {
-  override def toJson: JsObject = super.toJson + ("report" → report().fold[JsValue](JsObject.empty)(r ⇒ Json.parse(r))) // FIXME is parse fails (invalid report)
+  override def toJson: JsObject =
+    super.toJson + ("report" -> report().fold[JsValue](JsObject.empty)(r => Json.parse(r))) // FIXME is parse fails (invalid report)
 }
 
 case class CortexJob(

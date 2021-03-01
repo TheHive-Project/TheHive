@@ -15,7 +15,7 @@ import models.JsonFormat.{caseImpactStatusFormat, caseResolutionStatusFormat, ca
 import services.{AuditedModel, CaseSrv}
 
 import org.elastic4play.JsonFormat.dateFormat
-import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat ⇒ F, AttributeOption ⇒ O}
+import org.elastic4play.models.{AttributeDef, BaseEntity, EntityDef, HiveEnumeration, ModelDef, AttributeFormat => F, AttributeOption => O}
 import org.elastic4play.services.{FindSrv, SequenceSrv}
 
 object CaseStatus extends Enumeration with HiveEnumeration {
@@ -33,7 +33,7 @@ object CaseImpactStatus extends Enumeration with HiveEnumeration {
   val NoImpact, WithImpact, NotApplicable = Value
 }
 
-trait CaseAttributes { _: AttributeDef ⇒
+trait CaseAttributes { _: AttributeDef =>
   val caseId: A[Long]             = attribute("caseId", F.numberFmt, "Id of the case (auto-generated)", O.model)
   val title: A[String]            = attribute("title", F.textFmt, "Title of the case")
   val description: A[String]      = attribute("description", F.textFmt, "Description of the case")
@@ -68,7 +68,7 @@ class CaseModel @Inject()(
     implicit val ec: ExecutionContext
 ) extends ModelDef[CaseModel, Case]("case", "Case", "/case")
     with CaseAttributes
-    with AuditedModel { caseModel ⇒
+    with AuditedModel { caseModel =>
 
   private lazy val logger        = Logger(getClass)
   private lazy val artifactModel = artifactModelProvider.get
@@ -77,29 +77,29 @@ class CaseModel @Inject()(
   private lazy val alertModel    = alertModelProvider.get
 
   override val defaultSortBy             = Seq("-startDate")
-  override val removeAttribute: JsObject = Json.obj("status" → CaseStatus.Deleted)
+  override val removeAttribute: JsObject = Json.obj("status" -> CaseStatus.Deleted)
 
   override def creationHook(parent: Option[BaseEntity], attrs: JsObject): Future[JsObject] =
-    sequenceSrv("case").map { caseId ⇒
+    sequenceSrv("case").map { caseId =>
       attrs +
-        ("caseId" → JsNumber(caseId)) +
-        ("owner"  → (attrs \ "owner").asOpt[String].fold[JsValue](JsNull)(o ⇒ JsString(o.toLowerCase())))
+        ("caseId" -> JsNumber(caseId)) +
+        ("owner"  -> (attrs \ "owner").asOpt[String].fold[JsValue](JsNull)(o => JsString(o.toLowerCase())))
     }
 
   private def updateStatus(updateAttrs: JsObject): JsObject =
     (updateAttrs \ "status").asOpt[CaseStatus.Type] match {
-      case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") ⇒
+      case Some(CaseStatus.Resolved) if !updateAttrs.keys.contains("endDate") =>
         updateAttrs +
-          ("endDate" → Json.toJson(new Date)) +
-          ("flag"    → JsFalse)
-      case Some(CaseStatus.Open) ⇒
-        updateAttrs + ("endDate" → JsArray(Nil))
-      case _ ⇒
+          ("endDate" -> Json.toJson(new Date)) +
+          ("flag"    -> JsFalse)
+      case Some(CaseStatus.Open) =>
+        updateAttrs + ("endDate" -> JsArray(Nil))
+      case _ =>
         updateAttrs
     }
 
   private def lowercaseOwner(updateAttrs: JsObject): JsObject =
-    (updateAttrs \ "owner").asOpt[String].fold(updateAttrs)(o ⇒ updateAttrs + ("owner" → JsString(o.toLowerCase)))
+    (updateAttrs \ "owner").asOpt[String].fold(updateAttrs)(o => updateAttrs + ("owner" -> JsString(o.toLowerCase)))
 
   override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] =
     Future.successful(lowercaseOwner(updateStatus(updateAttrs)))
@@ -107,86 +107,86 @@ class CaseModel @Inject()(
   private[models] def buildArtifactStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     findSrv(artifactModel, and(parent("case", withId(caze.id)), "status" ~= "Ok"), selectCount)
-      .map { artifactStats ⇒
-        Json.obj("artifacts" → artifactStats)
+      .map { artifactStats =>
+        Json.obj("artifacts" -> artifactStats)
       }
   }
 
   private[models] def buildTaskStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     findSrv(taskModel, and(parent("case", withId(caze.id)), "status" in ("Waiting", "InProgress", "Completed")), groupByField("status", selectCount))
-      .map { taskStatsJson ⇒
+      .map { taskStatsJson =>
         val (taskCount, taskStats) = taskStatsJson.value.foldLeft((0L, JsObject.empty)) {
-          case ((total, s), (key, value)) ⇒
+          case ((total, s), (key, value)) =>
             val count = (value \ "count").as[Long]
-            (total + count, s + (key → JsNumber(count)))
+            (total + count, s + (key -> JsNumber(count)))
         }
-        Json.obj("tasks" → (taskStats + ("total" → JsNumber(taskCount))))
+        Json.obj("tasks" -> (taskStats + ("total" -> JsNumber(taskCount))))
       }
   }
 
   private[models] def buildMergeIntoStats(caze: Case): Future[JsObject] =
     caze
       .mergeInto()
-      .fold(Future.successful(JsObject.empty)) { mergeCaseId ⇒
+      .fold(Future.successful(JsObject.empty)) { mergeCaseId =>
         caseSrv
           .get(mergeCaseId)
-          .map { c ⇒
-            Json.obj("mergeInto" → Json.obj("caseId" → c.caseId(), "title" → c.title()))
+          .map { c =>
+            Json.obj("mergeInto" -> Json.obj("caseId" -> c.caseId(), "title" -> c.title()))
           }
           .recover {
-            case _ ⇒ Json.obj("mergeInto" → Json.obj("caseId" → "<deleted>", "title" → "<deleted>"))
+            case _ => Json.obj("mergeInto" -> Json.obj("caseId" -> "<deleted>", "title" -> "<deleted>"))
           }
       }
 
   private[models] def buildMergeFromStats(caze: Case): Future[JsObject] =
     Future
-      .traverse(caze.mergeFrom()) { id ⇒
+      .traverse(caze.mergeFrom()) { id =>
         caseSrv
           .get(id)
-          .map { c ⇒
-            Json.obj("caseId" → c.caseId(), "title" → c.title())
+          .map { c =>
+            Json.obj("caseId" -> c.caseId(), "title" -> c.title())
           }
           .recover {
-            case _ ⇒ Json.obj("caseId" → "<deleted>", "title" → "<deleted>")
+            case _ => Json.obj("caseId" -> "<deleted>", "title" -> "<deleted>")
           }
       }
       .map {
-        case mf if mf.nonEmpty ⇒ Json.obj("mergeFrom" → mf)
-        case _                 ⇒ JsObject.empty
+        case mf if mf.nonEmpty => Json.obj("mergeFrom" -> mf)
+        case _                 => JsObject.empty
       }
 
   private[models] def buildAlertStats(caze: Case): Future[JsObject] = {
     import org.elastic4play.services.QueryDSL._
     findSrv(alertModel, "case" ~= caze.id, groupByField("type", groupByField("source", selectCount)))
-      .map { alertStatsJson ⇒
+      .map { alertStatsJson =>
         val alertStats = for {
-          (tpe, JsObject(srcStats)) ← alertStatsJson.value
-          src                       ← srcStats.keys
-        } yield Json.obj("type" → tpe, "source" → src)
-        Json.obj("alerts" → alertStats)
+          (tpe, JsObject(srcStats)) <- alertStatsJson.value
+          src                       <- srcStats.keys
+        } yield Json.obj("type" -> tpe, "source" -> src)
+        Json.obj("alerts" -> alertStats)
       }
   }
 
   override def getStats(entity: BaseEntity): Future[JsObject] =
     entity match {
-      case caze: Case ⇒
+      case caze: Case =>
         for {
-          taskStats      ← buildTaskStats(caze)
-          artifactStats  ← buildArtifactStats(caze)
-          alertStats     ← buildAlertStats(caze)
-          mergeIntoStats ← buildMergeIntoStats(caze)
-          mergeFromStats ← buildMergeFromStats(caze)
+          taskStats      <- buildTaskStats(caze)
+          artifactStats  <- buildArtifactStats(caze)
+          alertStats     <- buildAlertStats(caze)
+          mergeIntoStats <- buildMergeIntoStats(caze)
+          mergeFromStats <- buildMergeFromStats(caze)
         } yield taskStats ++ artifactStats ++ alertStats ++ mergeIntoStats ++ mergeFromStats
-      case other ⇒
+      case other =>
         logger.warn(s"Request caseStats from a non-case entity ?! ${other.getClass}:$other")
         Future.successful(JsObject.empty)
     }
 
   override val computedMetrics = Map(
-    "handlingDurationInSeconds" → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 1000",
-    "handlingDurationInHours"   → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 3600000",
-    "handlingDurationInDays"    → "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / (3600000 * 24)"
+    "handlingDurationInSeconds" -> "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 1000",
+    "handlingDurationInHours"   -> "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / 3600000",
+    "handlingDurationInDays"    -> "(doc['endDate'].date.getMillis() - doc['startDate'].date.getMillis()) / (3600000 * 24)"
   )
 }
 

@@ -42,13 +42,18 @@ class DashboardSrv @Inject()(
   def update(dashboard: Dashboard, fields: Fields)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     update(dashboard, fields, ModifyConfig.default)
 
-  def update(dashboard: Dashboard, fields: Fields, modifyConfig: ModifyConfig)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
+  def update(dashboard: Dashboard, fields: Fields, modifyConfig: ModifyConfig)(
+      implicit authContext: AuthContext,
+      ec: ExecutionContext
+  ): Future[Dashboard] =
     updateSrv(dashboard, fields, modifyConfig)
 
   def delete(id: String)(implicit authContext: AuthContext, ec: ExecutionContext): Future[Dashboard] =
     deleteSrv[DashboardModel, Dashboard](dashboardModel, id)
 
-  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(implicit ec: ExecutionContext): (Source[Dashboard, NotUsed], Future[Long]) =
+  def find(queryDef: QueryDef, range: Option[String], sortBy: Seq[String])(
+      implicit ec: ExecutionContext
+  ): (Source[Dashboard, NotUsed], Future[Long]) =
     findSrv[DashboardModel, Dashboard](dashboardModel, queryDef, range, sortBy)
 
   def stats(queryDef: QueryDef, aggs: Seq[Agg])(implicit ec: ExecutionContext): Future[JsObject] = findSrv(dashboardModel, queryDef, aggs: _*)

@@ -18,7 +18,7 @@ import akka.{Done, NotUsed}
 import models.JsonFormat.artifactStatusFormat
 import services.{ArtifactSrv, AuditedModel}
 
-import org.elastic4play.models.{AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat ⇒ F, AttributeOption ⇒ O}
+import org.elastic4play.models.{AttributeDef, BaseEntity, ChildModelDef, EntityDef, HiveEnumeration, AttributeFormat => F, AttributeOption => O}
 import org.elastic4play.services.{Attachment, AttachmentSrv, DBLists}
 import org.elastic4play.utils.MultiHash
 import org.elastic4play.{BadRequestError, InternalError}
@@ -28,7 +28,7 @@ object ArtifactStatus extends Enumeration with HiveEnumeration {
   val Ok, Deleted = Value
 }
 
-trait ArtifactAttributes { _: AttributeDef ⇒
+trait ArtifactAttributes { _: AttributeDef =>
   def dblists: DBLists
   val artifactId: A[String]             = attribute("_id", F.stringFmt, "Artifact id", O.model)
   val data: A[Option[String]]           = optionalAttribute("data", F.stringFmt, "Content of the artifact", O.readonly)
@@ -56,11 +56,11 @@ class ArtifactModel @Inject()(
     with ArtifactAttributes
     with AuditedModel {
   private[ArtifactModel] lazy val logger = Logger(getClass)
-  override val removeAttribute: JsObject = Json.obj("status" → ArtifactStatus.Deleted)
+  override val removeAttribute: JsObject = Json.obj("status" -> ArtifactStatus.Deleted)
 
   override def apply(attributes: JsObject): Artifact = {
     val tags = (attributes \ "tags").asOpt[Seq[JsString]].getOrElse(Nil).distinct
-    new Artifact(this, attributes + ("tags" → JsArray(tags)))
+    new Artifact(this, attributes + ("tags" -> JsArray(tags)))
   }
 
   // this method modify request in order to hash artifact and manager file upload
@@ -70,23 +70,23 @@ class ArtifactModel @Inject()(
       throw BadRequestError(s"Artifact must contain a message or on ore more tags")
     if (keys.contains("data") == keys.contains("attachment"))
       throw BadRequestError(s"Artifact must contain data or attachment (but not both)")
-    computeId(parent.getOrElse(throw InternalError(s"artifact $attrs has no parent")), attrs).map { id ⇒
-      attrs + ("_id" → JsString(id))
+    computeId(parent.getOrElse(throw InternalError(s"artifact $attrs has no parent")), attrs).map { id =>
+      attrs + ("_id" -> JsString(id))
     }
   }
 
   override def updateHook(entity: BaseEntity, updateAttrs: JsObject): Future[JsObject] =
     entity match {
-      case artifact: Artifact ⇒
+      case artifact: Artifact =>
         val removeMessage = (updateAttrs \ "message").toOption.exists {
-          case JsNull         ⇒ true
-          case JsArray(Seq()) ⇒ true
-          case _              ⇒ false
+          case JsNull         => true
+          case JsArray(Seq()) => true
+          case _              => false
         }
         val removeTags = (updateAttrs \ "tags").toOption.exists {
-          case JsNull         ⇒ true
-          case JsArray(Seq()) ⇒ true
-          case _              ⇒ false
+          case JsNull         => true
+          case JsArray(Seq()) => true
+          case _              => false
         }
         if ((removeMessage && removeTags) ||
             (removeMessage && artifact.tags().isEmpty) ||
@@ -102,12 +102,12 @@ class ArtifactModel @Inject()(
     mm.addValue((attrs \ "data").asOpt[JsValue].getOrElse(JsNull))
     mm.addValue((attrs \ "dataType").asOpt[JsValue].getOrElse(JsNull))
     for {
-      IOResult(_, _) ← (attrs \ "attachment" \ "filepath")
+      IOResult(_, _) <- (attrs \ "attachment" \ "filepath")
         .asOpt[String]
-        .fold(Future.successful(IOResult(0, Success(Done))))(file ⇒ mm.addFile(file))
-      _ ← (attrs \ "attachment" \ "id")
+        .fold(Future.successful(IOResult(0, Success(Done))))(file => mm.addFile(file))
+      _ <- (attrs \ "attachment" \ "id")
         .asOpt[String]
-        .fold(Future.successful(NotUsed: NotUsed)) { fileId ⇒
+        .fold(Future.successful(NotUsed: NotUsed)) { fileId =>
           mm.addFile(attachmentSrv.source(fileId))
         }
     } yield {
@@ -118,17 +118,17 @@ class ArtifactModel @Inject()(
 
   override def getStats(entity: BaseEntity): Future[JsObject] =
     entity match {
-      case artifact: Artifact ⇒
+      case artifact: Artifact =>
         val (similarArtifacts, total) = artifactSrv.get.findSimilar(artifact, Some("0-1"), Seq("-ioc"))
         for {
-          ioc ← similarArtifacts.runWith(Sink.headOption).map(_.fold(false)(_.ioc()))
-          t   ← total
-        } yield Json.obj("seen" → t, "ioc" → ioc)
-      case _ ⇒ Future.successful(JsObject.empty)
+          ioc <- similarArtifacts.runWith(Sink.headOption).map(_.fold(false)(_.ioc()))
+          t   <- total
+        } yield Json.obj("seen" -> t, "ioc" -> ioc)
+      case _ => Future.successful(JsObject.empty)
     }
 }
 
 class Artifact(model: ArtifactModel, attributes: JsObject) extends EntityDef[ArtifactModel, Artifact](model, attributes) with ArtifactAttributes {
   def dblists: DBLists          = model.dblists
-  override def toJson: JsObject = super.toJson + ("reports" → Json.parse(reports())) // FIXME is parse fails (invalid report)
+  override def toJson: JsObject = super.toJson + ("reports" -> Json.parse(reports())) // FIXME is parse fails (invalid report)
 }

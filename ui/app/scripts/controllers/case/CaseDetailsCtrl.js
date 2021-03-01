@@ -25,12 +25,23 @@
                         '_parent': {
                             '_type': 'case_task',
                             '_query': {
-                                '_parent': {
-                                    '_type': 'case',
-                                    '_query': {
-                                        '_id': $scope.caseId
+                                _and: [
+                                    {
+                                        '_parent': {
+                                            '_type': 'case',
+                                            '_query': {
+                                                '_id': $scope.caseId
+                                            }
+                                        }
+                                    },
+                                    {
+                                        _not: {
+                                            status: 'Cancel'
+                                        }
                                     }
-                                }
+                                ]
+
+
                             }
                         }
                     }
@@ -95,7 +106,7 @@
         $scope.openAttachment = function(attachment) {
             $state.go('app.case.tasks-item', {
                 caseId: $scope.caze.id,
-                itemId: attachment.case_task.id
+                itemId: attachment.case_task ? attachment.case_task.id : attachment._parent
             });
         };
 

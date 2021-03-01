@@ -56,7 +56,6 @@ lazy val thehiveCortex = (project in file("thehive-cortex"))
 
 lazy val thehive = (project in file("."))
   .enablePlugins(PlayScala /*, PlayAkkaHttp2Support*/ )
-  .enablePlugins(Bintray)
   .dependsOn(thehiveBackend, thehiveMisp, thehiveCortex)
   .aggregate(thehiveBackend, thehiveMisp, thehiveCortex)
   .settings(projectSettings)
@@ -85,31 +84,14 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
         |GPG key as well as configuration for yum.""".stripMargin,
     linuxPackageMappings in Rpm := Seq(
       packageMapping(
-        file("PGP-PUBLIC-KEY")                       → "etc/pki/rpm-gpg/GPG-TheHive-Project",
-        file("package/rpm-release/thehive-rpm.repo") → "/etc/yum.repos.d/thehive-rpm.repo",
-        file("LICENSE")                              → "/usr/share/doc/thehive-project-release/LICENSE"
+        file("PGP-PUBLIC-KEY")                       -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
+        file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
+        file("LICENSE")                              -> "/usr/share/doc/thehive-project-release/LICENSE"
       )
     )
   )
 
-rpmReleaseFile := {
-  import scala.sys.process._
-  val rpmFile = (packageBin in Rpm in rpmPackageRelease).value
-  Process(
-    "rpm" ::
-      "--define" :: "_gpg_name TheHive Project" ::
-      "--define" :: "_signature gpg" ::
-      "--define" :: "__gpg_check_password_cmd /bin/true" ::
-      "--define" :: "__gpg_sign_cmd %{__gpg} gpg --batch --no-verbose --no-armor --use-agent --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} %{__plaintext_filename}" ::
-      "--addsign" :: rpmFile.toString ::
-      Nil
-  ).!!
-  rpmFile
-}
-
-milestoneFilter := ((milestone: Milestone) ⇒ milestone.title.head < '4')
-
-bintrayOrganization := Some("thehive-project")
+milestoneFilter := ((milestone: Milestone) => milestone.title.head < '4')
 
 // Front-end //
 run := {
@@ -122,12 +104,4 @@ packageBin := {
   (packageBin in Universal).value
   (packageBin in Debian).value
   (packageBin in Rpm).value
-}
-
-publish := {
-  (publish in Docker).value
-  publishRelease.value
-  publishLatest.value
-  publishRpm.value
-  publishDebian.value
 }
