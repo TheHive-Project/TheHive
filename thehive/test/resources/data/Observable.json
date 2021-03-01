@@ -4,34 +4,48 @@
     "message": "Some weird domain",
     "tlp": 3,
     "ioc": true,
-    "sighted": false
+    "sighted": false,
+    "dataType": "domain",
+    "data": "h.fr",
+    "relatedId": ""
   },
   {
     "id": "c.fr",
     "message": "This domain",
     "tlp": 2,
     "ioc": false,
-    "sighted": false
+    "sighted": false,
+    "dataType": "domain",
+    "data": "c.fr",
+    "relatedId": ""
   },
   {
     "id": "helloworld",
     "message": "hello world",
     "tlp": 1,
     "ioc": false,
-    "sighted": false
+    "sighted": false,
+    "dataType": "file",
+    "relatedId": ""
   },
   {
     "id": "perdu.com",
     "message": "if you are lost",
     "tlp": 1,
     "ioc": false,
-    "sighted": true
+    "sighted": true,
+    "dataType": "domain",
+    "data": "perdu.com",
+    "relatedId": ""
   },
   {
     "id": "alert-h.fr",
     "message": "observable from alert",
     "tlp": 1,
     "ioc": true,
-    "sighted": true
+    "sighted": true,
+    "dataType": "domain",
+    "data": "h.fr",
+    "relatedId": ""
   }
 ]

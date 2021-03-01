@@ -1,24 +1,21 @@
 package org.thp.thehive
 
-import java.io.File
-import java.nio.file.{Files, Paths}
-import akka.actor.ActorSystem
-import com.google.inject.Injector
-
-import javax.inject.{Inject, Provider, Singleton}
 import org.apache.commons.io.FileUtils
 import org.thp.scalligraph.auth._
-import org.thp.scalligraph.janus.JanusDatabase
-import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.janus.JanusDatabaseProvider
+import org.thp.scalligraph.models.{Database, Schema, UpdatableSchema}
 import org.thp.scalligraph.query.QueryExecutor
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.scalligraph.AppBuilder
+import org.thp.scalligraph.{AppBuilder, SingleInstance}
 import org.thp.thehive.controllers.v0.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers.{AppendToFileProvider, EmailerProvider, NotifierProvider}
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.{UserSrv => _, _}
 
+import java.io.File
+import java.nio.file.{Files, Paths}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.Try
 
 object TestAppBuilderLock
@@ -32,6 +29,7 @@ trait TestAppBuilder {
       .bind[UserSrv, LocalUserSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchemaDefinition]
+      .multiBind[UpdatableSchema](classOf[TheHiveSchemaDefinition])
       .bindNamed[QueryExecutor, TheHiveQueryExecutor]("v0")
       .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
       .multiBind[NotifierProvider](classOf[AppendToFileProvider])
@@ -41,6 +39,7 @@ trait TestAppBuilder {
       .multiBind[TriggerProvider](classOf[TaskAssignedProvider])
       .multiBind[TriggerProvider](classOf[AlertCreatedProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
+      .bindInstance[SingleInstance](new SingleInstance(true))
       .multiBind[GenIntegrityCheckOps](
         classOf[ProfileIntegrityCheckOps],
         classOf[OrganisationIntegrityCheckOps],
@@ -52,7 +51,8 @@ trait TestAppBuilder {
         classOf[CustomFieldIntegrityCheckOps],
         classOf[CaseTemplateIntegrityCheckOps],
         classOf[DataIntegrityCheckOps],
-        classOf[CaseIntegrityCheckOps]
+        classOf[CaseIntegrityCheckOps],
+        classOf[AlertIntegrityCheckOps]
       )
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
@@ -63,10 +63,11 @@ trait TestAppBuilder {
       .addConfiguration("play.mailer.mock = yes")
       .addConfiguration("play.mailer.debug = yes")
       .addConfiguration(s"storage.localfs.location = ${System.getProperty("user.dir")}/target/storage")
-      .bindEagerly[AkkaGuiceExtensionSetup]
+      .bindEagerly[ClusterSetup]
 
   def testApp[A](body: AppBuilder => A): A = {
     val storageDirectory = Files.createTempDirectory(Paths.get("target"), "janusgraph-test-database").toFile
+    val indexDirectory   = Files.createTempDirectory(Paths.get("target"), storageDirectory.getName).toFile
     TestAppBuilderLock.synchronized {
       if (!Files.exists(Paths.get(s"target/janusgraph-test-database-$databaseName"))) {
         val app = appConfigure
@@ -77,19 +78,24 @@ trait TestAppBuilder {
                                |    storage.backend: berkeleyje
                                |    storage.directory: "target/janusgraph-test-database-$databaseName"
                                |    berkeleyje.freeDisk: 2
+                               |    index.search {
+                               |      backend : lucene
+                               |      directory: target/janusgraph-test-database-$databaseName-idx
+                               |    }
                                |  }
                                |}
                                |akka.cluster.jmx.multi-mbeans-in-same-jvm: on
                                |""".stripMargin)
-          .bind[Database, JanusDatabase]
+          .bindToProvider[Database, JanusDatabaseProvider]
 
         app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
         app[Database].close()
       }
       FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)
+      FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName-idx"), indexDirectory)
     }
     val app = appConfigure
-      .bind[Database, JanusDatabase]
+      .bindToProvider[Database, JanusDatabaseProvider]
       .addConfiguration(s"""
                            |db {
                            |  provider: janusgraph
@@ -97,6 +103,10 @@ trait TestAppBuilder {
                            |    storage.backend: berkeleyje
                            |    storage.directory: $storageDirectory
                            |    berkeleyje.freeDisk: 2
+                           |    index.search {
+                           |      backend : lucene
+                           |      directory: $indexDirectory
+                           |    }
                            |  }
                            |}
                            |""".stripMargin)
@@ -112,9 +122,4 @@ trait TestAppBuilder {
 @Singleton
 class BasicDatabaseProvider @Inject() (database: Database) extends Provider[Database] {
   override def get(): Database = database
-}
-
-@Singleton
-class AkkaGuiceExtensionSetup @Inject() (system: ActorSystem, injector: Injector) {
-  GuiceAkkaExtension(system).set(injector)
 }

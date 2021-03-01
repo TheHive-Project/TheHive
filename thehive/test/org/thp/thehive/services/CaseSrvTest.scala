@@ -240,7 +240,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       val c = app[Database].tryTransaction { implicit graph =>
         val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
         app[CaseSrv].create(
-          Case( //0, "case 5", "desc 5", 1, new Date(), None, flag = false, 2, 3, CaseStatus.Open, None, Seq(organisation._id)),
+          Case(
             title = "case 5",
             description = "desc 5",
             severity = 1,
@@ -265,9 +265,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
       val currentLen = c.tags.length
 
-      app[Database].tryTransaction(implicit graph =>
-        app[CaseSrv].addTags(c.`case`, Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne""""))
-      ) must beSuccessfulTry
+      app[Database].tryTransaction(implicit graph => app[CaseSrv].addTags(c.`case`, Set("tag1", "tag3"))) must beSuccessfulTry
 
       app[Database].roTransaction { implicit graph =>
         app[CaseSrv].startTraversal.has(_.title, "case 5").tags.toList.length shouldEqual currentLen + 1
@@ -417,6 +415,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       val c8 = app[Database]
         .tryTransaction { implicit graph =>
           val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
+          val certuser     = app[UserSrv].getOrFail(EntityName("certuser@thehive.local")).get
           app[CaseSrv].create(
             Case(
               title = "case 8",
@@ -432,7 +431,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
               tags = Seq("tag1", "tag2"),
               assignee = Some("certuser@thehive.local")
             ),
-            assignee = None,
+            assignee = Some(certuser),
             organisation,
             Seq.empty,
             None,

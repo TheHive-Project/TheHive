@@ -32,10 +32,10 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "set configuration item" in testApp { app =>
       app[TagSrv]
-      val request = FakeRequest("PUT", "/api/config/tags.defaultColour")
+      val request = FakeRequest("PUT", "/api/config/tags.freeTagColour")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"value": "#00FF00"}"""))
-      val result = app[ConfigCtrl].set("tags.defaultColour")(request)
+      val result = app[ConfigCtrl].set("tags.freeTagColour")(request)
 
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 

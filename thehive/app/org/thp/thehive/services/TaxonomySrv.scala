@@ -17,7 +17,7 @@ import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class TaxonomySrv @Inject() (organisationSrvProvider: Provider[OrganisationSrv]) extends VertexSrv[Taxonomy] {
+class TaxonomySrv @Inject() (organisationSrvProvider: Provider[OrganisationSrv], tagSrv: TagSrv) extends VertexSrv[Taxonomy] {
 
   lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
   val taxonomyTagSrv                        = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
@@ -80,8 +80,11 @@ object TaxonomyOps {
       else
         traversal.filter(_.organisations.get(authContext.organisation))
 
-    private def noFreetags: Traversal.V[Taxonomy] =
-      traversal.filterNot(_.has(_.namespace, TextP.startingWith("_freetags")))
+    def noFreetags: Traversal.V[Taxonomy] =
+      traversal.has(_.namespace, TextP.notStartingWith("_freetags"))
+
+    def freetags: Traversal.V[Taxonomy] =
+      traversal.has(_.namespace, TextP.startingWith("_freetags"))
 
     def alreadyImported(namespace: String): Boolean =
       traversal.getByNamespace(namespace).exists
