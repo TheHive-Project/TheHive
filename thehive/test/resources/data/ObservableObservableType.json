@@ -3,5 +3,8 @@
   {"from": "c.fr", "to": "domain"},
   {"from": "helloworld", "to": "file"},
   {"from": "perdu.com", "to": "domain"},
-  {"from": "alert-h.fr", "to": "domain"}
+  {"from": "alert-h.fr", "to": "domain"},
+  {"from": "mergeObs211","to": "domain"},
+  {"from": "mergeObs231", "to":  "domain"},
+  {"from": "mergeObs232", "to":  "domain"}
 ]

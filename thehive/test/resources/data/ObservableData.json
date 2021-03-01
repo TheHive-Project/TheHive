@@ -2,5 +2,8 @@
   {"from": "h.fr", "to": "data-h.fr"},
   {"from": "c.fr", "to": "data-c.fr"},
   {"from": "perdu.com", "to": "data-perdu.com"},
-  {"from": "alert-h.fr", "to": "data-h.fr"}
+  {"from": "alert-h.fr", "to": "data-h.fr"},
+  {"from": "mergeObs211","to": "data-h.fr"},
+  {"from": "mergeObs231", "to":  "data-c.fr"},
+  {"from": "mergeObs232", "to":  "data-perdu.com"}
 ]
