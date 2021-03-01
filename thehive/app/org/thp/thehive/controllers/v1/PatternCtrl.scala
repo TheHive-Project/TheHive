@@ -60,15 +60,12 @@ class PatternCtrl @Inject() (
             inputPatterns
               .sortBy(_.external_id.length) // sort to create sub-patterns after their parent
               .foldLeft[JsArray](JsArray.empty) { (array, inputPattern) =>
-                val res = db.tryTransaction { implicit graph =>
-                  createFromInput(inputPattern)
-                } match {
-                  case Failure(e) =>
-                    Json.obj("status" -> "Failure", "message" -> e.getMessage)
-                  case Success(t) =>
-                    Json.obj("status" -> "Success", "mitreId" -> t.patternId, "patternName" -> t.name)
-                }
-                array :+ res
+                array :+ db.tryTransaction { implicit graph =>
+                  createFromInput(inputPattern).transform(
+                    t => Success(Json.obj("status" -> "Success", "mitreId" -> t.patternId, "patternName" -> t.name)),
+                    e => Success(Json.obj("status" -> "Failure", "message" -> e.getMessage))
+                  )
+                }.get
               }
         } yield Results.Created(importedPatterns)
       }
@@ -87,8 +84,8 @@ class PatternCtrl @Inject() (
     entrypoint("get case patterns")
       .authRoTransaction(db) { implicit request => implicit graph =>
         for {
-          patternIds <- patternSrv.getCasePatterns(caseId)
-        } yield Results.Ok(patternIds.toJson)
+          patterns <- patternSrv.getCasePatterns(caseId)
+        } yield Results.Ok(patterns.toJson)
       }
 
   def delete(patternId: String): Action[AnyContent] =

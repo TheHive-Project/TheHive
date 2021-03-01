@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('theHiveDirectives')
-        .directive('flowItem', function($uibModal, $state, $window, HtmlSanitizer, UserSrv) {
+        .directive('flowItem', function($uibModal, $state, $window, HtmlSanitizer, UserSrv, AttackPatternSrv) {
             return {
                 restrict: 'E',
                 replace: true,
@@ -57,6 +57,8 @@
 
                         return false;
                     };
+
+                    scope.tactics = AttackPatternSrv.tactics.values;
 
                     scope.bulk = scope.isBulkOperation();
                 },

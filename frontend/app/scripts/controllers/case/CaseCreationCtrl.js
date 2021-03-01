@@ -4,7 +4,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $uibModalInstance, CaseSrv, NotificationSrv, TagSrv, template) {
+        function ($rootScope, $scope, $uibModalInstance, CaseSrv, TaxonomyCacheSrv, NotificationSrv, TagSrv, template) {
 
             $rootScope.title = 'New case';
             $scope.activeTlp = 'active';
@@ -17,6 +17,8 @@
             };
             $scope.template = template;
             $scope.fromTemplate = angular.isDefined(template) && !_.isEqual($scope.template, {});
+
+            $scope.tags = [];
 
             if ($scope.fromTemplate === true) {
 
@@ -37,7 +39,7 @@
                 $scope.tasks = _.map(template.tasks, function (t) {
                     return t.title;
                 });
-                
+
             } else {
                 $scope.tasks = [];
                 $scope.newCase = {
@@ -84,6 +86,13 @@
                     $scope.pendingAsync = false;
                     NotificationSrv.error('CaseCreationCtrl', response.data, response.status);
                 });
+            };
+
+            $scope.fromTagLibrary = function() {
+                TaxonomyCacheSrv.openTagLibrary()
+                    .then(function(tags){
+                        $scope.tags = $scope.tags.concat(tags);
+                    })
             };
 
             $scope.addTask = function (task) {

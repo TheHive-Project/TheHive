@@ -37,9 +37,9 @@
             </span>
             <span class="ml-xxs">
                 <i class="glyphicon glyphicon-calendar"></i>
-                <span>{{c.startDate | showDate}}</span>&nbsp;&nbsp;
+                <span>{{c.startDate | shortDate}}</span>&nbsp;&nbsp;
             <span ng-show="isCaseClosed()" class="text-success">(Closed at
-                    {{c.endDate | showDate}}
+                    {{c.endDate | shortDate}}
                     as
                     <strong>{{CaseResolutionStatus[c.resolutionStatus]}}</strong>)</span>
             </span>

@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, UserSrv, TagSrv, UtilsSrv) {
+    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, TaxonomyCacheSrv, UserSrv, TagSrv, UtilsSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -63,6 +63,13 @@
 
                     return filter.type;
                 };
+
+                scope.fromTagLibrary = function(filter) {
+                    TaxonomyCacheSrv.openTagLibrary()
+                        .then(function(tags){
+                            filter.value.list = filter.value.list.concat(tags);
+                        })
+                }
 
                 scope.promiseFor = function(filter, query) {
                     var field = scope.metadata[scope.entity].attributes[filter.field];

@@ -33,12 +33,21 @@
             </ul>
         </div>
         <div class="col-xs-10 pl-xxxs clear">
-            <tags-input class="form-control-wrapper"
-                ng-model="filter.value.list"
-                placeholder="ex: Enter a tag"
-                replace-spaces-with-dashes="false">
-                    <auto-complete source="promiseFor(filter, $query)" min-length="3" debounce-delay="400"></auto-complete>
+            <div class="input-group">
+                <tags-input class="form-control-wrapper ti-tag-selector"
+                    ng-model="filter.value.list"
+                    placeholder="ex: Enter a tag"
+                    replace-spaces-with-dashes="false"
+                    template="views/directives/tag-input-item.html">
+                        <auto-complete source="promiseFor(filter, $query)" min-length="3" debounce-delay="400"></auto-complete>
                 </tags-input>
+
+                <span class="input-group-btn vtop">
+                    <button type="button" class="btn btn-block btn-default" ng-click="fromTagLibrary(filter)" uib-tooltip="Add tag from library" tooltip-placement="left">
+                        <span class="fa fa-plus"></span>
+                    </button>
+                </span>
+            </div>
         </div>
     </div>
 

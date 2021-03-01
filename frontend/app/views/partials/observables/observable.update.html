@@ -56,11 +56,21 @@
             <label class="col-md-3 control-label">Add Tags <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableAddTags"></label>
             <div class="col-md-9">
                 <input type="hidden" name="addTags" ng-model="$dialog.params.addTagNames" ng-required="$dialog.state.enableAddTags"/>
-                <tags-input name="addTagsInput" ng-model="$dialog.params.addTags" class="ti-input-sm"
-                    placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2"
-                    on-tag-added="$dialog.toggleAddTags()">
-                    <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
-                </tags-input>
+
+                <div class="input-group">
+                    <tags-input name="addTagsInput" ng-model="$dialog.params.addTags" class="ti-input-sm ti-tag-selector"
+                        placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2"
+                        on-tag-added="$dialog.toggleAddTags()" template="views/directives/tag-input-item.html">
+                        <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
+                    </tags-input>
+
+                    <span class="input-group-btn vtop">
+                        <button type="button" class="btn btn-block btn-sm btn-primary" ng-click="$dialog.fromTagLibrary('add')" uib-tooltip="Add tag from library" tooltip-placement="left">
+                            <span class="fa fa-plus"></span>
+                        </button>
+                    </span>
+                </div>
+
             </div>
         </div>
 
@@ -68,13 +78,22 @@
             <label class="col-md-3 control-label">Remove Tags <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableRemoveTags"></label>
             <div class="col-md-9">
                 <input type="hidden" name="removeTags" ng-model="$dialog.params.removeTagNames" ng-required="$dialog.state.enableRemoveTags"/>
-                <tags-input name="removeTagsInput" ng-model="$dialog.params.removeTags" class="ti-input-sm"
-                    placeholder="Remove tags" replace-spaces-with-dashes="false" min-length="2"
-                    on-tag-added="$dialog.toggleRemoveTags()">
-                    <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
-                </tags-input>
+                <div class="input-group">
+                    <tags-input name="removeTagsInput" ng-model="$dialog.params.removeTags" class="ti-input-sm ti-tag-selector"
+                        placeholder="Remove tags" replace-spaces-with-dashes="false" min-length="2"
+                        on-tag-added="$dialog.toggleRemoveTags()" template="views/directives/tag-input-item.html">
+                        <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
+                    </tags-input>
+
+                    <span class="input-group-btn vtop">
+                        <button type="button" class="btn btn-block btn-sm btn-primary" ng-click="$dialog.fromTagLibrary('remove')" uib-tooltip="Add tag from library" tooltip-placement="left">
+                            <span class="fa fa-plus"></span>
+                        </button>
+                    </span>
+                </div>
             </div>
         </div>
+
     </div>
 
 

@@ -61,7 +61,9 @@ class OrganisationSrv @Inject() (
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
 
   def currentId(implicit graph: Graph, authContext: AuthContext): EntityId =
-    authContext.organisation.fold(identity, oid => cache.getOrElseUpdate(s"organisation-$oid")(getByName(oid)._id.getOrFail("Organisation").get))
+    authContext
+      .organisation
+      .fold(identity, oid => cache.getOrElseUpdate(s"organisation-$oid")(getByName(oid)._id.getOrFail("Organisation").get))
 
   def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
     userSrv.current.organisations.visibleOrganisationsFrom

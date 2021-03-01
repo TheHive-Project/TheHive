@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('TaxonomyCacheSrv', function($http, $q, $filter, QuerySrv) {
+        .service('TaxonomyCacheSrv', function($http, $q, $filter, $uibModal, QuerySrv) {
             var self = this;
 
             this.cache = null;
@@ -66,6 +66,46 @@
                 }
 
                 return deferred.promise;
+            };
+
+            self.openTagLibrary = function() {
+                var defer = $q.defer();
+
+                var modalInstance = $uibModal.open({
+                    controller: 'TaxonomySelectionModalCtrl',
+                    controllerAs: '$modal',
+                    animation: true,
+                    templateUrl: 'views/partials/misc/taxonomy-selection.modal.html',
+                    size: 'lg',
+                    resolve: {
+                        taxonomies: function() {
+                            return self.all();
+                        }
+                    }
+                });
+
+                modalInstance.result
+                    .then(function(selectedTags) {
+                        var filterFn = $filter('tagValue'),
+                            tags = [];
+
+                        _.each(selectedTags, function(tag) {
+                            tags.push({
+                                text: filterFn(tag)
+                            });
+                        });
+
+                        //$scope.tags = $scope.tags.concat(tags);
+                        defer.resolve(tags);
+                    })
+                    .catch(function(err) {
+                        if (err && !_.isString(err)) {
+                            NotificationSrv.error('Tag selection', err.data, err.status);
+                        }
+                        defer.rejeect(err);
+                    });
+
+                return defer.promise;
             };
         });
 })();

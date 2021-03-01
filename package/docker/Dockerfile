@@ -55,6 +55,7 @@ RUN apt update && \
   mkdir /etc/thehive && \
   cp /opt/thehive/conf/logback.xml /etc/thehive/logback.xml && \
   chown -R root:root /opt/thehive && \
+  touch /var/log/thehive/application.log && \
   chown -R thehive:thehive /var/log/thehive /etc/thehive && \
   chmod +x /opt/thehive/entrypoint
 

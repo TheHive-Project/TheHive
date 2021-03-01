@@ -5,8 +5,9 @@ import play.api.libs.json._
 import java.util.Date
 
 case class InputProcedure(
-    description: String,
-    occurence: Date,
+    description: Option[String],
+    occurDate: Date,
+    tactic: String,
     caseId: String,
     patternId: String
 )
@@ -14,13 +15,15 @@ case class InputProcedure(
 object InputProcedure {
   implicit val reads: Reads[InputProcedure] = Reads[InputProcedure] { json =>
     for {
-      description <- (json \ "description").validate[String]
-      occurence   <- (json \ "occurence").validate[Date]
+      description <- (json \ "description").validateOpt[String]
+      occurDate   <- (json \ "occurDate").validate[Date]
+      tactic      <- (json \ "tactic").validate[String]
       caseId      <- (json \ "caseId").validate[String]
       patternId   <- (json \ "patternId").validate[String]
     } yield InputProcedure(
       description,
-      occurence,
+      occurDate,
+      tactic,
       caseId,
       patternId
     )
@@ -35,9 +38,10 @@ case class OutputProcedure(
     _createdBy: String,
     _updatedAt: Option[Date],
     _updatedBy: Option[String],
-    description: String,
-    occurence: Date,
+    description: Option[String],
+    occurDate: Date,
     patternId: String,
+    tactic: String,
     extraData: JsObject
 )
 

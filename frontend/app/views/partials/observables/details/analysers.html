@@ -45,7 +45,7 @@
                                     <i class="glyphicon" ng-class="{ Failure:'glyphicon-warning-sign text-warning', Success:'glyphicon-ok text-success', InProgress:'fa fa-cog fa-spin', Waiting:'fa fa-cog fa-spin'}[job.status]"></i>
                                 </span>
 
-                                <a href ng-click="showReport(job.id)" uib-tooltip="View report">{{(job.endDate || job.startDate) | showDate}}</a> ({{job.cortexId}})
+                                <a href ng-click="showReport(job.id)" uib-tooltip="View report">{{(job.endDate || job.startDate) | shortDate}}</a> ({{job.cortexId}})
                             </li>
                         </ul>
                     </td>
@@ -96,7 +96,7 @@
 <div class="row observable-report" ng-if="report">
     <div class="col-md-12">
         <h4 class="pad10 text-primary">
-            Report <small>for {{report.template}} analysis of {{(report.endDate || report.startDate) | showDate}}</small>
+            Report <small>for {{report.template}} analysis of {{(report.endDate || report.startDate) | shortDate}}</small>
             <span class="pull-right">
                 <small><a href class="text-primary" ng-click="showRaw = !showRaw">{{showRaw ? 'Hide': 'Show'}} Raw Report</a></small>
                 <small class="mh-xxxs">|</small>

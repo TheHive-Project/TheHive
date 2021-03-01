@@ -34,11 +34,10 @@ class PatternSrv @Inject() (
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Pattern] =
     Try(startTraversal.getByPatternId(name)).getOrElse(startTraversal.limit(0))
 
-  def getCasePatterns(caseId: String)(implicit authContext: AuthContext, graph: Graph): Try[Seq[String]] =
+  def getCasePatterns(caseId: String)(implicit authContext: AuthContext, graph: Graph): Try[Seq[RichPattern]] =
     for {
       caze <- caseSrv.get(EntityIdOrName(caseId)).visible(organisationSrv).getOrFail("Case")
-      patterns = caseSrv.get(caze).procedure.pattern.richPattern.toSeq
-    } yield patterns.map(_.patternId)
+    } yield caseSrv.get(caze).procedure.pattern.richPattern.toSeq
 
   def update(
       pattern: Pattern with Entity,

@@ -68,7 +68,8 @@
                 $scope.artifacts = new PaginatedQuerySrv({
                     name: 'observables',
                     root: $scope.caseId,
-                    objectType: 'obserable',
+                    objectType: 'observable',
+                    streamObjectType: 'case_artifact',
                     version: 'v1',
                     scope: $scope,
                     sort: $scope.filtering.context.sort,

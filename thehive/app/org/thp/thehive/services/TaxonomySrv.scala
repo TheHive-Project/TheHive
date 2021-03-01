@@ -103,7 +103,7 @@ object TaxonomyOps {
       if (authContext.isPermitted(Permissions.manageTaxonomy))
         noFreetags
       else
-        traversal.filter(_.organisations.get(authContext.organisation))
+        noFreetags.filter(_.organisations.get(authContext.organisation))
 
     def noFreetags: Traversal.V[Taxonomy] =
       traversal.has(_.namespace, TextP.notStartingWith("_freetags"))

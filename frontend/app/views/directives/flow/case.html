@@ -35,10 +35,10 @@
                 </span>
             </div>
             <div ng-switch-when="startDate">
-                {{k}}: <em>{{v | showDate}}</em>
+                {{k}}: <em>{{v | shortDate}}</em>
             </div>
             <div ng-switch-when="endDate">
-                {{k}}: <em>{{v | showDate}}</em>
+                {{k}}: <em>{{v | shortDate}}</em>
             </div>
             <div ng-switch-when="tlp">
                 {{k}}: <tlp format="'static'" value="v"></tlp>

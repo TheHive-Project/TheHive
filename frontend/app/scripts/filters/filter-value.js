@@ -1,8 +1,10 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveFilters').filter('filterValue', function(UtilsSrv) {
+    angular.module('theHiveFilters').filter('filterValue', function(UtilsSrv, UiSettingsSrv) {
         return function(value) {
+            var dateFormat = UiSettingsSrv.defaultDateFormat();
+
             if (angular.isArray(value)) {
                 return _.map(value, function(item) {
                     return item.label || item.text;
@@ -33,11 +35,11 @@
                 }
 
                 if(start !== null) {
-                    result.push('From: ' + moment(start).hour(0).minutes(0).seconds(0).format('MM/DD/YY HH:mm'));
+                    result.push('From: ' + moment(start).hour(0).minutes(0).seconds(0).format(dateFormat));
                 }
 
                 if(end !== null) {
-                    result.push('To: ' + moment(end).hour(23).minutes(59).seconds(59).format('MM/DD/YY HH:mm'));
+                    result.push('To: ' + moment(end).hour(23).minutes(59).seconds(59).format(dateFormat));
                 }
 
                 return result.join(', ');

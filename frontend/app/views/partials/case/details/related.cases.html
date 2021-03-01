@@ -4,7 +4,7 @@
     <div>
         <h5>Newest (<a href ui-sref="app.case.details({caseId:links[0].id})">Case # {{newestLink.caseId}} - {{newestLink.title}}</a>)</h5>
         <div>
-            Created on <strong>{{newestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
+            Created on <strong>{{newestLink.startDate | shortDate:'YYYY-MM-DD'}}</strong>
         </div>
         <div>
             Shares <strong><ng-pluralize count="newestLink.linksCount" when="{'one': '1 observable', 'other': '{} observables'}"></ng-pluralize></strong>
@@ -21,7 +21,7 @@
     <div ng-show="links.length > 1">
         <h5>Oldest (<a href ui-sref="app.case.details({caseId:oldestLink.id})">Case # {{oldestLink.caseId}} - {{oldestLink.title}}</a>)</h5>
         <div>
-            Created on <strong>{{oldestLink.startDate | showDate:'YYYY-MM-DD'}}</strong>
+            Created on <strong>{{oldestLink.startDate | shortDate:'YYYY-MM-DD'}}</strong>
         </div>
         <div>
             Shares

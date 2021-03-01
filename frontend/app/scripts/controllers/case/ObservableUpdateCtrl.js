@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers').controller('ObservableUpdateCtrl',
-        function($scope, $uibModalInstance, TagSrv, selection) {
+        function($scope, $uibModalInstance, TagSrv, TaxonomyCacheSrv, selection) {
             var self = this;
 
             this.selection = selection;
@@ -138,6 +138,19 @@
 
             this.getTags = function(query) {
                 return TagSrv.fromObservables(query);
+            };
+
+            self.fromTagLibrary = function(field) {
+                TaxonomyCacheSrv.openTagLibrary()
+                    .then(function(tags){
+                        if(field === 'add') {
+                            self.params.addTags = (self.params.addTags || []).concat(tags);
+                            self.toggleAddTags();
+                        } else if (field === 'remove') {
+                            self.params.removeTags = (self.params.removeTags || []).concat(tags);
+                            self.toggleRemoveTags();
+                        }
+                    })
             };
 
             this.toogleIoc = function() {

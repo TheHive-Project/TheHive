@@ -15,43 +15,70 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 
 import javax.inject.{Inject, Named, Singleton}
+import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
 @Singleton
-class TagSrv @Inject() (organisationSrv: OrganisationSrv, appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)
-    extends VertexSrv[Tag] {
+class TagSrv @Inject() (
+    organisationSrv: OrganisationSrv,
+    appConfig: ApplicationConfig,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+) extends VertexSrv[Tag] {
 
   private val freeTagColourConfig: ConfigItem[String, String] =
     appConfig.item[String]("tags.freeTagColour", "Default colour for free tags")
 
   def freeTagColour: String = freeTagColourConfig.get
 
-  def freeTagNamespace(implicit graph: Graph, authContext: AuthContext): String =
+  private val defaultColourConfig: ConfigItem[String, String] =
+    appConfig.item[String]("tags.defaultColour", "Default colour of the automatically created tags")
+
+  def defaultColour: String = defaultColourConfig.get
+
+  private def freeTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Tag =
+    Tag(freeTagNamespace, tagName, None, None, defaultColour)
+
+  private def freeTagNamespace(implicit graph: Graph, authContext: AuthContext): String =
     s"_freetags_${organisationSrv.currentId(graph, authContext).value}"
 
-  def parseString(tagName: String)(implicit graph: Graph, authContext: AuthContext): Tag = {
-    val ns  = freeTagNamespace
-    val tag = Tag.fromString(tagName, ns, freeTagColour)
-    if (tag.isFreeTag) Tag(ns, tagName, None, None, freeTagColour)
-    else tag
+  def fromString(tagName: String): Option[(String, String, Option[String])] = {
+    val namespacePredicateValue: Regex = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
+    val namespacePredicate: Regex      = "([^\".:=]+)[.:]([^\".=]+)".r
+
+    tagName match {
+      case namespacePredicateValue(namespace, predicate, value) if value.exists(_ != '=') =>
+        Some((namespace.trim, predicate.trim, Some(value.trim)))
+      case namespacePredicate(namespace, predicate) =>
+        Some((namespace.trim, predicate.trim, None))
+      case _ => None
+    }
   }
 
   def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
-  def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
-    val tag = parseString(tagName)
-    getTag(tag).headOption.fold(create(tag))(Success(_))
-  }
+  def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    fromString(tagName) match {
+      case Some((ns, pred, v)) =>
+        startTraversal
+          .getByName(ns, pred, v)
+          .getOrFail("Tag")
+          .orElse(
+            startTraversal
+              .getByName(freeTagNamespace, tagName, None)
+              .getOrFail("Tag")
+              .orElse(create(freeTag(tagName)))
+          )
+      case None =>
+        startTraversal
+          .getByName(freeTagNamespace, tagName, None)
+          .getOrFail("Tag")
+          .orElse(create(freeTag(tagName)))
+    }
 
-  def getOrCreate(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    getTag(tag).getOrFail("Tag").recoverWith { case _ => create(tag) }
-
-  override def createEntity(e: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
+  def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     integrityCheckActor ! EntityAdded("Tag")
-    super.createEntity(e)
+    super.createEntity(tag)
   }
-
-  def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = createEntity(tag)
 
   override def exists(e: Tag)(implicit graph: Graph): Boolean = startTraversal.getByName(e.namespace, e.predicate, e.value).exists
 

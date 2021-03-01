@@ -274,9 +274,6 @@ angular.module('thehive', [
                     organisation: function($stateParams, OrganisationSrv) {
                         return OrganisationSrv.get($stateParams.organisation);
                     },
-                    templates: function($stateParams, OrganisationSrv) {
-                        return OrganisationSrv.caseTemplates($stateParams.organisation);
-                    },
                     fields: function(CustomFieldsSrv){
                         return CustomFieldsSrv.all();
                     },
@@ -508,6 +505,18 @@ angular.module('thehive', [
 
                         return deferred.promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
+                }
+            })
+            .state('app.case.procedures', {
+                url: '/procedures',
+                templateUrl: 'views/partials/case/case.procedures.html',
+                controller: 'CaseProceduresCtrl',
+                controllerAs: '$vm',
+                data: {
+                    tab: 'procedures'
                 },
                 guard: {
                     isSuperAdmin: false

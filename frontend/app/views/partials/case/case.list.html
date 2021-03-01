@@ -79,7 +79,7 @@
 
                                         <div class="text-success" ng-show="currentCase.status !== 'Open'">
                                             <small>
-                                                (Closed at {{currentCase.endDate | showDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)
+                                                (Closed at {{currentCase.endDate | shortDate}} as <strong>{{$vm.CaseResolutionStatus[currentCase.resolutionStatus]}}</strong>)
                                             </small>
                                         </div>
                                         <div class="text-danger" ng-if="currentCase.mergeFrom">
@@ -132,11 +132,12 @@
                                     <td>
                                         <div>
                                             <a href ng-click="$vm.addFilterValue('startDate', currentCase.startDate)">
-                                                <span uib-tooltip="{{currentCase.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
+                                                <span uib-tooltip="{{currentCase.startDate | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{currentCase.startDate | shortDate}}</span>
                                             </a>
                                         </div>
-                                        <div>
-                                            <case-duration start="currentCase.startDate" end="currentCase.endDate" icon="fa-clock-o"></case-duration>
+                                        <div ng-switch="currentCase.status">
+                                            <case-duration ng-switch-when="Resolved" start="currentCase.startDate" end="currentCase.endDate" icon="fa-clock-o"></case-duration>
+                                            <case-duration ng-switch-when="Open" start="currentCase.startDate" icon="fa-clock-o"></case-duration>
                                         </div>
                                     </td>
                                     <td class="text-center">

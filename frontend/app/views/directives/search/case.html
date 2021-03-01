@@ -8,13 +8,13 @@
     <user-info value="value.owner" field="name"></user-info>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
-    <span ng-bind="value.startDate | showDate"></span>
+    <span ng-bind="value.startDate | shortDate"></span>
 
     <span ng-if="value.endDate" class="text-success">
         (
         <strong>Closed</strong>
         on
-        {{value.endDate | showDate}}
+        {{value.endDate | shortDate}}
         as
         <strong>{{value.resolutionStatus}}</strong>)
     </span>
