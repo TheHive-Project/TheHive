@@ -74,7 +74,6 @@
                                         </a>
                                     </th>
                                     <th style="width: 150px;">Details</th>
-                                    <!-- <th style="width: 100px;">Observables</th> -->
                                     <th style="width: 90px;">
                                         <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('assignee')" uib-tooltip="Sort by occur start date">
                                             Assignee
@@ -86,7 +85,7 @@
                                     <th style="width: 150px">
                                         Dates
 
-                                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('startDate')" uib-tooltip="Sort by occur start date">
+                                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('startDate')" uib-tooltip="Sort by start date">
                                             S.
                                             <i ng-show="$vm.filtering.context.sort.indexOf('+startDate') === -1 && $vm.filtering.context.sort.indexOf('-startDate') === -1" class="fa fa-sort"></i>
                                             <i ng-show="$vm.filtering.context.sort.indexOf('+startDate') !== -1" class="fa fa-caret-up"></i>
@@ -178,7 +177,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div ng-class="{'text-danger': !!currentCase.extraData.actionRequired}">
+                                        <div ng-class="{'text-danger': !!currentCase.extraData.actionRequired}" class="clearfix">
                                             <a href ng-click="$vm.addFilterValue('actionRequired', true)">
                                                 <span ng-if="!!currentCase.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
                                                     <i class="fa fa-exclamation-triangle"></i>
@@ -186,21 +185,21 @@
                                             </a>
 
                                             <a ui-sref="app.case.tasks({caseId: currentCase._id})" ng-class="{'text-danger': !!currentCase.extraData.actionRequired}">
-                                                <ng-pluralize count="currentCase.extraData.taskStats.total" when="{'0': 'No Tasks', '1': '1 Task', 'other': '{} Tasks'}"></ng-pluralize>
+                                                <span>Tasks</span>
+                                                <strong class="pull-right">{{currentCase.extraData.taskStats.total || 0}}</strong>
                                             </a>
                                         </div>
                                         <task-progress class="mt-0" ng-show="currentCase.extraData.taskStats.total > 0" tasks="currentCase.extraData.taskStats"></task-progress>
 
-                                        <div>
+                                        <div class="clearfix mt-xxs">
+
                                             <a ui-sref="app.case.observables({caseId: currentCase._id})">
-                                                <ng-pluralize count="currentCase.extraData.observableStats.total" when="{'0': 'No Observables', '1': '1 Observable', 'other': '{} Observables'}"></ng-pluralize>
+                                                <span>Observables</span>
+                                                <strong class="pull-right">{{currentCase.extraData.observableStats.total || 0}}</strong>
                                             </a>
                                         </div>
 
                                     </td>
-                                    <!-- <td>
-                                        <a ui-sref="app.case.observables({caseId: currentCase._id})">{{currentCase.extraData.observableStats.total}}</a>
-                                    </td> -->
                                     <td class="nowrap">
                                         <user user-id="currentCase.assignee" icon-only="true" icon-size="m"></user>
                                     </td>
