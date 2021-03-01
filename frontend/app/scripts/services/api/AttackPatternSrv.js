@@ -27,46 +27,60 @@
                 ],
                 values: {
                     'reconnaissance': {
-                        label: 'Reconnaissance'
+                        label: 'Reconnaissance',
+                        color: '#D1BBD7'
                     },
                     'resource-development': {
-                        label: 'Resource Development'
+                        label: 'Resource Development',
+                        color: '#AE76A3'
                     },
                     'initial-access': {
-                        label: 'Initial Access'
+                        label: 'Initial Access',
+                        color: '#882E72'
                     },
                     'execution': {
-                        label: 'Execution'
+                        label: 'Execution',
+                        color: '#1965B0'
                     },
                     'persistence': {
-                        label: 'Persistence'
+                        label: 'Persistence',
+                        color: '#5289C7'
                     },
                     'privilege-escalation': {
-                        label: 'Privilege Escalation'
+                        label: 'Privilege Escalation',
+                        color: '#7BAFDE'
                     },
                     'defense-evasion': {
-                        label: 'Defense Evasion'
+                        label: 'Defense Evasion',
+                        color: '#4EB256'
                     },
                     'credential-access': {
-                        label: 'Credential Access'
+                        label: 'Credential Access',
+                        color: '#90C987'
                     },
                     'discovery': {
-                        label: 'Discovery'
+                        label: 'Discovery',
+                        color: '#CAE0AB'
                     },
                     'lateral-movement': {
-                        label: 'Lateral Movement'
+                        label: 'Lateral Movement',
+                        color: '#F7F056'
                     },
                     'collection': {
-                        label: 'Collection'
+                        label: 'Collection',
+                        color: '#F6C141'
                     },
                     'command-and-control': {
-                        label: 'Command and Control'
+                        label: 'Command and Control',
+                        color: '#F1932D'
                     },
                     'exfiltration': {
-                        label: 'Exfiltration'
+                        label: 'Exfiltration',
+                        color: '#E8601C'
                     },
                     'impact': {
-                        label: 'Impact'
+                        label: 'Impact',
+                        color: '#DC050C'
                     }
                 }
             };
@@ -120,7 +134,7 @@
 
                         _.each(techniques, function(technique) {
                             technique.isSubTechnique = !!technique.extraData.parent;
-                        });                        
+                        });
 
                         self.tacticsCache[tactic] = techniques;
 
