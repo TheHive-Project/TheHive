@@ -57,23 +57,16 @@ class TagSrv @Inject() (
   def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    fromString(tagName) match {
-      case Some((ns, pred, v)) =>
-        startTraversal
-          .getByName(ns, pred, v)
-          .getOrFail("Tag")
-          .orElse(
-            startTraversal
-              .getByName(freeTagNamespace, tagName, None)
-              .getOrFail("Tag")
-              .orElse(create(freeTag(tagName)))
-          )
-      case None =>
+    fromString(tagName)
+      .flatMap {
+        case (ns, pred, v) => startTraversal.getByName(ns, pred, v).headOption
+      }
+      .fold {
         startTraversal
           .getByName(freeTagNamespace, tagName, None)
           .getOrFail("Tag")
           .orElse(create(freeTag(tagName)))
-    }
+      }(Success(_))
 
   def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     integrityCheckActor ! EntityAdded("Tag")
