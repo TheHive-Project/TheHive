@@ -238,10 +238,34 @@
                 });
         };
 
+        this.filterByResolutionStatus = function(status) {
+            this.filtering.clearFilters()
+                .then(function() {
+                    self.filtering.addFilterValue('resolutionStatus', status);
+                    self.addFilterValue('status', 'Resolved');
+                });
+        };
+
         this.sortBy = function(sort) {
             this.list.sort = sort;
             this.list.update();
             this.filtering.setSort(sort);
+        };
+
+        this.sortByField = function(field) {
+            var context = this.filtering.context;
+            var currentSort = Array.isArray(context.sort) ? _.without(context.sort, '-flag', '+flag')[0] : context.sort;
+            var sort = null;
+
+            if(currentSort.substr(1) !== field) {
+                sort = ['-flag', '+' + field];
+            } else {
+                sort = ['-flag', (currentSort === '+' + field) ? '-'+field : '+'+field];
+            }
+
+            self.list.sort = sort;
+            self.list.update();
+            self.filtering.setSort(sort);
         };
 
         this.bulkEdit = function() {
