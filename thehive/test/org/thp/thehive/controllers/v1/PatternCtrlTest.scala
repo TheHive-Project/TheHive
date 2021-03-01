@@ -97,6 +97,81 @@ class PatternCtrlTest extends PlaySpecification with TestAppBuilder {
       contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
+    "import & update a pattern" in testApp { app =>
+      // Get a pattern
+      val request1 = FakeRequest("GET", "/api/v1/pattern/T123")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result1 = app[PatternCtrl].get("T123")(request1)
+      status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
+      val result1Pattern = contentAsJson(result1).as[OutputPattern]
+
+      TestPattern(result1Pattern) must_=== TestPattern(
+        "T123",
+        "testPattern1",
+        Some("The testPattern 1"),
+        Set("testTactic1", "testTactic2"),
+        "http://test.pattern.url",
+        "unit-test",
+        None,
+        None,
+        revoked = false,
+        Seq(),
+        Seq(),
+        None,
+        Seq(),
+        Seq(),
+        remoteSupport = true,
+        Seq(),
+        Some("1.0")
+      )
+
+      // Update a pattern
+      val request2 = FakeRequest("POST", "/api/v1/pattern/import/attack")
+        .withHeaders("user" -> "admin@thehive.local")
+        .withBody(
+          AnyContentAsMultipartFormData(
+            MultipartFormData(
+              dataParts = Map.empty,
+              files =
+                Seq(FilePart("file", "patternsUpdate.json", Option("application/json"), FakeTemporaryFile.fromResource("/patternsUpdate.json"))),
+              badParts = Seq()
+            )
+          )
+        )
+
+      val result2 = app[PatternCtrl].importMitre(request2)
+      status(result2) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result2)}")
+
+      // Check for updates
+      val request3 = FakeRequest("GET", "/api/v1/pattern/T123")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result3 = app[PatternCtrl].get("T123")(request3)
+      status(result3) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result3)}")
+      val result3Pattern = contentAsJson(result3).as[OutputPattern]
+
+      TestPattern(result3Pattern) must_=== TestPattern(
+        "T123",
+        "Updated testPattern1",
+        None,
+        Set(),
+        "https://attack.mitre.org/techniques/T123",
+        "attack-pattern",
+        None,
+        None,
+        revoked = true,
+        Seq(),
+        Seq(),
+        None,
+        Seq(),
+        Seq(),
+        remoteSupport = false,
+        Seq(),
+        None
+      )
+    }
+
     "delete a pattern" in testApp { app =>
       val request1 = FakeRequest("GET", "/api/v1/pattern/testPattern1")
         .withHeaders("user" -> "certuser@thehive.local")

@@ -56,7 +56,7 @@ class PatternCtrl @Inject() (
 
         for {
           inputPatterns <- parseJsonFile(file)
-          richPatterns =
+          importedPatterns =
             inputPatterns
               .sortBy(_.external_id.length) // sort to create sub-patterns after their parent
               .foldLeft[JsArray](JsArray.empty) { (array, inputPattern) =>
@@ -70,7 +70,7 @@ class PatternCtrl @Inject() (
                 }
                 array :+ res
               }
-        } yield Results.Created(richPatterns)
+        } yield Results.Created(importedPatterns)
       }
 
   def get(patternId: String): Action[AnyContent] =
@@ -108,19 +108,17 @@ class PatternCtrl @Inject() (
   private def createFromInput(inputPattern: InputPattern)(implicit graph: Graph, authContext: AuthContext): Try[Pattern with Entity] =
     if (inputPattern.external_id.isEmpty)
       Failure(BadRequestError(s"A pattern with no MITRE id cannot be imported"))
-    else if (patternSrv.startTraversal.alreadyImported(inputPattern.external_id)) {
-      // TODO update pattern
-      def patternTraversal = patternSrv.get(EntityIdOrName(inputPattern.external_id))
-      for {
-        pattern <-
-          patternSrv
-            .update(patternTraversal, Seq())
-            .flatMap(_ => patternTraversal.getOrFail("Pattern"))
-        _ = if (inputPattern.x_mitre_is_subtechnique) linkPattern(pattern)
-      } yield pattern
-    } else if (inputPattern.`type` != "attack-pattern")
+    else if (inputPattern.`type` != "attack-pattern")
       Failure(BadRequestError(s"Only patterns with type attack-pattern are imported, this one is ${inputPattern.`type`}"))
+    else if (patternSrv.startTraversal.alreadyImported(inputPattern.external_id))
+      // Update a pattern
+      for {
+        pattern        <- patternSrv.get(EntityIdOrName(inputPattern.external_id)).getOrFail("Pattern")
+        updatedPattern <- patternSrv.update(pattern, inputPattern.toPattern)
+        _ = if (inputPattern.x_mitre_is_subtechnique) linkPattern(pattern)
+      } yield updatedPattern
     else
+      // Create a pattern
       for {
         pattern <- patternSrv.createEntity(inputPattern.toPattern)
         _ = if (inputPattern.x_mitre_is_subtechnique) linkPattern(pattern)

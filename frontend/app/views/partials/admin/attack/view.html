@@ -1,48 +1,25 @@
 <form class="form">
-
-    <div class="modal-header bg-primary">
-        <h3 class="modal-title">{{::$modal.pattern.parent ? 'Sub-technique' : 'Technique'}}: {{::$modal.pattern.name}}
-            <small class="ml-xxxs">(Version: {{::$modal.pattern.version}})</small>
+    <div class="modal-header" ng-class="{'bg-primary': !!!$modal.pattern.revoked, 'bg-danger': !!$modal.pattern.revoked}">
+        <h3 class="modal-title">{{$modal.pattern.isSubTechnique ? ($modal.pattern.parentName + ': ') : ''}}{{::$modal.pattern.name}}
+            <span ng-if="$modal.pattern.revoked" class="label label-danger">Revoked</span>
         </h3>
     </div>
 
     <div class="modal-body">
         <div class="row">
-            <div class="col-sm-6">
+            <div class="col-sm-4">
                 <div class="form-group">
-                    <label>{{::$modal.pattern.parent ? 'Sub-technique' : 'Technique'}} Name</label>
+                    <label>{{::$modal.pattern.isSubTechnique ? 'Sub-technique' : 'Technique'}} Name</label>
                     <div>{{::$modal.pattern.name}}</div>
                 </div>
             </div>
-            <div class="col-sm-6" ng-if="::$modal.pattern.parent">
+            <div class="col-sm-4" ng-if="::$modal.pattern.isSubTechnique">
                 <div class="form-group">
                     <label>Sub-Technique of</label>
-                    <div>{{::$modal.pattern.parent || '-'}}</div>
+                    <div>{{::$modal.pattern.parentName || '-'}}</div>
                 </div>
             </div>
-        </div>
-
-        <div class="row">
-            <div class="col-sm-6">
-                <div class="form-group">
-                    <label>Tactics</label>
-                    <div ng-repeat="tactic in ::$modal.pattern.tactics" class="mb-xxs">
-                        <span class="label label-lg label-default">{{tactic}}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6">
-                <div class="form-group">
-                    <label>Data Sources</label>
-                    <div ng-repeat="ds in ::$modal.pattern.dataSources" class="mb-xxs">
-                        <span class="label label-lg label-default">{{ds}}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-sm-6">
+            <div class="col-sm-4">
                 <div class="form-group">
                     <label>URL</label>
                     <div>
@@ -52,11 +29,108 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-6">
+        </div>
+
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>Tactics</label>
+                    <div ng-if="::$modal.pattern.tactics.length === 0">
+                        <em class="text-muted">None</em>
+                    </div>
+                    <div ng-repeat="tactic in ::$modal.pattern.tactics" class="mb-xxs">
+                        <span class="label label-default">{{tactic}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>Data Sources</label>
+                    <div ng-if="::$modal.pattern.dataSources.length === 0">
+                        <em class="text-muted">None</em>
+                    </div>
+                    <div ng-repeat="ds in ::$modal.pattern.dataSources" class="mb-xxs">
+                        <span class="label label-default">{{ds}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
                 <div class="form-group">
                     <label>Platforms</label>
+                    <div ng-if="::$modal.pattern.platforms.length === 0">
+                        <em class="text-muted">None</em>
+                    </div>
                     <div ng-repeat="platform in ::$modal.pattern.platforms" class="mb-xxs">
-                        <span class="label label-lg label-default">{{platform}}</span>
+                        <span class="label label-default">{{platform}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>Defense Bypassed</label>
+                    <div ng-if="::$modal.pattern.defenseBypassed.length === 0">
+                        <em class="text-muted">None</em>
+                    </div>
+                    <div ng-repeat="defense in ::$modal.pattern.defenseBypassed" class="mb-xxs">
+                        <span class="label label-default">{{defense}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>Permissions Required</label>
+                    <div ng-if="::$modal.pattern.permissionsRequired.length === 0">
+                        <em class="text-muted">None</em>
+                    </div>
+                    <div ng-repeat="perm in ::$modal.pattern.permissionsRequired" class="mb-xxs">
+                        <span class="label label-default">{{perm}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>System Requirements</label>
+                    <div ng-if="::$modal.pattern.systemRequirements.length === 0">
+                        <em class="text-muted">None</em>
+                    </div>
+                    <div ng-repeat="req in ::$modal.pattern.systemRequirements" class="mb-xxs">
+                        <span class="label label-default">{{req}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>Remote Support</label>
+                    <div>{{!!$modal.pattern.remoteSupport}}</div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>Capec ID</label>
+                    <div ng-if="$modal.pattern.capecId">
+                        {{::$modal.pattern.capecId}}
+                    </div>
+                    <div ng-if="!$modal.pattern.capecId">
+                        <em class="text-muted">None</em>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>Capec URL</label>
+                    <div ng-if="$modal.pattern.capecUrl">
+                        <a href="{{::$modal.pattern.capecUrl}}" target="_blank">
+                            {{::$modal.pattern.capecUrl}} <i class="fa fa-external-link ml-xxxs"></i>
+                        </a>
+                    </div>
+                    <div ng-if="!$modal.pattern.capecUrl">
+                        <em class="text-muted">None</em>
                     </div>
                 </div>
             </div>
@@ -64,35 +138,35 @@
 
         <div class="form-group">
             <label>Description</label>
-            <div>{{::$modal.pattern.description}}</div>
+            <div ng-if="$modal.pattern.description">
+                {{::$modal.pattern.description}}
+            </div>
+            <div ng-if="!$modal.pattern.description">
+                <em class="text-muted">None</em>
+            </div>
         </div>
 
-        <div class="row">
+        <div class="row" ng-if="$modal.pattern.extraData.children.length > 0">
             <div class="col-sm-12">
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th class="pl-0" width="200">Tag</th>
-                            <th>Predicate</th>
-                            <th>Value</th>
-                            <th width="100">Color</th>
-                            <th width="10"></th>
+                            <th class="pl-0" width="200">ID</th>
+                            <th>Name</th>
+                            <th>Tactics</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="tag in $modal.taxonomy.tags">
+                        <tr ng-repeat="p in $modal.pattern.extraData.children">
                             <td>
-                                <span class="label">
-                                    <tag value="tag"></tag>
-                                </span>
+                                {{::p.patternId}}
+                                <a class="ml-xxs" href="{{::p.url}}" target="_blank">
+                                    <i class="text-primary fa fa-external-link"></i>
+                                </a>
                             </td>
-                            <td>{{::tag.predicate}}</td>
-                            <td>{{::tag.value || '-'}}</td>
-                            <td>{{::tag.colour}}</td>
+                            <td>{{::p.name}}</td>
                             <td>
-                                <span ng-if="::tag.description" uib-tooltip="{{::tag.description}}" tooltip-placement="left">
-                                    <i class="fa fa-question-circle"></i>
-                                </span>
+                                <span ng-repeat="tactic in p.tactics" class="label label-default mr-xxxs mb-xxxs">{{tactic}}</span>
                             </td>
                         </tr>
                     </tbody>
@@ -101,7 +175,8 @@
         </div>
     </div>
     <div class="modal-footer">
-        <button class="btn btn-default pull-left" type="button" ng-click="$modal.cancel()">Cancel</button>
-        <button class="btn btn-primary pull-right" type="button" ng-click="$modal.cancel()">Close</button>
+        <button class="btn btn-primary pull-right"
+            ng-class="{'btn-primary': !!!$modal.pattern.revoked, 'btn-danger': !!$modal.pattern.revoked}"
+            type="button" ng-click="$modal.cancel()">Close</button>
     </div>
 </form>

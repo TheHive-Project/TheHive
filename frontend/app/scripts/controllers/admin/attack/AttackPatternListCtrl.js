@@ -31,7 +31,7 @@
                 operations: [
                     {'_name': 'listPattern'}
                 ],
-                extraData: ['enabled'],
+                extraData: ['enabled', 'parent'],
                 onUpdate: function() {
                     self.loading = false;
                 }
@@ -136,6 +136,16 @@
 
         this.cancel = function () {
             $uibModalInstance.dismiss('cancel');
+        };
+
+        this.$onInit = function() {
+            if (this.pattern.extraData.parent) {
+                this.pattern.isSubTechnique = true;
+                this.pattern.parentId = this.pattern.extraData.parent.patternId;
+                this.pattern.parentName = this.pattern.extraData.parent.name;
+            } else {
+                this.pattern.isSubTechnique = false;
+            }
         };
     }
 

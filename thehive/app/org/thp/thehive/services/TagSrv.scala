@@ -43,6 +43,9 @@ class TagSrv @Inject() (organisationSrv: OrganisationSrv, appConfig: Application
     getTag(tag).headOption.fold(create(tag))(Success(_))
   }
 
+  def getOrCreate(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    getTag(tag).getOrFail("Tag").recoverWith { case _ => create(tag) }
+
   override def createEntity(e: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     integrityCheckActor ! EntityAdded("Tag")
     super.createEntity(e)
@@ -51,6 +54,17 @@ class TagSrv @Inject() (organisationSrv: OrganisationSrv, appConfig: Application
   def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = createEntity(tag)
 
   override def exists(e: Tag)(implicit graph: Graph): Boolean = startTraversal.getByName(e.namespace, e.predicate, e.value).exists
+
+  def update(
+      tag: Tag with Entity,
+      input: Tag
+  )(implicit graph: Graph): Try[Tag with Entity] =
+    for {
+      updatedTag <- get(tag)
+        .when(tag.description != input.description)(_.update(_.description, input.description))
+        .when(tag.colour != input.colour)(_.update(_.colour, input.colour))
+        .getOrFail("Tag")
+    } yield updatedTag
 }
 
 object TagOps {

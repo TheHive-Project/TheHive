@@ -2,7 +2,7 @@
     <div class="col-md-12">
         <div class="box">
             <div class="box-header with-border">
-                <h3 class="box-title">List of ATT&CK patterns</h3>
+                <h3 class="box-title">List of ATT&CK patterns ({{$vm.list.values.length || 0}} of {{$vm.list.total}})</h3>
             </div>
             <div class="box-body">
                 <div ng-include="'views/partials/admin/attack/list/toolbar.html'"></div>
@@ -54,10 +54,14 @@
                                     <td>
                                         <a href ng-click="$vm.show(pattern.patternId)">{{::pattern.patternId}}</a>
                                     </td>
-                                    <td>{{::pattern.name}}</td>
+                                    <td ng-class="{'text-danger': pattern.revoked}">{{::pattern.name}}</td>
                                     <td>
-                                        <span ng-if="!pattern.parent">-</span>
-                                        <a ng-if="::pattern.parent" href ng-click="$vm.show(pattern.parent)">{{::pattern.parent}}</a>
+                                        <span ng-if="!pattern.extraData.parent">-</span>
+                                        <span ng-if="::pattern.extraData.parent">
+                                            <a href ng-click="$vm.show(pattern.extraData.parent.patternId)" class="mr-xxs">{{::pattern.extraData.parent.patternId}}</a>
+                                            <a href ng-click="$vm.addFilterValue('parent', pattern.extraData.parent.patternId)"><i class="fa fa-filter"></i></a>
+                                        </span>
+
                                     </td>
                                     <td>
                                         <div ng-repeat="tactic in ::pattern.tactics" class="mb-xxs">
@@ -73,13 +77,13 @@
                                                 <i class="text-primary fa fa-external-link"></i>
                                             </a>
 
-                                            <a class="btn btn-icon btn-clear" href  ng-click="$vm.show(pattern)" uib-tooltip="Edit pattern">
+                                            <a class="btn btn-icon btn-clear" href  ng-click="$vm.show(pattern.patternId)" uib-tooltip="Show pattern">
                                                 <i class="text-primary fa fa-search"></i>
                                             </a>
-
+<!--
                                             <a class="btn btn-icon btn-clear" href  ng-click="$vm.remove(pattern)" uib-tooltip="Delete pattern">
                                                 <i class="text-danger fa fa-trash"></i>
-                                            </a>
+                                            </a> -->
                                         </div>
 
                                     </td>

@@ -63,13 +63,14 @@ object InputKillChainPhase {
 object InputPattern {
   implicit val reads: Reads[InputPattern] = Reads[InputPattern] { json =>
     for {
-      references <- (json \ "external_references").validate[Seq[InputReference]]
+      optReferences <- (json \ "external_references").validateOpt[Seq[InputReference]]
+      references     = optReferences.getOrElse(Seq())
       mitreReference = references.find(ref => isSourceNameMitre(ref.source_name))
       capecReference = references.find(ref => isSourceNameCapec(ref.source_name))
-      name                         <- (json \ "name").validate[String]
+      name                         <- (json \ "name").validateOpt[String]
       description                  <- (json \ "description").validateOpt[String]
       kill_chain_phases            <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
-      techniqueType                <- (json \ "type").validate[String]
+      techniqueType                <- (json \ "type").validateOpt[String]
       revoked                      <- (json \ "revoked").validateOpt[Boolean]
       x_mitre_data_sources         <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
       x_mitre_defense_bypassed     <- (json \ "x_mitre_defense_bypassed").validateOpt[Seq[String]]
@@ -82,11 +83,11 @@ object InputPattern {
       x_mitre_version              <- (json \ "x_mitre_version").validateOpt[String]
     } yield InputPattern(
       mitreReference.flatMap(_.external_id).getOrElse(""),
-      name,
+      name.getOrElse(""),
       description,
       kill_chain_phases.getOrElse(Seq()),
       mitreReference.flatMap(_.url).getOrElse(""),
-      techniqueType,
+      techniqueType.getOrElse(""),
       capecReference.flatMap(_.external_id),
       capecReference.flatMap(_.url),
       revoked.getOrElse(false),

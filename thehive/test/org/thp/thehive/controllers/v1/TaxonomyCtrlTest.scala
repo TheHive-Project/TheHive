@@ -13,7 +13,7 @@ case class TestTaxonomy(
     namespace: String,
     description: String,
     version: Int,
-    tags: List[OutputTag]
+    tags: Set[OutputTag]
 )
 
 object TestTaxonomy {
@@ -22,7 +22,7 @@ object TestTaxonomy {
       outputTaxonomy.namespace,
       outputTaxonomy.description,
       outputTaxonomy.version,
-      outputTaxonomy.tags.toList
+      outputTaxonomy.tags.toSet
     )
 }
 
@@ -50,6 +50,15 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       )
     )
 
+    val updateTaxo = InputTaxonomy(
+      "taxonomy1",
+      "Updated The taxonomy 1",
+      2,
+      None,
+      List(InputPredicate("pred1", None, None, None, None)),
+      List(InputValue("pred1", List(InputEntry("value2", None, Some("#fba800"), None, None))))
+    )
+
     "create a valid taxonomy" in testApp { app =>
       val request = FakeRequest("POST", "/api/v1/taxonomy")
         .withJsonBody(Json.toJson(inputTaxo))
@@ -64,7 +73,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "test-taxo",
         "A test taxonomy",
         1,
-        List(
+        Set(
           OutputTag("test-taxo", "pred1", Some("entry1"), None, "#ffa800"),
           OutputTag("test-taxo", "pred2", Some("entry2"), None, "#00ad1c"),
           OutputTag("test-taxo", "pred2", Some("entry21"), None, "#00ad1c")
@@ -80,19 +89,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[TaxonomyCtrl].create(request)
       status(result) must beEqualTo(403).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("AuthorizationError")
-    }
-
-    "return error if namespace is present in database" in testApp { app =>
-      val alreadyInDatabase = inputTaxo.copy(namespace = "taxonomy1")
-
-      val request = FakeRequest("POST", "/api/v1/taxonomy")
-        .withJsonBody(Json.toJson(alreadyInDatabase))
-        .withHeaders("user" -> "admin@thehive.local")
-
-      val result = app[TaxonomyCtrl].create(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
-      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
-      (contentAsJson(result) \ "message").as[String] must contain("already exists")
     }
 
     "return error if namespace is empty" in testApp { app =>
@@ -120,7 +116,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "taxonomy1",
         "The taxonomy 1",
         1,
-        List(OutputTag("taxonomy1", "pred1", Some("value1"), None, "#00f300"))
+        Set(OutputTag("taxonomy1", "pred1", Some("value1"), None, "#00f300"))
       )
     }
 
@@ -169,17 +165,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       contentAsJson(result).as[JsArray].value.size must beEqualTo(1)
     }
 
-    "return error if zip file contains an already present taxonomy" in testApp { app =>
-      val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
-        .withHeaders("user" -> "admin@thehive.local")
-        .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag-present.zip")))
-
-      val result = app[TaxonomyCtrl].importZip(request)
-      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
-      contentAsString(result) must contain("Failure")
-      contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
-    }
-
     "return error if zip file contains a bad formatted taxonomy" in testApp { app =>
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
         .withHeaders("user" -> "admin@thehive.local")
@@ -189,6 +174,27 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
       (contentAsJson(result) \ "message").as[String] must contain("formatting")
+    }
+
+    "update a taxonomies and their tags" in testApp { app =>
+      val request = FakeRequest("POST", "/api/v1/taxonomy")
+        .withJsonBody(Json.toJson(updateTaxo))
+        .withHeaders("user" -> "admin@thehive.local")
+
+      val result = app[TaxonomyCtrl].create(request)
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+      val resultTaxo = contentAsJson(result).as[OutputTaxonomy]
+
+      TestTaxonomy(resultTaxo) must_=== TestTaxonomy(
+        "taxonomy1",
+        "Updated The taxonomy 1",
+        2,
+        Set(
+          OutputTag("taxonomy1", "pred1", Some("value2"), None, "#fba800"),
+          OutputTag("taxonomy1", "pred1", Some("value1"), None, "#00f300")
+        )
+      )
     }
 
     "activate a taxonomy" in testApp { app =>

@@ -573,8 +573,20 @@ object Conversion {
       _.into[OutputProcedure]
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.patternId, _.pattern.patternId)
+        .withFieldConst(_.extraData, JsObject.empty)
         .enableMethodAccessors
         .transform
     )
 
+  implicit val richProcedureWithStatsRenderer: Renderer.Aux[(RichProcedure, JsObject), OutputProcedure] =
+    Renderer.toJson[(RichProcedure, JsObject), OutputProcedure] { procedureWithExtraData =>
+      procedureWithExtraData
+        ._1
+        .into[OutputProcedure]
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldComputed(_.patternId, _.pattern.patternId)
+        .withFieldConst(_.extraData, procedureWithExtraData._2)
+        .enableMethodAccessors
+        .transform
+    }
 }

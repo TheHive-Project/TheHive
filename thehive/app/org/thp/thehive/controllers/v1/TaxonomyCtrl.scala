@@ -85,7 +85,7 @@ class TaxonomyCtrl @Inject() (
               case Failure(e) =>
                 Json.obj("namespace" -> taxo.namespace, "status" -> "Failure", "message" -> e.getMessage)
               case Success(t) =>
-                Json.obj("namespace" -> t.namespace, "status" -> "Success", "tagsImported" -> t.tags.size)
+                Json.obj("namespace" -> t.namespace, "status" -> "Success", "numberOfTags" -> t.tags.size)
             }
             array :+ res
           }
@@ -124,8 +124,14 @@ class TaxonomyCtrl @Inject() (
     else if (inputTaxo.namespace.startsWith("_freetags"))
       Failure(BadRequestError(s"Namespace _freetags is restricted for TheHive"))
     else if (taxonomySrv.startTraversal.alreadyImported(inputTaxo.namespace))
-      Failure(BadRequestError(s"A taxonomy with namespace '${inputTaxo.namespace}' already exists in this organisation"))
+      // Update the taxonomy, update exisiting tags & create others
+      for {
+        _           <- allTags.toTry(t => taxonomySrv.updateOrCreateTag(inputTaxo.namespace, t))
+        taxonomy    <- taxonomySrv.get(EntityIdOrName(inputTaxo.namespace)).getOrFail("Taxonomy")
+        updatedTaxo <- taxonomySrv.update(taxonomy, inputTaxo.toTaxonomy)
+      } yield updatedTaxo
     else
+      // Create the taxonomy and all its tags
       for {
         tagsEntities <- allTags.toTry(t => tagSrv.create(t))
         richTaxonomy <- taxonomySrv.create(inputTaxo.toTaxonomy, tagsEntities)

@@ -77,5 +77,18 @@ object ProcedureOps {
             .by(_.pattern)
         )
         .domainMap { case (procedure, pattern) => RichProcedure(procedure, pattern) }
+
+    def richProcedureWithCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Procedure] => Traversal[D, G, C]
+    ): Traversal[(RichProcedure, D), JMap[String, Any], Converter[(RichProcedure, D), JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.pattern)
+            .by(entityRenderer)
+        )
+        .domainMap {
+          case (procedure, pattern, renderedEntity) => (RichProcedure(procedure, pattern), renderedEntity)
+        }
   }
 }

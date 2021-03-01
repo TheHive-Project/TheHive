@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('AttackPatternSrv', function($http, QuerySrv) {
+        .service('AttackPatternSrv', function($http, $q, QuerySrv) {
             var baseUrl = './api/v1/pattern';
 
             this.list = function() {
@@ -14,10 +14,29 @@
             };
 
             this.get = function(id) {
-                return $http.get(baseUrl + '/' + id)
-                    .then(function(response){
-                        return response.data;
-                    });
+
+                var defer = $q.defer();
+
+                QuerySrv.call('v1', [{
+                    '_name': 'getPattern',
+                    'idOrName': id
+                }], {
+                    name:'get-attach-pattern-' + id,
+                    page: {
+                        from: 0,
+                        to: 1,
+                        extraData: [
+                            "parent",
+                            "children"
+                        ]
+                    }
+                }).then(function(response) {
+                    defer.resolve(response[0]);
+                }).catch(function(err){
+                    defer.reject(err);
+                });
+
+                return defer.promise;                
             };
 
             this.import = function(post) {
