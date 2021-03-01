@@ -30,13 +30,8 @@ class TagSrv @Inject() (
 
   def freeTagColour: String = freeTagColourConfig.get
 
-  private val defaultColourConfig: ConfigItem[String, String] =
-    appConfig.item[String]("tags.defaultColour", "Default colour of the automatically created tags")
-
-  def defaultColour: String = defaultColourConfig.get
-
   private def freeTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Tag =
-    Tag(freeTagNamespace, tagName, None, None, defaultColour)
+    Tag(freeTagNamespace, tagName, None, None, freeTagColour)
 
   private def freeTagNamespace(implicit graph: Graph, authContext: AuthContext): String =
     s"_freetags_${organisationSrv.currentId(graph, authContext).value}"
