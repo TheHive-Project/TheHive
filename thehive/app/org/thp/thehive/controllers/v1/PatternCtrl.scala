@@ -1,12 +1,11 @@
 package org.thp.thehive.controllers.v1
 
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputPattern
@@ -17,7 +16,7 @@ import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.io.FileInputStream
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -25,7 +24,7 @@ class PatternCtrl @Inject() (
     entrypoint: Entrypoint,
     properties: Properties,
     patternSrv: PatternSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl
     with PatternRenderer {
   override val entityName: String                 = "pattern"
@@ -38,7 +37,6 @@ class PatternCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Pattern], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, extraData), patternSteps, _) =>
         patternSteps.richPage(from, to, extraData.contains("total"))(_.richPatternWithCustomRenderer(patternRenderer(extraData - "total")))
@@ -47,7 +45,6 @@ class PatternCtrl @Inject() (
   override val outputQuery: Query = Query.output[RichPattern, Traversal.V[Pattern]](_.richPattern)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Pattern]](
     "getPattern",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => patternSrv.get(idOrName)(graph)
   )
 
@@ -75,7 +72,7 @@ class PatternCtrl @Inject() (
 
   def get(patternId: String): Action[AnyContent] =
     entrypoint("get pattern")
-      .authRoTransaction(db) { implicit request => implicit graph =>
+      .authRoTransaction(db) { _ => implicit graph =>
         patternSrv
           .get(EntityIdOrName(patternId))
           .richPattern

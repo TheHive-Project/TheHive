@@ -10,7 +10,7 @@ import org.thp.thehive.connector.misp.services.{MispExportSrv, Synchro}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.{AlertSrv, CaseSrv}
+import org.thp.thehive.services.{AlertSrv, CaseSrv, OrganisationSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -23,7 +23,8 @@ class MispCtrl @Inject() (
     mispExportSrv: MispExportSrv,
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
+    organisationSrv: OrganisationSrv,
     @Named("misp-actor") mispActor: ActorRef,
     implicit val ec: ExecutionContext
 ) {
@@ -55,7 +56,7 @@ class MispCtrl @Inject() (
         alertSrv
           .startTraversal
           .filterByType("misp")
-          .visible
+          .visible(organisationSrv)
           .toIterator
           .toTry(alertSrv.remove(_))
           .map(_ => Results.NoContent)

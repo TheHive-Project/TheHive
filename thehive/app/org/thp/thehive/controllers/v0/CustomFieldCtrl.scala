@@ -19,7 +19,7 @@ import scala.util.Success
 @Singleton
 class CustomFieldCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     customFieldSrv: CustomFieldSrv,
     override val publicData: PublicCustomField,
     @Named("v0") override val queryExecutor: QueryExecutor
@@ -92,7 +92,6 @@ class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends Publi
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, _, _), customFieldSteps, _) =>
         customFieldSteps.page(from, to, withTotal = true)
@@ -101,7 +100,6 @@ class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends Publi
   override val outputQuery: Query = Query.output[CustomField with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[CustomField]](
     "getCustomField",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => customFieldSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties =

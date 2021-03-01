@@ -5,6 +5,8 @@ import play.api.libs.json.Json.WithDefaultValues
 import java.util.Date
 import play.api.libs.json.{JsObject, Json, OFormat}
 
+import java.util.Date
+
 /*
 Format based on :
 https://tools.ietf.org/id/draft-dulaunoy-misp-taxonomy-format-04.html

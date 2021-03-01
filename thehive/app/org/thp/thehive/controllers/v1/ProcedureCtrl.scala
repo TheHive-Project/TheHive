@@ -13,14 +13,14 @@ import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.ProcedureSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class ProcedureCtrl @Inject() (
     entrypoint: Entrypoint,
     properties: Properties,
     procedureSrv: ProcedureSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl
     with ProcedureRenderer {
   override val entityName: String                 = "procedure"
@@ -33,7 +33,6 @@ class ProcedureCtrl @Inject() (
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Procedure], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, procedureSteps, _) =>
       procedureSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
         _.richProcedureWithCustomRenderer(procedureStatsRenderer(range.extraData - "total"))
@@ -42,7 +41,6 @@ class ProcedureCtrl @Inject() (
   override val outputQuery: Query = Query.output[RichProcedure, Traversal.V[Procedure]](_.richProcedure)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Procedure]](
     "getProcedure",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => procedureSrv.get(idOrName)(graph)
   )
 

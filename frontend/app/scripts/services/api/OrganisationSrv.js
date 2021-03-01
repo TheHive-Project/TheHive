@@ -54,7 +54,11 @@
                     {
                         '_name': 'users'
                     }
-                ]).then(function(response) {
+                ], {
+                    params: {
+                        name: 'users'
+                    }
+                }).then(function(response) {
                     return $q.resolve(response.data);
                 });
             };
@@ -67,7 +71,11 @@
                     {
                         '_name': 'caseTemplates'
                     }
-                ]).then(function(response) {
+                ], {
+                    params: {
+                        name: 'caseTemplates'
+                    }
+                }).then(function(response) {
                     return $q.resolve(response.data);
                 });
             };

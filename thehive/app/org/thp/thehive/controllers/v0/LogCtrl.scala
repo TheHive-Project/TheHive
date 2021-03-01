@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
@@ -11,16 +10,16 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputLog
 import org.thp.thehive.models.{Log, Permissions, RichLog}
 import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{LogSrv, OrganisationSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
+
 @Singleton
 class LogCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     logSrv: LogSrv,
     taskSrv: TaskSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,
@@ -76,15 +75,13 @@ class LogCtrl @Inject() (
 class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "log"
   override val initialQuery: Query =
-    Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks.logs)
+    Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => logSrv.startTraversal(graph).visible(organisationSrv)(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Log]](
     "getLog",
-    FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog)
   )
   override val outputQuery: Query = Query.output[RichLog, Traversal.V[Log]](_.richLog)

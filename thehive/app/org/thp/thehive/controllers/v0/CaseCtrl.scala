@@ -1,26 +1,27 @@
 package org.thp.thehive.controllers.v0
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.thp.scalligraph._
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
-import org.thp.scalligraph._
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
+import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import java.util.Date
 import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
@@ -29,11 +30,11 @@ class CaseCtrl @Inject() (
     override val entrypoint: Entrypoint,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    tagSrv: TagSrv,
     userSrv: UserSrv,
+    organisationSrv: OrganisationSrv,
     override val publicData: PublicCase,
     @Named("v0") override val queryExecutor: QueryExecutor,
-    @Named("with-thehive-schema") implicit override val db: Database
+    implicit override val db: Database
 ) extends CaseRenderer
     with QueryCtrl {
   def create: Action[AnyContent] =
@@ -53,18 +54,15 @@ class CaseCtrl @Inject() (
               .organisations(Permissions.manageCase)
               .get(request.organisation)
               .orFail(AuthorizationError("Operation not permitted"))
+          user         <- userSrv.current.getOrFail("User")
           caseTemplate <- caseTemplateName.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
-          user         <- inputCase.user.map(u => userSrv.get(EntityIdOrName(u)).visible.getOrFail("User")).flip
-          tags         <- inputCase.tags.toTry(tagSrv.getOrCreate)
-          tasks        <- inputTasks.toTry(t => t.owner.map(o => userSrv.getOrFail(EntityIdOrName(o))).flip.map(owner => t.toTask -> owner))
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
-            user,
+            Some(user),
             organisation,
-            tags.toSet,
             customFields,
             caseTemplate,
-            tasks
+            inputTasks.map(_.toTask)
           )
         } yield Results.Created(richCase.toJson)
       }
@@ -75,7 +73,7 @@ class CaseCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         val c = caseSrv
           .get(EntityIdOrName(caseIdOrNumber))
-          .visible
+          .visible(organisationSrv)
         val stats: Option[Boolean] = request.body("stats")
         if (stats.contains(true))
           c.richCaseWithCustomRenderer(caseStatsRenderer(request))
@@ -155,7 +153,7 @@ class CaseCtrl @Inject() (
           .toTry(c =>
             caseSrv
               .get(EntityIdOrName(c))
-              .visible
+              .visible(organisationSrv)
               .getOrFail("Case")
           )
           .map { cases =>
@@ -169,7 +167,7 @@ class CaseCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         val relatedCases = caseSrv
           .get(EntityIdOrName(caseIdOrNumber))
-          .visible
+          .visible(organisationSrv)
           .linkedCases
           .map {
             case (c, o) =>
@@ -186,24 +184,24 @@ class CaseCtrl @Inject() (
 class PublicCase @Inject() (
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
+    observableSrv: ObservableSrv,
+    taskSrv: TaskSrv,
     userSrv: UserSrv,
     customFieldSrv: CustomFieldSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends PublicData
     with CaseRenderer {
   override val entityName: String = "case"
   override val initialQuery: Query =
-    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).cases)
+    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => caseSrv.startTraversal(graph).visible(organisationSrv)(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] =
     Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
       "getCase",
-      FieldsParser[EntityIdOrName],
-      (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(authContext)
+      (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
     )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
           caseSteps
@@ -217,8 +215,20 @@ class PublicCase @Inject() (
     )
   override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[Traversal.V[Case], Traversal.V[Observable]]("observables", (caseSteps, authContext) => caseSteps.observables(authContext)),
-    Query[Traversal.V[Case], Traversal.V[Task]]("tasks", (caseSteps, authContext) => caseSteps.tasks(authContext))
+    Query[Traversal.V[Case], Traversal.V[Observable]](
+      "observables",
+      (caseSteps, authContext) =>
+        // caseSteps.observables(authContext)
+        observableSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
+    ),
+    Query[Traversal.V[Case], Traversal.V[Task]](
+      "tasks",
+      (caseSteps, authContext) => caseSteps.tasks(authContext)
+//        taskSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
+    ),
+    Query[Traversal.V[Case], Traversal.V[User]]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Organisation]]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Alert]]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(organisationSrv)(authContext))
   )
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Case]
@@ -229,26 +239,12 @@ class PublicCase @Inject() (
       .property("startDate", UMapping.date)(_.field.updatable)
       .property("endDate", UMapping.date.optional)(_.field.updatable)
       .property("tags", UMapping.string.set)(
-        _.select(_.tags.displayName)
-          .filter((_, cases) =>
-            cases
-              .tags
-              .graphMap[String, String, Converter.Identity[String]](
-                { v =>
-                  val namespace = UMapping.string.getProperty(v, "namespace")
-                  val predicate = UMapping.string.getProperty(v, "predicate")
-                  val value     = UMapping.string.optional.getProperty(v, "value")
-                  Tag(namespace, predicate, value, None, "#000000").toString
-                },
-                Converter.identity[String]
-              )
-          )
-          .converter(_ => Converter.identity[String])
-          .custom { (_, value, vertex, _, graph, authContext) =>
+        _.field
+          .custom { (_, value, vertex, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
               .getOrFail("Case")
-              .flatMap(`case` => caseSrv.updateTagNames(`case`, value)(graph, authContext))
+              .flatMap(`case` => caseSrv.updateTags(`case`, value)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -257,7 +253,7 @@ class PublicCase @Inject() (
       .property("pap", UMapping.int)(_.field.updatable)
       .property("status", UMapping.enum[CaseStatus.type])(_.field.updatable)
       .property("summary", UMapping.string.optional)(_.field.updatable)
-      .property("owner", UMapping.string.optional)(_.select(_.user.value(_.login)).custom { (_, login, vertex, _, graph, authContext) =>
+      .property("owner", UMapping.string.optional)(_.rename("assignee").custom { (_, login, vertex, graph, authContext) =>
         for {
           c    <- caseSrv.get(vertex)(graph).getOrFail("Case")
           user <- login.map(u => userSrv.get(EntityIdOrName(u))(graph).getOrFail("User")).flip
@@ -267,77 +263,47 @@ class PublicCase @Inject() (
           }
         } yield Json.obj("owner" -> user.map(_.login))
       })
-      .property("resolutionStatus", UMapping.string.optional)(_.select(_.resolutionStatus.value(_.value)).custom {
-        (_, resolutionStatus, vertex, _, graph, authContext) =>
-          for {
-            c <- caseSrv.get(vertex)(graph).getOrFail("Case")
-            _ <- resolutionStatus match {
-              case Some(s) => caseSrv.setResolutionStatus(c, s)(graph, authContext)
-              case None    => caseSrv.unsetResolutionStatus(c)(graph, authContext)
-            }
-          } yield Json.obj("resolutionStatus" -> resolutionStatus)
+      .property("resolutionStatus", UMapping.string.optional)(_.field.custom { (_, resolutionStatus, vertex, graph, authContext) =>
+        for {
+          c <- caseSrv.get(vertex)(graph).getOrFail("Case")
+          _ <- resolutionStatus match {
+            case Some(s) => caseSrv.setResolutionStatus(c, s)(graph, authContext)
+            case None    => caseSrv.unsetResolutionStatus(c)(graph, authContext)
+          }
+        } yield Json.obj("resolutionStatus" -> resolutionStatus)
       })
-      .property("impactStatus", UMapping.string.optional)(_.select(_.impactStatus.value(_.value)).custom {
-        (_, impactStatus, vertex, _, graph, authContext) =>
-          for {
-            c <- caseSrv.get(vertex)(graph).getOrFail("Case")
-            _ <- impactStatus match {
-              case Some(s) => caseSrv.setImpactStatus(c, s)(graph, authContext)
-              case None    => caseSrv.unsetImpactStatus(c)(graph, authContext)
-            }
-          } yield Json.obj("impactStatus" -> impactStatus)
+      .property("impactStatus", UMapping.string.optional)(_.field.custom { (_, impactStatus, vertex, graph, authContext) =>
+        for {
+          c <- caseSrv.get(vertex)(graph).getOrFail("Case")
+          _ <- impactStatus match {
+            case Some(s) => caseSrv.setImpactStatus(c, s)(graph, authContext)
+            case None    => caseSrv.unsetImpactStatus(c)(graph, authContext)
+          }
+        } yield Json.obj("impactStatus" -> impactStatus)
       })
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), caseTraversal) =>
-          db
-            .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField"))
-            .map {
-              case CustomFieldType.boolean => caseTraversal.customFields(EntityIdOrName(name)).value(_.booleanValue).domainMap(v => JsBoolean(v))
-              case CustomFieldType.date    => caseTraversal.customFields(EntityIdOrName(name)).value(_.dateValue).domainMap(v => JsNumber(v.getTime))
-              case CustomFieldType.float   => caseTraversal.customFields(EntityIdOrName(name)).value(_.floatValue).domainMap(v => JsNumber(v))
-              case CustomFieldType.integer => caseTraversal.customFields(EntityIdOrName(name)).value(_.integerValue).domainMap(v => JsNumber(v))
-              case CustomFieldType.string  => caseTraversal.customFields(EntityIdOrName(name)).value(_.stringValue).domainMap(v => JsString(v))
-            }
-            .getOrElse(caseTraversal.constant2(null))
+        case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
+          caseSteps
+            .customFields(EntityIdOrName(idOrName))
+            .jsonValue
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
-        .filter {
-          case (FPathElem(_, FPathElem(name, _)), caseTraversal) =>
-            db
-              .roTransaction(implicit graph => customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField"))
-              .map {
-                case CustomFieldType.boolean => caseTraversal.customFields(EntityIdOrName(name)).value(_.booleanValue)
-                case CustomFieldType.date    => caseTraversal.customFields(EntityIdOrName(name)).value(_.dateValue)
-                case CustomFieldType.float   => caseTraversal.customFields(EntityIdOrName(name)).value(_.floatValue)
-                case CustomFieldType.integer => caseTraversal.customFields(EntityIdOrName(name)).value(_.integerValue)
-                case CustomFieldType.string  => caseTraversal.customFields(EntityIdOrName(name)).value(_.stringValue)
-              }
-              .getOrElse(caseTraversal.constant2(null))
-          case (_, caseTraversal) => caseTraversal.constant2(null)
-        }
-        .converter {
-          case FPathElem(_, FPathElem(name, _)) =>
-            db
-              .roTransaction { implicit graph =>
-                customFieldSrv.get(EntityIdOrName(name)).value(_.`type`).getOrFail("CustomField")
-              }
-              .map {
-                case CustomFieldType.boolean => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Boolean] }
-                case CustomFieldType.date    => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Date] }
-                case CustomFieldType.float   => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Double] }
-                case CustomFieldType.integer => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[Long] }
-                case CustomFieldType.string  => new Converter[Any, JsValue] { def apply(x: JsValue): Any = x.as[String] }
-              }
-              .getOrElse((x: JsValue) => x)
-          case _ => (x: JsValue) => x
+        .filter[JsValue] {
+          case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
+            predicate match {
+              case Right(predicate) => caseTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+              case Left(true)       => caseTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
+              case Left(false)      => caseTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+            }
+          case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
-          case (FPathElem(_, FPathElem(name, _)), value, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
             for {
               c <- caseSrv.get(vertex)(graph).getOrFail("Case")
               _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)(graph, authContext)
             } yield Json.obj(s"customField.$name" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, _, graph, authContext) =>
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
             for {
               c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
               cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }

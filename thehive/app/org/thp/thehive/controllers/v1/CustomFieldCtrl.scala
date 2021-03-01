@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -12,17 +11,16 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
 @Singleton
-class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-schema") db: Database, customFieldSrv: CustomFieldSrv)
-    extends QueryableCtrl {
+class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, db: Database, customFieldSrv: CustomFieldSrv) extends QueryableCtrl {
 
   override val entityName: String  = "CustomField"
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     {
       case (OutputParam(from, to, _), customFieldSteps, _) =>
         customFieldSteps.page(from, to, withTotal = true)
@@ -31,7 +29,6 @@ class CustomFieldCtrl @Inject() (entrypoint: Entrypoint, @Named("with-thehive-sc
   override val outputQuery: Query = Query.output[CustomField with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[CustomField]](
     "getCustomField",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => customFieldSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[CustomField]

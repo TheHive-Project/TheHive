@@ -16,7 +16,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 @Singleton
 class ObservableTypeCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     observableTypeSrv: ObservableTypeSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservableType
@@ -54,13 +54,11 @@ class PublicObservableType @Inject() (observableTypeSrv: ObservableTypeSrv) exte
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[ObservableType], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       (range, observableTypeSteps, _) => observableTypeSteps.richPage(range.from, range.to, withTotal = true)(identity)
     )
   override val outputQuery: Query = Query.output[ObservableType with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[ObservableType]](
     "getObservableType",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => observableTypeSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[ObservableType]

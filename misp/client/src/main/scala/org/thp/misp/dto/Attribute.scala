@@ -1,13 +1,13 @@
 package org.thp.misp.dto
 
-import java.time.OffsetDateTime
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.util.{Base64, Date}
-
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, OWrites, Reads}
+
+import java.time.OffsetDateTime
+import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
+import java.util.{Base64, Date}
 
 case class Attribute(
     id: String,

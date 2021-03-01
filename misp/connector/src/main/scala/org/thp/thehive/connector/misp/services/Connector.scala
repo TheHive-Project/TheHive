@@ -2,13 +2,13 @@ package org.thp.thehive.connector.misp.services
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.thehive.models.{HealthStatus, ObservableType}
+import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.{Connector => TheHiveConnector}
 import play.api.libs.json.{JsObject, Json}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,8 +27,8 @@ class Connector @Inject() (appConfig: ApplicationConfig, system: ActorSystem, ma
   def attributeConverter(attributeCategory: String, attributeType: String): Option[AttributeConverter] =
     attributeConvertersConfig.get.reverseIterator.find(a => a.mispCategory == attributeCategory && a.mispType == attributeType)
 
-  def attributeConverter(`type`: ObservableType): Option[(String, String)] =
-    attributeConvertersConfig.get.reverseIterator.find(_.`type`.value == `type`.name).map(a => a.mispCategory -> a.mispType)
+  def attributeConverter(observableType: String): Option[(String, String)] =
+    attributeConvertersConfig.get.reverseIterator.find(_.`type`.value == observableType).map(a => a.mispCategory -> a.mispType)
 
   val syncIntervalConfig: ConfigItem[FiniteDuration, FiniteDuration] = appConfig.item[FiniteDuration]("misp.syncInterval", "")
   def syncInterval: FiniteDuration                                   = syncIntervalConfig.get

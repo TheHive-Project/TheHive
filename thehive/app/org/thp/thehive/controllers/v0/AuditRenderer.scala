@@ -1,8 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.{Date, Map => JMap}
-
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.models.UMapping
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
@@ -16,6 +14,8 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsNumber, JsObject, JsString}
+
+import java.util.{Date, Map => JMap}
 
 trait AuditRenderer {
 
@@ -84,7 +84,7 @@ trait AuditRenderer {
   def auditRenderer: Traversal.V[Audit] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     (_: Traversal.V[Audit])
       .coalesceIdent[Vertex](_.`object`, _.identity)
-      .choose(
+      .chooseValue(
         _.on(_.label)
           .option("Case", t => caseToJson(t.v[Case]))
           .option("Task", t => taskToJson(t.v[Task]))

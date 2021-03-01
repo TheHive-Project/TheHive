@@ -21,7 +21,7 @@ class ProfileCtrl @Inject() (
     override val entrypoint: Entrypoint,
     profileSrv: ProfileSrv,
     override val publicData: PublicProfile,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
@@ -75,7 +75,6 @@ class PublicProfile @Inject() (profileSrv: ProfileSrv) extends PublicData {
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](
     "getProfile",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => profileSrv.get(idOrName)(graph)
   )
   val initialQuery: Query =
@@ -83,7 +82,6 @@ class PublicProfile @Inject() (profileSrv: ProfileSrv) extends PublicData {
 
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Profile], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, profileSteps, _) => profileSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Profile with Entity]

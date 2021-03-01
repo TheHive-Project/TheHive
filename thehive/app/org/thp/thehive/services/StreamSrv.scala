@@ -17,7 +17,7 @@ import play.api.Logger
 import play.api.libs.json.Json
 
 import java.io.NotSerializableException
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,17 +39,18 @@ case object Commit            extends StreamMessage
   * to global stream actor.
   */
 class StreamActor(
+    organisationSrv: OrganisationSrv,
     authContext: AuthContext,
     refresh: FiniteDuration,
     maxWait: FiniteDuration,
     graceDuration: FiniteDuration,
     keepAlive: FiniteDuration,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends Actor {
   import context.dispatcher
 
-  lazy val logger: Logger = Logger(s"${getClass.getName}.$self")
+  lazy val logger: Logger = Logger(getClass)
 
   override def receive: Receive = {
     val keepAliveTimer = context.system.scheduler.scheduleOnce(keepAlive, self, PoisonPill)
@@ -72,7 +73,7 @@ class StreamActor(
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .getByIds(ids: _*)
-          .visible(authContext)
+          .visible(organisationSrv)(authContext)
           .toSeq
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
@@ -112,7 +113,7 @@ class StreamActor(
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .getByIds(ids: _*)
-          .visible(authContext)
+          .visible(organisationSrv)(authContext)
           .toSeq
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
@@ -135,8 +136,9 @@ class StreamActor(
 class StreamSrv @Inject() (
     appConfig: ApplicationConfig,
     eventSrv: EventSrv,
+    organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     system: ActorSystem,
     implicit val ec: ExecutionContext
 ) {
@@ -185,7 +187,7 @@ class StreamSrv @Inject() (
     val streamId = generateStreamId()
     val streamActor =
       system.actorOf(
-        Props(classOf[StreamActor], authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db),
+        Props(classOf[StreamActor], organisationSrv, authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db),
         s"stream-$streamId"
       )
     logger.debug(s"Register stream actor ${streamActor.path}")
@@ -196,7 +198,7 @@ class StreamSrv @Inject() (
 
   def get(streamId: String): Future[Seq[EntityId]] = {
     implicit val timeout: Timeout = Timeout(refresh + 1.second)
-    Retry(maxAttempts).withBackoff(minBackoff, maxBackoff, randomFactor)(system) {
+    Retry(maxAttempts).withBackoff(minBackoff, maxBackoff, randomFactor)(system.scheduler, system.dispatcher) {
       // Check if stream actor exists
       eventSrv
         .publishAsk(StreamTopic(streamId))(Identify(1))(Timeout(2.seconds))

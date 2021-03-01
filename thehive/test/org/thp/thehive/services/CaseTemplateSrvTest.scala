@@ -24,17 +24,25 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
             titlePrefix = Some("[CTT]"),
             description = Some("description ctt1"),
             severity = Some(2),
+            tags = Seq("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne""""),
             flag = false,
             tlp = Some(1),
             pap = Some(3),
             summary = Some("summary case template test 1")
           ),
           organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get,
-          tagNames = Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne""""),
           tasks = Seq(
-            (
-              Task("task case template case template test 1", "group1", None, TaskStatus.Waiting, flag = false, None, None, 0, None),
-              app[UserSrv].get(EntityName("certuser@thehive.local")).headOption
+            Task(
+              title = "task case template case template test 1",
+              group = "group1",
+              description = None,
+              status = TaskStatus.Waiting,
+              flag = false,
+              startDate = None,
+              endDate = None,
+              order = 0,
+              dueDate = None,
+              assignee = None
             )
           ),
           customFields = Seq(("string1", Some("love")), ("boolean1", Some(false)))
@@ -53,9 +61,22 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
     "add a task to a template" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         for {
-          richTask     <- app[TaskSrv].create(Task("t1", "default", None, TaskStatus.Waiting, flag = false, None, None, 1, None), None)
           caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _            <- app[CaseTemplateSrv].addTask(caseTemplate, richTask.task)
+          _ <- app[CaseTemplateSrv].createTask(
+            caseTemplate,
+            Task(
+              title = "t1",
+              group = "default",
+              description = None,
+              status = TaskStatus.Waiting,
+              flag = false,
+              startDate = None,
+              endDate = None,
+              order = 1,
+              dueDate = None,
+              assignee = None
+            )
+          )
         } yield ()
       } must beSuccessfulTry
 
@@ -68,7 +89,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _ <- app[CaseTemplateSrv].updateTagNames(
+          _ <- app[CaseTemplateSrv].updateTags(
             caseTemplate,
             Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne2"""", """newNspc:newPred="newOne3"""")
           )

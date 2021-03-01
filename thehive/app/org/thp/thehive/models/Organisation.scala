@@ -1,9 +1,9 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
+
+import java.util.Date
 
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "name")

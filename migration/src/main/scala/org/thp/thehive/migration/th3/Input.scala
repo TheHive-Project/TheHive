@@ -1,17 +1,14 @@
 package org.thp.thehive.migration.th3
 
-import java.util.{Base64, Date}
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.RangeQuery
-import com.sksamuel.elastic4s.searches.queries.term.TermsQuery
-import javax.inject.{Inject, Singleton}
+import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.requests.searches.queries.RangeQuery
+import com.sksamuel.elastic4s.requests.searches.queries.term.TermsQuery
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
 import org.thp.thehive.migration.Filter
@@ -21,6 +18,8 @@ import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
+import java.util.{Base64, Date}
+import javax.inject.{Inject, Singleton}
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.{classTag, ClassTag}

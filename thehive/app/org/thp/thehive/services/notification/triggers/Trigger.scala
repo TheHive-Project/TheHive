@@ -1,8 +1,8 @@
 package org.thp.thehive.services.notification.triggers
 
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.{ConfigLoader, Configuration}
 
@@ -13,8 +13,8 @@ trait Trigger {
 
   def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean
 
-  def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: Option[User with Entity])(
-      implicit graph: Graph
+  def filter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity, user: Option[User with Entity])(implicit
+      graph: Graph
   ): Boolean = user.fold(true)(!_.locked)
 
   override def toString: String = s"Trigger($name)"

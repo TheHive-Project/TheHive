@@ -1,9 +1,10 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{FObject, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
+
+import javax.inject.{Inject, Singleton}
 
 case class OutputParam(from: Long, to: Long, extraData: Set[String])
 
@@ -38,7 +39,7 @@ class TheHiveQueryExecutor @Inject() (
     taxonomyCtrl: TaxonomyCtrl,
     //    dashboardCtrl: DashboardCtrl,
     properties: Properties,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryExecutor {
 
   lazy val controllers: Seq[QueryableCtrl] =

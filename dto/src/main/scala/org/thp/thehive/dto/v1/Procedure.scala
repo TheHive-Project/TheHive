@@ -1,6 +1,6 @@
 package org.thp.thehive.dto.v1
 
-import play.api.libs.json.{Format, JsObject, Json, Reads, Writes}
+import play.api.libs.json._
 
 import java.util.Date
 

@@ -13,7 +13,8 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": ""
   },
   {
     "id": "alert2",
@@ -29,7 +30,8 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": ""
   },
   {
     "id": "alert3",
@@ -45,7 +47,8 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": ""
   },
   {
     "id": "alert4",
@@ -61,7 +64,8 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": ""
   },
   {
     "id": "alert5",
@@ -77,6 +81,7 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": ""
   }
 ]

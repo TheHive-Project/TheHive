@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -13,10 +12,12 @@ import org.thp.thehive.models.{ObservableType, Permissions}
 import org.thp.thehive.services.ObservableTypeSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
+
 @Singleton
 class ObservableTypeCtrl @Inject() (
     val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     observableTypeSrv: ObservableTypeSrv
 ) extends QueryableCtrl {
   override val entityName: String = "ObservableType"
@@ -25,13 +26,11 @@ class ObservableTypeCtrl @Inject() (
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[ObservableType], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       (range, observableTypeSteps, _) => observableTypeSteps.richPage(range.from, range.to, withTotal = true)(identity)
     )
   override val outputQuery: Query = Query.output[ObservableType with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[ObservableType]](
     "getObservableType",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => observableTypeSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[ObservableType]

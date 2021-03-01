@@ -24,6 +24,7 @@ object Permissions extends Perms {
   lazy val manageTaxonomy: PermissionDesc           = PermissionDesc("manageTaxonomy", "Manage taxonomies", "admin")
   lazy val manageTask: PermissionDesc               = PermissionDesc("manageTask", "Manage tasks", "organisation")
   lazy val manageUser: PermissionDesc               = PermissionDesc("manageUser", "Manage users", "organisation", "admin")
+  lazy val managePlatform: PermissionDesc           = PermissionDesc("managePlatform", "Manage TheHive platform", "admin")
 
   lazy val list: Set[PermissionDesc] =
     Set(

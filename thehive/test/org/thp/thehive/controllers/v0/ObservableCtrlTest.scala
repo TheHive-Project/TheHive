@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.io.File
-import java.nio.file.{Path, Files => JFiles}
-import java.util.UUID
-
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.AppBuilder
@@ -22,6 +18,10 @@ import play.api.libs.json.Json
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, Headers, MultipartFormData}
 import play.api.test.{FakeRequest, NoTemporaryFileCreator, PlaySpecification}
+
+import java.io.File
+import java.nio.file.{Path, Files => JFiles}
+import java.util.UUID
 
 case class TestObservable(
     dataType: String,

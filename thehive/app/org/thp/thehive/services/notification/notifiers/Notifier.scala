@@ -1,8 +1,8 @@
 package org.thp.thehive.services.notification.notifiers
 
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.BadConfigurationError
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.{ConfigLoader, Configuration}
 
@@ -19,8 +19,8 @@ trait Notifier {
       `object`: Option[Entity],
       organisation: Organisation with Entity,
       user: Option[User with Entity]
-  )(
-      implicit graph: Graph
+  )(implicit
+      graph: Graph
   ): Future[Unit]
 
 }

@@ -7,6 +7,8 @@ import java.util.Date
 import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json._
 
+import java.util.Date
+
 case class InputCase(
     title: String,
     description: String,

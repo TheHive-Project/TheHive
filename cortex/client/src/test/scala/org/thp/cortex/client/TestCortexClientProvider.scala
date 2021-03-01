@@ -1,10 +1,6 @@
 package org.thp.cortex.client
 
-import java.net.URLEncoder
-import java.nio.file.{Path, Paths}
-
 import akka.stream.scaladsl._
-import javax.inject.{Inject, Provider}
 import mockws.MockWS
 import org.thp.client.NoAuthentication
 import org.thp.cortex.dto.v0.{OutputJob, OutputWorker}
@@ -13,6 +9,9 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import play.api.test.Helpers._
 
+import java.net.URLEncoder
+import java.nio.file.{Path, Paths}
+import javax.inject.{Inject, Provider}
 import scala.concurrent.ExecutionContext
 import scala.io.Source
 import scala.util.matching.Regex
@@ -42,7 +41,8 @@ class TestCortexClientProvider @Inject() (Action: DefaultActionBuilder, implicit
       val filename = URLEncoder.encode(s"$id.test.txt", "utf-8")
       Action(
         Result(
-          header = ResponseHeader(200, Map("Content-Disposition" -> s"""attachment; filename="$filename"""", "Content-Transfer-Encoding" -> "binary")),
+          header =
+            ResponseHeader(200, Map("Content-Disposition" -> s"""attachment; filename="$filename"""", "Content-Transfer-Encoding" -> "binary")),
           body = HttpEntity.Streamed(FileIO.fromPath(fileResource(id)), None, None)
         )
       )

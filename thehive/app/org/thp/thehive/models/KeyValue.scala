@@ -1,8 +1,8 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph.BuildVertexEntity
+
+import java.util.Date
 
 object ValueType extends Enumeration {
   val string, integer, float, boolean, date = Value

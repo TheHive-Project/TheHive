@@ -1,16 +1,16 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ConfigContext
 import play.api.libs.json.JsValue
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
-class UserConfigContext @Inject() (@Named("with-thehive-schema") db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
+class UserConfigContext @Inject() (db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
   override def defaultPath(path: String): String = s"user.defaults.$path"
 
   override def getValue(context: AuthContext, path: String): Option[JsValue] =
@@ -36,7 +36,7 @@ class UserConfigContext @Inject() (@Named("with-thehive-schema") db: Database, c
 }
 
 @Singleton
-class OrganisationConfigContext @Inject() (@Named("with-thehive-schema") db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
+class OrganisationConfigContext @Inject() (db: Database, configSrv: ConfigSrv) extends ConfigContext[AuthContext] {
   override def defaultPath(path: String): String = s"organisation.defaults.$path"
 
   override def getValue(context: AuthContext, path: String): Option[JsValue] =

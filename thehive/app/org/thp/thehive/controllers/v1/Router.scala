@@ -1,12 +1,14 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Singleton}
 import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
+import javax.inject.{Inject, Singleton}
+
 @Singleton
 class Router @Inject() (
+    adminCtrl: AdminCtrl,
     authenticationCtrl: AuthenticationCtrl,
     alertCtrl: AlertCtrl,
     // attachmentCtrl: AttachmentCtrl,
@@ -39,6 +41,12 @@ class Router @Inject() (
   override def routes: Routes = {
     case GET(p"/status") => statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
+
+    case GET(p"/admin/check/stats")         => adminCtrl.checkStats
+    case GET(p"/admin/check/$name/trigger") => adminCtrl.triggerCheck(name)
+    case GET(p"/admin/index/status")        => adminCtrl.indexStatus
+    case GET(p"/admin/index/$name/reindex") => adminCtrl.reindex(name)
+
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
     case GET(p"/logout")                 => authenticationCtrl.logout
     case POST(p"/logout")                => authenticationCtrl.logout

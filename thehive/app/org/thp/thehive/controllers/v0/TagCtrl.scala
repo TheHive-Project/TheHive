@@ -1,25 +1,26 @@
 package org.thp.thehive.controllers.v0
 
-import java.nio.file.Files
-
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser, Renderer}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
 import org.thp.thehive.services.TagOps._
-import org.thp.thehive.services.TagSrv
+import org.thp.thehive.services.{OrganisationSrv, TagSrv}
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.nio.file.Files
+import javax.inject.{Inject, Named, Singleton}
+
 class TagCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     tagSrv: TagSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicTag
@@ -99,19 +100,20 @@ class TagCtrl @Inject() (
       }
 }
 
+case class TagHint(freeTag: Option[String], namespace: Option[String], predicate: Option[String], value: Option[String], limit: Option[Long])
+
 @Singleton
-class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
-  override val entityName: String  = "tag"
-  override val initialQuery: Query = Query.init[Traversal.V[Tag]]("listTag", (graph, _) => tagSrv.startTraversal(graph))
+class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData {
+  override val entityName: String = "tag"
+  override val initialQuery: Query =
+    Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Tag with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Tag]](
     "getTag",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => tagSrv.get(idOrName)(graph)
   )
   implicit val stringRenderer: Renderer[String] = Renderer.toJson[String, String](identity)
@@ -119,6 +121,17 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromCase", (tagSteps, _) => tagSteps.fromCase),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromAlert", (tagSteps, _) => tagSteps.fromAlert),
+    Query.initWithParam[TagHint, Traversal[String, Vertex, Converter[String, Vertex]]](
+      "autoComplete",
+      (tagHint, graph, authContext) =>
+        tagHint
+          .freeTag
+          .fold(tagSrv.startTraversal(graph).autoComplete(tagHint.namespace, tagHint.predicate, tagHint.value)(authContext).visible(authContext))(
+            tagSrv.startTraversal(graph).autoComplete(organisationSrv, _)(authContext)
+          )
+          .merge(tagHint.limit)(_.limit(_))
+          .displayName
+    ),
     Query[Traversal.V[Tag], Traversal[String, Vertex, Converter[String, Vertex]]]("text", (tagSteps, _) => tagSteps.displayName),
     Query.output[String, Traversal[String, Vertex, Converter[String, Vertex]]]
   )
@@ -129,19 +142,11 @@ class PublicTag @Inject() (tagSrv: TagSrv) extends PublicData {
     .property("description", UMapping.string.optional)(_.field.readonly)
     .property("text", UMapping.string)(
       _.select(_.displayName)
-        .filter((_, tags) =>
-          tags
-            .graphMap[String, String, Converter.Identity[String]](
-              { v =>
-                val namespace = UMapping.string.getProperty(v, "namespace")
-                val predicate = UMapping.string.getProperty(v, "predicate")
-                val value     = UMapping.string.optional.getProperty(v, "value")
-                Tag(namespace, predicate, value, None, "#000000").toString
-              },
-              Converter.identity[String]
-            )
-        )
-        .converter(_ => Converter.identity[String])
+        .filter[String] {
+          case (_, tags, authContext, Right(predicate)) => tags.freetags(organisationSrv)(authContext).has(_.predicate, predicate)
+          case (_, tags, _, Left(true))                 => tags
+          case (_, tags, _, Left(false))                => tags.empty
+        }
         .readonly
     )
     .build

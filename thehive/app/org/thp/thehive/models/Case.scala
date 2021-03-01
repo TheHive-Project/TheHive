@@ -1,11 +1,11 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.Permission
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import play.api.libs.json.{Format, Json}
+
+import java.util.Date
 
 object CaseStatus extends Enumeration {
   val Open, Resolved, Duplicated = Value
@@ -16,7 +16,7 @@ object CaseStatus extends Enumeration {
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "value")
 case class ResolutionStatus(value: String) {
-  require(!value.isEmpty, "ResolutionStatus can't be empty")
+  require(value.nonEmpty, "ResolutionStatus can't be empty")
 }
 
 object ResolutionStatus {
@@ -35,7 +35,7 @@ case class CaseResolutionStatus()
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "value")
 case class ImpactStatus(value: String) {
-  require(!value.isEmpty, "ImpactStatus can't be empty")
+  require(value.nonEmpty, "ImpactStatus can't be empty")
 }
 
 object ImpactStatus {
@@ -82,12 +82,23 @@ case class CaseProcedure()
 
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "number")
-//@DefineIndex(IndexType.fulltext, "title")
-//@DefineIndex(IndexType.fulltext, "description")
-//@DefineIndex(IndexType.standard, "startDate")
-@DefineIndex(IndexType.basic, "status")
+@DefineIndex(IndexType.fulltext, "title")
+@DefineIndex(IndexType.fulltext, "description")
+@DefineIndex(IndexType.standard, "severity")
+@DefineIndex(IndexType.standard, "startDate")
+@DefineIndex(IndexType.standard, "endDate")
+@DefineIndex(IndexType.standard, "flag")
+@DefineIndex(IndexType.standard, "tlp")
+@DefineIndex(IndexType.standard, "pap")
+@DefineIndex(IndexType.standard, "status")
+@DefineIndex(IndexType.fulltext, "summary")
+@DefineIndex(IndexType.standard, "tags")
+@DefineIndex(IndexType.standard, "assignee")
+@DefineIndex(IndexType.standard, "organisationIds")
+@DefineIndex(IndexType.standard, "impactStatus")
+@DefineIndex(IndexType.standard, "resolutionStatus")
+@DefineIndex(IndexType.standard, "caseTemplate")
 case class Case(
-    number: Int,
     title: String,
     description: String,
     severity: Int,
@@ -97,34 +108,43 @@ case class Case(
     tlp: Int,
     pap: Int,
     status: CaseStatus.Value,
-    summary: Option[String]
+    summary: Option[String],
+    tags: Seq[String],
+    impactStatus: Option[String] = None,
+    resolutionStatus: Option[String] = None,
+    /* filled by the service */
+    assignee: Option[String] = None,
+    number: Int = 0,
+    organisationIds: Set[EntityId] = Set.empty,
+    caseTemplate: Option[String] = None
 )
 
 case class RichCase(
     `case`: Case with Entity,
-    tags: Seq[Tag with Entity],
-    impactStatus: Option[String],
-    resolutionStatus: Option[String],
-    assignee: Option[String],
     customFields: Seq[RichCustomField],
     userPermissions: Set[Permission]
 ) {
-  def _id: EntityId              = `case`._id
-  def _createdBy: String         = `case`._createdBy
-  def _updatedBy: Option[String] = `case`._updatedBy
-  def _createdAt: Date           = `case`._createdAt
-  def _updatedAt: Option[Date]   = `case`._updatedAt
-  def number: Int                = `case`.number
-  def title: String              = `case`.title
-  def description: String        = `case`.description
-  def severity: Int              = `case`.severity
-  def startDate: Date            = `case`.startDate
-  def endDate: Option[Date]      = `case`.endDate
-  def flag: Boolean              = `case`.flag
-  def tlp: Int                   = `case`.tlp
-  def pap: Int                   = `case`.pap
-  def status: CaseStatus.Value   = `case`.status
-  def summary: Option[String]    = `case`.summary
+  def _id: EntityId                    = `case`._id
+  def _createdBy: String               = `case`._createdBy
+  def _updatedBy: Option[String]       = `case`._updatedBy
+  def _createdAt: Date                 = `case`._createdAt
+  def _updatedAt: Option[Date]         = `case`._updatedAt
+  def number: Int                      = `case`.number
+  def title: String                    = `case`.title
+  def description: String              = `case`.description
+  def severity: Int                    = `case`.severity
+  def startDate: Date                  = `case`.startDate
+  def endDate: Option[Date]            = `case`.endDate
+  def flag: Boolean                    = `case`.flag
+  def tlp: Int                         = `case`.tlp
+  def pap: Int                         = `case`.pap
+  def status: CaseStatus.Value         = `case`.status
+  def summary: Option[String]          = `case`.summary
+  def tags: Seq[String]                = `case`.tags
+  def assignee: Option[String]         = `case`.assignee
+  def impactStatus: Option[String]     = `case`.impactStatus
+  def resolutionStatus: Option[String] = `case`.resolutionStatus
+  def caseTemplate: Option[String]     = `case`.caseTemplate
 }
 
 object RichCase {
@@ -141,7 +161,7 @@ object RichCase {
       severity: Int,
       startDate: Date,
       endDate: Option[Date],
-      tags: Seq[Tag with Entity],
+      tags: Seq[String],
       flag: Boolean,
       tlp: Int,
       pap: Int,
@@ -149,19 +169,38 @@ object RichCase {
       summary: Option[String],
       impactStatus: Option[String],
       resolutionStatus: Option[String],
-      user: Option[String],
+      assignee: Option[String],
       customFields: Seq[RichCustomField],
-      userPermissions: Set[Permission]
+      userPermissions: Set[Permission],
+      organisationIds: Set[EntityId]
   ): RichCase = {
-    val `case`: Case with Entity = new Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary) with Entity {
-      override val _id: EntityId              = __id
-      override val _label: String             = "Case"
-      override val _createdBy: String         = __createdBy
-      override val _updatedBy: Option[String] = __updatedBy
-      override val _createdAt: Date           = __createdAt
-      override val _updatedAt: Option[Date]   = __updatedAt
-    }
-    RichCase(`case`, tags, impactStatus, resolutionStatus, user, customFields, userPermissions)
+    val `case`: Case with Entity =
+      new Case(
+        number = number,
+        title = title,
+        description = description,
+        severity = severity,
+        startDate = startDate,
+        endDate = endDate,
+        flag = flag,
+        tlp = tlp,
+        pap = pap,
+        status = status,
+        summary = summary,
+        organisationIds = organisationIds,
+        tags = tags,
+        assignee = assignee,
+        impactStatus = impactStatus,
+        resolutionStatus = resolutionStatus
+      ) with Entity {
+        override val _id: EntityId              = __id
+        override val _label: String             = "Case"
+        override val _createdBy: String         = __createdBy
+        override val _updatedBy: Option[String] = __updatedBy
+        override val _createdAt: Date           = __createdAt
+        override val _updatedAt: Option[Date]   = __updatedAt
+      }
+    RichCase(`case`, customFields, userPermissions)
   }
 }
 

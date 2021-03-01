@@ -1,13 +1,13 @@
 package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.Traversal.Unk
 import org.thp.thehive.services.th3.TH3Aggregation
 import play.api.Logger
@@ -90,7 +90,7 @@ trait QueryCtrl {
             .map(inputFilter => filterQuery.toQuery(inputFilter))
             .fold(publicData.initialQuery)(publicData.initialQuery.andThen)
         aggs <- aggregationParser.sequence(field.get("stats"))
-      } yield aggs.map(a => filteredQuery andThen new AggregationQuery(db, queryExecutor.publicProperties, filterQuery).toQuery(a))
+      } yield aggs.map(a => filteredQuery andThen new AggregationQuery(queryExecutor.publicProperties, filterQuery).toQuery(a))
   }
 
   def searchParser(initialQuery: Query = publicData.initialQuery): FieldsParser[Query] =
@@ -103,7 +103,7 @@ trait QueryCtrl {
               .map(inputFilter => filterQuery.toQuery(inputFilter))
               .fold(initialQuery)(initialQuery.andThen)
           inputSort <- sortParser(field.get("sort"))
-          sortedQuery = filteredQuery andThen new SortQuery(db, queryExecutor.publicProperties).toQuery(inputSort)
+          sortedQuery = filteredQuery andThen new SortQuery(queryExecutor.publicProperties).toQuery(inputSort)
           outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false, withParents = 0)))
           outputQuery = publicData.pageQuery.toQuery(outputParam)
         } yield sortedQuery andThen outputQuery

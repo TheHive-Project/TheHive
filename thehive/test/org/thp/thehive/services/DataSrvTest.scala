@@ -1,6 +1,5 @@
 package org.thp.thehive.services
 
-import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -22,11 +21,16 @@ class DataSrvTest extends PlaySpecification with TestAppBuilder {
     "get related observables" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         app[ObservableSrv].create(
-          Observable(Some("love"), 1, ioc = false, sighted = true, ignoreSimilarity = None),
-          app[ObservableTypeSrv].get(EntityName("domain")).getOrFail("Observable").get,
-          "love.com",
-          Set("tagX"),
-          Nil
+          Observable(
+            message = Some("love"),
+            tlp = 1,
+            ioc = false,
+            sighted = true,
+            ignoreSimilarity = None,
+            dataType = "domain",
+            tags = Seq("tagX")
+          ),
+          "love.com"
         )
       }
 

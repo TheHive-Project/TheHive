@@ -1,20 +1,19 @@
 package org.thp.thehive.services
 
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.ProcedureOps._
 import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
@@ -22,8 +21,6 @@ class ProcedureSrv @Inject() (
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
     patternSrv: PatternSrv
-)(implicit
-    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Procedure] {
   val caseProcedureSrv    = new EdgeSrv[CaseProcedure, Case, Procedure]
   val procedurePatternSrv = new EdgeSrv[ProcedurePattern, Procedure, Pattern]
@@ -56,7 +53,7 @@ class ProcedureSrv @Inject() (
   def remove(procedure: Procedure with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       caze <- get(procedure).caze.getOrFail("Case")
-      _    <- auditSrv.procedure.delete(procedure, Some(caze))
+      _    <- auditSrv.procedure.delete(procedure, caze)
     } yield get(procedure).remove()
 
 }

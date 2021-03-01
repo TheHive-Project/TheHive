@@ -5,10 +5,10 @@ import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
@@ -27,7 +27,6 @@ class ResponderSrvTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   "responder service" should {
     "fetch responders by type" in testApp { app =>

@@ -1,8 +1,8 @@
 package org.thp.cortex.dto.v0
 
-import java.util.Date
-
 import play.api.libs.json._
+
+import java.util.Date
 
 object JobStatus extends Enumeration {
   val InProgress, Success, Failure, Waiting, Deleted = Value

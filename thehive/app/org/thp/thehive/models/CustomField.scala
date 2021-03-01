@@ -1,12 +1,11 @@
 package org.thp.thehive.models
 
-import java.util.{Date, NoSuchElementException}
-
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph._
 import org.thp.scalligraph.models._
 import play.api.libs.json._
 
+import java.util.{Date, NoSuchElementException}
 import scala.util.{Failure, Success, Try}
 
 trait CustomFieldValue[C] extends Product {
