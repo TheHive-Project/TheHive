@@ -413,6 +413,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         case21.observables.toSeq.size mustEqual 1
         case22.observables.toSeq.size mustEqual 0
         case23.observables.toSeq.size mustEqual 2
+        // Alerts
+        case21.alert.toSeq.size mustEqual 1
+        case22.alert.toSeq.size mustEqual 0
+        case23.alert.toSeq.size mustEqual 0
 
         for {
           c21     <- case21.clone().getOrFail("Case")
@@ -427,6 +431,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           mergedCase.customFields.toSeq.size mustEqual 2
           mergedCase.tasks.toSeq.size mustEqual 3
           mergedCase.observables.toSeq.size mustEqual 3
+          mergedCase.alert.toSeq.size mustEqual 1
 
           app[CaseSrv].get(EntityName("21")).getOrFail("Case") must beAFailedTry
           app[CaseSrv].get(EntityName("22")).getOrFail("Case") must beAFailedTry

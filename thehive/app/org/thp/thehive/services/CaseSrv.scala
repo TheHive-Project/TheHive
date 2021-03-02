@@ -25,7 +25,7 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 
 import java.lang.{Long => JLong}
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -40,9 +40,11 @@ class CaseSrv @Inject() (
     auditSrv: AuditSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     impactStatusSrv: ImpactStatusSrv,
+    alertSrvProvider: Provider[AlertSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(implicit @Named("with-thehive-schema") db: Database)
     extends VertexSrv[Case] {
+  lazy val alertSrv: AlertSrv = alertSrvProvider.get
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
@@ -330,6 +332,11 @@ class CaseSrv @Inject() (
               .richObservable
               .toList
               .toTry(shareSrv.shareObservable(_, richCase.`case`, orga))
+          _ <-
+            get(c)
+              .alert
+              .toList
+              .toTry(alertSrv.alertCaseSrv.create(AlertCase(), _, richCase.`case`))
           _ <-
             get(c)
               .procedure
