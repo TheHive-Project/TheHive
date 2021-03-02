@@ -155,7 +155,7 @@ class DatabaseBuilder @Inject() (
             .startTraversal
             .hasNot(_.name, "admin")
             .filterNot(_.taxonomies.freetags)
-            .foreach(o => taxonomySrv.createFreetag(o))
+            .foreach(o => taxonomySrv.createFreetagTaxonomy(o))
 
           // TODO: get tags from entity and create freetag for each
 //          // Add each tag to its Organisation's FreeTags taxonomy

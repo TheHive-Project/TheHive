@@ -31,17 +31,23 @@ class TaxonomySrv @Inject() (organisationSrv: OrganisationSrv, tagSrv: TagSrv) e
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
     } yield richTaxonomy
 
-  def createFreetag(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
+  def createFreetagTaxonomy(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Taxonomy with Entity] = {
     val customTaxo = Taxonomy(s"_freetags_${organisation._id.value}", "Custom taxonomy", 1)
     for {
-      taxonomy     <- createEntity(customTaxo)
-      richTaxonomy <- Try(RichTaxonomy(taxonomy, Seq()))
-      _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
-    } yield richTaxonomy
+      taxonomy <- createEntity(customTaxo)
+      _        <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
+    } yield taxonomy
   }
 
+  def getFreetagTaxonomy(implicit graph: Graph, authContext: AuthContext): Try[Taxonomy with Entity] =
+    getByName(s"_freetags_${organisationSrv.currentId.value}")
+      .getOrFail("FreetagTaxonomy")
+      .orElse {
+        organisationSrv.current.notAdmin.getOrFail("Organisation").flatMap(createFreetagTaxonomy)
+      }
+
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
-    Try(startTraversal.getByNamespace(name)).getOrElse(startTraversal.limit(0))
+    startTraversal.getByNamespace(name)
 
   def update(taxonomy: Taxonomy with Entity, input: Taxonomy)(implicit graph: Graph): Try[RichTaxonomy] =
     for {

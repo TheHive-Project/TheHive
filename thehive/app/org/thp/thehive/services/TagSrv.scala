@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{EdgeSrv, IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
@@ -21,17 +21,16 @@ import scala.util.{Success, Try}
 @Singleton
 class TagSrv @Inject() (
     organisationSrv: OrganisationSrv,
+    taxonomySrv: TaxonomySrv,
     appConfig: ApplicationConfig,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[Tag] {
 
+  val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   private val freeTagColourConfig: ConfigItem[String, String] =
     appConfig.item[String]("tags.freeTagColour", "Default colour for free tags")
 
   def freeTagColour: String = freeTagColourConfig.get
-
-  private def freeTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Tag =
-    Tag(freeTagNamespace, tagName, None, None, freeTagColour)
 
   private def freeTagNamespace(implicit graph: Graph, authContext: AuthContext): String =
     s"_freetags_${organisationSrv.currentId(graph, authContext).value}"
@@ -60,8 +59,15 @@ class TagSrv @Inject() (
         startTraversal
           .getByName(freeTagNamespace, tagName, None)
           .getOrFail("Tag")
-          .orElse(create(freeTag(tagName)))
+          .orElse(createFreeTag(tagName))
       }(Success(_))
+
+  private def createFreeTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    for {
+      freetagTaxonomy <- taxonomySrv.getFreetagTaxonomy
+      tag             <- createEntity(Tag(freeTagNamespace, tagName, None, None, freeTagColour))
+      _               <- taxonomyTagSrv.create(TaxonomyTag(), freetagTaxonomy, tag)
+    } yield tag
 
   def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
     integrityCheckActor ! EntityAdded("Tag")

@@ -52,7 +52,7 @@ class OrganisationSrv @Inject() (
     val activeTaxos = getByName("admin").taxonomies.toSeq
     for {
       newOrga <- createEntity(e)
-      _       <- taxonomySrv.createFreetag(newOrga)
+      _       <- taxonomySrv.createFreetagTaxonomy(newOrga)
       _       <- activeTaxos.toTry(t => organisationTaxonomySrv.create(OrganisationTaxonomy(), newOrga, t))
       _       <- auditSrv.organisation.create(newOrga, newOrga.toJson)
     } yield newOrga
@@ -186,6 +186,8 @@ object OrganisationOps {
           case (organisation, linkedOrganisations) =>
             RichOrganisation(organisation, linkedOrganisations)
         }
+
+    def notAdmin: Traversal.V[Organisation] = traversal.hasNot(_.name, Organisation.administration.name)
 
     def isAdmin: Boolean = traversal.has(_.name, Organisation.administration.name).exists
 
