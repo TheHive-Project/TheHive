@@ -14,17 +14,18 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
 @Singleton
 class TagSrv @Inject() (
     organisationSrv: OrganisationSrv,
-    taxonomySrv: TaxonomySrv,
+    taxonomySrvProvider: Provider[TaxonomySrv],
     appConfig: ApplicationConfig,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[Tag] {
+  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
 
   val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   private val freeTagColourConfig: ConfigItem[String, String] =
