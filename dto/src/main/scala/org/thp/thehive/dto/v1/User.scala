@@ -11,7 +11,7 @@ object InputUser {
   implicit val writes: Writes[InputUser] = Json.writes[InputUser]
 }
 
-case class OutputOrganisationProfile(organisation: String, profile: String)
+case class OutputOrganisationProfile(organisationId: String, organisation: String, profile: String)
 object OutputOrganisationProfile {
   implicit val format: OFormat[OutputOrganisationProfile] = Json.format[OutputOrganisationProfile]
 }

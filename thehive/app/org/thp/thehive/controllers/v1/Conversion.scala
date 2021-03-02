@@ -331,15 +331,15 @@ object Conversion {
       .transform
   )
 
-  implicit val userWithOrganisationOutput: Renderer.Aux[(RichUser, Seq[(String, String)]), OutputUser] =
-    Renderer.toJson[(RichUser, Seq[(String, String)]), OutputUser] { userWithOrganisations =>
+  implicit val userWithOrganisationOutput: Renderer.Aux[(RichUser, Seq[(Organisation with Entity, String)]), OutputUser] =
+    Renderer.toJson[(RichUser, Seq[(Organisation with Entity, String)]), OutputUser] { userWithOrganisations =>
       val (user, organisations) = userWithOrganisations
       user
         .into[OutputUser]
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
         .withFieldComputed(_.hasKey, _.apikey.isDefined)
-        .withFieldConst(_.organisations, organisations.map { case (org, role) => OutputOrganisationProfile(org, role) })
+        .withFieldConst(_.organisations, organisations.map { case (org, role) => OutputOrganisationProfile(org._id.toString, org.name, role) })
         .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
         .enableMethodAccessors
         .transform

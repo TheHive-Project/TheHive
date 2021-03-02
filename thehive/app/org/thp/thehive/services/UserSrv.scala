@@ -187,13 +187,14 @@ object UserOps {
       else organisations0(requiredPermission)
     }
 
-    def organisationWithRole: Traversal[Seq[(String, String)], JList[JMap[String, Any]], CList[(String, String), JMap[String, Any], Converter[
-      (String, String),
-      JMap[String, Any]
-    ]]] =
+    def organisationWithRole: Traversal[Seq[(Organisation with Entity, String)], JList[JMap[String, Any]], CList[
+      (Organisation with Entity, String),
+      JMap[String, Any],
+      Converter[(Organisation with Entity, String), JMap[String, Any]]
+    ]] =
       role
         .project(
-          _.by(_.organisation.value(_.name))
+          _.by(_.organisation)
             .by(_.profile.value(_.name))
         )
         .fold
