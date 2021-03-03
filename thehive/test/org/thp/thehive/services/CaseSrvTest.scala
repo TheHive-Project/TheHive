@@ -65,7 +65,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           ),
           richCase.`case`.organisationIds
         )
-        richCase.tags must contain(exactly("testNamespace:testPredicate=\"t1\"", "testNamespace:testPredicate=\"t3\""))
+        richCase.tags must contain(exactly("t1", "t3"))
       }
     }
 
@@ -107,7 +107,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           ),
           richCase.`case`.organisationIds
         )
-        richCase.tags must contain(exactly("testNamespace:testPredicate=\"t2\"", "testNamespace:testPredicate=\"t1\""))
+        richCase.tags must contain(exactly("t2", "t1"))
         richCase._createdBy must_=== "system@thehive.local"
       }
     }
@@ -122,7 +122,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         richCase.severity must_=== 2
         richCase.startDate must_=== new Date(1531667370000L)
         richCase.endDate must beNone
-        richCase.tags must contain(exactly("testNamespace:testPredicate=\"t1\"", "testNamespace:testPredicate=\"t2\""))
+        richCase.tags must contain(exactly("t1", "t2"))
         richCase.flag must_=== false
         richCase.tlp must_=== 2
         richCase.pap must_=== 2
@@ -228,10 +228,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           c3 <- app[CaseSrv].get(EntityName("3")).getOrFail("Case")
-          _  <- app[CaseSrv].updateTags(c3, Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="yolo""""))
+          _  <- app[CaseSrv].updateTags(c3, Set("t2", "yolo"))
         } yield app[CaseSrv].get(c3).tags.toList.map(_.toString)
       } must beASuccessfulTry.which { tags =>
-        tags must contain(exactly("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="yolo""""))
+        tags must contain(exactly("t2", "yolo"))
       }
     }
 

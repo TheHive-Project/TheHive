@@ -106,9 +106,9 @@ class AlertSrv @Inject() (
       authContext: AuthContext
   ): Try[(Seq[Tag with Entity], Seq[Tag with Entity])] =
     for {
-      tagsToAdd    <- (tags -- alert.tags).toTry(tagSrv.getOrCreate)
-      tagsToRemove <- (alert.tags.toSet -- tags).toTry(tagSrv.getOrCreate)
-      _            <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
+      tagsToAdd <- (tags -- alert.tags).toTry(tagSrv.getOrCreate)
+      tagsToRemove = get(alert).tags.toSeq.filterNot(t => tags.contains(t.toString))
+      _ <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
       _ = if (tags.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(alert).update(_.tags, tags.toSeq).getOrFail("Alert")
       _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags))

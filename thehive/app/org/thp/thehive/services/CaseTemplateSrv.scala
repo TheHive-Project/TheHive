@@ -90,9 +90,9 @@ class CaseTemplateSrv @Inject() (
       authContext: AuthContext
   ): Try[(Seq[Tag with Entity], Seq[Tag with Entity])] =
     for {
-      tagsToAdd    <- (tags -- caseTemplate.tags).toTry(tagSrv.getOrCreate)
-      tagsToRemove <- (caseTemplate.tags.toSet -- tags).toTry(tagSrv.getOrCreate)
-      _            <- tagsToAdd.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
+      tagsToAdd <- (tags -- caseTemplate.tags).toTry(tagSrv.getOrCreate)
+      tagsToRemove = get(caseTemplate).tags.toSeq.filterNot(t => tags.contains(t.toString))
+      _ <- tagsToAdd.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
       _ = if (tags.nonEmpty) get(caseTemplate).outE[CaseTemplateTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(caseTemplate).update(_.tags, tags.toSeq).getOrFail("CaseTemplate")
       _ <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> tags))

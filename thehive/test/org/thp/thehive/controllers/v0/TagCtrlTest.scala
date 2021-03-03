@@ -141,17 +141,12 @@ class TagCtrlTest extends PlaySpecification with TestAppBuilder {
          "query":{
             "_and":[
                {
-                  "_is":{
-                     "namespace":"testNamespace"
-                  }
-               },
-               {
                   "_or":[
                      {
-                        "value":"testDomain"
+                        "predicate":"testDomain"
                      },
                      {
-                        "value":"hello"
+                        "predicate":"hello"
                      }
                   ]
                }
@@ -169,7 +164,7 @@ class TagCtrlTest extends PlaySpecification with TestAppBuilder {
       val l = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[List[OutputTag]]
 
       l.length shouldEqual 2
-      l.find(_.value.get == "testDomain") must beSome
+      l.find(_.predicate == "testDomain") must beSome
     }
   }
 }

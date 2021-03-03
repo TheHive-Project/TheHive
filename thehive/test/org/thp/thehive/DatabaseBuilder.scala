@@ -1,17 +1,21 @@
 package org.thp.thehive
 
-import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 import org.scalactic.Or
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, Entity, Schema, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Graph}
 import org.thp.scalligraph.{EntityId, EntityName, RichOption}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services._
 import play.api.Logger
@@ -55,20 +59,21 @@ class DatabaseBuilder @Inject() (
 
   lazy val logger: Logger = Logger(getClass)
 
-  def build()(implicit db: Database, authContext: AuthContext): Try[Unit] = {
+  def build()(implicit db: Database): Try[Unit] = {
 
     lazy val logger: Logger = Logger(getClass)
     logger.info("Initialize database schema")
-    db.createSchemaFrom(schema)
+    db.createSchemaFrom(schema)(LocalUserSrv.getSystemAuthContext)
       .flatMap(_ => db.addSchemaIndexes(schema))
       .flatMap { _ =>
         integrityChecks.foreach { check =>
           db.tryTransaction { implicit graph =>
-            Success(check.initialCheck())
+            Success(check.initialCheck()(graph, LocalUserSrv.getSystemAuthContext))
           }
           ()
         }
         db.tryTransaction { implicit graph =>
+          implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
           val idMap =
             createVertex(caseSrv, FieldsParser[Case]) ++
               createVertex(alertSrv, FieldsParser[Alert]) ++
@@ -149,179 +154,122 @@ class DatabaseBuilder @Inject() (
 
           createEdge(procedureSrv.caseProcedureSrv, caseSrv, procedureSrv, FieldsParser[CaseProcedure], idMap)
           createEdge(procedureSrv.procedurePatternSrv, procedureSrv, patternSrv, FieldsParser[ProcedurePattern], idMap)
+          Success(())
+        }
 
+        db.tryTransaction { implicit graph =>
+          val (defaultOrganisation, defaultUser) = organisationSrv.startTraversal.notAdmin.project(_.by.by(_.users)).head
+          implicit val authContext: AuthContext =
+            AuthContextImpl(defaultUser.login, defaultUser.name, defaultOrganisation._id, "init", Permissions.all)
           // For each organisation, if there is no custom taxonomy, create it
           organisationSrv
             .startTraversal
             .hasNot(_.name, "admin")
             .filterNot(_.taxonomies.freetags)
-            .foreach(o => taxonomySrv.createFreetagTaxonomy(o))
-
-          // TODO: get tags from entity and create freetag for each
-//          // Add each tag to its Organisation's FreeTags taxonomy
-//          caseSrv
-//            .startTraversal
-//            .project(_.by
-//              .by(_.value(_.tags).fold)
-//              .by(_.organisations.taxonomies.freetags))
-//            .foreach {
-//              case (case0, tags, freeTaxo) =>
-//                for {
-//                  t <- tags.toTry(tagSrv.getOrCreate)
-//                  _ <- t.toTry(caseSrv.caseTagSrv.create(CaseTag(), case0, _))
-//                }
-//            }
-
-          alertSrv
-            .startTraversal
-            .setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity[Vertex])
-            .project(
-              _.by
-                .by(_.out("AlertTag").valueMap("namespace", "predicate", "value").fold)
-                .by(_.out("AlertOrganisation")._id.option)
-                .by(_.out("AlertCase")._id.option)
-            )
-            .foreach {
-              case (vertex, tagMaps, Some(organisationId), caseId) =>
-                val tags = for {
-                  tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
-                  namespace = tag.getOrElse("namespace", "_autocreate")
-                  predicate <- tag.get("predicate")
-                  value = tag.get("value")
-                } yield
-                  (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
-                    (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
-                    value.fold("")(v => f"""="$v"""")
-
-                tags.foreach(vertex.property(Cardinality.list, "tags", _))
-                vertex.property("organisationId", organisationId.value)
-                caseId.foreach(vertex.property("caseId", _))
-              case _ =>
-            }
+            .foreach(o => taxonomySrv.createFreetagTaxonomy(o).get)
 
           caseSrv
             .startTraversal
-            .setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity[Vertex])
             .project(
               _.by
-                .by(_.out("CaseTag").valueMap("namespace", "predicate", "value").fold)
-                .by(_.out("CaseUser").property("login", UMapping.string).option)
-                .by(_.in("ShareCase").in("OrganisationShare")._id.fold)
-                .by(_.out("CaseImpactStatus").property("value", UMapping.string).option)
-                .by(_.out("CaseResolutionStatus").property("value", UMapping.string).option)
-                .by(_.out("CaseCaseTemplate").property("name", UMapping.string).option)
+                .by(_.organisations._id.fold)
             )
             .foreach {
-              case (vertex, tagMaps, assignee, organisationIds, impactStatus, resolutionStatus, caseTemplate) =>
-                val tags = for {
-                  tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
-                  namespace = tag.getOrElse("namespace", "_autocreate")
-                  predicate <- tag.get("predicate")
-                  value = tag.get("value")
-                } yield
-                  (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
-                    (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
-                    value.fold("")(v => f"""="$v"""")
-
-                tags.foreach(vertex.property(Cardinality.list, "tags", _))
-                assignee.foreach(vertex.property("assignee", _))
-                organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
-                impactStatus.foreach(vertex.property("impactStatus", _))
-                resolutionStatus.foreach(vertex.property("resolutionStatus", _))
-                caseTemplate.foreach(vertex.property("caseTemplate", _))
+              case (case0, organisationIds) =>
+                case0.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseSrv.caseTagSrv.create(CaseTag(), case0, _)).get)
+                case0.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(caseSrv.caseUserSrv.create(CaseUser(), case0, _)).get)
+                case0
+                  .resolutionStatus
+                  .foreach(
+                    resolutionStatusSrv
+                      .getByName(_)
+                      .getOrFail("ResolutionStatus")
+                      .flatMap(caseSrv.caseResolutionStatusSrv.create(CaseResolutionStatus(), case0, _))
+                      .get
+                  )
+                case0
+                  .impactStatus
+                  .foreach(
+                    impactStatusSrv
+                      .getByName(_)
+                      .getOrFail("ImpectStatus")
+                      .flatMap(caseSrv.caseImpactStatusSrv.create(CaseImpactStatus(), case0, _))
+                      .get
+                  )
+                case0
+                  .caseTemplate
+                  .foreach(
+                    caseTemplateSrv
+                      .getByName(_)
+                      .getOrFail("CaseTemplate")
+                      .flatMap(caseSrv.caseCaseTemplateSrv.create(CaseCaseTemplate(), case0, _))
+                      .get
+                  )
+                caseSrv.get(case0).update(_.organisationIds, organisationIds.toSet).iterate()
             }
 
-          caseTemplateSrv
+          alertSrv
             .startTraversal
-            .setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity[Vertex])
-            .project(
-              _.by
-                .by(_.out("CaseTemplateTag").valueMap("namespace", "predicate", "value").fold)
-            )
+            .project(_.by.by(_.organisation._id).by(_.`case`._id.option))
             .foreach {
-              case (vertex, tagMaps) =>
-                val tags = for {
-                  tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
-                  namespace = tag.getOrElse("namespace", "_autocreate")
-                  predicate <- tag.get("predicate")
-                  value = tag.get("value")
-                } yield
-                  (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
-                    (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
-                    value.fold("")(v => f"""="$v"""")
-
-                tags.foreach(vertex.property(Cardinality.list, "tags", _))
-            }
-
-          logSrv
-            .startTraversal
-            .setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity[Vertex])
-            .project(
-              _.by
-                .by(_.in("TaskLog")._id)
-                .by(_.in("TaskLog").in("ShareTask").in("OrganisationShare")._id.fold)
-            )
-            .foreach {
-              case (vertex, taskId, organisationIds) =>
-                vertex.property("taskId", taskId)
-                organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
+              case (alert, organisationId, caseId) =>
+                alert.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(alertSrv.alertTagSrv.create(AlertTag(), alert, _)).get)
+                alertSrv.get(alert).update(_.organisationId, organisationId).update(_.caseId, caseId).iterate()
             }
 
           observableSrv
             .startTraversal
-            .setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity[Vertex])
-            .project(
-              _.by
-                .by(_.out("ObservableObservableType").property("name", UMapping.string))
-                .by(_.out("ObservableTag").valueMap("namespace", "predicate", "value").fold)
-                .by(_.out("ObservableData").property("data", UMapping.string).option)
-                .by(_.out("ObservableAttachment").property("attachmentId", UMapping.string).option)
-                .by(_.coalesceIdent(_.in("ShareObservable").out("ShareCase"), _.in("AlertObservable"), _.in("ReportObservable"))._id.option)
-                .by(
-                  _.coalesceIdent(
-                    _.optional(_.in("ReportObservable").in("ObservableJob")).in("ShareObservable").in("OrganisationShare"),
-                    _.in("AlertObservable").out("AlertOrganisation")
-                  )
-                    ._id
-                    .fold
-                )
-            )
+            .project(_.by.by(_.coalesceIdent(_.`case`, _.alert)._id).by(_.organisations._id.fold))
             .foreach {
-              case (vertex, dataType, tagMaps, data, attachmentId, Some(relatedId), organisationIds) =>
-                val tags = for {
-                  tag <- tagMaps.asInstanceOf[Seq[Map[String, String]]]
-                  namespace = tag.getOrElse("namespace", "_autocreate")
-                  predicate <- tag.get("predicate")
-                  value = tag.get("value")
-                } yield
-                  (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
-                    (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
-                    value.fold("")(v => f"""="$v"""")
+              case (observable, relatedId, organisationIds) =>
+                observable
+                  .tags
+                  .foreach(tag => tagSrv.getOrCreate(tag).flatMap(observableSrv.observableTagSrv.create(ObservableTag(), observable, _)).get)
+                observableTypeSrv
+                  .getByName(observable.dataType)
+                  .getOrFail("ObservableType")
+                  .flatMap(observableSrv.observableObservableType.create(ObservableObservableType(), observable, _))
+                  .get
+                observable
+                  .data
+                  .foreach(data =>
+                    dataSrv
+                      .getByName(data)
+                      .getOrFail("data")
+                      .orElse(dataSrv.create(Data(data)))
+                      .flatMap(observableSrv.observableDataSrv.create(ObservableData(), observable, _))
+                      .get
+                  )
+                observableSrv.get(observable).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
+            }
 
-                vertex.property("dataType", dataType)
-                tags.foreach(vertex.property(Cardinality.list, "tags", _))
-                data.foreach(vertex.property("data", _))
-                attachmentId.foreach(vertex.property("attachmentId", _))
-                vertex.property("relatedId", relatedId.value)
-                organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
-              case _ =>
+          caseTemplateSrv
+            .startTraversal
+            .foreach { caseTemplate =>
+              caseTemplate
+                .tags
+                .foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _)).get)
+            }
+
+          logSrv
+            .startTraversal
+            .project(_.by.by(_.task._id).by(_.organisations._id.fold))
+            .foreach {
+              case (log, taskId, organisationIds) =>
+                logSrv.get(log).update(_.taskId, taskId).update(_.organisationIds, organisationIds.toSet).iterate()
             }
 
           taskSrv
             .startTraversal
-            .setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity[Vertex])
             .project(
               _.by
-                .by(_.out("TaskUser").property("login", UMapping.string).option)
-                .by(_.coalesceIdent(_.in("ShareTask").out("ShareCase"), _.in("CaseTemplateTask"))._id.option)
-                .by(_.coalesceIdent(_.in("ShareTask").in("OrganisationShare"), _.in("CaseTemplateTask").out("CaseTemplateOrganisation"))._id.fold)
+                .by(_.coalesceIdent(_.`case`, _.caseTemplate)._id)
+                .by(_.coalesceIdent(_.organisations, _.caseTemplate.organisation)._id.fold)
             )
             .foreach {
-              case (vertex, assignee, Some(relatedId), organisationIds) =>
-                assignee.foreach(vertex.property("assignee", _))
-                vertex.property("relatedId", relatedId.value)
-                organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
-              case _ =>
+              case (task, relatedId, organisationIds) =>
+                task.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(taskSrv.taskUserSrv.create(TaskUser(), task, _)).get)
+                taskSrv.get(task).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
             }
           Success(())
         }

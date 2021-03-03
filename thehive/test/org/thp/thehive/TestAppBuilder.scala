@@ -88,7 +88,7 @@ trait TestAppBuilder {
                                |""".stripMargin)
           .bindToProvider[Database, JanusDatabaseProvider]
 
-        app[DatabaseBuilder].build()(app[Database], app[UserSrv].getSystemAuthContext)
+        app[DatabaseBuilder].build()(app[Database])
         app[Database].close()
       }
       FileUtils.copyDirectory(new File(s"target/janusgraph-test-database-$databaseName"), storageDirectory)

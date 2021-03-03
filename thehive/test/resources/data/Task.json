@@ -7,6 +7,7 @@
     "status": "Waiting",
     "flag": false,
     "order": 0,
+    "assignee": "certuser@thehive.local",
     "relatedId": ""
   },
   {
@@ -27,6 +28,7 @@
     "status": "Waiting",
     "flag": true,
     "order": 0,
+    "assignee": "certuser@thehive.local",
     "relatedId": ""
   },
   {

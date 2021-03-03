@@ -145,7 +145,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       description = "description of alert #1",
       severity = 2,
       date = new Date(1555359572000L),
-      tags = Set("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\""),
+      tags = Set("alert", "test"),
       tlp = 2,
       pap = 2,
       status = "New",
@@ -163,7 +163,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         Some("h.fr"),
         None,
         1,
-        Set("testNamespace:testPredicate=\"hello\""),
+        Set("hello"),
         ioc = true,
         sighted = true,
         Some("observable from alert")
@@ -267,10 +267,10 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       pap = 2,
       status = "Open",
       tags = Set(
-        "testNamespace:testPredicate=\"alert\"",
-        "testNamespace:testPredicate=\"test\"",
-        "testNamespace:testPredicate=\"spam\"",
-        "testNamespace:testPredicate=\"src:mail\""
+        "alert",
+        "test",
+        "spam",
+        "src:mail"
       ),
       summary = None,
       owner = Some("certuser@thehive.local"),

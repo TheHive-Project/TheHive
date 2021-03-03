@@ -13,7 +13,7 @@ import play.api.test.PlaySpecification
 import scala.collection.JavaConverters._
 
 class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
-  implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local").authContext
+  implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
   def templateEngine(testSchema: Schema): Template =
     new Object with Template {
       override val schema: Schema = testSchema

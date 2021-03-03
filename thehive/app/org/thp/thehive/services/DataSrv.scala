@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.apache.tinkerpop.gremlin.structure.T
+import org.apache.tinkerpop.gremlin.structure.{T, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
@@ -30,6 +30,9 @@ class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: Ac
       .fold(createEntity(e))(Success(_))
 
   override def exists(e: Data)(implicit graph: Graph): Boolean = startTraversal.getByData(e.data).exists
+
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Data] =
+    startTraversal.getByData(name)
 }
 
 object DataOps {

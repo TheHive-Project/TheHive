@@ -62,6 +62,9 @@ object LogOps {
     def get(idOrName: EntityIdOrName): Traversal.V[Log] =
       idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
 
+    def organisations: Traversal.V[Organisation] =
+      task.organisations
+
     def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Log] =
       traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
 

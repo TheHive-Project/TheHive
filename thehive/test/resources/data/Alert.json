@@ -14,7 +14,8 @@
     "pap": 2,
     "read": false,
     "follow": true,
-    "organisationId": ""
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert2",
@@ -31,7 +32,8 @@
     "pap": 2,
     "read": false,
     "follow": true,
-    "organisationId": ""
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert3",
@@ -48,7 +50,8 @@
     "pap": 2,
     "read": false,
     "follow": true,
-    "organisationId": ""
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert4",
@@ -65,7 +68,8 @@
     "pap": 2,
     "read": false,
     "follow": true,
-    "organisationId": ""
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert5",
@@ -82,6 +86,7 @@
     "pap": 2,
     "read": false,
     "follow": true,
-    "organisationId": ""
+    "organisationId": "",
+    "tags": ["test", "alert"]
   }
 ]

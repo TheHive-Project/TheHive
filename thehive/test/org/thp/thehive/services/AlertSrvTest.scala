@@ -96,9 +96,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         } yield app[AlertSrv].get(EntityName("testType;testSource;ref1")).tags.toSeq
       }
 
-      tags must beSuccessfulTry.which(t =>
-        t.map(_.toString) must contain(exactly("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\"", "tag7"))
-      )
+      tags must beSuccessfulTry.which(t => t.map(_.toString) must contain(exactly("alert", "test", "tag7")))
     }
 
 //    "add an observable if not existing" in testApp { app => // TODO clarify the expectation
@@ -210,7 +208,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
         observables must have size 1
         observables must contain { (o: RichObservable) =>
           o.data must beSome("h.fr")
-          o.tags must contain("testNamespace:testPredicate=\"testDomain\"", "testNamespace:testPredicate=\"hello\"").exactly
+          o.tags must contain("testDomain")
         }
       }
     }

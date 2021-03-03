@@ -123,9 +123,9 @@ class ObservableSrv @Inject() (
       authContext: AuthContext
   ): Try[(Seq[Tag with Entity], Seq[Tag with Entity])] =
     for {
-      tagsToAdd    <- (tags -- observable.tags).toTry(tagSrv.getOrCreate)
-      tagsToRemove <- (observable.tags.toSet -- tags).toTry(tagSrv.getOrCreate)
-      _            <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
+      tagsToAdd <- (tags -- observable.tags).toTry(tagSrv.getOrCreate)
+      tagsToRemove = get(observable).tags.toSeq.filterNot(t => tags.contains(t.toString))
+      _ <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
       _ = if (tags.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(observable).update(_.tags, tags.toSeq).getOrFail("Observable")
       _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))

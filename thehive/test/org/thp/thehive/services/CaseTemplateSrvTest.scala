@@ -24,7 +24,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
             titlePrefix = Some("[CTT]"),
             description = Some("description ctt1"),
             severity = Some(2),
-            tags = Seq("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne""""),
+            tags = Seq("""t2""", """newOne"""),
             flag = false,
             tlp = Some(1),
             pap = Some(3),
@@ -51,7 +51,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
 
       app[Database].roTransaction { implicit graph =>
         val orgId = app[OrganisationSrv].currentId.value
-        app[TagSrv].startTraversal.getByName(s"_freetags_$orgId", "testNamespace:testPredicate=\"newOne\"", None).exists must beTrue
+        app[TagSrv].startTraversal.getByName(s"_freetags_$orgId", "newOne", None).exists must beTrue
         app[TaskSrv].startTraversal.has(_.title, "task case template case template test 1").exists must beTrue
         val richCT = app[CaseTemplateSrv].startTraversal.getByName("case template test 1").richCaseTemplate.getOrFail("CaseTemplate").get
         richCT.customFields.length shouldEqual 2
@@ -91,14 +91,14 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
           caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
           _ <- app[CaseTemplateSrv].updateTags(
             caseTemplate,
-            Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne2"""", """newNspc:newPred="newOne3"""")
+            Set("""t2""", """newOne2""", """newNspc:newPred="newOne3"""")
           )
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
         app[CaseTemplateSrv].get(EntityName("spam")).tags.toList.map(_.toString)
       } must containTheSameElementsAs(
-        Seq("testNamespace:testPredicate=\"t2\"", "testNamespace:testPredicate=\"newOne2\"", "newNspc:newPred=\"newOne3\"")
+        Seq("t2", "newOne2", "newNspc:newPred=\"newOne3\"")
       )
     }
 
@@ -106,17 +106,17 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
       app[Database].tryTransaction { implicit graph =>
         for {
           caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _            <- app[CaseTemplateSrv].addTags(caseTemplate, Set("""testNamespace:testPredicate="t2"""", """testNamespace:testPredicate="newOne2""""))
+          _            <- app[CaseTemplateSrv].addTags(caseTemplate, Set("""t2""", """newOne2"""))
         } yield ()
       } must beSuccessfulTry
       app[Database].roTransaction { implicit graph =>
         app[CaseTemplateSrv].get(EntityName("spam")).tags.toList.map(_.toString)
       } must containTheSameElementsAs(
         Seq(
-          "testNamespace:testPredicate=\"t2\"",
-          "testNamespace:testPredicate=\"newOne2\"",
-          "testNamespace:testPredicate=\"spam\"",
-          "testNamespace:testPredicate=\"src:mail\""
+          "t2",
+          "newOne2",
+          "spam",
+          "src:mail"
         )
       )
     }
