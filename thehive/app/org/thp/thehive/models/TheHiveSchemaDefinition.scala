@@ -373,6 +373,14 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.unsafeHas("name", "admin").raw.property("permissions", "managePlatform").iterate()
       Success(())
     }
+    .updateGraph("Remove manageTag permission to admin profile", "Profile") { traversal =>
+      traversal.unsafeHas("name", "admin").raw.properties[String]("permissions").forEachRemaining(p => if (p.value() == "manageTag") p.remove())
+      Success(())
+    }
+    .updateGraph("Add manageTag permission to org-admin profile", "Profile") { traversal =>
+      traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageTag").iterate()
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
