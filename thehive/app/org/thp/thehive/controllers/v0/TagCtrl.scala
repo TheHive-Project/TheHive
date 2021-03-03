@@ -1,21 +1,19 @@
 package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser, Renderer}
+import org.thp.scalligraph.EntityIdOrName
+import org.thp.scalligraph.controllers.{Entrypoint, Renderer}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
-import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.models.{Permissions, Tag}
+import org.thp.thehive.models.Tag
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.{OrganisationSrv, TagSrv}
-import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import java.nio.file.Files
 import javax.inject.{Inject, Named, Singleton}
 
 class TagCtrl @Inject() (
@@ -25,69 +23,6 @@ class TagCtrl @Inject() (
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicTag
 ) extends QueryCtrl {
-  def importTaxonomy: Action[AnyContent] =
-    entrypoint("import taxonomy")
-      .extract("file", FieldsParser.file.optional.on("file"))
-      .extract("content", FieldsParser.jsObject.optional.on("content"))
-      .authPermittedTransaction(db, Permissions.manageTag) { implicit request => implicit graph =>
-        val file: Option[FFile]       = request.body("file")
-        val content: Option[JsObject] = request.body("content")
-        val tags = file
-          .fold(Seq.empty[Tag])(ffile => parseTaxonomy(Json.parse(Files.newInputStream(ffile.filepath)))) ++
-          content.fold(Seq.empty[Tag])(parseTaxonomy)
-
-        tags
-          .filterNot(tagSrv.startTraversal.getTag(_).exists)
-          .toTry(tagSrv.create)
-          .map(ts => Results.Ok(JsNumber(ts.size)))
-      }
-
-  def parseTaxonomy(taxonomy: JsValue): Seq[Tag] =
-    (taxonomy \ "namespace").asOpt[String].fold(Seq.empty[Tag]) { namespace =>
-      (taxonomy \ "values").asOpt[Seq[JsObject]].filter(_.nonEmpty) match {
-        case Some(values) => parseValues(namespace, values)
-        case _            => (taxonomy \ "predicates").asOpt[Seq[JsObject]].fold(Seq.empty[Tag])(parsePredicates(namespace, _))
-      }
-    }
-
-  def parseValues(namespace: String, values: Seq[JsObject]): Seq[Tag] =
-    for {
-      value <-
-        values
-          .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "predicate").asOpt[String], acc, v))
-          ._1
-      predicate <- (value \ "predicate").asOpt[String].toList
-      entry <-
-        (value \ "entry")
-          .asOpt[Seq[JsObject]]
-          .getOrElse(Nil)
-          .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
-          ._1
-      v <- (entry \ "value").asOpt[String]
-      colour =
-        (entry \ "colour")
-          .asOpt[String]
-          .getOrElse("#000000")
-      e = (entry \ "description").asOpt[String] orElse (entry \ "expanded").asOpt[String]
-    } yield Tag(namespace, predicate, Some(v), e, colour)
-
-  private def distinct(valueOpt: Option[String], acc: (Seq[JsObject], Seq[String]), v: JsObject): (Seq[JsObject], Seq[String]) =
-    if (valueOpt.isDefined && acc._2.contains(valueOpt.get)) acc
-    else (acc._1 :+ v, valueOpt.fold(acc._2)(acc._2 :+ _))
-
-  def parsePredicates(namespace: String, predicates: Seq[JsObject]): Seq[Tag] =
-    for {
-      predicate <-
-        predicates
-          .foldLeft((Seq.empty[JsObject], Seq.empty[String]))((acc, v) => distinct((v \ "value").asOpt[String], acc, v))
-          ._1
-      v <- (predicate \ "value").asOpt[String]
-      e = (predicate \ "expanded").asOpt[String]
-      colour =
-        (predicate \ "colour")
-          .asOpt[String]
-          .getOrElse("#000000")
-    } yield Tag(namespace, v, None, e, colour)
 
   def get(tagId: String): Action[AnyContent] =
     entrypoint("get tag")
@@ -122,7 +57,7 @@ class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) ext
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromAlert", (tagSteps, _) => tagSteps.fromAlert),
     Query.initWithParam[TagHint, Traversal[String, Vertex, Converter[String, Vertex]]](
-      "autoComplete",
+      "TagAutoComplete",
       (tagHint, graph, authContext) =>
         tagHint
           .freeTag

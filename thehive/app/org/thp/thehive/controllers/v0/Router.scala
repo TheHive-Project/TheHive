@@ -215,7 +215,6 @@ class Router @Inject() (
     case GET(p"/tag")          => tagCtrl.search
     case POST(p"/tag/_search") => tagCtrl.search
     case POST(p"/tag/_stats")  => tagCtrl.stats
-    case POST(p"/tag/_import") => tagCtrl.importTaxonomy
     case GET(p"/tag/$id")      => tagCtrl.get(id)
 
     case GET(p"/user")                          => userCtrl.search

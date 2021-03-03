@@ -18,6 +18,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.ShareOps._
+import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.UserOps._
@@ -36,6 +37,7 @@ class Properties @Inject() (
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     customFieldSrv: CustomFieldSrv,
+    organisationSrv: OrganisationSrv,
     db: Database
 ) {
 
@@ -407,4 +409,23 @@ class Properties @Inject() (
       .property("version", UMapping.int)(_.field.readonly)
       .property("enabled", UMapping.boolean)(_.select(_.enabled).readonly)
       .build
+
+  lazy val tag: PublicProperties =
+    PublicPropertyListBuilder[Tag]
+      .property("namespace", UMapping.string)(_.field.readonly)
+      .property("predicate", UMapping.string)(_.field.updatable)
+      .property("value", UMapping.string.optional)(_.field.readonly)
+      .property("description", UMapping.string.optional)(_.field.updatable)
+      .property("colour", UMapping.string)(_.field.updatable)
+      .property("text", UMapping.string)(
+        _.select(_.displayName)
+          .filter[String] {
+            case (_, tags, authContext, Right(predicate)) => tags.freetags(organisationSrv)(authContext).has(_.predicate, predicate)
+            case (_, tags, _, Left(true))                 => tags
+            case (_, tags, _, Left(false))                => tags.empty
+          }
+          .readonly
+      )
+      .build
+
 }

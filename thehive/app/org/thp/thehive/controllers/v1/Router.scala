@@ -28,6 +28,7 @@ class Router @Inject() (
     patternCtrl: PatternCtrl,
     procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
+    tagCtrl: TagCtrl,
     taskCtrl: TaskCtrl,
     shareCtrl: ShareCtrl,
     taxonomyCtrl: TaxonomyCtrl,
@@ -35,7 +36,6 @@ class Router @Inject() (
     userCtrl: UserCtrl,
     statusCtrl: StatusCtrl
     // streamCtrl: StreamCtrl,
-    // tagCtrl: TagCtrl,
 ) extends SimpleRouter {
 
   override def routes: Routes = {
@@ -164,6 +164,9 @@ class Router @Inject() (
     case GET(p"/profile/$profileId")    => profileCtrl.get(profileId)
     case PATCH(p"/profile/$profileId")  => profileCtrl.update(profileId)
     case DELETE(p"/profile/$profileId") => profileCtrl.delete(profileId)
+
+    case GET(p"/tag/$id")   => tagCtrl.get(id)
+    case PATCH(p"/tag/$id") => tagCtrl.update(id)
 
     case GET(p"/describe/_all")       => describeCtrl.describeAll
     case GET(p"/describe/$modelName") => describeCtrl.describe(modelName)

@@ -299,9 +299,11 @@ object Conversion {
         .transform
     }
 
-  implicit val tagOutput: Renderer.Aux[Tag, OutputTag] =
-    Renderer.toJson[Tag, OutputTag](
-      _.into[OutputTag]
+  implicit val tagOutput: Renderer.Aux[Tag with Entity, OutputTag] =
+    Renderer.toJson[Tag with Entity, OutputTag](tag =>
+      tag
+        .asInstanceOf[Tag]
+        .into[OutputTag]
         .withFieldComputed(_.namespace, t => if (t.isFreeTag) "_freetags_" else t.namespace)
         .transform
     )
