@@ -34,6 +34,7 @@ class TheHiveQueryExecutor @Inject() (
     procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
     shareCtrl: ShareCtrl,
+    tagCtrl: TagCtrl,
     taskCtrl: TaskCtrl,
     userCtrl: UserCtrl,
     taxonomyCtrl: TaxonomyCtrl,
@@ -59,7 +60,7 @@ class TheHiveQueryExecutor @Inject() (
       procedureCtrl,
       profileCtrl,
       shareCtrl,
-//      tagCtrl,
+      tagCtrl,
       taskCtrl,
       userCtrl,
       taxonomyCtrl
