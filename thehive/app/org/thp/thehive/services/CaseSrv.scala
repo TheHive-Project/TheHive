@@ -247,6 +247,16 @@ class CaseSrv @Inject() (
       ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
     } yield RichCustomField(cf, ccfe)
 
+  def deleteCustomField(
+      cfIdOrName: EntityIdOrName
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    Try(
+      caseCustomFieldSrv
+        .get(cfIdOrName)
+        .filter(_.outV.v[Case].can(Permissions.manageCase))
+        .remove()
+    )
+
   def setImpactStatus(
       `case`: Case with Entity,
       impactStatus: String
@@ -408,18 +418,17 @@ object CaseOps {
             ) -> renderedEntity
         }
 
+    def customFields: Traversal.E[CaseCustomField] = traversal.outE[CaseCustomField]
+
     def customFields(idOrName: EntityIdOrName): Traversal.E[CaseCustomField] =
       idOrName
         .fold(
-          id => traversal.outE[CaseCustomField].filter(_.inV.getByIds(id)),
-          name => traversal.outE[CaseCustomField].filter(_.inV.v[CustomField].has(_.name, name))
+          id => customFields.filter(_.inV.getByIds(id)),
+          name => customFields.filter(_.inV.v[CustomField].has(_.name, name))
         )
 
-    def customFields: Traversal.E[CaseCustomField] = traversal.outE[CaseCustomField]
-
     def richCustomFields: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] =
-      traversal
-        .outE[CaseCustomField]
+      customFields
         .project(_.by.by(_.inV.v[CustomField]))
         .domainMap {
           case (cfv, cf) => RichCustomField(cf, cfv)

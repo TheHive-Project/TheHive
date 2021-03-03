@@ -125,6 +125,14 @@ class CaseCtrl @Inject() (
         } yield Results.NoContent
       }
 
+  def deleteCustomField(cfId: String): Action[AnyContent] =
+    entrypoint("delete a custom field")
+      .authPermittedTransaction(db, Permissions.manageCase) { implicit request => implicit graph =>
+        for {
+          _ <- caseSrv.deleteCustomField(EntityIdOrName(cfId))
+        } yield Results.NoContent
+      }
+
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =
     entrypoint("merge cases")
       .authTransaction(db) { implicit request => implicit graph =>
