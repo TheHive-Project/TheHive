@@ -61,8 +61,9 @@ class DescribeCtrl @Inject() (
   case class EntityDescription(label: String, initialQuery: String, attributes: Seq[PropertyDescription]) {
     def toJson: JsObject =
       Json.obj(
-        "label"      -> label,
-        "attributes" -> (attributes ++ metadata)
+        "label"        -> label,
+        "initialQuery" -> initialQuery,
+        "attributes"   -> (attributes ++ metadata)
       )
   }
 
