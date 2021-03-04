@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
@@ -41,12 +42,12 @@ class TagCtrl @Inject() (
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Tag], Traversal.V[Tag]]("freetags", (tagSteps, authContext) => tagSteps.freetags(organisationSrv)(authContext)),
     Query.initWithParam[TagHint, Traversal[String, Vertex, Converter[String, Vertex]]](
-      "TagAutoComplete",
+      "tagAutoComplete",
       (tagHint, graph, authContext) =>
         tagHint
           .freeTag
           .fold(tagSrv.startTraversal(graph).autoComplete(tagHint.namespace, tagHint.predicate, tagHint.value)(authContext).visible(authContext))(
-            tagSrv.startTraversal(graph).autoComplete(organisationSrv, _)(authContext)
+            tagSrv.startTraversal(graph).autoComplete(organisationSrv, _)(authContext).sort(_.by("predicate", Order.asc))
           )
           .merge(tagHint.limit)(_.limit(_))
           .displayName

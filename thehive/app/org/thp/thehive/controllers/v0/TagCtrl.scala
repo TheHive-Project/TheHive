@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v0
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, Renderer}
@@ -57,12 +58,12 @@ class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) ext
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromObservable", (tagSteps, _) => tagSteps.fromObservable),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("fromAlert", (tagSteps, _) => tagSteps.fromAlert),
     Query.initWithParam[TagHint, Traversal[String, Vertex, Converter[String, Vertex]]](
-      "TagAutoComplete",
+      "tagAutoComplete",
       (tagHint, graph, authContext) =>
         tagHint
           .freeTag
           .fold(tagSrv.startTraversal(graph).autoComplete(tagHint.namespace, tagHint.predicate, tagHint.value)(authContext).visible(authContext))(
-            tagSrv.startTraversal(graph).autoComplete(organisationSrv, _)(authContext)
+            tagSrv.startTraversal(graph).autoComplete(organisationSrv, _)(authContext).sort(_.by("predicate", Order.asc))
           )
           .merge(tagHint.limit)(_.limit(_))
           .displayName
