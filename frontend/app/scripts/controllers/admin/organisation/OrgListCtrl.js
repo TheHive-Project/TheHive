@@ -42,11 +42,7 @@
                     filter: this.filtering.buildQuery(),
                     operations: [
                         {'_name': 'listOrganisation'}
-                    ],
-                    //extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount', 'permissions', 'actionRequired'],
-                    onUpdate: function() {
-                        // self.resetSelection();
-                    }
+                    ]
                 });
             };
 
@@ -93,11 +89,18 @@
                             return org;
                         },
                         organisations: function() {
-                            var list = _.filter(angular.copy(self.list), function(item) {
-                                return [OrganisationSrv.defaultOrg, org.name].indexOf(item.name) === -1;
-                            });
+                            var defer = $q.defer();
 
-                            return _.sortBy(list, 'name');
+                            OrganisationSrv.list()
+                                .then(function(response) {
+                                    var list = _.filter(response.data, function(item) {
+                                        return [OrganisationSrv.defaultOrg, org.name].indexOf(item.name) === -1;
+                                    });
+
+                                    defer.resolve(_.sortBy(list, 'name'));
+                                });
+
+                            return defer.promise;
                         },
                         links: function () {
                             return OrganisationSrv.links(org.name);
@@ -105,16 +108,22 @@
                     }
                 });
 
-                modalInstance.result.then(function(newLinks) {
-                    OrganisationSrv.setLinks(org.name, newLinks)
-                        .then(function() {
-                            self.load();
-                            NotificationSrv.log('Organisation updated successfully', 'success');
-                        })
-                        .catch(function(err) {
+                modalInstance.result
+                    .then(function(newLinks) {
+                        OrganisationSrv.setLinks(org.name, newLinks)
+                            .then(function() {
+                                self.load();
+                                NotificationSrv.log('Organisation updated successfully', 'success');
+                            })
+                            .catch(function(err) {
+                                NotificationSrv.error('Error', 'Organisation update failed', err.status);
+                            });
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
                             NotificationSrv.error('Error', 'Organisation update failed', err.status);
-                        });
-                });
+                        }
+                    });
             };
 
             self.update = function(orgName, org) {
