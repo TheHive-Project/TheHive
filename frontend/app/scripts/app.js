@@ -205,6 +205,21 @@ angular.module('thehive', [
                 url: 'administration',
                 template: '<ui-view/>'
             })
+            .state('app.administration.platform', {
+                url: '/platform',
+                templateUrl: 'views/partials/admin/platform/status.html',
+                controller: 'PlatformStatusCtrl',
+                controllerAs: '$vm',
+                title: 'Platform administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                },
+                guard: {
+                    permissions: ['managePlatform']
+                }
+            })
             .state('app.administration.profiles', {
                 url: '/profiles',
                 templateUrl: 'views/partials/admin/profile/list.html',
