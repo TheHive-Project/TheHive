@@ -94,7 +94,7 @@ class DescribeCtrl @Inject() (
     ).toOption
 
   def entityDescriptions: Seq[EntityDescription] =
-    cacheApi.getOrElseUpdate(s"describe.v1", cacheExpire) {
+    cacheApi.getOrElseUpdate("describe.v1", cacheExpire) {
       Seq(
         EntityDescription("alert", "listAlert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
         EntityDescription("audit", "listAudit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _))),

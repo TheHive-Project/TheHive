@@ -12,6 +12,7 @@ import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldOps._
+import play.api.cache.SyncCacheApi
 import play.api.libs.json.{JsObject, JsValue}
 
 import java.util.{Map => JMap}
@@ -19,11 +20,17 @@ import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)
-    extends VertexSrv[CustomField] {
+class CustomFieldSrv @Inject() (
+    auditSrv: AuditSrv,
+    organisationSrv: OrganisationSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    cacheApi: SyncCacheApi
+) extends VertexSrv[CustomField] {
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
     integrityCheckActor ! EntityAdded("CustomField")
+    cacheApi.remove("describe.v0")
+    cacheApi.remove("describe.v1")
     super.createEntity(e)
   }
 
@@ -37,6 +44,8 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
 
   def delete(c: CustomField with Entity, force: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     get(c).remove() // TODO use force
+    cacheApi.remove("describe.v0")
+    cacheApi.remove("describe.v1")
     organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
       auditSrv.customField.delete(c, organisation)
     }
@@ -58,7 +67,11 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
         customFieldSteps
           .clone()
           .getOrFail("CustomFields")
-          .flatMap(auditSrv.customField.update(_, updatedFields))
+          .flatMap { cf =>
+            cacheApi.remove("describe.v0")
+            cacheApi.remove("describe.v1")
+            auditSrv.customField.update(cf, updatedFields)
+          }
     }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[CustomField] =
