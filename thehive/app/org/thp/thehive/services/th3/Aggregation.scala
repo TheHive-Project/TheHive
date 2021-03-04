@@ -1,8 +1,5 @@
 package org.thp.thehive.services.th3
 
-import java.lang.{Long => JLong}
-import java.time.temporal.ChronoUnit
-import java.util.{Calendar, Date, List => JList}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.scalactic.Accumulation._
 import org.scalactic._
@@ -13,7 +10,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
 import play.api.Logger
-import play.api.libs.json.{JsNull, JsNumber, JsObject, Json}
+import play.api.libs.json.{JsNull, JsNumber, JsObject, JsString, Json}
 
 import java.lang.{Long => JLong}
 import java.time.temporal.ChronoUnit
@@ -349,7 +346,12 @@ case class FieldAggregation(
           )
       )
       .fold
-      .domainMap(kvs => Output(JsObject(kvs.map(kv => kv._1.toString -> kv._2.toJson))))
+      .domainMap(kvs =>
+        Output(JsObject(kvs.map {
+          case (JsString(k), v) => k          -> v.toJson
+          case (k, v)           => k.toString -> v.toJson
+        }))
+      )
       .castDomain[Output[_]]
   }
 }
