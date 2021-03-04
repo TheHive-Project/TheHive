@@ -87,7 +87,7 @@ class UserSrv @Inject() (
 
   def delete(user: User with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     if (get(user).organisations.filterNot(_.get(organisation._id)).exists)
-      get(user).role.filterNot(_.organisation.get(organisation._id)).remove()
+      get(user).role.filter(_.organisation.get(organisation._id)).remove()
     else {
       get(user).role.remove()
       get(user).remove()
