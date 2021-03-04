@@ -309,7 +309,7 @@ object Conversion {
         .withFieldConst(_._updatedBy, tag._updatedBy)
         .withFieldConst(_._createdAt, tag._createdAt)
         .withFieldConst(_._createdBy, tag._createdBy)
-        .withFieldConst(_._type, "Profile")
+        .withFieldConst(_._type, "Tag")
         .withFieldComputed(_.namespace, t => if (t.isFreeTag) "_freetags_" else t.namespace)
         .transform
     )
