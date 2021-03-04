@@ -23,6 +23,8 @@ import java.util.Base64
 import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
+case class UserOutputParam(from: Long, to: Long, extraData: Set[String], organisation: Option[String])
+
 @Singleton
 class UserCtrl @Inject() (
     entrypoint: Entrypoint,
@@ -48,9 +50,13 @@ class UserCtrl @Inject() (
     (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
 
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
+  override val pageQuery: ParamQuery[UserOutputParam] = Query.withParam[UserOutputParam, Traversal.V[User], IteratorOutput](
     "page",
-    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, range.extraData.contains("total"))
+    (params, userSteps, authContext) =>
+      params
+        .organisation
+        .fold(userSteps.richUser(authContext))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
+        .page(params.from, params.to, params.extraData.contains("total"))
   )
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
