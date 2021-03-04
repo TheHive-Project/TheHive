@@ -19,7 +19,7 @@ import play.api.http.HttpEntity
 import play.api.libs.json.{JsNull, JsObject, Json}
 import play.api.mvc._
 
-import java.util.Base64
+import java.util.{Base64, Date}
 import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
@@ -209,10 +209,19 @@ class UserCtrl @Inject() (
                         .flatMap(userSrv.setAvatar(user, _))
                         .map(_ => Json.obj("avatar" -> "[binary data]"))
                   }.flip
-                } yield updateName.getOrElse(JsObject.empty) ++
-                  updateLocked.getOrElse(JsObject.empty) ++
-                  updateProfile.getOrElse(JsObject.empty) ++
-                  updatedAvatar.getOrElse(JsObject.empty)
+                } yield {
+                  val updatedProperties = updateName.getOrElse(JsObject.empty) ++
+                    updateLocked.getOrElse(JsObject.empty) ++
+                    updateProfile.getOrElse(JsObject.empty) ++
+                    updatedAvatar.getOrElse(JsObject.empty)
+                  if (updatedProperties.fields.nonEmpty)
+                    userSrv
+                      .get(user)
+                      .update(_._updatedBy, Some(request.userId))
+                      .update(_._updatedAt, Some(new Date))
+                      .iterate()
+                  updatedProperties
+                }
               }(update => auditSrv.user.update(user, update))
               .map(_ => Results.NoContent)
         }
