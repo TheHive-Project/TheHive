@@ -2,19 +2,52 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('OrgListCtrl',
-        function($scope, $q, $uibModal, OrganisationSrv, NotificationSrv, appConfig) {
+        function($scope, $q, $uibModal, PaginatedQuerySrv, OrganisationSrv, NotificationSrv, FilteringSrv, appConfig) {
             var self = this;
 
             self.appConfig = appConfig;
 
-            self.load = function() {
-                OrganisationSrv.list()
-                    .then(function(response) {
-                        self.list = response.data;
-                    })
-                    .catch(function(err) {
-                        NotificationSrv.error('Error', 'Failed to list organisations', err.status);
+            this.$onInit = function() {
+                self.filtering = new FilteringSrv('organisation', 'organisation.list', {
+                    version: 'v1',
+                    defaults: {
+                        showFilters: true,
+                        showStats: false,
+                        pageSize: 15,
+                        sort: ['-_updatedAt']
+                    },
+                    defaultFilter: []
+                });
+                self.filtering.initContext('list')
+                    .then(function() {
+                        self.load();
+
+                        $scope.$watch('$vm.list.pageSize', function (newValue) {
+                            self.filtering.setPageSize(newValue);
+                        });
                     });
+            };
+
+            this.load = function() {
+
+                this.list = new PaginatedQuerySrv({
+                    name: 'organisations',
+                    root: undefined,
+                    objectType: 'organisation',
+                    version: 'v1',
+                    scope: $scope,
+                    sort: self.filtering.context.sort,
+                    loadAll: false,
+                    pageSize: self.filtering.context.pageSize,
+                    filter: this.filtering.buildQuery(),
+                    operations: [
+                        {'_name': 'listOrganisation'}
+                    ],
+                    //extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount', 'permissions', 'actionRequired'],
+                    onUpdate: function() {
+                        // self.resetSelection();
+                    }
+                });
             };
 
             self.showNewOrg = function(mode, org) {
@@ -106,6 +139,53 @@
                     });
             };
 
-            self.load();
+            this.toggleFilters = function () {
+                this.filtering.toggleFilters();
+            };
+
+            this.filter = function () {
+                self.filtering.filter().then(this.applyFilters);
+            };
+
+            this.clearFilters = function () {
+                this.filtering.clearFilters()
+                    .then(self.search);
+            };
+
+            this.removeFilter = function (index) {
+                self.filtering.removeFilter(index)
+                    .then(self.search);
+            };
+
+            this.search = function () {
+                self.load();
+                self.filtering.storeContext();
+            };
+            this.addFilterValue = function (field, value) {
+                this.filtering.addFilterValue(field, value);
+                this.search();
+            };
+
+            this.sortBy = function(sort) {
+                this.list.sort = sort;
+                this.list.update();
+                this.filtering.setSort(sort);
+            };
+
+            this.sortByField = function(field) {
+                var context = this.filtering.context;
+                var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
+                var sort = null;
+
+                if(currentSort.substr(1) !== field) {
+                    sort = ['+' + field];
+                } else {
+                    sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                }
+
+                self.list.sort = sort;
+                self.list.update();
+                self.filtering.setSort(sort);
+            };
         });
 })();
