@@ -196,7 +196,7 @@
             };
 
             $scope.getTags = function(query) {
-                return TagSrv.fromObservables(query);
+                return TagSrv.getTags(query);
             };
         }
     );

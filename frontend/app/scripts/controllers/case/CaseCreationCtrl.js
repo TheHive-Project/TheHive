@@ -112,7 +112,7 @@
             };
 
             $scope.getTags = function(query) {
-                return TagSrv.fromCases(query);
+                return TagSrv.getTags(query);
             };
 
             $scope.keys = function(o) {

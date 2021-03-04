@@ -5,45 +5,30 @@
 
             var self = this;
 
-            var getTags = function(objectType, term) { // TODO remove objectType parameter (not used anymore)
+            this.getTags = function(term) {
                 var defer = $q.defer();
-                QuerySrv.call('v0', [
-                    { _name: 'autoComplete', freeTag: term, limit: 10 },
-                ], {name: 'tags-auto-complete'})
-                    .then(function(data) {
-                        defer.resolve(_.map(_.unique(data), function(tag) {
-                            return {text: tag};
-                        }));
-                    });
+
+                var operations = [
+                    { _name: 'listTag'},
+                    { _name: 'freetags'},
+                    { _name: 'filter', _like: {_field: 'predicate', _value: term+'*'}},
+                    { _name: 'sort', _fields: [{'predicate': 'asc'}]},
+                    { _name: 'text'},
+                    // { _name: 'page', from: 0, to: 20},
+                    // { _name: 'text'}
+                ]
+
+                QuerySrv.query('v1', operations, {
+                    params: {
+                        name: 'tags-auto-complete'
+                    }
+                }).then(function(response) {
+                    defer.resolve(_.map(response.data, function(tag) {
+                        return {text: tag};
+                    }));
+                });
 
                 return defer.promise;
-            };
-
-            this.getTagsFor = function(entity, query) {
-
-                switch(entity) {
-                    case 'case':
-                        return self.fromCases(query);
-                    case 'observable':
-                        return self.fromObservables(query);
-                    case 'alert':
-                        return self.fromAlerts(query);
-                    default:
-                        return self.getTags(undefined, query);
-                }
-
-            };
-
-            this.fromCases = function(term) {
-                return getTags('fromCase', term);
-            };
-
-            this.fromObservables = function(term) {
-                return getTags('fromObservable', term);
-            };
-
-            this.fromAlerts = function(term) {
-                return getTags('fromAlert', term);
             };
 
         });
