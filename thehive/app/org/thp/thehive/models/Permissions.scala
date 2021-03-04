@@ -42,6 +42,7 @@ object Permissions extends Perms {
       manageOrganisation,
       managePage,
       managePattern,
+      managePlatform,
       manageProcedure,
       manageProfile,
       manageShare,

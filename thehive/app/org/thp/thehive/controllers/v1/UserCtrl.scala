@@ -71,12 +71,15 @@ class UserCtrl @Inject() (
           .current
           .richUserWithCustomRenderer(request.organisation, _.organisationWithRole)
           .getOrFail("User")
-          .map(user =>
+          .map { user =>
+            val scope =
+              if (user._1.organisation == Organisation.administration.name) "admin"
+              else "organisation"
             Results
               .Ok(user.toJson)
               .withHeaders("X-Organisation" -> request.organisation.toString)
-              .withHeaders("X-Permissions" -> user._1.permissions.mkString(","))
-          )
+              .withHeaders("X-Permissions" -> (Permissions.forScope(scope) & user._1.permissions).mkString(","))
+          }
           .recover { case _ => Results.Unauthorized.withHeaders("X-Logout" -> "1") }
       }
 
