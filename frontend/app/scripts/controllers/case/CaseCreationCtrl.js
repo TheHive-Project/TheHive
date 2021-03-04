@@ -112,7 +112,7 @@
             };
 
             $scope.getTags = function(query) {
-                return TagSrv.getTags(query);
+                return TagSrv.autoComplete(query);
             };
 
             $scope.keys = function(o) {

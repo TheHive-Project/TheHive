@@ -64,7 +64,7 @@
         };
 
         $scope.getCaseTags = function(query) {
-            return TagSrv.getTags(query);
+            return TagSrv.autoComplete(query);
         };
     });
 

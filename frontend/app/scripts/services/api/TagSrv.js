@@ -20,10 +20,28 @@
 
                 QuerySrv.query('v1', operations, {
                     params: {
-                        name: 'tags-auto-complete'
+                        name: 'list-tags'
                     }
                 }).then(function(response) {
                     defer.resolve(_.map(response.data, function(tag) {
+                        return {text: tag};
+                    }));
+                });
+
+                return defer.promise;
+            };
+
+            this.autoComplete = function(term) {
+                var defer = $q.defer();
+
+                var operations = [
+                    { _name: 'tagAutoComplete', freeTag: term, limit: 20}
+                ]
+
+                QuerySrv.call('v1', operations, {
+                    name: 'tags-auto-complete'
+                }).then(function(response) {
+                    defer.resolve(_.map(response, function(tag) {
                         return {text: tag};
                     }));
                 });

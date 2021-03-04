@@ -77,7 +77,7 @@
                     var promise = null;
 
                     if(field.name === 'tags') {
-                        return TagSrv.getTags(query);
+                        return TagSrv.autoComplete(query);
                     } else if(field.type === 'user') {
                         promise = AuthenticationSrv.current()
                             .then(function(user) {
