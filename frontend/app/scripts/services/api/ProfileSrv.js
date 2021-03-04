@@ -11,23 +11,23 @@
                 admin: {
                     hints: 'Permissions for administration user profiles',
                     keys: [
+                        'managePlatform',
                         'manageUser',
                         'manageOrganisation',
                         'manageCustomField',
                         'manageConfig',
-                        'manageTag',
                         'manageTaxonomy',
                         'manageProfile',
                         'manageAnalyzerTemplate',
                         'manageObservableTemplate'
                     ],
                     labels: {
+                        managePlatform: 'Manage the platform',
                         manageUser: 'Manage users',
                         manageOrganisation: 'Manage organisations',
                         manageCustomField: 'Manage custom fields',
                         manageConfig: 'Manage configurations',
                         manageTaxonomy: 'Manage taxonomies',
-                        manageTag: 'Manage tags',
                         manageProfile: 'Manage profiles',
                         manageAnalyzerTemplate: 'Manage analyzer templates',
                         manageObservableTemplate: 'Manage observable types'
@@ -38,6 +38,7 @@
                     keys: [
                         'manageUser',
                         'manageCaseTemplate',
+                        'manageTag',
                         'manageAlert',
                         'manageCase',
                         'manageShare',
@@ -50,6 +51,7 @@
                     labels: {
                         manageUser: 'Manage users',
                         manageCaseTemplate: 'Manage case templates',
+                        manageTag: 'Manage custom tags',
                         manageAlert: 'Manage alert',
                         manageCase: 'Manage case',
                         manageShare: 'Manage sharing',
