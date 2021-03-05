@@ -62,13 +62,20 @@
                         Custom Fields
                     </th>
                     <th style="width: 60px;">By</th>
-                    <th style="width: 120px">
-                      <a href class="text-default" ng-click="$vm.sortByField('_createdAt')">
-                        Creation Date
-                        <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') === -1 && $vm.filtering.context.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
-                        <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
-                        <i ng-show="$vm.filtering.context.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
-                      </a>
+                    <th style="width: 150px">
+                        Dates
+                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('_createdAt')" uib-tooltip="Sort by creation date">
+                            C.
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') === -1 && $vm.filtering.context.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('_updatedAt')" uib-tooltip="Sort by last update date">
+                            U.
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_updatedAt') === -1 && $vm.filtering.context.sort.indexOf('-_updatedAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_updatedAt') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
+                        </a>
                     </th>
                     <th style="width: 120px">Actions</th>
                 </tr>
@@ -108,10 +115,11 @@
                         <user user-id="template._createdBy" icon-only="true" icon-size="m"></user>
                     </td>
                     <td>
-                        <div>
-                            <a href ng-click="$vm.addFilterValue('_createdAt', template._createdAt)">
-                                <span uib-tooltip="{{template._createdAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{template._createdAt | shortDate}}</span>
-                            </a>
+                        <div ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+_createdAt') !== -1 || $vm.filtering.context.sort.indexOf('-_createdAt') !== -1}">
+                            C. <a href ng-click="$vm.addFilterValue('_createdAt', template._createdAt)">{{template._createdAt | shortDate}}</a>
+                        </div>
+                        <div ng-if="template._updatedAt > 0" ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+_updatedAt') !== -1 || $vm.filtering.context.sort.indexOf('-_updatedAt') !== -1}">
+                            U. <a href ng-click="$vm.addFilterValue('_updatedAt', template._updatedAt)">{{template._updatedAt | shortDate}}</a>
                         </div>
                     </td>
                     <td class="text-center">
