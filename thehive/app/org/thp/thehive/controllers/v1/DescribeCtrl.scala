@@ -115,6 +115,7 @@ class DescribeCtrl @Inject() (
         EntityDescription("pattern", "listPattern", patternCtrl.publicProperties.list.flatMap(propertyToJson("pattern", _))),
         EntityDescription("procedure", "listProcedure", procedureCtrl.publicProperties.list.flatMap(propertyToJson("procedure", _))),
         EntityDescription("profile", "listProfile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _))),
+        EntityDescription("tag", "listTag", tagCtrl.publicProperties.list.flatMap(propertyToJson("tag", _))),
         EntityDescription("task", "listTask", taskCtrl.publicProperties.list.flatMap(propertyToJson("task", _))),
         EntityDescription("taxonomy", "listTaxonomy", taxonomyCtrl.publicProperties.list.flatMap(propertyToJson("taxonomy", _))),
         EntityDescription("user", "listUser", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _)))
