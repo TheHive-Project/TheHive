@@ -1,16 +1,16 @@
 package org.thp.thehive.services.notification.notifiers
 
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.client.{ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.libs.json.{Json, Reads, Writes}
 import play.api.libs.ws.WSClient
 import play.api.{Configuration, Logger}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
@@ -69,13 +69,14 @@ class Mattermost(ws: WSClient, mattermostNotification: MattermostNotification, b
       `object`: Option[Entity],
       organisation: Organisation with Entity,
       user: Option[User with Entity]
-  )(
-      implicit graph: Graph
+  )(implicit
+      graph: Graph
   ): Future[Unit] =
     for {
       finalMessage <- Future.fromTry(buildMessage(mattermostNotification.text, audit, context, `object`, user, baseUrl))
-      _ <- ws
-        .url(mattermostNotification.url)
-        .post(Json.toJson(mattermostNotification.copy(text = finalMessage)))
+      _ <-
+        ws
+          .url(mattermostNotification.url)
+          .post(Json.toJson(mattermostNotification.copy(text = finalMessage)))
     } yield ()
 }

@@ -1,12 +1,11 @@
 package org.thp.thehive.services
 
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
@@ -14,7 +13,7 @@ import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ProcedureOps._
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
@@ -22,8 +21,6 @@ class PatternSrv @Inject() (
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv
-)(implicit
-    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Pattern] {
   val patternPatternSrv = new EdgeSrv[PatternPattern, Pattern, Pattern]
 
@@ -37,9 +34,9 @@ class PatternSrv @Inject() (
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Pattern] =
     Try(startTraversal.getByPatternId(name)).getOrElse(startTraversal.limit(0))
 
-  def getCasePatterns(caseId: String)(implicit graph: Graph): Try[Seq[RichPattern]] =
+  def getCasePatterns(caseId: String)(implicit authContext: AuthContext, graph: Graph): Try[Seq[RichPattern]] =
     for {
-      caze <- caseSrv.get(EntityIdOrName(caseId)).getOrFail("Case")
+      caze <- caseSrv.get(EntityIdOrName(caseId)).visible(organisationSrv).getOrFail("Case")
     } yield caseSrv.get(caze).procedure.pattern.richPattern.toSeq
 
   def update(

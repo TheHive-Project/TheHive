@@ -1,20 +1,28 @@
 package org.thp.thehive
 
-import java.io.File
-
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.scalactic.Or
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.traversal.Graph
+import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityId, EntityName, RichOption}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.LogOps._
+import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
+import java.io.File
+import javax.inject.{Inject, Singleton}
 import scala.io.Source
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Failure, Success, Try}
@@ -51,20 +59,21 @@ class DatabaseBuilder @Inject() (
 
   lazy val logger: Logger = Logger(getClass)
 
-  def build()(implicit db: Database, authContext: AuthContext): Try[Unit] = {
+  def build()(implicit db: Database): Try[Unit] = {
 
     lazy val logger: Logger = Logger(getClass)
     logger.info("Initialize database schema")
-    db.createSchemaFrom(schema)
+    db.createSchemaFrom(schema)(LocalUserSrv.getSystemAuthContext)
       .flatMap(_ => db.addSchemaIndexes(schema))
       .flatMap { _ =>
         integrityChecks.foreach { check =>
           db.tryTransaction { implicit graph =>
-            Success(check.initialCheck())
+            Success(check.initialCheck()(graph, LocalUserSrv.getSystemAuthContext))
           }
           ()
         }
         db.tryTransaction { implicit graph =>
+          implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
           val idMap =
             createVertex(caseSrv, FieldsParser[Case]) ++
               createVertex(alertSrv, FieldsParser[Alert]) ++
@@ -107,7 +116,7 @@ class DatabaseBuilder @Inject() (
           createEdge(roleSrv.roleOrganisationSrv, roleSrv, organisationSrv, FieldsParser[RoleOrganisation], idMap)
           createEdge(roleSrv.roleProfileSrv, roleSrv, profileSrv, FieldsParser[RoleProfile], idMap)
 
-          createEdge(observableSrv.observableKeyValueSrv, observableSrv, keyValueSrv, FieldsParser[ObservableKeyValue], idMap)
+          //          createEdge(observableSrv.observableKeyValueSrv, observableSrv, keyValueSrv, FieldsParser[ObservableKeyValue], idMap)
           createEdge(observableSrv.observableObservableType, observableSrv, observableTypeSrv, FieldsParser[ObservableObservableType], idMap)
           createEdge(observableSrv.observableDataSrv, observableSrv, dataSrv, FieldsParser[ObservableData], idMap)
           createEdge(observableSrv.observableAttachmentSrv, observableSrv, attachmentSrv, FieldsParser[ObservableAttachment], idMap)
@@ -145,7 +154,123 @@ class DatabaseBuilder @Inject() (
 
           createEdge(procedureSrv.caseProcedureSrv, caseSrv, procedureSrv, FieldsParser[CaseProcedure], idMap)
           createEdge(procedureSrv.procedurePatternSrv, procedureSrv, patternSrv, FieldsParser[ProcedurePattern], idMap)
+          Success(())
+        }
 
+        db.tryTransaction { implicit graph =>
+          val (defaultOrganisation, defaultUser) = organisationSrv.startTraversal.notAdmin.project(_.by.by(_.users)).head
+          implicit val authContext: AuthContext =
+            AuthContextImpl(defaultUser.login, defaultUser.name, defaultOrganisation._id, "init", Permissions.all)
+          // For each organisation, if there is no custom taxonomy, create it
+          organisationSrv
+            .startTraversal
+            .hasNot(_.name, "admin")
+            .filterNot(_.taxonomies.freetags)
+            .foreach(o => taxonomySrv.createFreetagTaxonomy(o).get)
+
+          caseSrv
+            .startTraversal
+            .project(
+              _.by
+                .by(_.organisations._id.fold)
+            )
+            .foreach {
+              case (case0, organisationIds) =>
+                case0.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseSrv.caseTagSrv.create(CaseTag(), case0, _)).get)
+                case0.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(caseSrv.caseUserSrv.create(CaseUser(), case0, _)).get)
+                case0
+                  .resolutionStatus
+                  .foreach(
+                    resolutionStatusSrv
+                      .getByName(_)
+                      .getOrFail("ResolutionStatus")
+                      .flatMap(caseSrv.caseResolutionStatusSrv.create(CaseResolutionStatus(), case0, _))
+                      .get
+                  )
+                case0
+                  .impactStatus
+                  .foreach(
+                    impactStatusSrv
+                      .getByName(_)
+                      .getOrFail("ImpectStatus")
+                      .flatMap(caseSrv.caseImpactStatusSrv.create(CaseImpactStatus(), case0, _))
+                      .get
+                  )
+                case0
+                  .caseTemplate
+                  .foreach(
+                    caseTemplateSrv
+                      .getByName(_)
+                      .getOrFail("CaseTemplate")
+                      .flatMap(caseSrv.caseCaseTemplateSrv.create(CaseCaseTemplate(), case0, _))
+                      .get
+                  )
+                caseSrv.get(case0).update(_.organisationIds, organisationIds.toSet).iterate()
+            }
+
+          alertSrv
+            .startTraversal
+            .project(_.by.by(_.organisation._id).by(_.`case`._id.option))
+            .foreach {
+              case (alert, organisationId, caseId) =>
+                alert.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(alertSrv.alertTagSrv.create(AlertTag(), alert, _)).get)
+                alertSrv.get(alert).update(_.organisationId, organisationId).update(_.caseId, caseId).iterate()
+            }
+
+          observableSrv
+            .startTraversal
+            .project(_.by.by(_.coalesceIdent(_.`case`, _.alert)._id).by(_.organisations._id.fold))
+            .foreach {
+              case (observable, relatedId, organisationIds) =>
+                observable
+                  .tags
+                  .foreach(tag => tagSrv.getOrCreate(tag).flatMap(observableSrv.observableTagSrv.create(ObservableTag(), observable, _)).get)
+                observableTypeSrv
+                  .getByName(observable.dataType)
+                  .getOrFail("ObservableType")
+                  .flatMap(observableSrv.observableObservableType.create(ObservableObservableType(), observable, _))
+                  .get
+                observable
+                  .data
+                  .foreach(data =>
+                    dataSrv
+                      .getByName(data)
+                      .getOrFail("data")
+                      .orElse(dataSrv.create(Data(data)))
+                      .flatMap(observableSrv.observableDataSrv.create(ObservableData(), observable, _))
+                      .get
+                  )
+                observableSrv.get(observable).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
+            }
+
+          caseTemplateSrv
+            .startTraversal
+            .foreach { caseTemplate =>
+              caseTemplate
+                .tags
+                .foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _)).get)
+            }
+
+          logSrv
+            .startTraversal
+            .project(_.by.by(_.task._id).by(_.organisations._id.fold))
+            .foreach {
+              case (log, taskId, organisationIds) =>
+                logSrv.get(log).update(_.taskId, taskId).update(_.organisationIds, organisationIds.toSet).iterate()
+            }
+
+          taskSrv
+            .startTraversal
+            .project(
+              _.by
+                .by(_.coalesceIdent(_.`case`, _.caseTemplate)._id)
+                .by(_.coalesceIdent(_.organisations, _.caseTemplate.organisation)._id.fold)
+            )
+            .foreach {
+              case (task, relatedId, organisationIds) =>
+                task.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(taskSrv.taskUserSrv.create(TaskUser(), task, _)).get)
+                taskSrv.get(task).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
+            }
           Success(())
         }
       }

@@ -1,15 +1,12 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.util.{Date, Map => JMap}
-
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.client.{ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
 import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
@@ -25,6 +22,8 @@ import play.api.libs.json.Json.WithDefaultValues
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
+import java.util.{Date, Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -155,7 +154,7 @@ class Webhook(
       (_: Traversal.V[Audit])
         .coalesce(
           _.`object` //.out[Audited]
-            .choose(
+            .chooseValue(
               _.on(_.label)
                 .option("Case", t => caseToJson(t.v[Case]))
                 .option("Task", t => taskToJson(t.v[Task]))

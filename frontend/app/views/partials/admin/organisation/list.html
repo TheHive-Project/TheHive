@@ -2,25 +2,67 @@
     <div class="col-md-12">
         <div class="box">
             <div class="box-header with-border">
-                <h3 class="box-title">List of organisations</h3>
+                <h3 class="box-title">List of organisations ({{$vm.list.values.length || 0}} of {{$vm.list.total}})</h3>
             </div>
             <div class="box-body">
                 <div ng-include="'views/partials/admin/organisation/list/toolbar.html'"></div>
 
+                <div class="mt-xs filter-panel" ng-include="'views/partials/admin/organisation/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+                <!-- Filters preview  -->
+                <div class="row mt-xs">
+                    <div class="col-md-12 clearfix">
+                        <filters-preview filters="$vm.filtering.context.filters"
+                            on-clear-item="$vm.removeFilter(field)"
+                            on-clear-all="$vm.clearFilters()"></filters-preview>
+                    </div>
+                </div>
+
                 <!-- Datalist  -->
                 <div class="row mt-s">
                     <div class="col-md-12">
+                        <psearch control="$vm.list"></psearch>
+
                         <table class="table table-striped case-list">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    <th style="width: 300px">Created By</th>
-                                    <th style="width: 160px">Created At</th>
+                                    <th>
+                                        <a href class="text-default" ng-click="$vm.sortByField('name')">
+                                            Name
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+name') === -1 && $vm.filtering.context.sort.indexOf('-name') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+name') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-name') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
+                                    <th style="width: 300px">
+                                        <a href class="text-default" ng-click="$vm.sortByField('_createdBy')">
+                                            Created By
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdBy') === -1 && $vm.filtering.context.sort.indexOf('-_createdBy') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdBy') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-_createdBy') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
+                                    <th style="width: 160px">
+                                        Dates
+
+                                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('_createdAt')" uib-tooltip="Sort by creation date">
+                                            C.
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') === -1 && $vm.filtering.context.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('_updatedAt')" uib-tooltip="Sort by last update date">
+                                            U.
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+_updatedAt') === -1 && $vm.filtering.context.sort.indexOf('-_updatedAt') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+_updatedAt') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
                                     <th style="width: 250px"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr ng-repeat="org in $vm.list">
+                                <tr ng-repeat="org in $vm.list.values">
                                     <td>
                                         <div class="org-name">
                                             <a ui-sref="app.administration.organisations-details({organisation: org.name})">{{::org.name}}</a>
@@ -39,9 +81,16 @@
                                     </td>
 
                                     <td class="clearfix">
-                                      <user user-id="org.createdBy" icon-only="false" icon-size="m"></user>
+                                      <user user-id="org._createdBy" icon-only="false" icon-size="m"></user>
                                     </td>
-                                    <td>{{org.createdAt | shortDate}}</td>
+                                    <td>
+                                        <div ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+_createdAt') !== -1 || $vm.filtering.context.sort.indexOf('-_createdAt') !== -1}">
+                                            C. <a href ng-click="$vm.addFilterValue('_createdAt', org._createdAt)">{{org._createdAt | shortDate}}</a>
+                                        </div>
+                                        <div ng-if="org._updatedAt > 0" ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+_updatedAt') !== -1 || $vm.filtering.context.sort.indexOf('-_updatedAt') !== -1}">
+                                            U. <a href ng-click="$vm.addFilterValue('_updatedAt', org._updatedAt)">{{org._updatedAt | shortDate}}</a>
+                                        </div>
+                                    </td>
                                     <td>
                                         <span class="mr-xs text-primary">
                                             <a ui-sref="app.administration.organisations-details({organisation: org.name})">
@@ -59,6 +108,8 @@
                                 </tr>
                             </tbody>
                         </table>
+
+                        <psearch control="$vm.list"></psearch>
                     </div>
                 </div>
             </div>

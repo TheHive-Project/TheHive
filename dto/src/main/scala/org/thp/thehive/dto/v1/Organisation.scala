@@ -1,8 +1,8 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
-
 import play.api.libs.json.{Format, Json, Writes}
+
+import java.util.Date
 
 case class InputOrganisation(name: String, description: String)
 

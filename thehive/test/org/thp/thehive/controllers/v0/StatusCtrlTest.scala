@@ -1,11 +1,10 @@
 package org.thp.thehive.controllers.v0
 
-import org.thp.scalligraph.models.SchemaStatus
 import org.thp.scalligraph.{AppBuilder, ScalligraphApplicationLoader}
 import org.thp.thehive.models.HealthStatus
 import org.thp.thehive.services.Connector
 import org.thp.thehive.{TestAppBuilder, TheHiveModule}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsNull, JsObject, Json}
 import play.api.mvc.AbstractController
 import play.api.test.{FakeRequest, PlaySpecification}
 import play.api.{Configuration, Environment}
@@ -29,8 +28,6 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
       )
 
     override def health: HealthStatus.Value = HealthStatus.Warning
-
-    override def schemaStatus: Option[SchemaStatus] = None
   }
 
   override def appConfigure: AppBuilder = super.appConfigure.multiBindInstance[Connector](fakeCortexConnector)
@@ -70,8 +67,10 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
           "authType"             -> Seq("local", "key", "header"),
           "capabilities"         -> Seq("changePassword", "setPassword", "authByKey"),
           "ssoAutoLogin"         -> config.get[Boolean]("user.autoCreateOnSso"),
-          "pollingDuration"      -> 1000,
-          "schemaStatus"         -> Json.arr()
+          "pollingDuration"      -> 1000
+        ),
+        "schemaStatus" -> Json.arr(
+          Json.obj("name" -> "thehive", "currentVersion" -> 56, "expectedVersion" -> 56, "error" -> JsNull)
         )
       )
 

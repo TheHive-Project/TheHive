@@ -55,7 +55,7 @@
 
         <div class="ttp-item" ng-repeat="proc in $vm.list.values">
             <div class="ttp-header">
-                <div class="ttp-tactic clickable" ng-click="$vm.expanded[proc._id] = !$vm.expanded[proc._id]">
+                <div class="ttp-tactic clickable" ng-click="$vm.expanded[proc._id] = !$vm.expanded[proc._id]" style="border-color: {{$vm.tactics[proc.tactic].color}}">
                     <div>
                         <a class="mr-xxs">
                             <i class="fa" ng-class="{true: 'fa-chevron-up', false: 'fa-chevron-down'}[!!$vm.expanded[proc._id]]"></i>

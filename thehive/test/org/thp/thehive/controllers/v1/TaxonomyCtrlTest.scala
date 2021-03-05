@@ -14,17 +14,23 @@ case class TestTaxonomy(
     namespace: String,
     description: String,
     version: Int,
-    tags: Set[OutputTag]
+    tags: Set[TestTag]
 )
 
 object TestTaxonomy {
   def apply(outputTaxonomy: OutputTaxonomy): TestTaxonomy =
     outputTaxonomy
       .into[TestTaxonomy]
-      .withFieldComputed(_.tags, _.tags.toSet)
+      .withFieldComputed(_.tags, _.tags.toSet.map(TestTag.apply))
       .transform
 }
 
+case class TestTag(namespace: String, predicate: String, value: Option[String], description: Option[String], colour: String)
+
+object TestTag {
+  def apply(outputTag: OutputTag): TestTag =
+    TestTag(outputTag.namespace, outputTag.predicate, outputTag.value, outputTag.description, outputTag.colour)
+}
 class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
   "taxonomy controller" should {
 
@@ -73,9 +79,9 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "A test taxonomy",
         1,
         Set(
-          OutputTag("test-taxo", "pred1", Some("entry1"), None, "#ffa800"),
-          OutputTag("test-taxo", "pred2", Some("entry2"), None, "#00ad1c"),
-          OutputTag("test-taxo", "pred2", Some("entry21"), None, "#00ad1c")
+          TestTag("test-taxo", "pred1", Some("entry1"), None, "#ffa800"),
+          TestTag("test-taxo", "pred2", Some("entry2"), None, "#00ad1c"),
+          TestTag("test-taxo", "pred2", Some("entry21"), None, "#00ad1c")
         )
       )
     }
@@ -115,7 +121,7 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "taxonomy1",
         "The taxonomy 1",
         1,
-        Set(OutputTag("taxonomy1", "pred1", Some("value1"), None, "#00f300"))
+        Set(TestTag("taxonomy1", "pred1", Some("value1"), None, "#00f300"))
       )
     }
 
@@ -190,8 +196,8 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
         "Updated The taxonomy 1",
         2,
         Set(
-          OutputTag("taxonomy1", "pred1", Some("value2"), None, "#fba800"),
-          OutputTag("taxonomy1", "pred1", Some("value1"), None, "#00f300")
+          TestTag("taxonomy1", "pred1", Some("value2"), None, "#fba800"),
+          TestTag("taxonomy1", "pred1", Some("value1"), None, "#00f300")
         )
       )
     }

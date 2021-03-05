@@ -1,9 +1,8 @@
 package org.thp.thehive.connector.cortex.services.notification.notifiers
 
 import com.typesafe.config.ConfigRenderOptions
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadConfigurationError, NotFoundError, RichOption}
 import org.thp.thehive.connector.cortex.services.{ActionSrv, ResponderSrv}
@@ -14,6 +13,7 @@ import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvid
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json, OWrites}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 

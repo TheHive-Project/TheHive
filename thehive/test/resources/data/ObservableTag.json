@@ -1,7 +1,0 @@
-[
-  {"from": "h.fr", "to": "tagtestDomain"},
-  {"from": "c.fr", "to": "tagtestDomain"},
-  {"from": "helloworld", "to": "taghello"},
-  {"from": "helloworld", "to": "tagworld"},
-  {"from": "alert-h.fr", "to":  "taghello"}
-]

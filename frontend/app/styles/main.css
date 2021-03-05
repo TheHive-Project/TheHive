@@ -282,15 +282,11 @@ pre.clearpre {
 }
 
 .progress.progress-bar-sm {
-    height: 10px;
+    height: 4px;
 }
 
 .progress.progress-bar-sm .progress-bar {
-    line-height: 10px;
-}
-
-.progress.task-progress {
-    margin-bottom: 4px !important;
+    line-height: 4px;
 }
 
 .progress.task-progress .progress-bar {

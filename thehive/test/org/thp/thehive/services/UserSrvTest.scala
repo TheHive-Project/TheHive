@@ -61,7 +61,7 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder {
         if (userCount == 2) Success(())
         else Failure(new Exception(s"User certadmin is not in cert organisation twice ($userCount)"))
       }
-      new UserIntegrityCheckOps(db, userSrv, profileSrv, organisationSrv, roleSrv).check()
+      new UserIntegrityCheckOps(db, userSrv, profileSrv, organisationSrv, roleSrv).duplicationCheck()
       db.roTransaction { implicit graph =>
         val userCount = userSrv.get(EntityName("certadmin@thehive.local")).organisations.get(EntityName("cert")).getCount
         userCount must beEqualTo(1)

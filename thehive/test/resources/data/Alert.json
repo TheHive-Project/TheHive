@@ -13,7 +13,9 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert2",
@@ -29,7 +31,9 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert3",
@@ -45,7 +49,9 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert4",
@@ -61,7 +67,9 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alert5",
@@ -77,7 +85,9 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": "",
+    "tags": ["test", "alert"]
   },
   {
     "id": "alertMerge1",

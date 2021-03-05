@@ -36,9 +36,16 @@
                     <th>Password</th>
                     <th>API Key</th>
                     <th class="text-center" style="width: 100px" ng-if="$ctrl.mfaEnabled">MFA</th>
-                    <th class="text-center" style="width: 120px">
+                    <th class="text-center" style="width: 150px">
+                        Dates
+                        <a href class="text-default" ng-click="$ctrl.sortByField('_createdAt')">
+                            C.
+                            <i ng-show="$ctrl.sort.indexOf('+_createdAt') === -1 && $ctrl.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$ctrl.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
+                        </a>
                         <a href class="text-default" ng-click="$ctrl.sortByField('_updatedAt')">
-                            Updated At
+                            U.
                             <i ng-show="$ctrl.sort.indexOf('+_updatedAt') === -1 && $ctrl.sort.indexOf('-_updatedAt') === -1" class="fa fa-sort"></i>
                             <i ng-show="$ctrl.sort.indexOf('+_updatedAt') !== -1" class="fa fa-caret-up"></i>
                             <i ng-show="$ctrl.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
@@ -105,7 +112,14 @@
                             <button type="button" class="btn btn-danger btn-sm" ng-click="$ctrl.resetMfa(user)">Reset</button>
                         </span>
                     </td>
-                    <td>{{user._updatedAt | shortDate}}</td>
+                    <td>
+                        <div ng-class="{'text-bold': $ctrl.sort.indexOf('+_createdAt') !== -1 || $ctrl.sort.indexOf('-_createdAt') !== -1}">
+                            C. <a href ng-click="$ctrl.addFilterValue('_createdAt', user._createdAt)">{{user._createdAt | shortDate}}</a>
+                        </div>
+                        <div ng-if="user._updatedAt > 0" ng-class="{'text-bold': $ctrl.sort.indexOf('+_updatedAt') !== -1 || $ctrl.sort.indexOf('-_updatedAt') !== -1}">
+                            U. <a href ng-click="$ctrl.addFilterValue('_updatedAt', user._updatedAt)">{{user._updatedAt | shortDate}}</a>
+                        </div>
+                    </td>
                     <td>
                         <span class="clickable mr-xxs text-primary" ng-click="$ctrl.editUser(user)" uib-tooltip="Edit User">
                             <i class="text-20 fa fa-edit"></i>

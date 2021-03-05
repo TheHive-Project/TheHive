@@ -6,7 +6,9 @@
     "description": "description task 1",
     "status": "Waiting",
     "flag": false,
-    "order": 0
+    "order": 0,
+    "assignee": "certuser@thehive.local",
+    "relatedId": ""
   },
   {
     "id": "task2",
@@ -15,7 +17,8 @@
     "description": "description task 2",
     "status": "Waiting",
     "flag": true,
-    "order": 1
+    "order": 1,
+    "relatedId": ""
   },
   {
     "id": "task3",
@@ -24,7 +27,9 @@
     "description": "description task 3",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "assignee": "certuser@thehive.local",
+    "relatedId": ""
   },
   {
     "id": "task4",
@@ -33,7 +38,8 @@
     "description": "description task 4",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "task5",
@@ -42,7 +48,8 @@
     "description": "description task 5",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "taskActionRequired1",
@@ -51,7 +58,8 @@
     "description": "description task Required",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "taskActionRequired2",
@@ -60,7 +68,8 @@
     "description": "description task Required",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "taskMerge211",
@@ -69,7 +78,8 @@
     "description": "description task merge 21 1",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "taskMerge212",
@@ -78,7 +88,8 @@
     "description": "description task merge 21 2",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "taskMerge231",
@@ -87,6 +98,7 @@
     "description": "description task merge 23 1",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   }
 ]

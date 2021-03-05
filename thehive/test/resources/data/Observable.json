@@ -4,55 +4,76 @@
     "message": "Some weird domain",
     "tlp": 3,
     "ioc": true,
-    "sighted": false
+    "sighted": false,
+    "dataType": "domain",
+    "data": "h.fr",
+    "tags": ["testDomain"],
+    "relatedId": ""
   },
   {
     "id": "c.fr",
     "message": "This domain",
     "tlp": 2,
     "ioc": false,
-    "sighted": false
+    "sighted": false,
+    "dataType": "domain",
+    "data": "c.fr",
+    "tags": ["testDomain"],
+    "relatedId": ""
   },
   {
     "id": "helloworld",
     "message": "hello world",
     "tlp": 1,
     "ioc": false,
-    "sighted": false
+    "sighted": false,
+    "dataType": "file",
+    "tags": ["hello", "world"],
+    "relatedId": ""
   },
   {
     "id": "perdu.com",
     "message": "if you are lost",
     "tlp": 1,
     "ioc": false,
-    "sighted": true
+    "sighted": true,
+    "dataType": "domain",
+    "data": "perdu.com",
+    "relatedId": ""
   },
   {
     "id": "alert-h.fr",
     "message": "observable from alert",
     "tlp": 1,
     "ioc": true,
-    "sighted": true
+    "sighted": true,
+    "dataType": "domain",
+    "data": "h.fr",
+    "tags": ["hello"],
+    "relatedId": ""
   },
   {
     "id": "mergeObs211",
     "message": "merge Obs 211",
     "tlp": 1,
     "ioc": true,
-    "sighted": false
+    "sighted": false,
+    "relatedId": ""
   },
   {
     "id": "mergeObs231",
     "message": "merge Obs 231",
     "tlp": 2,
     "ioc": false,
-    "sighted": true
+    "sighted": true,
+    "relatedId": ""
   },
   {
     "id": "mergeObs232",
     "message": "merge Obs 232",
     "tlp": 4,
     "ioc": true,
-    "sighted": true
+    "sighted": true,
+    "relatedId": ""
   }
 ]

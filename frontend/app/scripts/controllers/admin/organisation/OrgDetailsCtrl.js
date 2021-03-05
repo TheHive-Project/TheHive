@@ -44,6 +44,7 @@
                     sort: self.filtering.context.sort,
                     loadAll: false,
                     pageSize: self.filtering.context.pageSize,
+                    pageOptions: {organisation: self.org.name},
                     filter: this.filtering.buildQuery(),
                     operations: [{
                             '_name': 'getOrganisation',

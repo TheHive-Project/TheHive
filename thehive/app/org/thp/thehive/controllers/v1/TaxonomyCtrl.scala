@@ -2,13 +2,12 @@ package org.thp.thehive.controllers.v1
 
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTaxonomy
@@ -18,7 +17,7 @@ import org.thp.thehive.services.{TagSrv, TaxonomySrv}
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named}
+import javax.inject.Inject
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -27,7 +26,7 @@ class TaxonomyCtrl @Inject() (
     properties: Properties,
     taxonomySrv: TaxonomySrv,
     tagSrv: TagSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl
     with TaxonomyRenderer {
 
@@ -38,13 +37,11 @@ class TaxonomyCtrl @Inject() (
   override val getQuery: ParamQuery[EntityIdOrName] =
     Query.initWithParam[EntityIdOrName, Traversal.V[Taxonomy]](
       "getTaxonomy",
-      FieldsParser[EntityIdOrName],
       (idOrName, graph, authContext) => taxonomySrv.get(idOrName)(graph).visible(authContext)
     )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Taxonomy], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, extraData), taxoSteps, _) =>
           taxoSteps.richPage(from, to, extraData.contains("total"))(_.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total")))
@@ -114,12 +111,13 @@ class TaxonomyCtrl @Inject() (
             value.predicate,
             Some(e.value),
             e.expanded,
-            e.colour.getOrElse(tagSrv.defaultColour)
+            e.colour.getOrElse(tagSrv.freeTagColour)
           )
         }
     }
     // Create a tag for predicates with no tags associated
-    val allTags = tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace, p.value, None, None, p.colour.getOrElse(tagSrv.defaultColour)))
+
+    val allTags = tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace, p.value, None, None, p.colour.getOrElse(tagSrv.freeTagColour)))
 
     if (inputTaxo.namespace.isEmpty)
       Failure(BadRequestError(s"A taxonomy with no namespace cannot be imported"))

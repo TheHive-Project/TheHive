@@ -4,6 +4,7 @@ import org.thp.scalligraph.BuildVertexEntity
 import org.thp.scalligraph.models.{DefineIndex, IndexType}
 
 @DefineIndex(IndexType.unique, "namespace", "predicate", "value")
+@DefineIndex(IndexType.fulltext, "namespace", "predicate", "value", "description")
 @BuildVertexEntity
 case class Tag(
     namespace: String,
@@ -19,6 +20,8 @@ case class Tag(
       case Tag(n, p, v, _, _) => n == namespace && p == predicate && v == value
       case _                  => false
     }
+
+  lazy val isFreeTag: Boolean = namespace.startsWith("_freetags_")
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Tag]
 

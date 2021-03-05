@@ -205,6 +205,9 @@ object Migrate extends App with MigrationOps {
       migrationStats.flush()
       logger.info(migrationStats.toString)
       System.exit(returnStatus)
-    } finally actorSystem.terminate()
+    } finally {
+      actorSystem.terminate()
+      ()
+    }
   }
 }

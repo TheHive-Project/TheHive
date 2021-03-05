@@ -1,13 +1,15 @@
 package org.thp.thehive.services
 
-import org.apache.tinkerpop.gremlin.structure.Graph
-import org.thp.scalligraph.EntityIdOrName
+import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{Entity, Model}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
+import org.thp.scalligraph.utils.FunctionalCondition._
+import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models.{TaskStatus, _}
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
@@ -16,30 +18,26 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 
 import java.lang.{Boolean => JBoolean}
 import java.util.{Date, Map => JMap}
-import javax.inject.{Inject, Named, Provider, Singleton}
-import scala.util.{Failure, Success, Try}
+import javax.inject.{Inject, Provider, Singleton}
+import scala.util.{Failure, Try}
 
 @Singleton
-class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, organisationSrv: OrganisationSrv)(implicit
-    @Named("with-thehive-schema") db: Database
-) extends VertexSrv[Task] {
+class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv)
+    extends VertexSrv[Task] {
 
   lazy val caseSrv: CaseSrv = caseSrvProvider.get
   val caseTemplateTaskSrv   = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
   val taskUserSrv           = new EdgeSrv[TaskUser, Task, User]
   val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
 
-  def create(e: Task, owner: Option[User with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
+  def create(task: Task, assignee: Option[User with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
     for {
-      task <- createEntity(e)
-      _    <- owner.map(taskUserSrv.create(TaskUser(), task, _)).flip
-    } yield RichTask(task, owner)
-
-  def isAvailableFor(taskId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Boolean =
-    get(taskId).visible(authContext).exists
+      createdTask <- createEntity(task.copy(assignee = assignee.map(_.login)))
+      _           <- assignee.map(taskUserSrv.create(TaskUser(), createdTask, _)).flip
+    } yield RichTask(createdTask)
 
   def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(task).unassign()
+    get(task).update(_.assignee, None).outE[TaskUser].remove()
     auditSrv.task.update(task, Json.obj("assignee" -> JsNull))
   }
 
@@ -78,36 +76,38 @@ class TaskSrv @Inject() (caseSrvProvider: Provider[CaseSrv], auditSrv: AuditSrv,
   /**
     * Tries to update the status of a task with related fields
     * according the status value if empty
-    * @param t the task to update
-    * @param o the potential owner
-    * @param s the status to set
+    * @param task the task to update
+    * @param status the status to set
     * @param graph db
     * @param authContext auth db
     * @return
     */
-  def updateStatus(t: Task with Entity, o: User with Entity, s: TaskStatus.Value)(implicit
+  def updateStatus(task: Task with Entity, status: TaskStatus.Value)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Task with Entity] = {
-    def setStatus(): Try[Task with Entity] = get(t).update(_.status, s).getOrFail("")
+    def setStatus(): Traversal.V[Task] = get(task).update(_.status, status)
 
-    s match {
-      case TaskStatus.Cancel | TaskStatus.Waiting => setStatus()
-      case TaskStatus.Completed =>
-        t.endDate.fold(get(t).update(_.status, s).update(_.endDate, Some(new Date())).getOrFail(""))(_ => setStatus())
-
+    status match {
+      case TaskStatus.Cancel | TaskStatus.Waiting => setStatus().getOrFail("Task")
+      case TaskStatus.Completed                   => setStatus().when(task.endDate.isEmpty)(_.update(_.endDate, Some(new Date()))).getOrFail("Task")
       case TaskStatus.InProgress =>
-        for {
-          _       <- get(t).assignee.headOption.fold(assign(t, o))(_ => Success(()))
-          updated <- t.startDate.fold(get(t).update(_.status, s).update(_.startDate, Some(new Date())).getOrFail(""))(_ => setStatus())
-        } yield updated
-
-      case _ => Failure(new Exception(s"Invalid TaskStatus $s for update"))
+        setStatus()
+          .when(task.startDate.isEmpty)(_.update(_.startDate, Some(new Date())))
+          .getOrFail("Task")
+          .when(task.assignee.isEmpty) { updatedTask =>
+            for {
+              t        <- updatedTask
+              assignee <- userSrv.current.getOrFail("User")
+              _        <- assign(t, assignee)
+            } yield t
+          }
+      case _ => Failure(new Exception(s"Invalid TaskStatus $status for update"))
     }
   }
 
   def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(task).unassign()
+    get(task).update(_.assignee, Some(user.login)).outE[TaskUser].remove()
     for {
       _ <- taskUserSrv.create(TaskUser(), task, user)
       _ <- auditSrv.task.update(task, Json.obj("assignee" -> user.login))
@@ -136,28 +136,33 @@ object TaskOps {
   implicit class TaskOpsDefs(traversal: Traversal.V[Task]) {
 
     def get(idOrName: EntityIdOrName): Traversal.V[Task] =
-      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
+      idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Task] =
-      traversal.filter(_.organisations.current)
+    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Task] =
+      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
 
-    def active: Traversal.V[Task] = traversal.filterNot(_.has(_.status, TaskStatus.Cancel))
+    def assignTo(login: String): Traversal.V[Task] = traversal.has(_.assignee, login)
+
+    def relatedTo(caseId: EntityId): Traversal.V[Task] =
+      traversal.has(_.relatedId, caseId)
+
+    def inOrganisation(organisationId: EntityId): Traversal.V[Task] =
+      traversal.has(_.organisationIds, organisationId)
+
+    def active: Traversal.V[Task] = traversal.hasNot(_.status, TaskStatus.Cancel)
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Task] =
       if (authContext.permissions.contains(permission))
         traversal.filter(_.shares.filter(_.profile.has(_.permissions, permission)).organisation.current)
       else
-        traversal.limit(0)
+        traversal.empty
 
     def `case`: Traversal.V[Case] = traversal.in[ShareTask].out[ShareCase].dedup.v[Case]
 
     def caseTemplate: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateTask].v[CaseTemplate]
 
-    def caseTasks: Traversal.V[Task] = traversal.filter(_.inE[ShareTask]).v[Task]
-
-    def caseTemplateTasks: Traversal.V[Task] = traversal.filter(_.inE[CaseTemplateTask]).v[Task]
-
-    def logs: Traversal.V[Log] = traversal.out[TaskLog].v[Log]
+    def logs: Traversal.V[Log] = //traversal.out[TaskLog].v[Log]
+      traversal.graph.V()(Model.vertex[Log]).has(_.taskId, P.within(traversal._id.toSeq: _*))
 
     def assignee: Traversal.V[User] = traversal.out[TaskUser].v[User]
 
@@ -190,25 +195,11 @@ object TaskOps {
             .byValue(_.actionRequired)
         )
 
-    def richTask: Traversal[RichTask, JMap[String, Any], Converter[RichTask, JMap[String, Any]]] =
-      traversal
-        .project(
-          _.by
-            .by(_.out[TaskUser].v[User].fold)
-        )
-        .domainMap {
-          case (task, user) => RichTask(task, user.headOption)
-        }
+    def richTask: Traversal[RichTask, Vertex, Converter[RichTask, Vertex]] =
+      traversal.identity.domainMap(RichTask) // FIXME add actionRequired ?
 
-    def richTaskWithoutActionRequired: Traversal[RichTask, JMap[String, Any], Converter[RichTask, JMap[String, Any]]] =
-      traversal
-        .project(
-          _.by
-            .by(_.out[TaskUser].v[User].fold)
-        )
-        .domainMap {
-          case (task, user) => RichTask(task, user.headOption)
-        }
+    def richTaskWithoutActionRequired: Traversal[RichTask, Vertex, Converter[RichTask, Vertex]] =
+      traversal.identity.domainMap(RichTask)
 
     def richTaskWithCustomRenderer[D, G, C <: Converter[D, G]](
         entityRenderer: Traversal.V[Task] => Traversal[D, G, C]
@@ -216,15 +207,12 @@ object TaskOps {
       traversal
         .project(
           _.by
-            .by(_.assignee.fold)
             .by(entityRenderer)
         )
         .domainMap {
-          case (task, user, renderedEntity) =>
-            RichTask(task, user.headOption) -> renderedEntity
+          case (task, renderedEntity) =>
+            RichTask(task) -> renderedEntity
         }
-
-    def unassign(): Unit = traversal.outE[TaskUser].remove()
 
     def shares: Traversal.V[Share] = traversal.in[ShareTask].v[Share]
 

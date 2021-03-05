@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.{List => JList, Map => JMap}
-
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -13,15 +12,16 @@ import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json._
 
 trait ObservableRenderer extends BaseRenderer[Observable] {
 
-  def seenStats(implicit
+  def seenStats(organisationSrv: OrganisationSrv)(implicit
       authContext: AuthContext
   ): Traversal.V[Observable] => Traversal[JsValue, JMap[JBoolean, JLong], Converter[JsValue, JMap[JBoolean, JLong]]] =
     _.filteredSimilar
-      .visible
+      .visible(organisationSrv)
       .groupCount(_.byValue(_.ioc))
       .domainMap { stats =>
         val nTrue  = stats.getOrElse(true, 0L)
@@ -52,17 +52,21 @@ trait ObservableRenderer extends BaseRenderer[Observable] {
   def permissions(implicit authContext: AuthContext): Traversal.V[Observable] => Traversal[JsValue, Vertex, Converter[JsValue, Vertex]] =
     _.userPermissions.domainMap(permissions => Json.toJson(permissions))
 
-  def observableStatsRenderer(extraData: Set[String])(
-    implicit authContext: AuthContext
+  def observableStatsRenderer(organisationSrv: OrganisationSrv, extraData: Set[String])(implicit
+      authContext: AuthContext
   ): Traversal.V[Observable] => JsTraversal = { implicit traversal =>
-    baseRenderer(extraData, traversal, {
-      case (f, "seen")        => addData("seen", f)(seenStats)
-      case (f, "shares")      => addData("shares", f)(sharesStats)
-      case (f, "links")       => addData("links", f)(observableLinks)
-      case (f, "permissions") => addData("permissions", f)(permissions)
-      case (f, "isOwner")     => addData("isOwner", f)(isOwner)
-      case (f, "shareCount")  => addData("shareCount", f)(shareCount)
-      case (f, _)             => f
-    })
+    baseRenderer(
+      extraData,
+      traversal,
+      {
+        case (f, "seen")        => addData("seen", f)(seenStats(organisationSrv))
+        case (f, "shares")      => addData("shares", f)(sharesStats)
+        case (f, "links")       => addData("links", f)(observableLinks)
+        case (f, "permissions") => addData("permissions", f)(permissions)
+        case (f, "isOwner")     => addData("isOwner", f)(isOwner)
+        case (f, "shareCount")  => addData("shareCount", f)(shareCount)
+        case (f, _)             => f
+      }
+    )
   }
 }

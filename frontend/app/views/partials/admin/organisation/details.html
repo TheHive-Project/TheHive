@@ -108,6 +108,7 @@
                                 on-reload="$vm.loadUsers()"
                                 on-edit="$vm.showUserDialog(user)"
                                 on-sort="$vm.sortByField(field)"
+                                on-filter="$vm.addFilterValue(field, value)"
                                 sort="$vm.filtering.context.sort"
                                 set-password-enabled="$vm.canSetPass"
                                 mfa-enabled="$vm.canChangeMfa"></org-user-list>

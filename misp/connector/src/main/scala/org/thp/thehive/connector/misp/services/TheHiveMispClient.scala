@@ -1,7 +1,6 @@
 package org.thp.thehive.connector.misp.services
 
 import akka.stream.Materializer
-import javax.inject.Inject
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
 import org.thp.misp.client.{MispClient, MispPurpose}
@@ -13,6 +12,7 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClientConfig
 
+import javax.inject.Inject
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 

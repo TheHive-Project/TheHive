@@ -85,7 +85,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         tlp = 1,
         pap = 3,
         status = "Open",
-        tags = Set("testNamespace:testPredicate=\"spam\"", "testNamespace:testPredicate=\"src:mail\"", "tag1", "tag2"),
+        tags = Set("spam", "src:mail", "tag1", "tag2"),
         summary = None,
         owner = Some("certuser@thehive.local"),
         customFields = Json.obj(
@@ -181,7 +181,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         tlp = 2,
         pap = 2,
         status = "Open",
-        tags = Set("testNamespace:testPredicate=\"t2\"", "testNamespace:testPredicate=\"t1\""),
+        tags = Set("t2", "t1"),
         summary = None,
         owner = Some("certuser@thehive.local"),
         customFields = JsObject.empty,
@@ -326,10 +326,10 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      (resultCase \ "count").asOpt[Int] must beSome(7)
-      (resultCase \ "testNamespace:testPredicate=\"t1\"" \ "count").asOpt[Int] must beSome(2)
-      (resultCase \ "testNamespace:testPredicate=\"t2\"" \ "count").asOpt[Int] must beSome(1)
-      (resultCase \ "testNamespace:testPredicate=\"t3\"" \ "count").asOpt[Int] must beSome(1)
+      (resultCase \ "count").asOpt[Int] must beSome(3)
+      (resultCase \ "t1" \ "count").asOpt[Int] must beSome(2)
+      (resultCase \ "t2" \ "count").asOpt[Int] must beSome(1)
+      (resultCase \ "t3" \ "count").asOpt[Int] must beSome(1)
     }
 
     "assign a case to an user" in testApp { app =>

@@ -1,8 +1,8 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
-
 import play.api.libs.json.{Json, OFormat, OWrites}
+
+import java.util.Date
 
 case class InputProfile(name: String, permissions: Set[String])
 

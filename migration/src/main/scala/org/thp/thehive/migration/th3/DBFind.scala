@@ -4,9 +4,9 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.search.{SearchHit, SearchResponse}
-import com.sksamuel.elastic4s.searches.SearchRequest
+import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.{ElasticRequest, Show}
+import com.sksamuel.elastic4s.requests.searches.{SearchHit, SearchRequest, SearchResponse}
 import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{InternalError, SearchError}
 import play.api.libs.json._
@@ -75,6 +75,9 @@ class DBFind(pageSize: Int, keepAlive: FiniteDuration, db: DBConfiguration, impl
     (src, total)
   }
 
+  def showQuery(request: SearchRequest): String =
+    Show[ElasticRequest].show(SearchHandler.build(request))
+
   /**
     * Search entities in ElasticSearch
     *
@@ -87,10 +90,10 @@ class DBFind(pageSize: Int, keepAlive: FiniteDuration, db: DBConfiguration, impl
   def apply(range: Option[String], sortBy: Seq[String])(query: String => SearchRequest): (Source[JsObject, NotUsed], Future[Long]) = {
     val (offset, limit) = getOffsetAndLimitFromRange(range)
     val sortDef         = DBUtils.sortDefinition(sortBy)
-    val searchRequest   = query(db.indexName).start(offset).sortBy(sortDef).version(true)
+    val searchRequest   = query(db.indexName).start(offset).sortBy(sortDef).seqNoPrimaryTerm(true)
 
     logger.debug(
-      s"search in ${searchRequest.indexesTypes.indexes.mkString(",")} / ${searchRequest.indexesTypes.types.mkString(",")} ${db.client.show(searchRequest)}"
+      s"search in ${searchRequest.indexes.values.mkString(",")} ${showQuery(searchRequest)}"
     )
     val (src, total) =
       if (limit > 2 * pageSize)
@@ -108,7 +111,7 @@ class DBFind(pageSize: Int, keepAlive: FiniteDuration, db: DBConfiguration, impl
   def apply(query: String => SearchRequest): Future[SearchResponse] = {
     val searchRequest = query(db.indexName)
     logger.debug(
-      s"search in ${searchRequest.indexesTypes.indexes.mkString(",")} / ${searchRequest.indexesTypes.types.mkString(",")} ${db.client.show(searchRequest)}"
+      s"search in ${searchRequest.indexes.values.mkString(",")} ${showQuery(searchRequest)}"
     )
 
     db.execute(searchRequest)

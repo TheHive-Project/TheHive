@@ -1,11 +1,11 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph.auth.{Permission, User => ScalligraphUser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 import org.thp.thehive.services.LocalPasswordAuthSrv
+
+import java.util.Date
 
 @BuildEdgeEntity[User, Role]
 case class UserRole()

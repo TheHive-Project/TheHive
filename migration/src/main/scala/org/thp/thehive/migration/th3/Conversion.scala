@@ -1,7 +1,5 @@
 package org.thp.thehive.migration.th3
 
-import java.util.{Base64, Date}
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -13,6 +11,8 @@ import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
+
+import java.util.{Base64, Date}
 
 case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
@@ -63,7 +63,7 @@ trait Conversion {
       status      <- (json \ "status").validate[CaseStatus.Value]
       summary     <- (json \ "summary").validateOpt[String]
       user        <- (json \ "owner").validateOpt[String]
-      tags             = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      tags             = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
       metrics          = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       resolutionStatus = (json \ "resolutionStatus").asOpt[String]
       impactStatus     = (json \ "impactStatus").asOpt[String]
@@ -76,14 +76,27 @@ trait Conversion {
           name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
       }
     } yield InputCase(
-      Case(number, title, description, severity, startDate, endDate, flag, tlp, pap, status, summary),
-      user.map(normaliseLogin),
+      Case(
+        title = title,
+        description = description,
+        severity = severity,
+        startDate = startDate,
+        endDate = endDate,
+        flag = flag,
+        tlp = tlp,
+        pap = pap,
+        status = status,
+        summary = summary,
+        tags = tags.toSeq,
+        number = number,
+        organisationIds = Set.empty,
+        assignee = user.map(normaliseLogin),
+        impactStatus = impactStatus,
+        resolutionStatus = resolutionStatus,
+        caseTemplate = None
+      ), // organisation Ids are filled by output
       Map(mainOrganisation -> Profile.orgAdmin.name),
-      tags,
       (metricsValue ++ customFieldsValue).toMap,
-      None,
-      resolutionStatus,
-      impactStatus,
       metaData
     )
   }
@@ -108,10 +121,16 @@ trait Conversion {
           )
     } yield InputObservable(
       metaData,
-      Observable(message, tlp, ioc, sighted, None),
-      Seq(mainOrganisation),
-      dataType,
-      tags,
+      Observable(
+        message = message,
+        tlp = tlp,
+        ioc = ioc,
+        sighted = sighted,
+        ignoreSimilarity = None,
+        dataType = dataType,
+        tags = tags.toSeq
+      ),
+      Set(mainOrganisation),
       dataOrAttachment
     )
   }
@@ -132,18 +151,19 @@ trait Conversion {
     } yield InputTask(
       metaData,
       Task(
-        title,
-        group,
-        description,
-        status: TaskStatus.Value,
-        flag: Boolean,
-        startDate: Option[Date],
-        endDate: Option[Date],
-        order: Int,
-        dueDate: Option[Date]
+        title = title,
+        group = group,
+        description = description,
+        status = status,
+        flag = flag,
+        startDate = startDate,
+        endDate = endDate,
+        order = order,
+        dueDate = dueDate,
+        assignee = owner.map(normaliseLogin)
       ),
       owner.map(normaliseLogin),
-      Seq(mainOrganisation)
+      Set(mainOrganisation)
     )
   }
 
@@ -178,7 +198,7 @@ trait Conversion {
       read = status == "Ignored" || status == "Imported"
       follow <- (json \ "follow").validate[Boolean]
       caseId <- (json \ "case").validateOpt[String]
-      tags         = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      tags         = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
       customFields = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       customFieldsValue = customFields.value.map {
         case (name, value) =>
@@ -188,23 +208,23 @@ trait Conversion {
     } yield InputAlert(
       metaData: MetaData,
       Alert(
-        tpe,
-        source,
-        sourceRef,
-        externalLink,
-        title,
-        description,
-        severity,
-        date,
-        lastSyncDate,
-        tlp,
-        pap.getOrElse(2),
-        read,
-        follow
+        `type` = tpe,
+        source = source,
+        sourceRef = sourceRef,
+        externalLink = externalLink,
+        title = title,
+        description = description,
+        severity = severity,
+        date = date,
+        lastSyncDate = lastSyncDate,
+        tlp = tlp,
+        pap = pap.getOrElse(2),
+        read = read,
+        follow = follow,
+        tags = tags.toSeq
       ),
       caseId,
       mainOrganisation,
-      tags,
       customFieldsValue.toMap,
       caseTemplate: Option[String]
     )
@@ -229,10 +249,16 @@ trait Conversion {
             )
       } yield InputObservable(
         metaData,
-        Observable(message, tlp.getOrElse(2), ioc.getOrElse(false), sighted = false, ignoreSimilarity = None),
-        Nil,
-        dataType,
-        tags,
+        Observable(
+          message = message,
+          tlp = tlp.getOrElse(2),
+          ioc = ioc.getOrElse(false),
+          sighted = false,
+          ignoreSimilarity = None,
+          dataType = dataType,
+          tags = tags.toSeq
+        ),
+        Set(mainOrganisation),
         dataOrAttachment
       )
 
@@ -352,15 +378,16 @@ trait Conversion {
     } yield InputCaseTemplate(
       metaData,
       CaseTemplate(
-        name,
-        displayName,
-        titlePrefix,
-        description,
-        severity,
-        flag,
-        tlp,
-        pap,
-        summary
+        name = name,
+        displayName = displayName,
+        titlePrefix = titlePrefix,
+        description = description,
+        tags = tags.toSeq,
+        severity = severity,
+        flag = flag,
+        tlp = tlp,
+        pap = pap,
+        summary = summary
       ),
       mainOrganisation,
       tags,
@@ -384,18 +411,19 @@ trait Conversion {
       } yield InputTask(
         metaData,
         Task(
-          title,
-          group.getOrElse("default"),
-          description,
-          status.getOrElse(TaskStatus.Waiting),
-          flag.getOrElse(false),
-          startDate,
-          endDate,
-          order.getOrElse(1),
-          dueDate
+          title = title,
+          group = group.getOrElse("default"),
+          description = description,
+          status = status.getOrElse(TaskStatus.Waiting),
+          flag = flag.getOrElse(false),
+          startDate = startDate,
+          endDate = endDate,
+          order = order.getOrElse(1),
+          dueDate = dueDate,
+          assignee = owner.map(normaliseLogin)
         ),
         owner.map(normaliseLogin),
-        Seq(mainOrganisation)
+        Set(mainOrganisation)
       )
     }
 
@@ -448,10 +476,16 @@ trait Conversion {
           )
       } yield InputObservable(
         metaData,
-        Observable(message, tlp, ioc, sighted, ignoreSimilarity = None),
-        Seq(mainOrganisation),
-        dataType,
-        tags,
+        Observable(
+          message = message,
+          tlp = tlp,
+          ioc = ioc,
+          sighted = sighted,
+          ignoreSimilarity = None,
+          dataType = dataType,
+          tags = tags.toSeq
+        ),
+        Set(mainOrganisation),
         dataOrAttachment
       )
     }

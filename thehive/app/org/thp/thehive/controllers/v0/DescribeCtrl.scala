@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
@@ -41,7 +41,7 @@ class DescribeCtrl @Inject() (
     userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     injector: Injector,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     applicationConfig: ApplicationConfig
 ) {
 
@@ -88,7 +88,7 @@ class DescribeCtrl @Inject() (
     ).toOption
 
   def entityDescriptions: Seq[EntityDescription] =
-    cacheApi.getOrElseUpdate(s"describe.v0", cacheExpire) {
+    cacheApi.getOrElseUpdate("describe.v0", cacheExpire) {
       Seq(
         EntityDescription("case", "/case", caseCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case", _))),
         EntityDescription("case_task", "/case/task", taskCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case_task", _))),
@@ -209,7 +209,7 @@ class DescribeCtrl @Inject() (
       case _ => None
     }
 
-  def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
+  def propertyToJson(model: String, prop: PublicProperty): Seq[PropertyDescription] =
     customDescription(model, prop.propertyName).getOrElse {
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))

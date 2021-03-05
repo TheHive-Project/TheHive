@@ -5,62 +5,48 @@
 
             var self = this;
 
-            var getTags = function(objectType, term) {
+            this.getTags = function(term) {
                 var defer = $q.defer();
+
                 var operations = [
-                    { _name: 'listTag' }
-                ];
+                    { _name: 'listTag'},
+                    { _name: 'freetags'},
+                    { _name: 'filter', _like: {_field: 'predicate', _value: term+'*'}},
+                    { _name: 'sort', _fields: [{'predicate': 'asc'}]},
+                    { _name: 'text'},
+                    // { _name: 'page', from: 0, to: 20},
+                    // { _name: 'text'}
+                ]
 
-                if(objectType) {
-                    operations.push({ _name: objectType });
-                }
-
-                operations.push({
-                    _name: 'filter',
-                    _like: {
-                        _field: 'text',
-                        _value: '*' + term + '*'
+                QuerySrv.query('v1', operations, {
+                    params: {
+                        name: 'list-tags'
                     }
+                }).then(function(response) {
+                    defer.resolve(_.map(response.data, function(tag) {
+                        return {text: tag};
+                    }));
                 });
-
-                operations.push({ _name: 'text' });
-
-                // Get the list
-                QuerySrv.call('v0', operations, {name: 'tags-auto-complete'})
-                    .then(function(data) {
-                        defer.resolve(_.map(_.unique(data), function(tag) {
-                            return {text: tag};
-                        }));
-                    });
 
                 return defer.promise;
             };
 
-            this.getTagsFor = function(entity, query) {
+            this.autoComplete = function(term) {
+                var defer = $q.defer();
 
-                switch(entity) {
-                    case 'case':
-                        return self.fromCases(query);
-                    case 'observable':
-                        return self.fromObservables(query);
-                    case 'alert':
-                        return self.fromAlerts(query);
-                    default:
-                        return self.getTags(undefined, query);
-                }
+                var operations = [
+                    { _name: 'tagAutoComplete', freeTag: term, limit: 20}
+                ]
 
-            };
+                QuerySrv.call('v1', operations, {
+                    name: 'tags-auto-complete'
+                }).then(function(response) {
+                    defer.resolve(_.map(response, function(tag) {
+                        return {text: tag};
+                    }));
+                });
 
-            this.fromCases = function(term) {
-                return getTags('fromCase', term);
-            };
-
-            this.fromObservables = function(term) {
-                return getTags('fromObservable', term);
-            };
-
-            this.fromAlerts = function(term) {
-                return getTags('fromAlert', term);
+                return defer.promise;
             };
 
         });

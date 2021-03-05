@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.dav
 
 import akka.stream.scaladsl.StreamConverters
 import akka.util.ByteString
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -15,13 +14,13 @@ import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Success
 import scala.util.matching.Regex
 import scala.xml.{Node, NodeSeq}
 
 @Singleton
-class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, @Named("with-thehive-schema") db: Database, attachmentSrv: AttachmentSrv)
-    extends SimpleRouter {
+class Router @Inject() (entrypoint: Entrypoint, vfs: VFS, db: Database, attachmentSrv: AttachmentSrv) extends SimpleRouter {
   lazy val logger: Logger = Logger(getClass)
 
   object PROPFIND {

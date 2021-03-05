@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v0
 
 import com.typesafe.config.{ConfigRenderOptions, Config => TypeSafeConfig}
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
@@ -15,6 +14,7 @@ import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Result, Results}
 import play.api.{ConfigLoader, Configuration, Logger}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -26,7 +26,7 @@ class ConfigCtrl @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) {
 
   lazy val logger: Logger = Logger(getClass)

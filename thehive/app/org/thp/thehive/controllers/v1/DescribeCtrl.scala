@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Boolean => JBoolean}
-import java.util.Date
-import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PublicProperty
@@ -11,14 +7,18 @@ import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hash
+import org.thp.scalligraph.{EntityId, NotFoundError}
+import org.thp.thehive.controllers.v0.{QueryCtrl => QueryCtrlV0}
 import org.thp.thehive.services.{CustomFieldSrv, ImpactStatusSrv, ResolutionStatusSrv}
 import play.api.Logger
 import play.api.cache.SyncCacheApi
 import play.api.inject.Injector
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
-import org.thp.thehive.controllers.v0.{QueryCtrl => QueryCtrlV0}
 
+import java.lang.{Boolean => JBoolean}
+import java.util.Date
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
@@ -47,7 +47,7 @@ class DescribeCtrl @Inject() (
     impactStatusSrv: ImpactStatusSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     injector: Injector,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     applicationConfig: ApplicationConfig
 ) {
 
@@ -61,8 +61,9 @@ class DescribeCtrl @Inject() (
   case class EntityDescription(label: String, initialQuery: String, attributes: Seq[PropertyDescription]) {
     def toJson: JsObject =
       Json.obj(
-        "label"      -> label,
-        "attributes" -> (attributes ++ metadata)
+        "label"        -> label,
+        "initialQuery" -> initialQuery,
+        "attributes"   -> (attributes ++ metadata)
       )
   }
 
@@ -93,7 +94,7 @@ class DescribeCtrl @Inject() (
     ).toOption
 
   def entityDescriptions: Seq[EntityDescription] =
-    cacheApi.getOrElseUpdate(s"describe.v1", cacheExpire) {
+    cacheApi.getOrElseUpdate("describe.v1", cacheExpire) {
       Seq(
         EntityDescription("alert", "listAlert", alertCtrl.publicProperties.list.flatMap(propertyToJson("alert", _))),
         EntityDescription("audit", "listAudit", auditCtrl.publicProperties.list.flatMap(propertyToJson("audit", _))),
@@ -215,7 +216,7 @@ class DescribeCtrl @Inject() (
       case _ => None
     }
 
-  def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
+  def propertyToJson(model: String, prop: PublicProperty): Seq[PropertyDescription] =
     customDescription(model, prop.propertyName).getOrElse {
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))
@@ -225,7 +226,7 @@ class DescribeCtrl @Inject() (
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if c == classOf[EntityId]                          => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>
-          logger.warn(s"Unrecognized property $prop. Add a custom description")
+          logger.warn(s"Unrecognized property ${prop.propertyName}:${prop.mapping.domainTypeClass.getSimpleName}. Add a custom description")
           Seq(PropertyDescription(prop.propertyName, "unknown"))
       }
     }

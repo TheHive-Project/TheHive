@@ -134,7 +134,7 @@
             };
 
             this.getTags = function(query) {
-                return TagSrv.fromCases(query);
+                return TagSrv.autoComplete(query);
             };
 
             self.fromTagLibrary = function(field) {

@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.Base64
-
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -22,19 +19,24 @@ import play.api.http.HttpEntity
 import play.api.libs.json.{JsNull, JsObject, Json}
 import play.api.mvc._
 
+import java.util.{Base64, Date}
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
+
+case class UserOutputParam(from: Long, to: Long, extraData: Set[String], organisation: Option[String])
 
 @Singleton
 class UserCtrl @Inject() (
     entrypoint: Entrypoint,
     properties: Properties,
+    caseSrv: CaseSrv,
     userSrv: UserSrv,
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                 = "user"
@@ -45,22 +47,28 @@ class UserCtrl @Inject() (
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[User]](
     "getUser",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
 
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
+  override val pageQuery: ParamQuery[UserOutputParam] = Query.withParam[UserOutputParam, Traversal.V[User], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
-    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, range.extraData.contains("total"))
+    (params, userSteps, authContext) =>
+      params
+        .organisation
+        .fold(userSteps.richUser(authContext))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
+        .page(params.from, params.to, params.extraData.contains("total"))
   )
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[User]]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
-    Query[Traversal.V[User], Traversal.V[Task]]("tasks", (userSteps, authContext) => userSteps.tasks.visible(authContext)),
-    Query[Traversal.V[User], Traversal.V[Case]]("cases", (userSteps, authContext) => userSteps.cases.visible(authContext))
+    Query[Traversal.V[User], Traversal.V[Task]]("tasks", (userSteps, authContext) => userSteps.tasks.visible(organisationSrv)(authContext)),
+    Query[Traversal.V[User], Traversal.V[Case]](
+      "cases",
+      (userSteps, authContext) =>
+        caseSrv.startTraversal(userSteps.graph).visible(organisationSrv)(authContext).assignedTo(userSteps.value(_.login).toSeq: _*)
+    )
   )
   def current: Action[AnyContent] =
     entrypoint("current user")
@@ -69,12 +77,16 @@ class UserCtrl @Inject() (
           .current
           .richUserWithCustomRenderer(request.organisation, _.organisationWithRole)
           .getOrFail("User")
-          .map(user =>
+          .map { user =>
+            val scope =
+              if (user._1.organisation == Organisation.administration.name) "admin"
+              else "organisation"
             Results
               .Ok(user.toJson)
               .withHeaders("X-Organisation" -> request.organisation.toString)
-              .withHeaders("X-Permissions" -> user._1.permissions.mkString(","))
-          )
+              .withHeaders("X-Permissions" -> (Permissions.forScope(scope) & user._1.permissions).mkString(","))
+          }
+          .recover { case _ => Results.Unauthorized.withHeaders("X-Logout" -> "1") }
       }
 
   def create: Action[AnyContent] =
@@ -197,10 +209,19 @@ class UserCtrl @Inject() (
                         .flatMap(userSrv.setAvatar(user, _))
                         .map(_ => Json.obj("avatar" -> "[binary data]"))
                   }.flip
-                } yield updateName.getOrElse(JsObject.empty) ++
-                  updateLocked.getOrElse(JsObject.empty) ++
-                  updateProfile.getOrElse(JsObject.empty) ++
-                  updatedAvatar.getOrElse(JsObject.empty)
+                } yield {
+                  val updatedProperties = updateName.getOrElse(JsObject.empty) ++
+                    updateLocked.getOrElse(JsObject.empty) ++
+                    updateProfile.getOrElse(JsObject.empty) ++
+                    updatedAvatar.getOrElse(JsObject.empty)
+                  if (updatedProperties.fields.nonEmpty)
+                    userSrv
+                      .get(user)
+                      .update(_._updatedBy, Some(request.userId))
+                      .update(_._updatedAt, Some(new Date))
+                      .iterate()
+                  updatedProperties
+                }
               }(update => auditSrv.user.update(user, update))
               .map(_ => Results.NoContent)
         }

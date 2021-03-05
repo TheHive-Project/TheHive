@@ -19,7 +19,7 @@
                     {_name: 'currentUser'},
                     {_name: 'tasks'}
                 ] : [
-                    {_name: 'waitingTask'}
+                    {_name: 'waitingTasks'}
                 ];
 
                 if ($stateParams.viewId === 'mytasks') {

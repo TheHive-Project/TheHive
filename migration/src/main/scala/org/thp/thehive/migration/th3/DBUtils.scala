@@ -1,9 +1,8 @@
 package org.thp.thehive.migration.th3
 
-import com.sksamuel.elastic4s.http.ElasticDsl.fieldSort
-import com.sksamuel.elastic4s.http.search.SearchHit
-import com.sksamuel.elastic4s.searches.sort.Sort
-import com.sksamuel.elastic4s.searches.sort.SortOrder.{ASC, DESC}
+import com.sksamuel.elastic4s.ElasticDsl.fieldSort
+import com.sksamuel.elastic4s.requests.searches.SearchHit
+import com.sksamuel.elastic4s.requests.searches.sort.{Sort, SortOrder}
 import play.api.libs.json._
 
 import scala.collection.IterableLike
@@ -29,9 +28,9 @@ object DBUtils {
   def sortDefinition(sortBy: Seq[String]): Seq[Sort] = {
     val byFieldList: Seq[(String, Sort)] = sortBy
       .map {
-        case f if f.startsWith("+") => f.drop(1) -> fieldSort(f.drop(1)).order(ASC)
-        case f if f.startsWith("-") => f.drop(1) -> fieldSort(f.drop(1)).order(DESC)
-        case f if f.length() > 0    => f         -> fieldSort(f)
+        case f if f.startsWith("+") => f.drop(1) -> fieldSort(f.drop(1)).order(SortOrder.ASC)
+        case f if f.startsWith("-") => f.drop(1) -> fieldSort(f.drop(1)).order(SortOrder.DESC)
+        case f if f.nonEmpty        => f         -> fieldSort(f)
       }
     // then remove duplicates
     // Same as : val fieldSortDefs = byFieldList.groupBy(_._1).map(_._2.head).values.toSeq
@@ -50,10 +49,10 @@ object DBUtils {
       case None    => JsNull -> (body \ "relations").as[JsString]
     }
     body - "relations" +
-      ("_type"    -> model) +
-      ("_routing" -> hit.routing.fold(id)(JsString.apply)) +
-      ("_parent"  -> parent) +
-      ("_id"      -> id) +
-      ("_version" -> JsNumber(hit.version))
+      ("_type"        -> model) +
+      ("_routing"     -> hit.routing.fold(id)(JsString.apply)) +
+      ("_parent"      -> parent) +
+      ("_id"          -> id) +
+      ("_primaryTerm" -> JsNumber(hit.primaryTerm))
   }
 }

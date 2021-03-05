@@ -1,16 +1,15 @@
 package org.thp.thehive.controllers.v1
 
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputShare, ObservablesFilter, TasksFilter}
-import org.thp.thehive.models.{Case, Observable, Organisation, Permissions, RichShare, Share, Task}
+import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
@@ -19,7 +18,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named}
+import javax.inject.Inject
 import scala.util.{Failure, Success, Try}
 
 class ShareCtrl @Inject() (
@@ -31,7 +30,7 @@ class ShareCtrl @Inject() (
     taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    db: Database
 ) extends QueryableCtrl {
   override val entityName: String                 = "share"
   override val publicProperties: PublicProperties = properties.share
@@ -39,13 +38,11 @@ class ShareCtrl @Inject() (
     Query.init[Traversal.V[Share]]("listShare", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext).shares)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Share], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, shareSteps, _) => shareSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richShare)
   )
   override val outputQuery: Query = Query.outputWithContext[RichShare, Traversal.V[Share]]((shareSteps, _) => shareSteps.richShare)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Share]](
     "getShare",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => shareSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
@@ -187,7 +184,7 @@ class ShareCtrl @Inject() (
               .richShare
               .getOrFail("Share")
           profile <- profileSrv.getOrFail(EntityIdOrName(profile))
-          _       <- shareSrv.update(richShare.share, profile)
+          _       <- shareSrv.updateProfile(richShare.share, profile)
         } yield Results.Ok
       }
 

@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
 import io.github.nremond.SecureHash
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -11,6 +10,7 @@ import org.thp.thehive.models.User
 import play.api.mvc.RequestHeader
 import play.api.{Configuration, Logger}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 object LocalPasswordAuthSrv {
@@ -19,7 +19,7 @@ object LocalPasswordAuthSrv {
     SecureHash.createHash(password)
 }
 
-class LocalPasswordAuthSrv(@Named("with-thehive-schema") db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
+class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)
   lazy val logger: Logger                              = Logger(getClass)
@@ -68,8 +68,7 @@ class LocalPasswordAuthSrv(@Named("with-thehive-schema") db: Database, userSrv: 
 }
 
 @Singleton
-class LocalPasswordAuthProvider @Inject() (@Named("with-thehive-schema") db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv)
-    extends AuthSrvProvider {
+class LocalPasswordAuthProvider @Inject() (db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrvProvider {
   override val name: String                               = "local"
   override def apply(config: Configuration): Try[AuthSrv] = Success(new LocalPasswordAuthSrv(db, userSrv, localUserSrv))
 }

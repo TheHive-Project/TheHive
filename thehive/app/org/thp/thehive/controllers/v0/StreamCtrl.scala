@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.auth.{ExpirationStatus, SessionAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
@@ -12,6 +11,7 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
@@ -23,7 +23,7 @@ class StreamCtrl @Inject() (
     val caseSrv: CaseSrv,
     val taskSrv: TaskSrv,
     val userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     implicit val schema: Schema,
     implicit val ec: ExecutionContext
 ) extends AuditRenderer {

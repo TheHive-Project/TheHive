@@ -1,18 +1,25 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
-import org.apache.tinkerpop.gremlin.structure.{Edge, Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.{Edge, Vertex}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Converter
+import org.thp.scalligraph.traversal.{Converter, Graph}
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
+
+import java.util.Date
 
 @BuildEdgeEntity[Audit, User]
 case class AuditUser()
 
-@DefineIndex(IndexType.basic, "requestId", "mainAction")
 @BuildVertexEntity
+@DefineIndex(IndexType.basic, "requestId", "mainAction")
+@DefineIndex(IndexType.standard, "requestId")
+@DefineIndex(IndexType.standard, "action")
+@DefineIndex(IndexType.standard, "mainAction")
+@DefineIndex(IndexType.standard, "objectId")
+@DefineIndex(IndexType.standard, "objectType")
+@DefineIndex(IndexType.standard, "_createdAt")
+@DefineIndex(IndexType.standard, "_updatedAt")
 case class Audit(
     requestId: String,
     action: String,
@@ -104,7 +111,7 @@ object Audited {
         override def _createdAt: Date           = entity._createdAt
         override def _updatedAt: Option[Date]   = entity._updatedAt
       }
-    override def create(e: Audited, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge = from.addEdge(label, to)
+    override def create(e: Audited, from: Vertex, to: Vertex)(implicit graph: Graph): Edge = from.addEdge(label, to)
   }
 }
 case class AuditContext()
@@ -135,7 +142,7 @@ object AuditContext extends HasModel {
         override def _createdAt: Date           = entity._createdAt
         override def _updatedAt: Option[Date]   = entity._updatedAt
       }
-    override def create(e: AuditContext, from: Vertex, to: Vertex)(implicit db: Database, graph: Graph): Edge =
+    override def create(e: AuditContext, from: Vertex, to: Vertex)(implicit graph: Graph): Edge =
       from.addEdge(label, to)
   }
 }

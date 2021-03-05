@@ -235,7 +235,7 @@
             };
 
             self.getTags = function (query) {
-                return TagSrv.fromCases(query);
+                return TagSrv.autoComplete(query);
             };
         });
 })();

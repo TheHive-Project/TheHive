@@ -47,7 +47,7 @@ class TagSrvTest extends PlaySpecification with TestAppBuilder {
           tag.map(_.namespace) must beEqualTo(Success(s"_freetags_$orgId"))
           tag.map(_.predicate) must beEqualTo(Success("afreetag"))
           tag.map(_.predicate) must beEqualTo(Success("afreetag"))
-          tag.map(_.colour) must beEqualTo(Success(app[TagSrv].defaultColour))
+          tag.map(_.colour) must beEqualTo(Success(app[TagSrv].freeTagColour))
         }
       }
     }

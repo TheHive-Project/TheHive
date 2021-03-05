@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorSystem, Props}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberEvent, _}
 import com.google.inject.Injector
+import org.thp.scalligraph.SingleInstance
 import play.api.{Configuration, Logger}
 
 import javax.inject.{Inject, Singleton}
@@ -13,9 +14,9 @@ class ClusterSetup @Inject() (
     configuration: Configuration,
     system: ActorSystem,
     injector: Injector
-) {
+) extends SingleInstance(configuration.get[Seq[String]]("akka.cluster.seed-nodes").isEmpty) {
   system.actorOf(Props[ClusterListener])
-  if (configuration.get[Seq[String]]("akka.cluster.seed-nodes").isEmpty) {
+  if (value) {
     val logger: Logger = Logger(getClass)
     logger.info("Initialising cluster")
     val cluster = Cluster(system)

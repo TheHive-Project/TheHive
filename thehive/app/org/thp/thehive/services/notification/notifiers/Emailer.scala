@@ -1,13 +1,13 @@
 package org.thp.thehive.services.notification.notifiers
 
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.libs.mailer.{Email, MailerClient}
 import play.api.{Configuration, Logger}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
@@ -54,8 +54,8 @@ class Emailer(
       `object`: Option[Entity],
       organisation: Organisation with Entity,
       user: Option[User with Entity]
-  )(
-      implicit graph: Graph
+  )(implicit
+      graph: Graph
   ): Future[Unit] =
     user.fold(Future.successful(logger.warn(s"Email can't be sent to an organisation"))) { u =>
       buildMessage(template, audit, context, `object`, user, baseUrl)

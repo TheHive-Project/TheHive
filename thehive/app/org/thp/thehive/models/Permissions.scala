@@ -20,10 +20,11 @@ object Permissions extends Perms {
   lazy val manageProcedure: PermissionDesc          = PermissionDesc("manageProcedure", "Manage procedures", "organisation")
   lazy val manageProfile: PermissionDesc            = PermissionDesc("manageProfile", "Manage user profiles", "admin")
   lazy val manageShare: PermissionDesc              = PermissionDesc("manageShare", "Manage shares", "organisation")
-  lazy val manageTag: PermissionDesc                = PermissionDesc("manageTag", "Manage tags", "admin")
+  lazy val manageTag: PermissionDesc                = PermissionDesc("manageTag", "Manage tags", "organisation")
   lazy val manageTaxonomy: PermissionDesc           = PermissionDesc("manageTaxonomy", "Manage taxonomies", "admin")
   lazy val manageTask: PermissionDesc               = PermissionDesc("manageTask", "Manage tasks", "organisation")
   lazy val manageUser: PermissionDesc               = PermissionDesc("manageUser", "Manage users", "organisation", "admin")
+  lazy val managePlatform: PermissionDesc           = PermissionDesc("managePlatform", "Manage TheHive platform", "admin")
 
   lazy val list: Set[PermissionDesc] =
     Set(
@@ -41,6 +42,7 @@ object Permissions extends Perms {
       manageOrganisation,
       managePage,
       managePattern,
+      managePlatform,
       manageProcedure,
       manageProfile,
       manageShare,

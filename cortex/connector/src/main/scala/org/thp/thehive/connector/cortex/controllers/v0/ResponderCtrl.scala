@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import com.google.inject.name.Named
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -11,12 +9,13 @@ import org.thp.thehive.controllers.v0.Conversion._
 import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class ResponderCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-cortex-schema") implicit val db: Database,
+    implicit val db: Database,
     responderSrv: ResponderSrv,
     implicit val ex: ExecutionContext
 ) {

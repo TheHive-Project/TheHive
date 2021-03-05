@@ -1,31 +1,25 @@
 package org.thp.thehive.services
 
 import org.apache.tinkerpop.gremlin.process.traversal.TextP
-
-import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.TagOps._
+import org.thp.thehive.services.TaxonomyOps._
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class TaxonomySrv @Inject() (
-    organisationSrv: OrganisationSrv,
-    tagSrv: TagSrv
-)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Taxonomy] {
+class TaxonomySrv @Inject() (organisationSrv: OrganisationSrv, tagSrv: TagSrv) extends VertexSrv[Taxonomy] {
 
   val taxonomyTagSrv          = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   val organisationTaxonomySrv = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
@@ -37,17 +31,23 @@ class TaxonomySrv @Inject() (
       richTaxonomy <- Try(RichTaxonomy(taxonomy, tags))
     } yield richTaxonomy
 
-  def createFreetag(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {
-    val customTaxo = Taxonomy(s"_freetags_${organisation._id}", "Custom taxonomy", 1)
+  def createFreetagTaxonomy(organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Taxonomy with Entity] = {
+    val customTaxo = Taxonomy(s"_freetags_${organisation._id.value}", "Custom taxonomy", 1)
     for {
-      taxonomy     <- createEntity(customTaxo)
-      richTaxonomy <- Try(RichTaxonomy(taxonomy, Seq()))
-      _            <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
-    } yield richTaxonomy
+      taxonomy <- createEntity(customTaxo)
+      _        <- organisationTaxonomySrv.create(OrganisationTaxonomy(), organisation, taxonomy)
+    } yield taxonomy
   }
 
+  def getFreetagTaxonomy(implicit graph: Graph, authContext: AuthContext): Try[Taxonomy with Entity] =
+    getByName(s"_freetags_${organisationSrv.currentId.value}")
+      .getOrFail("FreetagTaxonomy")
+      .orElse {
+        organisationSrv.current.notAdmin.getOrFail("Organisation").flatMap(createFreetagTaxonomy)
+      }
+
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
-    Try(startTraversal.getByNamespace(name)).getOrElse(startTraversal.limit(0))
+    startTraversal.getByNamespace(name)
 
   def update(taxonomy: Taxonomy with Entity, input: Taxonomy)(implicit graph: Graph): Try[RichTaxonomy] =
     for {
@@ -111,8 +111,11 @@ object TaxonomyOps {
       else
         noFreetags.filter(_.organisations.get(authContext.organisation))
 
-    private def noFreetags: Traversal.V[Taxonomy] =
-      traversal.filterNot(_.has(_.namespace, TextP.startingWith("_freetags")))
+    def noFreetags: Traversal.V[Taxonomy] =
+      traversal.hasNot(_.namespace, TextP.startingWith("_freetags"))
+
+    def freetags: Traversal.V[Taxonomy] =
+      traversal.has(_.namespace, TextP.startingWith("_freetags"))
 
     def alreadyImported(namespace: String): Boolean =
       traversal.getByNamespace(namespace).exists

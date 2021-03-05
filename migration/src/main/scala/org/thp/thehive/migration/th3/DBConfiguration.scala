@@ -2,16 +2,16 @@ package org.thp.thehive.migration.th3
 
 import java.nio.file.{Files, Paths}
 import java.security.KeyStore
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
-import com.sksamuel.elastic4s.http._
-import com.sksamuel.elastic4s.http.bulk.BulkResponseItem
-import com.sksamuel.elastic4s.http.search.SearchHit
-import com.sksamuel.elastic4s.searches._
+import com.sksamuel.elastic4s._
+import com.sksamuel.elastic4s.http.JavaClient
+import com.sksamuel.elastic4s.requests.bulk.BulkResponseItem
+import com.sksamuel.elastic4s.requests.searches.{SearchHit, SearchRequest}
 import com.sksamuel.elastic4s.streams.ReactiveElastic.ReactiveElastic
 import com.sksamuel.elastic4s.streams.{RequestBuilder, ResponseListener}
+
 import javax.inject.{Inject, Named, Singleton}
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
@@ -39,29 +39,29 @@ class DBConfiguration @Inject() (
     config: Configuration,
     lifecycle: ApplicationLifecycle,
     @Named("databaseVersion") val version: Int,
-    implicit val ec: ExecutionContext,
     implicit val actorSystem: ActorSystem
 ) {
   private[DBConfiguration] lazy val logger = Logger(getClass)
 
-  def requestConfigCallback: RequestConfigCallback = (requestConfigBuilder: RequestConfig.Builder) => {
-    requestConfigBuilder.setAuthenticationEnabled(credentialsProviderMaybe.isDefined)
-    config.getOptional[Boolean]("search.circularRedirectsAllowed").foreach(requestConfigBuilder.setCircularRedirectsAllowed)
-    config.getOptional[Int]("search.connectionRequestTimeout").foreach(requestConfigBuilder.setConnectionRequestTimeout)
-    config.getOptional[Int]("search.connectTimeout").foreach(requestConfigBuilder.setConnectTimeout)
-    config.getOptional[Boolean]("search.contentCompressionEnabled").foreach(requestConfigBuilder.setContentCompressionEnabled)
-    config.getOptional[String]("search.cookieSpec").foreach(requestConfigBuilder.setCookieSpec)
-    config.getOptional[Boolean]("search.expectContinueEnabled").foreach(requestConfigBuilder.setExpectContinueEnabled)
-    //    config.getOptional[InetAddress]("search.localAddress").foreach(requestConfigBuilder.setLocalAddress)
-    config.getOptional[Int]("search.maxRedirects").foreach(requestConfigBuilder.setMaxRedirects)
-    //    config.getOptional[Boolean]("search.proxy").foreach(requestConfigBuilder.setProxy)
-    config.getOptional[Seq[String]]("search.proxyPreferredAuthSchemes").foreach(v => requestConfigBuilder.setProxyPreferredAuthSchemes(v.asJava))
-    config.getOptional[Boolean]("search.redirectsEnabled").foreach(requestConfigBuilder.setRedirectsEnabled)
-    config.getOptional[Boolean]("search.relativeRedirectsAllowed").foreach(requestConfigBuilder.setRelativeRedirectsAllowed)
-    config.getOptional[Int]("search.socketTimeout").foreach(requestConfigBuilder.setSocketTimeout)
-    config.getOptional[Seq[String]]("search.targetPreferredAuthSchemes").foreach(v => requestConfigBuilder.setTargetPreferredAuthSchemes(v.asJava))
-    requestConfigBuilder
-  }
+  def requestConfigCallback: RequestConfigCallback =
+    (requestConfigBuilder: RequestConfig.Builder) => {
+      requestConfigBuilder.setAuthenticationEnabled(credentialsProviderMaybe.isDefined)
+      config.getOptional[Boolean]("search.circularRedirectsAllowed").foreach(requestConfigBuilder.setCircularRedirectsAllowed)
+      config.getOptional[Int]("search.connectionRequestTimeout").foreach(requestConfigBuilder.setConnectionRequestTimeout)
+      config.getOptional[Int]("search.connectTimeout").foreach(requestConfigBuilder.setConnectTimeout)
+      config.getOptional[Boolean]("search.contentCompressionEnabled").foreach(requestConfigBuilder.setContentCompressionEnabled)
+      config.getOptional[String]("search.cookieSpec").foreach(requestConfigBuilder.setCookieSpec)
+      config.getOptional[Boolean]("search.expectContinueEnabled").foreach(requestConfigBuilder.setExpectContinueEnabled)
+      //    config.getOptional[InetAddress]("search.localAddress").foreach(requestConfigBuilder.setLocalAddress)
+      config.getOptional[Int]("search.maxRedirects").foreach(requestConfigBuilder.setMaxRedirects)
+      //    config.getOptional[Boolean]("search.proxy").foreach(requestConfigBuilder.setProxy)
+      config.getOptional[Seq[String]]("search.proxyPreferredAuthSchemes").foreach(v => requestConfigBuilder.setProxyPreferredAuthSchemes(v.asJava))
+      config.getOptional[Boolean]("search.redirectsEnabled").foreach(requestConfigBuilder.setRedirectsEnabled)
+      config.getOptional[Boolean]("search.relativeRedirectsAllowed").foreach(requestConfigBuilder.setRelativeRedirectsAllowed)
+      config.getOptional[Int]("search.socketTimeout").foreach(requestConfigBuilder.setSocketTimeout)
+      config.getOptional[Seq[String]]("search.targetPreferredAuthSchemes").foreach(v => requestConfigBuilder.setTargetPreferredAuthSchemes(v.asJava))
+      requestConfigBuilder
+    }
 
   lazy val credentialsProviderMaybe: Option[CredentialsProvider] =
     for {
@@ -86,9 +86,7 @@ class DBConfiguration @Inject() (
         val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
         kmf.init(keyStore, keyStorePassword)
         kmf.getKeyManagers
-      } finally {
-        keyInputStream.close()
-      }
+      } finally keyInputStream.close()
 
     val trustManagers = config
       .getOptional[String]("search.trustStore.path")
@@ -102,9 +100,7 @@ class DBConfiguration @Inject() (
           val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
           tmf.init(keyStore)
           tmf.getTrustManagers
-        } finally {
-          trustInputStream.close()
-        }
+        } finally trustInputStream.close()
       }
       .getOrElse(Array.empty)
 
@@ -114,27 +110,29 @@ class DBConfiguration @Inject() (
     sslContext
   }
 
-  def httpClientConfig: HttpClientConfigCallback = (httpClientBuilder: HttpAsyncClientBuilder) => {
-    sslContextMaybe.foreach(httpClientBuilder.setSSLContext)
-    credentialsProviderMaybe.foreach(httpClientBuilder.setDefaultCredentialsProvider)
-    httpClientBuilder
-  }
+  def httpClientConfig: HttpClientConfigCallback =
+    (httpClientBuilder: HttpAsyncClientBuilder) => {
+      sslContextMaybe.foreach(httpClientBuilder.setSSLContext)
+      credentialsProviderMaybe.foreach(httpClientBuilder.setDefaultCredentialsProvider)
+      httpClientBuilder
+    }
 
   /**
     * Underlying ElasticSearch client
     */
-  val client: ElasticClient = ElasticClient(ElasticProperties(config.get[String]("search.uri")), requestConfigCallback, httpClientConfig)
+  private val props  = ElasticProperties(config.get[String]("search.uri"))
+  private val client = ElasticClient(JavaClient(props, requestConfigCallback, httpClientConfig))
+
   // when application close, close also ElasticSearch connection
   lifecycle.addStopHook { () =>
-    Future {
-      client.close()
-    }
+    client.close()
+    Future.successful(())
   }
 
-  def execute[T, U](t: T)(
-      implicit
+  def execute[T, U](t: T)(implicit
       handler: Handler[T, U],
-      manifest: Manifest[U]
+      manifest: Manifest[U],
+      ec: ExecutionContext
   ): Future[U] = {
     logger.debug(s"Elasticsearch request: ${client.show(t)}")
     client.execute(t).flatMap {
@@ -157,7 +155,8 @@ class DBConfiguration @Inject() (
   /**
     * Creates a Source (akka stream) from the result of the search
     */
-  def source(searchRequest: SearchRequest): Source[SearchHit, NotUsed] = Source.fromPublisher(client.publisher(searchRequest))
+  def source(searchRequest: SearchRequest): Source[SearchHit, NotUsed] =
+    Source.fromPublisher(client.publisher(searchRequest))
 
   /**
     * Create a Sink (akka stream) that create entity in ElasticSearch
@@ -209,5 +208,5 @@ class DBConfiguration @Inject() (
     * return a new instance of DBConfiguration that points to the previous version of the index schema
     */
   def previousVersion: DBConfiguration =
-    new DBConfiguration(config, lifecycle, version - 1, ec, actorSystem)
+    new DBConfiguration(config, lifecycle, version - 1, actorSystem)
 }

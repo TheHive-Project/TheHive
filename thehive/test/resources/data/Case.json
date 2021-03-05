@@ -9,7 +9,9 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "tags": ["t1", "t3"],
+    "assignee": "certuser@thehive.local"
   },
   {
     "id": "case2",
@@ -21,7 +23,10 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "tags": ["t1","t2"],
+    "impactStatus": "NoImpact",
+    "assignee": "certuser@thehive.local"
   },
   {
     "id": "case3",
@@ -33,7 +38,10 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "caseTemplate": "spam",
+    "tags": ["t1","t2"],
+    "assignee": "socuser@thehive.local"
   },
   {
     "id": "caseActionRequired1",

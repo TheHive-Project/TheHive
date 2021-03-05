@@ -24,7 +24,7 @@ class DashboardCtrl @Inject() (
     override val entrypoint: Entrypoint,
     dashboardSrv: DashboardSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     override val publicData: PublicDashboard,
     @Named("v0") override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
@@ -94,23 +94,21 @@ class PublicDashboard @Inject() (
     Query.init[Traversal.V[Dashboard]](
       "listDashboard",
       (graph, authContext) =>
-        Traversal
+        graph
           .union(
             organisationSrv.filterTraversal(_).get(authContext.organisation).dashboards,
             userSrv.filterTraversal(_).getByName(authContext.userId).dashboards
-          )(graph)
+          )
           .dedup
     )
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Dashboard]](
     "getDashboard",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => dashboardSrv.get(idOrName)(graph).visible(authContext)
   )
 
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Dashboard], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, dashboardSteps, _) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard)
   )
   override val outputQuery: Query = Query.output[RichDashboard, Traversal.V[Dashboard]](_.richDashboard)
@@ -121,25 +119,25 @@ class PublicDashboard @Inject() (
     .property("status", UMapping.string)(
       _.select(_.choose(_.organisation, "Shared", "Private"))
         .custom {
-          case (_, "Shared", vertex, _, graph, authContext) =>
+          case (_, "Shared", vertex, graph, authContext) =>
             for {
               dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
             } yield Json.obj("status" -> "Shared")
 
-          case (_, "Private", vertex, _, graph, authContext) =>
+          case (_, "Private", vertex, graph, authContext) =>
             for {
               d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _ <- dashboardSrv.unshare(d, authContext.organisation)(graph, authContext)
             } yield Json.obj("status" -> "Private")
 
-          case (_, "Deleted", vertex, _, graph, authContext) =>
+          case (_, "Deleted", vertex, graph, authContext) =>
             for {
               d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
               _ <- dashboardSrv.remove(d)(graph, authContext)
             } yield Json.obj("status" -> "Deleted")
 
-          case (_, status, _, _, _, _) =>
+          case (_, status, _, _, _) =>
             Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))
         }
     )

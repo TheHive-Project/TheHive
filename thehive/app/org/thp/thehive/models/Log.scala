@@ -1,15 +1,26 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
+
+import java.util.Date
 
 @BuildEdgeEntity[Log, Attachment]
 case class LogAttachment()
 
+@DefineIndex(IndexType.fulltext, "message")
+@DefineIndex(IndexType.standard, "date")
+@DefineIndex(IndexType.standard, "taskId")
+@DefineIndex(IndexType.standard, "organisationIds")
 @BuildVertexEntity
-case class Log(message: String, date: Date, deleted: Boolean)
+case class Log(
+    message: String,
+    date: Date,
+    deleted: Boolean,
+    /* filled by the service */
+    taskId: EntityId = EntityId(""),
+    organisationIds: Set[EntityId] = Set.empty
+)
 
 case class RichLog(log: Log with Entity, attachments: Seq[Attachment with Entity]) {
   def _id: EntityId              = log._id

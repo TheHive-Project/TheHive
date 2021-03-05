@@ -95,3 +95,7 @@ pre.error-trace {
     white-space: pre-wrap;
     background-color: #f9f1f1;
 }
+
+td.case-status {
+    text-align: center;
+}
