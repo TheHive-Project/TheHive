@@ -51,10 +51,14 @@
                             </div>
 
                             <div class="flex-col flex-1 vertical">
-                                {{data.mixedCount}} objects in DB
+                                <span class="label label-lg label-default">
+                                    {{data.mixedCount}}
+                                </span>
                             </div>
                             <div class="flex-col flex-1 vertical">
-                                {{data.compositeCount}}
+                                <span class="label label-lg label-default">
+                                    {{data.compositeCount}}
+                                </span>
                             </div>
                             <div class="flex-col flex-w-100">
                                 <a href class="text-primary" ng-click="$vm.reindex(indexName)"><i
