@@ -38,7 +38,7 @@
                         <i ng-show="$vm.filtering.context.sort.indexOf('-predicate') !== -1" class="fa fa-caret-down"></i>
                       </a>
                     </th>
-                    <th width="150px">
+                    <th width="250px">
                         Colour
                     </th>
                     <th style="width: 60px;">By</th>
@@ -66,10 +66,10 @@
                 <tr ng-repeat="tag in $vm.list.values">
                     <td>{{tag._id}}</td>
                     <td>
-                        <tag value="tag.predicate"></tag>
+                        <tag-item class="label-lg" value="tag.predicate" colour="tag.colour"></tag-item>
                     </td>
                     <td>
-                        <span>{{tag.colour}}</span>
+                        <updatable-colour value="tag.colour" on-update="$vm.updateColour(tag._id, newValue)"></updatable-colour>
                     </td>
 
                     <td class="nowrap">

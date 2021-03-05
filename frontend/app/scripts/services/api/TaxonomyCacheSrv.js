@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('TaxonomyCacheSrv', function($http, $q, $filter, $uibModal, QuerySrv) {
+        .service('TaxonomyCacheSrv', function($http, $q, $filter, $uibModal, TagSrv, QuerySrv) {
             var self = this;
 
             this.cache = null;
@@ -58,6 +58,14 @@
 
                                 self.cacheTagColors(taxonomy.tags);
                             });
+                        })
+                        .then(function() {
+                            return TagSrv.getFreeTags();
+                        })
+                        .then(function(freeTags) {
+                            self.cacheTagColors(freeTags);
+
+                            console.log(self.cache);
 
                             deferred.resolve(self.cache);
                         });

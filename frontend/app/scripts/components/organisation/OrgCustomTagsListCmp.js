@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgCustomTagsList', {
-            controller: function($uibModal, $scope, PaginatedQuerySrv, FilteringSrv, UserSrv, NotificationSrv, ModalUtilsSrv) {
+            controller: function($scope, PaginatedQuerySrv, FilteringSrv, TagSrv, UserSrv, NotificationSrv) {
                 var self = this;
 
                 self.tags = [];
@@ -11,7 +11,7 @@
 
                 this.$onInit = function() {
                     // TODO: FIXME
-                    self.filtering = new FilteringSrv('taxonomy', 'custom-tags.list', {
+                    self.filtering = new FilteringSrv('tag', 'custom-tags.list', {
                         version: 'v1',
                         defaults: {
                             showFilters: true,
@@ -58,6 +58,16 @@
                         }
                     });
                 };
+
+                self.updateColour = function(id, colour) {
+                    TagSrv.updateTag(id, {colour: colour})
+                        .then(function(/*response*/) {
+                            NotificationSrv.success('Tag list', 'Tag colour updated successfully');
+                        })
+                        .catch(function(err) {
+                            NotificationSrv.error('Tag list', err.data, err.status);
+                        })
+                }
 
                 // Filtering
                 this.toggleFilters = function () {
