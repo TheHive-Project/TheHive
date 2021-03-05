@@ -33,11 +33,6 @@
                                 self.filtering.setPageSize(newValue);
                             });
                         });
-
-                    // TODO: REMOVE ME
-                    if (self.templates && !_.isEmpty(self.templates)) {
-                        self.loadTemplate(self.templates[0]);
-                    }
                 };
 
                 this.load = function() {
