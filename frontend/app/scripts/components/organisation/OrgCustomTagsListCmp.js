@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgCustomTagsList', {
-            controller: function($scope, PaginatedQuerySrv, FilteringSrv, TagSrv, UserSrv, NotificationSrv) {
+            controller: function($scope, PaginatedQuerySrv, FilteringSrv, TagSrv, UserSrv, ModalUtilsSrv, NotificationSrv) {
                 var self = this;
 
                 self.tags = [];
@@ -50,6 +50,7 @@
                                 '_name': 'freetags'
                             }
                         ],
+                        extraData: ['usage'],
                         onFailure: function(err) {
                             if(err && err.status === 400) {
                                 self.filtering.resetContext();
@@ -57,6 +58,23 @@
                             }
                         }
                     });
+                };
+
+                self.deleteTag = function (tag) {
+                    ModalUtilsSrv.confirm('Remove free tag', 'Are you sure you want to delete this tag?', {
+                        okText: 'Yes, remove it',
+                        flavor: 'danger'
+                    })
+                        .then(function () {
+                            return TagSrv.removeTag(tag._id);
+                        })
+                        .then(function () {
+                            NotificationSrv.success('Tag list', 'Tag removed successfully');
+
+                            self.load();
+
+                            $scope.$emit('freetags:refresh');
+                        });
                 };
 
                 self.updateColour = function(id, colour) {
@@ -125,110 +143,6 @@
                     self.list.update();
                     self.filtering.setSort(sort);
                 };
-
-
-                // this.showTemplate = function(template) {
-
-                //     var promise = template._id ? CaseTemplateSrv.get(template._id) : $q.resolve(template);
-
-                //     promise
-                //         .then(function(response) {
-                //             var modalInstance = $uibModal.open({
-                //                 animation: true,
-                //                 keyboard: false,
-                //                 backdrop: 'static',
-                //                 templateUrl: 'views/components/org/case-template/details.modal.html',
-                //                 controller: 'OrgCaseTemplateModalCtrl',
-                //                 controllerAs: '$vm',
-                //                 size: 'max',
-                //                 resolve: {
-                //                     template: function() {
-                //                         return response;
-                //                     },
-                //                     fields: function() {
-                //                         return self.fields;
-                //                     }
-                //                 }
-                //             });
-
-                //             return modalInstance.result;
-                //         })
-                //         .then(function() {
-                //             self.load();
-                //         })
-                //         .catch(function(err) {
-                //             if(err && !_.isString(err)) {
-                //                 NotificationSrv.error('Case Template Admin', err.data, err.status);
-                //             }
-                //         })
-                // }
-
-                // self.createTemplate = function(template) {
-                //     return CaseTemplateSrv.create(template).then(
-                //         function(/*response*/) {
-                //             self.load();
-
-                //             $scope.$emit('templates:refresh');
-
-                //             NotificationSrv.log('The template [' + template.name + '] has been successfully created', 'success');
-                //         },
-                //         function(response) {
-                //             NotificationSrv.error('TemplateCtrl', response.data, response.status);
-                //         }
-                //     );
-                // };
-
-                // self.importTemplate = function() {
-                //     var modalInstance = $uibModal.open({
-                //         animation: true,
-                //         templateUrl: 'views/components/org/case-template/import.html',
-                //         controller: 'AdminCaseTemplateImportCtrl',
-                //         controllerAs: 'vm',
-                //         size: 'lg'
-                //     });
-
-                //     modalInstance.result
-                //         .then(function(template) {
-                //             return self.createTemplate(template);
-                //         })
-                //         .catch(function(err) {
-                //             if (err && err.status) {
-                //                 NotificationSrv.error('TemplateCtrl', err.data, err.status);
-                //             }
-                //         });
-                // };
-
-                // self.deleteTemplate = function (template) {
-                //     ModalUtilsSrv.confirm('Remove case template', 'Are you sure you want to delete this case template?', {
-                //         okText: 'Yes, remove it',
-                //         flavor: 'danger'
-                //     })
-                //         .then(function () {
-                //             return CaseTemplateSrv.delete(template._id);
-                //         })
-                //         .then(function () {
-                //             self.load();
-
-                //             $scope.$emit('templates:refresh');
-                //         });
-                // };
-
-                // self.exportTemplate = function (template) {
-                //     CaseTemplateSrv.get(template._id)
-                //         .then(function(response) {
-                //             var fileName = 'Case-Template__' + response.name.replace(/\s/gi, '_') + '.json';
-
-                //             // Create a blob of the data
-                //             var fileToSave = new Blob([angular.toJson(_.omit(response, 'id'))], {
-                //                 type: 'application/json',
-                //                 name: fileName
-                //             });
-
-                //             // Save the file
-                //             saveAs(fileToSave, fileName);
-                //         })
-
-                // };
             },
             controllerAs: '$vm',
             templateUrl: 'views/components/org/custom-tags/tag-list.html',

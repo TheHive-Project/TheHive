@@ -29,7 +29,6 @@
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th width="100">ID</th>
                     <th>
                       <a href class="text-default" ng-click="$vm.sortByField('predicate')">
                         Name
@@ -41,6 +40,9 @@
                     <th width="250px">
                         Colour
                     </th>
+                    <th width="100px">Cases</th>
+                    <th width="100px">Alerts</th>
+                    <th width="100px">Observables</th>
                     <th style="width: 60px;">By</th>
                     <th style="width: 150px">
                         Dates
@@ -58,20 +60,21 @@
                             <i ng-show="$vm.filtering.context.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
                         </a>
                     </th>
-                    <th style="width: 120px">Actions</th>
+                    <th style="width: 60px">Actions</th>
                 </tr>
             </thead>
 
             <tbody>
                 <tr ng-repeat="tag in $vm.list.values">
-                    <td>{{tag._id}}</td>
                     <td>
                         <tag-item class="label-lg" value="tag.predicate" colour="tag.colour"></tag-item>
                     </td>
                     <td>
                         <updatable-colour value="tag.colour" on-update="$vm.updateColour(tag._id, newValue)"></updatable-colour>
                     </td>
-
+                    <td>{{tag.extraData.usage.case}}</td>
+                    <td>{{tag.extraData.usage.alert}}</td>
+                    <td>{{tag.extraData.usage.observable}}</td>
                     <td class="nowrap">
                         <user user-id="tag._createdBy" icon-only="true" icon-size="m"></user>
                     </td>
@@ -84,10 +87,10 @@
                         </div>
                     </td>
                     <td class="text-center">
-                        <a href class="btn btn-icon btn-clear" ng-click="$vm.showTemplate(template)">
+                        <!-- <a href class="btn btn-icon btn-clear" ng-click="$vm.showTemplate(template)">
                             <i class="text-info fa fa-edit"></i>
-                        </a>
-                        <a href class="btn btn-icon btn-clear" ng-click="$vm.deleteTemplate(template)">
+                        </a> -->
+                        <a href class="btn btn-icon btn-clear" ng-click="$vm.deleteTag(tag)">
                             <i class="text-info fa fa-trash text-danger"></i>
                         </a>
                     </td>

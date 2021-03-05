@@ -26,6 +26,10 @@
                 return $http.patch('./api/v1/tag/' + id, patch);
             }
 
+            this.removeTag = function(id) {
+                return $http.delete('./api/v1/tag/' + id);
+            }
+
             this.autoComplete = function(term) {
                 var defer = $q.defer();
 

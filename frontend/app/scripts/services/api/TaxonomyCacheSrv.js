@@ -65,8 +65,6 @@
                         .then(function(freeTags) {
                             self.cacheTagColors(freeTags);
 
-                            console.log(self.cache);
-
                             deferred.resolve(self.cache);
                         });
                 } else {
