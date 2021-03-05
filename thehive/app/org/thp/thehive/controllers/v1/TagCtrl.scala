@@ -77,4 +77,14 @@ class TagCtrl @Inject() (
           .update(_.getFreetag(organisationSrv, EntityIdOrName(tagId)), propertyUpdaters)
           .map(_ => Results.NoContent)
       }
+
+  def delete(tagId: String): Action[AnyContent] =
+    entrypoint("delete tag")
+      .authPermittedTransaction(db, Permissions.manageTag) { implicit request => implicit graph =>
+        tagSrv
+          .getFreetag(EntityIdOrName(tagId))
+          .getOrFail("Tag")
+          .flatMap(tagSrv.delete)
+          .map(_ => Results.NoContent)
+      }
 }

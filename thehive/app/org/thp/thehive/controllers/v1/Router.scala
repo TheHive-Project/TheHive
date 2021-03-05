@@ -165,8 +165,9 @@ class Router @Inject() (
     case PATCH(p"/profile/$profileId")  => profileCtrl.update(profileId)
     case DELETE(p"/profile/$profileId") => profileCtrl.delete(profileId)
 
-    case GET(p"/tag/$id")   => tagCtrl.get(id)
-    case PATCH(p"/tag/$id") => tagCtrl.update(id)
+    case GET(p"/tag/$id")    => tagCtrl.get(id)
+    case PATCH(p"/tag/$id")  => tagCtrl.update(id)
+    case DELETE(p"/tag/$id") => tagCtrl.delete(id)
 
     case GET(p"/describe/_all")       => describeCtrl.describeAll
     case GET(p"/describe/$modelName") => describeCtrl.describe(modelName)

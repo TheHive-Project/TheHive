@@ -53,6 +53,9 @@ class TagSrv @Inject() (
 
   def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
+  def getFreetag(idOrName: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Traversal.V[Tag] =
+    startTraversal.getFreetag(organisationSrv, idOrName)
+
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
     fromString(tagName)
       .flatMap {
