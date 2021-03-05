@@ -31,7 +31,7 @@ class DescribeCtrl @Inject() (
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
     customFieldCtrl: CustomFieldCtrl,
-//    dashboardCtrl: DashboardCtrl,
+    dashboardCtrl: DashboardCtrl,
     logCtrl: LogCtrl,
     observableCtrl: ObservableCtrl,
     observableTypeCtrl: ObservableTypeCtrl,
@@ -102,7 +102,7 @@ class DescribeCtrl @Inject() (
         EntityDescription("case", "listCase", caseCtrl.publicProperties.list.flatMap(propertyToJson("case", _))),
         EntityDescription("caseTemplate", "listCaseTemplate", caseTemplateCtrl.publicProperties.list.flatMap(propertyToJson("caseTemplate", _))),
         EntityDescription("customField", "listCustomField", customFieldCtrl.publicProperties.list.flatMap(propertyToJson("customField", _))),
-        // EntityDescription("dashboard", "listDashboard", dashboardCtrl.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
+        EntityDescription("dashboard", "listDashboard", dashboardCtrl.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
         EntityDescription("log", "listLog", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
         EntityDescription("observable", "listObservable", observableCtrl.publicProperties.list.flatMap(propertyToJson("observable", _))),
         EntityDescription(
@@ -161,28 +161,8 @@ class DescribeCtrl @Inject() (
         )
       case ("case", "impactStatus")     => Some(Seq(impactStatus))
       case ("case", "resolutionStatus") => Some(Seq(resolutionStatus))
-//    //case ("observable", "status") =>
-//    //  Some(PropertyDescription("status", "enumeration", Seq(JsString("Ok"))))
-//    //case ("observable", "dataType") =>
-//    //  Some(PropertyDescription("status", "enumeration", Seq(JsString("sometesttype", "fqdn", "url", "regexp", "mail", "hash", "registry", "custom-type", "uri_path", "ip", "user-agent", "autonomous-system", "file", "mail_subject", "filename", "other", "domain"))))
-//    case ("alert", "status") =>
-//      Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("New"), JsString("Updated"), JsString("Ignored"), JsString("Imported")))))
-//    case ("case_task", "status") =>
-//      Some(
-//        Seq(PropertyDescription("status", "enumeration", Seq(JsString("Waiting"), JsString("InProgress"), JsString("Completed"), JsString("Cancel"))))
-//      )
-//    case ("case", "impactStatus") =>
-//      Some(Seq(PropertyDescription("impactStatus", "enumeration", Seq(JsString("NoImpact"), JsString("WithImpact"), JsString("NotApplicable")))))
-//    case ("case", "resolutionStatus") =>
-//      Some(
-//        Seq(
-//          PropertyDescription(
-//            "resolutionStatus",
-//            "enumeration",
-//            Seq(JsString("FalsePositive"), JsString("Duplicated"), JsString("Indeterminate"), JsString("TruePositive"), JsString("Other"))
-//          )
-//        )
-//      )
+      case ("dashboard", "status") =>
+        Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")))))
       case (_, "tlp") =>
         Some(
           Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
@@ -205,17 +185,7 @@ class DescribeCtrl @Inject() (
       case (_, "_createdBy")   => Some(Seq(PropertyDescription("_createdBy", "user")))
       case (_, "_updatedBy")   => Some(Seq(PropertyDescription("_updatedBy", "user")))
       case (_, "customFields") => Some(customFields)
-//    case ("case_artifact_job" | "action", "status") =>
-//      Some(
-//        Seq(
-//          PropertyDescription(
-//            "status",
-//            "enumeration",
-//            Seq(JsString("InProgress"), JsString("Success"), JsString("Failure"), JsString("Waiting"), JsString("Deleted"))
-//          )
-//        )
-//      )
-      case _ => None
+      case _                   => None
     }
 
   def propertyToJson(model: String, prop: PublicProperty): Seq[PropertyDescription] =

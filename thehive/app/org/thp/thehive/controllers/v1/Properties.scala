@@ -1,10 +1,10 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty}
+import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -12,6 +12,7 @@ import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
+import org.thp.thehive.services.DashboardOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
@@ -34,6 +35,7 @@ class Properties @Inject() (
     caseSrv: CaseSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
+    dashboardSrv: DashboardSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     customFieldSrv: CustomFieldSrv,
@@ -427,5 +429,36 @@ class Properties @Inject() (
           .readonly
       )
       .build
+
+  lazy val dashboard: PublicProperties = PublicPropertyListBuilder[Dashboard]
+    .property("title", UMapping.string)(_.field.updatable)
+    .property("description", UMapping.string)(_.field.updatable)
+    .property("definition", UMapping.string)(_.field.updatable)
+    .property("status", UMapping.string)(
+      _.select(_.choose(_.organisation, "Shared", "Private"))
+        .custom {
+          case (_, "Shared", vertex, graph, authContext) =>
+            for {
+              dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
+              _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
+            } yield Json.obj("status" -> "Shared")
+
+          case (_, "Private", vertex, graph, authContext) =>
+            for {
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
+              _ <- dashboardSrv.unshare(d, authContext.organisation)(graph, authContext)
+            } yield Json.obj("status" -> "Private")
+
+          case (_, "Deleted", vertex, graph, authContext) =>
+            for {
+              d <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
+              _ <- dashboardSrv.remove(d)(graph, authContext)
+            } yield Json.obj("status" -> "Deleted")
+
+          case (_, status, _, _, _) =>
+            Failure(InvalidFormatAttributeError("status", "String", Set("Shared", "Private", "Deleted"), FString(status)))
+        }
+    )
+    .build
 
 }
