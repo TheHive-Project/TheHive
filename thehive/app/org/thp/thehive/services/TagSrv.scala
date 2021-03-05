@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import java.util.{Map => JMap}
 import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -109,10 +110,13 @@ object TagOps {
     def displayName: Traversal[String, Vertex, Converter[String, Vertex]] = traversal.domainMap(_.toString)
 
     def fromCase: Traversal.V[Tag] = traversal.filter(_.in[CaseTag])
+    def `case`: Traversal.V[Case]  = traversal.in[CaseTag].v[Case]
 
-    def fromObservable: Traversal.V[Tag] = traversal.filter(_.in[ObservableTag])
+    def fromObservable: Traversal.V[Tag]    = traversal.filter(_.in[ObservableTag])
+    def observable: Traversal.V[Observable] = traversal.in[ObservableTag].v[Observable]
 
     def fromAlert: Traversal.V[Tag] = traversal.filter(_.in[AlertTag])
+    def alert: Traversal.V[Alert]   = traversal.in[AlertTag].v[Alert]
 
     def freetags(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Tag] = {
       val freeTagNamespace: String = s"_freetags_${organisationSrv.currentId(traversal.graph, authContext).value}"
@@ -140,6 +144,11 @@ object TagOps {
 
     def visible(implicit authContext: AuthContext): Traversal.V[Tag] =
       traversal.filter(_.organisation.current)
+
+    def withCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Tag] => Traversal[D, G, C]
+    ): Traversal[(Tag with Entity, D), JMap[String, Any], Converter[(Tag with Entity, D), JMap[String, Any]]] =
+      traversal.project(_.by.by(entityRenderer))
   }
 }
 

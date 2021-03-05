@@ -23,16 +23,20 @@ class TagCtrl @Inject() (
     entrypoint: Entrypoint,
     db: Database,
     tagSrv: TagSrv,
-    organisationSrv: OrganisationSrv,
+    val organisationSrv: OrganisationSrv,
     properties: Properties
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with TagRenderer {
   override val entityName: String                 = "Tag"
   override val publicProperties: PublicProperties = properties.tag
   override val initialQuery: Query =
     Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
     "page",
-    (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
+    (params, tagSteps, authContext) =>
+      tagSteps.richPage(params.from, params.to, params.extraData.contains("total"))(
+        _.withCustomRenderer(tagStatsRenderer(params.extraData - "total")(authContext))
+      )
   )
   override val outputQuery: Query = Query.output[Tag with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Tag]](

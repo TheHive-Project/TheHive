@@ -1,6 +1,6 @@
 package org.thp.thehive.dto.v1
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{JsObject, Json, OFormat}
 
 import java.util.Date
 
@@ -15,7 +15,8 @@ case class OutputTag(
     predicate: String,
     value: Option[String],
     description: Option[String],
-    colour: String
+    colour: String,
+    extraData: JsObject
 )
 
 object OutputTag {
