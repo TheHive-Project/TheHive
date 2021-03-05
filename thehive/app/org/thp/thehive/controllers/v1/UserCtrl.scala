@@ -268,6 +268,12 @@ class UserCtrl @Inject() (
               .users
               .get(EntityIdOrName(userIdOrName))
               .getOrFail("User")
+              .orElse {
+                userSrv
+                  .current
+                  .get(EntityIdOrName(userIdOrName))
+                  .getOrFail("User")
+              }
           }
           key <- authSrv.getKey(user.login)
         } yield Results.Ok(key)
