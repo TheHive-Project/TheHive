@@ -19,14 +19,43 @@
                     </div>
                 </div>
 
+                <h4 class="text-primary mt-m">Database Schema status</h4>
+                <div class="flex-table">
+                    <div class="flex-header mt-xs">
+                        <div class="flex-col flex-w-120 text-center">Status</div>
+                        <div class="flex-col flex-2">Schema name</div>
+                        <div class="flex-col flex-1">Schema version</div>
+                    </div>
+                    <div ng-repeat="schema in $vm.appConfig.schemaStatus" class="flex-table">
+                        <div class="flex-row mt-xs">
+                            <div class="flex-col flex-w-120 vertical centered">
+                                <span class="label label-lg label-default" ng-class="{
+                                        true: 'label-success',
+                                        false: 'label-danger'}[schema.error === null]">{{schema.error === null ? 'OK' : 'ERROR'}}</span>
+                            </div>
+                            <div class="flex-col flex-2">
+                                <h4 class="media-heading text-primary">
+                                    {{schema.name}}
+                                </h4>
+                                <div ng-if="schema.error" class="text-danger">
+                                    <p>{{schema.error}}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex-col flex-1 vertical">
+                                {{schema.currentVersion}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <h4 class="text-primary mt-m">Data index status <small class="ml-m clickable" ng-click="$vm.loadIndexStatus()"><i class="fa fa-refresh"></i> Reload</small></h4>
                 <div class="empty-message" ng-if="$vm.loading.index">Loading index status...</div>
                 <div class="flex-table" ng-show="!$vm.loading.index">
                     <div class="flex-header mt-xs">
                         <div class="flex-col flex-w-120 text-center">Status</div>
                         <div class="flex-col flex-2">Index name</div>
-                        <div class="flex-col flex-1">Database Objects</div>
-                        <div class="flex-col flex-1">Index Objects</div>
+                        <div class="flex-col flex-1"># Entities</div>
                         <div class="flex-col flex-w-100"></div>
                     </div>
                     <div ng-repeat="(indexName, data) in $vm.indexStatus" class="flex-table">
@@ -34,20 +63,12 @@
                             <div class="flex-col flex-w-120 vertical centered">
                                 <span class="label label-lg label-default" ng-class="{
                                         'OK': 'label-success',
-                                        'Error': 'label-danger'}[data.status]">{{data.status}}</span>
+                                        'Error': 'label-danger'}[data.status]">{{data.status | uppercase}}</span>
                             </div>
                             <div class="flex-col flex-2 vertical">
                                 <h4 class="media-heading text-primary">
                                     {{indexName}}
                                 </h4>
-                                <div class="mt-xs">
-                                    <div>{{(data.mixedCount / data.compositeCount) * 100}}%</div>
-                                    <div class="progress progress-xs">
-                                        <div class="progress-bar" ng-class="{
-                                            'OK': 'progress-bar-success',
-                                            'Error': 'progress-bar-danger'}[data.status]" style="width: {{(data.mixedCount / data.compositeCount) * 100}}%"></div>
-                                    </div>
-                                </div>
                             </div>
 
                             <div class="flex-col flex-1 vertical">
@@ -55,79 +76,28 @@
                                     {{data.mixedCount}}
                                 </span>
                             </div>
-                            <div class="flex-col flex-1 vertical">
-                                <span class="label label-lg label-default">
-                                    {{data.compositeCount}}
-                                </span>
-                            </div>
+
                             <div class="flex-col flex-w-100">
-                                <a href class="text-primary" ng-click="$vm.reindex(indexName)"><i
-                                        class="fa fa-edit mr-xxxs"></i> Reindex</a>
+                                <a href class="text-primary" ng-click="$vm.reindex(indexName)"><i class="fa fa-edit mr-xxxs"></i> Reindex</a>
                             </div>
                         </div>
                     </div>
                 </div>
 
 
-                <h4 class="text-primary mt-m">Data health status <small class="ml-m clickable" ng-click="$vm.loadCheckStats()"><i class="fa fa-refresh"></i> Reload</small></h4>
+                <h4 class="text-primary mt-m">Database integrity check</h4>
                 <div class="empty-message" ng-if="$vm.loading.check">Loading data health stats...</div>
                 <div class="flex-table" ng-show="!$vm.loading.check">
                     <div class="flex-header mt-xs">
-                        <div class="flex-col flex-w-120 text-center">Status</div>
                         <div class="flex-col flex-1">Control name</div>
-                        <div class="flex-col flex-2">Global Stats</div>
-                        <div class="flex-col flex-2">Duplicate Stats</div>
                         <div class="flex-col flex-w-100"></div>
                     </div>
                     <div ng-repeat="(checkName, data) in $vm.checkStats" class="flex-table">
                         <div class="flex-row mt-xs">
-                            <div class="flex-col flex-w-120 vertical centered">
-                                <span class="label label-lg label-default" ng-class="{
-                                        true: 'label-warning',
-                                        false: 'label-success'}[data.needCheck]">{{data.needCheck ? 'Pending': 'OK'}}</span>
-                            </div>
                             <div class="flex-col flex-1 vertical">
                                 <h4 class="media-heading text-primary">
                                     {{checkName}}
                                 </h4>
-                            </div>
-
-                            <div class="flex-col flex-2">
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <span class="label label-lg label-default mr-xxxs">Iterations:
-                                            {{data.globalStats.global.iteration}}</span>
-                                        <span class="label label-lg label-default mr-xxxs" ng-class="{
-                                            true: 'label-warning'}[data.globalStats.global.duplicate > 0]">Duplicate:
-                                            {{data.globalStats.global.duplicate}}</span>
-                                        <span class="label label-lg label-default">Duration:
-                                            {{data.globalStats.global.duration}}</span>
-                                    </div>
-                                </div>
-                                <div class="row mt-xxs">
-                                    <div class="col-sm-12">
-                                        <strong>Last execution: </strong>{{data.globalStats.lastDate | shortDate}}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex-col flex-2">
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <span class="label label-lg label-default mr-xxxs">Iterations:
-                                            {{data.duplicateStats.global.iteration}}</span>
-                                        <span class="label label-lg label-default mr-xxxs" ng-class="{
-                                            true: 'label-warning'}[data.duplicateStats.global.duplicate > 0]">Duplicate:
-                                            {{data.duplicateStats.global.duplicate}}</span>
-                                        <span class="label label-lg label-default">Duration:
-                                            {{data.duplicateStats.global.duration}}</span>
-                                    </div>
-                                </div>
-                                <div class="row mt-xxs">
-                                    <div class="col-sm-12">
-                                        <strong>Last execution: </strong>{{data.duplicateStats.lastDate | shortDate}}
-                                    </div>
-                                </div>
                             </div>
 
                             <div class="flex-col flex-w-100">
@@ -138,40 +108,7 @@
                     </div>
                 </div>
 
-                <h4 class="text-primary mt-m">Database Schema status</h4>
-                <div class="flex-table">
-                    <div class="flex-header mt-xs">
-                        <div class="flex-col flex-w-120 text-center">Status</div>
-                        <div class="flex-col flex-2">Schema name</div>
-                        <div class="flex-col flex-1">Current Version</div>
-                        <div class="flex-col flex-1">Expected Version</div>
-                    </div>
-                    <div ng-repeat="schema in $vm.appConfig.schemaStatus" class="flex-table">
-                        <div class="flex-row mt-xs">
-                            <div class="flex-col flex-w-120 vertical centered">
-                                <span class="label label-lg label-default" ng-class="{
-                                        true: 'label-success',
-                                        false: 'label-danger'}[schema.error === null]">{{schema.error === null ? 'OK' :
-                                    'Error'}}</span>
-                            </div>
-                            <div class="flex-col flex-2">
-                                <h4 class="media-heading text-primary">
-                                    {{schema.name}}
-                                </h4>
-                                <div ng-if="schema.error" class="mt-xs text-danger">
-                                    {{schema.error}}
-                                </div>
-                            </div>
 
-                            <div class="flex-col flex-1 vertical">
-                                {{schema.currentVersion}}
-                            </div>
-                            <div class="flex-col flex-1 vertical">
-                                {{schema.expectedVersion}}
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
