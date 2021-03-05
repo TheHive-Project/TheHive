@@ -29,6 +29,7 @@
         <table class="table table-striped">
             <thead>
                 <tr>
+                    <th width="100">ID</th>
                     <th>
                       <a href class="text-default" ng-click="$vm.sortByField('predicate')">
                         Name
@@ -63,8 +64,9 @@
 
             <tbody>
                 <tr ng-repeat="tag in $vm.list.values">
+                    <td>{{tag._id}}</td>
                     <td>
-                        <span>{{tag.predicate}}</span>
+                        <tag value="tag.predicate"></tag>
                     </td>
                     <td>
                         <span>{{tag.colour}}</span>
