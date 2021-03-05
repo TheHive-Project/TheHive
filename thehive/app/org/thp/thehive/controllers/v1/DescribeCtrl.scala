@@ -40,6 +40,7 @@ class DescribeCtrl @Inject() (
     patternCtrl: PatternCtrl,
     procedureCtrl: ProcedureCtrl,
     profileCtrl: ProfileCtrl,
+    tagCtrl: TagCtrl,
     taskCtrl: TaskCtrl,
     taxonomyCtrl: TaxonomyCtrl,
     userCtrl: UserCtrl,
@@ -103,7 +104,7 @@ class DescribeCtrl @Inject() (
         EntityDescription("customField", "listCustomField", customFieldCtrl.publicProperties.list.flatMap(propertyToJson("customField", _))),
         // EntityDescription("dashboard", "listDashboard", dashboardCtrl.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
         EntityDescription("log", "listLog", logCtrl.publicProperties.list.flatMap(propertyToJson("case_task_log", _))),
-        EntityDescription("observable", "listObservable", observableCtrl.publicProperties.list.flatMap(propertyToJson("case_artifact", _))),
+        EntityDescription("observable", "listObservable", observableCtrl.publicProperties.list.flatMap(propertyToJson("observable", _))),
         EntityDescription(
           "observableType",
           "listObservableType",
@@ -114,7 +115,7 @@ class DescribeCtrl @Inject() (
         EntityDescription("pattern", "listPattern", patternCtrl.publicProperties.list.flatMap(propertyToJson("pattern", _))),
         EntityDescription("procedure", "listProcedure", procedureCtrl.publicProperties.list.flatMap(propertyToJson("procedure", _))),
         EntityDescription("profile", "listProfile", profileCtrl.publicProperties.list.flatMap(propertyToJson("profile", _))),
-        EntityDescription("task", "listTask", taskCtrl.publicProperties.list.flatMap(propertyToJson("case_task", _))),
+        EntityDescription("task", "listTask", taskCtrl.publicProperties.list.flatMap(propertyToJson("task", _))),
         EntityDescription("taxonomy", "listTaxonomy", taxonomyCtrl.publicProperties.list.flatMap(propertyToJson("taxonomy", _))),
         EntityDescription("user", "listUser", userCtrl.publicProperties.list.flatMap(propertyToJson("user", _)))
       ) ++ describeCortexEntity("job", "listJob", "JobCtrl") ++
