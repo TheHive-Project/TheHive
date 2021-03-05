@@ -84,8 +84,7 @@
                             <div class="flex-col flex-w-120 vertical centered">
                                 <span class="label label-lg label-default" ng-class="{
                                         true: 'label-warning',
-                                        false: 'label-success'}[data.needCheck]">{{data.needCheck ? 'Yes':
-                                    'No'}}</span>
+                                        false: 'label-success'}[data.needCheck]">{{data.needCheck ? 'Pending': 'OK'}}</span>
                             </div>
                             <div class="flex-col flex-1 vertical">
                                 <h4 class="media-heading text-primary">
@@ -98,7 +97,8 @@
                                     <div class="col-sm-12">
                                         <span class="label label-lg label-default mr-xxxs">Iterations:
                                             {{data.globalStats.global.iteration}}</span>
-                                        <span class="label label-lg label-default mr-xxxs">Duplicate:
+                                        <span class="label label-lg label-default mr-xxxs" ng-class="{
+                                            true: 'label-warning'}[data.globalStats.global.duplicate > 0]">Duplicate:
                                             {{data.globalStats.global.duplicate}}</span>
                                         <span class="label label-lg label-default">Duration:
                                             {{data.globalStats.global.duration}}</span>
@@ -116,7 +116,8 @@
                                     <div class="col-sm-12">
                                         <span class="label label-lg label-default mr-xxxs">Iterations:
                                             {{data.duplicateStats.global.iteration}}</span>
-                                        <span class="label label-lg label-default mr-xxxs">Duplicate:
+                                        <span class="label label-lg label-default mr-xxxs" ng-class="{
+                                            true: 'label-warning'}[data.duplicateStats.global.duplicate > 0]">Duplicate:
                                             {{data.duplicateStats.global.duplicate}}</span>
                                         <span class="label label-lg label-default">Duration:
                                             {{data.duplicateStats.global.duration}}</span>
