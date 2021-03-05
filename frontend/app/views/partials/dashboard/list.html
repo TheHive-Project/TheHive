@@ -1,42 +1,128 @@
-<div class="box">
-    <div class="box-header with-border">
-        <h3 class="box-title">Dashboards ({{$vm.dashboards.length}})</h3>
-    </div>
-    <div class="box-body">
-        <button class="btn btn-primary" type="button" ng-click="$vm.addDashboard()">Create new Dashboard</button>
-        <button class="btn btn-default" type="button" ng-click="$vm.importDashboard()">Import Dashboard</button>
-
-        <div class="row mv-s" ng-if="$vm.dashboards.length === 0">
-            <div class="col-md-12">
-                <div class="empty-message">No dashboards defined.</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">
+                    Dashboard List ({{$vm.list.values.length || 0}} of {{$vm.list.total}})
+                </h3>
             </div>
-        </div>
+            <div class="box-body">
+                <div ng-include="'views/partials/dashboard/list/toolbar.html'"></div>
 
-        <div class="row mv-s" ng-if="$vm.dashboards.length > 0">
-            <div class="col-sm-12 dashboards-list">
-                <div class="dashboard-item media" ng-repeat="db in $vm.dashboards track by db.id">
-                    <div class="media-left">
-                        <span class="label label-default">{{db.status}}</span>
-                    </div>
-                    <div class="media-body">
-                        <h4 class="media-heading">
-                            <a href ui-sref="app.dashboards-view({id: db.id})">{{db.title}}</a>
-                        </h4>
-                        <span class="text-muted">{{db.description}}</span>
-                    </div>
-                    <div class="media-right ph-xs text-center" ng-if="(db.createdBy === currentUser.login)">
-                        <a href ng-click="$vm.editDashboard(db)"><i class="fa fa-pencil"></i>Edit</a>
-                    </div>
-                    <div class="media-right ph-xs text-center" ng-if="(db.createdBy === currentUser.login)">
-                        <a href class="text-danger" ng-click="$vm.deleteDashboard(db.id)"><i class="fa fa-trash"></i>Delete</a>
-                    </div>
-                    <div class="media-right ph-xs text-center">
-                        <a href ng-click="$vm.duplicateDashboard(db)"><i class="fa fa-copy"></i>Duplicate</a>
-                    </div>
-                    <div class="media-right ph-xs text-center">
-                        <a href ng-click="$vm.exportDashboard(db)"><i class="fa fa-download"></i> Export</a>
+                <div class="mt-xs filter-panel" ng-include="'views/partials/dashboard/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+                <!-- Filters preview  -->
+                <div class="row mt-xs">
+                    <div class="col-md-12 clearfix">
+                        <filters-preview filters="$vm.filtering.context.filters"
+                            on-clear-item="$vm.removeFilter(field)"
+                            on-clear-all="$vm.clearFilters()"></filters-preview>
                     </div>
                 </div>
+
+                <!-- Datalist  -->
+                <div class="row mt-xs">
+                    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+                        <div class="empty-message">No records</div>
+                    </div>
+
+                    <div class="col-md-12" ng-show="$vm.list.total > 0">
+                        <psearch control="$vm.list"></psearch>
+
+                        <table class="table table-striped case-list">
+                            <thead>
+                                <tr>
+                                    <th width="150px">
+                                        <a href class="text-default" ng-click="$vm.sortByField('status')">
+                                            Status
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+status') === -1 && $vm.filtering.context.sort.indexOf('-status') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+status') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-status') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href class="text-default" ng-click="$vm.sortByField('title')">
+                                            Title
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+title') === -1 && $vm.filtering.context.sort.indexOf('-title') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+title') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-title') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
+                                    <th style="width: 250px;">
+                                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('createdBy')" uib-tooltip="Sort by owner">
+                                            By
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+createdBy') === -1 && $vm.filtering.context.sort.indexOf('-createdBy') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+createdBy') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-createdBy') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
+                                    <th style="width: 150px">
+                                        Dates
+                                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('createdAt')" uib-tooltip="Sort by creation date">
+                                            C.
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+createdAt') === -1 && $vm.filtering.context.sort.indexOf('-createdAt') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+createdAt') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-createdAt') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('updatedAt')" uib-tooltip="Sort by last update date">
+                                            U.
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+updatedAt') === -1 && $vm.filtering.context.sort.indexOf('-updatedAt') === -1" class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+updatedAt') !== -1" class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-updatedAt') !== -1" class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
+                                    <th style="width: 160px"></th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr ng-repeat="item in $vm.list.values">
+
+                                    <td class="wrap">
+                                        <span class="label label-default clickable" ng-click="$vm.addFilterValue('status', item.status)">{{item.status}}</span>
+                                    </td>
+
+                                    <td class="wrap">
+                                        <div>
+                                            <a href ui-sref="app.dashboards-view({id: item._id})">{{item.title}}</a>
+                                        </div>
+                                        <span class="text-muted">{{item.description}}</span>
+                                    </td>
+                                    <td class="nowrap">
+                                        <user user-id="item.createdBy" icon-size="m"></user>
+                                    </td>
+                                    <td>
+                                        <div ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+createdAt') !== -1 || $vm.filtering.context.sort.indexOf('-createdAt') !== -1}">
+                                            C. <a href ng-click="$vm.addFilterValue('createdAt', item.createdAt)">{{item.createdAt | shortDate}}</a>
+                                        </div>
+                                        <div ng-if="item.updatedAt > 0" ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+updatedAt') !== -1 || $vm.filtering.context.sort.indexOf('-updatedAt') !== -1}">
+                                            U. <a href ng-click="$vm.addFilterValue('updatedAt', item.updatedAt)">{{item.updatedAt | shortDate}}</a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
+                                            <a href ng-click="$vm.editDashboard(item)"><i class="fa fa-pencil"></i>Edit</a>
+                                        </div>
+                                        <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
+                                            <a href class="text-danger" ng-click="$vm.deleteDashboard(item._id)"><i class="fa fa-trash"></i>Delete</a>
+                                        </div>
+                                        <div class="media-right ph-xs text-center">
+                                            <a href ng-click="$vm.duplicateDashboard(item)"><i class="fa fa-copy"></i>Duplicate</a>
+                                        </div>
+                                        <div class="media-right ph-xs text-center">
+                                            <a href ng-click="$vm.exportDashboard(item)"><i class="fa fa-download"></i> Export</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <psearch control="$vm.list"></psearch>
+                    </div>
+                </div>
+
+
+
             </div>
         </div>
     </div>
