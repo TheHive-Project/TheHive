@@ -12,21 +12,21 @@
                             <div class="btn-group">
                                 <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.exportReport()">
                                     <i class="fa fa-save"></i>
-                                    Export Report
+                                    Export status report
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <h4 class="text-primary mt-m">Index status <small class="ml-m clickable" ng-click="$vm.loadIndexStatus()"><i class="fa fa-refresh"></i> Reload</small></h4>
+                <h4 class="text-primary mt-m">Data index status <small class="ml-m clickable" ng-click="$vm.loadIndexStatus()"><i class="fa fa-refresh"></i> Reload</small></h4>
                 <div class="empty-message" ng-if="$vm.loading.index">Loading index status...</div>
                 <div class="flex-table" ng-show="!$vm.loading.index">
                     <div class="flex-header mt-xs">
                         <div class="flex-col flex-w-120 text-center">Status</div>
                         <div class="flex-col flex-2">Index name</div>
-                        <div class="flex-col flex-1">Mixed count</div>
-                        <div class="flex-col flex-1">Composite</div>
+                        <div class="flex-col flex-1">Database Objects</div>
+                        <div class="flex-col flex-1">Index Objects</div>
                         <div class="flex-col flex-w-100"></div>
                     </div>
                     <div ng-repeat="(indexName, data) in $vm.indexStatus" class="flex-table">
@@ -40,10 +40,18 @@
                                 <h4 class="media-heading text-primary">
                                     {{indexName}}
                                 </h4>
+                                <div class="mt-xs">
+                                    <div>{{(data.mixedCount / data.compositeCount) * 100}}%</div>
+                                    <div class="progress progress-xs">
+                                        <div class="progress-bar" ng-class="{
+                                            'OK': 'progress-bar-success',
+                                            'Error': 'progress-bar-danger'}[data.status]" style="width: {{(data.mixedCount / data.compositeCount) * 100}}%"></div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="flex-col flex-1 vertical">
-                                {{data.mixedCount}}
+                                {{data.mixedCount}} objects in DB
                             </div>
                             <div class="flex-col flex-1 vertical">
                                 {{data.compositeCount}}
@@ -57,8 +65,8 @@
                 </div>
 
 
-                <h4 class="text-primary mt-m">Integrity control status <small class="ml-m clickable" ng-click="$vm.loadCheckStats()"><i class="fa fa-refresh"></i> Reload</small></h4>
-                <div class="empty-message" ng-if="$vm.loading.check">Loading integrity control stats...</div>
+                <h4 class="text-primary mt-m">Data health status <small class="ml-m clickable" ng-click="$vm.loadCheckStats()"><i class="fa fa-refresh"></i> Reload</small></h4>
+                <div class="empty-message" ng-if="$vm.loading.check">Loading data health stats...</div>
                 <div class="flex-table" ng-show="!$vm.loading.check">
                     <div class="flex-header mt-xs">
                         <div class="flex-col flex-w-120 text-center">Status</div>
@@ -84,11 +92,11 @@
                             <div class="flex-col flex-2">
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <span class="label label-default mr-xxxs">Iterations:
-                                            {{data.globalStats.global.iterations}}</span>
-                                        <span class="label label-default mr-xxxs">Duplicate:
+                                        <span class="label label-lg label-default mr-xxxs">Iterations:
+                                            {{data.globalStats.global.iteration}}</span>
+                                        <span class="label label-lg label-default mr-xxxs">Duplicate:
                                             {{data.globalStats.global.duplicate}}</span>
-                                        <span class="label label-default">Duration:
+                                        <span class="label label-lg label-default">Duration:
                                             {{data.globalStats.global.duration}}</span>
                                     </div>
                                 </div>
@@ -102,11 +110,11 @@
                             <div class="flex-col flex-2">
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <span class="label label-default mr-xxxs">Iterations:
-                                            {{data.duplicateStats.global.iterations}}</span>
-                                        <span class="label label-default mr-xxxs">Duplicate:
+                                        <span class="label label-lg label-default mr-xxxs">Iterations:
+                                            {{data.duplicateStats.global.iteration}}</span>
+                                        <span class="label label-lg label-default mr-xxxs">Duplicate:
                                             {{data.duplicateStats.global.duplicate}}</span>
-                                        <span class="label label-default">Duration:
+                                        <span class="label label-lg label-default">Duration:
                                             {{data.duplicateStats.global.duration}}</span>
                                     </div>
                                 </div>

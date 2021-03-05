@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('theHiveControllers').controller('PlatformStatusCtrl', function(PlatformSrv, NotificationSrv, appConfig) {
+    angular.module('theHiveControllers').controller('PlatformStatusCtrl', function(ModalSrv, PlatformSrv, NotificationSrv, appConfig) {
             var self = this;
 
             self.appConfig = appConfig;
@@ -43,7 +43,6 @@
                 var date = new moment().format('YYYYMMDD-HH:mmZ');
                 var fileName = 'Platform-Status-Report-'+date+'.json';
 
-
                 var content = {
                     indexStatus: self.indexStatus,
                     checkStatus: self.checkStats,
@@ -61,16 +60,46 @@
             }
 
             this.reindex = function(indexName) {
-                PlatformSrv.runReindex(indexName)
-                    .then(function(response) {
-                        NotificationSrv.log('Reindexing of ' + indexName + ' started sucessfully', 'success');
+                var modalInstance = ModalSrv.confirm(
+                    'Reindex',
+                    'Are you sure you want to trigger ' + indexName + ' data reindex', {
+                        okText: 'Yes, reindex it'
+                    }
+                );
+
+                modalInstance.result
+                    .then(function() {
+                        PlatformSrv.runReindex(indexName);
+                    })
+                    .then(function(/*response*/) {
+                        NotificationSrv.success('Reindexing of ' + indexName + ' data started sucessfully');
+                    })
+                    .catch(function(err) {
+                        if (!_.isString(err)) {
+                            NotificationSrv.error('Platform status', err.data, err.status);
+                        }
                     });
             };
 
             this.checkControl = function(checkName) {
-                PlatformSrv.runCheck(checkName)
-                    .then(function(response) {
-                        NotificationSrv.log('Integrity check of ' + checkName + ' started sucessfully', 'success');
+                var modalInstance = ModalSrv.confirm(
+                    'Data health check',
+                    'Are you sure you want to trigger ' + checkName + ' health check', {
+                        okText: 'Yes, trigger it'
+                    }
+                );
+
+                modalInstance.result
+                    .then(function() {
+                        PlatformSrv.runCheck(checkName);
+                    })
+                    .then(function(/*response*/) {
+                        NotificationSrv.success('Data health check of ' + checkName + ' started sucessfully');
+                    })
+                    .catch(function(err) {
+                        if (!_.isString(err)) {
+                            NotificationSrv.error('Platform status', err.data, err.status);
+                        }
                     });
             }
 
