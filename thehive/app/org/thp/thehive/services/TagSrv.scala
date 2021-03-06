@@ -92,6 +92,17 @@ class TagSrv @Inject() (
         .when(tag.colour != input.colour)(_.update(_.colour, input.colour))
         .getOrFail("Tag")
     } yield updatedTag
+
+  override def delete(tag: Tag with Entity)(implicit graph: Graph): Try[Unit] = {
+    val tagName = tag.toString
+    Try {
+      get(tag)
+        .sideEffect(
+          _.unionFlat(_.`case`.removeValue(_.tags, tagName), _.alert.removeValue(_.tags, tagName), _.observable.removeValue(_.tags, tagName))
+        )
+        .remove()
+    }
+  }
 }
 
 object TagOps {
