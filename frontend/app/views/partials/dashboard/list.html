@@ -32,7 +32,7 @@
                         <table class="table table-striped case-list">
                             <thead>
                                 <tr>
-                                    <th width="100px">
+                                    <th width="80px">
                                         <a href class="text-default" ng-click="$vm.sortByField('status')">
                                             Status
                                             <i ng-show="$vm.filtering.context.sort.indexOf('+status') === -1 && $vm.filtering.context.sort.indexOf('-status') === -1" class="fa fa-sort"></i>
@@ -48,9 +48,9 @@
                                             <i ng-show="$vm.filtering.context.sort.indexOf('-title') !== -1" class="fa fa-caret-down"></i>
                                         </a>
                                     </th>
-                                    <th style="width: 250px;">
+                                    <th style="width: 180px;">
                                         <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('createdBy')" uib-tooltip="Sort by owner">
-                                            By
+                                            Owned By
                                             <i ng-show="$vm.filtering.context.sort.indexOf('+createdBy') === -1 && $vm.filtering.context.sort.indexOf('-createdBy') === -1" class="fa fa-sort"></i>
                                             <i ng-show="$vm.filtering.context.sort.indexOf('+createdBy') !== -1" class="fa fa-caret-up"></i>
                                             <i ng-show="$vm.filtering.context.sort.indexOf('-createdBy') !== -1" class="fa fa-caret-down"></i>
@@ -83,9 +83,9 @@
                                     </td>
 
                                     <td class="wrap">
-                                        <div>
+                                        <h4 class="mt-0">
                                             <a href ui-sref="app.dashboards-view({id: item._id})">{{item.title}}</a>
-                                        </div>
+                                        </h4>
                                         <span class="text-muted">{{item.description}}</span>
                                     </td>
                                     <td class="nowrap">
@@ -101,16 +101,19 @@
                                     </td>
                                     <td>
                                         <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
-                                            <a href ng-click="$vm.editDashboard(item)"><i class="fa fa-pencil"></i>Edit</a>
+                                            <a href ui-sref="app.dashboards-view({id: item._id})"><i class="fa fa-area-chart"></i>View</a>
                                         </div>
                                         <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
-                                            <a href class="text-danger" ng-click="$vm.deleteDashboard(item._id)"><i class="fa fa-trash"></i>Delete</a>
+                                            <a href ng-click="$vm.editDashboard(item)"><i class="fa fa-pencil"></i>Edit</a>
                                         </div>
                                         <div class="media-right ph-xs text-center">
-                                            <a href ng-click="$vm.duplicateDashboard(item)"><i class="fa fa-copy"></i>Duplicate</a>
+                                            <a href ng-click="$vm.duplicateDashboard(item)"><i class="fa fa-copy"></i>Copy</a>
                                         </div>
                                         <div class="media-right ph-xs text-center">
                                             <a href ng-click="$vm.exportDashboard(item)"><i class="fa fa-download"></i> Export</a>
+                                        </div>
+                                        <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
+                                            <a href class="text-danger" ng-click="$vm.deleteDashboard(item._id)"><i class="fa fa-trash"></i>Delete</a>
                                         </div>
                                     </td>
                                 </tr>
