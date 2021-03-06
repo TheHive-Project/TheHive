@@ -69,7 +69,7 @@
                             return TagSrv.removeTag(tag._id);
                         })
                         .then(function () {
-                            NotificationSrv.success('Tag list', 'Tag removed successfully');
+                            NotificationSrv.success('Tag [' + tag.predicate + '] removed successfully');
 
                             self.load();
 
@@ -80,7 +80,7 @@
                 self.updateColour = function(id, colour) {
                     TagSrv.updateTag(id, {colour: colour})
                         .then(function(/*response*/) {
-                            NotificationSrv.success('Tag list', 'Tag colour updated successfully');
+                            NotificationSrv.success('Tag colour updated successfully');
                         })
                         .catch(function(err) {
                             NotificationSrv.error('Tag list', err.data, err.status);
