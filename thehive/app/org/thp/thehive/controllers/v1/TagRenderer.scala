@@ -18,12 +18,14 @@ trait TagRenderer extends BaseRenderer[Tag] {
       _.by(_.`case`.count)
         .by(_.alert.count)
         .by(_.observable.count)
+        .by(_.caseTemplate.count)
     ).domainMap {
-      case (caseCount, alertCount, observableCount) =>
+      case (caseCount, alertCount, observableCount, caseTemplateCount) =>
         Json.obj(
-          "case"       -> caseCount,
-          "alert"      -> alertCount,
-          "observable" -> observableCount
+          "case"         -> caseCount,
+          "alert"        -> alertCount,
+          "observable"   -> observableCount,
+          "caseTemplate" -> caseTemplateCount
         )
     }
 

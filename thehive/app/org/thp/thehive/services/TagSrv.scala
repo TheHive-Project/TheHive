@@ -98,7 +98,12 @@ class TagSrv @Inject() (
     Try {
       get(tag)
         .sideEffect(
-          _.unionFlat(_.`case`.removeValue(_.tags, tagName), _.alert.removeValue(_.tags, tagName), _.observable.removeValue(_.tags, tagName))
+          _.unionFlat(
+            _.`case`.removeValue(_.tags, tagName),
+            _.alert.removeValue(_.tags, tagName),
+            _.observable.removeValue(_.tags, tagName),
+            _.caseTemplate.removeValue(_.tags, tagName)
+          )
         )
         .remove()
     }
@@ -131,6 +136,9 @@ object TagOps {
 
     def fromAlert: Traversal.V[Tag] = traversal.filter(_.in[AlertTag])
     def alert: Traversal.V[Alert]   = traversal.in[AlertTag].v[Alert]
+
+    def fromCaseTemplate: Traversal.V[Tag]      = traversal.filter(_.in[CaseTemplateTag])
+    def caseTemplate: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateTag].v[CaseTemplate]
 
     def freetags(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Tag] = {
       val freeTagNamespace: String = s"_freetags_${organisationSrv.currentId(traversal.graph, authContext).value}"
