@@ -204,7 +204,6 @@ class PublicCase @Inject() (
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
     observableSrv: ObservableSrv,
-    taskSrv: TaskSrv,
     userSrv: UserSrv,
     customFieldSrv: CustomFieldSrv,
     implicit val db: Database

@@ -57,6 +57,8 @@
     "message": "merge Obs 211",
     "tlp": 1,
     "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
     "sighted": false,
     "relatedId": ""
   },
@@ -65,6 +67,8 @@
     "message": "merge Obs 231",
     "tlp": 2,
     "ioc": false,
+    "dataType": "ip",
+    "data": "127.0.0.1",
     "sighted": true,
     "relatedId": ""
   },
@@ -73,6 +77,8 @@
     "message": "merge Obs 232",
     "tlp": 4,
     "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
     "sighted": true,
     "relatedId": ""
   }

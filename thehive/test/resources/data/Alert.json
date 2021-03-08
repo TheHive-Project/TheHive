@@ -103,6 +103,7 @@
     "tlp": 2,
     "pap": 2,
     "read": false,
-    "follow": true
+    "follow": true,
+    "organisationId": ""
   }
 ]
