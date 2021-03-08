@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph._
-import org.apache.tinkerpop.gremlin.structure.Graph
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
@@ -151,8 +151,8 @@ class CaseCtrl @Inject() (
     entrypoint("merge cases")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
-          caze    <- caseSrv.get(EntityIdOrName(caseId)).visible.getOrFail("Case")
-          toMerge <- caseSrv.get(EntityIdOrName(caseToMerge)).visible.getOrFail("Case")
+          caze    <- caseSrv.get(EntityIdOrName(caseId)).visible(organisationSrv).getOrFail("Case")
+          toMerge <- caseSrv.get(EntityIdOrName(caseToMerge)).visible(organisationSrv).getOrFail("Case")
           _       <- sameOrga(Seq(caze, toMerge))
           _       <- sameProfile(Seq(caze, toMerge))
           merged  <- caseSrv.merge(Seq(caze, toMerge))

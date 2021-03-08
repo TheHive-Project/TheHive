@@ -29,7 +29,7 @@ import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 import java.lang.{Long => JLong}
 import java.util.{Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Provider, Singleton}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 @Singleton
 class CaseSrv @Inject() (
@@ -44,6 +44,7 @@ class CaseSrv @Inject() (
     impactStatusSrv: ImpactStatusSrv,
     observableSrv: ObservableSrv,
     attachmentSrv: AttachmentSrv,
+    userSrv: UserSrv,
     alertSrvProvider: Provider[AlertSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
     cache: SyncCacheApi
@@ -321,7 +322,6 @@ class CaseSrv @Inject() (
 
   def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
     val mergedCase = Case(
-      nextCaseNumber,
       cases.map(_.title).mkString(" / "),
       cases.map(_.description).mkString("\n\n"),
       cases.map(_.severity).max,
@@ -331,14 +331,13 @@ class CaseSrv @Inject() (
       cases.map(_.tlp).max,
       cases.map(_.pap).max,
       CaseStatus.Open,
-      cases.map(_.summary).fold(None)((s1, s2) => (s1 ++ s2).reduceOption(_ + "\n\n" + _))
+      cases.map(_.summary).fold(None)((s1, s2) => (s1 ++ s2).reduceOption(_ + "\n\n" + _)),
+      cases.flatMap(_.tags).distinct
     )
-
-    val tags = cases.flatMap(c => get(c).tags.toSeq)
     for {
       user     <- userSrv.get(EntityIdOrName(authContext.userId)).getOrFail("User")
       orga     <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
-      richCase <- create(mergedCase, Some(user), orga, tags.toSet, Seq(), None, Seq())
+      richCase <- create(mergedCase, Some(user), orga, Seq(), None, Seq())
       _ <- cases.toTry { c =>
         for {
           _ <-
@@ -346,13 +345,13 @@ class CaseSrv @Inject() (
               .tasks
               .richTask
               .toList
-              .toTry(shareSrv.shareTask(_, richCase.`case`, orga))
+              .toTry(shareSrv.shareTask(_, richCase.`case`, orga._id))
           _ <-
             get(c)
               .observables
               .richObservable
               .toList
-              .toTry(shareSrv.shareObservable(_, richCase.`case`, orga))
+              .toTry(shareSrv.shareObservable(_, richCase.`case`, orga._id))
           _ <-
             get(c)
               .alert

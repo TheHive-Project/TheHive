@@ -77,7 +77,8 @@
     "flag": false,
     "tlp": 4,
     "pap": 3,
-    "status": "Open"
+    "status": "Open",
+    "tags": ["toMerge:pred1=\"value1\""]
   },
   {
     "id": "caseMerge22",
@@ -89,7 +90,8 @@
     "flag": true,
     "tlp": 1,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "tags": ["toMerge:pred2=\"value2\""]
   },
   {
     "id": "caseMerge23",
