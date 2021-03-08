@@ -18,7 +18,7 @@
                     scope.bgColor = scope.colour ||
                         TaxonomyCacheSrv.getColour(scope.value) ||
                         TaxonomyCacheSrv.getColour('_freetags_:' + scope.value) ||
-                        '#3c8dbc';
+                        '#000000';
                 } else {
                     scope.tag = _.without([
                         scope.value.namespace,
@@ -26,7 +26,7 @@
                         scope.value.predicate,
                         scope.value.value ? ("=\"" + scope.value.value + "\"") : null
                     ], null).join('');
-                    scope.bgColor = scope.value.colour || scope.colour || '#3c8dbc';
+                    scope.bgColor = scope.value.colour || scope.colour || '#000000';
                 }
 
                 scope.$watch('colour', function(value) {
@@ -34,6 +34,23 @@
                         return;
                     }
                     scope.bgColor = value;
+                });
+
+                scope.$watch('value', function(value) {
+                    if(!value) {
+                        return;
+                    }
+
+                    if(_.isString(value)) {
+                        scope.tag = value;
+                    } else {
+                        scope.tag = _.without([
+                            value.namespace,
+                            ':',
+                            value.predicate,
+                            value.value ? ("=\"" + value.value + "\"") : null
+                        ], null).join('');
+                    }
                 });
             }
         };

@@ -87,6 +87,16 @@
                         })
                 }
 
+                self.updateTag = function(id, value) {
+                    TagSrv.updateTag(id, {predicate: value})
+                        .then(function(/*response*/) {
+                            NotificationSrv.success('Tag value updated successfully');
+                        })
+                        .catch(function(err) {
+                            NotificationSrv.error('Tag list', err.data, err.status);
+                        })
+                }
+
                 // Filtering
                 this.toggleFilters = function () {
                     this.filtering.toggleFilters();
