@@ -11,6 +11,17 @@
                     <li>
                         <a href ng-click="$vm.bulkEdit()"><i class="fa fa-edit"></i> Edit</a>
                     </li>
+                    <li class="divider"></li>
+                    <li ng-if="$vm.menu.flag">
+                        <a href ng-click="$vm.bulkFlag(true)"><i class="fa fa-flag"></i> Add flag</a>
+                    </li>
+                    <li ng-if="$vm.menu.unflag">
+                        <a href ng-click="$vm.bulkFlag(false)"><i class="fa fa-flag-o"></i> Remove flag</a>
+                    </li>
+                    <li ng-if="$vm.menu.delete" class="divider"></li>
+                    <li>
+                        <a href ng-click="$vm.bulkRemove()"><i class="fa fa-trash"></i> Delete</a>
+                    </li>
                 </ul>
             </div>
 

@@ -1,7 +1,8 @@
 (function() {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('CaseListCtrl', CaseListCtrl);
+        .controller('CaseListCtrl', CaseListCtrl)
+        .controller('CaseBulkDeleteModalCtrl', CaseBulkDeleteModalCtrl);
 
     function CaseListCtrl($scope, $q, $state, $window, $uibModal, StreamQuerySrv, FilteringSrv, SecuritySrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
         var self = this;
@@ -124,8 +125,21 @@
             } else {
                 self.selection = [];
                 self.menu.selectAll = false;
-                // self.updateMenu();
+                self.updateMenu();
             }
+        };
+
+        self.updateMenu = function() {
+            // Handle flag/unflag menu items
+            var temp = _.uniq(_.pluck(self.selection, 'flag'));
+            self.menu.unflag = temp.length === 1 && temp[0] === true;
+            self.menu.flag = temp.length === 1 && temp[0] === false;
+
+            // Handle close menu item
+            temp = _.uniq(_.pluck(self.selection, 'status'));
+            self.menu.close = temp.length === 1 && temp[0] === 'Open';
+
+            self.menu.delete = self.selection.length > 0;
         };
 
         self.select = function(caze) {
@@ -136,7 +150,7 @@
                     return item._id === caze._id;
                 });
             }
-            // self.updateMenu();
+            self.updateMenu();
         };
 
         self.selectAll = function() {
@@ -156,8 +170,7 @@
                 self.selection = [];
             }
 
-            //self.updateMenu();
-
+            self.updateMenu();
         };
 
         this.toggleStats = function () {
@@ -268,6 +281,19 @@
             self.filtering.setSort(sort);
         };
 
+        this.bulkFlag = function(flag) {
+            var ids = _.pluck(self.selection, '_id');
+
+            return CaseSrv.bulkUpdate(ids, {flag: flag})
+                .then(function(/*responses*/) {
+                    NotificationSrv.log('Selected cases have been updated successfully', 'success');
+                })
+                .catch(function(err) {
+                    NotificationSrv.error('Bulk flag cases', err.data, err.status);
+                });
+
+        }
+
         this.bulkEdit = function() {
             var modal = $uibModal.open({
                 animation: 'true',
@@ -290,6 +316,21 @@
                 });
             });
         };
+
+        this.bulkRemove = function() {
+            var modal = $uibModal.open({
+                animation: 'true',
+                templateUrl: 'views/partials/case/case.bulk.delete.confirm.html',
+                controller: 'CaseBulkDeleteModalCtrl',
+                controllerAs: '$dialog',
+                size: 'lg',
+                resolve: {
+                    selection: function() {
+                        return self.selection;
+                    }
+                }
+            });
+        }
 
         this.getCaseResponders = function(caze, force) {
             if (!force && this.caseResponders !== null) {
@@ -318,5 +359,41 @@
                     }
                 });
         };
+    }
+
+    function CaseBulkDeleteModalCtrl($uibModalInstance, $q, CaseSrv, NotificationSrv, selection) {
+        var self = this;
+
+        this.selection = selection;
+        this.count = selection.length;
+        this.typedCount = undefined;
+        this.loading = false;
+
+        this.ok = function() {
+            $uibModalInstance.close();
+        }
+        this.cancel = function() {
+            $uibModalInstance.dismiss();
+        }
+        this.confirm = function() {
+            self.loading = true;
+
+            var promises = _.map(self.selection, function(caze) {
+                return CaseSrv.forceRemove({ caseId: caze._id }).$promise;
+            });
+
+            $q.all(promises)
+                .then(function(responses) {
+                    self.loading = false;
+                    NotificationSrv.log('Cases have been deleted successfully: ' + responses.length, 'success');
+                    $uibModalInstance.close();
+                })
+                .catch(function(errors) {
+                    self.loading = false;
+                    _.each(errors, function(err) {
+                        NotificationSrv.error('Bulk delete cases', err.data, err.status);
+                    });
+                })
+        }
     }
 })();
