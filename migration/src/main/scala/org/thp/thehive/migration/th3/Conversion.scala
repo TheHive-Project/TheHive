@@ -390,7 +390,6 @@ trait Conversion {
         summary = summary
       ),
       mainOrganisation,
-      tags,
       (metricsValue ++ customFieldsValue).toSeq
     )
   }
