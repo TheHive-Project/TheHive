@@ -86,6 +86,7 @@ case "$1" in
     fi
 
     # Chown definitions created by SBT Native Packager
+    mkdir -p /var/log/thehive
     touch /var/log/thehive/application.log
     chown -R thehive:thehive /var/log/thehive
     chown root:thehive /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/secret.conf
