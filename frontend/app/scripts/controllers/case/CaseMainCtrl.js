@@ -187,7 +187,7 @@
                 var defer = $q.defer();
 
                 CaseSrv.update({
-                    caseId: caseId
+                    caseId: $scope.caseId
                 }, data, function(/*response*/) {
                     //UtilsSrv.shallowClearAndCopy(response, $scope.caze);
                     defer.resolve($scope.caze);

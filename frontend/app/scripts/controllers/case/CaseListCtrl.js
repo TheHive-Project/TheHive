@@ -4,7 +4,7 @@
         .controller('CaseListCtrl', CaseListCtrl)
         .controller('CaseBulkDeleteModalCtrl', CaseBulkDeleteModalCtrl);
 
-    function CaseListCtrl($scope, $q, $state, $window, $uibModal, StreamQuerySrv, FilteringSrv, SecuritySrv, StreamStatSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, NotificationSrv, Severity, Tlp, CortexSrv) {
+    function CaseListCtrl($scope, $rootScope, $q, $uibModal, StreamQuerySrv, FilteringSrv, SecuritySrv, ModalUtilsSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, CaseImpactStatus, NotificationSrv, CortexSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -138,6 +138,7 @@
             // Handle close menu item
             temp = _.uniq(_.pluck(self.selection, 'status'));
             self.menu.close = temp.length === 1 && temp[0] === 'Open';
+            self.menu.reopen = temp.length === 1 && temp[0] === 'Resolved';
 
             self.menu.delete = self.selection.length > 0;
         };
@@ -328,6 +329,84 @@
                     selection: function() {
                         return self.selection;
                     }
+                }
+            });
+
+            modal.result.catch(function(err) {
+                if(err && !_.isString(err)) {
+                    NotificationSrv.error('Case Remove', err.data, err.status);
+                }
+            })
+        }
+
+        this.bulkReopen = function() {
+            return ModalUtilsSrv.confirm('Reopen cases', 'Are you sure you want to reopen the selected cases?', {
+                okText: 'Yes, proceed'
+            }).then(function() {
+                var ids = _.pluck(self.selection, '_id');
+
+                return CaseSrv.bulkUpdate(ids, {status: 'Open'})
+                    .then(function(/*responses*/) {
+                        NotificationSrv.log('Selected cases have been reopened successfully', 'success');
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Bulk reopen cases', err.data, err.status);
+                    });
+            });
+        }
+
+        this.closeCase = function(caze) {
+            var scope = $rootScope.$new();
+
+            scope.CaseResolutionStatus = CaseResolutionStatus;
+            scope.CaseImpactStatus = CaseImpactStatus;
+            scope.caseId = caze._id;
+            scope.updateField = function(data) {
+                return CaseSrv.update({
+                    caseId: caze._id
+                }, data)
+                .$promise
+                .then(function(/*response*/) {
+                    return caze;
+                });
+            };
+
+            var modal = $uibModal.open({
+                scope: scope,
+                templateUrl: 'views/partials/case/case.close.html',
+                controller: 'CaseCloseModalCtrl',
+                size: 'lg',
+                resolve: {
+                    caze: function() {
+                        return angular.copy(caze);
+                    }
+                }
+            })
+
+            return modal.result.catch(function(err){
+                if(err && !_.isString(err)) {
+                    NotificationSrv.error('Case bulk close', err.data, err.status);
+                }
+            });
+        }
+
+        $scope.updateField = function(data) {
+            return CaseSrv.update({
+                caseId: caseId
+            }, data).$promise;
+        };
+
+        this.bulkClose = function() {
+            return ModalUtilsSrv.confirm('Close cases', 'Are you sure you want to close the selected ' + self.selection.length+' case(s)?', {
+                okText: 'Yes, proceed'
+            }).then(function() {
+                return self.selection.reduce(function(initialPromise, nextCase) {
+                    return initialPromise
+                        .then(self.closeCase(nextCase));
+                }, $q.resolve());
+            }).catch(function(err){
+                if(err && !_.isString(err)) {
+                    NotificationSrv.error('Case bulk close', err.data, err.status);
                 }
             });
         }

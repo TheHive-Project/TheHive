@@ -18,6 +18,12 @@
                     <li ng-if="$vm.menu.unflag">
                         <a href ng-click="$vm.bulkFlag(false)"><i class="fa fa-flag-o"></i> Remove flag</a>
                     </li>
+                    <li ng-if="$vm.menu.reopen">
+                        <a href ng-click="$vm.bulkReopen()"><i class="fa fa-folder-open"></i> Reopen</a>
+                    </li>
+                    <li ng-if="$vm.menu.close">
+                        <a href ng-click="$vm.bulkClose()"><i class="fa fa-folder"></i> Close</a>
+                    </li>
                     <li ng-if="$vm.menu.delete" class="divider"></li>
                     <li>
                         <a href ng-click="$vm.bulkRemove()"><i class="fa fa-trash"></i> Delete</a>
