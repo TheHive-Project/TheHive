@@ -45,14 +45,14 @@ class ProcedureSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[(Traversal.V[Procedure], JsObject)] =
     auditSrv.mergeAudits(super.update(traversal, propertyUpdaters)) {
       case (procedureSteps, updatedFields) =>
-        procedureSteps.clone().project(_.by.by(_.caze)).getOrFail("Procedure").flatMap {
+        procedureSteps.clone().project(_.by.by(_.`case`)).getOrFail("Procedure").flatMap {
           case (procedure, caze) => auditSrv.procedure.update(procedure, caze, updatedFields)
         }
     }
 
   def remove(procedure: Procedure with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      caze <- get(procedure).caze.getOrFail("Case")
+      caze <- get(procedure).`case`.getOrFail("Case")
       _    <- auditSrv.procedure.delete(procedure, caze)
     } yield get(procedure).remove()
 
@@ -64,7 +64,7 @@ object ProcedureOps {
     def pattern: Traversal.V[Pattern] =
       traversal.out[ProcedurePattern].v[Pattern]
 
-    def caze: Traversal.V[Case] =
+    def `case`: Traversal.V[Case] =
       traversal.in[CaseProcedure].v[Case]
 
     def get(idOrName: EntityIdOrName): Traversal.V[Procedure] =
