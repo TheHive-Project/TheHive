@@ -155,14 +155,12 @@ object TagOps {
 
     def autoComplete(namespace: Option[String], predicate: Option[String], value: Option[String])(implicit
         authContext: AuthContext
-    ): Traversal.V[Tag] = {
-      traversal.graph.db.mapPredicate(TextP.containing(""))
+    ): Traversal.V[Tag] =
       traversal
         .merge(namespace)((t, ns) => t.has(_.namespace, TextP.containing(ns)))
         .merge(predicate)((t, p) => t.has(_.predicate, TextP.containing(p)))
         .merge(value)((t, v) => t.has(_.value, TextP.containing(v)))
         .visible
-    }
 
     def visible(implicit authContext: AuthContext): Traversal.V[Tag] =
       traversal.filter(_.organisation.current)

@@ -1,10 +1,12 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString}
 import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.query.PredicateOps._
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{BadRequestError, EntityIdOrName, InvalidFormatAttributeError, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -46,6 +48,15 @@ class Properties @Inject() (
   lazy val metaProperties: PublicProperties =
     PublicPropertyListBuilder
       .forType[Product](_ => true)
+      .property("_id", UMapping.entityId)(
+        _.select(_._id)
+          .filter[EntityId] {
+            case (_, t, _, Right(p))   => t.has(T.id, p.map(_.value))
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("_createdBy", UMapping.string)(_.field.readonly)
       .property("_createdAt", UMapping.date)(_.field.readonly)
       .property("_updatedBy", UMapping.string.optional)(_.field.readonly)
