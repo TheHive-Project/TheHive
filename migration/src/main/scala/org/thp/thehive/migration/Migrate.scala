@@ -152,6 +152,9 @@ object Migrate extends App with MigrationOps {
       opt[Seq[String]]("exclude-audit-objectTypes")
         .text("don't migration audits with this objectType (case, case_artifact, case_task, ...)")
         .action((v, c) => addConfig(c, "input.filter.excludeAuditObjectTypes", v.asJava)),
+      opt[Int]("case-number-shift")
+        .text("transpose case number by adding this value")
+        .action((v, c) => addConfig(c, "output.caseNumberShift", v)),
       note("Accepted date formats are \"yyyyMMdd[HH[mm[ss]]]\" and \"MMdd\""),
       note(
         "The Format for duration is: <length> <unit>.\n" +

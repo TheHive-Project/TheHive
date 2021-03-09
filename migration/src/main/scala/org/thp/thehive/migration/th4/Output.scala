@@ -6,6 +6,7 @@ import akka.stream.Materializer
 import com.google.inject.{Guice, Injector => GInjector}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.janusgraph.core.schema.{SchemaStatus => JanusSchemaStatus}
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
@@ -59,7 +60,6 @@ object Output {
 
               bind[AuditSrv].to[NoAuditSrv]
               bind[Database].toProvider[JanusDatabaseProvider]
-              bind[Configuration].toInstance(configuration)
               bind[Environment].toInstance(Environment.simple())
               bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
               bind[Schema].toProvider[TheHiveCortexSchemaProvider]
@@ -86,6 +86,7 @@ object Output {
 
 @Singleton
 class Output @Inject() (
+    configuration: Configuration,
     theHiveSchema: TheHiveSchemaDefinition,
     cortexSchema: CortexSchemaDefinition,
     caseSrv: CaseSrv,
@@ -116,6 +117,11 @@ class Output @Inject() (
     .getOrElse(
       throw BadConfigurationError("Default user domain is empty in configuration. Please add `auth.defaultUserDomain` in your configuration file.")
     )
+  val caseNumberShift: Int = configuration.get[Int]("caseNumberShift")
+  val observableDataIsIndexed: Boolean = db match {
+    case jdb: JanusDatabase => jdb.listIndexesWithStatus(JanusSchemaStatus.ENABLED).fold(_ => false, _.exists(_.startsWith("Data")))
+    case _                  => false
+  }
   lazy val observableSrv: ObservableSrv                                     = observableSrvProvider.get
   private var profiles: Map[String, Profile with Entity]                    = Map.empty
   private var organisations: Map[String, Organisation with Entity]          = Map.empty
@@ -493,13 +499,13 @@ class Output @Inject() (
       } yield IdMapping(inputTask.metaData.id, richTask._id)
     }
 
-  override def caseExists(inputCase: InputCase): Boolean = caseNumbers.contains(inputCase.`case`.number)
+  override def caseExists(inputCase: InputCase): Boolean = caseNumbers.contains(inputCase.`case`.number + caseNumberShift)
 
   private def getCase(caseId: EntityId)(implicit graph: Graph): Try[Case with Entity] = caseSrv.getByIds(caseId).getOrFail("Case")
 
   override def createCase(inputCase: InputCase): Try[IdMapping] =
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.debug(s"Create case #${inputCase.`case`.number}")
+      logger.debug(s"Create case #${inputCase.`case`.number + caseNumberShift}")
       val organisationIds = inputCase
         .organisations
         .flatMap {
@@ -531,7 +537,7 @@ class Output @Inject() (
           impactStatus = impactStatus.map(_.value),
           resolutionStatus = resolutionStatus.map(_.value)
         )
-      caseSrv.createEntity(`case`).map { createdCase =>
+      caseSrv.createEntity(`case`.copy(number = `case`.number + caseNumberShift)).map { createdCase =>
         updateMetaData(createdCase, inputCase.metaData)
         assignee
           .foreach { user =>
@@ -622,12 +628,16 @@ class Output @Inject() (
       } yield IdMapping(inputLog.metaData.id, log._id)
     }
 
+  private def getData(value: String)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
+    if (observableDataIsIndexed) dataSrv.create(Data(value))
+    else dataSrv.createEntity(Data(value))
+
   private def createSimpleObservable(observable: Observable, observableType: ObservableType with Entity, dataValue: String)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Observable with Entity] =
     for {
-      data <- dataSrv.createEntity(Data(dataValue))
+      data <- getData(dataValue)
       _ <-
         if (observableType.isAttachment) Failure(BadRequestError("A attachment observable doesn't accept string value"))
         else Success(())
