@@ -242,25 +242,7 @@ class Output @Inject() (
                      | ${tags.size} tags""".stripMargin)
   }
 
-  def startMigration(): Try[Unit] =
-//    db match {
-//      case jdb: JanusDatabase => jdb.dropOtherConnections.recover { case error => logger.error(s"Fail to remove other connection", error) }
-//      case _                  =>
-//    }
-    if (db.version("thehive") == 0)
-      db.createSchemaFrom(theHiveSchema)(LocalUserSrv.getSystemAuthContext)
-        .flatMap(_ => db.setVersion(theHiveSchema.name, theHiveSchema.operations.lastVersion))
-        .flatMap(_ => db.createSchemaFrom(cortexSchema)(LocalUserSrv.getSystemAuthContext))
-        .flatMap(_ => db.setVersion(cortexSchema.name, cortexSchema.operations.lastVersion))
-        .map(_ => retrieveExistingData())
-    else
-      theHiveSchema
-        .update(db)
-        .flatMap(_ => cortexSchema.update(db))
-        .map { _ =>
-          retrieveExistingData()
-          db.rebuildIndexes()
-        }
+  def startMigration(): Try[Unit] = Success(retrieveExistingData())
 
   def endMigration(): Try[Unit] = {
     db.addSchemaIndexes(theHiveSchema)
