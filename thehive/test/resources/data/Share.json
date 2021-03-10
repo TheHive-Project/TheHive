@@ -10,5 +10,6 @@
   {"id": "case23-merge-cert", "owner":  true},
   {"id": "case24-merge-soc", "owner":  true},
   {"id": "case24-merge-cert", "owner":  true},
-  {"id": "case25-merge-cert", "owner":  true}
+  {"id": "case25-merge-cert", "owner":  true},
+  {"id": "case26-merge-pug", "owner":  true}
 ]

@@ -78,7 +78,8 @@
     "tlp": 4,
     "pap": 3,
     "status": "Open",
-    "tags": ["toMerge:pred1=\"value1\""]
+    "tags": ["toMerge:pred1=\"value1\""],
+    "assignee": "certuser@thehive.local"
   },
   {
     "id": "caseMerge22",
@@ -91,7 +92,8 @@
     "tlp": 1,
     "pap": 2,
     "status": "Open",
-    "tags": ["toMerge:pred2=\"value2\""]
+    "tags": ["toMerge:pred2=\"value2\""],
+    "assignee": "certuser@thehive.local"
   },
   {
     "id": "caseMerge23",
@@ -103,7 +105,8 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "assignee": "certuser@thehive.local"
   },
   {
     "id": "caseMerge24",
@@ -115,7 +118,8 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "assignee": "socuser@thehive.local"
   },
   {
     "id": "caseMerge25",
@@ -127,6 +131,20 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "assignee": "certuser@thehive.local"
+  },
+  {
+    "id": "caseMerge26",
+    "number": 26,
+    "title": "case#26",
+    "description": "description of case #26",
+    "severity": 2,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 1,
+    "pap": 2,
+    "status": "Open",
+    "assignee": "puguser@thehive.local"
   }
 ]

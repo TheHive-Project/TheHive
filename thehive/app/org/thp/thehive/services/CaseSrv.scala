@@ -11,7 +11,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
-import org.thp.scalligraph.{EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -29,7 +29,7 @@ import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 import java.lang.{Long => JLong}
 import java.util.{Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Provider, Singleton}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CaseSrv @Inject() (
@@ -320,58 +320,111 @@ class CaseSrv @Inject() (
     auditSrv.`case`.update(`case`, Json.obj("owner" -> JsNull))
   }
 
-  def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichCase] = {
-    val mergedCase = Case(
-      cases.map(_.title).mkString(" / "),
-      cases.map(_.description).mkString("\n\n"),
-      cases.map(_.severity).max,
-      cases.map(_.startDate).min,
-      None,
-      cases.exists(_.flag),
-      cases.map(_.tlp).max,
-      cases.map(_.pap).max,
-      CaseStatus.Open,
-      cases.map(_.summary).fold(None)((s1, s2) => (s1 ++ s2).reduceOption(_ + "\n\n" + _)),
-      cases.flatMap(_.tags).distinct
-    )
-    for {
-      user     <- userSrv.get(EntityIdOrName(authContext.userId)).getOrFail("User")
-      orga     <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
-      richCase <- create(mergedCase, Some(user), orga, Seq(), None, Seq())
-      _ <- cases.toTry { c =>
-        for {
-          _ <-
-            get(c)
-              .tasks
-              .richTask
-              .toList
-              .toTry(shareSrv.shareTask(_, richCase.`case`, orga._id))
-          _ <-
-            get(c)
-              .observables
-              .richObservable
-              .toList
-              .toTry(shareSrv.shareObservable(_, richCase.`case`, orga._id))
-          _ <-
-            get(c)
-              .alert
-              .toList
-              .toTry(alertSrv.alertCaseSrv.create(AlertCase(), _, richCase.`case`))
-          _ <-
-            get(c)
-              .procedure
-              .toList
-              .toTry(caseProcedureSrv.create(CaseProcedure(), richCase.`case`, _))
-          _ <-
-            get(c)
-              .richCustomFields
-              .toList
-              .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
-        } yield Success(())
-      }
-      _ = cases.map(remove(_))
-    } yield richCase
+  def merge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichCase] =
+    if (cases.size > 1 && canMerge(cases)) {
+      val mergedCase = Case(
+        cases.map(_.title).mkString(" / "),
+        cases.map(_.description).mkString("\n\n"),
+        cases.map(_.severity).max,
+        cases.map(_.startDate).min,
+        None,
+        cases.exists(_.flag),
+        cases.map(_.tlp).max,
+        cases.map(_.pap).max,
+        CaseStatus.Open,
+        cases.map(_.summary).fold(None)((s1, s2) => (s1 ++ s2).reduceOption(_ + "\n\n" + _)),
+        cases.flatMap(_.tags).distinct
+      )
+
+      val allProfilesOrgas = get(cases.head)
+        .shares
+        .project(_.by(_.profile).by(_.organisation))
+        .toSeq
+
+      for {
+        user     <- userSrv.get(EntityIdOrName(authContext.userId)).getOrFail("User")
+        orga     <- organisationSrv.current.getOrFail("Organisation")
+        richCase <- create(mergedCase, Some(user), orga, Seq(), None, Seq())
+        _ <- cases.toTry { c =>
+          for {
+            // Share case with all organisations except the one who created the merged case
+            _ <-
+              allProfilesOrgas
+                .filter(_._2._id != organisationSrv.currentId)
+                .toTry(profileOrg => shareSrv.shareCase(owner = false, richCase.`case`, profileOrg._2, profileOrg._1))
+
+            _ <- shareMergedCaseTasks(allProfilesOrgas.map(_._2), c, richCase.`case`)
+            _ <- shareMergedCaseObservables(allProfilesOrgas.map(_._2), c, richCase.`case`)
+            _ <-
+              get(c)
+                .alert
+                .toList
+                .toTry(alertSrv.alertCaseSrv.create(AlertCase(), _, richCase.`case`))
+            _ <-
+              get(c)
+                .procedure
+                .toList
+                .toTry(caseProcedureSrv.create(CaseProcedure(), richCase.`case`, _))
+            _ <-
+              get(c)
+                .richCustomFields
+                .toList
+                .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
+          } yield Success(())
+        }
+        _ = cases.map(remove(_))
+      } yield richCase
+    } else
+      Failure(BadRequestError("To be able to merge, cases must have same organisation / profile pair and user must be org-admin"))
+
+  private def canMerge(cases: Seq[Case with Entity])(implicit graph: Graph, authContext: AuthContext): Boolean = {
+    val allOrgProfiles = getByIds(cases.map(_._id): _*)
+      .shares
+      .project(_.by(_.profile.value(_.name)).by(_.organisation._id))
+      .fold
+      .toSeq
+      .map(_.toSet)
+      .distinct
+
+    // All cases must have the same organisation / profile pair &&
+    // case organisation must match current organisation and be of org-admin profile
+    allOrgProfiles.size == 1 && allOrgProfiles
+      .head
+      .find(_._2 == organisationSrv.currentId)
+      .map(_._1)
+      .contains(Profile.orgAdmin.name)
   }
+
+  private def shareMergedCaseTasks(orgs: Seq[Organisation with Entity], fromCase: Case with Entity, mergedCase: Case with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      _ <- orgs.toTry(org =>
+        get(fromCase)
+          .share(org._id)
+          .tasks
+          .richTask
+          .toList
+          .toTry(shareSrv.shareTask(_, mergedCase, org._id))
+      )
+    } yield Success()
+
+  private def shareMergedCaseObservables(orgs: Seq[Organisation with Entity], fromCase: Case with Entity, mergedCase: Case with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] =
+    for {
+      _ <- orgs.toTry(org =>
+        get(fromCase)
+          .share(org._id)
+          .observables
+          .richObservable
+          .toList
+          .toTry(shareSrv.shareObservable(_, mergedCase, org._id))
+      )
+    } yield Success()
+
 }
 
 object CaseOps {

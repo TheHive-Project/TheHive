@@ -2,12 +2,11 @@ package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph._
-import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
@@ -19,7 +18,6 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json._
@@ -153,33 +151,9 @@ class CaseCtrl @Inject() (
         for {
           caze    <- caseSrv.get(EntityIdOrName(caseId)).visible(organisationSrv).getOrFail("Case")
           toMerge <- caseSrv.get(EntityIdOrName(caseToMerge)).visible(organisationSrv).getOrFail("Case")
-          _       <- sameOrga(Seq(caze, toMerge))
-          _       <- sameProfile(Seq(caze, toMerge))
           merged  <- caseSrv.merge(Seq(caze, toMerge))
         } yield Results.Created(merged.toJson)
       }
-
-  private def sameOrga(cases: Seq[Case with Entity])(implicit graph: Graph): Try[Seq[Case with Entity]] =
-    for {
-      orgas <- cases.toTry(c => caseSrv.get(c).organisations.getOrFail("Organisation"))
-      firstOrga <- orgas.headOption match {
-        case Some(o) => Success(o)
-        case None    => Failure(BadRequestError("No organisations found"))
-      }
-      sameOrga = orgas.forall(_.name == firstOrga.name)
-      res <- if (sameOrga) Success(cases) else Failure(BadRequestError(s"Cases to merge have different organisations"))
-    } yield res
-
-  private def sameProfile(cases: Seq[Case with Entity])(implicit graph: Graph): Try[Seq[Case with Entity]] =
-    for {
-      profiles <- cases.toTry(c => caseSrv.get(c).shares.profile.getOrFail("Profile"))
-      firstProfile <- profiles.headOption match {
-        case Some(o) => Success(o)
-        case None    => Failure(BadRequestError("No profiles found"))
-      }
-      sameProfile = profiles.forall(_.name == firstProfile.name)
-      res <- if (sameProfile) Success(cases) else Failure(BadRequestError(s"Cases to merge have different profiles"))
-    } yield res
 
   def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("case link")

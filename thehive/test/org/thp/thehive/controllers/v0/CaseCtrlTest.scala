@@ -326,7 +326,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      (resultCase \ "count").asOpt[Int] must beSome(3)
+      (resultCase \ "count").asOpt[Int] must beSome(7)
       (resultCase \ "t1" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "t2" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "t3" \ "count").asOpt[Int] must beSome(1)
@@ -418,7 +418,6 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val result = app[CaseCtrl].merge("21", "25")(request)
       status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
-      (contentAsJson(result) \ "message").as[String] must contain("different profiles")
     }
   }
 }

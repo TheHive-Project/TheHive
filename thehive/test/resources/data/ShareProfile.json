@@ -7,5 +7,7 @@
   {"from": "case22-merge-cert", "to": "org-admin"},
   {"from": "case23-merge-cert", "to": "org-admin"},
   {"from": "case24-merge-soc", "to": "org-admin"},
-  {"from": "case25-merge-cert", "to": "read-only"}
+  {"from": "case24-merge-cert", "to": "read-only"},
+  {"from": "case25-merge-cert", "to": "read-only"},
+  {"from": "case26-merge-pug", "to": "read-only"}
 ]

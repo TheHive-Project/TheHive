@@ -9,5 +9,6 @@
   {"from": "case22-merge-cert", "to": "caseMerge22"},
   {"from": "case23-merge-cert", "to": "caseMerge23"},
   {"from": "case24-merge-soc", "to": "caseMerge24"},
-  {"from": "case25-merge-cert", "to": "caseMerge25"}
+  {"from": "case25-merge-cert", "to": "caseMerge25"},
+  {"from": "case26-merge-pug", "to": "caseMerge26"}
 ]

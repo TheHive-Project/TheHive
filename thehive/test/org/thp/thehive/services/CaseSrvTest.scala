@@ -178,7 +178,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
     "get correct next case number" in testApp { app =>
       app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].nextCaseNumber shouldEqual 26
+        app[CaseSrv].nextCaseNumber shouldEqual 27
       }
     }
 
@@ -456,7 +456,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       pending
     }
 
-    "merge cases" in testApp { app =>
+    "merge cases, happy path with one organisation" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         def case21 = app[CaseSrv].get(EntityName("21")).clone()
         def case22 = app[CaseSrv].get(EntityName("22")).clone()
@@ -483,9 +483,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         case23.alert.toSeq.size mustEqual 0
 
         for {
-          c21     <- case21.clone().getOrFail("Case")
-          c22     <- case22.clone().getOrFail("Case")
-          c23     <- case23.clone().getOrFail("Case")
+          c21     <- case21.getOrFail("Case")
+          c22     <- case22.getOrFail("Case")
+          c23     <- case23.getOrFail("Case")
           newCase <- app[CaseSrv].merge(Seq(c21, c22, c23))
         } yield newCase
       } must beASuccessfulTry.which { richCase =>
@@ -500,6 +500,59 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           app[CaseSrv].get(EntityName("21")).getOrFail("Case") must beAFailedTry
           app[CaseSrv].get(EntityName("22")).getOrFail("Case") must beAFailedTry
           app[CaseSrv].get(EntityName("23")).getOrFail("Case") must beAFailedTry
+        }
+      }
+    }
+
+    "merge cases, happy path with three organisations" in testApp { app =>
+      app[Database].tryTransaction { implicit graph =>
+        def case21 = app[CaseSrv].get(EntityName("21")).clone()
+        def case24 = app[CaseSrv].get(EntityName("24")).clone()
+        def case26 = app[CaseSrv].get(EntityName("26")).clone()
+        // Tasks
+        case21.tasks.toSeq.size mustEqual 2
+        case24.tasks.toSeq.size mustEqual 0
+        case26.tasks.toSeq.size mustEqual 0
+        // Observables
+        case21.observables.toSeq.size mustEqual 1
+        case24.observables.toSeq.size mustEqual 0
+        case26.observables.toSeq.size mustEqual 0
+
+        for {
+          c21     <- case21.getOrFail("Case")
+          c24     <- case24.getOrFail("Case")
+          c26     <- case26.getOrFail("Case")
+          newCase <- app[CaseSrv].merge(Seq(c21, c24, c26))
+        } yield newCase
+      } must beASuccessfulTry.which { richCase =>
+        app[Database].roTransaction { implicit graph =>
+          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
+          mergedCase.tasks.toSeq.size mustEqual 2
+          mergedCase.observables.toSeq.size mustEqual 1
+
+          app[CaseSrv].get(EntityName("21")).getOrFail("Case") must beAFailedTry
+          app[CaseSrv].get(EntityName("24")).getOrFail("Case") must beAFailedTry
+          app[CaseSrv].get(EntityName("26")).getOrFail("Case") must beAFailedTry
+        }
+
+        app[Database].roTransaction { implicit graph =>
+          implicit val authContext: AuthContext =
+            DummyUserSrv(userId = "socuser@thehive.local", organisation = "soc", permissions = Profile.analyst.permissions).authContext
+
+          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
+          mergedCase.getOrFail("Case") must beASuccessfulTry
+          mergedCase.tasks.toSeq.size mustEqual 1
+          mergedCase.observables.toSeq.size mustEqual 1
+        }
+
+        app[Database].roTransaction { implicit graph =>
+          implicit val authContext: AuthContext =
+            DummyUserSrv(userId = "puguser@thehive.local", organisation = "pug", permissions = Profile.analyst.permissions).authContext
+
+          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
+          mergedCase.getOrFail("Case") must beASuccessfulTry
+          mergedCase.tasks.toSeq.size mustEqual 0
+          mergedCase.observables.toSeq.size mustEqual 0
         }
       }
     }
