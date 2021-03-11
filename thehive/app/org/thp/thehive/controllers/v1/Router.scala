@@ -111,8 +111,8 @@ class Router @Inject() (
     case GET(p"/task")                                => taskCtrl.list
     case POST(p"/task")                               => taskCtrl.create
     case GET(p"/task/$taskId")                        => taskCtrl.get(taskId)
-    case PATCH(p"/task/$taskId")                      => taskCtrl.update(taskId)
     case PATCH(p"/task/_bulk")                        => taskCtrl.bulkUpdate
+    case PATCH(p"/task/$taskId")                      => taskCtrl.update(taskId)
     case GET(p"/task/$taskId/actionRequired")         => taskCtrl.isActionRequired(taskId)
     case PUT(p"/task/$taskId/actionRequired/$orgaId") => taskCtrl.actionRequired(taskId, orgaId, required = true)
     case PUT(p"/task/$taskId/actionDone/$orgaId")     => taskCtrl.actionRequired(taskId, orgaId, required = false)
