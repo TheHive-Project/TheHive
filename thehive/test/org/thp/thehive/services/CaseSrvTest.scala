@@ -1,15 +1,17 @@
 package org.thp.thehive.services
 
 import org.specs2.matcher.Matcher
-import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.{BadRequestError, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.ShareOps._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
@@ -246,41 +248,41 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "add an observable if not existing" in testApp { app =>
-//      app[Database].roTransaction { implicit graph =>
-//        val c1          = app[CaseSrv].get(EntityName("1")).getOrFail("Case").get
-//        val observables = app[ObservableSrv].startTraversal.richObservable.toList
-//
-//        observables must not(beEmpty)
-//
-//        val hfr = observables.find(_.message.contains("Some weird domain")).get
-//
-//        app[Database].tryTransaction { implicit graph =>
-////          app[CaseSrv].addObservable(c1, hfr)
-//          app[CaseSrv].createObservable(c1, hfr, hfr.data.get)
-//        }.get must throwA[CreateError]
-//
-//        val newObs = app[Database].tryTransaction { implicit graph =>
-//          val organisation = app[OrganisationSrv].current.getOrFail("Organisation").get
-//          app[ObservableSrv].create(
-//            Observable(
-//              message = Some("if you feel lost"),
-//              tlp = 1,
-//              ioc = false,
-//              sighted = true,
-//              ignoreSimilarity = None,
-//              dataType = "domain",
-//              tags = Nil,
-//              organisationIds = Seq(organisation._id),
-//              relatedId = c1._id
-//            ),
-//            "lost.com"
-//          )
-//        }.get
-//
-//        app[Database].tryTransaction { implicit graph =>
-//          app[CaseSrv].addObservable(c1, newObs)
-//        } must beSuccessfulTry
-//      }
+      //      app[Database].roTransaction { implicit graph =>
+      //        val c1          = app[CaseSrv].get(EntityName("1")).getOrFail("Case").get
+      //        val observables = app[ObservableSrv].startTraversal.richObservable.toList
+      //
+      //        observables must not(beEmpty)
+      //
+      //        val hfr = observables.find(_.message.contains("Some weird domain")).get
+      //
+      //        app[Database].tryTransaction { implicit graph =>
+      ////          app[CaseSrv].addObservable(c1, hfr)
+      //          app[CaseSrv].createObservable(c1, hfr, hfr.data.get)
+      //        }.get must throwA[CreateError]
+      //
+      //        val newObs = app[Database].tryTransaction { implicit graph =>
+      //          val organisation = app[OrganisationSrv].current.getOrFail("Organisation").get
+      //          app[ObservableSrv].create(
+      //            Observable(
+      //              message = Some("if you feel lost"),
+      //              tlp = 1,
+      //              ioc = false,
+      //              sighted = true,
+      //              ignoreSimilarity = None,
+      //              dataType = "domain",
+      //              tags = Nil,
+      //              organisationIds = Seq(organisation._id),
+      //              relatedId = c1._id
+      //            ),
+      //            "lost.com"
+      //          )
+      //        }.get
+      //
+      //        app[Database].tryTransaction { implicit graph =>
+      //          app[CaseSrv].addObservable(c1, newObs)
+      //        } must beSuccessfulTry
+      //      }
       pending
     }
 
@@ -442,24 +444,26 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "show linked cases" in testApp { app =>
-//      app[Database].roTransaction { implicit graph =>
-//        app[CaseSrv].get(EntityName("1")).linkedCases must beEmpty
-//        val observables = app[ObservableSrv].startTraversal.richObservable.toList
-//        val hfr         = observables.find(_.message.contains("Some weird domain")).get
-//
-//        app[Database].tryTransaction { implicit graph =>
-//          app[CaseSrv].addObservable(app[CaseSrv].get(EntityName("2")).getOrFail("Case").get, hfr)
-//        }
-//
-//        app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityName("1")).linkedCases must not(beEmpty))
-//      }
+      //      app[Database].roTransaction { implicit graph =>
+      //        app[CaseSrv].get(EntityName("1")).linkedCases must beEmpty
+      //        val observables = app[ObservableSrv].startTraversal.richObservable.toList
+      //        val hfr         = observables.find(_.message.contains("Some weird domain")).get
+      //
+      //        app[Database].tryTransaction { implicit graph =>
+      //          app[CaseSrv].addObservable(app[CaseSrv].get(EntityName("2")).getOrFail("Case").get, hfr)
+      //        }
+      //
+      //        app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityName("1")).linkedCases must not(beEmpty))
+      //      }
       pending
     }
 
     "merge cases, happy path with one organisation" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
         def case21 = app[CaseSrv].get(EntityName("21")).clone()
+
         def case22 = app[CaseSrv].get(EntityName("22")).clone()
+
         def case23 = app[CaseSrv].get(EntityName("23")).clone()
         // Procedures
         case21.procedure.toSeq.size mustEqual 1
@@ -491,6 +495,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       } must beASuccessfulTry.which { richCase =>
         app[Database].roTransaction { implicit graph =>
           def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
+
           mergedCase.procedure.toSeq.size mustEqual 3
           mergedCase.customFields.toSeq.size mustEqual 2
           mergedCase.tasks.toSeq.size mustEqual 3
@@ -504,58 +509,50 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       }
     }
 
-    "merge cases, happy path with three organisations" in testApp { app =>
+    "refuse to merge cases with different shares" in testApp { app =>
       app[Database].tryTransaction { implicit graph =>
-        def case21 = app[CaseSrv].get(EntityName("21")).clone()
-        def case24 = app[CaseSrv].get(EntityName("24")).clone()
-        def case26 = app[CaseSrv].get(EntityName("26")).clone()
+        val case21 = app[CaseSrv].getOrFail(EntityName("21")).get
+        val case24 = app[CaseSrv].getOrFail(EntityName("24")).get
+        val case26 = app[CaseSrv].getOrFail(EntityName("26")).get
+        app[CaseSrv].merge(Seq(case21, case24, case26))
+      } must beFailedTry.withThrowable[BadRequestError]
+    }
+
+    "merge cases, happy path with three organisations" in testApp { app =>
+      implicit val authContext: AuthContext =
+        DummyUserSrv(organisation = "soc", permissions = Profile.analyst.permissions).authContext
+
+      def getCase(number: Int)(implicit graph: Graph): Traversal.V[Case] = app[CaseSrv].getByName(number.toString)
+
+      app[Database].tryTransaction { implicit graph =>
         // Tasks
-        case21.tasks.toSeq.size mustEqual 2
-        case24.tasks.toSeq.size mustEqual 0
-        case26.tasks.toSeq.size mustEqual 0
+        getCase(24).share(EntityName("cert")).tasks.getCount mustEqual 1
+        getCase(24).share(EntityName("soc")).tasks.getCount mustEqual 2
+        getCase(25).share(EntityName("cert")).tasks.getCount mustEqual 0
+        getCase(25).share(EntityName("soc")).tasks.getCount mustEqual 0
+
         // Observables
-        case21.observables.toSeq.size mustEqual 1
-        case24.observables.toSeq.size mustEqual 0
-        case26.observables.toSeq.size mustEqual 0
+        getCase(24).share(EntityName("cert")).observables.getCount mustEqual 0
+        getCase(24).share(EntityName("soc")).observables.getCount mustEqual 0
+        getCase(25).share(EntityName("cert")).observables.getCount mustEqual 2
+        getCase(25).share(EntityName("soc")).observables.getCount mustEqual 1
 
         for {
-          c21     <- case21.getOrFail("Case")
-          c24     <- case24.getOrFail("Case")
-          c26     <- case26.getOrFail("Case")
-          newCase <- app[CaseSrv].merge(Seq(c21, c24, c26))
+          c24     <- getCase(24).getOrFail("Case")
+          c25     <- getCase(25).getOrFail("Case")
+          newCase <- app[CaseSrv].merge(Seq(c24, c25))
         } yield newCase
       } must beASuccessfulTry.which { richCase =>
         app[Database].roTransaction { implicit graph =>
-          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
-          mergedCase.tasks.toSeq.size mustEqual 2
-          mergedCase.observables.toSeq.size mustEqual 1
+          getCase(richCase.number).share(EntityName("cert")).tasks.getCount mustEqual 1
+          getCase(richCase.number).share(EntityName("soc")).tasks.getCount mustEqual 2
+          getCase(richCase.number).share(EntityName("cert")).observables.getCount mustEqual 2
+          getCase(richCase.number).share(EntityName("soc")).observables.getCount mustEqual 1
 
-          app[CaseSrv].get(EntityName("21")).getOrFail("Case") must beAFailedTry
-          app[CaseSrv].get(EntityName("24")).getOrFail("Case") must beAFailedTry
-          app[CaseSrv].get(EntityName("26")).getOrFail("Case") must beAFailedTry
-        }
-
-        app[Database].roTransaction { implicit graph =>
-          implicit val authContext: AuthContext =
-            DummyUserSrv(userId = "socuser@thehive.local", organisation = "soc", permissions = Profile.analyst.permissions).authContext
-
-          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
-          mergedCase.getOrFail("Case") must beASuccessfulTry
-          mergedCase.tasks.toSeq.size mustEqual 1
-          mergedCase.observables.toSeq.size mustEqual 1
-        }
-
-        app[Database].roTransaction { implicit graph =>
-          implicit val authContext: AuthContext =
-            DummyUserSrv(userId = "puguser@thehive.local", organisation = "pug", permissions = Profile.analyst.permissions).authContext
-
-          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
-          mergedCase.getOrFail("Case") must beASuccessfulTry
-          mergedCase.tasks.toSeq.size mustEqual 0
-          mergedCase.observables.toSeq.size mustEqual 0
+          getCase(24).getOrFail("Case") must beAFailedTry
+          getCase(25).getOrFail("Case") must beAFailedTry
         }
       }
     }
-
   }
 }

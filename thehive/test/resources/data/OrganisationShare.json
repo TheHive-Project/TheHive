@@ -11,5 +11,6 @@
   {"from": "cert", "to": "case24-merge-cert"},
   {"from": "soc", "to": "case24-merge-soc"},
   {"from": "cert", "to": "case25-merge-cert"},
+  {"from": "soc", "to": "case25-merge-soc"},
   {"from": "pug", "to": "case26-merge-pug"}
 ]

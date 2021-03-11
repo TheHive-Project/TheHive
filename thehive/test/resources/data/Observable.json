@@ -81,5 +81,25 @@
     "data": "127.0.0.1",
     "sighted": true,
     "relatedId": ""
+  },
+  {
+    "id": "mergeObs251",
+    "message": "merge Obs 251",
+    "tlp": 4,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
+    "sighted": true,
+    "relatedId": ""
+  },
+  {
+    "id": "mergeObs252",
+    "message": "merge Obs 252",
+    "tlp": 4,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
+    "sighted": true,
+    "relatedId": ""
   }
 ]
