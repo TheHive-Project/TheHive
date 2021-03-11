@@ -311,8 +311,26 @@ object Conversion {
         .withFieldConst(_._createdBy, tag._createdBy)
         .withFieldConst(_._type, "Tag")
         .withFieldComputed(_.namespace, t => if (t.isFreeTag) "_freetags_" else t.namespace)
+        .withFieldConst(_.extraData, JsObject.empty)
         .transform
     )
+
+  implicit val tagWithStatsOutput: Renderer.Aux[(Tag with Entity, JsObject), OutputTag] =
+    Renderer.toJson[(Tag with Entity, JsObject), OutputTag] {
+      case (tag, stats) =>
+        tag
+          .asInstanceOf[Tag]
+          .into[OutputTag]
+          .withFieldConst(_._id, tag._id.toString)
+          .withFieldConst(_._updatedAt, tag._updatedAt)
+          .withFieldConst(_._updatedBy, tag._updatedBy)
+          .withFieldConst(_._createdAt, tag._createdAt)
+          .withFieldConst(_._createdBy, tag._createdBy)
+          .withFieldConst(_._type, "Tag")
+          .withFieldComputed(_.namespace, t => if (t.isFreeTag) "_freetags_" else t.namespace)
+          .withFieldConst(_.extraData, stats)
+          .transform
+    }
 
   implicit class InputUserOps(inputUser: InputUser) {
 

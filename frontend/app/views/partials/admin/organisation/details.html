@@ -125,7 +125,18 @@
                             <org-case-template-list fields="$vm.fields" templates="$vm.templates" organisation="$vm.org"></org-case-template-list>
                         </div>
                     </uib-tab>
-                    <uib-tab index="2" if-permission="manageConfig">
+                    <uib-tab index="2" if-permission="manageTag">
+                        <uib-tab-heading>
+                            <span>
+                                <i class="mr-xxs fa fa-tag"></i>
+                                Custom Tags
+                            </span>
+                        </uib-tab-heading>
+                        <div if-permission="manageTag">
+                            <org-custom-tags-list organisation="$vm.org"></org-custom-tags-list>
+                        </div>
+                    </uib-tab>
+                    <uib-tab index="3" if-permission="manageConfig">
                         <uib-tab-heading>
                             <span>
                                 <i class="mr-xxs fa fa-cogs"></i>

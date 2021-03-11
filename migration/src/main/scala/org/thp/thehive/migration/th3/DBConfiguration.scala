@@ -5,6 +5,7 @@ import java.security.KeyStore
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
+import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s._
 import com.sksamuel.elastic4s.http.JavaClient
 import com.sksamuel.elastic4s.requests.bulk.BulkResponseItem
@@ -12,7 +13,7 @@ import com.sksamuel.elastic4s.requests.searches.{SearchHit, SearchRequest}
 import com.sksamuel.elastic4s.streams.ReactiveElastic.ReactiveElastic
 import com.sksamuel.elastic4s.streams.{RequestBuilder, ResponseListener}
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.client.CredentialsProvider
@@ -27,7 +28,7 @@ import play.api.{Configuration, Logger}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
 /**
   * This class is a wrapper of ElasticSearch client from Elastic4s
@@ -38,10 +39,10 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 class DBConfiguration @Inject() (
     config: Configuration,
     lifecycle: ApplicationLifecycle,
-    @Named("databaseVersion") val version: Int,
     implicit val actorSystem: ActorSystem
 ) {
   private[DBConfiguration] lazy val logger = Logger(getClass)
+  implicit val ec: ExecutionContext        = actorSystem.dispatcher
 
   def requestConfigCallback: RequestConfigCallback =
     (requestConfigBuilder: RequestConfig.Builder) => {
@@ -199,14 +200,18 @@ class DBConfiguration @Inject() (
       }
   }
 
+  private def exists(indexName: String): Boolean =
+    Await.result(execute(indexExists(indexName)), 20.seconds).isExists
+
   /**
     * Name of the index, suffixed by the current version
     */
-  val indexName: String = config.get[String]("search.index") + "_" + version
-
-  /**
-    * return a new instance of DBConfiguration that points to the previous version of the index schema
-    */
-  def previousVersion: DBConfiguration =
-    new DBConfiguration(config, lifecycle, version - 1, actorSystem)
+  lazy val indexName: String = {
+    val indexBaseName = config.get[String]("search.index")
+    val index_3_5_1   = indexBaseName + "_16"
+    val index_3_5_0   = indexBaseName + "_15"
+    if (exists(index_3_5_1)) index_3_5_1
+    else if (exists(index_3_5_0)) index_3_5_0
+    else ???
+  }
 }

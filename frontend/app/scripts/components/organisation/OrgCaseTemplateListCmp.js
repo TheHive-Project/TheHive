@@ -33,11 +33,6 @@
                                 self.filtering.setPageSize(newValue);
                             });
                         });
-
-                    // TODO: REMOVE ME
-                    if (self.templates && !_.isEmpty(self.templates)) {
-                        self.loadTemplate(self.templates[0]);
-                    }
                 };
 
                 this.load = function() {
@@ -122,20 +117,6 @@
                     self.list.sort = sort;
                     self.list.update();
                     self.filtering.setSort(sort);
-                };
-
-                this.newTemplate = function() {
-                    self.showTemplate({
-                        name: '',
-                        titlePrefix: '',
-                        severity: 2,
-                        tlp: 2,
-                        pap: 2,
-                        tags: [],
-                        tasks: [],
-                        customFields: {},
-                        description: ''
-                    });
                 };
 
                 this.showTemplate = function(template) {

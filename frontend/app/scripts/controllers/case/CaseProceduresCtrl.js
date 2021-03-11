@@ -67,11 +67,10 @@
             data[field] = procedure[field];
 
             ProcedureSrv.update(procedure._id, data)
-                .then(function(response) {
+                .then(function(/*response*/) {
                     if(reload) {
                         self.load();
                     }
-                    console.log(response);
                 }).catch(function(err) {
                     NotificationSrv.error('ProcedureCtrl', err.data, err.status);
                 });

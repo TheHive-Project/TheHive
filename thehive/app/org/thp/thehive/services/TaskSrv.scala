@@ -157,6 +157,8 @@ object TaskOps {
       else
         traversal.empty
 
+    def inCase: Traversal.V[Task] = traversal.filter(_.inE[ShareTask])
+
     def `case`: Traversal.V[Case] = traversal.in[ShareTask].out[ShareCase].dedup.v[Case]
 
     def caseTemplate: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateTask].v[CaseTemplate]

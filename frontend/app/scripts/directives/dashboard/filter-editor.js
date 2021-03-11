@@ -11,6 +11,7 @@
             templateUrl: 'views/directives/dashboard/filter-editor.html',
             link: function(scope) {
                 scope.dateOperator = {
+                    empty: 'Empty',
                     custom: 'Custom',
                     today: 'Today',
                     last7days: 'Last 7 days',

@@ -36,7 +36,6 @@ object Input {
           bind[Materializer].toInstance(Materializer(actorSystem))
           bind[ExecutionContext].toInstance(actorSystem.dispatcher)
           bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-          bind[Int].annotatedWithName("databaseVersion").toInstance(15)
         }
       })
       .getInstance(classOf[Input])

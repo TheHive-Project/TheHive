@@ -1,5 +1,6 @@
 package org.thp.thehive.services
 
+import java.util.{Map => JMap}
 import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -52,6 +53,9 @@ class TagSrv @Inject() (
 
   def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
+  def getFreetag(idOrName: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Traversal.V[Tag] =
+    startTraversal.getFreetag(organisationSrv, idOrName)
+
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
     fromString(tagName)
       .flatMap {
@@ -88,6 +92,22 @@ class TagSrv @Inject() (
         .when(tag.colour != input.colour)(_.update(_.colour, input.colour))
         .getOrFail("Tag")
     } yield updatedTag
+
+  override def delete(tag: Tag with Entity)(implicit graph: Graph): Try[Unit] = {
+    val tagName = tag.toString
+    Try {
+      get(tag)
+        .sideEffect(
+          _.unionFlat(
+            _.`case`.removeValue(_.tags, tagName),
+            _.alert.removeValue(_.tags, tagName),
+            _.observable.removeValue(_.tags, tagName),
+            _.caseTemplate.removeValue(_.tags, tagName)
+          )
+        )
+        .remove()
+    }
+  }
 }
 
 object TagOps {
@@ -109,10 +129,16 @@ object TagOps {
     def displayName: Traversal[String, Vertex, Converter[String, Vertex]] = traversal.domainMap(_.toString)
 
     def fromCase: Traversal.V[Tag] = traversal.filter(_.in[CaseTag])
+    def `case`: Traversal.V[Case]  = traversal.in[CaseTag].v[Case]
 
-    def fromObservable: Traversal.V[Tag] = traversal.filter(_.in[ObservableTag])
+    def fromObservable: Traversal.V[Tag]    = traversal.filter(_.in[ObservableTag])
+    def observable: Traversal.V[Observable] = traversal.in[ObservableTag].v[Observable]
 
     def fromAlert: Traversal.V[Tag] = traversal.filter(_.in[AlertTag])
+    def alert: Traversal.V[Alert]   = traversal.in[AlertTag].v[Alert]
+
+    def fromCaseTemplate: Traversal.V[Tag]      = traversal.filter(_.in[CaseTemplateTag])
+    def caseTemplate: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateTag].v[CaseTemplate]
 
     def freetags(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Tag] = {
       val freeTagNamespace: String = s"_freetags_${organisationSrv.currentId(traversal.graph, authContext).value}"
@@ -129,17 +155,20 @@ object TagOps {
 
     def autoComplete(namespace: Option[String], predicate: Option[String], value: Option[String])(implicit
         authContext: AuthContext
-    ): Traversal.V[Tag] = {
-      traversal.graph.db.mapPredicate(TextP.containing(""))
+    ): Traversal.V[Tag] =
       traversal
         .merge(namespace)((t, ns) => t.has(_.namespace, TextP.containing(ns)))
         .merge(predicate)((t, p) => t.has(_.predicate, TextP.containing(p)))
         .merge(value)((t, v) => t.has(_.value, TextP.containing(v)))
         .visible
-    }
 
     def visible(implicit authContext: AuthContext): Traversal.V[Tag] =
       traversal.filter(_.organisation.current)
+
+    def withCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Tag] => Traversal[D, G, C]
+    ): Traversal[(Tag with Entity, D), JMap[String, Any], Converter[(Tag with Entity, D), JMap[String, Any]]] =
+      traversal.project(_.by.by(entityRenderer))
   }
 }
 

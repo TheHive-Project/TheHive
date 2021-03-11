@@ -206,9 +206,11 @@ class MispClient(
       .mapAsyncUnordered(2) {
         case attribute @ Attribute(id, "malware-sample" | "attachment", _, _, _, _, _, _, _, None, _, _, _, _) =>
           // TODO need to unzip malware samples ?
-          downloadAttachment(id).map {
-            case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
-          }
+          downloadAttachment(id)
+            .map {
+              case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
+            }
+            .recover { case _ => attribute }
         case attribute => Future.successful(attribute)
       }
       .mapMaterializedValue(_ => NotUsed)

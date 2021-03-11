@@ -11,26 +11,28 @@
                 admin: {
                     hints: 'Permissions for administration user profiles',
                     keys: [
-                        'managePlatform',
-                        'manageUser',
                         'manageOrganisation',
+                        'manageProfile',
+                        'manageUser',
                         'manageCustomField',
                         'manageConfig',
-                        'manageTaxonomy',
-                        'manageProfile',
                         'manageAnalyzerTemplate',
-                        'manageObservableTemplate'
+                        'manageObservableTemplate',
+                        'manageTaxonomy',
+                        'managePattern',
+                        'managePlatform'
                     ],
                     labels: {
-                        managePlatform: 'Manage the platform',
-                        manageUser: 'Manage users',
                         manageOrganisation: 'Manage organisations',
+                        manageProfile: 'Manage profiles',
+                        manageUser: 'Manage users',
                         manageCustomField: 'Manage custom fields',
                         manageConfig: 'Manage configurations',
-                        manageTaxonomy: 'Manage taxonomies',
-                        manageProfile: 'Manage profiles',
                         manageAnalyzerTemplate: 'Manage analyzer templates',
-                        manageObservableTemplate: 'Manage observable types'
+                        manageObservableTemplate: 'Manage observable types',
+                        manageTaxonomy: 'Manage taxonomies',
+                        managePattern: 'Manage attack patterns',
+                        managePlatform: 'Manage the platform'
                     }
                 },
                 org: {

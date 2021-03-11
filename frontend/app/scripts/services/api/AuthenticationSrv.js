@@ -79,6 +79,12 @@
                             return 'app.administration.analyzer-templates';
                         } else if(self.hasPermission('manageObservableTemplate')) {
                             return 'app.administration.observables';
+                        } else if(self.hasPermission('managePlatform')) {
+                            return 'app.administration.platform';
+                        } else if(self.hasPermission('manageTaxonomy')) {
+                            return 'app.administration.taxonomies';
+                        } else if(self.hasPermission('managePattern')) {
+                            return 'app.administration.attackPatterns';
                         }
                     } else {
                         return 'app.cases';

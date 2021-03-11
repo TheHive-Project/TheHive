@@ -1,0 +1,106 @@
+<div ng-include="'views/components/org/custom-tags/toolbar.html'"></div>
+
+<div class="mt-xs filter-panel" ng-include="'views/components/org/custom-tags/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+<!-- Filters preview  -->
+<div class="row mt-xs">
+    <div class="col-md-12 clearfix">
+        <div class="pull-left">
+            <h4>
+                Custom tags List ({{$vm.list.values.length || 0}} of {{$vm.list.total}})
+            </h4>
+        </div>
+
+        <filters-preview filters="$vm.filtering.context.filters"
+            on-clear-item="$vm.removeFilter(field)"
+            on-clear-all="$vm.clearFilters()"></filters-preview>
+    </div>
+</div>
+
+<!-- Datalist  -->
+<div class="row mt-xs">
+    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+        <div class="empty-message">No records</div>
+    </div>
+
+    <div class="col-md-12" ng-show="$vm.list.total > 0">
+        <psearch control="$vm.list"></psearch>
+
+        <table class="table table-striped case-tags">
+            <thead>
+                <tr>
+                    <th>
+                      <a href class="text-default" ng-click="$vm.sortByField('predicate')">
+                        Name
+                        <i ng-show="$vm.filtering.context.sort.indexOf('+predicate') === -1 && $vm.filtering.context.sort.indexOf('-predicate') === -1" class="fa fa-sort"></i>
+                        <i ng-show="$vm.filtering.context.sort.indexOf('+predicate') !== -1" class="fa fa-caret-up"></i>
+                        <i ng-show="$vm.filtering.context.sort.indexOf('-predicate') !== -1" class="fa fa-caret-down"></i>
+                      </a>
+                    </th>
+                    <th width="250px">
+                        Colour
+                    </th>
+                    <th width="100px">Cases</th>
+                    <th width="100px">Alerts</th>
+                    <th width="100px">Observables</th>
+                    <th width="100px">Templates</th>
+                    <th style="width: 60px;">By</th>
+                    <th style="width: 150px">
+                        Dates
+
+                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('_createdAt')" uib-tooltip="Sort by creation date">
+                            C.
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') === -1 && $vm.filtering.context.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                        <a href class="text-default ml-xxxs" ng-click="$vm.sortByField('_updatedAt')" uib-tooltip="Sort by last update date">
+                            U.
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_updatedAt') === -1 && $vm.filtering.context.sort.indexOf('-_updatedAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('+_updatedAt') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$vm.filtering.context.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
+                    <th style="width: 60px">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr ng-repeat="tag in $vm.list.values">
+                    <td>
+                        <!-- <tag-item class="label-lg" value="tag.predicate" colour="tag.colour"></tag-item> -->
+                        <updatable-tag value="tag.predicate" colour="tag.colour" on-update="$vm.updateTag(tag._id, newValue)"></updatable-tag>
+                    </td>
+                    <td>
+                        <updatable-colour value="tag.colour" on-update="$vm.updateColour(tag._id, newValue)"></updatable-colour>
+                    </td>
+                    <td>{{tag.extraData.usage.case}}</td>
+                    <td>{{tag.extraData.usage.alert}}</td>
+                    <td>{{tag.extraData.usage.observable}}</td>
+                    <td>{{tag.extraData.usage.caseTemplate}}</td>
+                    <td class="nowrap">
+                        <user user-id="tag._createdBy" icon-only="true" icon-size="m"></user>
+                    </td>
+                    <td>
+                        <div ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+_createdAt') !== -1 || $vm.filtering.context.sort.indexOf('-_createdAt') !== -1}">
+                            C. <a href ng-click="$vm.addFilterValue('_createdAt', tag._createdAt)">{{tag._createdAt | shortDate}}</a>
+                        </div>
+                        <div ng-if="tag._updatedAt > 0" ng-class="{'text-bold': $vm.filtering.context.sort.indexOf('+_updatedAt') !== -1 || $vm.filtering.context.sort.indexOf('-_updatedAt') !== -1}">
+                            U. <a href ng-click="$vm.addFilterValue('_updatedAt', tag._updatedAt)">{{tag._updatedAt | shortDate}}</a>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <!-- <a href class="btn btn-icon btn-clear" ng-click="$vm.showTemplate(template)">
+                            <i class="text-info fa fa-edit"></i>
+                        </a> -->
+                        <a href class="btn btn-icon btn-clear" ng-click="$vm.deleteTag(tag)">
+                            <i class="text-info fa fa-trash text-danger"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <psearch control="$vm.list"></psearch>
+    </div>
+</div>

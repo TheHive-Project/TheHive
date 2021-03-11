@@ -38,7 +38,7 @@ class TheHiveQueryExecutor @Inject() (
     taskCtrl: TaskCtrl,
     userCtrl: UserCtrl,
     taxonomyCtrl: TaxonomyCtrl,
-    //    dashboardCtrl: DashboardCtrl,
+    dashboardCtrl: DashboardCtrl,
     properties: Properties,
     implicit val db: Database
 ) extends QueryExecutor {
@@ -50,7 +50,7 @@ class TheHiveQueryExecutor @Inject() (
       caseCtrl,
       caseTemplateCtrl,
       customFieldCtrl,
-//      dashboardCtrl,
+      dashboardCtrl,
       logCtrl,
       observableCtrl,
       observableTypeCtrl,

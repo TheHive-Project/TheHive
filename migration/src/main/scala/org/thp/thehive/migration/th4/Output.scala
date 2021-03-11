@@ -3,9 +3,10 @@ package org.thp.thehive.migration.th4
 import akka.actor.ActorSystem
 import akka.actor.typed.Scheduler
 import akka.stream.Materializer
-import com.google.inject.Guice
+import com.google.inject.{Guice, Injector => GInjector}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.janusgraph.core.schema.{SchemaStatus => JanusSchemaStatus}
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
@@ -21,7 +22,6 @@ import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import org.thp.thehive.{migration, ClusterSetup}
-import play.api.cache.SyncCacheApi
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
 import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
@@ -35,7 +35,7 @@ import scala.util.{Failure, Success, Try}
 
 object Output {
 
-  private def buildApp(configuration: Configuration)(implicit actorSystem: ActorSystem) =
+  private def buildApp(configuration: Configuration)(implicit actorSystem: ActorSystem): GInjector =
     Guice
       .createInjector(
         (play.api.inject.guice.GuiceableModule.guiceable(new EhCacheModule).guiced(Environment.simple(), configuration, Set.empty) :+
@@ -60,7 +60,6 @@ object Output {
 
               bind[AuditSrv].to[NoAuditSrv]
               bind[Database].toProvider[JanusDatabaseProvider]
-              bind[Configuration].toInstance(configuration)
               bind[Environment].toInstance(Environment.simple())
               bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
               bind[Schema].toProvider[TheHiveCortexSchemaProvider]
@@ -87,6 +86,7 @@ object Output {
 
 @Singleton
 class Output @Inject() (
+    configuration: Configuration,
     theHiveSchema: TheHiveSchemaDefinition,
     cortexSchema: CortexSchemaDefinition,
     caseSrv: CaseSrv,
@@ -109,8 +109,7 @@ class Output @Inject() (
     resolutionStatusSrv: ResolutionStatusSrv,
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
-    db: Database,
-    cache: SyncCacheApi
+    db: Database
 ) extends migration.Output {
   lazy val logger: Logger = Logger(getClass)
   val defaultUserDomain: String = userSrv
@@ -118,6 +117,11 @@ class Output @Inject() (
     .getOrElse(
       throw BadConfigurationError("Default user domain is empty in configuration. Please add `auth.defaultUserDomain` in your configuration file.")
     )
+  val caseNumberShift: Int = configuration.get[Int]("caseNumberShift")
+  val observableDataIsIndexed: Boolean = db match {
+    case jdb: JanusDatabase => jdb.listIndexesWithStatus(JanusSchemaStatus.ENABLED).fold(_ => false, _.exists(_.startsWith("Data")))
+    case _                  => false
+  }
   lazy val observableSrv: ObservableSrv                                     = observableSrvProvider.get
   private var profiles: Map[String, Profile with Entity]                    = Map.empty
   private var organisations: Map[String, Organisation with Entity]          = Map.empty
@@ -129,6 +133,7 @@ class Output @Inject() (
   private var caseTemplates: Map[String, CaseTemplate with Entity]          = Map.empty
   private var caseNumbers: Set[Int]                                         = Set.empty
   private var alerts: Set[(String, String, String)]                         = Set.empty
+  private var tags: Map[String, Tag with Entity]                            = Map.empty
 
   private def retrieveExistingData(): Unit = {
     val profilesBuilder           = Map.newBuilder[String, Profile with Entity]
@@ -141,6 +146,7 @@ class Output @Inject() (
     val caseTemplatesBuilder      = Map.newBuilder[String, CaseTemplate with Entity]
     val caseNumbersBuilder        = Set.newBuilder[Int]
     val alertsBuilder             = Set.newBuilder[(String, String, String)]
+    val tagsBuilder               = Map.newBuilder[String, Tag with Entity]
 
     db.roTransaction { implicit graph =>
       graph
@@ -157,7 +163,8 @@ class Output @Inject() (
             "CustomField",
             "CaseTemplate",
             "Case",
-            "Alert"
+            "Alert",
+            "Tag"
           )
         )
         .toIterator
@@ -194,6 +201,12 @@ class Output @Inject() (
             val source    = UMapping.string.getProperty(vertex, "source")
             val sourceRef = UMapping.string.getProperty(vertex, "sourceRef")
             alertsBuilder += ((`type`, source, sourceRef))
+          case ("Tag", vertex) =>
+            val tag = tagSrv.model.converter(vertex)
+            if (tag.namespace.startsWith(s"_freetags_"))
+              tagsBuilder += (s"${tag.namespace.drop(10)}-${tag.predicate}" -> tag)
+            else
+              tagsBuilder += (tag.toString -> tag)
           case _ =>
         }
     }
@@ -207,6 +220,7 @@ class Output @Inject() (
     caseTemplates = caseTemplatesBuilder.result()
     caseNumbers = caseNumbersBuilder.result()
     alerts = alertsBuilder.result()
+    tags = tagsBuilder.result()
     if (
       profiles.nonEmpty ||
       organisations.nonEmpty ||
@@ -217,7 +231,8 @@ class Output @Inject() (
       customFields.nonEmpty ||
       caseTemplates.nonEmpty ||
       caseNumbers.nonEmpty ||
-      alerts.nonEmpty
+      alerts.nonEmpty ||
+      tags.nonEmpty
     )
       logger.info(s"""Already migrated:
                      | ${profiles.size} profiles
@@ -229,28 +244,11 @@ class Output @Inject() (
                      | ${customFields.size} customFields
                      | ${caseTemplates.size} caseTemplates
                      | ${caseNumbers.size} caseNumbers
-                     | ${alerts.size} alerts""".stripMargin)
+                     | ${alerts.size} alerts
+                     | ${tags.size} tags""".stripMargin)
   }
 
-  def startMigration(): Try[Unit] =
-//    db match {
-//      case jdb: JanusDatabase => jdb.dropOtherConnections.recover { case error => logger.error(s"Fail to remove other connection", error) }
-//      case _                  =>
-//    }
-    if (db.version("thehive") == 0)
-      db.createSchemaFrom(theHiveSchema)(LocalUserSrv.getSystemAuthContext)
-        .flatMap(_ => db.setVersion(theHiveSchema.name, theHiveSchema.operations.lastVersion))
-        .flatMap(_ => db.createSchemaFrom(cortexSchema)(LocalUserSrv.getSystemAuthContext))
-        .flatMap(_ => db.setVersion(cortexSchema.name, cortexSchema.operations.lastVersion))
-        .map(_ => retrieveExistingData())
-    else
-      theHiveSchema
-        .update(db)
-        .flatMap(_ => cortexSchema.update(db))
-        .map { _ =>
-          retrieveExistingData()
-          db.rebuildIndexes()
-        }
+  def startMigration(): Try[Unit] = Success(retrieveExistingData())
 
   def endMigration(): Try[Unit] = {
     db.addSchemaIndexes(theHiveSchema)
@@ -282,9 +280,15 @@ class Output @Inject() (
     }
 
   def getTag(tagName: String, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    cache.getOrElseUpdate(s"tag-$tagName")(
-      tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour))
-    )
+    tags
+      .get(tagName)
+      .orElse(tags.get(s"$organisationId-$tagName"))
+      .fold[Try[Tag with Entity]] {
+        tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour)).map { tag =>
+          tags += (tagName -> tag)
+          tag
+        }
+      }(Success.apply)
 
   override def organisationExists(inputOrganisation: InputOrganisation): Boolean = organisations.contains(inputOrganisation.organisation.name)
 
@@ -462,19 +466,27 @@ class Output @Inject() (
     authTransaction(inputCaseTemplate.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create case template ${inputCaseTemplate.caseTemplate.name}")
       for {
-        organisation     <- getOrganisation(inputCaseTemplate.organisation)
-        richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.caseTemplate, organisation, Nil, Nil)
-        _ = updateMetaData(richCaseTemplate.caseTemplate, inputCaseTemplate.metaData)
+        organisation        <- getOrganisation(inputCaseTemplate.organisation)
+        createdCaseTemplate <- caseTemplateSrv.createEntity(inputCaseTemplate.caseTemplate)
+        _                   <- caseTemplateSrv.caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
+        _ <-
+          inputCaseTemplate
+            .caseTemplate
+            .tags
+            .toTry(
+              getTag(_, organisation._id.value).flatMap(t => caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
+            )
+        _ = updateMetaData(createdCaseTemplate, inputCaseTemplate.metaData)
         _ = inputCaseTemplate.customFields.foreach {
           case InputCustomFieldValue(name, value, order) =>
             (for {
               cf  <- getCustomField(name)
               ccf <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), value)
-              _   <- caseTemplateSrv.caseTemplateCustomFieldSrv.create(ccf, richCaseTemplate.caseTemplate, cf)
+              _   <- caseTemplateSrv.caseTemplateCustomFieldSrv.create(ccf, createdCaseTemplate, cf)
             } yield ()).logFailure(s"Unable to set custom field $name=${value.getOrElse("<not set>")}")
         }
-        _ = caseTemplates += (inputCaseTemplate.caseTemplate.name -> richCaseTemplate.caseTemplate)
-      } yield IdMapping(inputCaseTemplate.metaData.id, richCaseTemplate._id)
+        _ = caseTemplates += (inputCaseTemplate.caseTemplate.name -> createdCaseTemplate)
+      } yield IdMapping(inputCaseTemplate.metaData.id, createdCaseTemplate._id)
     }
 
   override def createCaseTemplateTask(caseTemplateId: EntityId, inputTask: InputTask): Try[IdMapping] =
@@ -487,13 +499,13 @@ class Output @Inject() (
       } yield IdMapping(inputTask.metaData.id, richTask._id)
     }
 
-  override def caseExists(inputCase: InputCase): Boolean = caseNumbers.contains(inputCase.`case`.number)
+  override def caseExists(inputCase: InputCase): Boolean = caseNumbers.contains(inputCase.`case`.number + caseNumberShift)
 
   private def getCase(caseId: EntityId)(implicit graph: Graph): Try[Case with Entity] = caseSrv.getByIds(caseId).getOrFail("Case")
 
   override def createCase(inputCase: InputCase): Try[IdMapping] =
     authTransaction(inputCase.metaData.createdBy) { implicit graph => implicit authContext =>
-      logger.debug(s"Create case #${inputCase.`case`.number}")
+      logger.debug(s"Create case #${inputCase.`case`.number + caseNumberShift}")
       val organisationIds = inputCase
         .organisations
         .flatMap {
@@ -525,7 +537,7 @@ class Output @Inject() (
           impactStatus = impactStatus.map(_.value),
           resolutionStatus = resolutionStatus.map(_.value)
         )
-      caseSrv.createEntity(`case`).map { createdCase =>
+      caseSrv.createEntity(`case`.copy(number = `case`.number + caseNumberShift)).map { createdCase =>
         updateMetaData(createdCase, inputCase.metaData)
         assignee
           .foreach { user =>
@@ -616,12 +628,16 @@ class Output @Inject() (
       } yield IdMapping(inputLog.metaData.id, log._id)
     }
 
+  private def getData(value: String)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
+    if (observableDataIsIndexed) dataSrv.create(Data(value))
+    else dataSrv.createEntity(Data(value))
+
   private def createSimpleObservable(observable: Observable, observableType: ObservableType with Entity, dataValue: String)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Observable with Entity] =
     for {
-      data <- dataSrv.createEntity(Data(dataValue))
+      data <- getData(dataValue)
       _ <-
         if (observableType.isAttachment) Failure(BadRequestError("A attachment observable doesn't accept string value"))
         else Success(())

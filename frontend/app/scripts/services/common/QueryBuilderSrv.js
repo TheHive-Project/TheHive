@@ -26,6 +26,15 @@
                 return null;
             }
             var operator = filter.value.operator || 'eq';
+
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            }
+
             var criterion = {};
             criterion[filter.field] = filter.value.value;
 
@@ -50,32 +59,43 @@
                 return null;
             }
             var operator = filter.value.operator || 'any';
-            var values = _.pluck(filter.value.list, 'text');
 
-            if(values.length > 0) {
-                var criterions = _.map(values, function(val) {
-                    return {_like: {
-                        _field: filter.field,
-                        _value: val
-                    }};
-                });
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            } else {
+                var values = _.pluck(filter.value.list, 'text');
 
-                var criteria = {};
-                switch(operator) {
-                    case 'all':
-                        criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
-                        break;
-                    case 'none':
-                        criteria = {
-                            _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
-                        };
-                        break;
-                    default:
-                        criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                if(values.length > 0) {
+                    var criterions = _.map(values, function(val) {
+                        return {_like: {
+                            _field: filter.field,
+                            _value: val
+                        }};
+                    });
+
+                    var criteria = {};
+                    switch(operator) {
+                        case 'all':
+                            criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
+                            break;
+                        case 'none':
+                            criteria = {
+                                _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
+                            };
+                            break;
+                        default:
+                            criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                    }
+
+                    return criteria;
                 }
-
-                return criteria;
             }
+
+
 
             return null;
         };
@@ -85,35 +105,46 @@
                 return null;
             }
             var operator = filter.value.operator || 'any';
-            var values = _.pluck(filter.value.list, 'text');
 
-            if(values.length > 0) {
-                var criterions = _.map(values, function(val) {
-                    return {
-                        _like: {
-                            _field: filter.field,
-                            _value: val
-                        }
-                    };
-                });
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            } else {
+                var values = _.pluck(filter.value.list, 'text');
 
-                var criteria = {};
-                switch(operator) {
-                    case 'all':
-                        criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
-                        break;
-                    case 'none':
-                        criteria = {
-                            _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
+                if(values.length > 0) {
+                    var criterions = _.map(values, function(val) {
+                        return {
+                            _like: {
+                                _field: filter.field,
+                                _value: val
+                            }
                         };
-                        break;
-                    //case 'any':
-                    default:
-                        criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
-                }
+                    });
 
-                return criteria;
+                    var criteria = {};
+                    switch(operator) {
+                        case 'all':
+                            criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
+                            break;
+                        case 'none':
+                            criteria = {
+                                _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
+                            };
+                            break;
+                        //case 'any':
+                        default:
+                            criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                    }
+
+                    return criteria;
+                }
             }
+
+
 
             return null;
         };
@@ -123,6 +154,15 @@
                 return null;
             }
             var operator = filter.value.operator || 'any';
+
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            }
+
             var values = _.pluck(filter.value.list, 'text');
 
             if(values.length > 0) {
@@ -156,6 +196,14 @@
                 operator = filter.value.operator || 'custom',
                 start,
                 end;
+
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            }
 
             if(operator === 'custom') {
                 if(value.from && value.from !== null) {
