@@ -3,10 +3,10 @@ package org.thp.thehive.controllers.v0
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
@@ -17,14 +17,13 @@ import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Named, Singleton}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 @Singleton
 class CaseCtrl @Inject() (

@@ -265,7 +265,7 @@ class CaseSrv @Inject() (
     Try(
       caseCustomFieldSrv
         .get(cfIdOrName)
-        .filter(_.outV.v[Case].can(Permissions.manageCase))
+        .filter(_.outV.v[Case])
         .remove()
     )
 

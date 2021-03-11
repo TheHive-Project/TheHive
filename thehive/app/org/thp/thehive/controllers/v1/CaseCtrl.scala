@@ -137,6 +137,12 @@ class CaseCtrl @Inject() (
     entrypoint("delete a custom field")
       .authPermittedTransaction(db, Permissions.manageCase) { implicit request => implicit graph =>
         for {
+          _ <-
+            caseSrv
+              .caseCustomFieldSrv
+              .get(EntityIdOrName(cfId))
+              .filter(_.outV.v[Case].can(Permissions.manageCase))
+              .existsOrFail
           _ <- caseSrv.deleteCustomField(EntityIdOrName(cfId))
         } yield Results.NoContent
       }
