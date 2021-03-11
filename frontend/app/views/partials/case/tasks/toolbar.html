@@ -2,6 +2,31 @@
     <div class="col-md-12">
         <div class="btn-toolbar" role="toolbar">
 
+            <div class="btn-group" uib-dropdown if-permission="manageTask" allowed="{{userPermissions}}">
+                <button type="button" class="btn btn-sm btn-default" uib-dropdown-toggle ng-disabled="selection.length === 0">
+                    <ng-pluralize count="selection.length" when="{'0': 'No tasks selected', 'one': '{} selected task', 'other': '{} selected tasks'}"></ng-pluralize>
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" uib-dropdown-menu>
+                    <li ng-if="menu.flag">
+                        <a href ng-click="bulkFlag(true)"><i class="fa fa-flag"></i> Add flag</a>
+                    </li>
+                    <li ng-if="menu.unflag">
+                        <a href ng-click="bulkFlag(false)"><i class="fa fa-flag-o"></i> Remove flag</a>
+                    </li>
+                    <!-- <li ng-if="$vm.menu.reopen">
+                        <a href ng-click="$vm.bulkReopen()"><i class="fa fa-folder-open"></i> Reopen</a>
+                    </li>
+                    <li ng-if="$vm.menu.close">
+                        <a href ng-click="$vm.bulkClose()"><i class="fa fa-folder"></i> Close</a>
+                    </li>
+                    <li ng-if="$vm.menu.delete" class="divider"></li>
+                    <li>
+                        <a href ng-click="$vm.bulkRemove()"><i class="fa fa-trash"></i> Delete</a>
+                    </li> -->
+                </ul>
+            </div>
+
             <div class="btn-group" if-permission="manageTask" allowed="{{userPermissions}}">
                 <button class="btn btn-sm btn-primary" ng-click="state.isNewTask = true">
                     <i class="glyphicon glyphicon-plus"></i>
@@ -36,13 +61,6 @@
                 </ul>
             </div>
 
-            <div class="btn-group">
-                <button class="btn btn-sm btn-default" ng-click="toggleGroupedView()">
-                    <i class="glyphicon glyphicon-th-list"></i>
-                    Show {{state.showGrouped ? 'as a List' : 'Groups'}}
-                </button>
-            </div>
-
             <div class="btn-group pull-right" role="group">
                 <page-sizer collection="tasks" sizes="[10, 15, 30, 100]"></page-sizer>
             </div>
@@ -50,6 +68,12 @@
             <div class="btn-group pull-right" role="group">
                 <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[filtering.context.showFilters]" type="button" ng-click="toggleFilters()">
                     <i class="fa fa-search"></i> Filters
+                </button>
+            </div>
+            <div class="btn-group pull-right">
+                <button class="btn btn-sm btn-default" ng-click="toggleGroupedView()">
+                    <i class="glyphicon glyphicon-th-list"></i>
+                    Show {{state.showGrouped ? 'as a List' : 'Groups'}}
                 </button>
             </div>
         </div>
