@@ -457,8 +457,8 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .map { json =>
         for {
           metaData  <- json.validate[MetaData]
-          tasksJson <- (json \ "tasks").validate[Seq[JsValue]]
-        } yield (metaData, tasksJson)
+          tasksJson <- (json \ "tasks").validateOpt[Seq[JsValue]]
+        } yield (metaData, tasksJson.getOrElse(Nil))
       }
       .mapConcat {
         case JsSuccess(x, _) => List(x)
@@ -480,7 +480,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         dbGet("caseTemplate", caseTemplateId)
           .map { json =>
             val metaData = json.as[MetaData]
-            val tasks    = (json \ "tasks").as(Reads.seq(caseTemplateTaskReads(metaData)))
+            val tasks    = (json \ "tasks").asOpt(Reads.seq(caseTemplateTaskReads(metaData))).getOrElse(Nil)
             Source(tasks.to[immutable.Iterable].map(t => Success(caseTemplateId -> t)))
           }
           .recover {
