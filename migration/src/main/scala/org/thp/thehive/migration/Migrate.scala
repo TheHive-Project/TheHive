@@ -37,11 +37,11 @@ object Migrate extends App with MigrationOps {
         .text("global configuration file"),
       opt[File]('i', "input")
         .valueName("<file>")
-        .action((f, c) => addConfig(c, "input", ConfigFactory.parseFileAnySyntax(f).resolve().root()))
+        .action((f, c) => addConfig(c, "input", ConfigFactory.parseFileAnySyntax(f).resolve().root().withFallback(c.getConfig("input"))))
         .text("TheHive3 configuration file"),
       opt[File]('o', "output")
         .valueName("<file>")
-        .action((f, c) => addConfig(c, "output", ConfigFactory.parseFileAnySyntax(f).resolve().root()))
+        .action((f, c) => addConfig(c, "output", ConfigFactory.parseFileAnySyntax(f).resolve().root().withFallback(c.getConfig("output"))))
         .text("TheHive4 configuration file"),
       opt[Unit]('d', "drop-database")
         .action((_, c) => addConfig(c, "output.dropDatabase", true))
