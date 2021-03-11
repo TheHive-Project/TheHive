@@ -88,5 +88,22 @@
     "follow": true,
     "organisationId": "",
     "tags": ["test", "alert"]
+  },
+  {
+    "id": "alertMerge1",
+    "type": "testType",
+    "source": "testSource",
+    "sourceRef": "ref6",
+    "title": "alert#6",
+    "description": "description of alert #6",
+    "severity": 2,
+    "date": 1555359572000,
+    "lastSyncDate": 1555359600000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "read": false,
+    "follow": true,
+    "organisationId": ""
   }
 ]

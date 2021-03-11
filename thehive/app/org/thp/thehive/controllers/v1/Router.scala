@@ -55,12 +55,13 @@ class Router @Inject() (
     case POST(p"/auth/totp/unset")       => authenticationCtrl.totpUnsetSecret(None)
     case POST(p"/auth/totp/unset/$user") => authenticationCtrl.totpUnsetSecret(Some(user))
 
-    case POST(p"/case")                 => caseCtrl.create
-    case GET(p"/case/$caseId")          => caseCtrl.get(caseId)
-    case PATCH(p"/case/$caseId")        => caseCtrl.update(caseId)
-    case POST(p"/case/_merge/$caseIds") => caseCtrl.merge(caseIds)
-    case DELETE(p"/case/$caseId")       => caseCtrl.delete(caseId)
-//    case PATCH(p"api/case/_bulk") =>                          caseCtrl.bulkUpdate()
+    case POST(p"/case")                     => caseCtrl.create
+    case GET(p"/case/$caseId")              => caseCtrl.get(caseId)
+    case PATCH(p"/case/$caseId")            => caseCtrl.update(caseId)
+    case POST(p"/case/_merge/$caseIds")     => caseCtrl.merge(caseIds)
+    case DELETE(p"/case/$caseId")           => caseCtrl.delete(caseId)
+    case DELETE(p"/case/customField/$cfId") => caseCtrl.deleteCustomField(cfId)
+    //    case PATCH(p"api/case/_bulk") =>                          caseCtrl.bulkUpdate()
 //    case POST(p"/case/_stats") =>                        caseCtrl.stats()
 //    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
 

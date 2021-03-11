@@ -4,5 +4,13 @@
   {"from": "case2-soc", "to": "case2"},
   {"from": "case3-soc", "to": "case3"},
   {"from": "case-actionRequired-soc", "to": "caseActionRequired1"},
-  {"from": "case-actionRequired-cert", "to": "caseActionRequired2"}
+  {"from": "case-actionRequired-cert", "to": "caseActionRequired2"},
+  {"from": "case21-merge-cert", "to": "caseMerge21"},
+  {"from": "case22-merge-cert", "to": "caseMerge22"},
+  {"from": "case23-merge-cert", "to": "caseMerge23"},
+  {"from": "case24-merge-soc", "to": "caseMerge24"},
+  {"from": "case24-merge-cert", "to": "caseMerge24"},
+  {"from": "case25-merge-cert", "to": "caseMerge25"},
+  {"from": "case25-merge-soc", "to": "caseMerge25"},
+  {"from": "case26-merge-pug", "to": "caseMerge26"}
 ]

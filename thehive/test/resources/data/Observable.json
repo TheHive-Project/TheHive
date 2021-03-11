@@ -51,5 +51,55 @@
     "data": "h.fr",
     "tags": ["hello"],
     "relatedId": ""
+  },
+  {
+    "id": "mergeObs211",
+    "message": "merge Obs 211",
+    "tlp": 1,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
+    "sighted": false,
+    "relatedId": ""
+  },
+  {
+    "id": "mergeObs231",
+    "message": "merge Obs 231",
+    "tlp": 2,
+    "ioc": false,
+    "dataType": "ip",
+    "data": "127.0.0.1",
+    "sighted": true,
+    "relatedId": ""
+  },
+  {
+    "id": "mergeObs232",
+    "message": "merge Obs 232",
+    "tlp": 4,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
+    "sighted": true,
+    "relatedId": ""
+  },
+  {
+    "id": "mergeObs251",
+    "message": "merge Obs 251",
+    "tlp": 4,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
+    "sighted": true,
+    "relatedId": ""
+  },
+  {
+    "id": "mergeObs252",
+    "message": "merge Obs 252",
+    "tlp": 4,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.1",
+    "sighted": true,
+    "relatedId": ""
   }
 ]

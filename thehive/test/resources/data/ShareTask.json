@@ -7,5 +7,11 @@
   {"from": "case-actionRequired-soc", "to": "taskActionRequired1", "actionRequired":  false},
   {"from": "case-actionRequired-cert", "to": "taskActionRequired1", "actionRequired":  false},
   {"from": "case-actionRequired-soc", "to": "taskActionRequired2", "actionRequired":  false},
-  {"from": "case-actionRequired-cert", "to": "taskActionRequired2", "actionRequired":  true}
+  {"from": "case-actionRequired-cert", "to": "taskActionRequired2", "actionRequired":  true},
+  {"from": "case21-merge-cert", "to": "taskMerge211", "actionRequired":  false},
+  {"from": "case21-merge-cert", "to": "taskMerge212", "actionRequired":  false},
+  {"from": "case23-merge-cert", "to": "taskMerge231", "actionRequired":  false},
+  {"from": "case24-merge-soc", "to": "taskMerge241", "actionRequired":  false},
+  {"from": "case24-merge-soc", "to": "taskMerge242", "actionRequired":  false},
+  {"from": "case24-merge-cert", "to": "taskMerge242", "actionRequired":  false}
 ]

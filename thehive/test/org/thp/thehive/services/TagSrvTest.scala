@@ -34,7 +34,8 @@ class TagSrvTest extends PlaySpecification with TestAppBuilder {
 
     "getOrCreate" should {
       "get a tag from a taxonomy" in testApp { app =>
-        app[Database].roTransaction { implicit graph =>
+        // TODO add tags property in Taxonomy.json to test get
+        app[Database].transaction { implicit graph =>
           val tag = app[TagSrv].getOrCreate("taxonomy1:pred1=value1")
           tag.map(_.toString) must beEqualTo(Success("taxonomy1:pred1=\"value1\""))
         }

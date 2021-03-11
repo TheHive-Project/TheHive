@@ -4,5 +4,13 @@
   {"id": "case2-soc", "owner":  false},
   {"id": "case3-soc", "owner":  true},
   {"id": "case-actionRequired-soc", "owner":  true},
-  {"id": "case-actionRequired-cert", "owner":  true}
+  {"id": "case-actionRequired-cert", "owner":  true},
+  {"id": "case21-merge-cert", "owner":  true},
+  {"id": "case22-merge-cert", "owner":  true},
+  {"id": "case23-merge-cert", "owner":  true},
+  {"id": "case24-merge-soc", "owner":  true},
+  {"id": "case24-merge-cert", "owner":  false},
+  {"id": "case25-merge-cert", "owner":  true},
+  {"id": "case25-merge-soc", "owner":  false},
+  {"id": "case26-merge-pug", "owner":  true}
 ]

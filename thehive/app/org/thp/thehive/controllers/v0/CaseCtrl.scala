@@ -144,22 +144,14 @@ class CaseCtrl @Inject() (
         } yield Results.NoContent
       }
 
-  def merge(caseIdsOrNumbers: String): Action[AnyContent] =
+  def merge(caseId: String, caseToMerge: String): Action[AnyContent] =
     entrypoint("merge cases")
       .authTransaction(db) { implicit request => implicit graph =>
-        caseIdsOrNumbers
-          .split(',')
-          .toSeq
-          .toTry(c =>
-            caseSrv
-              .get(EntityIdOrName(c))
-              .visible(organisationSrv)
-              .getOrFail("Case")
-          )
-          .map { cases =>
-            val mergedCase = caseSrv.merge(cases)
-            Results.Ok(mergedCase.toJson)
-          }
+        for {
+          caze    <- caseSrv.get(EntityIdOrName(caseId)).visible(organisationSrv).getOrFail("Case")
+          toMerge <- caseSrv.get(EntityIdOrName(caseToMerge)).visible(organisationSrv).getOrFail("Case")
+          merged  <- caseSrv.merge(Seq(caze, toMerge))
+        } yield Results.Created(merged.toJson)
       }
 
   def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
@@ -185,7 +177,6 @@ class PublicCase @Inject() (
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
     observableSrv: ObservableSrv,
-    taskSrv: TaskSrv,
     userSrv: UserSrv,
     customFieldSrv: CustomFieldSrv,
     implicit val db: Database

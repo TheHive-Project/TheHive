@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.scalligraph.controllers.FakeTemporaryFile
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1._
@@ -18,12 +19,10 @@ case class TestTaxonomy(
 
 object TestTaxonomy {
   def apply(outputTaxonomy: OutputTaxonomy): TestTaxonomy =
-    TestTaxonomy(
-      outputTaxonomy.namespace,
-      outputTaxonomy.description,
-      outputTaxonomy.version,
-      outputTaxonomy.tags.toSet.map(TestTag.apply)
-    )
+    outputTaxonomy
+      .into[TestTaxonomy]
+      .withFieldComputed(_.tags, _.tags.toSet.map(TestTag.apply))
+      .transform
 }
 
 case class TestTag(namespace: String, predicate: String, value: Option[String], description: Option[String], colour: String)

@@ -133,21 +133,35 @@ class CaseCtrl @Inject() (
         } yield Results.NoContent
       }
 
+  def deleteCustomField(cfId: String): Action[AnyContent] =
+    entrypoint("delete a custom field")
+      .authPermittedTransaction(db, Permissions.manageCase) { implicit request => implicit graph =>
+        for {
+          _ <-
+            caseSrv
+              .caseCustomFieldSrv
+              .get(EntityIdOrName(cfId))
+              .filter(_.outV.v[Case].can(Permissions.manageCase))
+              .existsOrFail
+          _ <- caseSrv.deleteCustomField(EntityIdOrName(cfId))
+        } yield Results.NoContent
+      }
+
   def merge(caseIdsOrNumbers: String): Action[AnyContent] =
     entrypoint("merge cases")
       .authTransaction(db) { implicit request => implicit graph =>
-        caseIdsOrNumbers
-          .split(',')
-          .toSeq
-          .toTry(c =>
-            caseSrv
-              .get(EntityIdOrName(c))
-              .visible(organisationSrv)
-              .getOrFail("Case")
-          )
-          .map { cases =>
-            val mergedCase = caseSrv.merge(cases)
-            Results.Ok(mergedCase.toJson)
-          }
+        for {
+          cases <-
+            caseIdsOrNumbers
+              .split(',')
+              .toSeq
+              .toTry(c =>
+                caseSrv
+                  .get(EntityIdOrName(c))
+                  .visible(organisationSrv)
+                  .getOrFail("Case")
+              )
+          mergedCase <- caseSrv.merge(cases)
+        } yield Results.Created(mergedCase.toJson)
       }
 }

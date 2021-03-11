@@ -33,7 +33,6 @@ case class TestCase(
 )
 
 object TestCase {
-
   def apply(outputCase: OutputCase): TestCase =
     outputCase.into[TestCase].transform
 }
@@ -327,7 +326,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      (resultCase \ "count").asOpt[Int] must beSome(3)
+      (resultCase \ "count").asOpt[Int] must beSome(7)
       (resultCase \ "t1" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "t2" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "t3" \ "count").asOpt[Int] must beSome(1)
@@ -361,6 +360,64 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         app[CaseSrv].get(EntityIdOrName("1")).headOption must beNone
 //        tasks.flatMap(task => app[TaskSrv].get(task).headOption) must beEmpty
       }
+    }
+
+    "merge two cases correctly" in testApp { app =>
+      val request21 = FakeRequest("GET", s"/api/v0/case/#21")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val case21 = app[CaseCtrl].get("21")(request21)
+      status(case21) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(case21)}")
+      val output21 = contentAsJson(case21).as[OutputCase]
+
+      val request = FakeRequest("POST", "/api/v0/case/21/_merge/22")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result = app[CaseCtrl].merge("21", "22")(request)
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+      val outputCase = contentAsJson(result).as[OutputCase]
+
+      // Merge result
+      TestCase(outputCase) must equalTo(
+        TestCase(
+          caseId = 26,
+          title = "case#21 / case#22",
+          description = "description of case #21\n\ndescription of case #22",
+          severity = 3,
+          startDate = output21.startDate,
+          flag = true,
+          tlp = 4,
+          pap = 3,
+          status = "Open",
+          tags = Set("toMerge:pred1=\"value1\"", "toMerge:pred2=\"value2\""),
+          owner = Some("certuser@thehive.local"),
+          stats = JsObject.empty
+        )
+      )
+
+      // Merged cases should be deleted
+      val deleted21 = app[CaseCtrl].get("21")(request)
+      status(deleted21) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted21)}")
+      val deleted22 = app[CaseCtrl].get("22")(request)
+      status(deleted22) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted22)}")
+    }
+
+    "merge two cases error, not same organisation" in testApp { app =>
+      val request = FakeRequest("POST", "/api/v0/case/21/_merge/24")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result = app[CaseCtrl].merge("21", "24")(request)
+      // User shouldn't be able to see others cases, resulting in 404
+      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
+    }
+
+    "merge two cases error, not same profile" in testApp { app =>
+      val request = FakeRequest("POST", "/api/v0/case/21/_merge/25")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result = app[CaseCtrl].merge("21", "25")(request)
+      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
+      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
     }
   }
 }

@@ -1,11 +1,19 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.Date
-
+import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
 import play.api.libs.json.{JsNull, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
+
+case class TestCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
+
+object TestCustomFieldValue {
+  def apply(outputCustomFieldValue: OutputCustomFieldValue): TestCustomFieldValue =
+    outputCustomFieldValue.into[TestCustomFieldValue].transform
+}
 
 case class TestCase(
     title: String,
@@ -19,40 +27,19 @@ case class TestCase(
     pap: Int,
     status: String,
     summary: Option[String] = None,
+    impactStatus: Option[String] = None,
+    resolutionStatus: Option[String] = None,
     user: Option[String],
     customFields: Seq[TestCustomFieldValue] = Seq.empty
 )
 
 object TestCase {
   def apply(outputCase: OutputCase): TestCase =
-    TestCase(
-      outputCase.title,
-      outputCase.description,
-      outputCase.severity,
-      outputCase.startDate,
-      outputCase.endDate,
-      outputCase.tags,
-      outputCase.flag,
-      outputCase.tlp,
-      outputCase.pap,
-      outputCase.status,
-      outputCase.summary,
-      outputCase.assignee,
-      outputCase.customFields.map(TestCustomFieldValue.apply).sortBy(_.order)
-    )
-}
-
-case class TestCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
-
-object TestCustomFieldValue {
-  def apply(outputCustomFieldValue: OutputCustomFieldValue): TestCustomFieldValue =
-    TestCustomFieldValue(
-      outputCustomFieldValue.name,
-      outputCustomFieldValue.description,
-      outputCustomFieldValue.`type`,
-      outputCustomFieldValue.value,
-      outputCustomFieldValue.order
-    )
+    outputCase
+      .into[TestCase]
+      .withFieldRenamed(_.assignee, _.user)
+      .withFieldComputed(_.customFields, _.customFields.map(TestCustomFieldValue.apply).sortBy(_.order))
+      .transform
 }
 
 class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
@@ -195,6 +182,69 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
 //        TestCase(resultCase) must_=== expected
       pending
+    }
+
+    "merge 3 cases correctly" in testApp { app =>
+      val request21 = FakeRequest("GET", s"/api/v1/case/#21")
+        .withHeaders("user" -> "certuser@thehive.local")
+      val case21 = app[CaseCtrl].get("21")(request21)
+      status(case21) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(case21)}")
+      val output21 = contentAsJson(case21).as[OutputCase]
+
+      val request = FakeRequest("GET", "/api/v1/case/_merge/21,22,23")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result = app[CaseCtrl].merge("21,22,23")(request)
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+
+      val outputCase = contentAsJson(result).as[OutputCase]
+
+      // Merge result
+      TestCase(outputCase) must equalTo(
+        TestCase(
+          title = "case#21 / case#22 / case#23",
+          description = "description of case #21\n\ndescription of case #22\n\ndescription of case #23",
+          severity = 3,
+          startDate = output21.startDate,
+          endDate = output21.endDate,
+          Set("toMerge:pred1=\"value1\"", "toMerge:pred2=\"value2\""),
+          flag = true,
+          tlp = 4,
+          pap = 3,
+          status = "Open",
+          None,
+          None,
+          None,
+          Some("certuser@thehive.local"),
+          Seq()
+        )
+      )
+
+      // Merged cases should be deleted
+      val deleted21 = app[CaseCtrl].get("21")(request)
+      status(deleted21) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted21)}")
+      val deleted22 = app[CaseCtrl].get("22")(request)
+      status(deleted22) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted22)}")
+      val deleted23 = app[CaseCtrl].get("23")(request)
+      status(deleted23) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted23)}")
+    }
+
+    "merge two cases error, not same organisation" in testApp { app =>
+      val request = FakeRequest("GET", "/api/v1/case/_merge/21,24")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result = app[CaseCtrl].merge("21,24")(request)
+      // User shouldn't be able to see others cases, resulting in 404
+      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
+    }
+
+    "merge two cases error, not same profile" in testApp { app =>
+      val request = FakeRequest("GET", "/api/v1/case/_merge/21,25")
+        .withHeaders("user" -> "certuser@thehive.local")
+
+      val result = app[CaseCtrl].merge("21,25")(request)
+      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
+      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
     }
   }
 }

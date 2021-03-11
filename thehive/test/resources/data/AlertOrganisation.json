@@ -3,5 +3,6 @@
   {"from": "alert2", "to": "cert"},
   {"from": "alert3", "to": "cert"},
   {"from": "alert4", "to": "cert"},
-  {"from": "alert5", "to": "cert"}
+  {"from": "alert5", "to": "cert"},
+  {"from": "alertMerge1", "to": "cert"}
 ]
