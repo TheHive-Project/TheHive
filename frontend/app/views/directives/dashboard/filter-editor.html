@@ -8,6 +8,7 @@
                 {{filter.value.operator || '='}} <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
                 <li><a href style="font-size:20px;" ng-click="filter.value.operator = '='">=</a></li>
                 <li><a href style="font-size:20px;" ng-click="filter.value.operator = '!='">!=</a></li>
                 <li><a href style="font-size:20px;" ng-click="filter.value.operator = '<'">&lt;</a></li>
@@ -16,7 +17,7 @@
                 <li><a href style="font-size:20px;" ng-click="filter.value.operator = '>='">&gt;=</a></li>
             </ul>
         </div>
-        <div class="col-xs-10 pl-xxxs">
+        <div class="col-xs-10 pl-xxxs" ng-show="filter.value.operator !== 'empty'">
             <input type="number" step=".01" class="form-control" ng-model="filter.value.value">
         </div>
     </div>
@@ -27,12 +28,13 @@
                 {{filter.value.operator || 'any'}} of <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
                 <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
                 <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
                 <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
             </ul>
         </div>
-        <div class="col-xs-10 pl-xxxs clear">
+        <div class="col-xs-10 pl-xxxs clear" ng-show="filter.value.operator !== 'empty'">
             <div class="input-group">
                 <tags-input class="form-control-wrapper ti-tag-selector"
                     ng-model="filter.value.list"
@@ -57,12 +59,13 @@
                 {{filter.value.operator || 'any'}} of <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
                 <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
                 <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
                 <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
             </ul>
         </div>
-        <div class="col-xs-10 pl-xxxs">
+        <div class="col-xs-10 pl-xxxs" ng-show="filter.value.operator !== 'empty'">
             <tags-input class="form-control-wrapper" min-length="2" ng-model="filter.value.list"
                 placeholder="ex: Firstname Lastname"
                 replace-spaces-with-dashes="false"
@@ -79,12 +82,13 @@
                 {{filter.value.operator || 'any'}} of <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
                 <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
                 <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
                 <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
             </ul>
         </div>
-        <div class="col-xs-10 pl-xxxs">
+        <div class="col-xs-10 pl-xxxs" ng-show="filter.value.operator !== 'empty'">
             <tags-input class="form-control-wrapper" min-length="2"
                 ng-model="filter.value.list"
                 placeholder="Enter a {{filter.field}}"
@@ -98,12 +102,13 @@
                 {{filter.value.operator || 'any'}} of <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
                 <li><a href ng-click="filter.value.operator = 'any'">any of</a></li>
                 <li><a href ng-click="filter.value.operator = 'all'">all of</a></li>
                 <li><a href ng-click="filter.value.operator = 'none'">none of</a></li>
             </ul>
         </div>
-        <div class="col-xs-10 pl-xxxs">
+        <div class="col-xs-10 pl-xxxs" ng-show="filter.value.operator !== 'empty'">
             <tags-input class="form-control-wrapper" min-length="2" ng-model="filter.value.list"
                 replace-spaces-with-dashes="false"
                 add-from-autocomplete-only="true"
@@ -134,6 +139,7 @@
                 {{dateOperator[filter.value.operator || 'custom']}} <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
+                <li><a href ng-click="setDateFilterOperator(filter, 'empty')">Empty</a></li>
                 <li><a href ng-click="setDateFilterOperator(filter, 'custom')">Custom</a></li>
                 <li><a href ng-click="setDateFilterOperator(filter, 'today')">Today</a></li>
                 <li><a href ng-click="setDateFilterOperator(filter, 'last7days')">Last 7 days</a></li>
