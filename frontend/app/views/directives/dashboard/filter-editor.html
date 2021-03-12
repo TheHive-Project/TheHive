@@ -5,16 +5,16 @@
     <div ng-switch-when="number|integer|float" ng-switch-when-separator="|" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
             <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
-                {{filter.value.operator || '='}} <span class="caret"></span>
+                {{operatorMap[filter.value.operator] || '='}} <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
                 <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
-                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '='">=</a></li>
-                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '!='">!=</a></li>
-                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '<'">&lt;</a></li>
-                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '<='">&lt;=</a></li>
-                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '>'">&gt;</a></li>
-                <li><a href style="font-size:20px;" ng-click="filter.value.operator = '>='">&gt;=</a></li>
+                <li><a href ng-click="filter.value.operator = '='">=</a></li>
+                <li><a href ng-click="filter.value.operator = '!='">!=</a></li>
+                <li><a href ng-click="filter.value.operator = '<'">&lt;</a></li>
+                <li><a href ng-click="filter.value.operator = '<='">&lt;=</a></li>
+                <li><a href ng-click="filter.value.operator = '>'">&gt;</a></li>
+                <li><a href ng-click="filter.value.operator = '>='">&gt;=</a></li>
             </ul>
         </div>
         <div class="col-xs-10 pl-xxxs" ng-show="filter.value.operator !== 'empty'">
@@ -25,7 +25,7 @@
     <div ng-switch-when="tags" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
             <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
-                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+                {{operatorMap[filter.value.operator || 'any']}} <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
                 <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
@@ -56,7 +56,7 @@
     <div ng-switch-when="user" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
             <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
-                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+                {{operatorMap[filter.value.operator || 'any']}} <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
                 <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
@@ -79,7 +79,7 @@
     <div ng-switch-when="string" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
             <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
-                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+                {{operatorMap[filter.value.operator || 'any']}} <span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
                 <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>
@@ -99,7 +99,7 @@
     <div ng-switch-when="enumeration" class="row">
         <div class="col-xs-2 ph-0" uib-dropdown>
             <button type="button" class="btn btn-block btn-default dropdown-toggle" uib-dropdown-toggle>
-                {{filter.value.operator || 'any'}} of <span class="caret"></span>
+                {{operatorMap[filter.value.operator || 'any']}}<span class="caret"></span>
             </button>
             <ul class="dropdown-menu" uib-dropdown-menu>
                 <li><a href ng-click="filter.value.operator = 'empty'">is empty</a></li>

@@ -10,6 +10,13 @@
             },
             templateUrl: 'views/directives/dashboard/filter-editor.html',
             link: function(scope) {
+                scope.operatorMap = {
+                    empty: 'Is Empty',
+                    any: 'Any Of',
+                    none: 'None Of',
+                    all: 'All Of'
+                };
+
                 scope.dateOperator = {
                     empty: 'Empty',
                     custom: 'Custom',
