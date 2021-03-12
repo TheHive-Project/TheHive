@@ -14,15 +14,18 @@
                     <li ng-if="menu.unflag">
                         <a href ng-click="bulkFlag(false)"><i class="fa fa-flag-o"></i> Remove flag</a>
                     </li>
-                    <!-- <li ng-if="$vm.menu.reopen">
-                        <a href ng-click="$vm.bulkReopen()"><i class="fa fa-folder-open"></i> Reopen</a>
+                    <li ng-if="menu.start">
+                        <a href ng-click="bulkStatus('InProgress')"><i class="fa fa-play"></i> Start</a>
                     </li>
-                    <li ng-if="$vm.menu.close">
-                        <a href ng-click="$vm.bulkClose()"><i class="fa fa-folder"></i> Close</a>
+                    <li ng-if="menu.reopen">
+                        <a href ng-click="bulkStatus('InProgress')"><i class="fa fa-folder-open"></i> Reopen</a>
                     </li>
-                    <li ng-if="$vm.menu.delete" class="divider"></li>
+                    <li ng-if="menu.close">
+                        <a href ng-click="bulkStatus('Completed')"><i class="fa fa-folder"></i> Close</a>
+                    </li>
+                    <!-- <li ng-if="menu.delete" class="divider"></li>
                     <li>
-                        <a href ng-click="$vm.bulkRemove()"><i class="fa fa-trash"></i> Delete</a>
+                        <a href ng-click="bulkRemove()"><i class="fa fa-trash"></i> Delete</a>
                     </li> -->
                 </ul>
             </div>

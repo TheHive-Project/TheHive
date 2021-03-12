@@ -737,6 +737,7 @@ table tr td.task-actions span.action-button {
     /*background: rgba(0,0,0,0.2) !important;*/
 }
 
+.task-flags.inline div,
 .observable-flags.inline div {
     display: inline;
 }

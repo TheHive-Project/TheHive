@@ -1,0 +1,30 @@
+<div class="task-flags" ng-class="{'inline': $ctrl.inline}">
+    <!-- TLP -->
+    <div class="task-status clickable" uib-tooltip="{{$ctrl.task.status}}" tooltip-popup-delay="500" tooltip-placement="bottom"
+        ng-click="$ctrl.filterBy('status', $ctrl.task.status)">
+        <i ng-class="{
+            'Waiting': 'glyphicon glyphicon-pause text-primary',
+            'InProgress': 'glyphicon glyphicon-hourglass text-yellow',
+            'Completed': 'glyphicon glyphicon-ok text-success',
+        }[$ctrl.task.status]"></i>
+    </div>
+
+    <!-- Flag -->
+    <div ng-if="!!$ctrl.task.flag" class="task-flag clickable" uib-tooltip="Is flagged" tooltip-popup-delay="500" tooltip-placement="bottom"
+        ng-click="$ctrl.filterBy('flag', true)">
+        <i class="glyphicon glyphicon-flag text-yellow"></i>
+    </div>
+    <div ng-if="!!!$ctrl.task.flag" class="task-flag clickable"
+        ng-click="$ctrl.filterBy('flag', false)">
+        <i class="glyphicon glyphicon-flag text-disabled"></i>
+    </div>
+
+    <!-- Assignee -->
+    <div ng-if="!!$ctrl.task.assignee" class="task-assignee" uib-tooltip="Is Assigned" tooltip-popup-delay="500" tooltip-placement="bottom">
+        <i class="glyphicon glyphicon-user text-muted"></i>
+    </div>
+    <div ng-if="!!!$ctrl.task.assignee" class="task-flag clickable" uib-tooltip="Not assigned" tooltip-popup-delay="500" tooltip-placement="bottom">
+        <i class="glyphicon glyphicon-user text-disabled"></i>
+    </div>
+
+</div>

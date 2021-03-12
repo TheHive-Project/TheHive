@@ -98,6 +98,18 @@
             $scope.menu.unflag = temp.length === 1 && temp[0] === true;
             $scope.menu.flag = temp.length === 1 && temp[0] === false;
 
+            // Handle start menu item
+            temp = _.uniq(_.pluck($scope.selection, 'status'));
+            $scope.menu.start = temp.length === 1 && temp[0] === 'Waiting';
+
+            // Handle close menu item
+            temp = _.uniq(_.pluck($scope.selection, 'status'));
+            $scope.menu.close = temp.indexOf('Completed') === -1;
+
+            // Handle reopen menu item
+            temp = _.uniq(_.pluck($scope.selection, 'status'));
+            $scope.menu.reopen = temp.length === 1 && temp[0] === 'Completed';
+
             // Handle close menu item
             // temp = _.uniq(_.pluck($scope.selection, 'status'));
             // $scope.menu.close = temp.length === 1 && temp[0] === 'Open';
@@ -278,16 +290,26 @@
             });
         };
 
-        $scope.bulkFlag = function(flag) {
-            var ids = _.pluck($scope.selection, '_id');
-
-            return CaseTaskSrv.bulkUpdate(ids, {flag: flag})
+        $scope.bulkUpdate = function(ids, patch) {
+            return CaseTaskSrv.bulkUpdate(ids, patch)
                 .then(function(/*responses*/) {
                     NotificationSrv.log('Selected tasks have been updated successfully', 'success');
                 })
                 .catch(function(err) {
-                    NotificationSrv.error('Bulk flag tasks', err.data, err.status);
+                    NotificationSrv.error('Bulk update tasks', err.data, err.status);
                 });
+        }
+
+        $scope.bulkFlag = function(flag) {
+            var ids = _.pluck($scope.selection, '_id');
+
+            return $scope.bulkUpdate(ids, {flag: flag});
+        }
+
+        $scope.bulkStatus = function(status) {
+            var ids = _.pluck($scope.selection, '_id');
+
+            return $scope.bulkUpdate(ids, {status: status});
         }
 
         // open task tab with its details
