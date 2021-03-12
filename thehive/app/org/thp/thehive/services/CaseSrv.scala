@@ -358,6 +358,7 @@ class CaseSrv @Inject() (
             _ <-
               get(c)
                 .alert
+                .update(_.caseId, Some(richCase._id))
                 .toSeq
                 .toTry(alertSrv.alertCaseSrv.create(AlertCase(), _, richCase.`case`))
             _ <-
@@ -402,6 +403,7 @@ class CaseSrv @Inject() (
         get(fromCase)
           .share(org._id)
           .tasks
+          .update(_.relatedId, mergedCase._id)
           .richTask
           .toSeq
           .toTry(shareSrv.shareTask(_, mergedCase, org._id))
@@ -417,6 +419,7 @@ class CaseSrv @Inject() (
         get(fromCase)
           .share(org._id)
           .observables
+          .update(_.relatedId, mergedCase._id)
           .richObservable
           .toSeq
           .toTry(shareSrv.shareObservable(_, mergedCase, org._id))
