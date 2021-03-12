@@ -110,12 +110,7 @@
             temp = _.uniq(_.pluck($scope.selection, 'status'));
             $scope.menu.reopen = temp.length === 1 && temp[0] === 'Completed';
 
-            // Handle close menu item
-            // temp = _.uniq(_.pluck($scope.selection, 'status'));
-            // $scope.menu.close = temp.length === 1 && temp[0] === 'Open';
-            // $scope.menu.reopen = temp.length === 1 && temp[0] === 'Resolved';
-
-            // $scope.menu.delete = $scope.selection.length > 0;
+            $scope.menu.delete = $scope.selection.length > 0;
         };
 
         $scope.select = function(task) {
@@ -310,6 +305,31 @@
             var ids = _.pluck($scope.selection, '_id');
 
             return $scope.bulkUpdate(ids, {status: status});
+        }
+
+        $scope.bulkRemove = function() {
+            var ids = _.pluck($scope.selection, '_id');
+
+            ModalUtilsSrv.confirm('Delete selected tasks', 'Are you sure you want to delete the selected tasks?', {
+                okText: 'Yes, proceed',
+                flavor: 'danger'
+            }).then(function() {
+                return CaseTaskSrv.bulkUpdate(ids, {status: 'Cancel'})
+                    .then(function(/*responses*/) {
+                        NotificationSrv.log('Selected tasks have been successfully removed', 'success');
+
+                        _.each($scope.selection, function(task) {
+                            $scope.$emit('tasks:task-removed', task);
+                        });
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Bulk remove tasks', err.data, err.status);
+                    });
+            }).catch(function(err) {
+                if(err && !_.isString(err)) {
+                    NotificationSrv.error('Bulk remove tasks', err.data, err.status);
+                }
+            })
         }
 
         // open task tab with its details
