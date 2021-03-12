@@ -57,6 +57,10 @@
                 });
             };
 
+            this.bulkUpdate = function(ids, update) {
+                return $http.patch('./api/v1/task/_bulk', _.extend({ids: ids}, update));
+            };
+
             this.removeShare = function(id, share) {
                 return $http.delete('./api/task/'+id+'/shares', {
                     data: {

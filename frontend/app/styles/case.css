@@ -80,7 +80,7 @@ table.case-list .case-tags .label,
     font-size: 12px !important;
     font-weight: normal;
 }
-
+table.data-list .btn-icon,
 table.case-list .btn-icon {
     padding: 6px;
     padding-top: 0;

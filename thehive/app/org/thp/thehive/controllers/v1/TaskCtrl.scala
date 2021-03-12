@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import org.thp.scalligraph._
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -123,6 +124,25 @@ class TaskCtrl @Inject() (
               .can(Permissions.manageTask),
             propertyUpdaters
           )
+          .map(_ => Results.NoContent)
+      }
+
+  def bulkUpdate: Action[AnyContent] =
+    entrypoint("bulk update")
+      .extract("input", FieldsParser.update("task", publicProperties))
+      .extract("ids", FieldsParser.seq[String].on("ids"))
+      .authTransaction(db) { implicit request => implicit graph =>
+        val properties: Seq[PropertyUpdater] = request.body("input")
+        val ids: Seq[String]                 = request.body("ids")
+        ids
+          .toTry { id =>
+            taskSrv
+              .update(
+                _.get(EntityIdOrName(id))
+                  .can(Permissions.manageTask),
+                properties
+              )
+          }
           .map(_ => Results.NoContent)
       }
 
