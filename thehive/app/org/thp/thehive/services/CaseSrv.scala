@@ -166,7 +166,7 @@ class CaseSrv @Inject() (
       tagsToAdd <- (tags -- `case`.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(`case`).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(caseTagSrv.create(CaseTag(), `case`, _))
-      _ = if (tags.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tagsToRemove.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(`case`).update(_.tags, tags.toSeq).getOrFail("Case")
       _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
@@ -205,27 +205,20 @@ class CaseSrv @Inject() (
   ): Try[RichObservable] =
     attachmentSrv.create(file).flatMap(attachment => createObservable(`case`, observable, attachment))
 
-  def shareDelete(caze: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val details = Json.obj("number" -> caze.number, "title" -> caze.title)
-
-    for {
-      share <- shareSrv.get(caze, authContext.organisation).getOrFail("Share")
-      org   <- organisationSrv.get(authContext.organisation).getOrFail("Organisation")
-      _     <- auditSrv.`case`.delete(caze, org, Some(details))
-      _ <-
-        if (share.owner) delete(caze)
-        else shareSrv.unshareCase(share._id)
-    } yield ()
-  }
-
-  private def delete(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  override def delete(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val details = Json.obj("number" -> `case`.number, "title" -> `case`.title)
-    for {
-      organisation <- organisationSrv.getOrFail(authContext.organisation)
-      shares = get(`case`).shares.toSeq
-      _ <- shares.toTry(s => shareSrv.unshareCase(s._id))
-      _ <- auditSrv.`case`.delete(`case`, organisation, Some(details))
-    } yield get(`case`).remove()
+    organisationSrv.get(authContext.organisation).getOrFail("Organisation").flatMap { organisation =>
+      shareSrv
+        .get(`case`, authContext.organisation)
+        .getOrFail("Share")
+        .flatMap {
+          case share if share.owner =>
+            get(`case`).shares.toSeq.toTry(s => shareSrv.unshareCase(s._id)).map(_ => get(`case`).remove())
+          case share =>
+            shareSrv.unshareCase(share._id)
+        }
+        .map(_ => auditSrv.`case`.delete(`case`, organisation, Some(details)))
+    }
   }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Case] =
@@ -386,7 +379,7 @@ class CaseSrv @Inject() (
                 .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
           } yield Success(())
         }
-        _ <- cases.toTry(delete(_))
+        _ <- cases.toTry(super.delete(_))
       } yield richCase
     } else
       Failure(BadRequestError("To be able to merge, cases must have same organisation / profile pair and user must be org-admin"))

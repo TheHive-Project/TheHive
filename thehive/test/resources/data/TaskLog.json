@@ -1,5 +1,5 @@
 [
   {"from": "task4", "to": "log1"},
-  {"from": "task-cascade-remove-simple", "to": "log-cascade-remove"},
-  {"from": "task-cascade-remove-delete", "to": "log-cascade-remove"}
+  {"from": "task-cascade-remove-simple", "to": "log-cascade-remove-simple"},
+  {"from": "task-cascade-remove-delete", "to": "log-cascade-remove-delete"}
 ]

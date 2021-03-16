@@ -117,17 +117,6 @@ class AlertSrv @Inject() (
   def addTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     updateTags(alert, tags ++ alert.tags).map(_ => ())
 
-  def removeObservable(alert: Alert with Entity, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    observableSrv
-      .get(observable)
-      .filter(_.inE[AlertObservable].outV.hasId(alert._id))
-      .getOrFail("Observable")
-      .flatMap { alertObservable =>
-        // FIXME Observable entity must be remove, not only the edge
-        alertObservableSrv.get(alertObservable).remove()
-        auditSrv.observableInAlert.delete(observable, alert)
-      }
-
   def createObservable(alert: Alert with Entity, observable: Observable, data: String)(implicit
       graph: Graph,
       authContext: AuthContext
@@ -365,7 +354,7 @@ class AlertSrv @Inject() (
   def remove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       organisation <- organisationSrv.getOrFail(authContext.organisation)
-      _            <- get(alert).observables.toIterator.toTry(observableSrv.remove(_))
+      _            <- get(alert).observables.toIterator.toTry(observableSrv.delete(_))
       _ = get(alert).remove()
       _ <- auditSrv.alert.delete(alert, organisation)
     } yield ()

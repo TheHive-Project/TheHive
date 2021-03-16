@@ -83,7 +83,7 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
 
   def exists(attachment: Attachment with Entity): Boolean = storageSrv.exists("attachment", attachment.attachmentId)
 
-  override def delete(attachment: Attachment with Entity)(implicit graph: Graph): Try[Unit] = {
+  override def delete(attachment: Attachment with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val attachments = startTraversal.has(_.attachmentId, attachment.attachmentId).limit(2).getCount
     if (attachments == 1)
       storageSrv.delete("attachment", attachment.attachmentId)

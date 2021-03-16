@@ -93,7 +93,8 @@ class TagSrv @Inject() (
         .getOrFail("Tag")
     } yield updatedTag
 
-  override def delete(tag: Tag with Entity)(implicit graph: Graph): Try[Unit] = {
+  // TODO add audit
+  override def delete(tag: Tag with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val tagName = tag.toString
     Try {
       get(tag)

@@ -134,40 +134,30 @@ class ObservableSrv @Inject() (
       _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 
-  def remove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  override def delete(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(observable).alert.headOption match {
       case None =>
-        get(observable)
-          .shares
-          .toIterator
-          .toTry { share =>
-            auditSrv
-              .observable
-              .delete(observable, share)
+        get(observable).share.getOrFail("Share").flatMap {
+          case share if share.owner =>
+            get(observable)
+              .shares
+              .toIterator
+              .toTry { share =>
+                auditSrv
+                  .observable
+                  .delete(observable, share)
+              }
               .map(_ => get(observable).remove())
-          }
-          .map(_ => ())
+          case share =>
+            for {
+              organisation <- organisationSrv.current.getOrFail("Organisation")
+              _            <- shareSrv.unshareObservable(observable, organisation)
+              _            <- auditSrv.observable.delete(observable, share)
+            } yield ()
+        }
       case Some(alert) =>
-        for {
-          _ <- Try(get(observable).remove())
-          _ <- auditSrv.observableInAlert.delete(observable, alert)
-        } yield ()
-    }
-
-  // Same as remove but with no Audit creation
-  def delete(obs: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    if (get(obs).isShared.head)
-      for {
-        orga <- organisationSrv.getOrFail(authContext.organisation)
-        _    <- shareSrv.unshareObservable(obs, orga)
-      } yield ()
-    else {
-      val alert       = get(obs).alert.headOption
-      val attachments = get(obs).attachments.toSeq
-      if (alert.isDefined) auditSrv.observableInAlert.delete(obs, alert.getOrElse(sys.error("FIXME")))
-      for {
-        _ <- attachments.toTry(attachmentSrv.delete(_))
-      } yield get(obs).remove()
+        get(observable).remove()
+        auditSrv.observableInAlert.delete(observable, alert)
     }
 
   override def update(

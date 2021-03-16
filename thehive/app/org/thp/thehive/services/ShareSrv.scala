@@ -99,8 +99,8 @@ class ShareSrv @Inject() (implicit
     for {
       organisation <- get(shareId).organisation.getOrFail("Organisation")
       case0        <- get(shareId).`case`.removeValue(_.organisationIds, organisation._id).getOrFail("Case")
-      _ = get(shareId).observables.removeValue(_.organisationIds, organisation._id).iterate()
-      _ = get(shareId).tasks.removeValue(_.organisationIds, organisation._id).iterate()
+      _ = get(shareId).observables.removeValue(_.organisationIds, organisation._id).barrier().filterNot(_.shares.range(1, 2)).remove()
+      _ = get(shareId).tasks.removeValue(_.organisationIds, organisation._id).barrier().filterNot(_.shares.range(1, 2)).remove()
       _ <- auditSrv.share.unshareCase(case0, organisation)
       _ <- delete(shareId)
     } yield ()

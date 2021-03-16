@@ -101,7 +101,6 @@
     "data": "127.0.0.1",
     "sighted": true,
     "relatedId": ""
-    "sighted": true
   },
   {
     "id": "obs-cascade-remove-simple",
@@ -111,8 +110,7 @@
     "dataType": "ip",
     "data": "127.0.0.2",
     "sighted": true,
-    "relatedId": "",
-    "sighted": true
+    "relatedId": ""
   },
   {
     "id": "obs-cascade-remove-unshare",
@@ -122,8 +120,7 @@
     "dataType": "ip",
     "data": "127.0.0.3",
     "sighted": true,
-    "relatedId": "",
-    "sighted": true
+    "relatedId": ""
   },
   {
     "id": "obs-cascade-remove-delete",
@@ -133,7 +130,6 @@
     "dataType": "ip",
     "data": "127.0.0.4",
     "sighted": true,
-    "relatedId": "",
-    "sighted": true
+    "relatedId": ""
   }
 ]

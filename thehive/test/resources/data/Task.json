@@ -120,8 +120,6 @@
     "flag": true,
     "order": 0,
     "relatedId": ""
-    "order": 0,
-    "relatedId": ""
   },
   {
     "id": "task-cascade-remove-simple",

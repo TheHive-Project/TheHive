@@ -3,14 +3,18 @@
     "id": "log1",
     "message": "log for action test",
     "date": 1566303875000,
-    "deleted": false,
     "taskId": ""
   },
   {
-    "id": "log-cascade-remove",
-    "message": "log cascade remove",
+    "id": "log-cascade-remove-simple",
+    "message": "log cascade remove simple",
     "date": 1566303875000,
-    "deleted": false,
+    "taskId": ""
+  },
+  {
+    "id": "log-cascade-remove-delete",
+    "message": "log cascade remove delete",
+    "date": 1566303875000,
     "taskId": ""
   }
 ]

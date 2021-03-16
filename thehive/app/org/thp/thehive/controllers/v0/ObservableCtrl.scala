@@ -305,7 +305,7 @@ class ObservableCtrl @Inject() (
               .get(EntityIdOrName(observableId))
               .canManage(organisationSrv)
               .getOrFail("Observable")
-          _ <- observableSrv.remove(observable)
+          _ <- observableSrv.delete(observable)
         } yield Results.NoContent
       }
 

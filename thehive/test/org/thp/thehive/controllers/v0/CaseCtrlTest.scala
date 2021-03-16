@@ -326,7 +326,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      (resultCase \ "count").asOpt[Int]        must beSome(9)
+      (resultCase \ "count").asOpt[Int]        must beSome(10)
       (resultCase \ "t1" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "t2" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "t3" \ "count").asOpt[Int] must beSome(1)
@@ -380,7 +380,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       // Merge result
       TestCase(outputCase) must equalTo(
         TestCase(
-          caseId = 26,
+          caseId = 36,
           title = "case#21 / case#22",
           description = "description of case #21\n\ndescription of case #22",
           severity = 3,
@@ -408,7 +408,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val result = app[CaseCtrl].merge("21", "24")(request)
       // User shouldn't be able to see others cases, resulting in 404
-      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
 
     "merge two cases error, not same profile" in testApp { app =>

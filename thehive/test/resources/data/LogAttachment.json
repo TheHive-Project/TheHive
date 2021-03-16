@@ -1,3 +1,4 @@
 [
-  {"from": "log-cascade-remove", "to": "cascade-remove-attachment2"}
+  {"from": "log-cascade-remove-simple", "to": "cascade-remove-attachment2"},
+  {"from": "log-cascade-remove-delete", "to": "cascade-remove-attachment2"}
 ]

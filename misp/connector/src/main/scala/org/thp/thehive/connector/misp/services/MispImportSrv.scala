@@ -331,7 +331,7 @@ class MispImportSrv @Inject() (
       .toIterator
       .foreach { obs =>
         logger.debug(s"Delete  $obs")
-        observableSrv.remove(obs).recover {
+        observableSrv.delete(obs).recover {
           case error => logger.error(s"Fail to delete observable $obs", error)
         }
       }

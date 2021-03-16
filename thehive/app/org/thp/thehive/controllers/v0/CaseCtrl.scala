@@ -140,7 +140,7 @@ class CaseCtrl @Inject() (
               .get(EntityIdOrName(caseIdOrNumber))
               .can(Permissions.manageCase)
               .getOrFail("Case")
-          _ <- caseSrv.shareDelete(c)
+          _ <- caseSrv.delete(c)
         } yield Results.NoContent
       }
 
