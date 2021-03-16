@@ -57,7 +57,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
               tags = Set("tag1", "tag2"),
               flag = Some(false),
               tlp = Some(1),
-              pap = Some(3)
+              pap = Some(3),
+              user = Some("certro@thehive.local")
             )
           )
         )
@@ -77,7 +78,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         pap = 3,
         status = "Open",
         summary = None,
-        user = Some("certuser@thehive.local"),
+        user = Some("certro@thehive.local"),
         customFields = Seq.empty
       )
 
