@@ -519,7 +519,6 @@ object Conversion {
       inputLog
         .into[Log]
         .withFieldConst(_.date, new Date)
-        .withFieldConst(_.deleted, false)
         .transform
   }
 

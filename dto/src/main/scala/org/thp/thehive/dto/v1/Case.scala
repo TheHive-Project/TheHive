@@ -2,8 +2,6 @@ package org.thp.thehive.dto.v1
 
 import ai.x.play.json.Encoders.encoder
 import ai.x.play.json.Jsonx
-
-import java.util.Date
 import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json._
 

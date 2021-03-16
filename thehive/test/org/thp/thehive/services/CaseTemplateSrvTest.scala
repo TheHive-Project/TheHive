@@ -6,8 +6,8 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models._
-import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.TagOps._
 import play.api.libs.json.{JsNumber, JsString, JsTrue, JsValue}
 import play.api.test.PlaySpecification
 
@@ -51,7 +51,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
 
       app[Database].roTransaction { implicit graph =>
         val orgId = app[OrganisationSrv].currentId.value
-        app[TagSrv].startTraversal.getByName(s"_freetags_$orgId", "newOne", None).exists must beTrue
+        app[TagSrv].startTraversal.getByName(s"_freetags_$orgId", "newOne", None).exists           must beTrue
         app[TaskSrv].startTraversal.has(_.title, "task case template case template test 1").exists must beTrue
         val richCT = app[CaseTemplateSrv].startTraversal.getByName("case template test 1").richCaseTemplate.getOrFail("CaseTemplate").get
         richCT.customFields.length shouldEqual 2

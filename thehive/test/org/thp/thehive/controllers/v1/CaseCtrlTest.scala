@@ -236,7 +236,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val result = app[CaseCtrl].merge("21,24")(request)
       // User shouldn't be able to see others cases, resulting in 404
-      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
 
     "merge two cases error, not same profile" in testApp { app =>
@@ -244,7 +244,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21,25")(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result)                              must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
     }
   }

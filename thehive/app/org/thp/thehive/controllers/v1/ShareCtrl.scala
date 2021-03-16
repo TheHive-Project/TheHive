@@ -115,9 +115,8 @@ class ShareCtrl @Inject() (
                   .can(Permissions.manageShare)
                   .share(organisationId)
                   .has(_.owner, false)
-                  ._id
                   .orFail(AuthorizationError("Operation not permitted"))
-              _ <- shareSrv.remove(shareId)
+              _ <- shareSrv.delete(shareId)
             } yield ()
           }
           .map(_ => Results.NoContent)
@@ -135,7 +134,7 @@ class ShareCtrl @Inject() (
             organisations.toTry { organisationName =>
               organisationSrv
                 .getOrFail(EntityIdOrName(organisationName))
-                .flatMap(shareSrv.removeShareTasks(task, _))
+                .flatMap(shareSrv.unshareTask(task, _))
             }
           }
           .map(_ => Results.NoContent)
@@ -153,7 +152,7 @@ class ShareCtrl @Inject() (
             organisations.toTry { organisationName =>
               organisationSrv
                 .getOrFail(EntityIdOrName(organisationName))
-                .flatMap(shareSrv.removeShareObservable(observable, _))
+                .flatMap(shareSrv.unshareObservable(observable, _))
             }
           }
           .map(_ => Results.NoContent)
@@ -167,7 +166,7 @@ class ShareCtrl @Inject() (
     else if (shareSrv.get(shareId).has(_.owner, true).exists)
       Failure(AuthorizationError("You can't remove initial shares"))
     else
-      shareSrv.remove(shareId)
+      shareSrv.get(shareId).getOrFail("Share").flatMap(shareSrv.delete(_))
 
   def updateShare(shareId: String): Action[AnyContent] =
     entrypoint("update share")

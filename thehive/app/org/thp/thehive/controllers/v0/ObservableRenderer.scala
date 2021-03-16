@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Boolean => JBoolean, Long => JLong}
-import java.util.{Map => JMap}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.Traversal.V
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -13,6 +11,9 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
+
+import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.util.{Map => JMap}
 
 trait ObservableRenderer {
 

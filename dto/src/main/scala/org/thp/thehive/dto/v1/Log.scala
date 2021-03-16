@@ -17,7 +17,6 @@ case class OutputLog(
     message: String,
     date: Date,
     attachment: Option[OutputAttachment] = None,
-    deleted: Boolean,
     owner: String,
     extraData: JsObject
 )

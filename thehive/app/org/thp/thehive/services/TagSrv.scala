@@ -1,6 +1,5 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
 import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -16,6 +15,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 
+import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.matching.Regex
 import scala.util.{Success, Try}
@@ -93,7 +93,8 @@ class TagSrv @Inject() (
         .getOrFail("Tag")
     } yield updatedTag
 
-  override def delete(tag: Tag with Entity)(implicit graph: Graph): Try[Unit] = {
+  // TODO add audit
+  override def delete(tag: Tag with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val tagName = tag.toString
     Try {
       get(tag)

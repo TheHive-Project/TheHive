@@ -146,5 +146,29 @@
     "pap": 2,
     "status": "Open",
     "assignee": "puguser@thehive.local"
+  },
+  {
+    "id": "case4",
+    "number": 34,
+    "title": "case#4",
+    "description": "description of case cascade remove",
+    "severity": 3,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "status": "Open"
+  },
+  {
+    "id": "case5",
+    "number": 35,
+    "title": "case#5",
+    "description": "description of case cascade remove",
+    "severity": 3,
+    "startDate": 1531667370000,
+    "flag": false,
+    "tlp": 2,
+    "pap": 2,
+    "status": "Open"
   }
 ]

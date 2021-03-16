@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Long => JLong}
-import java.util.{List => JList, Map => JMap}
-
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -13,6 +10,9 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
+
+import java.lang.{Long => JLong}
+import java.util.{List => JList, Map => JMap}
 
 trait LogRenderer extends BaseRenderer[Log] {
 

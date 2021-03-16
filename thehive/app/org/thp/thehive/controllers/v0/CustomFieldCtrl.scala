@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -14,6 +13,7 @@ import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.{JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.Success
 
 @Singleton

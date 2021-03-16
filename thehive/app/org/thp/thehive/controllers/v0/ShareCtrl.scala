@@ -80,27 +80,21 @@ class ShareCtrl @Inject() (
       .extract("organisations", FieldsParser[String].sequence.on("organisations"))
       .authTransaction(db) { implicit request => implicit graph =>
         val organisations: Seq[String] = request.body("organisations")
-        organisations
-          .map(EntityIdOrName(_))
-          .toTry { organisationId =>
-            for {
-              organisation <- organisationSrv.get(organisationId).getOrFail("Organisation")
-              _ <-
-                if (request.organisation.fold(_ == organisation._id, _ == organisation.name))
-                  Failure(BadRequestError("You cannot remove your own share"))
-                else Success(())
-              shareId <-
-                caseSrv
-                  .get(EntityIdOrName(caseId))
-                  .can(Permissions.manageShare)
-                  .share(organisationId)
-                  .has(_.owner, false)
-                  ._id
-                  .orFail(AuthorizationError("Operation not permitted"))
-              _ <- shareSrv.remove(shareId)
-            } yield ()
-          }
-          .map(_ => Results.NoContent)
+
+        val organisationIds = organisations.map(o => organisationSrv.getId(EntityIdOrName(o)))
+        if (organisationIds.contains(organisationSrv.currentId))
+          Failure(BadRequestError("You cannot remove your own share"))
+        else
+          caseSrv
+            .get(EntityIdOrName(caseId))
+            .can(Permissions.manageShare)
+            .shares
+            .filter(_.organisation.getByIds(organisationIds: _*))
+            .has(_.owner, false)
+            ._id
+            .toSeq
+            .toTry(shareSrv.unshareCase)
+            .map(_ => Results.NoContent)
       }
 
   def removeTaskShares(taskId: String): Action[AnyContent] =
@@ -115,7 +109,7 @@ class ShareCtrl @Inject() (
             organisations.toTry { organisationName =>
               organisationSrv
                 .getOrFail(EntityIdOrName(organisationName))
-                .flatMap(shareSrv.removeShareTasks(task, _))
+                .flatMap(shareSrv.unshareTask(task, _))
             }
           }
           .map(_ => Results.NoContent)
@@ -133,7 +127,7 @@ class ShareCtrl @Inject() (
             organisations.toTry { organisationName =>
               organisationSrv
                 .getOrFail(EntityIdOrName(organisationName))
-                .flatMap(shareSrv.removeShareObservable(observable, _))
+                .flatMap(shareSrv.unshareObservable(observable, _))
             }
           }
           .map(_ => Results.NoContent)
@@ -147,7 +141,7 @@ class ShareCtrl @Inject() (
     else if (shareSrv.get(shareId).has(_.owner, true).exists)
       Failure(AuthorizationError("You can't remove initial shares"))
     else
-      shareSrv.remove(shareId)
+      shareSrv.unshareCase(shareId)
 
   def updateShare(shareId: String): Action[AnyContent] =
     entrypoint("update share")

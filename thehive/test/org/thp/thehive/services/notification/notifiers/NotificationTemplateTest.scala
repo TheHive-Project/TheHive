@@ -1,7 +1,5 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.util.{HashMap => JHashMap}
-
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
@@ -10,6 +8,7 @@ import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.services.{AuditSrv, CaseSrv, UserSrv}
 import play.api.test.PlaySpecification
 
+import java.util.{HashMap => JHashMap}
 import scala.collection.JavaConverters._
 
 class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {

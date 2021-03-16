@@ -7,5 +7,9 @@
   {"from": "case23-merge-cert", "to": "mergeObs232"},
   {"from": "case25-merge-soc", "to": "mergeObs251"},
   {"from": "case25-merge-cert", "to": "mergeObs251"},
-  {"from": "case25-merge-cert", "to": "mergeObs252"}
+  {"from": "case25-merge-cert", "to": "mergeObs252"},
+  {"from": "cascade-remove-simple", "to": "obs-cascade-remove-simple"},
+  {"from": "share-cascade-remove", "to": "obs-cascade-remove-delete"},
+  {"from": "share-cascade-remove", "to": "obs-cascade-remove-unshare"},
+  {"from": "share-cascade-remove2", "to": "obs-cascade-remove-unshare"}
 ]

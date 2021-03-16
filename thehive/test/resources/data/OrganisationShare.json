@@ -1,6 +1,9 @@
 [
   {"from": "cert", "to": "case1-cert"},
   {"from": "cert", "to": "case2-cert"},
+  {"from": "cert", "to": "cascade-remove-simple"},
+  {"from": "cert", "to": "share-cascade-remove"},
+  {"from": "soc", "to": "share-cascade-remove2"},
   {"from": "soc", "to": "case2-soc"},
   {"from": "soc", "to": "case3-soc"},
   {"from": "soc", "to": "case-actionRequired-soc"},

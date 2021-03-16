@@ -16,7 +16,6 @@ case class LogAttachment()
 case class Log(
     message: String,
     date: Date,
-    deleted: Boolean,
     /* filled by the service */
     taskId: EntityId = EntityId(""),
     organisationIds: Set[EntityId] = Set.empty
@@ -30,5 +29,4 @@ case class RichLog(log: Log with Entity, attachments: Seq[Attachment with Entity
   def _updatedAt: Option[Date]   = log._updatedAt
   def date: Date                 = log.date
   def message: String            = log.message
-  def deleted: Boolean           = log.deleted
 }

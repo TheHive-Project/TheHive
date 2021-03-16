@@ -1,11 +1,11 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.{EntityIdOrName, RichOptionTry}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.{EntityIdOrName, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputAlert, InputCustomFieldValue}
 import org.thp.thehive.models._

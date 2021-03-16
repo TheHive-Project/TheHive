@@ -5,13 +5,13 @@ import akka.stream.scaladsl.Source
 import akka.stream.stage.{AsyncCallback, GraphStage, GraphStageLogic, OutHandler}
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.{ElasticRequest, Show}
 import com.sksamuel.elastic4s.requests.searches.{SearchHit, SearchRequest, SearchResponse}
-import javax.inject.{Inject, Singleton}
+import com.sksamuel.elastic4s.{ElasticRequest, Show}
 import org.thp.scalligraph.{InternalError, SearchError}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
+import javax.inject.{Inject, Singleton}
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationLong, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}

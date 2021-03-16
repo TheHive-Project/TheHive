@@ -310,7 +310,7 @@ class ObservableCtrl @Inject() (
       }
 
   def delete(observableId: String): Action[AnyContent] =
-    entrypoint("delete")
+    entrypoint("delete observable")
       .authTransaction(db) { implicit request => implicit graph =>
         for {
           observable <-
@@ -318,7 +318,7 @@ class ObservableCtrl @Inject() (
               .get(EntityIdOrName(observableId))
               .canManage(organisationSrv)
               .getOrFail("Observable")
-          _ <- observableSrv.remove(observable)
+          _ <- observableSrv.delete(observable)
         } yield Results.NoContent
       }
 

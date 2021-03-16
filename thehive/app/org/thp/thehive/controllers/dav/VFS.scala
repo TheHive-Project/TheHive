@@ -1,14 +1,15 @@
 package org.thp.thehive.controllers.dav
 
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class VFS @Inject() (caseSrv: CaseSrv, organisationSrv: OrganisationSrv) {

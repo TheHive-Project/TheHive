@@ -1,7 +1,5 @@
 package org.thp.thehive.migration
 
-import java.io.File
-
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
@@ -9,6 +7,7 @@ import play.api.libs.logback.LogbackLoggerConfigurator
 import play.api.{Configuration, Environment}
 import scopt.OParser
 
+import java.io.File
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext}

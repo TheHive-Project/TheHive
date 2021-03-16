@@ -1,12 +1,13 @@
 package org.thp.thehive.services
 
-import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.utils.Hash
@@ -28,11 +29,13 @@ class ObservableSrv @Inject() (
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
-    caseSrvProvider: Provider[CaseSrv],
     auditSrv: AuditSrv,
+    shareSrvProvider: Provider[ShareSrv],
+    caseSrvProvider: Provider[CaseSrv],
     organisationSrv: OrganisationSrv,
     alertSrvProvider: Provider[AlertSrv]
 ) extends VertexSrv[Observable] {
+  lazy val shareSrv: ShareSrv  = shareSrvProvider.get
   lazy val caseSrv: CaseSrv    = caseSrvProvider.get
   lazy val alertSrv: AlertSrv  = alertSrvProvider.get
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
@@ -131,20 +134,30 @@ class ObservableSrv @Inject() (
       _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 
-  def remove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  override def delete(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(observable).alert.headOption match {
       case None =>
-        get(observable)
-          .shares
-          .toIterator
-          .toTry { share =>
-            auditSrv
-              .observable
-              .delete(observable, share)
+        get(observable).share.getOrFail("Share").flatMap {
+          case share if share.owner =>
+            get(observable)
+              .shares
+              .toIterator
+              .toTry { share =>
+                auditSrv
+                  .observable
+                  .delete(observable, share)
+              }
               .map(_ => get(observable).remove())
-          }
-          .map(_ => ())
-      case Some(alert) => alertSrv.removeObservable(alert, observable)
+          case share =>
+            for {
+              organisation <- organisationSrv.current.getOrFail("Organisation")
+              _            <- shareSrv.unshareObservable(observable, organisation)
+              _            <- auditSrv.observable.delete(observable, share)
+            } yield ()
+        }
+      case Some(alert) =>
+        get(observable).remove()
+        auditSrv.observableInAlert.delete(observable, alert)
     }
 
   override def update(
@@ -221,6 +234,9 @@ object ObservableOps {
       traversal.coalesceIdent(_.in[ShareObservable].in[OrganisationShare], _.in[AlertObservable].out[AlertOrganisation]).v[Organisation]
 
     def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
+
+    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+      traversal.choose(_.inE[ShareObservable].count.is(P.gt(1)), true, false)
 
     def richObservable: Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
       traversal
@@ -309,7 +325,7 @@ object ObservableOps {
           _.out[ObservableAttachment]
             .in[ObservableAttachment] // FIXME this doesn't work. Link must be done with attachmentId
         )
-        .where(JP.without(originLabel.name))
+        .where(P.without(originLabel.name))
         .dedup
         .v[Observable]
     }

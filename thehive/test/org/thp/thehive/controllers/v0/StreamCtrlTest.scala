@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
@@ -10,6 +8,8 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
 import play.api.test.{FakeRequest, PlaySpecification}
 
+import java.util.Date
+
 class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
   "stream controller" should {
     "create a stream" in testApp { app =>
@@ -17,7 +17,7 @@ class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
         .withHeaders("user" -> "certuser@thehive.local")
       val result = app[StreamCtrl].create(request)
 
-      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result)          must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       contentAsString(result) must not(beEmpty)
     }
 

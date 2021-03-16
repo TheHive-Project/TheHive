@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -12,6 +11,8 @@ import org.thp.thehive.dto.v0.InputObservableType
 import org.thp.thehive.models.{ObservableType, Permissions}
 import org.thp.thehive.services.ObservableTypeSrv
 import play.api.mvc.{Action, AnyContent, Results}
+
+import javax.inject.{Inject, Named, Singleton}
 
 @Singleton
 class ObservableTypeCtrl @Inject() (

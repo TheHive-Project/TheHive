@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
@@ -18,6 +17,7 @@ import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton

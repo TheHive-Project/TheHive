@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -14,6 +13,8 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PageOps._
 import org.thp.thehive.services.{OrganisationSrv, PageSrv}
 import play.api.mvc._
+
+import javax.inject.{Inject, Named, Singleton}
 
 @Singleton
 class PageCtrl @Inject() (

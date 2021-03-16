@@ -25,7 +25,8 @@ class ShareSrv @Inject() (implicit
     auditSrv: AuditSrv,
     caseSrvProvider: Provider[CaseSrv],
     taskSrv: TaskSrv,
-    observableSrvProvider: Provider[ObservableSrv]
+    observableSrvProvider: Provider[ObservableSrv],
+    organisationSrv: OrganisationSrv
 ) extends VertexSrv[Share] {
   lazy val caseSrv: CaseSrv             = caseSrvProvider.get
   lazy val observableSrv: ObservableSrv = observableSrvProvider.get
@@ -85,25 +86,26 @@ class ShareSrv @Inject() (implicit
     } yield newShareProfile
   }
 
-//  def remove(`case`: Case with Entity, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-//    caseSrv.get(`case`).in[ShareCase].filter(_.in[OrganisationShare])._id.getOrFail().flatMap(remove(_)) // FIXME add organisation ?
+  private def delete(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    for {
+      share <- getOrFail(shareId)
+      tasks = get(share).tasks.toSeq
+      obs   = get(share).observables.toSeq
+      _ <- tasks.toTry(taskSrv.delete(_))
+      _ <- obs.toTry(observableSrv.delete(_))
+    } yield get(shareId).remove()
 
-  def remove(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  def unshareCase(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       organisation <- get(shareId).organisation.getOrFail("Organisation")
       case0        <- get(shareId).`case`.removeValue(_.organisationIds, organisation._id).getOrFail("Case")
-      _ = get(shareId).observables.removeValue(_.organisationIds, organisation._id).iterate()
-      _ = get(shareId).tasks.removeValue(_.organisationIds, organisation._id).iterate()
+      _ = get(shareId).observables.removeValue(_.organisationIds, organisation._id).barrier().filterNot(_.shares.range(1, 2)).remove()
+      _ = get(shareId).tasks.removeValue(_.organisationIds, organisation._id).barrier().filterNot(_.shares.range(1, 2)).remove()
       _ <- auditSrv.share.unshareCase(case0, organisation)
-    } yield get(shareId).remove()
+      _ <- delete(shareId)
+    } yield ()
 
-  /**
-    * Unshare Task for a given Organisation
-    * @param task task to unshare
-    * @param organisation organisation the task must be unshared with
-    * @return
-    */
-  def removeShareTasks(
+  def unshareTask(
       task: Task with Entity,
       organisation: Organisation with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
@@ -119,13 +121,7 @@ class ShareSrv @Inject() (implicit
       _     <- auditSrv.share.unshareTask(task, case0, organisation)
     } yield shareTaskSrv.get(shareTask).remove()
 
-  /**
-    * Unshare Task for a given Organisation
-    * @param observable observable to unshare
-    * @param organisation organisation the task must be unshared with
-    * @return
-    */
-  def removeShareObservable(
+  def unshareObservable(
       observable: Observable with Entity,
       organisation: Organisation with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =

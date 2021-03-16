@@ -5,18 +5,19 @@ import org.thp.scalligraph.models.UMapping
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
 import org.thp.thehive.controllers.v0.Conversion._
+import org.thp.thehive.controllers.v1.Conversion.{patternOutput, richProcedureRenderer}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.PatternOps._
+import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsNumber, JsObject, JsString}
-import org.thp.thehive.controllers.v1.Conversion.{patternOutput, richProcedureRenderer}
+
 import java.util.{Date, List => JList, Map => JMap}
 
 trait AuditRenderer {

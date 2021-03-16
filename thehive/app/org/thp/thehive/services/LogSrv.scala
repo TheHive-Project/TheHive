@@ -34,13 +34,11 @@ class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSr
       _ <- auditSrv.log.create(createdLog, task, richLog.toJson)
     } yield richLog
 
-  def cascadeRemove(log: Log with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      _    <- get(log).attachments.toIterator.toTry(attachmentSrv.cascadeRemove(_))
-      task <- get(log).task.getOrFail("Task")
-      _ = get(log).remove()
-      _ <- auditSrv.log.delete(log, task)
-    } yield ()
+  override def delete(log: Log with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    get(log).attachments.toSeq.toTry(attachmentSrv.delete(_)).map { _ =>
+      get(log).task.headOption.foreach(task => auditSrv.log.delete(log, task))
+      get(log).remove()
+    }
 
   override def update(
       traversal: Traversal.V[Log],

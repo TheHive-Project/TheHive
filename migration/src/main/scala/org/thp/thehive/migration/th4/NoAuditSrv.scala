@@ -2,8 +2,6 @@ package org.thp.thehive.migration.th4
 
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-
-import javax.inject.{Inject, Provider, Singleton}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.EventSrv
@@ -11,6 +9,7 @@ import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.Audit
 import org.thp.thehive.services.{AuditSrv, UserSrv}
 
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton

@@ -1,7 +1,5 @@
 package org.thp.thehive.migration.th3
 
-import java.nio.file.{Files, Paths}
-import java.security.KeyStore
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
@@ -12,9 +10,6 @@ import com.sksamuel.elastic4s.requests.bulk.BulkResponseItem
 import com.sksamuel.elastic4s.requests.searches.{SearchHit, SearchRequest}
 import com.sksamuel.elastic4s.streams.ReactiveElastic.ReactiveElastic
 import com.sksamuel.elastic4s.streams.{RequestBuilder, ResponseListener}
-
-import javax.inject.{Inject, Singleton}
-import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.client.CredentialsProvider
 import org.apache.http.client.config.RequestConfig
@@ -26,6 +21,10 @@ import play.api.inject.ApplicationLifecycle
 import play.api.libs.json.JsObject
 import play.api.{Configuration, Logger}
 
+import java.nio.file.{Files, Paths}
+import java.security.KeyStore
+import javax.inject.{Inject, Singleton}
+import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}

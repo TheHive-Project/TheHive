@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.apache.tinkerpop.gremlin.structure.{T, Vertex}
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}

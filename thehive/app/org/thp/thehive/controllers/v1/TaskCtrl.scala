@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph._
-import org.thp.scalligraph.EntityIdOrName
+import org.thp.scalligraph.{EntityIdOrName, _}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -163,4 +162,16 @@ class TaskCtrl @Inject() (
         } yield Results.NoContent
       }
 
+  def delete(taskId: String): Action[AnyContent] =
+    entrypoint("delete task")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          t <-
+            taskSrv
+              .get(EntityIdOrName(taskId))
+              .can(Permissions.manageTask)
+              .getOrFail("Task")
+          _ <- taskSrv.delete(t)
+        } yield Results.NoContent
+      }
 }

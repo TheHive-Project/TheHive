@@ -12,5 +12,8 @@
   {"id": "case24-merge-cert", "owner":  false},
   {"id": "case25-merge-cert", "owner":  true},
   {"id": "case25-merge-soc", "owner":  false},
-  {"id": "case26-merge-pug", "owner":  true}
+  {"id": "case26-merge-pug", "owner":  true},
+  {"id": "cascade-remove-simple", "owner":  true},
+  {"id": "share-cascade-remove", "owner":  false},
+  {"id": "share-cascade-remove2", "owner":  true}
 ]

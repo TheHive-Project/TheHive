@@ -10,7 +10,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
 import play.api.Logger
-import play.api.libs.json.{JsNull, JsNumber, JsObject, JsString, Json}
+import play.api.libs.json._
 
 import java.lang.{Long => JLong}
 import java.time.temporal.ChronoUnit

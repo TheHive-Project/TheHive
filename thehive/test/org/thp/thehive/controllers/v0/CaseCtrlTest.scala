@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import akka.stream.Materializer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityIdOrName
@@ -13,6 +11,8 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseSrv
 import play.api.libs.json._
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 case class TestCase(
     caseId: Int,
@@ -206,7 +206,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val resultCase = contentAsJson(result).as[OutputCase]
 
       resultCase.title must equalTo("new title")
-      resultCase.flag must equalTo(true)
+      resultCase.flag  must equalTo(true)
     }
 
     "update a bulk of cases properly" in testApp { app =>
@@ -226,8 +226,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       resultCases must have size 2
 
       resultCases.map(_.description) must contain(be_==("new description")).forall
-      resultCases.map(_.tlp) must contain(be_==(1)).forall
-      resultCases.map(_.pap) must contain(be_==(1)).forall
+      resultCases.map(_.tlp)         must contain(be_==(1)).forall
+      resultCases.map(_.pap)         must contain(be_==(1)).forall
 
       val requestGet1 = FakeRequest("GET", s"/api/v0/case/1")
         .withHeaders("user" -> "certuser@thehive.local")
@@ -251,7 +251,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           Json.parse("""{"query":{"severity":2}}""")
         )
       val result = app[CaseCtrl].search()(request)
-      status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result)            must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       header("X-Total", result) must beSome("2")
       val resultCases = contentAsJson(result)(defaultAwaitTimeout, app[Materializer]).as[Seq[OutputCase]]
 
@@ -296,7 +296,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           Json.parse("""{"query":{"_and":[{"_field":"customFields.boolean1","_value":true}]}}""")
         )
       val resultSearch = app[CaseCtrl].search()(requestSearch)
-      status(resultSearch) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
+      status(resultSearch)                                                                     must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultSearch)}")
       contentAsJson(resultSearch)(defaultAwaitTimeout, app[Materializer]).as[List[OutputCase]] must not(beEmpty)
     }
 
@@ -327,7 +327,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must_=== 200
       val resultCase = contentAsJson(result)
 
-      (resultCase \ "count").asOpt[Int] must beSome(7)
+      (resultCase \ "count").asOpt[Int]        must beSome(10)
       (resultCase \ "t1" \ "count").asOpt[Int] must beSome(2)
       (resultCase \ "t2" \ "count").asOpt[Int] must beSome(1)
       (resultCase \ "t3" \ "count").asOpt[Int] must beSome(1)
@@ -381,7 +381,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       // Merge result
       TestCase(outputCase) must equalTo(
         TestCase(
-          caseId = 27,
+          caseId = 36,
           title = "case#21 / case#22",
           description = "description of case #21\n\ndescription of case #22",
           severity = 3,
@@ -409,7 +409,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val result = app[CaseCtrl].merge("21", "24")(request)
       // User shouldn't be able to see others cases, resulting in 404
-      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
 
     "merge two cases error, not same profile" in testApp { app =>
@@ -417,7 +417,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withHeaders("user" -> "certuser@thehive.local")
 
       val result = app[CaseCtrl].merge("21", "25")(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
+      status(result)                              must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
     }
   }

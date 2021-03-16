@@ -101,5 +101,35 @@
     "data": "127.0.0.1",
     "sighted": true,
     "relatedId": ""
+  },
+  {
+    "id": "obs-cascade-remove-simple",
+    "message": "obs-cascade-remove-simple",
+    "tlp": 1,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.2",
+    "sighted": true,
+    "relatedId": ""
+  },
+  {
+    "id": "obs-cascade-remove-unshare",
+    "message": "obs-cascade-remove-unshare",
+    "tlp": 1,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.3",
+    "sighted": true,
+    "relatedId": ""
+  },
+  {
+    "id": "obs-cascade-remove-delete",
+    "message": "obs-cascade-remove-delete",
+    "tlp": 1,
+    "ioc": true,
+    "dataType": "ip",
+    "data": "127.0.0.4",
+    "sighted": true,
+    "relatedId": ""
   }
 ]

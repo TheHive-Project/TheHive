@@ -1,10 +1,10 @@
 package org.thp.thehive.migration.th3
 
 import com.sksamuel.elastic4s.ElasticDsl._
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.NotFoundError
 import play.api.libs.json.JsObject
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton

@@ -1,8 +1,6 @@
 package org.thp.thehive.dto.v1
 
 import play.api.libs.json.Json.WithDefaultValues
-
-import java.util.Date
 import play.api.libs.json.{JsObject, Json, OFormat}
 
 import java.util.Date

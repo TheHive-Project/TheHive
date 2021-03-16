@@ -120,5 +120,35 @@
     "flag": true,
     "order": 0,
     "relatedId": ""
+  },
+  {
+    "id": "task-cascade-remove-simple",
+    "title": "task-cascade-remove-simple",
+    "group": "group1",
+    "description": "description task simple",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "task-cascade-remove-unshare",
+    "title": "task-cascade-remove-unshare",
+    "group": "group1",
+    "description": "description task unshare",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "task-cascade-remove-delete",
+    "title": "task-cascade-remove-delete",
+    "group": "group1",
+    "description": "description task delete",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
   }
 ]

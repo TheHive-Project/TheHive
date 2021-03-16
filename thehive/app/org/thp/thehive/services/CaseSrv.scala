@@ -9,6 +9,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
@@ -165,7 +166,7 @@ class CaseSrv @Inject() (
       tagsToAdd <- (tags -- `case`.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(`case`).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(caseTagSrv.create(CaseTag(), `case`, _))
-      _ = if (tags.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tagsToRemove.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(`case`).update(_.tags, tags.toSeq).getOrFail("Case")
       _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
@@ -204,14 +205,19 @@ class CaseSrv @Inject() (
   ): Try[RichObservable] =
     attachmentSrv.create(file).flatMap(attachment => createObservable(`case`, observable, attachment))
 
-  def remove(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  override def delete(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val details = Json.obj("number" -> `case`.number, "title" -> `case`.title)
-    for {
-      organisation <- organisationSrv.getOrFail(authContext.organisation)
-      _            <- auditSrv.`case`.delete(`case`, organisation, Some(details))
-    } yield {
-      get(`case`).share.remove()
-      get(`case`).remove()
+    organisationSrv.get(authContext.organisation).getOrFail("Organisation").flatMap { organisation =>
+      shareSrv
+        .get(`case`, authContext.organisation)
+        .getOrFail("Share")
+        .flatMap {
+          case share if share.owner =>
+            get(`case`).shares.toSeq.toTry(s => shareSrv.unshareCase(s._id)).map(_ => get(`case`).remove())
+          case share =>
+            shareSrv.unshareCase(share._id)
+        }
+        .map(_ => auditSrv.`case`.delete(`case`, organisation, Some(details)))
     }
   }
 
@@ -373,7 +379,7 @@ class CaseSrv @Inject() (
                 .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
           } yield Success(())
         }
-        _ <- cases.toTry(remove(_))
+        _ <- cases.toTry(super.delete(_))
       } yield richCase
     } else
       Failure(BadRequestError("To be able to merge, cases must have same organisation / profile pair and user must be org-admin"))
@@ -590,6 +596,9 @@ object CaseOps {
         .project(_.by(_.selectKeys.richCase).by(_.selectValues))
         .toSeq
     }
+
+    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+      traversal.choose(_.inE[ShareCase].count.is(P.gt(1)), true, false)
 
     def richCase(implicit authContext: AuthContext): Traversal[RichCase, JMap[String, Any], Converter[RichCase, JMap[String, Any]]] =
       traversal

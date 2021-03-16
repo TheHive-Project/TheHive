@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.lang.{Boolean => JBoolean, Long => JLong}
-import java.util.{List => JList, Map => JMap}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -14,6 +12,9 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json._
+
+import java.lang.{Boolean => JBoolean, Long => JLong}
+import java.util.{List => JList, Map => JMap}
 
 trait ObservableRenderer extends BaseRenderer[Observable] {
 

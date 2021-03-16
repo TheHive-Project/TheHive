@@ -10,5 +10,25 @@
       "905138a85e85e74344e90d25dba7299e"
     ],
     "attachmentId": "a4bf1f6be616bf6a0de2ff6264de43a64bb768d38c783ec2bc74b5d4dcf5f889"
+  },
+  {
+    "id": "cascade-remove-attachment1",
+    "name": "cascade1.txt",
+    "size": 13,
+    "contentType": "text/plain",
+    "hashes": [
+      "905138a85e85e74344e90d25dba7299e"
+    ],
+    "attachmentId": "b4bf1f6be616bf6a0de2ff6264de43a64bb768d38c783ec2bc74b5d4dcf5f889"
+  },
+  {
+    "id": "cascade-remove-attachment2",
+    "name": "cascade2.txt",
+    "size": 13,
+    "contentType": "text/plain",
+    "hashes": [
+      "a4bf1f6be616bf6a0de2ff6264de43a64bb768d38c783ec2bc74b5d4dcf5f889"
+    ],
+    "attachmentId": "c4bf1f6be616bf6a0de2ff6264de43a64bb768d38c783ec2bc74b5d4dcf5f889"
   }
 ]

@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.{AppBuilder, EntityIdOrName}
@@ -10,6 +8,8 @@ import org.thp.thehive.models.{Case, CaseStatus, Permissions}
 import org.thp.thehive.services.{CaseSrv, FlowActor, OrganisationSrv}
 import play.api.libs.json.JsObject
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
   override def appConfigure: AppBuilder =
