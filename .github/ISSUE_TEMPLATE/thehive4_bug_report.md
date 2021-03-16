@@ -1,8 +1,16 @@
+---
+name: Bug Report for TheHive4
+about: Create a bug report for TheHive 4.
+title: "[Bug]"
+labels: bug, TheHive4
+assignees: ''
+
+---
+
 # EDIT THIS TITLE BEFORE POSTING. Use this template for bug reports. If you'd like to request a feature, please be as descriptive as possible and delete the template except the first section (Request Type)
 
 ### Request Type
-(select Bug or Feature Request and **remove this part**)
-Bug / Feature Request
+Bug
 
 ### Work Environment
 
@@ -10,7 +18,7 @@ Bug / Feature Request
 |---------------------------|--------------------
 | OS version (server)       | Debian, Ubuntu, CentOS, RedHat, ...
 | OS version (client)       | XP, Seven, 10, Ubuntu, ...
-| TheHive version / git hash   | 3.x, hash of the commit
+| TheHive version / git hash   | 4.x, hash of the commit
 | Package Type              | RPM, DEB, Docker, Binary, From source
 | Browser type & version    | If applicable
 
