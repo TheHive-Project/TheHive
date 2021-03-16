@@ -1,10 +1,10 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityIdOrName}
 import play.api.libs.json.JsObject
+
+import java.util.Date
 
 @BuildVertexEntity
 case class Dashboard(title: String, description: String, definition: JsObject)

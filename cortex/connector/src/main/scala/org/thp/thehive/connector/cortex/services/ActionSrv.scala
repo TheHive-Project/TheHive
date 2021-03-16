@@ -1,34 +1,32 @@
 package org.thp.thehive.connector.cortex.services
 
-import java.util.{Date, Map => JMap}
-
 import akka.actor.ActorRef
 import com.google.inject.name.Named
-import javax.inject.Inject
-import org.apache.tinkerpop.gremlin.structure.{Element, Graph}
+import org.apache.tinkerpop.gremlin.structure.Element
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.ActionOps._
 import org.thp.thehive.connector.cortex.services.Conversion._
-import org.thp.thehive.connector.cortex.services.CortexActor.CheckJob
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.LogSrv
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.{LogSrv, OrganisationSrv}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
+import java.util.{Date, Map => JMap}
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -40,7 +38,7 @@ class ActionSrv @Inject() (
     logSrv: LogSrv,
     connector: Connector,
     implicit val schema: Schema,
-    @Named("with-thehive-cortex-schema") implicit val db: Database,
+    implicit val db: Database,
     implicit val ec: ExecutionContext,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[Action] {
@@ -230,16 +228,16 @@ object ActionOps {
 
     def context: Traversal[Product with Entity, Element, Converter[Product with Entity, Element]] = traversal.out[ActionContext].entity
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Action] =
+    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Action] =
       traversal.filter(
         _.out[ActionContext]
-          .choose(
+          .chooseBranch[String, Any](
             _.on(_.label)
-              .option("Case", _.v[Case].visible.entity)
-              .option("Task", _.v[Task].visible.entity)
-              .option("Log", _.v[Log].visible.entity)
-              .option("Alert", _.v[Alert].visible.entity)
-              .option("Observable", _.v[Observable].visible.entity)
+              .option("Case", _.v[Case].visible(organisationSrv).widen[Any])
+              .option("Task", _.v[Task].visible(organisationSrv).widen[Any])
+              .option("Log", _.v[Log].visible(organisationSrv).widen[Any])
+              .option("Alert", _.v[Alert].visible(organisationSrv).widen[Any])
+              .option("Observable", _.v[Observable].visible(organisationSrv).widen[Any])
           )
       )
   }

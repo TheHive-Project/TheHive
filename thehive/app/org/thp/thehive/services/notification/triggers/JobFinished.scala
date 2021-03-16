@@ -1,9 +1,9 @@
 package org.thp.thehive.services.notification.triggers
 
-import javax.inject.{Inject, Singleton}
 import org.thp.thehive.models.Audit
 import play.api.Configuration
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton

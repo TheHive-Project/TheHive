@@ -18,8 +18,13 @@
         $scope.taskResponders = null;
         $scope.collapseOptions = {};
 
+        $scope.selection = [];
+        $scope.menu = {
+            selectAll: false
+        };
+
         this.$onInit = function() {
-            $scope.filtering = new FilteringSrv('case_task', 'task.list', {
+            $scope.filtering = new FilteringSrv('task', 'task.list', {
                 version: 'v1',
                 defaults: {
                     showFilters: true,
@@ -48,7 +53,7 @@
         };
 
         $scope.load = function() {
-            $scope.tasks = new PaginatedQuerySrv({
+            $scope.list = new PaginatedQuerySrv({
                 name: 'case-tasks',
                 root: $scope.caseId,
                 objectType: 'case_task',
@@ -68,13 +73,78 @@
                     {'_name': 'getCase', "idOrName": $scope.caseId},
                     {'_name': 'tasks'}
                 ],
-                extraData: ['shareCount'],
+                extraData: ['shareCount', 'actionRequired'],
                 //extraData: ['isOwner', 'shareCount'],
                 onUpdate: function() {
-                    $scope.buildTaskGroups($scope.tasks.values);
+                    $scope.buildTaskGroups($scope.list.values);
+                    $scope.resetSelection();
                 }
             });
         };
+
+        $scope.resetSelection = function() {
+            if ($scope.menu.selectAll) {
+                $scope.selectAll();
+            } else {
+                $scope.selection = [];
+                $scope.menu.selectAll = false;
+                $scope.updateMenu();
+            }
+        };
+
+        $scope.updateMenu = function() {
+            // Handle flag/unflag menu items
+            var temp = _.uniq(_.pluck($scope.selection, 'flag'));
+            $scope.menu.unflag = temp.length === 1 && temp[0] === true;
+            $scope.menu.flag = temp.length === 1 && temp[0] === false;
+
+            // Handle start menu item
+            temp = _.uniq(_.pluck($scope.selection, 'status'));
+            $scope.menu.start = temp.length === 1 && temp[0] === 'Waiting';
+
+            // Handle close menu item
+            temp = _.uniq(_.pluck($scope.selection, 'status'));
+            $scope.menu.close = temp.indexOf('Completed') === -1;
+
+            // Handle reopen menu item
+            temp = _.uniq(_.pluck($scope.selection, 'status'));
+            $scope.menu.reopen = temp.length === 1 && temp[0] === 'Completed';
+
+            $scope.menu.delete = $scope.selection.length > 0;
+        };
+
+        $scope.select = function(task) {
+            if (task.selected) {
+                $scope.selection.push(task);
+            } else {
+                $scope.selection = _.reject($scope.selection, function(item) {
+                    return item._id === task._id;
+                });
+            }
+            $scope.updateMenu();
+        };
+
+        $scope.selectAll = function() {
+            var selected = $scope.menu.selectAll;
+
+            _.each($scope.list.values, function(item) {
+                // if(SecuritySrv.checkPermissions(['manageCase'], item.extraData.permissions)) {
+                item.selected = selected;
+                // }
+            });
+
+            if (selected) {
+                $scope.selection = _.filter($scope.list.values, function(item) {
+                    return !!item.selected;
+                });
+            } else {
+                $scope.selection = [];
+            }
+
+            $scope.updateMenu();
+        };
+
+        // ######################@@@
 
         $scope.toggleStats = function () {
             $scope.filtering.toggleStats();
@@ -214,6 +284,53 @@
                 });
             });
         };
+
+        $scope.bulkUpdate = function(ids, patch) {
+            return CaseTaskSrv.bulkUpdate(ids, patch)
+                .then(function(/*responses*/) {
+                    NotificationSrv.log('Selected tasks have been updated successfully', 'success');
+                })
+                .catch(function(err) {
+                    NotificationSrv.error('Bulk update tasks', err.data, err.status);
+                });
+        }
+
+        $scope.bulkFlag = function(flag) {
+            var ids = _.pluck($scope.selection, '_id');
+
+            return $scope.bulkUpdate(ids, {flag: flag});
+        }
+
+        $scope.bulkStatus = function(status) {
+            var ids = _.pluck($scope.selection, '_id');
+
+            return $scope.bulkUpdate(ids, {status: status});
+        }
+
+        $scope.bulkRemove = function() {
+            var ids = _.pluck($scope.selection, '_id');
+
+            ModalUtilsSrv.confirm('Delete selected tasks', 'Are you sure you want to delete the selected tasks?', {
+                okText: 'Yes, proceed',
+                flavor: 'danger'
+            }).then(function() {
+                return CaseTaskSrv.bulkUpdate(ids, {status: 'Cancel'})
+                    .then(function(/*responses*/) {
+                        NotificationSrv.log('Selected tasks have been successfully removed', 'success');
+
+                        _.each($scope.selection, function(task) {
+                            $scope.$emit('tasks:task-removed', task);
+                        });
+                    })
+                    .catch(function(err) {
+                        NotificationSrv.error('Bulk remove tasks', err.data, err.status);
+                    });
+            }).catch(function(err) {
+                if(err && !_.isString(err)) {
+                    NotificationSrv.error('Bulk remove tasks', err.data, err.status);
+                }
+            })
+        }
 
         // open task tab with its details
         $scope.startTask = function(task) {

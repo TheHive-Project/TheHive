@@ -1,9 +1,9 @@
 package org.thp.thehive.connector.cortex.dto.v0
 
-import java.util.Date
-
 import org.thp.thehive.dto.v0.OutputObservable
 import play.api.libs.json.{JsObject, Json, OFormat}
+
+import java.util.Date
 
 case class OutputJob(
     _type: String,

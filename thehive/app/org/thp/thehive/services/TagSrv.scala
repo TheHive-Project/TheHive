@@ -1,65 +1,113 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.process.traversal.TextP
+import org.apache.tinkerpop.gremlin.structure.Vertex
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{EdgeSrv, IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
-import org.thp.thehive.models.{AlertTag, CaseTag, ObservableTag, Tag}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
+import org.thp.scalligraph.utils.FunctionalCondition.When
+import org.thp.thehive.models._
+import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Named, Provider, Singleton}
+import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
 @Singleton
-class TagSrv @Inject() (appConfig: ApplicationConfig, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    @Named("with-thehive-schema") db: Database
+class TagSrv @Inject() (
+    organisationSrv: OrganisationSrv,
+    taxonomySrvProvider: Provider[TaxonomySrv],
+    appConfig: ApplicationConfig,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[Tag] {
+  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
 
-  val autoCreateConfig: ConfigItem[Boolean, Boolean] =
-    appConfig.item[Boolean]("tags.autocreate", "If true, create automatically tag if it doesn't exist")
+  val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
+  private val freeTagColourConfig: ConfigItem[String, String] =
+    appConfig.item[String]("tags.freeTagColour", "Default colour for free tags")
 
-  def autoCreate: Boolean = autoCreateConfig.get
+  def freeTagColour: String = freeTagColourConfig.get
 
-  val defaultNamespaceConfig: ConfigItem[String, String] =
-    appConfig.item[String]("tags.defaultNamespace", "Default namespace of the automatically created tags")
+  private def freeTagNamespace(implicit graph: Graph, authContext: AuthContext): String =
+    s"_freetags_${organisationSrv.currentId(graph, authContext).value}"
 
-  def defaultNamespace: String = defaultNamespaceConfig.get
+  def fromString(tagName: String): Option[(String, String, Option[String])] = {
+    val namespacePredicateValue: Regex = "([^\".:=]+)[.:]([^\".=]+)=\"?([^\"]+)\"?".r
+    val namespacePredicate: Regex      = "([^\".:=]+)[.:]([^\".=]+)".r
 
-  val defaultColourConfig: ConfigItem[String, Int] =
-    appConfig.mapItem[String, Int](
-      "tags.defaultColour",
-      "Default colour of the automatically created tags",
-      {
-        case s if s(0) == '#' => Try(Integer.parseUnsignedInt(s.tail, 16)).getOrElse(defaultColour)
-        case _                => defaultColour
-      }
-    )
-  def defaultColour: Int = defaultColourConfig.get
-
-  def parseString(tagName: String): Tag =
-    Tag.fromString(tagName, defaultNamespace, defaultColour)
-
-  def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
-
-  def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
-    val tag = parseString(tagName)
-    getTag(tag).getOrFail("Tag").recoverWith {
-      case _ if autoCreate => create(tag)
+    tagName match {
+      case namespacePredicateValue(namespace, predicate, value) if value.exists(_ != '=') =>
+        Some((namespace.trim, predicate.trim, Some(value.trim)))
+      case namespacePredicate(namespace, predicate) =>
+        Some((namespace.trim, predicate.trim, None))
+      case _ => None
     }
   }
 
-  override def createEntity(e: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Tag")
-    super.createEntity(e)
+  def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
+
+  def getFreetag(idOrName: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Traversal.V[Tag] =
+    startTraversal.getFreetag(organisationSrv, idOrName)
+
+  def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    fromString(tagName)
+      .flatMap {
+        case (ns, pred, v) => startTraversal.getByName(ns, pred, v).headOption
+      }
+      .fold {
+        startTraversal
+          .getByName(freeTagNamespace, tagName, None)
+          .getOrFail("Tag")
+          .orElse(createFreeTag(tagName))
+      }(Success(_))
+
+  private def createFreeTag(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    for {
+      freetagTaxonomy <- taxonomySrv.getFreetagTaxonomy
+      tag             <- createEntity(Tag(freeTagNamespace, tagName, None, None, freeTagColour))
+      _               <- taxonomyTagSrv.create(TaxonomyTag(), freetagTaxonomy, tag)
+    } yield tag
+
+  def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
+    integrityCheckActor ! EntityAdded("Tag")
+    super.createEntity(tag)
   }
 
-  def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = createEntity(tag)
-
   override def exists(e: Tag)(implicit graph: Graph): Boolean = startTraversal.getByName(e.namespace, e.predicate, e.value).exists
+
+  def update(
+      tag: Tag with Entity,
+      input: Tag
+  )(implicit graph: Graph): Try[Tag with Entity] =
+    for {
+      updatedTag <- get(tag)
+        .when(tag.description != input.description)(_.update(_.description, input.description))
+        .when(tag.colour != input.colour)(_.update(_.colour, input.colour))
+        .getOrFail("Tag")
+    } yield updatedTag
+
+  override def delete(tag: Tag with Entity)(implicit graph: Graph): Try[Unit] = {
+    val tagName = tag.toString
+    Try {
+      get(tag)
+        .sideEffect(
+          _.unionFlat(
+            _.`case`.removeValue(_.tags, tagName),
+            _.alert.removeValue(_.tags, tagName),
+            _.observable.removeValue(_.tags, tagName),
+            _.caseTemplate.removeValue(_.tags, tagName)
+          )
+        )
+        .remove()
+    }
+  }
 }
 
 object TagOps {
@@ -75,18 +123,56 @@ object TagOps {
       value.fold(t.hasNot(_.value))(v => t.has(_.value, v))
     }
 
+    def taxonomy: Traversal.V[Taxonomy] = traversal.in[TaxonomyTag].v[Taxonomy]
+
+    def organisation: Traversal.V[Organisation]                           = traversal.in[TaxonomyTag].in[OrganisationTaxonomy].v[Organisation]
     def displayName: Traversal[String, Vertex, Converter[String, Vertex]] = traversal.domainMap(_.toString)
 
     def fromCase: Traversal.V[Tag] = traversal.filter(_.in[CaseTag])
+    def `case`: Traversal.V[Case]  = traversal.in[CaseTag].v[Case]
 
-    def fromObservable: Traversal.V[Tag] = traversal.filter(_.in[ObservableTag])
+    def fromObservable: Traversal.V[Tag]    = traversal.filter(_.in[ObservableTag])
+    def observable: Traversal.V[Observable] = traversal.in[ObservableTag].v[Observable]
 
     def fromAlert: Traversal.V[Tag] = traversal.filter(_.in[AlertTag])
-  }
+    def alert: Traversal.V[Alert]   = traversal.in[AlertTag].v[Alert]
 
+    def fromCaseTemplate: Traversal.V[Tag]      = traversal.filter(_.in[CaseTemplateTag])
+    def caseTemplate: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateTag].v[CaseTemplate]
+
+    def freetags(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Tag] = {
+      val freeTagNamespace: String = s"_freetags_${organisationSrv.currentId(traversal.graph, authContext).value}"
+      traversal
+        .has(_.namespace, freeTagNamespace)
+    }
+
+    def getFreetag(organisationSrv: OrganisationSrv, idOrName: EntityIdOrName)(implicit authContext: AuthContext): Traversal.V[Tag] =
+      idOrName.fold(traversal.getByIds(_), traversal.has(_.predicate, _)).freetags(organisationSrv)
+
+    def autoComplete(organisationSrv: OrganisationSrv, freeTag: String)(implicit authContext: AuthContext): Traversal.V[Tag] =
+      freetags(organisationSrv)
+        .has(_.predicate, TextP.containing(freeTag))
+
+    def autoComplete(namespace: Option[String], predicate: Option[String], value: Option[String])(implicit
+        authContext: AuthContext
+    ): Traversal.V[Tag] =
+      traversal
+        .merge(namespace)((t, ns) => t.has(_.namespace, TextP.containing(ns)))
+        .merge(predicate)((t, p) => t.has(_.predicate, TextP.containing(p)))
+        .merge(value)((t, v) => t.has(_.value, TextP.containing(v)))
+        .visible
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Tag] =
+      traversal.filter(_.organisation.current)
+
+    def withCustomRenderer[D, G, C <: Converter[D, G]](
+        entityRenderer: Traversal.V[Tag] => Traversal[D, G, C]
+    ): Traversal[(Tag with Entity, D), JMap[String, Any], Converter[(Tag with Entity, D), JMap[String, Any]]] =
+      traversal.project(_.by.by(entityRenderer))
+  }
 }
 
-class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
+class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
 
   override def resolve(entities: Seq[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
     firstCreatedEntity(entities).foreach {
@@ -98,4 +184,20 @@ class TagIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Data
     }
     Success(())
   }
+
+  override def globalCheck(): Map[String, Long] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        val orphans = service
+          .startTraversal
+          .filter(_.taxonomy.has(_.namespace, TextP.startingWith("_freetags_")))
+          .filterNot(_.or(_.inE[AlertTag], _.inE[ObservableTag], _.inE[CaseTag], _.inE[CaseTemplateTag]))
+          ._id
+          .toSeq
+        if (orphans.nonEmpty) {
+          service.getByIds(orphans: _*).remove()
+          Map("orphan" -> orphans.size.toLong)
+        } else Map.empty[String, Long]
+      }
+    }.getOrElse(Map("globalFailure" -> 1L))
 }

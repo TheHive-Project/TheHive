@@ -26,6 +26,15 @@
                 return null;
             }
             var operator = filter.value.operator || 'eq';
+
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            }
+
             var criterion = {};
             criterion[filter.field] = filter.value.value;
 
@@ -50,33 +59,92 @@
                 return null;
             }
             var operator = filter.value.operator || 'any';
-            var values = _.pluck(filter.value.list, 'text');
 
-            if(values.length > 0) {
-                var criterions = _.map(values, function(val) {
-                    var v = {_like: {}};
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            } else {
+                var values = _.pluck(filter.value.list, 'text');
 
-                    v._like[filter.field] = val;
+                if(values.length > 0) {
+                    var criterions = _.map(values, function(val) {
+                        return {_like: {
+                            _field: filter.field,
+                            _value: val
+                        }};
+                    });
 
-                    return v;
-                });
+                    var criteria = {};
+                    switch(operator) {
+                        case 'all':
+                            criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
+                            break;
+                        case 'none':
+                            criteria = {
+                                _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
+                            };
+                            break;
+                        default:
+                            criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                    }
 
-                var criteria = {};
-                switch(operator) {
-                    case 'all':
-                        criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
-                        break;
-                    case 'none':
-                        criteria = {
-                            _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
-                        };
-                        break;
-                    default:
-                        criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                    return criteria;
                 }
-
-                return criteria;
             }
+
+
+
+            return null;
+        };
+
+        this._buildQueryFromTagsFilter = function(fieldDef, filter) {
+            if (!filter || !filter.value) {
+                return null;
+            }
+            var operator = filter.value.operator || 'any';
+
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            } else {
+                var values = _.pluck(filter.value.list, 'text');
+
+                if(values.length > 0) {
+                    var criterions = _.map(values, function(val) {
+                        return {
+                            _like: {
+                                _field: filter.field,
+                                _value: val
+                            }
+                        };
+                    });
+
+                    var criteria = {};
+                    switch(operator) {
+                        case 'all':
+                            criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
+                            break;
+                        case 'none':
+                            criteria = {
+                                _not: criterions.length === 1 ? criterions[0] : { _or: criterions }
+                            };
+                            break;
+                        //case 'any':
+                        default:
+                            criteria = criterions.length === 1 ? criterions[0] : { _or: criterions };
+                    }
+
+                    return criteria;
+                }
+            }
+
+
 
             return null;
         };
@@ -86,6 +154,15 @@
                 return null;
             }
             var operator = filter.value.operator || 'any';
+
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            }
+
             var values = _.pluck(filter.value.list, 'text');
 
             if(values.length > 0) {
@@ -120,6 +197,14 @@
                 start,
                 end;
 
+            if(operator === 'empty') {
+                return {
+                    _not: {
+                        _contains: filter.field
+                    }
+                };
+            }
+
             if(operator === 'custom') {
                 if(value.from && value.from !== null) {
                     start = _.isString(value.from) ? (new Date(value.from)).getTime() : value.from.getTime();
@@ -128,7 +213,7 @@
                 }
 
                 if(value.to && value.to !== null) {
-                    end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.getTime();
+                    end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.setHours(23, 59, 59, 999);
                 } else {
                     end = null;
                 }
@@ -167,6 +252,8 @@
                 return this._buildQueryFromDateFilter(fieldDef, filter);
             } else if(filter.type === 'boolean') {
                 return this._buildQueryFromBooleanFilter(fieldDef, filter);
+            } else if(filter.field === 'tags') {
+                return this._buildQueryFromTagsFilter(fieldDef, filter);
             } else if(filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration') {
                 return this._buildQueryFromListFilter(fieldDef, filter);
             } else if(filter.type === 'string' && fieldDef.values.length === 0) {

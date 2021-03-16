@@ -2,5 +2,13 @@
   {"from": "case1-cert", "to": "org-admin"},
   {"from": "case2-cert", "to": "org-admin"},
   {"from": "case2-soc", "to": "read-only"},
-  {"from": "case3-soc", "to": "org-admin"}
+  {"from": "case3-soc", "to": "org-admin"},
+  {"from": "case21-merge-cert", "to": "org-admin"},
+  {"from": "case22-merge-cert", "to": "org-admin"},
+  {"from": "case23-merge-cert", "to": "org-admin"},
+  {"from": "case24-merge-soc", "to": "org-admin"},
+  {"from": "case24-merge-cert", "to": "read-only"},
+  {"from": "case25-merge-cert", "to": "read-only"},
+  {"from": "case25-merge-soc", "to": "org-admin"},
+  {"from": "case26-merge-pug", "to": "read-only"}
 ]

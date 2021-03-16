@@ -35,7 +35,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
         login = "admin@thehive.local",
         name = "Default admin user",
         profile = "admin",
-        permissions = Permissions.adminPermissions.map(_.toString),
+        permissions = Permissions.adminPermissions.asInstanceOf[Set[String]],
         organisation = Organisation.administration.name
       )
 
@@ -107,11 +107,13 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
           Permissions.manageCase,
           Permissions.manageUser,
           Permissions.managePage,
+          Permissions.manageProcedure,
           Permissions.manageObservable,
           Permissions.manageAlert,
           Permissions.manageAction,
           Permissions.manageConfig,
-          Permissions.accessTheHiveFS
+          Permissions.accessTheHiveFS,
+          Permissions.manageTag
         ),
         organisation = "cert"
       )
@@ -128,7 +130,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
         login = "socuser@thehive.local",
         name = "socuser",
         profile = "analyst",
-        permissions = Profile.analyst.permissions.map(_.toString),
+        permissions = Profile.analyst.permissions.asInstanceOf[Set[String]],
         organisation = "soc"
       )
 

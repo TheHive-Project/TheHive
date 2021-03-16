@@ -12,7 +12,7 @@
 <div>
     <span>
         <i class="fa fa-calendar"></i> Date:
-        <strong class="text-muted">{{value.date | showDate}}</strong>
+        <strong class="text-muted">{{value.date | shortDate}}</strong>
     </span>
     <span class="ml-xxs">
         <i class="fa fa-certificate"></i> Type:
@@ -29,7 +29,7 @@
     <span class="ml-xxs">
         <i class="glyphicon glyphicon-pushpin"></i> Attributes:
         <strong class="text-muted">{{value.artifacts.length}}</strong>
-    </span>    
+    </span>
 </div>
 <div class="mt-xs wrap" ng-if="value.tags.length>0">
     <strong>Tags:</strong><tag-list data="value.tags"></tag-list>

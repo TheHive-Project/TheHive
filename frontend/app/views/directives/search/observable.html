@@ -8,11 +8,11 @@
     </a>
 </div>
 <div>
-    <i class="glyphicon glyphicon-user"></i>    
+    <i class="glyphicon glyphicon-user"></i>
     <user-info value="value.createdBy" field="name"></user-info>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
-    <span ng-bind="value.startDate | showDate"></span>
+    <span ng-bind="value.startDate | shortDate"></span>
 </div>
 <div class="mt-xs wrap" ng-if="value.tags.length>0">
     <strong>Tags:</strong><tag-list data="value.tags"></tag-list>

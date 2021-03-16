@@ -1,16 +1,17 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.{List => JList, Map => JMap}
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.{Alert, RichCase, SimilarStats}
 import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json._
 
-trait AlertRenderer {
+import java.util.{Date, List => JList, Map => JMap}
+
+trait AlertRenderer extends BaseRenderer[Alert] {
   implicit val similarCaseWrites: Writes[(RichCase, SimilarStats)] = Writes[(RichCase, SimilarStats)] {
     case (richCase, similarStats) =>
       Json.obj(
@@ -22,7 +23,7 @@ trait AlertRenderer {
         "observableTypes"        -> similarStats.types
       )
   }
-  def similarCasesStats(implicit
+  def similarCasesStats(organisationSrv: OrganisationSrv)(implicit
       authContext: AuthContext
   ): Traversal.V[Alert] => Traversal[JsValue, JList[JMap[String, Any]], Converter[JsValue, JList[JMap[String, Any]]]] = {
     implicit val similarCaseOrdering: Ordering[(RichCase, SimilarStats)] = (x: (RichCase, SimilarStats), y: (RichCase, SimilarStats)) =>
@@ -36,35 +37,23 @@ trait AlertRenderer {
       else if (x._2.ioc._2 > y._2.ioc._2) -1
       else if (x._2.ioc._2 < y._2.ioc._2) 1
       else 0
-    _.similarCases(None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
+    _.similarCases(organisationSrv, caseFilter = None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
-  def alertStatsRenderer[D, G, C <: Converter[D, G]](extraData: Set[String])(implicit
-      authContext: AuthContext
-  ): Traversal.V[Alert] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { traversal =>
-    def addData[T](
-        name: String
-    )(f: Traversal.V[Alert] => Traversal[JsValue, T, Converter[JsValue, T]]): Traversal[JsObject, JMap[String, Any], Converter[
-      JsObject,
-      JMap[String, Any]
-    ]] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] = { t =>
-      val dataTraversal = f(traversal.start)
-      t.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.by(dataTraversal.raw)) { jmap =>
-        t.converter(jmap) + (name -> dataTraversal.converter(jmap.get(name).asInstanceOf[T]))
-      }
-    }
+  def importDate: Traversal.V[Alert] => Traversal[JsValue, JList[Date], Converter[JsValue, JList[Date]]] =
+    _.importDate.fold.domainMap(_.headOption.fold[JsValue](JsNull)(d => JsNumber(d.getTime)))
 
-    if (extraData.isEmpty) traversal.constant2(JsObject.empty)
-    else {
-      val dataName = extraData.toSeq
-      dataName.foldLeft[Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
-        traversal.onRawMap[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]](_.project(dataName.head, dataName.tail: _*))(_ =>
-          JsObject.empty
-        )
-      ) {
-        case (f, "similarCases") => addData("similarCases")(similarCasesStats)(f)
+  def alertStatsRenderer(organisationSrv: OrganisationSrv, extraData: Set[String])(implicit
+      authContext: AuthContext
+  ): Traversal.V[Alert] => JsTraversal = { implicit traversal =>
+    baseRenderer(
+      extraData,
+      traversal,
+      {
+        case (f, "similarCases") => addData("similarCases", f)(similarCasesStats(organisationSrv))
+        case (f, "importDate")   => addData("importDate", f)(importDate)
         case (f, _)              => f
       }
-    }
+    )
   }
 }

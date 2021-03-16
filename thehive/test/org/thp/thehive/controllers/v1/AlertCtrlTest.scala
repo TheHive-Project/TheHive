@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import java.util.Date
-
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
@@ -10,6 +8,8 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.AlertSrv
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 case class TestAlert(
     `type`: String,
@@ -150,7 +150,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
           description = "description of alert #1",
           severity = 2,
           date = new Date(1555359572000L),
-          tags = Set("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\""),
+          tags = Set("alert", "test"),
           tlp = 2,
           pap = 2,
           read = false,

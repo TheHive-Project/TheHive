@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
@@ -15,6 +14,7 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
 @Singleton
@@ -22,7 +22,7 @@ class OrganisationCtrl @Inject() (
     override val entrypoint: Entrypoint,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit override val db: Database,
+    implicit override val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicOrganisation
 ) extends QueryCtrl {
@@ -133,13 +133,11 @@ class PublicOrganisation @Inject() (organisationSrv: OrganisationSrv) extends Pu
     Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Organisation with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => organisationSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

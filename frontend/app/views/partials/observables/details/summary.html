@@ -2,7 +2,7 @@
     <!-- Observable details information-->
     <div class="col-md-6">
         <h4 class="vpad10 text-primary">
-            Metadata
+            Basic Information
             <div class="task-actions pull-right">
                 <!-- <span if-permission="manageShare" allowed="{{userPermissions}}"> -->
                 <span>
@@ -47,7 +47,7 @@
 
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Date added</dt>
-            <dd>{{artifact.startDate | showDate}}</dd>
+            <dd>{{artifact.startDate | shortDate}}</dd>
         </dl>
 
         <dl class="dl-horizontal clear">
@@ -95,7 +95,7 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Tags</dt>
             <dd ng-if="canEdit">
-                <updatable-tags value="artifact.tags" on-update="updateField('tags', getLabels(newValue))" source="getTags"></updatable-tags>
+                <updatable-tag-list on-update="updateField('tags', getLabels(newValue))" value="artifact.tags" source="getTags"></updatable-tag-list>
             </dd>
             <dd ng-if="!canEdit">
                 <tag-list ng-if="artifact.tags.length > 0" data="artifact.tags"></tag-list>

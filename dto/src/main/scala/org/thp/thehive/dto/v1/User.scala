@@ -1,9 +1,9 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
-
 import org.thp.scalligraph.controllers.FFile
 import play.api.libs.json.{Json, OFormat, Writes}
+
+import java.util.Date
 
 case class InputUser(login: String, name: String, password: Option[String], profile: String, organisation: Option[String], avatar: Option[FFile])
 
@@ -11,7 +11,7 @@ object InputUser {
   implicit val writes: Writes[InputUser] = Json.writes[InputUser]
 }
 
-case class OutputOrganisationProfile(organisation: String, profile: String)
+case class OutputOrganisationProfile(organisationId: String, organisation: String, profile: String)
 object OutputOrganisationProfile {
   implicit val format: OFormat[OutputOrganisationProfile] = Json.format[OutputOrganisationProfile]
 }

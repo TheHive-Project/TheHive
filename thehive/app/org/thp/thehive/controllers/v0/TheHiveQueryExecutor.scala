@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Provider, Singleton}
 import org.scalactic.Good
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FObject, Field, FieldsParser}
@@ -9,13 +8,16 @@ import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.RichType
-import org.thp.scalligraph.{BadRequestError, EntityIdOrName, GlobalQueryExecutor}
-import org.thp.thehive.models.{Case, Log, Observable, Task}
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, GlobalQueryExecutor}
+import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
 
+import javax.inject.{Inject, Provider, Singleton}
 import scala.reflect.runtime.{universe => ru}
 
 case class OutputParam(from: Long, to: Long, withStats: Boolean, withParents: Int)
@@ -34,7 +36,7 @@ object OutputParam {
 
 @Singleton
 class TheHiveQueryExecutor @Inject() (
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     alert: PublicAlert,
     audit: PublicAudit,
     `case`: PublicCase,
@@ -67,21 +69,25 @@ class TheHiveQueryExecutor @Inject() (
   override lazy val publicProperties: PublicProperties = publicDatas.foldLeft(metaProperties)(_ ++ _.publicProperties)
 
   val childTypes: PartialFunction[(ru.Type, String), ru.Type] = {
-    case (tpe, "case_task_log") if SubType(tpe, ru.typeOf[Traversal.V[Task]]) => ru.typeOf[Traversal.V[Log]]
-    case (tpe, "case_task") if SubType(tpe, ru.typeOf[Traversal.V[Case]])     => ru.typeOf[Traversal.V[Task]]
-    case (tpe, "case_artifact") if SubType(tpe, ru.typeOf[Traversal.V[Case]]) => ru.typeOf[Traversal.V[Observable]]
+    case (tpe, "case_task_log") if SubType(tpe, ru.typeOf[Traversal.V[Task]])             => ru.typeOf[Traversal.V[Log]]
+    case (tpe, "case_task") if SubType(tpe, ru.typeOf[Traversal.V[Case]])                 => ru.typeOf[Traversal.V[Task]]
+    case (tpe, "case_artifact") if SubType(tpe, ru.typeOf[Traversal.V[Case]])             => ru.typeOf[Traversal.V[Observable]]
+    case (tpe, "alert_artifact") if SubType(tpe, ru.typeOf[Traversal.V[Alert]])           => ru.typeOf[Traversal.V[Observable]]
+    case (tpe, "caseTemplate_task") if SubType(tpe, ru.typeOf[Traversal.V[CaseTemplate]]) => ru.typeOf[Traversal.V[Task]]
   }
-  val parentTypes: PartialFunction[ru.Type, ru.Type] = {
-    case tpe if SubType(tpe, ru.typeOf[Traversal.V[Task]])       => ru.typeOf[Traversal.V[Case]]
-    case tpe if SubType(tpe, ru.typeOf[Traversal.V[Observable]]) => ru.typeOf[Traversal.V[Case]]
-    case tpe if SubType(tpe, ru.typeOf[Traversal.V[Log]])        => ru.typeOf[Traversal.V[Observable]]
+  val parentTypes: PartialFunction[(ru.Type, String), ru.Type] = {
+    case (tpe, "caseTemplate") if SubType(tpe, ru.typeOf[Traversal.V[Task]]) => ru.typeOf[Traversal.V[CaseTemplate]]
+    case (tpe, _) if SubType(tpe, ru.typeOf[Traversal.V[Task]])              => ru.typeOf[Traversal.V[Case]]
+    case (tpe, "alert") if SubType(tpe, ru.typeOf[Traversal.V[Observable]])  => ru.typeOf[Traversal.V[Alert]]
+    case (tpe, _) if SubType(tpe, ru.typeOf[Traversal.V[Observable]])        => ru.typeOf[Traversal.V[Case]]
+    case (tpe, _) if SubType(tpe, ru.typeOf[Traversal.V[Log]])               => ru.typeOf[Traversal.V[Task]]
   }
-  override val customFilterQuery: FilterQuery = FilterQuery(db, publicProperties) { (tpe, globalParser) =>
+  override val customFilterQuery: FilterQuery = FilterQuery(publicProperties) { (tpe, globalParser) =>
     FieldsParser("parentChildFilter") {
-      case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) if parentTypes.isDefinedAt(tpe) =>
-        Good(new ParentIdInputFilter(parentId))
-      case (path, FObjOne("_parent", ParentQueryFilter(_, parentFilterField))) if parentTypes.isDefinedAt(tpe) =>
-        globalParser(parentTypes(tpe)).apply(path, parentFilterField).map(query => new ParentQueryInputFilter(query))
+      case (_, FObjOne("_parent", ParentIdFilter(parentType, parentId))) if parentTypes.isDefinedAt((tpe, parentType)) =>
+        Good(new ParentIdInputFilter(parentType, parentId))
+      case (path, FObjOne("_parent", ParentQueryFilter(parentType, parentFilterField))) if parentTypes.isDefinedAt((tpe, parentType)) =>
+        globalParser(parentTypes((tpe, parentType))).apply(path, parentFilterField).map(query => new ParentQueryInputFilter(parentType, query))
       case (path, FObjOne("_child", ChildQueryFilter(childType, childQueryField))) if childTypes.isDefinedAt((tpe, childType)) =>
         globalParser(childTypes((tpe, childType))).apply(path, childQueryField).map(query => new ChildQueryInputFilter(childType, query))
     }
@@ -107,9 +113,8 @@ object ParentIdFilter {
       .fold(Some(_), _ => None)
 }
 
-class ParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
+class ParentIdInputFilter(parentType: String, parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -119,12 +124,36 @@ class ParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Tr
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])
       .headOption
       .collect {
+        case t if t <:< ru.typeOf[Task] && parentType == "caseTemplate" =>
+          traversal
+            .asInstanceOf[Traversal.V[Task]]
+            .filter(_.caseTemplate.get(EntityIdOrName(parentId)))
+            .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Task] =>
-          traversal.asInstanceOf[Traversal.V[Task]].filter(_.`case`.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
+          traversal
+            .asInstanceOf[Traversal.V[Task]]
+            .filter(_.`case`.get(EntityIdOrName(parentId)))
+            .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Observable] =>
-          traversal.asInstanceOf[Traversal.V[Observable]].filter(_.`case`.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
+          traversal
+            .asInstanceOf[Traversal.V[Observable]]
+            .has(_.relatedId, EntityId(parentId))
+            .asInstanceOf[Traversal.Unk]
+//          && parentType == "alert" =>
+//          traversal
+//            .asInstanceOf[Traversal.V[Observable]]
+//            .filter(_.alert.get(EntityIdOrName(parentId)))
+//            .asInstanceOf[Traversal.Unk]
+//        case t if t <:< ru.typeOf[Observable] =>
+//          traversal
+//            .asInstanceOf[Traversal.V[Observable]]
+//            .filter(_.`case`.get(EntityIdOrName(parentId)))
+//            .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Log] =>
-          traversal.asInstanceOf[Traversal.V[Log]].filter(_.task.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
+          traversal
+            .asInstanceOf[Traversal.V[Log]]
+            .filter(_.task.get(EntityIdOrName(parentId)))
+            .asInstanceOf[Traversal.Unk]
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't parent"))
 }
@@ -140,9 +169,9 @@ object ParentQueryFilter {
       .fold(Some(_), _ => None)
 }
 
-class ParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk]) extends InputQuery[Traversal.Unk, Traversal.Unk] {
+class ParentQueryInputFilter(parentType: String, parentFilter: InputQuery[Traversal.Unk, Traversal.Unk])
+    extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -151,7 +180,6 @@ class ParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.U
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
       traversal.filter(parent =>
         parentFilter(
-          db,
           publicProperties,
           ru.typeOf[Traversal.V[T]],
           t(parent.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
@@ -163,9 +191,11 @@ class ParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.U
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])
       .headOption
       .collect {
-        case t if t <:< ru.typeOf[Task]       => filter[Task, Case](_.`case`)
-        case t if t <:< ru.typeOf[Observable] => filter[Observable, Case](_.`case`)
-        case t if t <:< ru.typeOf[Log]        => filter[Log, Task](_.task)
+        case t if t <:< ru.typeOf[Task] && parentType == "caseTemplate" => filter[Task, CaseTemplate](_.caseTemplate)
+        case t if t <:< ru.typeOf[Task]                                 => filter[Task, Case](_.`case`)
+        case t if t <:< ru.typeOf[Observable] && parentType == "alert"  => filter[Observable, Alert](_.alert)
+        case t if t <:< ru.typeOf[Observable]                           => filter[Observable, Case](_.`case`)
+        case t if t <:< ru.typeOf[Log]                                  => filter[Log, Task](_.task)
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't parent"))
   }
@@ -184,7 +214,6 @@ object ChildQueryFilter {
 class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal.Unk, Traversal.Unk])
     extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
-      db: Database,
       publicProperties: PublicProperties,
       traversalType: ru.Type,
       traversal: Traversal.Unk,
@@ -193,7 +222,6 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
       traversal.filter(child =>
         childFilter(
-          db,
           publicProperties,
           ru.typeOf[Traversal.V[T]],
           t(child.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
@@ -205,9 +233,11 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])
       .headOption
       .collect {
-        case t if t <:< ru.typeOf[Case] && childType == "case_task"     => filter[Case, Task](_.tasks(authContext))
-        case t if t <:< ru.typeOf[Case] && childType == "case_artifact" => filter[Case, Observable](_.observables(authContext))
-        case t if t <:< ru.typeOf[Task] && childType == "case_task_log" => filter[Task, Log](_.logs)
+        case t if t <:< ru.typeOf[Case] && childType == "case_task"                 => filter[Case, Task](_.tasks(authContext))
+        case t if t <:< ru.typeOf[Case] && childType == "case_artifact"             => filter[Case, Observable](_.observables(authContext))
+        case t if t <:< ru.typeOf[Task] && childType == "case_task_log"             => filter[Task, Log](_.logs)
+        case t if t <:< ru.typeOf[Alert] && childType == "alert_artifact"           => filter[Alert, Observable](_.observables)
+        case t if t <:< ru.typeOf[CaseTemplate] && childType == "caseTemplate_task" => filter[CaseTemplate, Task](_.tasks)
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't child $childType"))
   }

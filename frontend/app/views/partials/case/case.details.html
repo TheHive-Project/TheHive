@@ -1,6 +1,6 @@
 <div class="row case-details">
     <div class="col-md-8">
-        <h4 class="vpad10 text-primary">Summary</h4>
+        <h4 class="vpad10 text-primary">Basic Information</h4>
         <dl class="dl-horizontal clear">
             <dt class="pull-left">Title
             </dt>
@@ -64,14 +64,14 @@
                 <updatable-date on-update="updateField('startDate', newValue)" value="caze.startDate"></updatable-date>
             </dd>
             <dd ng-if="!canEdit">
-                {{caze.startDate | showDate}}
+                {{caze.startDate | shortDate}}
             </dd>
         </dl>
 
         <dl class="dl-horizontal">
             <dt class="pull-left">Tags</dt>
             <dd ng-if="canEdit">
-                <updatable-tags on-update="updateField('tags', getTags(newValue))" value="caze.tags" source="getCaseTags"></updatable-tags>
+                <updatable-tag-list on-update="updateField('tags', getTags(newValue))" value="caze.tags" source="getCaseTags"></updatable-tag-list>
             </dd>
             <dd ng-if="!canEdit">
                 <tag-list data="caze.tags"></tag-list>
@@ -84,7 +84,7 @@
                 <updatable-date on-update="updateField('endDate', newValue)" value="caze.endDate"></updatable-date>
             </dd>
             <dd class="text-success" ng-if="!canEdit">
-                {{caze.endDate | showDate}}
+                {{caze.endDate | shortDate}}
             </dd>
         </dl>
     </div>

@@ -58,7 +58,7 @@ body {
 }
 
 .container-main {
-    padding-top: 100px;
+    padding-top: 80px;
 }
 
 .marked>table, .markdown>table {
@@ -70,6 +70,13 @@ body {
 }
 
 .empty-message {
+    background-color: #f5f5f5;
+    color: #AAA;
+    font-size: 18px;
+    text-align: center;
+    padding: 40px;
+}
+.loading-message {
     background-color: #f5f5f5;
     color: #AAA;
     font-size: 18px;
@@ -270,20 +277,21 @@ pre.clearpre {
     font-weight: normal !important;
 }
 
+.list-group-item .label.label-lg {
+    font-size: 12px !important;
+}
+
 .progress.progress-bar-sm {
-    height: 10px;
+    height: 4px;
 }
 
 .progress.progress-bar-sm .progress-bar {
-    line-height: 10px;
-}
-
-.progress.task-progress {
-    margin-bottom: 4px !important;
+    line-height: 4px;
 }
 
 .progress.task-progress .progress-bar {
     opacity: 0.8;
+    height: 4px;
 }
 
 .btn-canceled, .progress-bar-default {
@@ -332,7 +340,7 @@ ul.observable-reports-summary li {
 
 .case-page .case-page-content {
     background-color: #FFF;
-    padding: 20px 10px 10px 10px;
+    padding: 10px 10px 10px 10px;
 }
 
 .case-details dt,
@@ -729,6 +737,7 @@ table tr td.task-actions span.action-button {
     /*background: rgba(0,0,0,0.2) !important;*/
 }
 
+.task-flags.inline div,
 .observable-flags.inline div {
     display: inline;
 }
@@ -770,4 +779,43 @@ table.tbody-stripped > tbody > tr > td {
 .ellipsable {
     overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+/* Customise tags input */
+
+tags-input.ti-tag-selector .tags .tag-item {
+    background-color: #d2d6de;
+    color: #444;
+    border: none;
+    padding: 0;
+    padding-right: 5px;
+    line-height: 26px;
+}
+
+tags-input.ti-tag-selector.ti-input-sm .tags .tag-item {
+    line-height: 22px;
+}
+
+tags-input.ti-tag-selector .tags .tag-item span.tag-item-border{
+    position: relative;
+    left:0;
+    width: 8px;
+    background-color: red;
+    display: inline-block;
+    border-top-left-radius: .25em;
+    border-bottom-left-radius: .25em;
+}
+
+tags-input.ti-tag-selector.ti-input-sm .tags .tag-item span.tag-item-border{
+    position: relative;
+    left:0;
+    width: 8px;
+    background-color: red;
+    display: inline-block;
+    border-top-left-radius: .25em;
+    border-bottom-left-radius: .25em;
+}
+
+.vtop {
+    vertical-align: top;
 }

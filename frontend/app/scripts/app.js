@@ -116,6 +116,9 @@ angular.module('thehive', [
                     },
                     uiConfig: function($q, UiSettingsSrv) {
                         return UiSettingsSrv.all();
+                    },
+                    taxonomyCache: function(TaxonomyCacheSrv) {
+                        return TaxonomyCacheSrv.all();
                     }
                 }
             })
@@ -202,6 +205,21 @@ angular.module('thehive', [
                 url: 'administration',
                 template: '<ui-view/>'
             })
+            .state('app.administration.platform', {
+                url: '/platform',
+                templateUrl: 'views/partials/admin/platform/status.html',
+                controller: 'PlatformStatusCtrl',
+                controllerAs: '$vm',
+                title: 'Platform administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                },
+                guard: {
+                    permissions: ['managePlatform']
+                }
+            })
             .state('app.administration.profiles', {
                 url: '/profiles',
                 templateUrl: 'views/partials/admin/profile/list.html',
@@ -216,6 +234,36 @@ angular.module('thehive', [
                 guard: {
                     permissions: ['manageProfile']
                 }
+            })
+            .state('app.administration.taxonomies', {
+                url: '/taxonomies',
+                templateUrl: 'views/partials/admin/taxonomy/list.html',
+                controller: 'TaxonomyListCtrl',
+                controllerAs: '$vm',
+                title: 'Taxonomies administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                },
+                guard: {
+                    permissions: ['manageTaxonomy']
+                }
+            })
+            .state('app.administration.attackPatterns', {
+                url: '/attack-patterns',
+                templateUrl: 'views/partials/admin/attack/list.html',
+                controller: 'AttackPatternListCtrl',
+                controllerAs: '$vm',
+                title: 'ATT&CK patterns administration',
+                resolve: {
+                    appConfig: function(VersionSrv) {
+                        return VersionSrv.get();
+                    }
+                }
+                // guard: {
+                //     permissions: ['manageTaxonomy']
+                // }
             })
             .state('app.administration.organisations', {
                 url: '/organisations',
@@ -240,9 +288,6 @@ angular.module('thehive', [
                 resolve: {
                     organisation: function($stateParams, OrganisationSrv) {
                         return OrganisationSrv.get($stateParams.organisation);
-                    },
-                    templates: function($stateParams, OrganisationSrv) {
-                        return OrganisationSrv.caseTemplates($stateParams.organisation);
                     },
                     fields: function(CustomFieldsSrv){
                         return CustomFieldsSrv.all();
@@ -475,6 +520,18 @@ angular.module('thehive', [
 
                         return deferred.promise;
                     }
+                },
+                guard: {
+                    isSuperAdmin: false
+                }
+            })
+            .state('app.case.procedures', {
+                url: '/procedures',
+                templateUrl: 'views/partials/case/case.procedures.html',
+                controller: 'CaseProceduresCtrl',
+                controllerAs: '$vm',
+                data: {
+                    tab: 'procedures'
                 },
                 guard: {
                     isSuperAdmin: false

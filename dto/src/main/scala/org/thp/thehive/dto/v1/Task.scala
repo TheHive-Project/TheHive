@@ -1,8 +1,8 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
-
 import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
+
+import java.util.Date
 
 case class InputTask(
     title: String,

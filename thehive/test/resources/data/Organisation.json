@@ -8,5 +8,10 @@
     "id": "soc",
     "name": "soc",
     "description": "soc"
+  },
+  {
+    "id": "pug",
+    "name": "pug",
+    "description": "pug"
   }
 ]

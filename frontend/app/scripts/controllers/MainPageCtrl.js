@@ -19,7 +19,7 @@
                     {_name: 'currentUser'},
                     {_name: 'tasks'}
                 ] : [
-                    {_name: 'waitingTask'}
+                    {_name: 'waitingTasks'}
                 ];
 
                 if ($stateParams.viewId === 'mytasks') {
@@ -31,7 +31,7 @@
                     self.view.data = 'waitingtasks';
                 }
 
-                self.filtering = new FilteringSrv('case_task', $stateParams.viewId + '.list', {
+                self.filtering = new FilteringSrv('task', $stateParams.viewId + '.list', {
                     version: 'v1',
                     defaults: {
                         showFilters: true,
@@ -63,7 +63,7 @@
                     filter: self.filtering.buildQuery(),
                     baseFilter: view === 'mytasks' ? self.defaultFilter : [],
                     operations: self.queryOperations,
-                    extraData: ['case'],
+                    extraData: ['case', 'actionRequired'],
                     name: $stateParams.viewId
                 });
             };

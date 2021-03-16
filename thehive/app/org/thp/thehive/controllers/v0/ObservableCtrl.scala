@@ -3,47 +3,56 @@ package org.thp.thehive.controllers.v0
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.InputObservable
+import org.thp.thehive.dto.v0.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services._
 import play.api.Configuration
 import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
+import shapeless._
 
 import java.io.FilterInputStream
 import java.nio.file.Files
+import java.util.Base64
 import javax.inject.{Inject, Named, Singleton}
 import scala.collection.JavaConverters._
-import scala.util.Success
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ObservableCtrl @Inject() (
     configuration: Configuration,
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
+    organisationSrv: OrganisationSrv,
+    alertSrv: AlertSrv,
+    attachmentSrv: AttachmentSrv,
     errorHandler: ErrorHandler,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservable,
     temporaryFileCreator: DefaultTemporaryFileCreator
 ) extends ObservableRenderer
     with QueryCtrl {
-  def create(caseId: String): Action[AnyContent] =
-    entrypoint("create artifact")
+
+  type AnyAttachmentType = InputAttachment :+: FFile :+: String :+: CNil
+
+  def createInCase(caseId: String): Action[AnyContent] =
+    entrypoint("create artifact in case")
       .extract("artifact", FieldsParser[InputObservable])
       .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
       .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
@@ -66,54 +75,172 @@ class ObservableCtrl @Inject() (
           }
           .map {
             case (case0, observableType) =>
-              val initialSuccessesAndFailures: (Seq[JsValue], Seq[JsValue]) =
-                inputAttachObs.foldLeft[(Seq[JsValue], Seq[JsValue])](Nil -> Nil) {
-                  case ((successes, failures), inputObservable) =>
-                    inputObservable.attachment.fold((successes, failures)) { attachment =>
-                      db
-                        .tryTransaction { implicit graph =>
-                          observableSrv
-                            .create(inputObservable.toObservable, observableType, attachment, inputObservable.tags, Nil)
-                            .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
-                        }
-                        .fold(
-                          e =>
-                            successes -> (failures :+ errorHandler.toErrorResult(e)._2 ++ Json
-                              .obj(
-                                "object" -> Json
-                                  .obj("data" -> s"file:${attachment.filename}", "attachment" -> Json.obj("name" -> attachment.filename))
-                              )),
-                          s => (successes :+ s) -> failures
-                        )
-                    }
-                }
-
-              val (successes, failures) = inputObservable
-                .data
-                .foldLeft(initialSuccessesAndFailures) {
-                  case ((successes, failures), data) =>
-                    db
-                      .tryTransaction { implicit graph =>
-                        observableSrv
-                          .create(inputObservable.toObservable, observableType, data, inputObservable.tags, Nil)
-                          .flatMap(o => caseSrv.addObservable(case0, o).map(_ => o.toJson))
-                      }
-                      .fold(
-                        failure => (successes, failures :+ errorHandler.toErrorResult(failure)._2 ++ Json.obj("object" -> Json.obj("data" -> data))),
-                        success => (successes :+ success, failures)
-                      )
+              val successesAndFailures =
+                if (observableType.isAttachment)
+                  inputAttachObs
+                    .flatMap(obs => obs.attachment.map(createAttachmentObservableInCase(case0, obs, _)))
+                else
+                  inputAttachObs
+                    .flatMap(obs => obs.data.map(createSimpleObservableInCase(case0, obs, _)))
+              val (successes, failures) = successesAndFailures
+                .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
+                  case ((s, f), Right(o)) => (s :+ o, f)
+                  case ((s, f), Left(o))  => (s, f :+ o)
                 }
               if (failures.isEmpty) Results.Created(JsArray(successes))
               else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
           }
       }
 
+  private def createSimpleObservableInCase(
+      `case`: Case with Entity,
+      inputObservable: InputObservable,
+      data: String
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        caseSrv.createObservable(`case`, inputObservable.toObservable, data)
+      } match {
+      case Success(o)     => Right(o.toJson)
+      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+    }
+
+  private def createAttachmentObservableInCase(
+      `case`: Case with Entity,
+      inputObservable: InputObservable,
+      fileOrAttachment: Either[FFile, InputAttachment]
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        fileOrAttachment match {
+          case Left(file) =>
+            caseSrv.createObservable(`case`, inputObservable.toObservable, file)
+          case Right(attachment) =>
+            for {
+              attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
+              obs    <- caseSrv.createObservable(`case`, inputObservable.toObservable, attach)
+            } yield obs
+        }
+      } match {
+      case Success(o) => Right(o.toJson)
+      case _ =>
+        val filename = fileOrAttachment.fold(_.filename, _.name)
+        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+    }
+
+  def createInAlert(alertId: String): Action[AnyContent] =
+    entrypoint("create artifact in alert")
+      .extract("artifact", FieldsParser[InputObservable])
+      .extract("isZip", FieldsParser.boolean.optional.on("isZip"))
+      .extract("zipPassword", FieldsParser.string.optional.on("zipPassword"))
+      .auth { implicit request =>
+        val inputObservable: InputObservable = request.body("artifact")
+        val isZip: Option[Boolean]           = request.body("isZip")
+        val zipPassword: Option[String]      = request.body("zipPassword")
+        val inputAttachObs                   = if (isZip.contains(true)) getZipFiles(inputObservable, zipPassword) else Seq(inputObservable)
+
+        db
+          .roTransaction { implicit graph =>
+            for {
+              alert <-
+                alertSrv
+                  .get(EntityIdOrName(alertId))
+                  .can(organisationSrv, Permissions.manageAlert)
+                  .orFail(AuthorizationError("Operation not permitted"))
+              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
+            } yield (alert, observableType)
+          }
+          .map {
+            case (alert, observableType) =>
+              val successesAndFailures =
+                if (observableType.isAttachment)
+                  inputAttachObs
+                    .flatMap { obs =>
+                      (obs.attachment.map(_.fold(Coproduct[AnyAttachmentType](_), Coproduct[AnyAttachmentType](_))) ++
+                        obs.data.map(Coproduct[AnyAttachmentType](_)))
+                        .map(createAttachmentObservableInAlert(alert, obs, _))
+                    }
+                else
+                  inputAttachObs
+                    .flatMap(obs => obs.data.map(createSimpleObservableInAlert(alert, obs, _)))
+              val (successes, failures) = successesAndFailures
+                .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
+                  case ((s, f), Right(o)) => (s :+ o, f)
+                  case ((s, f), Left(o))  => (s, f :+ o)
+                }
+              if (failures.isEmpty) Results.Created(JsArray(successes))
+              else Results.MultiStatus(Json.obj("success" -> successes, "failure" -> failures))
+          }
+      }
+
+  private def createSimpleObservableInAlert(
+      alert: Alert with Entity,
+      inputObservable: InputObservable,
+      data: String
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        alertSrv.createObservable(alert, inputObservable.toObservable, data)
+      } match {
+      case Success(o)     => Right(o.toJson)
+      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+    }
+
+  private def createAttachmentObservableInAlert(
+      alert: Alert with Entity,
+      inputObservable: InputObservable,
+      attachment: AnyAttachmentType
+  )(implicit authContext: AuthContext): Either[JsValue, JsValue] =
+    db
+      .tryTransaction { implicit graph =>
+        object createAttachment extends Poly1 {
+          implicit val fromFile: Case.Aux[FFile, Try[RichObservable]] = at[FFile] { file =>
+            alertSrv.createObservable(alert, inputObservable.toObservable, file)
+          }
+          implicit val fromAttachment: Case.Aux[InputAttachment, Try[RichObservable]] = at[InputAttachment] { attachment =>
+            for {
+              attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
+              obs    <- alertSrv.createObservable(alert, inputObservable.toObservable, attach)
+            } yield obs
+          }
+
+          implicit val fromString: Case.Aux[String, Try[RichObservable]] = at[String] { data =>
+            data.split(';') match {
+              case Array(filename, contentType, value) =>
+                val data = Base64.getDecoder.decode(value)
+                attachmentSrv
+                  .create(filename, contentType, data)
+                  .flatMap(attachment => alertSrv.createObservable(alert, inputObservable.toObservable, attachment))
+              case Array(filename, contentType) =>
+                attachmentSrv
+                  .create(filename, contentType, Array.emptyByteArray)
+                  .flatMap(attachment => alertSrv.createObservable(alert, inputObservable.toObservable, attachment))
+              case data =>
+                Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
+            }
+          }
+        }
+        attachment.fold(createAttachment)
+      } match {
+      case Success(o) => Right(o.toJson)
+      case _ =>
+        object attachmentName extends Poly1 {
+          implicit val fromFile: Case.Aux[FFile, String]                 = at[FFile](_.filename)
+          implicit val fromAttachment: Case.Aux[InputAttachment, String] = at[InputAttachment](_.name)
+          implicit val fromString: Case.Aux[String, String] = at[String] { data =>
+            if (data.contains(';')) data.takeWhile(_ != ';') else "no name"
+          }
+        }
+        val filename = attachment.fold(attachmentName)
+        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+    }
+
   def get(observableId: String): Action[AnyContent] =
     entrypoint("get observable")
       .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
           .get(EntityIdOrName(observableId))
-          .visible
+          .visible(organisationSrv)
           .richObservable
           .getOrFail("Observable")
           .map { observable =>
@@ -128,7 +255,7 @@ class ObservableCtrl @Inject() (
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.get(EntityIdOrName(observableId)).can(Permissions.manageObservable),
+            _.get(EntityIdOrName(observableId)).canManage(organisationSrv),
             propertyUpdaters
           )
           .flatMap {
@@ -145,10 +272,10 @@ class ObservableCtrl @Inject() (
       .authRoTransaction(db) { implicit request => implicit graph =>
         val observables = observableSrv
           .get(EntityIdOrName(observableId))
-          .visible
+          .visible(organisationSrv)
           .filteredSimilar
-          .visible
-          .richObservableWithCustomRenderer(observableLinkRenderer)
+          .visible(organisationSrv)
+          .richObservableWithCustomRenderer(organisationSrv, observableLinkRenderer)
           .toSeq
 
         Success(Results.Ok(observables.toJson))
@@ -164,7 +291,7 @@ class ObservableCtrl @Inject() (
         ids
           .toTry { id =>
             observableSrv
-              .update(_.get(EntityIdOrName(id)).can(Permissions.manageObservable), properties)
+              .update(_.get(EntityIdOrName(id)).canManage(organisationSrv), properties)
           }
           .map(_ => Results.NoContent)
       }
@@ -176,7 +303,7 @@ class ObservableCtrl @Inject() (
           observable <-
             observableSrv
               .get(EntityIdOrName(observableId))
-              .can(Permissions.manageObservable)
+              .canManage(organisationSrv)
               .getOrFail("Observable")
           _ <- observableSrv.remove(observable)
         } yield Results.NoContent
@@ -213,7 +340,7 @@ class ObservableCtrl @Inject() (
   }
 
   private def getZipFiles(observable: InputObservable, zipPassword: Option[String]): Seq[InputObservable] =
-    observable.attachment.toSeq.flatMap { attachment =>
+    observable.attachment.flatMap(_.swap.toSeq).flatMap { attachment =>
       val zipFile                = new ZipFile(attachment.filepath.toFile)
       val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
 
@@ -223,7 +350,7 @@ class ObservableCtrl @Inject() (
       files
         .filterNot(_.isDirectory)
         .flatMap(extractAndCheckSize(zipFile, _))
-        .map(ffile => observable.copy(attachment = Some(ffile)))
+        .map(ffile => observable.copy(attachment = Seq(Left(ffile))))
     }
 }
 
@@ -241,26 +368,24 @@ class PublicObservable @Inject() (
     )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
-    FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, withStats, 0), observableSteps, authContext) =>
           observableSteps
             .richPage(from, to, withTotal = true) {
               case o if withStats =>
-                o.richObservableWithCustomRenderer(observableStatsRenderer(authContext))(authContext)
+                o.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv)(authContext))(authContext)
                   .domainMap(ros => (ros._1, ros._2, None: Option[RichCase]))
               case o =>
                 o.richObservable.domainMap(ro => (ro, JsObject.empty, None))
             }
         case (OutputParam(from, to, _, _), observableSteps, authContext) =>
           observableSteps.richPage(from, to, withTotal = true)(
-            _.richObservableWithCustomRenderer(o => o.`case`.richCase(authContext))(authContext).domainMap(roc =>
+            _.richObservableWithCustomRenderer(organisationSrv, o => o.`case`.richCase(authContext))(authContext).domainMap(roc =>
               (roc._1, JsObject.empty, Some(roc._2): Option[RichCase])
             )
           )
@@ -268,7 +393,16 @@ class PublicObservable @Inject() (
     )
   override val outputQuery: Query = Query.output[RichObservable, Traversal.V[Observable]](_.richObservable)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    //    Query.output[(RichObservable, JsObject, Option[RichCase])]
+    Query[Traversal.V[Observable], Traversal.V[Organisation]](
+      "organisations",
+      (observableSteps, authContext) => observableSteps.organisations.visible(authContext)
+    ),
+    Query[Traversal.V[Observable], Traversal.V[Observable]](
+      "similar",
+      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(organisationSrv)(authContext)
+    ),
+    Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
+    Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Observable]
     .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
@@ -277,26 +411,12 @@ class PublicObservable @Inject() (
     .property("sighted", UMapping.boolean)(_.field.updatable)
     .property("ignoreSimilarity", UMapping.boolean)(_.field.updatable)
     .property("tags", UMapping.string.set)(
-      _.select(_.tags.displayName)
-        .filter((_, cases) =>
-          cases
-            .tags
-            .graphMap[String, String, Converter.Identity[String]](
-              { v =>
-                val namespace = UMapping.string.getProperty(v, "namespace")
-                val predicate = UMapping.string.getProperty(v, "predicate")
-                val value     = UMapping.string.optional.getProperty(v, "value")
-                Tag(namespace, predicate, value, None, 0).toString
-              },
-              Converter.identity[String]
-            )
-        )
-        .converter(_ => Converter.identity[String])
-        .custom { (_, value, vertex, _, graph, authContext) =>
+      _.field
+        .custom { (_, value, vertex, graph, authContext) =>
           observableSrv
             .get(vertex)(graph)
             .getOrFail("Observable")
-            .flatMap(observable => observableSrv.updateTagNames(observable, value)(graph, authContext))
+            .flatMap(observable => observableSrv.updateTags(observable, value)(graph, authContext))
             .map(_ => Json.obj("tags" -> value))
         }
     )
@@ -309,5 +429,6 @@ class PublicObservable @Inject() (
     .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
     .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
     .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
+    .property("relatedId", UMapping.entityId)(_.field.readonly)
     .build
 }

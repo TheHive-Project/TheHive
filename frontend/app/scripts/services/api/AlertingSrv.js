@@ -6,6 +6,10 @@
             var baseUrl = './api/alert';
 
             var similarityFilters = {
+                'none': {
+                    label: 'None',
+                    filters: []
+                },
                 'open-cases': {
                     label: 'Open Cases',
                     filters: [{
@@ -139,7 +143,8 @@
                         onUpdate: callback || undefined,
                         operations: [
                             {'_name': 'listAlert'}
-                        ]
+                        ],
+                        extraData: ['importDate']
                     });
                 },
 

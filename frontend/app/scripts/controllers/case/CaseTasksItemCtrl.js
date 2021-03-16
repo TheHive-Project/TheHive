@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseTasksItemCtrl',
-        function ($scope, $rootScope, $state, $stateParams, $timeout, $uibModal, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
+        function ($q, $scope, $rootScope, $state, $stateParams, $timeout, $uibModal, StreamSrv, PaginatedQuerySrv, SecuritySrv, ModalSrv, CaseSrv, AuthenticationSrv, OrganisationSrv, CaseTabsSrv, CaseTaskSrv, PSearchSrv, TaskLogSrv, NotificationSrv, CortexSrv, StatSrv, task) {
             var caseId = $stateParams.caseId,
                 taskId = $stateParams.itemId;
 
@@ -224,7 +224,7 @@
             };
 
             $scope.reloadTask = function() {
-                CaseTaskSrv.getById($scope.task._id)
+                return CaseTaskSrv.getById($scope.task._id)
                     .then(function(data) {
                         $scope.task = data;
                     })
@@ -234,10 +234,18 @@
             };
 
             $scope.loadShares = function () {
-                return CaseTaskSrv.getShares(caseId, taskId)
-                    .then(function(response) {
-                        $scope.shares = response.data;
-                    });
+                if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
+                    return CaseTaskSrv.getShares(caseId, taskId)
+                        .then(function(response) {
+
+                            // Add action required flag to shares
+                            _.each(response.data, function(share) {
+                                share.actionRequired = !!$scope.task.extraData.actionRequiredMap[share.organisationName];
+                            });
+
+                            $scope.shares = response.data;
+                        });
+                }
             };
 
             $scope.removeShare = function(share) {
@@ -304,6 +312,97 @@
                     });
             };
 
+
+
+            $scope.showAddLog = function(prompt) {
+                var modalInstance = $uibModal.open({
+                    animation: true,
+                    keyboard: false,
+                    backdrop: 'static',
+                    templateUrl: 'views/partials/case/tasklogs/add-task-log.modal.html',
+                    controller: 'AddTaskLogModalCtrl',
+                    controllerAs: '$modal',
+                    size: 'lg',
+                    resolve: {
+                        task: task,
+                        config: function() {
+                            return {
+                                prompt: prompt
+                            };
+                        }
+                    }
+                });
+
+                return modalInstance.result;
+            };
+
+            $scope.markAsDone = function(task) {
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before marking the required action as DONE?')
+                    .then(function(response) {
+                        if(response === 'skip-log') {
+                            return $q.resolve();
+                        } else {
+                            return $scope.showAddLog('Please add a task log');
+                        }
+                    })
+                    .then(function() {
+                        return CaseTaskSrv.markAsDone(task._id, $scope.currentUser.organisation);
+                    })
+                    .then(function() {
+                        NotificationSrv.log('The task\'s required action is completed', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task required action failed to be marked as done', err.status);
+                        }
+                    });
+            };
+
+            $scope.markAsActionRequired = function(task) {
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before requesting action?')
+                    .then(function(response) {
+                        if(response === 'skip-log') {
+                            return $q.resolve();
+                        } else {
+                            return $scope.showAddLog('Please add a task log');
+                        }
+                    })
+                    .then(function() {
+                        return CaseTaskSrv.markAsActionRequired(task._id, $scope.currentUser.organisation);
+                    })
+                    .then(function() {
+                        NotificationSrv.log('The task\'s required action flag has been set', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task request action failed', err.status);
+                        }
+                    });
+
+            };
+
+            $scope.markShareAsActionRequired = function(task, org) {
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before requesting action?')
+                    .then(function(response) {
+                        if(response === 'skip-log') {
+                            return $q.resolve();
+                        } else {
+                            return $scope.showAddLog('Please add a task log');
+                        }
+                    })
+                    .then(function() {
+                        return CaseTaskSrv.markAsActionRequired(task._id, org);
+                    })
+                    .then(function() {
+                        NotificationSrv.log('The task\'s required action flag has been set for organisation ' + org, 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task request action failed', err.status);
+                        }
+                    });
+            };
+
             this.$onInit = function() {
                 // Add tabs
                 CaseTabsSrv.addTab($scope.tabName, {
@@ -322,13 +421,39 @@
                     $('html,body').animate({scrollTop: $('body').offset().top}, 'fast');
                 }, 0);
 
+                // Add action required listener
+                StreamSrv.addListener({
+                    rootId: caseId,
+                    objectType: 'case_task',
+                    scope: $scope,
+                    callback: function(updates) {
+                        // Update action required indicators in task item page and shares list
+                        _.each(updates, function(update) {
+                            if(update.base.objectId === $scope.task._id ){
+
+                                var updatedKeys = _.keys(update.base.details);
+
+                                var actionRequiredChange = _.find(updatedKeys, function(key) {
+                                    return key.startsWith('actionRequired');
+                                });
+
+                                if(actionRequiredChange !== undefined) {
+                                    $scope.reloadTask()
+                                        .then(function() {
+                                            $scope.loadShares();
+                                        });
+                                }
+                            }
+                        });
+                    }
+                });
 
                 // Prepare the scope data
                 $scope.initScope(task);
 
-                if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
-                    $scope.loadShares();
-                }
+                // if(SecuritySrv.checkPermissions(['manageShare'], $scope.userPermissions)) {
+                $scope.loadShares();
+                //}
 
                 // $scope.organisations = organisations;
                 // $scope.profiles = profiles;

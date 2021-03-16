@@ -1,12 +1,10 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.ConfigOps._
@@ -16,13 +14,14 @@ import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
 import play.api.libs.json.{JsValue, Reads}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
 class ConfigSrv @Inject() (
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
-)(@Named("with-thehive-schema") implicit val db: Database)
+)(implicit val db: Database)
     extends VertexSrv[Config] {
   val organisationConfigSrv = new EdgeSrv[OrganisationConfig, Organisation, Config]
   val userConfigSrv         = new EdgeSrv[UserConfig, User, Config]

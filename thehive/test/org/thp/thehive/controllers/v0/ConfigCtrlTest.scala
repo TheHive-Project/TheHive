@@ -6,6 +6,9 @@ import play.api.libs.json.{JsObject, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
+
+// TODO leave unused code ?
+//
 //    def getList = {
 //      val request = FakeRequest("GET", "/api/config")
 //        .withHeaders("user" -> "admin@thehive.local")
@@ -29,16 +32,17 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "set configuration item" in testApp { app =>
       app[TagSrv]
-      val request = FakeRequest("PUT", "/api/config/tags.defaultColour")
+      val request = FakeRequest("PUT", "/api/config/tags.freeTagColour")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"value": "#00FF00"}"""))
-      val result = app[ConfigCtrl].set("tags.defaultColour")(request)
+      val result = app[ConfigCtrl].set("tags.freeTagColour")(request)
 
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      app[TagSrv].defaultColour must beEqualTo(0xff00)
+      app[TagSrv].freeTagColour must beEqualTo("#00FF00")
     }
-
+// TODO leave unused tests ?
+//
 //      "get user specific configuration" in testApp { app =>
 //        val request = FakeRequest("GET", "/api/config/user/organisation")
 //          .withHeaders("user" -> "admin@thehive.local")

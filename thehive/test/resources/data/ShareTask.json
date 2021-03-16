@@ -1,12 +1,22 @@
 [
-  {"from": "case1-cert", "to": "task1"},
-  {"from": "case1-cert", "to": "task2"},
-  {"from": "case2-soc", "to": "task3"},
-  {"from": "case2-cert", "to": "task4"},
-  {"from": "case3-soc", "to": "task5"},
-  {"from": "cascade-remove-simple", "to": "task-cascade-remove-simple"},
-  {"from": "share-cascade-remove", "to": "task-cascade-remove-delete"},
-  {"from": "share-cascade-remove", "to": "task-cascade-remove-unshare"},
-  {"from": "share-cascade-remove2", "to": "task-cascade-remove-unshare"}
+  {"from": "case1-cert", "to": "task1", "actionRequired":  false},
+  {"from": "case1-cert", "to": "task2", "actionRequired":  false},
+  {"from": "case2-soc", "to": "task3", "actionRequired":  false},
+  {"from": "case2-cert", "to": "task4", "actionRequired":  false},
+  {"from": "case3-soc", "to": "task5", "actionRequired":  false},
+  {"from": "case-actionRequired-soc", "to": "taskActionRequired1", "actionRequired":  false},
+  {"from": "case-actionRequired-cert", "to": "taskActionRequired1", "actionRequired":  false},
+  {"from": "case-actionRequired-soc", "to": "taskActionRequired2", "actionRequired":  false},
+  {"from": "case-actionRequired-cert", "to": "taskActionRequired2", "actionRequired":  true},
+  {"from": "case21-merge-cert", "to": "taskMerge211", "actionRequired":  false},
+  {"from": "case21-merge-cert", "to": "taskMerge212", "actionRequired":  false},
+  {"from": "case23-merge-cert", "to": "taskMerge231", "actionRequired":  false},
+  {"from": "case24-merge-soc", "to": "taskMerge241", "actionRequired":  false},
+  {"from": "case24-merge-soc", "to": "taskMerge242", "actionRequired":  false},
+  {"from": "case24-merge-cert", "to": "taskMerge242", "actionRequired":  false},
+  {"from": "cascade-remove-simple", "to": "task-cascade-remove-simple", "actionRequired":  false},
+  {"from": "share-cascade-remove", "to": "task-cascade-remove-delete", "actionRequired":  false},
+  {"from": "share-cascade-remove", "to": "task-cascade-remove-unshare", "actionRequired":  false},
+  {"from": "share-cascade-remove2", "to": "task-cascade-remove-unshare", "actionRequired":  false}
 
 ]

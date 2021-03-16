@@ -1,18 +1,16 @@
 package org.thp.thehive.services
 
-import java.lang.{Long => JLong}
-import java.util.{Date, List => JList, Map => JMap}
-
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.apache.tinkerpop.gremlin.structure.Graph
+import akka.actor.ActorRef
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
+import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IdentityConverter, StepLabel, Traversal}
-import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
+import org.thp.scalligraph.traversal._
+import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -21,9 +19,11 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
+import java.lang.{Long => JLong}
+import java.util.{Date, Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -34,9 +34,9 @@ class AlertSrv @Inject() (
     customFieldSrv: CustomFieldSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
-    auditSrv: AuditSrv
-)(implicit
-    @Named("with-thehive-schema") db: Database
+    auditSrv: AuditSrv,
+    attachmentSrv: AttachmentSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[Alert] {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
@@ -49,7 +49,7 @@ class AlertSrv @Inject() (
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Alert] =
     name.split(';') match {
       case Array(tpe, source, sourceRef) => startTraversal.getBySourceId(tpe, source, sourceRef)
-      case _                             => startTraversal.limit(0)
+      case _                             => startTraversal.empty
     }
 
   def create(
@@ -64,7 +64,7 @@ class AlertSrv @Inject() (
   ): Try[RichAlert] =
     tagNames.toTry(tagSrv.getOrCreate).flatMap(create(alert, organisation, _, customFields, caseTemplate))
 
-  def create(
+  private def create(
       alert: Alert,
       organisation: Organisation with Entity,
       tags: Seq[Tag with Entity],
@@ -74,17 +74,17 @@ class AlertSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[RichAlert] = {
-    val alertAlreadyExist = organisationSrv.get(organisation).alerts.getBySourceId(alert.`type`, alert.source, alert.sourceRef).getCount
-    if (alertAlreadyExist > 0)
+    val alertAlreadyExist = startTraversal.getBySourceId(alert.`type`, alert.source, alert.sourceRef).inOrganisation(organisation._id).exists
+    if (alertAlreadyExist)
       Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exist in organisation ${organisation.name}"))
     else
       for {
-        createdAlert <- createEntity(alert)
+        createdAlert <- createEntity(alert.copy(organisationId = organisation._id))
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
         _            <- tags.toTry(t => alertTagSrv.create(AlertTag(), createdAlert, t))
         cfs          <- customFields.toTry { cf: InputCustomFieldValue => createCustomField(createdAlert, cf) }
-        richAlert = RichAlert(createdAlert, organisation.name, tags, cfs, None, caseTemplate.map(_.name), 0)
+        richAlert = RichAlert(createdAlert, cfs, None, caseTemplate.map(_.name), 0)
         _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
       } yield richAlert
   }
@@ -101,38 +101,21 @@ class AlertSrv @Inject() (
           .flatMap(auditSrv.alert.update(_, updatedFields))
     }
 
-  def updateTags(alert: Alert with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val (tagsToAdd, tagsToRemove) = get(alert)
-      .tags
-      .toIterator
-      .foldLeft((tags, Set.empty[Tag with Entity])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove)
-        case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
-      }
+  def updateTags(alert: Alert with Entity, tags: Set[String])(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[(Seq[Tag with Entity], Seq[Tag with Entity])] =
     for {
-//      createdTags <- tagsToAdd.toTry(tagSrv.getOrCreate)
+      tagsToAdd <- (tags -- alert.tags).toTry(tagSrv.getOrCreate)
+      tagsToRemove = get(alert).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
-      _ = get(alert).removeTags(tagsToRemove)
-      _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags.map(_.toString)))
-    } yield ()
+      _ = if (tags.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ <- get(alert).update(_.tags, tags.toSeq).getOrFail("Alert")
+      _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags))
+    } yield (tagsToAdd, tagsToRemove)
 
-  }
-
-  def updateTagNames(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(alert, t.toSet))
-
-  def addTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val currentTags = get(alert)
-      .tags
-      .toSeq
-      .map(_.toString)
-      .toSet
-    for {
-      createdTags <- (tags -- currentTags).toTry(tagSrv.getOrCreate)
-      _           <- createdTags.toTry(alertTagSrv.create(AlertTag(), alert, _))
-      _           <- auditSrv.alert.update(alert, Json.obj("tags" -> (currentTags ++ tags)))
-    } yield ()
-  }
+  def addTags(alert: Alert with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    updateTags(alert, tags ++ alert.tags).map(_ => ())
 
   def removeObservable(alert: Alert with Entity, observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     observableSrv
@@ -140,16 +123,44 @@ class AlertSrv @Inject() (
       .filter(_.inE[AlertObservable].outV.hasId(alert._id))
       .getOrFail("Observable")
       .flatMap { alertObservable =>
+        // FIXME Observable entity must be remove, not only the edge
         alertObservableSrv.get(alertObservable).remove()
-        auditSrv.observableInAlert.delete(observable, Some(alert))
+        auditSrv.observableInAlert.delete(observable, alert)
       }
 
+  def createObservable(alert: Alert with Entity, observable: Observable, data: String)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
+    for {
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Set(organisationSrv.currentId), relatedId = alert._id), data)
+      _                 <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
+      _                 <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
+    } yield createdObservable
+
+  def createObservable(alert: Alert with Entity, observable: Observable, attachment: Attachment with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
+    for {
+      createdObservable <- observableSrv.create(observable.copy(organisationIds = Set(organisationSrv.currentId), relatedId = alert._id), attachment)
+      _                 <- alertObservableSrv.create(AlertObservable(), alert, createdObservable.observable)
+      _                 <- auditSrv.observableInAlert.create(createdObservable.observable, alert, createdObservable.toJson)
+    } yield createdObservable
+
+  def createObservable(alert: Alert with Entity, observable: Observable, file: FFile)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[RichObservable] =
+    attachmentSrv.create(file).flatMap(attachment => createObservable(alert, observable, attachment))
+
+  @deprecated("use createObservable", "0.2")
   def addObservable(alert: Alert with Entity, richObservable: RichObservable)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
     val maybeExistingObservable = richObservable.dataOrAttachment match {
-      case Left(data)        => get(alert).observables.filterOnData(data.data)
+      case Left(data)        => get(alert).observables.filterOnData(data)
       case Right(attachment) => get(alert).observables.filterOnAttachmentId(attachment.attachmentId)
     }
     maybeExistingObservable
@@ -210,60 +221,63 @@ class AlertSrv @Inject() (
 
   def markAsUnread(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update(_.read, false: Boolean).getOrFail("Alert")
+      alert <- get(alertId).update[Boolean](_.read, false).getOrFail("Alert")
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> false))
     } yield ()
 
   def markAsRead(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update(_.read, true: Boolean).getOrFail("Alert")
+      alert <- get(alertId).update[Boolean](_.read, true).getOrFail("Alert")
       _     <- auditSrv.alert.update(alert, Json.obj("read" -> true))
     } yield ()
 
   def followAlert(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update(_.follow, true: Boolean).getOrFail("Alert")
+      alert <- get(alertId).update[Boolean](_.follow, true).getOrFail("Alert")
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> true))
     } yield ()
 
   def unfollowAlert(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update(_.follow, false: Boolean).getOrFail("Alert")
+      alert <- get(alertId).update[Boolean](_.follow, false).getOrFail("Alert")
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
-  def createCase(alert: RichAlert, user: Option[User with Entity], organisation: Organisation with Entity)(implicit
+  def createCase(alert: RichAlert, assignee: Option[User with Entity], organisation: Organisation with Entity)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[RichCase] =
-    get(alert.alert).`case`.richCase.getOrFail("Case").orElse {
-      for {
-        caseTemplate <-
-          alert
-            .caseTemplate
-            .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
-            .flip
-        customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
-        case0 = Case(
-          number = 0,
-          title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
-          description = alert.description,
-          severity = alert.severity,
-          startDate = new Date,
-          endDate = None,
-          flag = false,
-          tlp = alert.tlp,
-          pap = alert.pap,
-          status = CaseStatus.Open,
-          summary = None
-        )
+    auditSrv.mergeAudits {
+      get(alert.alert).`case`.richCase.getOrFail("Case").orElse {
+        for {
+          caseTemplate <-
+            alert
+              .caseTemplate
+              .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
+              .flip
+          customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
+          case0 = Case(
+            title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
+            description = alert.description,
+            severity = alert.severity,
+            startDate = new Date,
+            endDate = None,
+            flag = false,
+            tlp = alert.tlp,
+            pap = alert.pap,
+            status = CaseStatus.Open,
+            summary = None,
+            alert.tags
+          )
 
-        createdCase <- caseSrv.create(case0, user, organisation, alert.tags.toSet, customField, caseTemplate, Nil)
-        _           <- importObservables(alert.alert, createdCase.`case`)
-        _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
-        _           <- markAsRead(alert._id)
-      } yield createdCase
-    }
+          createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil)
+          _           <- importObservables(alert.alert, createdCase.`case`)
+          _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
+          _           <- markAsRead(alert._id)
+          _ = integrityCheckActor ! EntityAdded("Alert")
+        } yield createdCase
+      }
+    }(richCase => auditSrv.alert.createCase(alert.alert, richCase.`case`, richCase.toJson.as[JsObject]))
 
   def mergeInCase(alertId: EntityIdOrName, caseId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     for {
@@ -273,28 +287,32 @@ class AlertSrv @Inject() (
     } yield updatedCase
 
   def mergeInCase(alert: Alert with Entity, `case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
-    auditSrv
-      .mergeAudits {
-        // No audit for markAsRead and observables
-        // Audits for customFields, description and tags
-        val description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
-        for {
-          _ <- markAsRead(alert._id)
-          _ <- importObservables(alert, `case`)
-          _ <- importCustomFields(alert, `case`)
-          _ <- caseSrv.addTags(`case`, get(alert).tags.toSeq.map(_.toString).toSet)
-          _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
-          c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
-          details <- Success(
-            Json.obj(
-              "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),
-              "description"  -> c.description,
-              "tags"         -> caseSrv.get(`case`).tags.toSeq.map(_.toString)
+    if (get(alert).isImported)
+      Failure(BadRequestError("Alert is already imported"))
+    else
+      auditSrv
+        .mergeAudits {
+          // No audit for markAsRead and observables
+          // Audits for customFields, description and tags
+          val description = `case`.description + s"\n  \n#### Merged with alert #${alert.sourceRef} ${alert.title}\n\n${alert.description.trim}"
+          for {
+            _ <- markAsRead(alert._id)
+            _ <- importObservables(alert, `case`)
+            _ <- importCustomFields(alert, `case`)
+            _ <- caseSrv.addTags(`case`, alert.tags.toSet)
+            _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
+            c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
+            details <- Success(
+              Json.obj(
+                "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),
+                "description"  -> c.description,
+                "tags"         -> (`case`.tags ++ alert.tags).distinct
+              )
             )
-          )
-        } yield details
-      }(details => auditSrv.alertToCase.merge(alert, `case`, Some(details)))
-      .flatMap(_ => caseSrv.getOrFail(`case`._id))
+          } yield details
+        }(details => auditSrv.alert.mergeToCase(alert, `case`, details.as[JsObject]))
+        .map(_ => integrityCheckActor ! EntityAdded("Alert"))
+        .flatMap(_ => caseSrv.getOrFail(`case`._id))
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(implicit
       graph: Graph,
@@ -305,23 +323,26 @@ class AlertSrv @Inject() (
       .richObservable
       .toIterator
       .toTry { richObservable =>
-        observableSrv
-          .duplicate(richObservable)
-          .flatMap(duplicatedObservable => caseSrv.addObservable(`case`, duplicatedObservable))
+        richObservable
+          .dataOrAttachment
+          .fold(
+            data => caseSrv.createObservable(`case`, richObservable.observable, data),
+            attachment => caseSrv.createObservable(`case`, richObservable.observable, attachment)
+          )
           .recover {
             case _: CreateError => // if case already contains observable, update tags
-              caseSrv
-                .get(`case`)
-                .observables
-                .filter { o =>
-                  richObservable.dataOrAttachment.fold(d => o.filterOnData(d.data), a => o.attachments.has(_.attachmentId, a.attachmentId))
-                }
+              richObservable
+                .dataOrAttachment
+                .fold(
+                  data => observableSrv.startTraversal.filterOnData(data),
+                  attachment => observableSrv.startTraversal.filterOnAttachmentId(attachment.attachmentId)
+                )
+                .filterOnData(richObservable.dataType)
+                .relatedTo(`case`._id)
+                .inOrganisation(organisationSrv.currentId)
                 .headOption
                 .foreach { observable =>
-                  val newTags = observableSrv
-                    .get(observable)
-                    .tags
-                    .toSet ++ richObservable.tags
+                  val newTags = (observable.tags ++ richObservable.tags).toSet
                   observableSrv.updateTags(observable, newTags)
                 }
           }
@@ -358,7 +379,7 @@ object AlertOps {
         traversal.getByIds(_),
         _.split(';') match {
           case Array(tpe, source, sourceRef) => getBySourceId(tpe, source, sourceRef)
-          case _                             => traversal.limit(0)
+          case _                             => traversal.empty
         }
       )
 
@@ -367,6 +388,9 @@ object AlertOps {
         .has(_.`type`, `type`)
         .has(_.source, source)
         .has(_.sourceRef, sourceRef)
+
+    def inOrganisation(organisationId: EntityId): Traversal.V[Alert] =
+      traversal.has(_.organisationId, organisationId)
 
     def filterByType(`type`: String): Traversal.V[Alert] = traversal.has(_.`type`, `type`)
 
@@ -378,31 +402,42 @@ object AlertOps {
 
     def `case`: Traversal.V[Case] = traversal.out[AlertCase].v[Case]
 
-    def removeTags(tags: Set[Tag with Entity]): Unit =
-      if (tags.nonEmpty)
-        traversal.outE[AlertTag].filter(_.otherV.hasId(tags.map(_._id).toSeq: _*)).remove()
+    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Alert] =
+      traversal.has(_.organisationId, organisationSrv.currentId(traversal.graph, authContext))
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Alert] =
-      traversal.filter(_.organisation.get(authContext.organisation))
-
-    def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Alert] =
+    def can(organisationSrv: OrganisationSrv, permission: Permission)(implicit authContext: AuthContext): Traversal.V[Alert] =
       if (authContext.permissions.contains(permission))
-        traversal.filter(_.organisation.get(authContext.organisation))
-      else traversal.limit(0)
+        traversal.visible(organisationSrv)
+      else traversal.empty
 
     def imported: Traversal[Boolean, Boolean, IdentityConverter[Boolean]] =
-      traversal
-        .`case`
-        .count
-        .choose(_.is(P.gt(0)), onTrue = true, onFalse = false)
+      traversal.choose(_.has(_.caseId), onTrue = true, onFalse = false)
 
-    def similarCases(maybeCaseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
+    def isImported: Boolean =
+      traversal.has(_.caseId).exists
+
+    def importDate: Traversal[Date, Date, Converter[Date, Date]] =
+      traversal.outE[AlertCase].value(_._createdAt)
+
+    def handlingDuration: Traversal[Long, Long, IdentityConverter[Long]] =
+      traversal.coalesceIdent(
+        _.filter(_.outE[AlertCase])
+          .sack(
+            (_: JLong, importDate: JLong) => importDate,
+            _.by(_.importDate.graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long))
+          )
+          .sack((_: Long) - (_: JLong), _.by(_._createdAt.graphMap[Long, JLong, Converter[Long, JLong]](_.getTime, Converter.long)))
+          .sack[Long],
+        _.constant(0L)
+      )
+
+    def similarCases(organisationSrv: OrganisationSrv, caseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
         authContext: AuthContext
     ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] = {
       val similarObservables = observables
         .filteredSimilar
-        .visible
-      maybeCaseFilter
+        .visible(organisationSrv)
+      caseFilter
         .fold(similarObservables)(caseFilter => similarObservables.filter(o => caseFilter(o.`case`)))
         .group(_.by(_.`case`))
         .unfold
@@ -434,63 +469,6 @@ object AlertOps {
         }
     }
 
-    def alertUserOrganisation(
-        permission: Permission
-    )(implicit
-        authContext: AuthContext
-    ): Traversal[(RichAlert, Organisation with Entity), JMap[String, Any], Converter[(RichAlert, Organisation with Entity), JMap[String, Any]]] = {
-      val alertLabel            = StepLabel.v[Alert]
-      val organisationLabel     = StepLabel.v[Organisation]
-      val tagsLabel             = StepLabel.vs[Tag]
-      val customFieldValueLabel = StepLabel.e[AlertCustomField]
-      val customFieldLabel      = StepLabel.v[CustomField]
-      val customFieldWithValueLabel =
-        StepLabel[Seq[(AlertCustomField with Entity, CustomField with Entity)], JList[JMap[String, Any]], Converter.CList[
-          (AlertCustomField with Entity, CustomField with Entity),
-          JMap[String, Any],
-          Converter[(AlertCustomField with Entity, CustomField with Entity), JMap[String, Any]]
-        ]]
-      val caseIdLabel           = StepLabel[Seq[EntityId], JList[AnyRef], Converter.CList[EntityId, AnyRef, Converter[EntityId, AnyRef]]]
-      val caseTemplateNameLabel = StepLabel[Seq[String], JList[String], Converter.CList[String, String, Converter[String, String]]]
-
-      val observableCountLabel = StepLabel[Long, JLong, Converter[Long, JLong]]
-      val result =
-        traversal
-          .`match`(
-            _.as(alertLabel)(_.organisation.current).as(organisationLabel),
-            _.as(alertLabel)(_.tags.fold).as(tagsLabel),
-            _.as(alertLabel)(
-              _.outE[AlertCustomField]
-                .as(customFieldValueLabel)
-                .inV
-                .v[CustomField]
-                .as(customFieldLabel)
-                .select((customFieldValueLabel, customFieldLabel))
-                .fold
-            ).as(customFieldWithValueLabel),
-            _.as(alertLabel)(_.`case`._id.fold).as(caseIdLabel),
-            _.as(alertLabel)(_.caseTemplate.value(_.name).fold).as(caseTemplateNameLabel),
-            _.as(alertLabel)(_.observables.count).as(observableCountLabel)
-          )
-          .select((alertLabel, organisationLabel, tagsLabel, customFieldWithValueLabel, caseIdLabel, caseTemplateNameLabel, observableCountLabel))
-          .domainMap {
-            case (alert, organisation, tags, customFields, caseId, caseTemplateName, observableCount) =>
-              RichAlert(
-                alert,
-                organisation.name,
-                tags,
-                customFields.map(cf => RichCustomField(cf._2, cf._1)),
-                caseId.headOption,
-                caseTemplateName.headOption,
-                observableCount
-              ) -> organisation
-          }
-      if (authContext.permissions.contains(permission))
-        result
-      else
-        result.limit(0)
-    }
-
     def customFields(idOrName: EntityIdOrName): Traversal.E[AlertCustomField] =
       idOrName
         .fold(
@@ -508,6 +486,54 @@ object AlertOps {
           case (cfv, cf) => RichCustomField(cf, cfv)
         }
 
+    def customFieldFilter(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName, predicate: P[JsValue]): Traversal.V[Alert] =
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.map(_.as[Boolean])))
+          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.map(_.as[Date])))
+          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.map(_.as[Double])))
+          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.map(_.as[Int])))
+          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.map(_.as[String])))
+        }
+        .getOrElse(traversal.empty)
+
+    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Alert] = {
+      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
+
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.booleanValue).inV.v[CustomField]))
+          case CustomFieldType.date    => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.dateValue).inV.v[CustomField]))
+          case CustomFieldType.float   => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.floatValue).inV.v[CustomField]))
+          case CustomFieldType.integer => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.integerValue).inV.v[CustomField]))
+          case CustomFieldType.string  => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.stringValue).inV.v[CustomField]))
+        }
+        .getOrElse(traversal.empty)
+    }
+
+    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Alert] = {
+      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
+
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.booleanValue).inV.v[CustomField]))
+          case CustomFieldType.date    => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.dateValue).inV.v[CustomField]))
+          case CustomFieldType.float   => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.floatValue).inV.v[CustomField]))
+          case CustomFieldType.integer => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.integerValue).inV.v[CustomField]))
+          case CustomFieldType.string  => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.stringValue).inV.v[CustomField]))
+        }
+        .getOrElse(traversal.empty)
+    }
+
     def observables: Traversal.V[Observable] = traversal.out[AlertObservable].v[Observable]
 
     def caseTemplate: Traversal.V[CaseTemplate] = traversal.out[AlertCaseTemplate].v[CaseTemplate]
@@ -518,23 +544,19 @@ object AlertOps {
       traversal
         .project(
           _.by
-            .by(_.organisation.value(_.name))
-            .by(_.tags.fold)
             .by(_.richCustomFields.fold)
-            .by(_.`case`._id.fold)
-            .by(_.caseTemplate.value(_.name).fold)
+            .by(_.`case`._id.option)
+            .by(_.caseTemplate.value(_.name).option)
             .by(_.observables.count)
             .by(entityRenderer)
         )
         .domainMap {
-          case (alert, organisation, tags, customFields, caseId, caseTemplate, observableCount, renderedEntity) =>
+          case (alert, customFields, caseId, caseTemplate, observableCount, renderedEntity) =>
             RichAlert(
               alert,
-              organisation,
-              tags,
               customFields,
-              caseId.headOption,
-              caseTemplate.headOption,
+              caseId,
+              caseTemplate,
               observableCount
             ) -> renderedEntity
         }
@@ -543,26 +565,140 @@ object AlertOps {
       traversal
         .project(
           _.by
-            .by(_.organisation.value(_.name).fold)
-            .by(_.tags.fold)
             .by(_.richCustomFields.fold)
-            .by(_.`case`._id.fold)
-            .by(_.caseTemplate.value(_.name).fold)
+            .by(_.`case`._id.option)
+            .by(_.caseTemplate.value(_.name).option)
             .by(_.outE[AlertObservable].count)
         )
         .domainMap {
-          case (alert, organisation, tags, customFields, caseId, caseTemplate, observableCount) =>
+          case (alert, customFields, caseId, caseTemplate, observableCount) =>
             RichAlert(
               alert,
-              organisation.head,
-              tags,
               customFields,
-              caseId.headOption,
-              caseTemplate.headOption,
+              caseId,
+              caseTemplate,
               observableCount
             )
         }
   }
 
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
+}
+
+class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Alert] {
+
+  override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = {
+    val (imported, notImported) = entities.partition(_.caseId.isDefined)
+    if (imported.nonEmpty && notImported.nonEmpty)
+      // Remove all non imported alerts
+      service.getByIds(notImported.map(_._id): _*).remove()
+    // Keep the last created alert
+    lastCreatedEntity(entities).foreach(e => service.getByIds(e._2.map(_._id): _*).remove())
+    Success(())
+  }
+
+  override def globalCheck(): Map[String, Long] = {
+    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+
+    val multiImport = db.tryTransaction { implicit graph =>
+      // Remove extra link with case
+      val linkIds = service
+        .startTraversal
+        .flatMap(_.outE[AlertCase].range(1, 100)._id)
+        .toSeq
+      if (linkIds.nonEmpty)
+        graph.E[AlertCase](linkIds: _*).remove()
+      Success(linkIds.length.toLong)
+    }
+
+    val orgMetrics: Map[String, Long] = db
+      .tryTransaction { implicit graph =>
+        // Check links with organisation
+        Try {
+          service
+            .startTraversal
+            .project(
+              _.by
+                .by(_.organisation._id.fold)
+            )
+            .toIterator
+            .flatMap {
+              case (alert, Seq(organisationId)) if alert.organisationId == organisationId => None // It's OK
+
+              case (alert, Seq(organisationId)) =>
+                logger.warn(
+                  s"Invalid organisationId in alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}), " +
+                    s"got ${alert.organisationId}, should be $organisationId. Fixing it."
+                )
+                service.get(alert).update(_.organisationId, organisationId).iterate()
+                Some("invalidOrganisationId")
+
+              case (alert, organisationIds) if organisationIds.isEmpty =>
+                organisationSrv.getOrFail(alert.organisationId) match {
+                  case Success(organisation) =>
+                    logger.warn(
+                      s"Link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) and " +
+                        s"organisation ${alert.organisationId} has disappeared. Fixing it."
+                    )
+                    service
+                      .alertOrganisationSrv
+                      .create(AlertOrganisation(), alert, organisation)
+                      .fold(
+                        error => {
+                          logger.error(
+                            s"Fail to create link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) " +
+                              s"and organisation ${alert.organisationId}",
+                            error
+                          )
+                          Some("missingOrganisationAndFail")
+                        },
+                        _ => Some("missingOrganisation")
+                      )
+                  case _ =>
+                    logger.warn(
+                      s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is not linked to " +
+                        s"existing organisation. Fixing it."
+                    )
+                    service.get(alert).remove()
+                    Some("nonExistentOrganisation")
+                }
+
+              case (alert, organisationIds) if organisationIds.contains(alert.organisationId) =>
+                val (extraLinks, extraOrganisationIds) = organisationIds.partition(_ == alert.organisationId)
+                if (extraOrganisationIds.nonEmpty) {
+                  logger.warn(
+                    s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is not linked to " +
+                      s"extra organisation(s): ${extraOrganisationIds.mkString(",")}. Fixing it."
+                  )
+                  service.get(alert).outE[AlertOrganisation].filter(_.inV.hasId(extraOrganisationIds: _*)).remove()
+                }
+                if (extraLinks.length > 1) {
+                  logger.warn(
+                    s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is linked more than once to " +
+                      s"organisation: ${alert.organisationId}. Fixing it."
+                  )
+                  service.get(alert).flatMap(_.outE[AlertOrganisation].range(1, 100)).remove()
+                }
+                Some("extraOrganisation")
+
+              case (alert, organisationIds) =>
+                logger.warn(
+                  s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) has inconsistent organisation links: " +
+                    s"organisation is ${alert.organisationId} but links are ${organisationIds.mkString(",")}. Fixing it."
+                )
+                service.get(alert).flatMap(_.outE[AlertOrganisation].sort(_.by("_createdAt", Order.asc)).range(1, 100)).remove()
+                service.get(alert).organisation._id.getOrFail("Organisation").foreach { organisationId =>
+                  service.get(alert).update(_.organisationId, organisationId).iterate()
+                }
+                Some("incoherent")
+            }
+            .toSeq
+        }
+      }
+      .getOrElse(Seq("globalFailure"))
+      .groupBy(identity)
+      .mapValues(_.size.toLong)
+
+    orgMetrics + ("multiImport" -> multiImport.getOrElse(0L))
+  }
 }

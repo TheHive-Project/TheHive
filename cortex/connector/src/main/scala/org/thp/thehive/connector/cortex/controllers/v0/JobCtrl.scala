@@ -1,7 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import com.google.inject.name.Named
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -14,17 +13,18 @@ import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.connector.cortex.services.JobSrv
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{OutputParam, PublicData, QueryCtrl}
-import org.thp.thehive.models.{Permissions, RichCase, RichObservable}
+import org.thp.thehive.models.{Observable, Permissions, RichCase, RichObservable}
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.ObservableSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class JobCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-cortex-schema") override val db: Database,
+    override val db: Database,
     jobSrv: JobSrv,
     observableSrv: ObservableSrv,
     errorHandler: ErrorHandler,
@@ -78,13 +78,11 @@ class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
     Query.init[Traversal.V[Job]]("listJob", (graph, authContext) => jobSrv.startTraversal(graph).visible(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Job]](
     "getJob",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => jobSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Job], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       {
         case (OutputParam(from, to, _, withParents), jobSteps, authContext) if withParents > 0 =>
           jobSteps.richPage(from, to, withTotal = true)(_.richJobWithCustomRenderer(jobParents(_)(authContext))(authContext))
@@ -93,6 +91,9 @@ class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
       }
     )
   override val outputQuery: Query = Query.outputWithContext[RichJob, Traversal.V[Job]]((jobSteps, authContext) => jobSteps.richJob(authContext))
+  override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query[Traversal.V[Observable], Traversal.V[Job]]("jobs", (observables, _) => observables.jobs)
+  )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Job]
     .property("analyzerId", UMapping.string)(_.rename("workerId").readonly)
     .property("cortexId", UMapping.string.optional)(_.field.readonly)

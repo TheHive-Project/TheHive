@@ -1,19 +1,19 @@
 package org.thp.misp.client
 
-import java.util.Date
-
 import akka.NotUsed
 import akka.stream.alpakka.json.scaladsl.JsonReader
 import akka.stream.scaladsl.{JsonFraming, Source}
 import akka.util.ByteString
 import org.thp.client.{ApplicationError, Authentication, ProxyWS}
-import org.thp.misp.dto.{Attribute, Event, Organisation, Tag, User}
+import org.thp.misp.dto._
 import org.thp.scalligraph.InternalError
+import org.thp.scalligraph.utils.FunctionalCondition._
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSRequest}
 
+import java.util.Date
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -29,6 +29,7 @@ class MispClient(
     ws: WSClient,
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String],
+    whitelistOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String]
 ) {
@@ -148,7 +149,7 @@ class MispClient(
 
   def getEvent(eventId: String)(implicit ec: ExecutionContext): Future[Event] = {
     logger.debug(s"Get MISP event $eventId")
-    require(!eventId.isEmpty)
+    require(eventId.nonEmpty)
     get(s"events/$eventId")
       .map(e => (e \ "Event").as[Event])
   }
@@ -163,7 +164,17 @@ class MispClient(
       .recover { case _ => Json.obj("name" -> name, "version" -> "", "status" -> "ERROR", "url" -> baseUrl) }
 
   def searchEvents(publishDate: Option[Date] = None)(implicit ec: ExecutionContext): Source[Event, NotUsed] = {
-    val query = publishDate.fold(JsObject.empty)(d => Json.obj("searchpublish_timestamp" -> ((d.getTime / 1000) + 1)))
+    val fromDate = (maxAge.map(a => System.currentTimeMillis() - a.toMillis).toSeq ++ publishDate.map(_.getTime))
+      .sorted(Ordering[Long].reverse)
+      .headOption
+      .map(d => "searchpublish_timestamp" -> JsNumber((d / 1000) + 1))
+    val tagFilter          = (whitelistTags ++ excludedTags.map("!" + _)).map(JsString.apply)
+    val organisationFilter = (whitelistOrganisations ++ excludedOrganisations.map("!" + _)).map(JsString.apply)
+    val query = JsObject
+      .empty
+      .merge(fromDate)(_ + _)
+      .when(tagFilter.nonEmpty)(_ + ("searchtag" -> JsArray(tagFilter.toSeq)))
+      .when(organisationFilter.nonEmpty)(_ + ("searchorg" -> JsArray(organisationFilter)))
     logger.debug("Search MISP events")
     Source
       .futureSource(postStream("events/index", query))
@@ -172,25 +183,7 @@ class MispClient(
         val maybeEvent = Try(Json.parse(data.toArray[Byte]).as[Event])
         maybeEvent.fold(error => { logger.warn(s"Event has invalid format: ${data.decodeString("UTF-8")}", error); Nil }, List(_))
       }
-      .filterNot(isExcluded)
       .mapMaterializedValue(_ => NotUsed)
-  }
-
-  def isExcluded(event: Event): Boolean = {
-    val eventTags = event.tags.map(_.name).toSet
-    if (whitelistTags.nonEmpty && (whitelistTags & eventTags).isEmpty) {
-      logger.debug(s"event ${event.id} is ignored because it doesn't contain any of whitelist tags (${whitelistTags.mkString(",")})")
-      true
-    } else if (excludedOrganisations.contains(event.orgc)) {
-      logger.debug(s"event ${event.id} is ignored because its organisation (${event.orgc}) is excluded")
-      true
-    } else {
-      val t = excludedTags.intersect(eventTags)
-      if ((excludedTags & eventTags).nonEmpty) {
-        logger.debug(s"event ${event.id} is ignored because one of its tags (${t.mkString(",")}) is excluded")
-        true
-      } else false
-    }
   }
 
   def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Source[Attribute, NotUsed] = {
@@ -213,9 +206,11 @@ class MispClient(
       .mapAsyncUnordered(2) {
         case attribute @ Attribute(id, "malware-sample" | "attachment", _, _, _, _, _, _, _, None, _, _, _, _) =>
           // TODO need to unzip malware samples ?
-          downloadAttachment(id).map {
-            case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
-          }
+          downloadAttachment(id)
+            .map {
+              case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
+            }
+            .recover { case _ => attribute }
         case attribute => Future.successful(attribute)
       }
       .mapMaterializedValue(_ => NotUsed)

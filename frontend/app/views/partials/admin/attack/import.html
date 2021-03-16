@@ -1,0 +1,22 @@
+<form class="" name="form" ng-submit="$vm.ok()">
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">Import MITRE ATT&CK patterns</h3>
+    </div>
+    <div class="modal-body">
+
+        <div class="filter-panel mb-s">
+            <h4>Download the official MITRE ATT&CK library</h4>
+            <p>You can download the latest archive of the official MITRE ATT&CK patterns <a target="_blank" href="https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json?version=TheHive-{{$vm.appConfig.versions.TheHive}}">from here</a></p>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label">MITRE ATT&CK patterns</label>
+            <input type="hidden" name="attachment" ng-model="$vm.formData.attachment.status" required>
+            <div file-chooser="" filemodel="$vm.formData.attachment"></div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-default pull-left" type="button" ng-click="$vm.cancel()">Cancel</button>
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="form.$invalid">Yes, Import it</button>
+    </div>
+</form>

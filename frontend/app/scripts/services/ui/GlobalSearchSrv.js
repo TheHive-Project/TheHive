@@ -55,11 +55,22 @@
         };
 
         this.buildDefaultFilterValue = function(fieldDef, value) {
-            if(fieldDef.name === 'tags' || fieldDef.type === 'user' || fieldDef.values.length > 0) {
+
+            var valueId = value.id;
+            var valueName = value.name;
+
+            if(valueId.startsWith('"') && valueId.endsWith('"')) {
+                valueId = valueId.slice (1, valueId.length-1);
+            }
+            if(valueName.startsWith('"') && valueName.endsWith('"')) {
+                valueName = valueName.slice (1, valueName.length-1);
+            }
+
+            if(fieldDef.type === 'string' || fieldDef.name === 'tags' || fieldDef.type === 'user' || fieldDef.values.length > 0) {
                 return {
                     operator: 'any',
                     list: [{
-                        text: (fieldDef.type === 'number' || fieldDef.type === 'integer') ? Number.parseInt(value.id) : value.id, label:value.name
+                        text: (fieldDef.type === 'number' || fieldDef.type === 'integer') ? Number.parseInt(valueId) : valueId, label:valueName
                     }]
                 };
             } else {
@@ -67,14 +78,14 @@
                     case 'number':
                     case 'integer':
                         return {
-                            value: Number.parseInt(value.id)
+                            value: Number.parseInt(valueId)
                         };
                     case 'boolean':
-                        return value.id === 'true';
+                        return valueId === 'true';
                     default:
-                      return value.id;
+                      return valueId;
                 }
-                return value.id;
+                return valueId;
             }
 
         };

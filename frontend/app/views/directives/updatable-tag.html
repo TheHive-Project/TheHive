@@ -1,0 +1,26 @@
+<div class="updatable-input updatable-input-text">
+	<span class="updatable-input-value-wrapper pb-xxxs" ng-hide="updatable.updating" ng-click="edit()">
+		<span ng-if="value!==null && value !==''" class="updatable-value"><tag-item value="value" colour="colour"></tag-item></span>
+		<span ng-if="value===null || value ===''" class="updatable-value text-warning"><em>Not Specified</em></span>
+
+		<small class="updatable-input-icon">
+			<i class="glyphicon glyphicon-pencil"></i>
+		</small>
+	</span>
+
+	<form ng-submit="update()" ng-show="updatable.updating">
+		<div class="input-group input-group-sm">
+
+			<input type="text" class="form-control input-sm" ng-model="value" autofocus="autofocus" required>
+
+			<span class="input-group-btn">
+				<button class="btn btn-sm btn-default" type="submit" ng-disabled="!value">
+					<i class="text-success glyphicon glyphicon-ok"></i>
+				</button>
+				<button class="btn btn-sm btn-default" type="button" ng-click="cancel()">
+					<i class="text-danger glyphicon glyphicon-remove"></i>
+				</button>
+	        </span>
+		</div>
+	</form>
+</div>

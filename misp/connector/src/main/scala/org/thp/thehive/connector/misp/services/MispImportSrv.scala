@@ -1,27 +1,31 @@
 package org.thp.thehive.connector.misp.services
 
-import java.nio.file.Files
-import java.util.Date
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, UserSrv}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{EntityName, RichSeq}
+import org.thp.scalligraph.utils.FunctionalCondition._
+import org.thp.scalligraph.{CreateError, EntityId, EntityName, RichSeq}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services._
+import org.thp.thehive.services.{UserSrv => _, _}
 import play.api.Logger
+import play.api.libs.json._
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.nio.file.Files
+import java.util.Date
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -31,16 +35,17 @@ class MispImportSrv @Inject() (
     observableSrv: ObservableSrv,
     organisationSrv: OrganisationSrv,
     observableTypeSrv: ObservableTypeSrv,
-    attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
+    auditSrv: AuditSrv,
+    userSrv: UserSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
   lazy val logger: Logger = Logger(getClass)
 
-  def eventToAlert(client: TheHiveMispClient, event: Event): Try[Alert] =
+  def eventToAlert(client: TheHiveMispClient, event: Event, organisationId: EntityId): Try[Alert] =
     client
       .currentOrganisationName
       .map { mispOrganisation =>
@@ -65,31 +70,32 @@ class MispImportSrv @Inject() (
             .getOrElse(2),
           pap = 2,
           read = false,
-          follow = true
+          follow = true,
+          organisationId = organisationId,
+          tags = event.tags.map(_.name),
+          caseId = None
         )
       }
 
-  def convertAttributeType(attributeCategory: String, attributeType: String): Try[(ObservableType with Entity, Seq[String])] = {
+  def convertAttributeType(attributeCategory: String, attributeType: String)(implicit
+      graph: Graph
+  ): Try[(ObservableType with Entity, Seq[String])] = {
     val obsTypeFromConfig = connector
       .attributeConverter(attributeCategory, attributeType)
       .flatMap { attrConv =>
-        db.roTransaction { implicit graph =>
-          observableTypeSrv
-            .get(attrConv.`type`)
-            .headOption
-            .map(_ -> attrConv.tags)
-        }
+        observableTypeSrv
+          .get(attrConv.`type`)
+          .headOption
+          .map(_ -> attrConv.tags)
       }
-    db.roTransaction { implicit graph =>
-      obsTypeFromConfig
-        .orElse(observableTypeSrv.get(EntityName(attributeType)).headOption.map(_ -> Nil))
-        .fold(observableTypeSrv.getOrFail(EntityName("other")).map(_ -> Seq.empty[String]))(Success(_))
-    }
+    obsTypeFromConfig
+      .orElse(observableTypeSrv.get(EntityName(attributeType)).headOption.map(_ -> Nil))
+      .fold(observableTypeSrv.getOrFail(EntityName("other")).map(_ -> Seq.empty[String]))(Success(_))
   }
 
   def attributeToObservable(
       attribute: Attribute
-  ): List[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])] =
+  )(implicit graph: Graph): List[(Observable, Either[String, (String, String, Source[ByteString, _])])] =
     attribute
       .`type`
       .split('|')
@@ -110,9 +116,15 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
-              observableType,
-              attribute.tags.map(_.name).toSet ++ additionalTags,
+              Observable(
+                message = attribute.comment,
+                tlp = 0,
+                ioc = false,
+                sighted = false,
+                ignoreSimilarity = None,
+                dataType = observableType.name,
+                tags = additionalTags ++ attribute.tags.map(_.name)
+              ),
               Right(attribute.data.get)
             )
           )
@@ -122,9 +134,15 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
-              observableType,
-              attribute.tags.map(_.name).toSet ++ additionalTags,
+              Observable(
+                message = attribute.comment,
+                tlp = 0,
+                ioc = false,
+                sighted = false,
+                ignoreSimilarity = None,
+                dataType = observableType.name,
+                tags = additionalTags ++ attribute.tags.map(_.name)
+              ),
               Left(attribute.value)
             )
           )
@@ -140,9 +158,15 @@ class MispImportSrv @Inject() (
                   s"attribute ${attribute.category}:${attribute.`type`} (${attribute.tags}) is converted to observable $observableType with tags $additionalTags"
                 )
                 (
-                  Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
-                  observableType,
-                  attribute.tags.map(_.name).toSet ++ additionalTags,
+                  Observable(
+                    message = attribute.comment,
+                    tlp = 0,
+                    ioc = false,
+                    sighted = false,
+                    ignoreSimilarity = None,
+                    dataType = observableType.name,
+                    tags = additionalTags ++ attribute.tags.map(_.name)
+                  ),
                   Left(value)
                 )
             }
@@ -152,181 +176,163 @@ class MispImportSrv @Inject() (
         Nil
       }
 
-  def getLastSyncDate(client: TheHiveMispClient, mispOrganisation: String, organisations: Seq[Organisation with Entity]): Option[Date] = {
-    val lastOrgSynchro = db.roTransaction { implicit graph =>
-      client
-        .organisationFilter(organisationSrv.startTraversal)
-        .group(
-          _.by,
-          _.by(
-            _.alerts
-              .filterBySource(mispOrganisation)
-              .filterByType("misp")
-              .value(a => a.lastSyncDate)
-              .max
-          )
+  def getLastSyncDate(client: TheHiveMispClient, mispOrganisation: String, organisations: Seq[Organisation with Entity])(implicit
+      graph: Graph
+  ): Option[Date] = {
+    val lastOrgSynchro = client
+      .organisationFilter(organisationSrv.startTraversal)
+      .group(
+        _.by,
+        _.by(
+          _.alerts
+            .filterBySource(mispOrganisation)
+            .filterByType("misp")
+            .value(a => a.lastSyncDate)
+            .max
         )
-        .head
-    }.values
-//      .asInstanceOf[Seq[Date]]
+      )
+      .head
+      .values
 
     if (lastOrgSynchro.size == organisations.size && organisations.nonEmpty) Some(lastOrgSynchro.min)
     else None
   }
 
-  def updateOrCreateObservable(
+  def updateOrCreateSimpleObservable(
       alert: Alert with Entity,
       observable: Observable,
-      observableType: ObservableType with Entity,
-      data: String,
-      tags: Set[String]
-  )(implicit authContext: AuthContext): Try[Observable with Entity] =
-    db.tryTransaction { implicit graph =>
-      alertSrv
-        .get(alert)
-        .observables
-        .filterOnType(observableType.name)
-        .filterOnData(data)
-        .richObservable
-        .headOption match {
-        case None =>
-          logger.debug(s"Observable ${observableType.name}:$data doesn't exist, create it")
+      data: String
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    alertSrv
+      .createObservable(alert, observable, data)
+      .map(_ => ())
+      .recoverWith {
+        case _: CreateError =>
           for {
-            richObservable <- observableSrv.create(observable, observableType, data, tags, Nil)
-            _              <- alertSrv.addObservable(alert, richObservable)
-          } yield richObservable.observable
-        case Some(richObservable) =>
-          logger.debug(s"Observable ${observableType.name}:$data exists, update it")
-          for {
-            updatedObservable <-
-              Some(observableSrv.get(richObservable.observable))
-                .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
-                .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
-                .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
-                .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
-                .get
+            richObservable <-
+              observableSrv
+                .startTraversal
+                .has(_.organisationIds, organisationSrv.currentId)
+                .has(_.relatedId, observable.relatedId)
+                .has(_.data, observable.data.get)
+                .richObservable
                 .getOrFail("Observable")
-            _ <- observableSrv.updateTagNames(updatedObservable, tags)
-          } yield updatedObservable
+            _ <-
+              observableSrv
+                .get(richObservable.observable)
+                .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
+                .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
+                .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
+                .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
+                .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
+                .getOrFail("Observable")
+          } yield ()
       }
-    }
 
-  def updateOrCreateObservable(
+  def updateOrCreateAttachmentObservable(
       alert: Alert with Entity,
       observable: Observable,
-      observableType: ObservableType with Entity,
       filename: String,
       contentType: String,
       src: Source[ByteString, _],
-      tags: Set[String]
-  )(implicit authContext: AuthContext): Future[Observable with Entity] =
-    db.roTransaction { implicit graph =>
-      alertSrv
-        .get(alert)
-        .observables
-        .filterOnType(observableType.name)
-        .filterOnAttachmentName(filename)
-        .filterOnAttachmentName(contentType)
-        .richObservable
-        .headOption
-    } match {
+      creation: Boolean
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    val existingObservable =
+      if (creation) None
+      else
+        alertSrv
+          .get(alert)
+          .observables
+          .filterOnType(observable.dataType)
+          .filterOnAttachmentName(filename)
+          .filterOnAttachmentName(contentType)
+          .richObservable
+          .headOption
+    existingObservable match {
       case None =>
-        logger.debug(s"Observable ${observableType.name}:$filename:$contentType doesn't exist, create it")
+        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType doesn't exist, create it")
         val file = Files.createTempFile("misp-attachment-", "")
-        (for {
-          _ <- src.runWith(FileIO.toPath(file))
-          fFile = FFile(filename, file, contentType)
-          createdObservable <- Future.fromTry {
-            db.tryTransaction { implicit graph =>
-              for {
-                createdAttachment <- attachmentSrv.create(fFile)
-                richObservable    <- observableSrv.create(observable, observableType, createdAttachment, tags, Nil)
-                _                 <- alertSrv.addObservable(alert, richObservable)
-              } yield richObservable
-            }
-          }
-        } yield createdObservable.observable)
-          .andThen { case _ => Files.delete(file) }
+        Await.result(src.runWith(FileIO.toPath(file)), 1.hour)
+        val fFile = FFile(filename, file, contentType)
+        val res   = alertSrv.createObservable(alert, observable, fFile).map(_ => ())
+        Files.delete(file)
+        res
       case Some(richObservable) =>
-        logger.debug(s"Observable ${observableType.name}:$filename:$contentType exists, update it")
-        Future.fromTry {
-          db.tryTransaction { implicit graph =>
-            for {
-              updatedObservable <-
-                Some(observableSrv.get(richObservable.observable))
-                  .map(t => if (richObservable.message != observable.message) t.update(_.message, observable.message) else t)
-                  .map(t => if (richObservable.tlp != observable.tlp) t.update(_.tlp, observable.tlp) else t)
-                  .map(t => if (richObservable.ioc != observable.ioc) t.update(_.ioc, observable.ioc) else t)
-                  .map(t => if (richObservable.sighted != observable.sighted) t.update(_.sighted, observable.sighted) else t)
-                  .get
-                  .getOrFail("Observable")
-              _ <- observableSrv.updateTagNames(updatedObservable, tags)
-            } yield updatedObservable
-          }
-        }
+        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType exists, update it")
+        for {
+          _ <-
+            observableSrv
+              .get(richObservable.observable)
+              .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
+              .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
+              .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
+              .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
+              .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
+              .getOrFail("Observable")
+        } yield ()
     }
+  }
 
   def importAttibutes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(implicit
+      graph: Graph,
       authContext: AuthContext
-  ): Future[Unit] = {
-    logger.debug(s"importAttibutes ${client.name}#${event.id}")
+  ): Unit = {
+    logger.debug(s"importAttributes ${client.name}#${event.id}")
     val startSyncDate = new Date
-    client
-      .searchAttributes(event.id, lastSynchro)
-      .mapConcat(attributeToObservable)
-      .fold(
-        Map.empty[
-          (String, String),
-          (Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])
-        ]
-      ) {
-        case (distinctMap, data @ (_, t, _, Left(d)))          => distinctMap + ((t.name, d) -> data)
-        case (distinctMap, data @ (_, t, _, Right((n, _, _)))) => distinctMap + ((t.name, n) -> data)
-      }
-      .mapConcat { m =>
-        m.values.toList
-      }
-      .runWith(Sink.foreachAsync(1) {
-        case (observable, observableType, tags, Left(data)) =>
-          updateOrCreateObservable(alert, observable, observableType, data, tags)
-            .fold(
-              error => {
-                logger.error(s"Unable to create observable $observable ${observableType.name}:$data", error)
-                Future.failed(error)
-              },
-              _ => Future.successful(())
-            )
-        case (observable, observableType, tags, Right((filename, contentType, src))) =>
-          updateOrCreateObservable(alert, observable, observableType, filename, contentType, src, tags)
-            .transform {
-              case Success(_) => Success(())
-              case Failure(error) =>
-                logger.error(
-                  s"Unable to create observable $observable ${observableType.name}:$filename",
-                  error
-                )
-                Success(())
-            }
-      })
-      .flatMap { _ =>
-        Future.fromTry {
-          logger.info("Removing old observables")
-          db.tryTransaction { implicit graph =>
-            alertSrv
-              .get(alert)
-              .observables
-              .filter(
-                _.or(
-                  _.has(_._updatedAt, P.lt(startSyncDate)),
-                  _.and(_.hasNot(_._updatedAt), _.has(_._createdAt, P.lt(startSyncDate)))
-                )
-              )
-              .toIterator
-              .toTry { obs =>
-                logger.info(s"Remove $obs")
-                observableSrv.remove(obs)
-              }
-          }.map(_ => ())
+    val queue =
+      client
+        .searchAttributes(event.id, lastSynchro)
+        .mapConcat(attributeToObservable)
+        .fold(
+          Map.empty[
+            (String, String),
+            (Observable, Either[String, (String, String, Source[ByteString, _])])
+          ]
+        ) {
+          case (distinctMap, data @ (obs, Left(d)))          => distinctMap + ((obs.dataType, d) -> data)
+          case (distinctMap, data @ (obs, Right((n, _, _)))) => distinctMap + ((obs.dataType, n) -> data)
+        }
+        .mapConcat { m =>
+          m.values.toList
+        }
+        .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])])
+    QueueIterator(queue).foreach {
+      case (observable, Left(data)) =>
+        updateOrCreateSimpleObservable(alert, observable, data)
+          .recover {
+            case error =>
+              logger.error(s"Unable to create observable $observable", error)
+          }
+      case (observable, Right((filename, contentType, src))) =>
+        updateOrCreateAttachmentObservable(
+          alert,
+          observable,
+          filename,
+          contentType,
+          src,
+          lastSynchro.isEmpty
+        )
+          .recover {
+            case error =>
+              logger.error(s"Unable to create observable $observable: $filename", error)
+          }
+    }
+
+    logger.info("Removing old observables")
+    alertSrv
+      .get(alert)
+      .observables
+      .filter(
+        _.or(
+          _.has(_._updatedAt, P.lt(startSyncDate)),
+          _.and(_.hasNot(_._updatedAt), _.has(_._createdAt, P.lt(startSyncDate)))
+        )
+      )
+      .toIterator
+      .foreach { obs =>
+        logger.debug(s"Delete  $obs")
+        observableSrv.remove(obs).recover {
+          case error => logger.error(s"Fail to delete observable $obs", error)
         }
       }
   }
@@ -339,78 +345,99 @@ class MispImportSrv @Inject() (
       mispOrganisation: String,
       event: Event,
       caseTemplate: Option[CaseTemplate with Entity]
-  )(implicit
-      authContext: AuthContext
-  ): Try[Alert with Entity] = {
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Alert with Entity, JsObject)] = {
     logger.debug(s"updateOrCreateAlert ${client.name}#${event.id} for organisation ${organisation.name}")
-    eventToAlert(client, event).flatMap { alert =>
-      db.tryTransaction { implicit graph =>
-        organisationSrv
-          .get(organisation)
-          .alerts
-          .getBySourceId("misp", mispOrganisation, event.id)
-          .richAlert
-          .headOption match {
-          case None => // if the related alert doesn't exist, create it
-            logger.debug(s"Event ${client.name}#${event.id} has no related alert for organisation ${organisation.name}")
-            alertSrv
-              .create(alert, organisation, event.tags.map(_.name).toSet, Seq(), caseTemplate)
-              .map(_.alert)
-          case Some(richAlert) =>
-            logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
-            for {
-              updatedAlert <-
-                Some(alertSrv.get(richAlert.alert))
-                  .map(t => if (richAlert.title != alert.title) t.update(_.title, alert.title) else t)
-                  .map(t => if (richAlert.lastSyncDate != alert.lastSyncDate) t.update(_.lastSyncDate, alert.lastSyncDate) else t)
-                  .map(t => if (richAlert.description != alert.description) t.update(_.description, alert.description) else t)
-                  .map(t => if (richAlert.severity != alert.severity) t.update(_.severity, alert.severity) else t)
-                  .map(t => if (richAlert.date != alert.date) t.update(_.date, alert.date) else t)
-                  .map(t => if (richAlert.tlp != alert.tlp) t.update(_.tlp, alert.tlp) else t)
-                  .map(t => if (richAlert.pap != alert.pap) t.update(_.pap, alert.pap) else t)
-                  .map(t => if (richAlert.externalLink != alert.externalLink) t.update(_.externalLink, alert.externalLink) else t)
-                  .get
-                  .getOrFail("Alert")
-              _ <- alertSrv.updateTagNames(updatedAlert, event.tags.map(_.name).toSet)
-            } yield updatedAlert
-        }
+    eventToAlert(client, event, organisation._id).flatMap { alert =>
+      organisationSrv
+        .get(organisation)
+        .alerts
+        .getBySourceId("misp", mispOrganisation, event.id)
+        .richAlert
+        .headOption match {
+        case None => // if the related alert doesn't exist, create it
+          logger.debug(s"Event ${client.name}#${event.id} has no related alert for organisation ${organisation.name}")
+          alertSrv
+            .create(alert, organisation, event.tags.map(_.name).toSet, Seq(), caseTemplate)
+            .map(ra => ra.alert -> ra.toJson.asInstanceOf[JsObject])
+        case Some(richAlert) =>
+          logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
+          val (updatedAlertTraversal, updatedFields) = (alertSrv.get(richAlert.alert), JsObject.empty)
+            .when(richAlert.title != alert.title)(_.update(_.title, alert.title), _ + ("title" -> JsString(alert.title)))
+            .when(richAlert.lastSyncDate != alert.lastSyncDate)(
+              _.update(_.lastSyncDate, alert.lastSyncDate),
+              _ + ("lastSyncDate" -> JsNumber(alert.lastSyncDate.getTime))
+            )
+            .when(richAlert.description != alert.description)(
+              _.update(_.description, alert.description),
+              _ + ("description" -> JsString(alert.description))
+            )
+            .when(richAlert.severity != alert.severity)(_.update(_.severity, alert.severity), _ + ("severity" -> JsNumber(alert.severity)))
+            .when(richAlert.date != alert.date)(_.update(_.date, alert.date), _ + ("date" -> JsNumber(alert.date.getTime)))
+            .when(richAlert.tlp != alert.tlp)(_.update(_.tlp, alert.tlp), _ + ("tlp" -> JsNumber(alert.tlp)))
+            .when(richAlert.pap != alert.pap)(_.update(_.pap, alert.pap), _ + ("pap" -> JsNumber(alert.pap)))
+            .when(richAlert.externalLink != alert.externalLink)(
+              _.update(_.externalLink, alert.externalLink),
+              _ + ("externalLink" -> alert.externalLink.fold[JsValue](JsNull)(JsString.apply))
+            )
+          val tags = event.tags.map(_.name)
+          for {
+            (addedTags, removedTags) <- alertSrv.updateTags(richAlert.alert, tags.toSet)
+            updatedAlert             <- updatedAlertTraversal.getOrFail("Alert")
+            updatedFieldWithTags =
+              if (addedTags.nonEmpty || removedTags.nonEmpty) updatedFields + ("tags" -> JsArray(tags.map(JsString))) else updatedFields
+          } yield (updatedAlert, updatedFieldWithTags)
       }
     }
   }
 
-  def syncMispEvents(client: TheHiveMispClient)(implicit authContext: AuthContext): Future[Unit] =
-    Future.fromTry(client.currentOrganisationName).flatMap { mispOrganisation =>
-      lazy val caseTemplate = client.caseTemplate.flatMap { caseTemplateName =>
-        db.roTransaction { implicit graph =>
-          caseTemplateSrv.get(EntityName(caseTemplateName)).headOption
-        }
-      }
-      logger.debug(s"Get eligible organisations")
-      val organisations = db.roTransaction { implicit graph =>
-        client.organisationFilter(organisationSrv.startTraversal).toSeq
-      }
-      val lastSynchro = getLastSyncDate(client, mispOrganisation, organisations)
-      logger.debug(s"Last synchronisation is $lastSynchro")
-      client
-        .searchEvents(publishDate = lastSynchro)
-        .runWith(Sink.foreachAsync(1) { event =>
-          logger.debug(s"Importing event ${client.name}#${event.id} in organisation(s): ${organisations.mkString(",")}")
-          Future
-            .traverse(organisations) { organisation =>
-              Future
-                .fromTry(updateOrCreateAlert(client, organisation, mispOrganisation, event, caseTemplate))
-                .flatMap(alert => importAttibutes(client, event, alert, lastSynchro))
-                .recover {
-                  case error =>
-                    logger.warn(s"Unable to create alert from MISP event ${client.name}#${event.id}", error)
+  def syncMispEvents(client: TheHiveMispClient): Unit =
+    client
+      .currentOrganisationName
+      .fold(
+        error => logger.error("Unable to get MISP organisation", error),
+        mispOrganisation => {
+          val caseTemplate = client.caseTemplate.flatMap { caseTemplateName =>
+            db.roTransaction { implicit graph =>
+              caseTemplateSrv.get(EntityName(caseTemplateName)).headOption
+            }
+          }
+
+          logger.debug(s"Get eligible organisations")
+          val organisations = db.roTransaction { implicit graph =>
+            client.organisationFilter(organisationSrv.startTraversal).toSeq
+          }
+          val lastSynchro = db.roTransaction { implicit graph =>
+            getLastSyncDate(client, mispOrganisation, organisations)
+          }
+
+          logger.debug(s"Last synchronisation is $lastSynchro")
+          val queue = client
+            .searchEvents(publishDate = lastSynchro)
+            .runWith(Sink.queue[Event])
+          QueueIterator(queue).foreach { event =>
+            logger.debug(s"Importing event ${client.name}#${event.id} in organisation(s): ${organisations.mkString(",")}")
+            organisations.foreach { organisation =>
+              implicit val authContext: AuthContext = userSrv.getSystemAuthContext.changeOrganisation(organisation._id, Profile.admin.permissions)
+              db.tryTransaction { implicit graph =>
+                auditSrv.mergeAudits {
+                  updateOrCreateAlert(client, organisation, mispOrganisation, event, caseTemplate)
+                    .map {
+                      case (alert, updatedFields) =>
+                        importAttibutes(client, event, alert, if (alert._updatedBy.isEmpty) None else lastSynchro)
+                        (alert, updatedFields)
+                    }
+                    .recoverWith {
+                      case error =>
+                        logger.warn(s"Unable to create alert from MISP event ${client.name}#${event.id}", error)
+                        Failure(error)
+                    }
+                } {
+                  case (alert, updatedFields) if alert._updatedBy.isDefined => auditSrv.alert.update(alert, updatedFields)
+                  case (alert, updatedFields)                               => auditSrv.alert.create(alert, updatedFields)
                 }
+              }
             }
-            .map(_ => ())
-            .recover {
-              case error =>
-                logger.warn(s"Unable to create alert from MISP event ${client.name}#${event.id}", error)
-            }
-        })
-        .map(_ => ())
-    }
+          }
+        }
+      )
 }

@@ -40,7 +40,10 @@
             <span ng-show="isCaseTruePositive()"> with <strong>{{caze.impactStatus === 'NoImpact' ? 'No Impact' : 'Impact'}}</strong></span>
         </span>
 
-        <case-duration class="ml-xxs" start="caze.startDate" end="caze.endDate" icon="fa-clock-o"></case-duration>
+        <span class="ml-xxs" ng-switch="caze.status">
+            <case-duration ng-switch-when="Resolved" start="caze.startDate" end="caze.endDate" icon="fa-clock-o"></case-duration>
+            <case-duration ng-switch-when="Open" start="caze.startDate" icon="fa-clock-o"></case-duration>
+        </span>
 
         <span class="ml-xxs text-danger" ng-show="links.length > 0" uib-tooltip="Related to">
             <i class="glyphicon glyphicon-link"></i>
@@ -106,12 +109,12 @@
                 </a>
             </span>
 
-            <!-- <span class="ml-xxs pull-right">
+            <span class="ml-xxs pull-right">
                 <a href ng-click="mergeCase()" class="text-primary noline" uib-tooltip="Merge case">
                     <i class="text-primary fa fa-compress"></i>
                     Merge
                 </a>
-            </span> -->
+            </span>
 
             <span class="ml-xxs pull-right" ng-if="!caze.flag || caze.flag == undefined">
                 <a href ng-click="switchFlag()" class="text-muted noline" uib-tooltip="Flag case">

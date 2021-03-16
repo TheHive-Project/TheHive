@@ -7,7 +7,6 @@ case class InputAlert(
     alert: Alert,
     caseId: Option[String],
     organisation: String,
-    tags: Set[String],
     customFields: Map[String, Option[Any]],
     caseTemplate: Option[String]
 ) {

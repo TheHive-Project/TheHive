@@ -1,10 +1,7 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Edge, Graph}
+import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -15,17 +12,25 @@ import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldOps._
+import play.api.cache.SyncCacheApi
 import play.api.libs.json.{JsObject, JsValue}
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, @Named("integrity-check-actor") integrityCheckActor: ActorRef)(
-    implicit @Named("with-thehive-schema") db: Database
+class CustomFieldSrv @Inject() (
+    auditSrv: AuditSrv,
+    organisationSrv: OrganisationSrv,
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    cacheApi: SyncCacheApi
 ) extends VertexSrv[CustomField] {
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("CustomField")
+    integrityCheckActor ! EntityAdded("CustomField")
+    cacheApi.remove("describe.v0")
+    cacheApi.remove("describe.v1")
     super.createEntity(e)
   }
 
@@ -39,6 +44,8 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
 
   def delete(c: CustomField with Entity, force: Boolean)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     get(c).remove() // TODO use force
+    cacheApi.remove("describe.v0")
+    cacheApi.remove("describe.v1")
     organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
       auditSrv.customField.delete(c, organisation)
     }
@@ -60,7 +67,11 @@ class CustomFieldSrv @Inject() (auditSrv: AuditSrv, organisationSrv: Organisatio
         customFieldSteps
           .clone()
           .getOrFail("CustomFields")
-          .flatMap(auditSrv.customField.update(_, updatedFields))
+          .flatMap { cf =>
+            cacheApi.remove("describe.v0")
+            cacheApi.remove("describe.v1")
+            auditSrv.customField.update(cf, updatedFields)
+          }
     }
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[CustomField] =
@@ -135,16 +146,16 @@ object CustomFieldOps {
         }
 
     def selectValue: Traversal[Any, JMap[String, Any], Converter[Any, JMap[String, Any]]] =
-      traversal.choose[String, Any](
+      traversal.chooseValue(
         _.on(
           _.inV
             .v[CustomField]
             .value(_.`type`)
-        ).option("boolean", _.value(_.booleanValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("date", _.value(_.dateValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("float", _.value(_.floatValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("integer", _.value(_.integerValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
-          .option("string", _.value(_.stringValue).cast[Any, Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+        ).option("boolean", _.value(_.booleanValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("date", _.value(_.dateValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("float", _.value(_.floatValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("integer", _.value(_.integerValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
+          .option("string", _.value(_.stringValue).widen[Any].setConverter[Any, Converter.Identity[Any]](Converter.identity[Any]))
       )
 
 //    def value: Traversal[Any, JMap[String, Any], Converter[Any, JMap[String, Any]]] =
@@ -174,8 +185,7 @@ object CustomFieldOps {
 
 }
 
-class CustomFieldIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: CustomFieldSrv)
-    extends IntegrityCheckOps[CustomField] {
+class CustomFieldIntegrityCheckOps @Inject() (val db: Database, val service: CustomFieldSrv) extends IntegrityCheckOps[CustomField] {
   override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>
@@ -184,4 +194,6 @@ class CustomFieldIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val 
         Success(())
       case _ => Success(())
     }
+
+  override def globalCheck(): Map[String, Long] = Map.empty
 }

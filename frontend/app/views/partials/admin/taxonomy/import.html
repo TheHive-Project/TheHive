@@ -1,0 +1,26 @@
+<form class="" name="form" ng-submit="$vm.ok()">
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">Import taxonomies archive</h3>
+    </div>
+    <div class="modal-body">
+
+        <div class="filter-panel mb-s">
+            <h4>Download the official MISP taxonomies archive</h4>
+            <p>You can download the latest archive of the official MISP Taxonomies <a target="_blank" href="https://github.com/MISP/misp-taxonomies/archive/main.zip?version=TheHive-{{$vm.appConfig.versions.TheHive}}">from here</a></p>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label">Taxonomies archive</label>
+            <input type="hidden" name="attachment" ng-model="$vm.formData.attachment.status" required>
+            <div file-chooser="" filemodel="$vm.formData.attachment"></div>
+
+            <p class="help-block">
+                The taxonomies archive must be a valid ZIP file containing at least one file names <em>machinetag.json</em>
+            </p>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-default pull-left" type="button" ng-click="$vm.cancel()">Cancel</button>
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="form.$invalid">Yes, Import it</button>
+    </div>
+</form>

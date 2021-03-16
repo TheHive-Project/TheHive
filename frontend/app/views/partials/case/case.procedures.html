@@ -1,0 +1,135 @@
+<div ng-include="'views/partials/case/procedures/toolbar.html'"></div>
+
+<div class="mt-xs filter-panel" ng-include="'views/partials/case/procedures/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+
+<!-- Filters preview  -->
+<div class="row mt-xs">
+    <div class="col-md-12 clearfix">
+        <div class="pull-left">
+            <h4>
+                Tactics, Techniques and Procedures ({{$vm.list.values.length || 0}} of {{$vm.list.total}})
+            </h4>
+        </div>
+
+        <filters-preview filters="$vm.filtering.context.filters" on-clear-item="$vm.removeFilter(field)" on-clear-all="$vm.clearFilters()"></filters-preview>
+    </div>
+</div>
+
+<!-- Datalist  -->
+<div class="row mt-xs">
+    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+        <div class="empty-message">No records</div>
+    </div>
+
+    <div class="col-md-12" ng-show="$vm.list.total > 0">
+        <psearch control="$vm.list"></psearch>
+
+        <div class="ttp-item-header">
+            <div class="ttp-tactic">
+                <a href class="text-default" ng-click="$vm.sortByField('tactic')">
+                    Tactic
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+tactic') === -1 && $vm.filtering.context.sort.indexOf('-tactic') === -1" class="fa fa-sort"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+tactic') !== -1" class="fa fa-caret-up"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('-tactic') !== -1" class="fa fa-caret-down"></i>
+                </a>
+            </div>
+            <div class="ttp-name">
+                <a href class="text-default" ng-click="$vm.sortByField('patternId')">
+                    Technique
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+patternId') === -1 && $vm.filtering.context.sort.indexOf('-patternId') === -1" class="fa fa-sort"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+patternId') !== -1" class="fa fa-caret-up"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('-patternId') !== -1" class="fa fa-caret-down"></i>
+                </a>
+            </div>
+            <div class="ttp-user">Created By</div>
+            <div class="ttp-date">
+                <a href class="text-default" ng-click="$vm.sortByField('occurDate')">
+                    Occur Date
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+occurDate') === -1 && $vm.filtering.context.sort.indexOf('-occurDate') === -1" class="fa fa-sort"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('+occurDate') !== -1" class="fa fa-caret-up"></i>
+                    <i ng-show="$vm.filtering.context.sort.indexOf('-occurDate') !== -1" class="fa fa-caret-down"></i>
+                </a>
+            </div>
+            <div class="ttp-action text-right">Actions</div>
+        </div>
+
+        <div class="ttp-item" ng-repeat="proc in $vm.list.values">
+            <div class="ttp-header">
+                <div class="ttp-tactic clickable" ng-click="$vm.expanded[proc._id] = !$vm.expanded[proc._id]" style="border-color: {{$vm.tactics[proc.tactic].color}}">
+                    <div>
+                        <a class="mr-xxs">
+                            <i class="fa" ng-class="{true: 'fa-chevron-up', false: 'fa-chevron-down'}[!!$vm.expanded[proc._id]]"></i>
+                        </a>
+
+                        {{$vm.tactics[proc.tactic].label}}
+
+                        <a href class="pull-right" ng-click="$vm.addFilterValue('tactic', proc.tactic)"><i class="fa fa-filter"></i></a>
+                    </div>
+                </div>
+                <div class="ttp-name" ng-if="proc.extraData.patternParent">
+                    <div>
+                        <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.patternParent.name}}:{{proc.extraData.pattern.name}}
+
+                        <a href class="pull-right" ng-click="$vm.addFilterValue('patternId', proc.patternId)"><i class="fa fa-filter"></i></a>
+                    </div>
+                </div>
+                <div class="ttp-name" ng-if="!proc.extraData.patternParent">
+                    <div>
+                        <a href ng-click="$vm.showPattern(proc.patternId)">{{proc.patternId}}</a> - {{proc.extraData.pattern.name}}
+
+                        <a href class="pull-right" ng-click="$vm.addFilterValue('patternId', proc.patternId)"><i class="fa fa-filter"></i></a>
+                    </div>
+                </div>
+
+                <div class="ttp-user">
+                    <user user-id="proc._createdBy" icon-only="false" icon-size="m"></user>
+                </div>
+                <div class="ttp-date">
+                    <a href ng-click="$vm.addFilterValue('occurDate', proc.occurDate)">
+                        <span uib-tooltip="{{proc.occurDate | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{proc.occurDate | shortDate}}</span>
+                    </a>
+                </div>
+                <div class="ttp-action">
+                    <a class="btn btn-icon btn-clear text-danger" href ng-click="$vm.remove(proc)" uib-tooltip="Delete TTP" if-permission="manageCase" allowed="{{userPermissions}}">
+                        <i class="fa fa-trash"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="ttp-body" ng-show="$vm.expanded[proc._id]">
+                <div class="row mb-xs">
+                    <div class="col-sm-4">
+                        <label>Created At</label>
+                        <div>
+                            <span uib-tooltip="{{proc._createdAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{proc._createdAt | shortDate}}</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label>Updated At</label>
+                        <div>
+                            <span uib-tooltip="{{proc._updatedAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{proc._updatedAt | shortDate}}</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label>Occured At</label>
+                        <div>
+                            <updatable-date on-update="$vm.updateField(proc, 'occurDate', true)" value="proc.occurDate" clearable="false"></updatable-date>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <label>Procedure</label>
+                        <div class="description-pane" if-permission="manageCase" allowed="{{userPermissions}}">
+                            <updatable-text on-update="$vm.updateField(proc, 'description')" value="proc.description"></updatable-text>
+                        </div>
+                        <div class="description-pane" if-not-permission="manageCase" allowed="{{userPermissions}}">
+                            <div marked="proc.description" class="markdown"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <psearch control="$vm.list"></psearch>
+    </div>
+</div>

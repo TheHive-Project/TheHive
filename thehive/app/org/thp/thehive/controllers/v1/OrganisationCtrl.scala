@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -15,13 +14,15 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
+
 @Singleton
 class OrganisationCtrl @Inject() (
     entrypoint: Entrypoint,
     properties: Properties,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl {
 
   override val entityName: String                 = "organisation"
@@ -36,13 +37,11 @@ class OrganisationCtrl @Inject() (
     )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, organisationSteps, _) => organisationSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richOrganisation)
   )
   override val outputQuery: Query = Query.output[RichOrganisation, Traversal.V[Organisation]](_.richOrganisation)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => organisationSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

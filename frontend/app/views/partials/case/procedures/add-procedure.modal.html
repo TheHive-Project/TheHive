@@ -1,0 +1,108 @@
+<form class="procedureForm" class="procedure-modal" ng-submit="$modal.addProcedure()" novalidate>
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">Add Tactic, Technique and Procedure</h3>
+    </div>
+    <div class="modal-body">
+
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group" ng-class="{ 'has-error' : procedureForm.tactic.$invalid && !procedureForm.tactic.$pristine }">
+                    <label>
+                        Tactic
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <select class="form-control" name="tactic" ng-model="$modal.procedure.tactic" autofocus="beforeProcedureModalShow"
+                        ng-options="tactic as $modal.tactics.values[tactic].label for tactic in $modal.tactics.keys" required ng-change="$modal.showTechniques()">
+                    </select>
+                    <p class="help-block" ng-show="procedureForm.tactic.$invalid && !procedureForm.tactic.$pristine">This field is required.</p>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group" ng-class="{ 'has-error' : procedureForm.occureDate.$invalid && !procedureForm.occureDate.$pristine }">
+                    <label>
+                        Occur Date
+                        <i class="fa fa-asterisk text-danger"></i>
+                    </label>
+                    <div>
+                        <date-time-picker date="$modal.procedure.occurDate" name="occurDate"></date-time-picker>
+                        <p class="help-block" ng-show="procedureForm.occureDate.$invalid && !procedureForm.occureDate.$pristine">The field is required.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="form-group" ng-class="{ 'has-error' : procedureForm.pattern.$invalid && !procedureForm.pattern.$pristine }">
+            <label>
+                Technique
+                <i class="fa fa-asterisk text-danger"></i>
+            </label>
+
+            <div ng-show="!$modal.procedure.tactic" class="text-muted">
+                Please select a tactic above.
+            </div>
+
+            <div ng-show="$modal.procedure.tactic">
+                <input type="text" class="form-control mv-xxxs" placeholder="Filter techniques" ng-model="$modal.state.search">
+                <input type="hidden"ng-model="$modal.procedure.patternId" required>
+                <div class="procedure-techniques-list p-xxs">
+
+                    <div ng-repeat="technique in $modal.state.techniques | filter:$modal.state.search">
+                        <div class="procedure-techniques-item" ng-class="{'active': $modal.procedure.patternId === technique.patternId}"
+                            ng-click="$modal.procedure.patternId = technique.patternId">
+                            <div class="radio">
+                                <label class="procedure-technique" ng-class="{'sub-technique': technique.isSubTechnique}">
+                                    <input type="radio" name="pattern" ng-value="technique.patternId" ng-model="$modal.procedure.patternId">
+
+                                    <span ng-if="!!!technique.isSubTechnique">{{technique.patternId}} - {{technique.name}}</span>
+                                    <span ng-if="!!technique.isSubTechnique">{{technique.patternId}} - {{technique.extraData.parent.name}}:{{technique.name}}</span>
+
+                                    <span class="pull-right ml-xxs">
+                                        <a href="{{technique.url}}" target="_blank">
+                                            <i class="fa fa-external-link"></i>
+                                        </a>
+                                    </span>
+                                    <span class="pull-right">
+                                        <i class="fa fa-question-circle" uib-tooltip="{{technique.description}}" tooltip-placement="left-center"></i>
+                                    </span>
+
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="help-block" ng-show="procedureForm.pattern.$invalid && !procedureForm.pattern.$pristine">This field is required.</p>
+            </div>
+
+
+
+        </div>
+
+        <div class="mv-xxs" ng-if="!$modal.showProcedure">
+            <a href ng-click="$modal.showProcedure = true"><i class="fa fa-plus"></i> Add Procedure</a>
+        </div>
+
+        <div class="form-group" ng-if="$modal.showProcedure" ng-class="{ 'has-error' : procedureForm.description.$invalid && !procedureForm.description.$pristine }">
+            <label>Procedure</label>
+            <div>
+                <div class="clearfix">
+                    <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank">
+                        <i class="fa fa-question-circle"></i> Markdown Reference
+                    </a>
+                </div>
+
+                <textarea name="procedure" class="content-box" markdown-editor="$modal.markdownEditorOptions" rows="10"
+                    ng-model="$modal.procedure.description" required></textarea>
+
+                <p class="help-block" ng-show="procedureForm.description.$invalid && !procedureForm.description.$pristine">This field is required.</p>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="$modal.cancel()" type="button">Cancel</button>
+
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="$modal.state.loading || procedureForm.$invalid">
+            Add TTP
+        </button>
+    </div>
+</form>

@@ -42,7 +42,7 @@
             <div ng-switch-when="tags">
                 {{k}}:
                 <span ng-repeat="tag in v">
-                    <span class="label label-primary">{{tag}}</span>
+                    <tag-item value="tag"></tag-item>
                 </span>
                 <span ng-if="v.length === 0">
                     <em>None</em>

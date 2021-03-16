@@ -1,13 +1,12 @@
 package org.thp.thehive.connector.cortex.services
 
-import javax.inject.{Inject, Singleton}
 import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
-import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.cortex.dto.v0.OutputWorker
+import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -68,10 +67,10 @@ class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper,
   def getAnalyzerByName(analyzerName: String, organisation: EntityIdOrName): Future[Map[CortexWorker, Seq[String]]] =
     searchAnalyzers(Json.obj("query" -> Json.obj("_field" -> "name", "_value" -> analyzerName)), organisation)
 
-  def searchAnalyzers(query: JsObject)(implicit authContext: AuthContext): Future[Map[OutputWorker, Seq[String]]] =
+  def searchAnalyzers(query: JsObject)(implicit authContext: AuthContext): Future[Map[CortexWorker, Seq[String]]] =
     searchAnalyzers(query, authContext.organisation)
 
-  def searchAnalyzers(query: JsObject, organisation: EntityIdOrName): Future[Map[OutputWorker, Seq[String]]] =
+  def searchAnalyzers(query: JsObject, organisation: EntityIdOrName): Future[Map[CortexWorker, Seq[String]]] =
     Future
       .traverse(serviceHelper.availableCortexClients(connector.clients, organisation)) { client =>
         client

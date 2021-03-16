@@ -5,6 +5,7 @@
 <table class="table table-striped table-hover" ng-show="$vm.list.total > 0">
 	<thead>
 		<tr>
+            <th width="70px"></th>
 			<th class="text-center" style="width: 60px;">Severity</th>
 			<th width="200px;">Group</th>
 			<th>Task</th>
@@ -14,15 +15,29 @@
 
 	<tbody>
 		<tr class="task-row"
-			ng-repeat="value in $vm.list.values">
+			ng-repeat="item in $vm.list.values">
+            <td>
+                <task-flags task="item" inline="true"></task-flags>
+            </td>
 			<td class="text-center">
-				<severity active="false" value="value.extraData.case.severity"></severity>
+				<severity active="false" value="item.extraData.case.severity"></severity>
 			</td>
-			<td>{{value.group}}</td>
+			<td>{{item.group}}</td>
 			<td>
-				<div>{{value.title}}</div>
 				<div>
-					<small><entity-link value="value.extraData.case"></entity-link></small>
+					<span class="text-primary mr-xxxs" ng-if="item.flag">
+						<i class="glyphicon glyphicon-flag"></i>
+					</span>
+
+					<a href ui-sref="app.case.tasks-item({caseId: item.extraData.case._id, itemId:item._id})" ng-class="{'text-danger': !!item.extraData.actionRequired}">
+						<span ng-if="!!item.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
+							<i class="fa fa-exclamation-triangle"></i>
+						</span>
+						{{item.title}}
+					</a>
+				</div>
+				<div>
+					<small><entity-link value="item.extraData.case"></entity-link></small>
 				</div>
 			</td>
 			<td>

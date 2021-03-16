@@ -1,12 +1,8 @@
 package org.thp.thehive.services
 
-import java.util.regex.Pattern
-import java.util.{List => JList, Map => JMap}
-
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.Order
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -14,8 +10,8 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.CList
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, InternalError, RichOptionTry}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
@@ -25,6 +21,9 @@ import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
+import java.util.regex.Pattern
+import java.util.{List => JList, Map => JMap}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -33,18 +32,12 @@ class UserSrv @Inject() (
     roleSrv: RoleSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
-    @Named("with-thehive-schema") implicit val db: Database
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[User] {
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
 
   val userAttachmentSrv = new EdgeSrv[UserAttachment, User, Attachment]
-
-  override def createEntity(e: User)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("User")
-    super.createEntity(e)
-  }
 
   def checkUser(user: User): Try[User] = {
     val login =
@@ -64,6 +57,7 @@ class UserSrv @Inject() (
        roleSrv.create(user, organisation, profile)
      else
        Success(())).flatMap { _ =>
+      integrityCheckActor ! EntityAdded("User")
       for {
         richUser <- get(user).richUser(authContext, organisation._id).getOrFail("User")
         _        <- auditSrv.user.create(user, richUser.toJson)
@@ -93,7 +87,7 @@ class UserSrv @Inject() (
 
   def delete(user: User with Entity, organisation: Organisation with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     if (get(user).organisations.filterNot(_.get(organisation._id)).exists)
-      get(user).role.filterNot(_.organisation.get(organisation._id)).remove()
+      get(user).role.filter(_.organisation.get(organisation._id)).remove()
     else {
       get(user).role.remove()
       get(user).remove()
@@ -177,7 +171,7 @@ object UserOps {
 
     def isNotLocked: Traversal.V[User] = traversal.has(_.locked, false)
 
-    def can(requiredPermission: Permission)(implicit authContext: AuthContext, db: Database): Traversal.V[User] =
+    def can(requiredPermission: Permission)(implicit authContext: AuthContext): Traversal.V[User] =
       traversal.filter(_.organisations(requiredPermission).get(authContext.organisation))
 
     def getByAPIKey(key: String): Traversal.V[User] = traversal.has(_.apikey, key).v[User]
@@ -187,19 +181,20 @@ object UserOps {
     protected def organisations0(requiredPermission: Permission): Traversal.V[Organisation] =
       role.filter(_.profile.has(_.permissions, requiredPermission)).organisation
 
-    def organisations(requiredPermission: Permission)(implicit db: Database): Traversal.V[Organisation] = {
+    def organisations(requiredPermission: Permission): Traversal.V[Organisation] = {
       val isInAdminOrganisation = traversal.clone().organisations0(requiredPermission).getByName(Organisation.administration.name).exists
-      if (isInAdminOrganisation) db.labelFilter("Organisation")(traversal.V()).v[Organisation]
+      if (isInAdminOrganisation) traversal.graph.V[Organisation]()
       else organisations0(requiredPermission)
     }
 
-    def organisationWithRole: Traversal[Seq[(String, String)], JList[JMap[String, Any]], CList[(String, String), JMap[String, Any], Converter[
-      (String, String),
-      JMap[String, Any]
-    ]]] =
+    def organisationWithRole: Traversal[Seq[(Organisation with Entity, String)], JList[JMap[String, Any]], CList[
+      (Organisation with Entity, String),
+      JMap[String, Any],
+      Converter[(Organisation with Entity, String), JMap[String, Any]]
+    ]] =
       role
         .project(
-          _.by(_.organisation.value(_.name))
+          _.by(_.organisation)
             .by(_.profile.value(_.name))
         )
         .fold
@@ -260,12 +255,11 @@ object UserOps {
       traversal
         .project(
           _.by
-            .by(_.avatar.fold)
+            .by(_.avatar.value(_.attachmentId).option)
             .by(_.role.project(_.by(_.profile).by(_.organisation.visible(authContext).project(_.by(_._id).byValue(_.name)).fold)).fold)
         )
         .domainMap {
-          case (user, attachment, profileOrganisations) =>
-            val avatar = attachment.headOption.map(_.attachmentId)
+          case (user, avatar, profileOrganisations) =>
             organisation
               .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
               .orElse(profileOrganisations.headOption)
@@ -275,27 +269,6 @@ object UserOps {
               }
         }
 
-    /*
-    def richUser(organisationId: EntityId): Traversal[RichUser, JMap[String, Any], Converter[RichUser, JMap[String, Any]]] =
-      traversal
-        .project(
-          _.by
-            .by(_.profile(organisation).fold)
-            .by(_.avatar.fold)
-        )
-        .domainMap {
-          case (user, profiles, attachment) =>
-            RichUser(
-              user,
-              attachment.headOption.map(_.attachmentId),
-              profiles.headOption.fold("")(_.name),
-              profiles.headOption.fold(Set.empty[Permission])(_.permissions),
-              organisation
-            )
-        }
-
-     */
-
     def richUserWithCustomRenderer[D, G, C <: Converter[D, G]](
         organisation: EntityIdOrName,
         entityRenderer: Traversal.V[User] => Traversal[D, G, C]
@@ -303,18 +276,17 @@ object UserOps {
       traversal
         .project(
           _.by
-            .by(_.avatar.fold)
+            .by(_.avatar.value(_.attachmentId).option)
             .by(_.role.project(_.by(_.profile).by(_.organisation.visible.project(_.by(_._id).byValue(_.name)).fold)).fold)
             .by(entityRenderer)
         )
         .domainMap {
-          case (user, attachment, profileOrganisations, renderedEntity) =>
+          case (user, avatar, profileOrganisations, renderedEntity) =>
             organisation
               .fold(id => profileOrganisations.find(_._2.exists(_._1 == id)), name => profileOrganisations.find(_._2.exists(_._2 == name)))
               .orElse(profileOrganisations.headOption)
-              .fold(throw InternalError(s"")) { // FIXME
+              .fold(RichUser(user, avatar, Profile.admin.name, Set.empty, "no org") -> renderedEntity) { // fake user (probably "system")
                 case (profile, organisationIdAndName) =>
-                  val avatar = attachment.headOption.map(_.attachmentId)
                   RichUser(user, avatar, profile.name, profile.permissions, organisationIdAndName.headOption.fold("***")(_._2)) -> renderedEntity
               }
         }
@@ -338,7 +310,7 @@ object UserOps {
 
 @Singleton
 class UserIntegrityCheckOps @Inject() (
-    @Named("with-thehive-schema") val db: Database,
+    val db: Database,
     val service: UserSrv,
     profileSrv: ProfileSrv,
     organisationSrv: OrganisationSrv,
@@ -364,19 +336,26 @@ class UserIntegrityCheckOps @Inject() (
     ()
   }
 
-  override def check(): Unit = {
-    super.check()
+  override def duplicationCheck(): Map[String, Long] = {
+    super.duplicationCheck()
     db.tryTransaction { implicit graph =>
-      duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
-      duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement(_)).foreach(e => removeEdges(e._2))
-      duplicateLinks[Vertex, Vertex](
+      val duplicateTaskAssignments =
+        duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement(_)).map(e => removeEdges(e._2)).size.toLong
+      val duplicateCaseAssignments =
+        duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement(_)).map(e => removeEdges(e._2)).size.toLong
+      val duplicateUsers = duplicateLinks[Vertex, Vertex](
         service.startTraversal,
         (_.out("UserRole"), _.in("UserRole")),
         (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
-      ).flatMap(firstCreatedElement(_)).foreach(e => removeVertices(e._2))
-      Success(())
-    }
-    ()
+      ).flatMap(firstCreatedElement(_)).map(e => removeVertices(e._2)).size.toLong
+      Success(
+        Map(
+          "duplicateTaskAssignments" -> duplicateTaskAssignments,
+          "duplicateCaseAssignments" -> duplicateCaseAssignments,
+          "duplicateUsers"           -> duplicateUsers
+        )
+      )
+    }.getOrElse(Map("globalFailure" -> 1L))
   }
 
   override def resolve(entities: Seq[User with Entity])(implicit graph: Graph): Try[Unit] = {
@@ -387,4 +366,6 @@ class UserIntegrityCheckOps @Inject() (
     }
     Success(())
   }
+
+  override def globalCheck(): Map[String, Long] = Map.empty
 }

@@ -1,13 +1,13 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import akka.actor.ActorSystem
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.services.AnalyzerSrv
 import org.thp.thehive.controllers.v0.Conversion._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton

@@ -14,7 +14,7 @@
                 streamObjectType: 'case_artifact_job',
                 filter: {
                     _parent: {
-                        _type: 'case_artifact',
+                        _type: 'observable',
                         _query: {
                             _id: observableId
                         }

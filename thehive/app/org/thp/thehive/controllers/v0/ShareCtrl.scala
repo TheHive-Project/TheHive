@@ -1,10 +1,9 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -18,6 +17,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -29,7 +29,7 @@ class ShareCtrl @Inject() (
     taskSrv: TaskSrv,
     observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) {
 
   def shareCase(caseId: String): Action[AnyContent] =
@@ -164,7 +164,7 @@ class ShareCtrl @Inject() (
               .richShare
               .getOrFail("Share")
           profile <- profileSrv.getOrFail(EntityIdOrName(profile))
-          _       <- shareSrv.update(richShare.share, profile)
+          _       <- shareSrv.updateProfile(richShare.share, profile)
         } yield Results.Ok
       }
 
@@ -174,7 +174,8 @@ class ShareCtrl @Inject() (
         val shares = caseSrv
           .get(EntityIdOrName(caseId))
           .shares
-          .filter(_.organisation.filterNot(_.get(request.organisation)).visible)
+          .visible
+          .filterNot(_.organisation.current)
           .richShare
           .toSeq
 

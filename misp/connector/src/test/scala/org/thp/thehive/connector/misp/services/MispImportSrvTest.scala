@@ -1,7 +1,5 @@
 package org.thp.thehive.connector.misp.services
 
-import java.util.{Date, UUID}
-
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
@@ -17,6 +15,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 import play.api.test.PlaySpecification
 
+import java.util.{Date, UUID}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
@@ -37,7 +36,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
     "get organisation" in testApp { app =>
       await(app[TheHiveMispClient].getOrganisation("1")) must beEqualTo(
-        Organisation("1", "ORGNAME", "Automatically generated admin organisation", UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
+        Organisation("1", "ORGNAME", Some("Automatically generated admin organisation"), UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
       )
     }
 
@@ -65,7 +64,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
           attributeCount = Some(11),
           distribution = 1,
           attributes = Nil,
-          tags = Seq(Tag(Some("1"), "TH-test", Some(0x36a3a3), None), Tag(Some("2"), "TH-test-2", Some(0x1ac7c7), None))
+          tags = Seq(Tag(Some("1"), "TH-test", Some("#36a3a3"), None), Tag(Some("2"), "TH-test-2", Some("#1ac7c7"), None))
         )
       )
     }
@@ -73,27 +72,33 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
   "MISP service" should {
     "import events" in testApp { app =>
-      await(app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])(authContext))(1.minute)
-
       app[Database].roTransaction { implicit graph =>
-        app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible.getOrFail("Alert")
-      } must beSuccessfulTry(
-        Alert(
-          `type` = "misp",
-          source = "ORGNAME",
-          sourceRef = "1",
-          externalLink = Some("https://misp.test/events/1"),
-          title = "#1 test1 -> 1.2",
-          description = s"Imported from MISP Event #1, created at ${Event.simpleDateFormat.parse("2019-08-23")}",
-          severity = 3,
-          date = Event.simpleDateFormat.parse("2019-08-23"),
-          lastSyncDate = new Date(1566913355000L),
-          tlp = 2,
-          pap = 2,
-          read = false,
-          follow = true
-        )
-      ).eventually(5, 100.milliseconds)
+        app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])
+        app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible(app[OrganisationSrv]).getOrFail("Alert")
+      } must beSuccessfulTry
+        .which { alert: Alert =>
+          alert must beEqualTo(
+            Alert(
+              `type` = "misp",
+              source = "ORGNAME",
+              sourceRef = "1",
+              externalLink = Some("https://misp.test/events/1"),
+              title = "#1 test1 -> 1.2",
+              description = s"Imported from MISP Event #1, created at ${Event.simpleDateFormat.parse("2019-08-23")}",
+              severity = 3,
+              date = Event.simpleDateFormat.parse("2019-08-23"),
+              lastSyncDate = new Date(1566913355000L),
+              tlp = 2,
+              pap = 2,
+              read = false,
+              follow = true,
+              tags = Seq("TH-test", "TH-test-2"),
+              organisationId = alert.organisationId,
+              caseId = None
+            )
+          )
+        }
+        .eventually(5, 100.milliseconds)
 
       val observables = app[Database]
         .roTransaction { implicit graph =>
@@ -105,10 +110,10 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
             .richObservable
             .toList
         }
-        .map(o => (o.`type`.name, o.data.map(_.data), o.tlp, o.message, o.tags.map(_.toString).toSet))
+        .map(o => (o.dataType, o.data, o.tlp, o.message, o.tags.toSet))
 //        println(observables.mkString("\n"))
       observables must contain(
-        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
+        ("filename", Some("plop"), 0, Some(""), Set("TEST", "TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
       )
     }
   }

@@ -1,20 +1,19 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Provider, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, EntityName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.ProfileOps._
 import play.api.libs.json.JsObject
 
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -23,13 +22,13 @@ class ProfileSrv @Inject() (
     organisationSrvProvider: Provider[OrganisationSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 )(implicit
-    @Named("with-thehive-schema") val db: Database
+    val db: Database
 ) extends VertexSrv[Profile] {
   lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
   lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
-    integrityCheckActor ! IntegrityCheckActor.EntityAdded("Profile")
+    integrityCheckActor ! EntityAdded("Profile")
     super.createEntity(e)
   }
 
@@ -83,8 +82,7 @@ object ProfileOps {
 
 }
 
-class ProfileIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ProfileSrv)
-    extends IntegrityCheckOps[Profile] {
+class ProfileIntegrityCheckOps @Inject() (val db: Database, val service: ProfileSrv) extends IntegrityCheckOps[Profile] {
   override def resolve(entities: Seq[Profile with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>
@@ -93,4 +91,6 @@ class ProfileIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: 
         Success(())
       case _ => Success(())
     }
+
+  override def globalCheck(): Map[String, Long] = Map.empty
 }

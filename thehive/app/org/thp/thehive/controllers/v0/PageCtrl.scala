@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -15,11 +14,13 @@ import org.thp.thehive.services.PageOps._
 import org.thp.thehive.services.{OrganisationSrv, PageSrv}
 import play.api.mvc._
 
+import javax.inject.{Inject, Named, Singleton}
+
 @Singleton
 class PageCtrl @Inject() (
     override val entrypoint: Entrypoint,
     pageSrv: PageSrv,
-    @Named("with-thehive-schema") override val db: Database,
+    override val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicPage
 ) extends QueryCtrl {
@@ -73,12 +74,10 @@ class PublicPage @Inject() (pageSrv: PageSrv, organisationSrv: OrganisationSrv) 
     Query.init[Traversal.V[Page]]("listPage", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).pages)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Page]](
     "getPage",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => pageSrv.get(idOrName)(graph).visible(authContext)
   )
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Page], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, pageSteps, _) => pageSteps.page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query = Query.output[Page with Entity]

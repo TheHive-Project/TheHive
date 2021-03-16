@@ -310,7 +310,7 @@
             };
 
             $scope.getTags = function(query) {
-                return TagSrv.fromObservables(query);
+                return TagSrv.autoComplete(query);
             };
 
             $scope.loadShares = function () {

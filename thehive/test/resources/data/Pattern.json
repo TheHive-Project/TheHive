@@ -1,0 +1,38 @@
+[
+  {
+    "id": "testPattern1",
+    "patternId": "T123",
+    "name": "testPattern1",
+    "description": "The testPattern 1",
+    "tactics": [
+      "testTactic1",
+      "testTactic2"
+    ],
+    "url": "http://test.pattern.url",
+    "patternType": "unit-test",
+    "revoked": false,
+    "dataSources": [],
+    "defenseBypassed": [],
+    "platforms": [],
+    "remoteSupport": true,
+    "revision": "1.0"
+  },
+  {
+    "id": "testPattern2",
+    "patternId": "T234",
+    "name": "testPattern2",
+    "description": "The testPattern 2",
+    "tactics": [
+      "testTactic2",
+      "testTactic3"
+    ],
+    "url": "http://test.pattern2.url",
+    "patternType": "unit-test",
+    "revoked": false,
+    "dataSources": [],
+    "defenseBypassed": [],
+    "platforms": [],
+    "remoteSupport": false,
+    "revision": "1.1"
+  }
+]

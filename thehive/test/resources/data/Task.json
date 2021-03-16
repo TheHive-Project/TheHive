@@ -6,7 +6,9 @@
     "description": "description task 1",
     "status": "Waiting",
     "flag": false,
-    "order": 0
+    "order": 0,
+    "assignee": "certuser@thehive.local",
+    "relatedId": ""
   },
   {
     "id": "task2",
@@ -15,7 +17,8 @@
     "description": "description task 2",
     "status": "Waiting",
     "flag": true,
-    "order": 1
+    "order": 1,
+    "relatedId": ""
   },
   {
     "id": "task3",
@@ -24,7 +27,9 @@
     "description": "description task 3",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "assignee": "certuser@thehive.local",
+    "relatedId": ""
   },
   {
     "id": "task4",
@@ -33,7 +38,8 @@
     "description": "description task 4",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "task5",
@@ -42,7 +48,80 @@
     "description": "description task 5",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "taskActionRequired1",
+    "title": "taskActionRequired1",
+    "group": "groupActionRequired",
+    "description": "description task Required",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "taskActionRequired2",
+    "title": "taskActionRequired2",
+    "group": "groupActionRequired",
+    "description": "description task Required",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "taskMerge211",
+    "title": "taskMerge211",
+    "group": "task merge",
+    "description": "description task merge 21 1",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "taskMerge212",
+    "title": "taskMerge212",
+    "group": "task merge",
+    "description": "description task merge 21 2",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "taskMerge231",
+    "title": "taskMerge231",
+    "group": "task merge",
+    "description": "description task merge 23 1",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "taskMerge241",
+    "title": "taskMerge241",
+    "group": "task merge",
+    "description": "description task merge 24 1",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+  },
+  {
+    "id": "taskMerge242",
+    "title": "taskMerge242",
+    "group": "task merge",
+    "description": "description task merge 24 2",
+    "status": "Waiting",
+    "flag": true,
+    "order": 0,
+    "relatedId": ""
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "task-cascade-remove-simple",
@@ -51,7 +130,8 @@
     "description": "description task simple",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "task-cascade-remove-unshare",
@@ -60,7 +140,8 @@
     "description": "description task unshare",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   },
   {
     "id": "task-cascade-remove-delete",
@@ -69,6 +150,7 @@
     "description": "description task delete",
     "status": "Waiting",
     "flag": true,
-    "order": 0
+    "order": 0,
+    "relatedId": ""
   }
 ]

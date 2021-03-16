@@ -1,10 +1,11 @@
 <div class="case-template-section">
-    <h4 class="vpad10 text-primary">
-        Custom fields ({{$vm.keys($vm.template.customFields).length}})
-        <a class="pull-right" href ng-click="$vm.addCustomFieldRow()">
-            <i class="fa fa-plus"></i>
-        </a>
-    </h4>
+    <div class="mb-xs">
+        <div class="btn-group">
+            <button class="btn btn-sm btn-primary" type="button" ng-click="$vm.addCustomFieldRow()">
+                <i class="mr-xxxs fa fa-plus"></i>Add custom field
+            </button>
+        </div>
+    </div>
 
     <div class="empty-message" ng-if="$vm.templateCustomFields.length === 0">
         No custom fields have been added. <a href class="mr-xxxs" ng-click="$vm.addCustomFieldRow()">Add a custom field</a>

@@ -1,10 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Boolean => JBoolean}
-import java.util.Date
-
-import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PublicProperty
@@ -12,6 +7,7 @@ import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hash
+import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.thehive.services.CustomFieldSrv
 import play.api.Logger
 import play.api.cache.SyncCacheApi
@@ -19,6 +15,9 @@ import play.api.inject.Injector
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.lang.{Boolean => JBoolean}
+import java.util.Date
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
@@ -36,13 +35,13 @@ class DescribeCtrl @Inject() (
     observableCtrl: ObservableCtrl,
     observableTypeCtrl: ObservableTypeCtrl,
     organisationCtrl: OrganisationCtrl,
-    pageCtrl: PageCtrl,
+//    pageCtrl: PageCtrl,
     profileCtrl: ProfileCtrl,
     taskCtrl: TaskCtrl,
     userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     injector: Injector,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     applicationConfig: ApplicationConfig
 ) {
 
@@ -89,7 +88,7 @@ class DescribeCtrl @Inject() (
     ).toOption
 
   def entityDescriptions: Seq[EntityDescription] =
-    cacheApi.getOrElseUpdate(s"describe.v0", cacheExpire) {
+    cacheApi.getOrElseUpdate("describe.v0", cacheExpire) {
       Seq(
         EntityDescription("case", "/case", caseCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case", _))),
         EntityDescription("case_task", "/case/task", taskCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case_task", _))),
@@ -119,8 +118,8 @@ class DescribeCtrl @Inject() (
           organisationCtrl.publicData.publicProperties.list.flatMap(propertyToJson("organisation", _))
         ),
         EntityDescription("profile", "/profile", profileCtrl.publicData.publicProperties.list.flatMap(propertyToJson("profile", _))),
-        EntityDescription("dashboard", "/dashboard", dashboardCtrl.publicData.publicProperties.list.flatMap(propertyToJson("dashboard", _))),
-        EntityDescription("page", "/page", pageCtrl.publicData.publicProperties.list.flatMap(propertyToJson("page", _)))
+        EntityDescription("dashboard", "/dashboard", dashboardCtrl.publicData.publicProperties.list.flatMap(propertyToJson("dashboard", _)))
+//        EntityDescription("page", "/page", pageCtrl.publicData.publicProperties.list.flatMap(propertyToJson("page", _)))
       ) ++ describeCortexEntity("case_artifact_job", "/connector/cortex/job", "JobCtrl") ++
         describeCortexEntity("action", "/connector/cortex/action", "ActionCtrl")
     }
@@ -207,10 +206,12 @@ class DescribeCtrl @Inject() (
             )
           )
         )
+      case ("dashboard", "status") =>
+        Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")))))
       case _ => None
     }
 
-  def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
+  def propertyToJson(model: String, prop: PublicProperty): Seq[PropertyDescription] =
     customDescription(model, prop.propertyName).getOrElse {
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))
@@ -218,6 +219,7 @@ class DescribeCtrl @Inject() (
         case c if c == classOf[Hash]                              => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if classOf[Number].isAssignableFrom(c)             => Seq(PropertyDescription(prop.propertyName, "number"))
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
+        case c if c == classOf[EntityId]                          => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>
           logger.warn(s"Unrecognized property $prop. Add a custom description")
           Seq(PropertyDescription(prop.propertyName, "unknown"))

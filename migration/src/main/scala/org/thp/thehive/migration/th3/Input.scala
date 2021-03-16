@@ -1,17 +1,14 @@
 package org.thp.thehive.migration.th3
 
-import java.util.{Base64, Date}
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.google.inject.Guice
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.term.TermsQuery
-import com.sksamuel.elastic4s.searches.queries.{Query, RangeQuery}
-import javax.inject.{Inject, Singleton}
+import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.requests.searches.queries.{Query, RangeQuery}
+import com.sksamuel.elastic4s.requests.searches.queries.term.TermsQuery
 import net.codingwell.scalaguice.ScalaModule
 import org.thp.thehive.migration
 import org.thp.thehive.migration.Filter
@@ -21,6 +18,8 @@ import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
+import java.util.{Base64, Date}
+import javax.inject.{Inject, Singleton}
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.{classTag, ClassTag}
@@ -37,7 +36,6 @@ object Input {
           bind[Materializer].toInstance(Materializer(actorSystem))
           bind[ExecutionContext].toInstance(actorSystem.dispatcher)
           bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-          bind[Int].annotatedWithName("databaseVersion").toInstance(15)
         }
       })
       .getInstance(classOf[Input])
@@ -433,8 +431,8 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
       .map { json =>
         for {
           metaData  <- json.validate[MetaData]
-          tasksJson <- (json \ "tasks").validate[Seq[JsValue]]
-        } yield (metaData, tasksJson)
+          tasksJson <- (json \ "tasks").validateOpt[Seq[JsValue]]
+        } yield (metaData, tasksJson.getOrElse(Nil))
       }
       .mapConcat {
         case JsSuccess(x, _) => List(x)
@@ -456,7 +454,7 @@ class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGe
         dbGet("caseTemplate", caseTemplateId)
           .map { json =>
             val metaData = json.as[MetaData]
-            val tasks    = (json \ "tasks").as(Reads.seq(caseTemplateTaskReads(metaData)))
+            val tasks    = (json \ "tasks").asOpt(Reads.seq(caseTemplateTaskReads(metaData))).getOrElse(Nil)
             Source(tasks.to[immutable.Iterable].map(t => Success(caseTemplateId -> t)))
           }
           .recover {

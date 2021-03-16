@@ -5,5 +5,15 @@
   {"from": "cert", "to": "share-cascade-remove"},
   {"from": "soc", "to": "share-cascade-remove2"},
   {"from": "soc", "to": "case2-soc"},
-  {"from": "soc", "to": "case3-soc"}
+  {"from": "soc", "to": "case3-soc"},
+  {"from": "soc", "to": "case-actionRequired-soc"},
+  {"from": "cert", "to": "case-actionRequired-cert"},
+  {"from": "cert", "to": "case21-merge-cert"},
+  {"from": "cert", "to": "case22-merge-cert"},
+  {"from": "cert", "to": "case23-merge-cert"},
+  {"from": "cert", "to": "case24-merge-cert"},
+  {"from": "soc", "to": "case24-merge-soc"},
+  {"from": "cert", "to": "case25-merge-cert"},
+  {"from": "soc", "to": "case25-merge-soc"},
+  {"from": "pug", "to": "case26-merge-pug"}
 ]

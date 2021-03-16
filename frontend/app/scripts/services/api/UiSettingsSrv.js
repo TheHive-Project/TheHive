@@ -9,7 +9,8 @@
         this.keys = [
             'hideEmptyCaseButton',
             'disallowMergeAlertInResolvedSimilarCases',
-            'defaultAlertSimilarCaseFilter'
+            'defaultAlertSimilarCaseFilter',
+            'defaultDateFormat'
         ];
 
         this.clearCache = function() {

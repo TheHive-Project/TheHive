@@ -1,7 +1,7 @@
 package org.thp.thehive.services.notification.triggers
 
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 
 trait GlobalTrigger extends Trigger {

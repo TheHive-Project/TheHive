@@ -1,15 +1,12 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.util.{Date, Map => JMap}
-
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.client.{ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
 import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
@@ -25,6 +22,8 @@ import play.api.libs.json.Json.WithDefaultValues
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
+import java.util.{Date, Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -93,7 +92,7 @@ class Webhook(
 
     def taskToJson: Traversal.V[Task] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
       _.project(
-        _.by(_.richTask.domainMap(_.toJson))
+        _.by(_.richTaskWithoutActionRequired.domainMap(_.toJson))
           .by(t => caseToJson(t.`case`))
       ).domainMap {
         case (task, case0) => task.as[JsObject] + ("case" -> case0)
@@ -155,7 +154,7 @@ class Webhook(
       (_: Traversal.V[Audit])
         .coalesce(
           _.`object` //.out[Audited]
-            .choose(
+            .chooseValue(
               _.on(_.label)
                 .option("Case", t => caseToJson(t.v[Case]))
                 .option("Task", t => taskToJson(t.v[Task]))
@@ -255,13 +254,14 @@ class Webhook(
       Future.failed(BadConfigurationError(s"The organisation ${organisation.name} is not authorised to use the webhook ${config.name}"))
     else if (user.isDefined)
       Future.failed(BadConfigurationError("The notification webhook must not be applied on user"))
-    else
-      for {
+    else {
+      val ws = new ProxyWS(config.wsConfig, mat)
+      val async = for {
         message <- Future.fromTry(buildMessage(config.version, audit))
         _ = logger.debug(s"Request webhook with message $message")
-        resp <- new ProxyWS(config.wsConfig, mat)
-          .url(config.url)
-          .post(message)
+        resp <- ws.url(config.url).post(message)
       } yield if (resp.status >= 400) logger.warn(s"Webhook call on ${config.url} returns ${resp.status} ${resp.statusText}") else ()
+      async.andThen { case _ => ws.close() }
+    }
 
 }

@@ -23,6 +23,11 @@
                                 <span class="badge badge-primary">{{observableCount}}</span>
                             </span>
 
+                            <span ng-switch-when="procedures">
+                                <i class="glyphicon glyphicon-knight"></i>&nbsp;&nbsp; TTPs&nbsp;&nbsp;
+                                <!-- <span class="badge badge-primary">{{observableCount}}</span> -->
+                            </span>
+
                             <span ng-switch-default>
                                 <span ng-switch on="name[0]">
                                     <span ng-switch-when="t">

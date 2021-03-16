@@ -16,7 +16,7 @@
                         return;
                     }
 
-                    _.each(list.values, function(action) {
+                    _.each(_.isArray(list) ? list : list.values, function(action) {
                         if (action.status === 'Failure') {
                             action.errorMessage = (JSON.parse(action.report) || {}).errorMessage;
                         }
