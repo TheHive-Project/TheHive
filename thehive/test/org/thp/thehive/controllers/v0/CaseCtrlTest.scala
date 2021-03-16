@@ -118,7 +118,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
                            "flag":false,
                            "status":"Waiting"
                         }
-                     ]
+                     ],
+                     "user":"certro@thehive.local"
                   }"""
             )
             .as[JsObject]
@@ -140,7 +141,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           pap = 2,
           status = "Open",
           tags = Set.empty,
-          owner = Some("certuser@thehive.local"),
+          owner = Some("certro@thehive.local"),
           stats = JsObject.empty
         )
       )
@@ -155,7 +156,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       val assignee = app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityIdOrName(outputCase._id)).assignee.getOrFail("Case"))
 
       assignee must beSuccessfulTry
-      assignee.get.login shouldEqual "certuser@thehive.local"
+      assignee.get.login shouldEqual "certro@thehive.local"
     }
 
     "try to get a case" in testApp { app =>
@@ -380,7 +381,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       // Merge result
       TestCase(outputCase) must equalTo(
         TestCase(
-          caseId = 26,
+          caseId = 27,
           title = "case#21 / case#22",
           description = "description of case #21\n\ndescription of case #22",
           severity = 3,
