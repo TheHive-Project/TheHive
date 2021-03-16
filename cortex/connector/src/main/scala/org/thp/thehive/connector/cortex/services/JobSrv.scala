@@ -26,7 +26,7 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableTypeSrv, ReportTagSrv}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, JsString, Json}
 
 import java.nio.file.Files
 import java.util.{Date, Map => JMap}
@@ -92,7 +92,13 @@ class JobSrv @Inject() (
         create(fromCortexOutputJob(cortexOutputJob).copy(cortexId = cortexId), observable.observable)
       })
       _ <- Future.fromTry(db.tryTransaction { implicit graph =>
-        auditSrv.job.create(createdJob.job, observable.observable, createdJob.toJson)
+        auditSrv
+          .job
+          .create(
+            createdJob.job,
+            observable.observable,
+            createdJob.toJson.as[JsObject] + ("objectType" -> JsString("Observable")) + ("objectId" -> JsString(observable._id.toString))
+          )
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
@@ -171,7 +177,14 @@ class JobSrv @Inject() (
             .update(_.endDate, endDate)
             .getOrFail("Job")
           observable <- get(job).observable.getOrFail("Observable")
-          _          <- auditSrv.job.update(job, observable, Json.obj("status" -> status, "endDate" -> endDate))
+          _ <-
+            auditSrv
+              .job
+              .update(
+                job,
+                observable,
+                Json.obj("status" -> status, "endDate" -> endDate, "objectType" -> "Observable", "objectId" -> observable._id.toString)
+              )
         } yield job
       }
     }

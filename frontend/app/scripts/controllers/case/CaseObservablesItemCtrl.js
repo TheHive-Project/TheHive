@@ -45,7 +45,7 @@
                     })
                     .finally(function () {
                         if($scope.analysisEnabled) {
-                            $scope.jobs = CortexSrv.list($scope, $scope.caseId, observableId, $scope.onJobsChange);
+                            $scope.jobs = CortexSrv.listJobs($scope, $scope.caseId, observableId, $scope.onJobsChange);
                         }
                     });
 
