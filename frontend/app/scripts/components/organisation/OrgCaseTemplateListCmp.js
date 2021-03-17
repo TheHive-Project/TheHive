@@ -119,6 +119,20 @@
                     self.filtering.setSort(sort);
                 };
 
+                this.newTemplate = function() {
+                    self.showTemplate({
+                        name: '',
+                        titlePrefix: '',
+                        severity: 2,
+                        tlp: 2,
+                        pap: 2,
+                        tags: [],
+                        tasks: [],
+                        customFields: {},
+                        description: ''
+                    });
+                };
+
                 this.showTemplate = function(template) {
 
                     var promise = template._id ? CaseTemplateSrv.get(template._id) : $q.resolve(template);
