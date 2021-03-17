@@ -59,6 +59,9 @@ trait CaseRenderer extends BaseRenderer[Case] {
   def actionRequired(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, Boolean, Converter[JsValue, Boolean]] =
     _.isActionRequired.domainMap(JsBoolean(_))
 
+  def procedureCount: Traversal.V[Case] => Traversal[JsNumber, JLong, Converter[JsNumber, JLong]] =
+    _.procedure.count.domainMap(JsNumber(_))
+
   def caseStatsRenderer(extraData: Set[String])(implicit
       authContext: AuthContext
   ): Traversal.V[Case] => JsTraversal = { implicit traversal =>
@@ -73,6 +76,7 @@ trait CaseRenderer extends BaseRenderer[Case] {
         case (f, "shareCount")      => addData("shareCount", f)(shareCountStats)
         case (f, "permissions")     => addData("permissions", f)(permissions)
         case (f, "actionRequired")  => addData("actionRequired", f)(actionRequired)
+        case (f, "procedureCount")  => addData("procedureCount", f)(procedureCount)
         case (f, _)                 => f
       }
     )
