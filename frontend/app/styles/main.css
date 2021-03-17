@@ -350,13 +350,21 @@ ul.observable-reports-summary li {
 
 .case-details dd,
 .case-custom-fields dd {
-    margin-left: 200px !important;
+    margin-left: 205px !important;
 }
 
 .case-custom-fields dt {
     background-color: #f9f9f9;
     padding-left: 5px;
     border-left: 2px solid #337ab7;
+}
+
+.case-custom-fields dt a {
+    display: none;
+}
+
+.case-custom-fields dt:hover a {
+    display: block;
 }
 
 .case-custom-fields dd {

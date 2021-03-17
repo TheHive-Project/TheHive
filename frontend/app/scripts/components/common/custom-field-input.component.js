@@ -10,6 +10,11 @@
                         value: newValue
                     });
                 };
+                this.removeCustomField = function(fieldId) {
+                    this.onRemove({
+                        fieldId: fieldId
+                    })
+                }
             },
             controllerAs: '$ctrl',
             templateUrl: 'views/components/common/custom-field-input.component.html',
@@ -18,7 +23,9 @@
                 field: '<',
                 value: '=',
                 onUpdate: '&',
-                editable: '<'
+                onRemove: '&',
+                editable: '<',
+                removable: '<'
             }
         });
 })();

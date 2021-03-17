@@ -41,8 +41,10 @@
                 <custom-field-input
                     index="$index"
                     editable="canEdit"
+                    removable="canEdit"
                     field="customFieldsCache[customField.name]"
                     on-update="updateField(fieldName, value)"
+                    on-remove="removeField(fieldId)"
                     value="customField.value"></custom-field-input>
             </div>
         </div>

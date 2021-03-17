@@ -126,6 +126,10 @@
                     }
                 });
             };
+
+            this.removeCustomField = function(customfFieldValueId) {
+                return $http.delete('./api/v1/case/customField/' + customfFieldValueId)
+            }
         });
 
 })();
