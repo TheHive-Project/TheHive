@@ -179,6 +179,6 @@ class Router @Inject() (
     case POST(p"/observable/type")             => observableTypeCtrl.create
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
 
-    case GET(p"monitor/disk") => monitoringCtrl.monitorDiskUsage
+    case GET(p"/monitor/disk") => monitoringCtrl.diskUsage
   }
 }

@@ -26,7 +26,7 @@ class MonitoringCtrl @Inject() (
   val diskLocations: ConfigItem[Seq[PartitionConfig], Seq[PartitionConfig]] =
     appConfig.item[Seq[PartitionConfig]]("monitor.disk", "disk locations to monitor")
 
-  def monitorDiskUsage: Action[AnyContent] =
+  def diskUsage: Action[AnyContent] =
     entrypoint("monitor disk usage")
       .authPermittedTransaction(db, Permissions.managePlatform)(implicit request =>
         implicit graph =>
