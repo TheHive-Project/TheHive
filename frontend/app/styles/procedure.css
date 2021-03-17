@@ -1,5 +1,5 @@
 .ttp-item {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     border: 1px solid #f5f5f5;
 }
 
@@ -30,7 +30,7 @@
     background-color: #fcfcfc;
 }
 .ttp-item .ttp-header > div {
-    padding: 10px;
+    padding: 2px 10px;
     vertical-align: middle;
 }
 
@@ -76,7 +76,7 @@
 
 .ttp-item-header > div {
     font-weight: bold;
-    padding: 10px;
+    padding: 4px 10px;
 }
 
 .procedure-techniques-list {

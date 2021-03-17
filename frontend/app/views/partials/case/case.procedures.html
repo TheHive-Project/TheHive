@@ -41,7 +41,7 @@
                     <i ng-show="$vm.filtering.context.sort.indexOf('-patternId') !== -1" class="fa fa-caret-down"></i>
                 </a>
             </div>
-            <div class="ttp-user">Created By</div>
+            <!-- <div class="ttp-user">Created By</div> -->
             <div class="ttp-date">
                 <a href class="text-default" ng-click="$vm.sortByField('occurDate')">
                     Occur Date
@@ -81,9 +81,9 @@
                     </div>
                 </div>
 
-                <div class="ttp-user">
+                <!-- <div class="ttp-user">
                     <user user-id="proc._createdBy" icon-only="false" icon-size="m"></user>
-                </div>
+                </div> -->
                 <div class="ttp-date">
                     <a href ng-click="$vm.addFilterValue('occurDate', proc.occurDate)">
                         <span uib-tooltip="{{proc.occurDate | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{proc.occurDate | shortDate}}</span>
@@ -97,19 +97,25 @@
             </div>
             <div class="ttp-body" ng-show="$vm.expanded[proc._id]">
                 <div class="row mb-xs">
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
+                        <label>Created At</label>
+                        <div>
+                            <user-info value="proc._createdBy" field="organisation"></user-info>/<user-info value="proc._createdBy" field="name"></user-info>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
                         <label>Created At</label>
                         <div>
                             <span uib-tooltip="{{proc._createdAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{proc._createdAt | shortDate}}</span>
                         </div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <label>Updated At</label>
                         <div>
-                            <span uib-tooltip="{{proc._updatedAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{proc._updatedAt | shortDate}}</span>
+                            <span uib-tooltip="{{proc._updatedAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{(proc._updatedAt | shortDate) || '-'}}</span>
                         </div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <label>Occured At</label>
                         <div>
                             <updatable-date on-update="$vm.updateField(proc, 'occurDate', true)" value="proc.occurDate" clearable="false"></updatable-date>
