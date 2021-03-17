@@ -227,6 +227,44 @@
                 });
         };
 
+        this.filterMyOrgCases = function() {
+            this.filtering.clearFilters()
+                .then(function() {
+                    var currentUser = AuthenticationSrv.currentUser;
+                    self.filtering.addFilter({
+                        field: 'owningOrganisation',
+                        type: 'string',
+                        value: {
+                            operator: 'all',
+                            list: [{
+                                text: currentUser.organisation,
+                                label: currentUser.organisation
+                            }]
+                        }
+                    });
+                    self.search();
+                });
+        };
+
+        this.filterSharedWithMyOrg = function() {
+            this.filtering.clearFilters()
+                .then(function() {
+                    var currentUser = AuthenticationSrv.currentUser;
+                    self.filtering.addFilter({
+                        field: 'owningOrganisation',
+                        type: 'string',
+                        value: {
+                            operator: 'none',
+                            list: [{
+                                text: currentUser.organisation,
+                                label: currentUser.organisation
+                            }]
+                        }
+                    });
+                    self.search();
+                });
+        };
+
         this.filterMyOpenCases = function() {
             this.filtering.clearFilters()
                 .then(function() {

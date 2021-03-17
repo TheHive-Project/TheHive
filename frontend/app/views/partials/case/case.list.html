@@ -199,6 +199,13 @@
                                             </a>
                                         </div>
 
+                                        <div class="clearfix mt-xxs">
+                                            <a ui-sref="app.case.procedures({caseId: currentCase._id})">
+                                                <span>TTPs</span>
+                                                <strong class="pull-right">{{currentCase.extraData.procedureCount || 0}}</strong>
+                                            </a>
+                                        </div>
+
                                     </td>
                                     <td class="nowrap">
                                         <user user-id="currentCase.assignee" icon-only="true" icon-size="m"></user>
