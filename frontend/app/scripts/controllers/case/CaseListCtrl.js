@@ -112,7 +112,7 @@
                 operations: [
                     {'_name': 'listCase'}
                 ],
-                extraData: ['observableStats', 'taskStats', 'isOwner', 'shareCount', 'permissions', 'actionRequired'],
+                extraData: ['observableStats', 'taskStats', 'procedureCount', 'isOwner', 'shareCount', 'permissions', 'actionRequired'],
                 onUpdate: function() {
                     self.resetSelection();
                 }
