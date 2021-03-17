@@ -25,6 +25,13 @@
                         org: org
                     });
                 };
+
+                this.cancelRequireAction = function(org) {
+                    this.onCancelRequireAction({
+                        task: self.task,
+                        org: org
+                    });
+                }
             },
             controllerAs: '$ctrl',
             templateUrl: 'views/components/sharing/task/sharing-list.html',
@@ -38,6 +45,7 @@
                 onUpdateProfile: '&',
                 onDelete: '&',
                 onRequireAction: '&',
+                onCancelRequireAction: '&',
                 permissions: '='
             }
         });

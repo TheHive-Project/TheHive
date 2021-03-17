@@ -11,7 +11,7 @@
                 <th>Organisation</th>
                 <th width="250">Profile</th>
                 <th width="160">Shared At</th>
-                <th width="120" class="text-right" if-permission="manageTask" allowed="{{$ctrl.permissions}}"></th>
+                <th width="150" class="text-right" if-permission="manageTask" allowed="{{$ctrl.permissions}}"></th>
                 <th width="80" class="text-right" if-permission="manageShare" allowed="{{$ctrl.permissions}}">Actions</th>
             </thead>
             <tbody>
@@ -42,6 +42,9 @@
                     <td class="text-right" if-permission="manageTask" allowed="{{$ctrl.permissions}}">
                         <span ng-if="!!!share.actionRequired" class="clickable text-primary" ng-click="$ctrl.requireAction(share.organisationName)">
                             <i class="fa fa-exclamation-triangle"></i> Require Action
+                        </span>
+                        <span ng-if="!!share.actionRequired" class="clickable text-danger" ng-click="$ctrl.cancelRequireAction(share.organisationName)">
+                            <i class="fa fa-exclamation-triangle"></i> Cancel Request
                         </span>
                     </td>
 
