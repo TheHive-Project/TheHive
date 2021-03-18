@@ -2,7 +2,7 @@ package org.thp.thehive.services.notification.notifiers
 
 import akka.stream.Materializer
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.thp.client.{ProxyWS, ProxyWSConfig}
+import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -31,6 +31,7 @@ case class WebhookNotification(
     name: String,
     url: String,
     version: Int = 0,
+    auth: Authentication,
     wsConfig: ProxyWSConfig = ProxyWSConfig(),
     includedTheHiveOrganisations: Seq[String] = Seq("*"),
     excludedTheHiveOrganisations: Seq[String] = Nil
@@ -259,7 +260,7 @@ class Webhook(
       val async = for {
         message <- Future.fromTry(buildMessage(config.version, audit))
         _ = logger.debug(s"Request webhook with message $message")
-        resp <- ws.url(config.url).post(message)
+        resp <- config.auth(ws.url(config.url)).post(message)
       } yield if (resp.status >= 400) logger.warn(s"Webhook call on ${config.url} returns ${resp.status} ${resp.statusText}") else ()
       async.andThen { case _ => ws.close() }
     }
