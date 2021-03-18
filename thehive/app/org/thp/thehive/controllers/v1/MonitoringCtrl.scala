@@ -23,8 +23,9 @@ class MonitoringCtrl @Inject() (
     implicit val format: Format[PartitionConfig] = Json.format[PartitionConfig]
   }
 
-  val diskLocations: ConfigItem[Seq[PartitionConfig], Seq[PartitionConfig]] =
+  val diskLocationsConfig: ConfigItem[Seq[PartitionConfig], Seq[PartitionConfig]] =
     appConfig.item[Seq[PartitionConfig]]("monitor.disk", "disk locations to monitor")
+  def diskLocations: Seq[PartitionConfig] = diskLocationsConfig.get
 
   def diskUsage: Action[AnyContent] =
     entrypoint("monitor disk usage")
@@ -32,17 +33,15 @@ class MonitoringCtrl @Inject() (
         implicit graph =>
           for {
             _ <- Success(())
-            locations =
-              diskLocations
-                .get
-                .foldLeft[JsArray](JsArray.empty)((array, p) =>
-                  array :+ Json.obj(
-                    "location"   -> p.location,
-                    "freeSpace"  -> new File(p.location).getFreeSpace,
-                    "totalSpace" -> new File(p.location).getTotalSpace
-                  )
-                )
-          } yield Results.Ok(locations)
+            locations = diskLocations.map { dl =>
+              val file = new File(dl.location)
+              Json.obj(
+                "location"   -> dl.location,
+                "freeSpace"  -> file.getFreeSpace,
+                "totalSpace" -> file.getTotalSpace
+              )
+            }
+          } yield Results.Ok(JsArray(locations))
       )
 
 }
