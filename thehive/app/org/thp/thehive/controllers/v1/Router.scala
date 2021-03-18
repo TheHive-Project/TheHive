@@ -20,6 +20,7 @@ class Router @Inject() (
     // dashboardCtrl: DashboardCtrl,
     describeCtrl: DescribeCtrl,
     logCtrl: LogCtrl,
+    monitoringCtrl: MonitoringCtrl,
     observableCtrl: ObservableCtrl,
     observableTypeCtrl: ObservableTypeCtrl,
     organisationCtrl: OrganisationCtrl,
@@ -177,5 +178,7 @@ class Router @Inject() (
     case GET(p"/observable/type/$idOrName")    => observableTypeCtrl.get(idOrName)
     case POST(p"/observable/type")             => observableTypeCtrl.create
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
+
+    case GET(p"/monitor/disk") => monitoringCtrl.diskUsage
   }
 }
