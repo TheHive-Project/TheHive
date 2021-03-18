@@ -111,6 +111,15 @@
                 .then(function () {
                     return CaseSrv.removeCustomField(fieldId);
                 })
+                .then(function() {
+                    var newList = _.reject($scope.caze.customFields, function(item) {
+                        return item._id === fieldId
+                    });
+
+                    $scope.caze.customFields = newList;
+
+                    $scope.updateCustomFieldsList();
+                })
                 .catch(function(err) {
                     if(err && !_.isString(err)) {
                         NotificationSrv.error('Remove custom field', err.data, err.status);

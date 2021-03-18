@@ -10,9 +10,9 @@
                         value: newValue
                     });
                 };
-                this.removeCustomField = function(fieldId) {
+                this.removeCustomField = function(id) {
                     this.onRemove({
-                        fieldId: fieldId
+                        fieldId: id
                     })
                 }
             },
@@ -22,6 +22,7 @@
                 index: '<',
                 field: '<',
                 value: '=',
+                id: '<',
                 onUpdate: '&',
                 onRemove: '&',
                 editable: '<',
