@@ -167,7 +167,7 @@ class MispClient(
     val fromDate = (maxAge.map(a => System.currentTimeMillis() - a.toMillis).toSeq ++ publishDate.map(_.getTime))
       .sorted(Ordering[Long].reverse)
       .headOption
-      .map(d => "searchpublish_timestamp" -> JsNumber((d / 1000) + 1))
+      .map(d => "searchtimestamp" -> JsNumber((d / 1000) + 1))
     val tagFilter          = (whitelistTags ++ excludedTags.map("!" + _)).map(JsString.apply)
     val organisationFilter = (whitelistOrganisations ++ excludedOrganisations.map("!" + _)).map(JsString.apply)
     val query = JsObject

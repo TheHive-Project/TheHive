@@ -181,18 +181,20 @@ class MispImportSrv @Inject() (
   ): Option[Date] = {
     val lastOrgSynchro = client
       .organisationFilter(organisationSrv.startTraversal)
-      .group(
-        _.by,
-        _.by(
-          _.alerts
-            .filterBySource(mispOrganisation)
-            .filterByType("misp")
-            .value(a => a.lastSyncDate)
-            .max
-        )
-      )
-      .head
-      .values
+      .notAdmin
+      ._id
+      .toIterator
+      .flatMap { orgId =>
+        alertSrv
+          .startTraversal
+          .filterBySource(mispOrganisation)
+          .filterByType("misp")
+          .has(_.organisationId, orgId)
+          .value(a => a.lastSyncDate)
+          .max
+          .headOption
+      }
+      .toSeq
 
     if (lastOrgSynchro.size == organisations.size && organisations.nonEmpty) Some(lastOrgSynchro.min)
     else None
@@ -213,8 +215,8 @@ class MispImportSrv @Inject() (
               observableSrv
                 .startTraversal
                 .has(_.organisationIds, organisationSrv.currentId)
-                .has(_.relatedId, observable.relatedId)
-                .has(_.data, observable.data.get)
+                .has(_.relatedId, alert._id)
+                .has(_.data, data)
                 .richObservable
                 .getOrFail("Observable")
             _ <-
@@ -273,7 +275,7 @@ class MispImportSrv @Inject() (
     }
   }
 
-  def importAttibutes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(implicit
+  def importAttributes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Unit = {
@@ -348,10 +350,10 @@ class MispImportSrv @Inject() (
   )(implicit graph: Graph, authContext: AuthContext): Try[(Alert with Entity, JsObject)] = {
     logger.debug(s"updateOrCreateAlert ${client.name}#${event.id} for organisation ${organisation.name}")
     eventToAlert(client, event, organisation._id).flatMap { alert =>
-      organisationSrv
-        .get(organisation)
-        .alerts
+      alertSrv
+        .startTraversal
         .getBySourceId("misp", mispOrganisation, event.id)
+        .has(_.organisationId, organisation._id)
         .richAlert
         .headOption match {
         case None => // if the related alert doesn't exist, create it
@@ -404,7 +406,7 @@ class MispImportSrv @Inject() (
 
           logger.debug(s"Get eligible organisations")
           val organisations = db.roTransaction { implicit graph =>
-            client.organisationFilter(organisationSrv.startTraversal).toSeq
+            client.organisationFilter(organisationSrv.startTraversal).notAdmin.toSeq
           }
           val lastSynchro = db.roTransaction { implicit graph =>
             getLastSyncDate(client, mispOrganisation, organisations)
@@ -423,7 +425,7 @@ class MispImportSrv @Inject() (
                   updateOrCreateAlert(client, organisation, mispOrganisation, event, caseTemplate)
                     .map {
                       case (alert, updatedFields) =>
-                        importAttibutes(client, event, alert, if (alert._updatedBy.isEmpty) None else lastSynchro)
+                        importAttributes(client, event, alert, if (alert._updatedBy.isEmpty) None else lastSynchro)
                         (alert, updatedFields)
                     }
                     .recoverWith {
