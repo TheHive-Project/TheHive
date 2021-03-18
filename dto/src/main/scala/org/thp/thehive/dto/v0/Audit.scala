@@ -44,7 +44,7 @@ case class OutputAudit(
 object OutputAudit {
 
   val auditWrites: OWrites[OutputAudit] = Json.writes[OutputAudit].transform { js: JsObject =>
-    Json.obj("base" -> (js - "summary"), "summary" -> (js \ "summary").asOpt[JsObject])
+    Json.obj("base" -> (js - "summary"), "summary" -> (js \ "summary").asOpt[JsObject], "_type" -> "audit")
   }
 
   val auditReads: Reads[OutputAudit] = Reads[OutputAudit] { js =>
