@@ -27,8 +27,9 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
       createdDashboard <- createEntity(dashboard)
       user             <- userSrv.current.getOrFail("User")
       _                <- dashboardUserSrv.create(DashboardUser(), createdDashboard, user)
-      _                <- auditSrv.dashboard.create(createdDashboard, RichDashboard(createdDashboard, Map.empty).toJson)
-    } yield RichDashboard(createdDashboard, Map.empty)
+      richDashboard = RichDashboard(createdDashboard, Map.empty, writable = true)
+      _ <- auditSrv.dashboard.create(createdDashboard, richDashboard.toJson)
+    } yield richDashboard
 
   override def update(
       traversal: Traversal.V[Dashboard],
@@ -107,14 +108,15 @@ object DashboardOps {
         .fold
         .domainMap(_.map { case (writable, orgs) => (orgs.value[String]("name"), writable) })
 
-    def richDashboard: Traversal[RichDashboard, JMap[String, Any], Converter[RichDashboard, JMap[String, Any]]] =
+    def richDashboard(implicit authContext: AuthContext): Traversal[RichDashboard, JMap[String, Any], Converter[RichDashboard, JMap[String, Any]]] =
       traversal
         .project(
           _.by
             .by(_.organisationShares)
+            .by(_.choose(_.canUpdate, true, false))
         )
         .domainMap {
-          case (dashboard, organisationShares) => RichDashboard(dashboard, organisationShares.toMap)
+          case (dashboard, organisationShares, writable) => RichDashboard(dashboard, organisationShares.toMap, writable)
         }
 
   }

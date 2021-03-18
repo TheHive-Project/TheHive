@@ -49,9 +49,9 @@ class DashboardCtrl @Inject() (
 
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Dashboard], IteratorOutput](
     "page",
-    (range, dashboardSteps, _) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard)
+    (range, dashboardSteps, authContext) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard(authContext))
   )
-  override val outputQuery: Query = Query.output[RichDashboard, Traversal.V[Dashboard]](_.richDashboard)
+  override val outputQuery: Query = Query.outputWithContext[RichDashboard, Traversal.V[Dashboard]](_.richDashboard(_))
 
   def create: Action[AnyContent] =
     entrypoint("create dashboard")
@@ -95,10 +95,9 @@ class DashboardCtrl @Inject() (
   def delete(dashboardId: String): Action[AnyContent] =
     entrypoint("delete dashboard")
       .authTransaction(db) { implicit request => implicit graph =>
-        userSrv
-          .current
-          .dashboards
+        dashboardSrv
           .get(EntityIdOrName(dashboardId))
+          .canUpdate
           .getOrFail("Dashboard")
           .map { dashboard =>
             dashboardSrv.remove(dashboard)

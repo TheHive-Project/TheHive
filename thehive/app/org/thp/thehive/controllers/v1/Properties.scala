@@ -451,7 +451,7 @@ class Properties @Inject() (
           case (_, "Shared", vertex, graph, authContext) =>
             for {
               dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
-              _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
+              _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = true)(graph, authContext)
             } yield Json.obj("status" -> "Shared")
 
           case (_, "Private", vertex, graph, authContext) =>

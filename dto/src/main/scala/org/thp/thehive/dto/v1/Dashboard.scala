@@ -20,7 +20,8 @@ case class OutputDashboard(
     title: String,
     description: String,
     status: String,
-    definition: String
+    definition: String,
+    writable: Boolean
 )
 
 object OutputDashboard {

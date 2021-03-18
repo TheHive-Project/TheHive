@@ -387,6 +387,10 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       Success(())
     }
     .removeProperty(model = "Log", propertyName = "deleted", usedOnlyByThisModel = true)
+    .updateGraph("Make shared dashboard writable", "Dashboard") { traversal =>
+      traversal.outE("OrganisationDashboard").raw.property("writable", true).iterate()
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

@@ -70,10 +70,9 @@ class DashboardCtrl @Inject() (
   def delete(dashboardId: String): Action[AnyContent] =
     entrypoint("delete dashboard")
       .authTransaction(db) { implicit request => implicit graph =>
-        userSrv
-          .current
-          .dashboards
+        dashboardSrv
           .get(EntityIdOrName(dashboardId))
+          .canUpdate
           .getOrFail("Dashboard")
           .map { dashboard =>
             dashboardSrv.remove(dashboard)
@@ -109,9 +108,9 @@ class PublicDashboard @Inject() (
 
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Dashboard], IteratorOutput](
     "page",
-    (range, dashboardSteps, _) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard)
+    (range, dashboardSteps, authContext) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard(authContext))
   )
-  override val outputQuery: Query = Query.output[RichDashboard, Traversal.V[Dashboard]](_.richDashboard)
+  override val outputQuery: Query = Query.outputWithContext[RichDashboard, Traversal.V[Dashboard]](_.richDashboard(_))
   val publicProperties: PublicProperties = PublicPropertyListBuilder[Dashboard]
     .property("title", UMapping.string)(_.field.updatable)
     .property("description", UMapping.string)(_.field.updatable)
@@ -122,7 +121,7 @@ class PublicDashboard @Inject() (
           case (_, "Shared", vertex, graph, authContext) =>
             for {
               dashboard <- dashboardSrv.get(vertex)(graph).filter(_.user.current(authContext)).getOrFail("Dashboard")
-              _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = false)(graph, authContext)
+              _         <- dashboardSrv.share(dashboard, authContext.organisation, writable = true)(graph, authContext)
             } yield Json.obj("status" -> "Shared")
 
           case (_, "Private", vertex, graph, authContext) =>
