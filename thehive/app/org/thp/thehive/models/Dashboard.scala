@@ -1,10 +1,10 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityIdOrName}
 import play.api.libs.json.JsObject
+
+import java.util.Date
 
 @BuildVertexEntity
 case class Dashboard(title: String, description: String, definition: JsObject)
@@ -17,7 +17,8 @@ case class OrganisationDashboard(writable: Boolean)
 
 case class RichDashboard(
     dashboard: Dashboard with Entity,
-    organisationShares: Map[String, Boolean]
+    organisationShares: Map[String, Boolean],
+    writable: Boolean
 ) {
   def _id: EntityIdOrName        = dashboard._id
   def _createdBy: String         = dashboard._createdBy

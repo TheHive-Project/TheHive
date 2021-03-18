@@ -1,3 +1,5 @@
 [
-  {"from": "helloworld", "to": "attachment-hello"}
+  {"from": "helloworld", "to": "attachment-hello"},
+  {"from": "obs-cascade-remove-simple", "to": "cascade-remove-attachment1"},
+  {"from": "obs-cascade-remove-delete", "to": "cascade-remove-attachment1"}
 ]

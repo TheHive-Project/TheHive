@@ -1,23 +1,21 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models.{Organisation, OrganisationPage, Page}
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PageOps._
 import play.api.libs.json.Json
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
-class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, organisationSrv: OrganisationSrv, auditSrv: AuditSrv)
-    extends VertexSrv[Page] {
+class PageSrv @Inject() (organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page] {
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 
@@ -38,7 +36,7 @@ class PageSrv @Inject() (implicit @Named("with-thehive-schema") db: Database, or
       _       <- auditSrv.page.update(p, Json.obj("title" -> p.title))
     } yield p
 
-  def delete(page: Page with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  override def delete(page: Page with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     organisationSrv.getOrFail(authContext.organisation).flatMap { organisation =>
       get(page).remove()
       auditSrv.page.delete(page, organisation)

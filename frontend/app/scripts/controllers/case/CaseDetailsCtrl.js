@@ -64,11 +64,11 @@
         };
 
         $scope.getCaseTags = function(query) {
-            return TagSrv.fromCases(query);
+            return TagSrv.autoComplete(query);
         };
     });
 
-    angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, CustomFieldsSrv) {
+    angular.module('theHiveControllers').controller('CaseCustomFieldsCtrl', function($scope, $uibModal, NotificationSrv, ModalUtilsSrv, CustomFieldsSrv, CaseSrv) {
 
         $scope.getCustomFieldName = function(fieldDef) {
             return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
@@ -102,6 +102,30 @@
                 $scope.customFieldsAvailable = _.keys($scope.allCustomFields).length > 0;
             });
         };
+
+        $scope.removeField = function(fieldId) {
+            ModalUtilsSrv.confirm('Remove custom field value', 'Are you sure you want to delete this case custom field value?', {
+                okText: 'Yes, remove it',
+                flavor: 'danger'
+            })
+                .then(function () {
+                    return CaseSrv.removeCustomField(fieldId);
+                })
+                .then(function() {
+                    var newList = _.reject($scope.caze.customFields, function(item) {
+                        return item._id === fieldId
+                    });
+
+                    $scope.caze.customFields = newList;
+
+                    $scope.updateCustomFieldsList();
+                })
+                .catch(function(err) {
+                    if(err && !_.isString(err)) {
+                        NotificationSrv.error('Remove custom field', err.data, err.status);
+                    }
+                });
+        }
 
         $scope.keys = function(obj) {
             return _.keys(obj);

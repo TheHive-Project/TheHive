@@ -1,24 +1,22 @@
 package org.thp.thehive.services
 
-import java.lang.{Long => JLong}
-
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.apache.tinkerpop.gremlin.structure.{Graph, T}
+import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.DataOps._
 
+import java.lang.{Long => JLong}
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit @Named("with-thehive-schema") db: Database)
-    extends VertexSrv[Data] {
+class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[Data] {
   override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     super.createEntity(e).map { data =>
       integrityCheckActor ! EntityAdded("Data")
@@ -32,6 +30,9 @@ class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: Ac
       .fold(createEntity(e))(Success(_))
 
   override def exists(e: Data)(implicit graph: Graph): Boolean = startTraversal.getByData(e.data).exists
+
+  override def getByName(name: String)(implicit graph: Graph): Traversal.V[Data] =
+    startTraversal.getByData(name)
 }
 
 object DataOps {
@@ -56,7 +57,7 @@ object DataOps {
 
 }
 
-class DataIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
+class DataIntegrityCheckOps @Inject() (val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
   override def resolve(entities: Seq[Data with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>
@@ -65,4 +66,15 @@ class DataIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Dat
         Success(())
       case _ => Success(())
     }
+
+  override def globalCheck(): Map[String, Long] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        val orphans = service.startTraversal.filterNot(_.inE[ObservableData])._id.toSeq
+        if (orphans.nonEmpty) {
+          service.getByIds(orphans: _*).remove()
+          Map("orphan" -> orphans.size.toLong)
+        } else Map.empty[String, Long]
+      }
+    }.getOrElse(Map("globalFailure" -> 1L))
 }

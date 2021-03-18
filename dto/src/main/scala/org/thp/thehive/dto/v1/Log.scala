@@ -1,9 +1,9 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
-
 import org.thp.scalligraph.controllers.FFile
 import play.api.libs.json.{JsObject, Json, OFormat}
+
+import java.util.Date
 
 case class InputLog(message: String, startDate: Option[Date] = None, attachment: Option[FFile] = None)
 
@@ -17,7 +17,6 @@ case class OutputLog(
     message: String,
     date: Date,
     attachment: Option[OutputAttachment] = None,
-    deleted: Boolean,
     owner: String,
     extraData: JsObject
 )

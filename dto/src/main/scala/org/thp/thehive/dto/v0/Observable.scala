@@ -1,10 +1,11 @@
 package org.thp.thehive.dto.v0
 
-import java.util.Date
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
 import play.api.libs.json.{JsObject, Json, OFormat, Writes}
+
+import java.util.Date
 
 case class InputObservable(
     dataType: String,

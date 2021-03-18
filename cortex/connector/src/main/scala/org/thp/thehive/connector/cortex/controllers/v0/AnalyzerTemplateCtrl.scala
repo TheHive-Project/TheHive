@@ -1,9 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import java.util.zip.ZipFile
-
 import com.google.inject.name.Named
-import javax.inject.{Inject, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -21,12 +18,14 @@ import org.thp.thehive.models.Permissions
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.util.zip.ZipFile
+import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success}
 
 @Singleton
 class AnalyzerTemplateCtrl @Inject() (
     override val entrypoint: Entrypoint,
-    @Named("with-thehive-cortex-schema") override val db: Database,
+    override val db: Database,
     analyzerTemplateSrv: AnalyzerTemplateSrv,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicAnalyzerTemplate
@@ -100,13 +99,11 @@ class PublicAnalyzerTemplate @Inject() (analyzerTemplateSrv: AnalyzerTemplateSrv
     Query.init[Traversal.V[AnalyzerTemplate]]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.startTraversal(graph))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[AnalyzerTemplate]](
     "getReportTemplate",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => analyzerTemplateSrv.get(idOrName)(graph)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[AnalyzerTemplate], IteratorOutput](
       "page",
-      FieldsParser[OutputParam],
       (range, analyzerTemplateTraversal, _) => analyzerTemplateTraversal.page(range.from, range.to, withTotal = true)
     )
   override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]

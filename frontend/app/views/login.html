@@ -1,3 +1,12 @@
+<div class="container-fluid mt-xs">
+    <div class="text-danger" ng-repeat="schema in appConfig.schemaStatus" ng-if="schema.error">
+        <div class="callout callout-danger">
+            <h4>Error in {{schema.name}} schema: expected version {{schema.expectedVersion}}, got {{schema.currentVersion}}</h4>
+            <p>Please contact the administrator</p>
+        </div>
+    </div>
+</div>
+
 <div class="login-box">
     <div class="login-logo">
         <img src="images/logo.svg" height="70"/>

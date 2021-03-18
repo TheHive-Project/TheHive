@@ -42,7 +42,7 @@
                 ], {
                     scope: $scope,
                     rootId: caseId,
-                    objectType: 'case_artifact',
+                    objectType: 'observable',
                     query: {
                         params: {
                             name: 'observables-by-tags-stats-' + caseId
@@ -69,7 +69,7 @@
                 ], {
                     scope: $scope,
                     rootId: caseId,
-                    objectType: 'case_artifact',
+                    objectType: 'observable',
                     query: {
                         params: {
                             name: 'observables-by-type-stats-' + caseId
@@ -95,7 +95,7 @@
                 ], {
                     scope: $scope,
                     rootId: caseId,
-                    objectType: 'case_artifact',
+                    objectType: 'observable',
                     query: {
                         params: {
                             name: 'observables-by-ioc-stats-' + caseId

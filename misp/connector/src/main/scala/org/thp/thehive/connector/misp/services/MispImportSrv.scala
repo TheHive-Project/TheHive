@@ -4,14 +4,14 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
 import org.thp.scalligraph.auth.{AuthContext, UserSrv}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.FunctionalCondition._
-import org.thp.scalligraph.{EntityName, RichSeq}
+import org.thp.scalligraph.{CreateError, EntityId, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -23,7 +23,7 @@ import play.api.libs.json._
 
 import java.nio.file.Files
 import java.util.Date
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
@@ -35,18 +35,17 @@ class MispImportSrv @Inject() (
     observableSrv: ObservableSrv,
     organisationSrv: OrganisationSrv,
     observableTypeSrv: ObservableTypeSrv,
-    attachmentSrv: AttachmentSrv,
     caseTemplateSrv: CaseTemplateSrv,
+    db: Database,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
   lazy val logger: Logger = Logger(getClass)
 
-  def eventToAlert(client: TheHiveMispClient, event: Event): Try[Alert] =
+  def eventToAlert(client: TheHiveMispClient, event: Event, organisationId: EntityId): Try[Alert] =
     client
       .currentOrganisationName
       .map { mispOrganisation =>
@@ -71,7 +70,10 @@ class MispImportSrv @Inject() (
             .getOrElse(2),
           pap = 2,
           read = false,
-          follow = true
+          follow = true,
+          organisationId = organisationId,
+          tags = event.tags.map(_.name),
+          caseId = None
         )
       }
 
@@ -93,7 +95,7 @@ class MispImportSrv @Inject() (
 
   def attributeToObservable(
       attribute: Attribute
-  )(implicit graph: Graph): List[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])] =
+  )(implicit graph: Graph): List[(Observable, Either[String, (String, String, Source[ByteString, _])])] =
     attribute
       .`type`
       .split('|')
@@ -114,9 +116,15 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
-              observableType,
-              attribute.tags.map(_.name).toSet ++ additionalTags,
+              Observable(
+                message = attribute.comment,
+                tlp = 0,
+                ioc = false,
+                sighted = false,
+                ignoreSimilarity = None,
+                dataType = observableType.name,
+                tags = additionalTags ++ attribute.tags.map(_.name)
+              ),
               Right(attribute.data.get)
             )
           )
@@ -126,9 +134,15 @@ class MispImportSrv @Inject() (
           )
           List(
             (
-              Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
-              observableType,
-              attribute.tags.map(_.name).toSet ++ additionalTags,
+              Observable(
+                message = attribute.comment,
+                tlp = 0,
+                ioc = false,
+                sighted = false,
+                ignoreSimilarity = None,
+                dataType = observableType.name,
+                tags = additionalTags ++ attribute.tags.map(_.name)
+              ),
               Left(attribute.value)
             )
           )
@@ -144,9 +158,15 @@ class MispImportSrv @Inject() (
                   s"attribute ${attribute.category}:${attribute.`type`} (${attribute.tags}) is converted to observable $observableType with tags $additionalTags"
                 )
                 (
-                  Observable(attribute.comment, 0, ioc = false, sighted = false, ignoreSimilarity = None),
-                  observableType,
-                  attribute.tags.map(_.name).toSet ++ additionalTags,
+                  Observable(
+                    message = attribute.comment,
+                    tlp = 0,
+                    ioc = false,
+                    sighted = false,
+                    ignoreSimilarity = None,
+                    dataType = observableType.name,
+                    tags = additionalTags ++ attribute.tags.map(_.name)
+                  ),
                   Left(value)
                 )
             }
@@ -161,73 +181,62 @@ class MispImportSrv @Inject() (
   ): Option[Date] = {
     val lastOrgSynchro = client
       .organisationFilter(organisationSrv.startTraversal)
-      .group(
-        _.by,
-        _.by(
-          _.alerts
-            .filterBySource(mispOrganisation)
-            .filterByType("misp")
-            .value(a => a.lastSyncDate)
-            .max
-        )
-      )
-      .head
-      .values
+      .notAdmin
+      ._id
+      .toIterator
+      .flatMap { orgId =>
+        alertSrv
+          .startTraversal
+          .filterBySource(mispOrganisation)
+          .filterByType("misp")
+          .has(_.organisationId, orgId)
+          .value(a => a.lastSyncDate)
+          .max
+          .headOption
+      }
+      .toSeq
 
     if (lastOrgSynchro.size == organisations.size && organisations.nonEmpty) Some(lastOrgSynchro.min)
     else None
   }
 
-  def updateOrCreateObservable(
+  def updateOrCreateSimpleObservable(
       alert: Alert with Entity,
       observable: Observable,
-      observableType: ObservableType with Entity,
-      data: String,
-      tags: Set[String],
-      creation: Boolean
-  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+      data: String
+  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+    alertSrv
+      .createObservable(alert, observable, data)
+      .map(_ => ())
+      .recoverWith {
+        case _: CreateError =>
+          for {
+            richObservable <-
+              observableSrv
+                .startTraversal
+                .has(_.organisationIds, organisationSrv.currentId)
+                .has(_.relatedId, alert._id)
+                .has(_.data, data)
+                .richObservable
+                .getOrFail("Observable")
+            _ <-
+              observableSrv
+                .get(richObservable.observable)
+                .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
+                .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
+                .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
+                .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
+                .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
+                .getOrFail("Observable")
+          } yield ()
+      }
 
-    val existingObservable =
-      if (creation) None
-      else
-        alertSrv
-          .get(alert)
-          .observables
-          .filterOnType(observableType.name)
-          .filterOnData(data)
-          .richObservable
-          .headOption
-    existingObservable match {
-      case None =>
-        logger.debug(s"Observable ${observableType.name}:$data doesn't exist, create it")
-        for {
-          richObservable <- observableSrv.create(observable, observableType, data, tags, Nil)
-          _              <- alertSrv.addObservable(alert, richObservable)
-        } yield ()
-      case Some(richObservable) =>
-        logger.debug(s"Observable ${observableType.name}:$data exists, update it")
-        for {
-          updatedObservable <-
-            observableSrv
-              .get(richObservable.observable)
-              .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
-              .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
-              .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
-              .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
-              .getOrFail("Observable")
-          _ <- observableSrv.updateTagNames(updatedObservable, tags)
-        } yield ()
-    }
-  }
-
-  def updateOrCreateObservable(
+  def updateOrCreateAttachmentObservable(
       alert: Alert with Entity,
       observable: Observable,
-      observableType: ObservableType with Entity,
       filename: String,
       contentType: String,
       src: Source[ByteString, _],
-      tags: Set[String],
       creation: Boolean
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val existingObservable =
@@ -236,40 +245,37 @@ class MispImportSrv @Inject() (
         alertSrv
           .get(alert)
           .observables
-          .filterOnType(observableType.name)
+          .filterOnType(observable.dataType)
           .filterOnAttachmentName(filename)
           .filterOnAttachmentName(contentType)
           .richObservable
           .headOption
     existingObservable match {
       case None =>
-        logger.debug(s"Observable ${observableType.name}:$filename:$contentType doesn't exist, create it")
+        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType doesn't exist, create it")
         val file = Files.createTempFile("misp-attachment-", "")
         Await.result(src.runWith(FileIO.toPath(file)), 1.hour)
         val fFile = FFile(filename, file, contentType)
-        for {
-          createdAttachment <- attachmentSrv.create(fFile)
-          richObservable    <- observableSrv.create(observable, observableType, createdAttachment, tags, Nil)
-          _                 <- alertSrv.addObservable(alert, richObservable)
-          _ = Files.delete(file)
-        } yield ()
+        val res   = alertSrv.createObservable(alert, observable, fFile).map(_ => ())
+        Files.delete(file)
+        res
       case Some(richObservable) =>
-        logger.debug(s"Observable ${observableType.name}:$filename:$contentType exists, update it")
+        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType exists, update it")
         for {
-          updatedObservable <-
+          _ <-
             observableSrv
               .get(richObservable.observable)
               .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
               .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
               .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
               .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
+              .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
               .getOrFail("Observable")
-          _ <- observableSrv.updateTagNames(updatedObservable, tags)
         } yield ()
     }
   }
 
-  def importAttibutes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(implicit
+  def importAttributes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Unit = {
@@ -282,28 +288,35 @@ class MispImportSrv @Inject() (
         .fold(
           Map.empty[
             (String, String),
-            (Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])
+            (Observable, Either[String, (String, String, Source[ByteString, _])])
           ]
         ) {
-          case (distinctMap, data @ (_, t, _, Left(d)))          => distinctMap + ((t.name, d) -> data)
-          case (distinctMap, data @ (_, t, _, Right((n, _, _)))) => distinctMap + ((t.name, n) -> data)
+          case (distinctMap, data @ (obs, Left(d)))          => distinctMap + ((obs.dataType, d) -> data)
+          case (distinctMap, data @ (obs, Right((n, _, _)))) => distinctMap + ((obs.dataType, n) -> data)
         }
         .mapConcat { m =>
           m.values.toList
         }
-        .runWith(Sink.queue[(Observable, ObservableType with Entity, Set[String], Either[String, (String, String, Source[ByteString, _])])])
+        .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])])
     QueueIterator(queue).foreach {
-      case (observable, observableType, tags, Left(data)) =>
-        updateOrCreateObservable(alert, observable, observableType, data, tags ++ client.observableTags, lastSynchro.isEmpty)
+      case (observable, Left(data)) =>
+        updateOrCreateSimpleObservable(alert, observable, data)
           .recover {
             case error =>
-              logger.error(s"Unable to create observable $observable ${observableType.name}:$data", error)
+              logger.error(s"Unable to create observable $observable", error)
           }
-      case (observable, observableType, tags, Right((filename, contentType, src))) =>
-        updateOrCreateObservable(alert, observable, observableType, filename, contentType, src, tags ++ client.observableTags, lastSynchro.isEmpty)
+      case (observable, Right((filename, contentType, src))) =>
+        updateOrCreateAttachmentObservable(
+          alert,
+          observable,
+          filename,
+          contentType,
+          src,
+          lastSynchro.isEmpty
+        )
           .recover {
             case error =>
-              logger.error(s"Unable to create observable $observable ${observableType.name}:$filename", error)
+              logger.error(s"Unable to create observable $observable: $filename", error)
           }
     }
 
@@ -320,7 +333,7 @@ class MispImportSrv @Inject() (
       .toIterator
       .foreach { obs =>
         logger.debug(s"Delete  $obs")
-        observableSrv.remove(obs).recover {
+        observableSrv.delete(obs).recover {
           case error => logger.error(s"Fail to delete observable $obs", error)
         }
       }
@@ -336,11 +349,11 @@ class MispImportSrv @Inject() (
       caseTemplate: Option[CaseTemplate with Entity]
   )(implicit graph: Graph, authContext: AuthContext): Try[(Alert with Entity, JsObject)] = {
     logger.debug(s"updateOrCreateAlert ${client.name}#${event.id} for organisation ${organisation.name}")
-    eventToAlert(client, event).flatMap { alert =>
-      organisationSrv
-        .get(organisation)
-        .alerts
+    eventToAlert(client, event, organisation._id).flatMap { alert =>
+      alertSrv
+        .startTraversal
         .getBySourceId("misp", mispOrganisation, event.id)
+        .has(_.organisationId, organisation._id)
         .richAlert
         .headOption match {
         case None => // if the related alert doesn't exist, create it
@@ -370,7 +383,7 @@ class MispImportSrv @Inject() (
             )
           val tags = event.tags.map(_.name)
           for {
-            (addedTags, removedTags) <- alertSrv.updateTagNames(richAlert.alert, tags.toSet)
+            (addedTags, removedTags) <- alertSrv.updateTags(richAlert.alert, tags.toSet)
             updatedAlert             <- updatedAlertTraversal.getOrFail("Alert")
             updatedFieldWithTags =
               if (addedTags.nonEmpty || removedTags.nonEmpty) updatedFields + ("tags" -> JsArray(tags.map(JsString))) else updatedFields
@@ -393,7 +406,7 @@ class MispImportSrv @Inject() (
 
           logger.debug(s"Get eligible organisations")
           val organisations = db.roTransaction { implicit graph =>
-            client.organisationFilter(organisationSrv.startTraversal).toSeq
+            client.organisationFilter(organisationSrv.startTraversal).notAdmin.toSeq
           }
           val lastSynchro = db.roTransaction { implicit graph =>
             getLastSyncDate(client, mispOrganisation, organisations)
@@ -412,7 +425,7 @@ class MispImportSrv @Inject() (
                   updateOrCreateAlert(client, organisation, mispOrganisation, event, caseTemplate)
                     .map {
                       case (alert, updatedFields) =>
-                        importAttibutes(client, event, alert, if (alert._updatedBy.isEmpty) None else lastSynchro)
+                        importAttributes(client, event, alert, if (alert._updatedBy.isEmpty) None else lastSynchro)
                         (alert, updatedFields)
                     }
                     .recoverWith {

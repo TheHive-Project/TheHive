@@ -1,0 +1,7 @@
+[
+  {"from": "case1", "to": "testProcedure1"},
+  {"from": "case1", "to": "testProcedure2"},
+  {"from": "caseMerge21", "to": "mergeProcedure211"},
+  {"from": "caseMerge22", "to": "mergeProcedure221"},
+  {"from": "caseMerge22", "to": "mergeProcedure222"}
+]

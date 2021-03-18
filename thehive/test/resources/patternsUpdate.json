@@ -1,0 +1,22 @@
+{
+  "type": "bundle",
+  "id": "bundle--ad5f3bce-004b-417e-899d-392f8591ab55",
+  "spec_version": "2.0",
+  "objects": [
+    {
+      "id": "testPattern1",
+      "name": "Updated testPattern1",
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T123",
+          "url": "https://attack.mitre.org/techniques/T123"
+        }
+      ],
+      "revoked": true,
+      "type": "attack-pattern",
+      "modified": "2020-01-24T14:14:05.452Z",
+      "created": "2017-12-14T16:46:06.044Z"
+    }
+  ]
+}

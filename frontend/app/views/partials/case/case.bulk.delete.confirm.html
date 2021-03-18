@@ -1,0 +1,32 @@
+<form name="removeForm" ng-submit="$dialog.confirm()">
+    <div class="modal-header bg-danger">
+        <h3 class="modal-title">Permanently remove selected cases</h3>
+    </div>
+    <div class="modal-body">
+        <p>Are you sure you want to permanently delete the following <b>{{$dialog.selection.length}}</b> case(s)?</p>
+
+        <div class="mt-xs">
+            <table class="table table-striped">
+                <tr ng-repeat="item in $dialog.selection">
+                    <td>#{{item.number}} - {{item.title}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="mt-xs">
+            <p><b>To confirm, please type the number of cases to delete.</b></p>
+
+            <input class="form-control input-lg" name="count" type="number" placeholder="{{$dialog.count}}"
+                ng-required ng-model="$dialog.typedCount">
+
+            <p><b class="text-danger">This action might take a while and cannot be undone.</b></p>
+        </div>
+    </div>
+    <div class="modal-footer text-left">
+        <button class="btn btn-default" ng-click="$dialog.cancel()" ng-disabled="$dialog.loading" type="button">Cancel</button>
+        <button class="btn btn-danger pull-right" type="submit"
+            ng-disabled="$dialog.loading || removeForm.$invalid || ($dialog.count != $dialog.typedCount)">
+            Yes, confirm.
+        </button>
+    </div>
+</form>

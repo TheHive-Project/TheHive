@@ -256,6 +256,7 @@
                  shares="shares"
                  read-only="true"
                  on-require-action="markShareAsActionRequired(task, org)"
+                 on-cancel-require-action="markShareAsActionDone(task, org)"
                  on-delete="removeShare(share)"
                  permissions="userPermissions"
                  ></task-sharing-list>

@@ -1,26 +1,25 @@
 package org.thp.thehive.services
 
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.RoleOps._
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
 @Singleton
-class RoleSrv @Inject() (@Named("with-thehive-schema") implicit val db: Database) extends VertexSrv[Role] {
+class RoleSrv @Inject() extends VertexSrv[Role] {
 
   val roleOrganisationSrv = new EdgeSrv[RoleOrganisation, Role, Organisation]
   val userRoleSrv         = new EdgeSrv[UserRole, User, Role]
   val roleProfileSrv      = new EdgeSrv[RoleProfile, Role, Profile]
 
-  def create(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(
-      implicit graph: Graph,
+  def create(user: User with Entity, organisation: Organisation with Entity, profile: Profile with Entity)(implicit
+      graph: Graph,
       authContext: AuthContext
   ): Try[Role with Entity] =
     for {

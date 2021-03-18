@@ -50,9 +50,11 @@
     <link rel="stylesheet" href="styles/dashboard.css"/>
     <link rel="stylesheet" href="styles/case-item.css"/>
     <link rel="stylesheet" href="styles/case-template.css"/>
+    <link rel="stylesheet" href="styles/procedure.css"/>
     <link rel="stylesheet" href="styles/custom-fields.css"/>
     <link rel="stylesheet" href="styles/directives/page-sizer.css"/>
     <link rel="stylesheet" href="styles/directives/user.css"/>
+    <link rel="stylesheet" href="styles/components/tag.css"/>
     <!-- endbuild -->
 
     <style>
@@ -139,12 +141,16 @@
     <script src="scripts/components/common/custom-field-input.component.js"></script>
     <script src="scripts/components/common/custom-field-labels.component.js"></script>
     <script src="scripts/components/common/observable-flags.component.js"></script>
+    <script src="scripts/components/common/tag.component.js"></script>
+    <script src="scripts/components/common/task-flags.component.js"></script>
     <script src="scripts/components/control-sidebar.component.js"></script>
     <script src="scripts/components/header.component.js"></script>
     <script src="scripts/components/list/stats-item.component.js"></script>
     <script src="scripts/components/main-sidebar.component.js"></script>
     <script src="scripts/components/organisation/OrgCaseTemplateListCmp.js"></script>
+    <script src="scripts/components/organisation/OrgCaseTemplateModalCtrl.js"></script>
     <script src="scripts/components/organisation/OrgConfigListCmp.js"></script>
+    <script src="scripts/components/organisation/OrgCustomTagsListCmp.js"></script>
     <script src="scripts/components/organisation/OrgSwitchCtrl.js"></script>
     <script src="scripts/components/organisation/OrgUserListCmp.js"></script>
     <script src="scripts/components/search/filters-preview.component.js"></script>
@@ -157,6 +163,7 @@
     <script src="scripts/controllers/admin/AdminCustomFieldsCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminObservablesCtrl.js"></script>
     <script src="scripts/controllers/admin/AdminUiSettingsCtrl.js"></script>
+    <script src="scripts/controllers/admin/attack/AttackPatternListCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/case-template/AdminCaseTemplateImportCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/case-template/AdminCaseTemplateTasksCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/OrgDetailsCtrl.js"></script>
@@ -165,8 +172,10 @@
     <script src="scripts/controllers/admin/organisation/OrgModalCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/OrgUserModalCtrl.js"></script>
     <script src="scripts/controllers/admin/organisation/OrgUsersCtrl.js"></script>
+    <script src="scripts/controllers/admin/platform/PlatformStatusCtrl.js"></script>
     <script src="scripts/controllers/admin/profile/ProfileListCtrl.js"></script>
     <script src="scripts/controllers/admin/profile/ProfileModalCtrl.js"></script>
+    <script src="scripts/controllers/admin/taxonomy/TaxonomyListCtrl.js"></script>
     <script src="scripts/controllers/alert/AlertEventCtrl.js"></script>
     <script src="scripts/controllers/alert/AlertListCtrl.js"></script>
     <script src="scripts/controllers/alert/AlertStatsCtrl.js"></script>
@@ -184,6 +193,7 @@
     <script src="scripts/controllers/case/CaseObservablesCtrl.js"></script>
     <script src="scripts/controllers/case/CaseObservablesExportCtrl.js"></script>
     <script src="scripts/controllers/case/CaseObservablesItemCtrl.js"></script>
+    <script src="scripts/controllers/case/CaseProceduresCtrl.js"></script>
     <script src="scripts/controllers/case/CaseReopenModalCtrl.js"></script>
     <script src="scripts/controllers/case/CaseSharingCtrl.js"></script>
     <script src="scripts/controllers/case/CaseStatsCtrl.js"></script>
@@ -195,6 +205,7 @@
     <script src="scripts/controllers/case/ObservableCreationCtrl.js"></script>
     <script src="scripts/controllers/case/ObservablesStatsCtrl.js"></script>
     <script src="scripts/controllers/case/ObservableUpdateCtrl.js"></script>
+    <script src="scripts/controllers/case/procedure/AddProcedureModalCtrl.js"></script>
     <script src="scripts/controllers/case/share/CaseShareModalCtrl.js"></script>
     <script src="scripts/controllers/case/tasklogs/AddTaskLogModalCtrl.js"></script>
     <script src="scripts/controllers/cortex/CortexInstanceDialogCtrl.js"></script>
@@ -206,6 +217,7 @@
     <script src="scripts/controllers/MigrationCtrl.js"></script>
     <script src="scripts/controllers/misc/ResponderSelectorCtrl.js"></script>
     <script src="scripts/controllers/misc/ServerInstanceDialogCtrl.js"></script>
+    <script src="scripts/controllers/misc/TaxonomySelectionModalCtrl.js"></script>
     <script src="scripts/controllers/RootCtrl.js"></script>
     <script src="scripts/controllers/SearchCtrl.js"></script>
     <script src="scripts/controllers/SettingsCtrl.js"></script>
@@ -243,15 +255,20 @@
     <script src="scripts/directives/responder-actions.js"></script>
     <script src="scripts/directives/search/search-item.js"></script>
     <script src="scripts/directives/severity.js"></script>
+    <script src="scripts/directives/tag-colour.js"></script>
+    <script src="scripts/directives/tag-item.js"></script>
     <script src="scripts/directives/tag-list.js"></script>
     <script src="scripts/directives/task-progress.js"></script>
     <script src="scripts/directives/tlp.js"></script>
     <script src="scripts/directives/updatable.js"></script>
     <script src="scripts/directives/updatableBoolean.js"></script>
+    <script src="scripts/directives/updatableColour.js"></script>
     <script src="scripts/directives/updatableDataDropdown.js"></script>
     <script src="scripts/directives/updatableDate.js"></script>
     <script src="scripts/directives/updatableSelect.js"></script>
     <script src="scripts/directives/updatableSimpleText.js"></script>
+    <script src="scripts/directives/updatableTag.js"></script>
+    <script src="scripts/directives/updatableTagList.js"></script>
     <script src="scripts/directives/updatableTags.js"></script>
     <script src="scripts/directives/updatableText.js"></script>
     <script src="scripts/directives/updatableUser.js"></script>
@@ -274,11 +291,13 @@
     <script src="scripts/filters/sha256.js"></script>
     <script src="scripts/filters/shortDate.js"></script>
     <script src="scripts/filters/showDate.js"></script>
+    <script src="scripts/filters/tag-value.js"></script>
     <script src="scripts/filters/urlencode.js"></script>
     <script src="scripts/services/AnalyzerInfoSrv.js"></script>
     <script src="scripts/services/api/AlertingSrv.js"></script>
     <script src="scripts/services/api/AnalyzerSrv.js"></script>
     <script src="scripts/services/api/AnalyzerTemplateSrv.js"></script>
+    <script src="scripts/services/api/AttackPatternSrv.js"></script>
     <script src="scripts/services/api/AuditSrv.js"></script>
     <script src="scripts/services/api/AuthenticationSrv.js"></script>
     <script src="scripts/services/api/CaseSrv.js"></script>
@@ -292,9 +311,13 @@
     <script src="scripts/services/api/MispSrv.js"></script>
     <script src="scripts/services/api/ObservableTypeSrv.js"></script>
     <script src="scripts/services/api/OrganisationSrv.js"></script>
+    <script src="scripts/services/api/PlatformSrv.js"></script>
+    <script src="scripts/services/api/ProcedureSrv.js"></script>
     <script src="scripts/services/api/ProfileSrv.js"></script>
     <script src="scripts/services/api/TagSrv.js"></script>
     <script src="scripts/services/api/TaskLogSrv.js"></script>
+    <script src="scripts/services/api/TaxonomyCacheSrv.js"></script>
+    <script src="scripts/services/api/TaxonomySrv.js"></script>
     <script src="scripts/services/api/UiSettingsSrv.js"></script>
     <script src="scripts/services/api/UserSrv.js"></script>
     <script src="scripts/services/api/VersionSrv.js"></script>

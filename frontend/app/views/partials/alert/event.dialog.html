@@ -24,7 +24,7 @@
                     </span>
                     <span class="ml-xxs">
                         <strong><i class="fa fa-calendar"></i> Date: </strong>
-                        <span>{{dialog.event.date | showDate}}</span>
+                        <span>{{dialog.event.date | shortDate}}</span>
                     </span>
                     <span class="ml-xxs">
                         <strong><i class="fa fa-certificate"></i> Type: </strong>
@@ -42,7 +42,7 @@
                 <div class="case-tags flexwrap mt-xxs">
                     <strong><i class="fa fa-tags mr-xxxs"></i></strong>
                     <strong class="text-muted mr-xxxs" ng-if="!dialog.event.tags || dialog.event.tags.length === 0">None</strong>
-                    <span ng-repeat="tag in dialog.event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs">{{tag}}</span>
+                    <tag-item ng-repeat="tag in dialog.event.tags track by $index" value="tag"></tag-item>
                 </div>
 
                 <div class="mt-xs" ng-if="dialog.event.description">

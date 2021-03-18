@@ -167,7 +167,7 @@ class MispClient(
     val fromDate = (maxAge.map(a => System.currentTimeMillis() - a.toMillis).toSeq ++ publishDate.map(_.getTime))
       .sorted(Ordering[Long].reverse)
       .headOption
-      .map(d => "searchpublish_timestamp" -> JsNumber((d / 1000) + 1))
+      .map(d => "searchtimestamp" -> JsNumber((d / 1000) + 1))
     val tagFilter          = (whitelistTags ++ excludedTags.map("!" + _)).map(JsString.apply)
     val organisationFilter = (whitelistOrganisations ++ excludedOrganisations.map("!" + _)).map(JsString.apply)
     val query = JsObject
@@ -206,9 +206,11 @@ class MispClient(
       .mapAsyncUnordered(2) {
         case attribute @ Attribute(id, "malware-sample" | "attachment", _, _, _, _, _, _, _, None, _, _, _, _) =>
           // TODO need to unzip malware samples ?
-          downloadAttachment(id).map {
-            case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
-          }
+          downloadAttachment(id)
+            .map {
+              case (filename, contentType, src) => attribute.copy(data = Some((filename, contentType, src)))
+            }
+            .recover { case _ => attribute }
         case attribute => Future.successful(attribute)
       }
       .mapMaterializedValue(_ => NotUsed)

@@ -114,11 +114,11 @@
                         <div class="case-tags flexwrap mt-xxs">
                             <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
                             <strong class="text-muted mr-xxxs" ng-if="!item.case.tags || item.case.tags.length === 0">None</strong>
-                            <span ng-repeat="tag in item.case.tags track by $index" ng-click="$cmp.addFilterValue('tags', tag)" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                            <tag-item ng-repeat="tag in item.case.tags track by $index" ng-click="$cmp.addFilterValue('tags', tag)" class="pointer" value="tag"></tag-item>
                         </div>
                         <div class="text-success" ng-show="item.case.status !== 'Open'">
                             <small>
-                                (Closed at {{item.case.endDate | showDate}} as <strong>{{$cmp.CaseResolutionStatus[item.case.resolutionStatus]}}</strong>)
+                                (Closed at {{item.case.endDate | shortDate}} as <strong>{{$cmp.CaseResolutionStatus[item.case.resolutionStatus]}}</strong>)
                             </small>
                         </div>
                         <div class="text-danger" ng-if="item.case.mergeFrom">
@@ -137,7 +137,7 @@
 
                     <div class="case-date">
                         <a href ng-click="$cmp.addFilterValue('_createdAt', item.case._createdAt)">
-                            <span uib-tooltip="{{item.case._createdAt | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
+                            <span uib-tooltip="{{item.case._createdAt | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.case._createdAt | shortDate}}</span>
                         </a>
                     </div>
 

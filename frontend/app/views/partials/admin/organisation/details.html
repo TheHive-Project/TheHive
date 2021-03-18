@@ -27,7 +27,7 @@
                             </span>
                             <span>
                                 <i class="glyphicon glyphicon-calendar"></i>
-                                <span class="mr-xxxs">{{$vm.org.createdAt | showDate}}</span>
+                                <span class="mr-xxxs">{{$vm.org.createdAt | shortDate}}</span>
                             </span>
                             <span ng-if="$vm.org.links.length > 0">
                                 <i class="fa fa-link"></i>
@@ -108,6 +108,7 @@
                                 on-reload="$vm.loadUsers()"
                                 on-edit="$vm.showUserDialog(user)"
                                 on-sort="$vm.sortByField(field)"
+                                on-filter="$vm.addFilterValue(field, value)"
                                 sort="$vm.filtering.context.sort"
                                 set-password-enabled="$vm.canSetPass"
                                 mfa-enabled="$vm.canChangeMfa"></org-user-list>
@@ -121,10 +122,21 @@
                             </span>
                         </uib-tab-heading>
                         <div if-permission="manageCaseTemplate">
-                            <org-case-template-list fields="$vm.fields" templates="$vm.templates"></org-case-template-list>
+                            <org-case-template-list fields="$vm.fields" templates="$vm.templates" organisation="$vm.org"></org-case-template-list>
                         </div>
                     </uib-tab>
-                    <uib-tab index="2" if-permission="manageConfig">
+                    <uib-tab index="2" if-permission="manageTag">
+                        <uib-tab-heading>
+                            <span>
+                                <i class="mr-xxs fa fa-tag"></i>
+                                Custom Tags
+                            </span>
+                        </uib-tab-heading>
+                        <div if-permission="manageTag">
+                            <org-custom-tags-list organisation="$vm.org"></org-custom-tags-list>
+                        </div>
+                    </uib-tab>
+                    <uib-tab index="3" if-permission="manageConfig">
                         <uib-tab-heading>
                             <span>
                                 <i class="mr-xxs fa fa-cogs"></i>

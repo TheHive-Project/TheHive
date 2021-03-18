@@ -1,12 +1,11 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.util.{HashMap => JHashMap}
-
 import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.helper.ConditionalHelpers
 import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.thehive.models.{Audit, User}
 
+import java.util.{HashMap => JHashMap}
 import scala.collection.JavaConverters._
 import scala.util.Try
 

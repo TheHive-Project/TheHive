@@ -1,10 +1,10 @@
 package org.thp.thehive.migration.th3
 
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import javax.inject.{Inject, Singleton}
+import com.sksamuel.elastic4s.ElasticDsl._
 import org.thp.scalligraph.NotFoundError
 import play.api.libs.json.JsObject
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -23,7 +23,7 @@ class DBGet @Inject() (db: DBConfiguration, implicit val ec: ExecutionContext) {
       search(db.indexName)
         .query(idsQuery(id) /*.types(modelName)*/ )
         .size(1)
-        .version(true)
+        .seqNoPrimaryTerm(true)
     }.map { searchResponse =>
       searchResponse
         .hits

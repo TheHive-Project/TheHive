@@ -1,12 +1,12 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
-
 import org.scalactic.Accumulation._
 import org.scalactic.{Bad, Good, One}
 import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers._
 import play.api.libs.json._
+
+import java.util.Date
 
 case class InputCustomField(name: String, description: String, `type`: String, mandatory: Option[Boolean])
 
@@ -55,21 +55,22 @@ object InputCustomFieldValue {
     case (_, FSeq(list)) =>
       list
         .validatedBy {
-        case cf: FObject =>
-          val order = FieldsParser.int(cf.get("order")).toOption
-          for {
-            name  <- FieldsParser.string(cf.get("name"))
-            value <- valueParser(cf.get("value"))
-          } yield InputCustomFieldValue(name, value, order)
-        case other =>
-          Bad(
-            One(
-              InvalidFormatAttributeError(s"customField", "CustomFieldValue", Set.empty, other)
+          case cf: FObject =>
+            val order = FieldsParser.int(cf.get("order")).toOption
+            for {
+              name  <- FieldsParser.string(cf.get("name"))
+              value <- valueParser(cf.get("value"))
+            } yield InputCustomFieldValue(name, value, order)
+          case other =>
+            Bad(
+              One(
+                InvalidFormatAttributeError(s"customField", "CustomFieldValue", Set.empty, other)
+              )
             )
-          )
-      }
+        }
     case _ => Good(Nil)
   }
+
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {
       case InputCustomFieldValue(name, Some(s: String), _)  => name -> JsString(s)

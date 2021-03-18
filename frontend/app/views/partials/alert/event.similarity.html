@@ -35,7 +35,7 @@
             </div>
             <div class="text-success" ng-show="item.status !== 'Open'">
                 <small>
-                    (Closed at {{item.endDate | showDate}} as <strong>{{dialog.CaseResolutionStatus[item.resolutionStatus]}}</strong>)
+                    (Closed at {{item.endDate | shortDate}} as <strong>{{dialog.CaseResolutionStatus[item.resolutionStatus]}}</strong>)
                 </small>
             </div>
             <div class="text-danger" ng-if="item.mergeFrom">
@@ -53,7 +53,7 @@
         </div>
 
         <div class="case-date">
-            <span uib-tooltip="{{item.startDate | showDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span>
+            <span uib-tooltip="{{item.startDate | shortDate}}" tooltip-popup-delay="500" tooltip-placement="bottom">{{item.startDate | shortDate}}</span>
         </div>
 
         <div class="case-similarity">

@@ -1,9 +1,9 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
+
+import java.util.Date
 
 @BuildVertexEntity
 case class Share(owner: Boolean)

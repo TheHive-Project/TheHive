@@ -266,7 +266,9 @@
                 QuerySrv.call('v1', [
                     {'_name': 'listOrganisation'},
                     {'_name': 'users'},
-                ])
+                    ], {
+                        name: 'users'
+                    })
                     .then(function(users) {
                         _.each(users, function(u) {
                             self.updateCache(u.login, u);

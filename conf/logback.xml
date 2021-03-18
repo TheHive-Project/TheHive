@@ -36,6 +36,8 @@
 
     <logger name="org.thp.scalligraph.models" level="TRACE"/>
     <logger name="org.thp.scalligraph.traversal" level="TRACE"/>
+    <logger name="org.thp.thehive.services.StreamSrv" level="INFO"/>
+    <logger name="org.thp.thehive.services.StreamActor" level="INFO"/>
     <!--
     <logger name="org.janusgraph.graphdb" level="INFO" />
     <logger name="org.thp.thehive.client" level="DEBUG" />

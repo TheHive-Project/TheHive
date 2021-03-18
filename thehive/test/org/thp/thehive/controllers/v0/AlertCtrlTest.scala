@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
@@ -14,6 +12,8 @@ import org.thp.thehive.services.CaseSrv
 import org.thp.thehive.services.ObservableOps._
 import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 case class TestAlert(
     `type`: String,
@@ -145,7 +145,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       description = "description of alert #1",
       severity = 2,
       date = new Date(1555359572000L),
-      tags = Set("testNamespace:testPredicate=\"alert\"", "testNamespace:testPredicate=\"test\""),
+      tags = Set("alert", "test"),
       tlp = 2,
       pap = 2,
       status = "New",
@@ -163,7 +163,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
         Some("h.fr"),
         None,
         1,
-        Set("testNamespace:testPredicate=\"hello\""),
+        Set("hello"),
         ioc = true,
         sighted = true,
         Some("observable from alert")
@@ -267,10 +267,10 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
       pap = 2,
       status = "Open",
       tags = Set(
-        "testNamespace:testPredicate=\"alert\"",
-        "testNamespace:testPredicate=\"test\"",
-        "testNamespace:testPredicate=\"spam\"",
-        "testNamespace:testPredicate=\"src:mail\""
+        "alert",
+        "test",
+        "spam",
+        "src:mail"
       ),
       summary = None,
       owner = Some("certuser@thehive.local"),
@@ -289,11 +289,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     observables must contain(
       exactly(
         beLike[RichObservable] {
-          case RichObservable(_, tpe, Some(data), None, _, _, _, _) if tpe.name == "domain" && data.data == "c.fr" => ok
-        } /*,
-        beLike[RichObservable] {
-          case RichObservable(obs, tpe, None, Some(attachment), tags, _, _) if tpe.name == "file" && attachment.name == "hello.txt" => ok
-        }*/
+          case obs if obs.dataType == "domain" && obs.data.contains("c.fr") => ok
+        }
       )
     )
   }

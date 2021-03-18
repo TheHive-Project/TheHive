@@ -2,10 +2,9 @@ package org.thp.thehive.services.notification
 
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
-import javax.inject.{Inject, Named}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.EventSrv
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadConfigurationError, EntityId}
 import org.thp.thehive.models.{Audit, Organisation, User}
@@ -19,6 +18,7 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.{Format, JsValue, Json}
 import play.api.{Configuration, Logger}
 
+import javax.inject.Inject
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -82,7 +82,7 @@ class NotificationActor @Inject() (
     userSrv: UserSrv,
     notificationSrv: NotificationSrv,
     cache: SyncCacheApi,
-    @Named("with-thehive-schema") implicit val db: Database,
+    implicit val db: Database,
     implicit val schema: Schema
 ) extends Actor {
   import context.dispatcher

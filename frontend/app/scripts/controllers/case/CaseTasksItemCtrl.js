@@ -382,7 +382,7 @@
             };
 
             $scope.markShareAsActionRequired = function(task, org) {
-                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before requesting action?')
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before marking the required action as DONE?')
                     .then(function(response) {
                         if(response === 'skip-log') {
                             return $q.resolve();
@@ -394,11 +394,33 @@
                         return CaseTaskSrv.markAsActionRequired(task._id, org);
                     })
                     .then(function() {
-                        NotificationSrv.log('The task\'s required action flag has been set for organisation ' + org, 'success');
+                        NotificationSrv.log('The task\'s required action is completed', 'success');
                     })
                     .catch(function(err) {
                         if(err && !_.isString(err)) {
-                            NotificationSrv.error('Error', 'Task request action failed', err.status);
+                            NotificationSrv.error('Error', 'Task required action failed to be marked as done', err.status);
+                        }
+                    });
+            };
+
+            $scope.markShareAsActionDone = function(task, org) {
+                CaseTaskSrv.promtForActionRequired('Require Action', 'Would you like to add a task log before marking the required action as DONE?')
+                    .then(function(response) {
+                        if(response === 'skip-log') {
+                            return $q.resolve();
+                        } else {
+                            return $scope.showAddLog('Please add a task log');
+                        }
+                    })
+                    .then(function() {
+                        return CaseTaskSrv.markAsDone(task._id, org);
+                    })
+                    .then(function() {
+                        NotificationSrv.log('The task\'s required action is completed', 'success');
+                    })
+                    .catch(function(err) {
+                        if(err && !_.isString(err)) {
+                            NotificationSrv.error('Error', 'Task required action failed to be marked as done', err.status);
                         }
                     });
             };

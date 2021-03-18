@@ -6,6 +6,10 @@
             var baseUrl = './api/alert';
 
             var similarityFilters = {
+                'none': {
+                    label: 'None',
+                    filters: []
+                },
                 'open-cases': {
                     label: 'Open Cases',
                     filters: [{

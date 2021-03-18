@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgCaseTemplateList', {
-            controller: function($uibModal, $scope, CaseTemplateSrv, TagSrv, UserSrv, AuthenticationSrv, NotificationSrv, UtilsSrv, ModalUtilsSrv) {
+            controller: function($uibModal, $scope, $q, CaseTemplateSrv, PaginatedQuerySrv, FilteringSrv, UserSrv, NotificationSrv, ModalUtilsSrv) {
                 var self = this;
 
                 self.task = '';
@@ -11,118 +11,116 @@
                 self.templateCustomFields = [];
                 self.templateIndex = -1;
                 self.getUserInfo = UserSrv.getCache;
-                self.currentUser = AuthenticationSrv.currentUser;
 
-                /**
-                 * Convert the template custom fields definition to a list of ordered field names
-                 * to be used for drag&drop sorting feature
-                 */
-                var getTemplateCustomFields = function(customFields) {
-                    var result = [];
 
-                    result = _.sortBy(
-                        _.map(customFields, function(definition, name) {
-                            var fieldDef = self.fields[name];
-                            var type = fieldDef ? fieldDef.type : null;
+                this.$onInit = function() {
+                    self.filtering = new FilteringSrv('caseTemplate', 'caseTemplate.list', {
+                        version: 'v1',
+                        defaults: {
+                            showFilters: true,
+                            showStats: false,
+                            pageSize: 15,
+                            sort: ['+displayName']
+                        },
+                        defaultFilter: []
+                    });
 
-                            // The field doesn't exist, trying to find the field type from it's template value
-                            if (type === null) {
-                                var keys = _.without(_.keys(definition), 'order');
-                                if (keys.length > 0) {
-                                    type = keys[0];
-                                }
+                    self.filtering.initContext(self.organisation.name)
+                        .then(function() {
+                            self.load();
+
+                            $scope.$watch('$vm.list.pageSize', function (newValue) {
+                                self.filtering.setPageSize(newValue);
+                            });
+                        });
+                };
+
+                this.load = function() {
+
+                    self.list = new PaginatedQuerySrv({
+                        name: 'organisation-case-templates',
+                        version: 'v1',
+                        skipStream: true,
+                        sort: self.filtering.context.sort,
+                        loadAll: false,
+                        pageSize: self.filtering.context.pageSize,
+                        filter: this.filtering.buildQuery(),
+                        operations: [{
+                                '_name': 'getOrganisation',
+                                'idOrName': self.organisation.name
+                            },
+                            {
+                                '_name': 'caseTemplates'
                             }
-
-                            return {
-                                name: name,
-                                order: definition.order,
-                                value: fieldDef ? definition[type] : null,
-                                type: type
-                            };
-                        }),
-                        'order'
-                    );
-
-                    return result;
-                };
-
-                self.dateOptions = {
-                    closeOnDateSelection: true,
-                    formatYear: 'yyyy',
-                    startingDay: 1
-                };
-
-                self.sortableOptions = {
-                    handle: '.drag-handle',
-                    stop: function( /*e, ui*/ ) {
-                        self.reorderTasks();
-                    },
-                    axis: 'y'
-                };
-
-                self.sortableFields = {
-                    handle: '.drag-handle',
-                    axis: 'y'
-                };
-
-                self.keys = function(obj) {
-                    if (!obj) {
-                        return [];
-                    }
-                    return _.keys(obj);
-                };
-
-                self.getList = function(id) {
-                    CaseTemplateSrv.list().then(function(templates) {
-                        self.templates = templates;
-
-                        if (templates.length === 0) {
-                            self.templateIndex = 0;
-                            self.newTemplate();
-                        } else if (id) {
-                            self.loadTemplateById(id);
-                        } else {
-                            self.loadTemplateById(templates[0].id, 0);
+                        ],
+                        onFailure: function(err) {
+                            if(err && err.status === 400) {
+                                self.filtering.resetContext();
+                                self.load();
+                            }
                         }
                     });
                 };
 
-                self.loadTemplate = function(template, index) {
-                    if (!template) {
-                        return;
+                // Filtering
+                this.toggleFilters = function () {
+                    this.filtering.toggleFilters();
+                };
+
+                this.filter = function () {
+                    self.filtering.filter().then(this.applyFilters);
+                };
+
+                this.clearFilters = function () {
+                    this.filtering.clearFilters()
+                        .then(self.search);
+                };
+
+                this.removeFilter = function (index) {
+                    self.filtering.removeFilter(index)
+                        .then(self.search);
+                };
+
+                this.search = function () {
+                    self.load();
+                    self.filtering.storeContext();
+                };
+                this.addFilterValue = function (field, value) {
+                    this.filtering.addFilterValue(field, value);
+                    this.search();
+                };
+
+                this.filterBy = function(field, value) {
+                    self.filtering.clearFilters()
+                        .then(function(){
+                            self.addFilterValue(field, value);
+                        });
+                };
+
+                this.sortBy = function(sort) {
+                    self.list.sort = sort;
+                    self.list.update();
+                    self.filtering.setSort(sort);
+                };
+
+                this.sortByField = function(field) {
+                    var context = this.filtering.context;
+                    var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
+                    var sort = null;
+
+                    if(currentSort.substr(1) !== field) {
+                        sort = ['+' + field];
+                    } else {
+                        sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
                     }
 
-                    var filteredKeys = _.filter(_.keys(template), function(k) {
-                        return k.startsWith('_');
-                    }).concat(['createdAt', 'updatedAt', 'createdBy', 'updatedBy']);
-
-                    self.template = _.defaults(_.omit(template, filteredKeys), {
-                        pap: 2,
-                        tlp: 2
-                    });
-                    self.template.tasks = _.sortBy(self.template.tasks, 'order');
-                    self.tags = UtilsSrv.objectify(self.template.tags, 'text');
-                    self.templateCustomFields = getTemplateCustomFields(template.customFields);
-
-                    self.templateIndex = index || _.indexOf(self.templates, _.findWhere(self.templates, {
-                        id: template.id
-                    }));
+                    self.list.sort = sort;
+                    self.list.update();
+                    self.filtering.setSort(sort);
                 };
 
-                self.$onInit = function() {
-                    if (self.templates && !_.isEmpty(self.templates)) {
-                        self.loadTemplate(self.templates[0]);
-                    }
-                };
-
-                self.loadTemplateById = function(id) {
-                    CaseTemplateSrv.get(id).then(function(template) {
-                        self.loadTemplate(template);
-                    });
-                };
-
-                self.newTemplate = function() {
-                    self.template = {
+                this.newTemplate = function() {
+                    self.showTemplate({
                         name: '',
                         titlePrefix: '',
                         severity: 2,
@@ -132,143 +130,49 @@
                         tasks: [],
                         customFields: {},
                         description: ''
-                    };
-                    self.tags = [];
-                    self.templateIndex = -1;
-                    self.templateCustomFields = [];
-                };
-
-                self.reorderTasks = function() {
-                    _.each(self.template.tasks, function(task, index) {
-                        task.order = index;
                     });
                 };
 
-                self.removeTask = function(task) {
-                    self.template.tasks = _.without(self.template.tasks, task);
-                    self.reorderTasks();
-                };
+                this.showTemplate = function(template) {
 
-                self.addTask = function() {
-                    var order = self.template.tasks ? self.template.tasks.length : 0;
+                    var promise = template._id ? CaseTemplateSrv.get(template._id) : $q.resolve(template);
 
-                    self.openTaskDialog({
-                        order: order
-                    }, 'Add');
-                };
-
-                self.editTask = function(task) {
-                    self.openTaskDialog(task, 'Update');
-                };
-
-                self.openTaskDialog = function(task, action) {
-                    var modal = $uibModal.open({
-                        scope: $scope,
-                        templateUrl: 'views/components/org/case-template/case-templates.task.html',
-                        controller: 'AdminCaseTemplateTasksCtrl',
-                        size: 'lg',
-                        resolve: {
-                            action: function() {
-                                return action;
-                            },
-                            task: function() {
-                                return _.extend({}, task);
-                            },
-                            users: function() {
-                                return UserSrv.list(
-                                    self.currentUser.organisation,
-                                    {
-                                        filter: {
-                                            _is: {
-                                                _field: 'locked',
-                                                _value: false
-                                            }
-                                        },
-                                        sort: ['+name']
+                    promise
+                        .then(function(response) {
+                            var modalInstance = $uibModal.open({
+                                animation: true,
+                                keyboard: false,
+                                backdrop: 'static',
+                                templateUrl: 'views/components/org/case-template/details.modal.html',
+                                controller: 'OrgCaseTemplateModalCtrl',
+                                controllerAs: '$vm',
+                                size: 'max',
+                                resolve: {
+                                    template: function() {
+                                        return response;
+                                    },
+                                    fields: function() {
+                                        return self.fields;
                                     }
-                                );
-                            },
-                            groups: function() {
-                                var existingGroups = _.uniq(_.pluck(self.template.tasks, 'group').sort());
+                                }
+                            });
 
-                                return existingGroups.length === 0 ? ['default'] : existingGroups;
-                            }
-                        }
-                    });
-
-                    modal.result.then(function(data) {
-                        if (action === 'Add') {
-                            if (self.template.tasks) {
-                                self.template.tasks.push(data);
-                            } else {
-                                self.template.tasks = [data];
-                            }
-                        } else {
-                            self.template.tasks[data.order] = data;
-                        }
-                    });
-                };
-
-                self.addCustomFieldRow = function() {
-                    self.templateCustomFields.push({
-                        name: null,
-                        order: self.templateCustomFields.length + 1,
-                        value: null
-                    });
-                };
-
-                self.removeCustomField = function(field) {
-                    self.templateCustomFields = _.without(self.templateCustomFields, field);
-                };
-
-                self.updateCustomField = function(field, value) {
-                    field.value = value;
-                };
-
-                self.deleteTemplate = function() {
-                    ModalUtilsSrv.confirm('Remove case template', 'Are you sure you want to delete this case template?', {
-                            okText: 'Yes, remove it',
-                            flavor: 'danger'
+                            return modalInstance.result;
                         })
                         .then(function() {
-                            return CaseTemplateSrv.delete(self.template.id);
+                            self.load();
                         })
-                        .then(function() {
-                            self.getList();
-
-                            $scope.$emit('templates:refresh');
-                        });
-                };
-
-                self.saveTemplate = function() {
-                    // Set tags
-                    self.template.tags = _.pluck(self.tags, 'text');
-
-                    // Set custom fields
-                    self.template.customFields = {};
-                    _.each(self.templateCustomFields, function(cf, index) {
-                        var fieldDef = self.fields[cf.name];
-                        var value = null;
-                        if (fieldDef) {
-                            value = fieldDef.type === 'date' && cf.value ? moment(cf.value).valueOf() : cf.value;
-                        }
-
-                        self.template.customFields[cf.name] = {};
-                        self.template.customFields[cf.name][fieldDef ? fieldDef.type : cf.type] = value;
-                        self.template.customFields[cf.name].order = index + 1;
-                    });
-
-                    if (_.isEmpty(self.template.id)) {
-                        self.createTemplate(self.template);
-                    } else {
-                        self.updateTemplate(self.template);
-                    }
-                };
+                        .catch(function(err) {
+                            if(err && !_.isString(err)) {
+                                NotificationSrv.error('Case Template Admin', err.data, err.status);
+                            }
+                        })
+                }
 
                 self.createTemplate = function(template) {
                     return CaseTemplateSrv.create(template).then(
-                        function(response) {
-                            self.getList(response.data.id);
+                        function(/*response*/) {
+                            self.load();
 
                             $scope.$emit('templates:refresh');
 
@@ -278,34 +182,6 @@
                             NotificationSrv.error('TemplateCtrl', response.data, response.status);
                         }
                     );
-                };
-
-                self.updateTemplate = function(template) {
-                    return CaseTemplateSrv.update(template.id, _.omit(template, 'id', 'user')).then(
-                        function( /*response*/ ) {
-                            self.getList(template.id);
-
-                            $scope.$emit('templates:refresh');
-
-                            NotificationSrv.log('The template [' + template.name + '] has been successfully updated', 'success');
-                        },
-                        function(response) {
-                            NotificationSrv.error('TemplateCtrl', response.data, response.status);
-                        }
-                    );
-                };
-
-                self.exportTemplate = function() {
-                    var fileName = 'Case-Template__' + self.template.name.replace(/\s/gi, '_') + '.json';
-
-                    // Create a blob of the data
-                    var fileToSave = new Blob([angular.toJson(_.omit(self.template, 'id'))], {
-                        type: 'application/json',
-                        name: fileName
-                    });
-
-                    // Save the file
-                    saveAs(fileToSave, fileName);
                 };
 
                 self.importTemplate = function() {
@@ -328,13 +204,42 @@
                         });
                 };
 
-                self.getTags = function(query) {
-                    return TagSrv.fromCases(query);
+                self.deleteTemplate = function (template) {
+                    ModalUtilsSrv.confirm('Remove case template', 'Are you sure you want to delete this case template?', {
+                        okText: 'Yes, remove it',
+                        flavor: 'danger'
+                    })
+                        .then(function () {
+                            return CaseTemplateSrv.delete(template._id);
+                        })
+                        .then(function () {
+                            self.load();
+
+                            $scope.$emit('templates:refresh');
+                        });
+                };
+
+                self.exportTemplate = function (template) {
+                    CaseTemplateSrv.get(template._id)
+                        .then(function(response) {
+                            var fileName = 'Case-Template__' + response.name.replace(/\s/gi, '_') + '.json';
+
+                            // Create a blob of the data
+                            var fileToSave = new Blob([angular.toJson(_.omit(response, 'id'))], {
+                                type: 'application/json',
+                                name: fileName
+                            });
+
+                            // Save the file
+                            saveAs(fileToSave, fileName);
+                        })
+
                 };
             },
             controllerAs: '$vm',
             templateUrl: 'views/components/org/case-template/case-templates.html',
             bindings: {
+                organisation: '<',
                 templates: '=',
                 fields: '<',
                 onReload: '&',

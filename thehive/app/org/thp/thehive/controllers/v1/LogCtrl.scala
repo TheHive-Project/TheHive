@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -11,17 +10,17 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputLog
 import org.thp.thehive.models.{Log, Permissions, RichLog}
 import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{LogSrv, OrganisationSrv, TaskSrv}
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
+
 @Singleton
 class LogCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     properties: Properties,
     logSrv: LogSrv,
     taskSrv: TaskSrv,
@@ -32,15 +31,13 @@ class LogCtrl @Inject() (
   override val entityName: String                 = "log"
   override val publicProperties: PublicProperties = properties.log
   override val initialQuery: Query =
-    Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.tasks.logs)
+    Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => logSrv.startTraversal(graph).visible(organisationSrv)(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Log]](
     "getLog",
-    FieldsParser[EntityIdOrName],
-    (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(authContext)
+    (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, logSteps, authContext) =>
       logSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
         _.richLogWithCustomRenderer(logStatsRenderer(range.extraData - "total")(authContext))
@@ -82,7 +79,7 @@ class LogCtrl @Inject() (
       .authTransaction(db) { implicit req => implicit graph =>
         for {
           log <- logSrv.get(EntityIdOrName(logId)).can(Permissions.manageTask).getOrFail("Log")
-          _   <- logSrv.cascadeRemove(log)
+          _   <- logSrv.delete(log)
         } yield Results.NoContent
       }
 }

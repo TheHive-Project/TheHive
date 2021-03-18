@@ -4,10 +4,10 @@ import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AppBuilder, EntityName}
+import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Organisation
 import org.thp.thehive.services._
-import org.thp.thehive.{BasicDatabaseProvider, TestAppBuilder}
 import play.api.test.PlaySpecification
 
 class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
@@ -22,7 +22,6 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
           .bind[Connector, TestConnector]
           .bindToProvider[Schema, TheHiveCortexSchemaProvider]
       )
-      .bindNamedToProvider[Database, BasicDatabaseProvider]("with-thehive-cortex-schema")
 
   "service helper" should {
     "filter properly organisations according to supplied config" in testApp { app =>

@@ -1,7 +1,5 @@
 package org.thp.thehive.migration
 
-import java.io.File
-
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
@@ -9,6 +7,7 @@ import play.api.libs.logback.LogbackLoggerConfigurator
 import play.api.{Configuration, Environment}
 import scopt.OParser
 
+import java.io.File
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext}
@@ -37,11 +36,11 @@ object Migrate extends App with MigrationOps {
         .text("global configuration file"),
       opt[File]('i', "input")
         .valueName("<file>")
-        .action((f, c) => addConfig(c, "input", ConfigFactory.parseFileAnySyntax(f).resolve().root()))
+        .action((f, c) => addConfig(c, "input", ConfigFactory.parseFileAnySyntax(f).resolve().root().withFallback(c.getConfig("input"))))
         .text("TheHive3 configuration file"),
       opt[File]('o', "output")
         .valueName("<file>")
-        .action((f, c) => addConfig(c, "output", ConfigFactory.parseFileAnySyntax(f).resolve().root()))
+        .action((f, c) => addConfig(c, "output", ConfigFactory.parseFileAnySyntax(f).resolve().root().withFallback(c.getConfig("output"))))
         .text("TheHive4 configuration file"),
       opt[Unit]('d', "drop-database")
         .action((_, c) => addConfig(c, "output.dropDatabase", true))
@@ -152,6 +151,9 @@ object Migrate extends App with MigrationOps {
       opt[Seq[String]]("exclude-audit-objectTypes")
         .text("don't migration audits with this objectType (case, case_artifact, case_task, ...)")
         .action((v, c) => addConfig(c, "input.filter.excludeAuditObjectTypes", v.asJava)),
+      opt[Int]("case-number-shift")
+        .text("transpose case number by adding this value")
+        .action((v, c) => addConfig(c, "output.caseNumberShift", v)),
       note("Accepted date formats are \"yyyyMMdd[HH[mm[ss]]]\" and \"MMdd\""),
       note(
         "The Format for duration is: <length> <unit>.\n" +
@@ -205,6 +207,9 @@ object Migrate extends App with MigrationOps {
       migrationStats.flush()
       logger.info(migrationStats.toString)
       System.exit(returnStatus)
-    } finally actorSystem.terminate()
+    } finally {
+      actorSystem.terminate()
+      ()
+    }
   }
 }

@@ -11,6 +11,23 @@
                     <li>
                         <a href ng-click="$vm.bulkEdit()"><i class="fa fa-edit"></i> Edit</a>
                     </li>
+                    <li class="divider"></li>
+                    <li ng-if="$vm.menu.flag">
+                        <a href ng-click="$vm.bulkFlag(true)"><i class="fa fa-flag"></i> Add flag</a>
+                    </li>
+                    <li ng-if="$vm.menu.unflag">
+                        <a href ng-click="$vm.bulkFlag(false)"><i class="fa fa-flag-o"></i> Remove flag</a>
+                    </li>
+                    <li ng-if="$vm.menu.reopen">
+                        <a href ng-click="$vm.bulkReopen()"><i class="fa fa-folder-open"></i> Reopen</a>
+                    </li>
+                    <li ng-if="$vm.menu.close">
+                        <a href ng-click="$vm.bulkClose()"><i class="fa fa-folder"></i> Close</a>
+                    </li>
+                    <li ng-if="$vm.menu.delete" class="divider"></li>
+                    <li>
+                        <a href ng-click="$vm.bulkRemove()"><i class="fa fa-trash"></i> Delete</a>
+                    </li>
                 </ul>
             </div>
 
@@ -33,6 +50,13 @@
                     </li>
                     <li>
                         <a ng-click="$vm.filterMyCases()"><i class="fa fa-user"></i> My cases</a>
+                    </li>
+                    <li class="divider"></li>
+                    <li>
+                        <a ng-click="$vm.filterMyOrgCases()"><i class="fa fa-building-o"></i> Owned by my org</a>
+                    </li>
+                    <li>
+                        <a ng-click="$vm.filterSharedWithMyOrg()"><i class="fa fa-share-square"></i> Shared with my org</a>
                     </li>
                 </ul>
             </div>

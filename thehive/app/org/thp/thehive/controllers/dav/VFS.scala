@@ -1,17 +1,18 @@
 package org.thp.thehive.controllers.dav
 
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.CaseSrv
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
-class VFS @Inject() (caseSrv: CaseSrv) {
+class VFS @Inject() (caseSrv: CaseSrv, organisationSrv: OrganisationSrv) {
 
   def get(path: List[String])(implicit graph: Graph, authContext: AuthContext): Seq[Resource] =
     path match {
@@ -45,7 +46,7 @@ class VFS @Inject() (caseSrv: CaseSrv) {
   def list(path: List[String])(implicit graph: Graph, authContext: AuthContext): Seq[Resource] =
     path match {
       case Nil | "" :: Nil       => List(StaticResource("cases"))
-      case "cases" :: Nil        => caseSrv.startTraversal.visible.toSeq.map(c => EntityResource(c, c.number.toString))
+      case "cases" :: Nil        => caseSrv.startTraversal.visible(organisationSrv).toSeq.map(c => EntityResource(c, c.number.toString))
       case "cases" :: cid :: Nil => List(StaticResource("observables"), StaticResource("tasks"))
       case "cases" :: cid :: "observables" :: Nil =>
         caseSrv

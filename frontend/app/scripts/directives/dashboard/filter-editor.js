@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, UserSrv, TagSrv, UtilsSrv) {
+    angular.module('theHiveDirectives').directive('filterEditor', function($q, AuthenticationSrv, TaxonomyCacheSrv, UserSrv, TagSrv, UtilsSrv) {
         return {
             restrict: 'E',
             scope: {
@@ -10,7 +10,15 @@
             },
             templateUrl: 'views/directives/dashboard/filter-editor.html',
             link: function(scope) {
+                scope.operatorMap = {
+                    empty: 'Is Empty',
+                    any: 'Any Of',
+                    none: 'None Of',
+                    all: 'All Of'
+                };
+
                 scope.dateOperator = {
+                    empty: 'Empty',
                     custom: 'Custom',
                     today: 'Today',
                     last7days: 'Last 7 days',
@@ -64,13 +72,20 @@
                     return filter.type;
                 };
 
+                scope.fromTagLibrary = function(filter) {
+                    TaxonomyCacheSrv.openTagLibrary()
+                        .then(function(tags){
+                            filter.value.list = filter.value.list.concat(tags);
+                        })
+                }
+
                 scope.promiseFor = function(filter, query) {
                     var field = scope.metadata[scope.entity].attributes[filter.field];
 
                     var promise = null;
 
                     if(field.name === 'tags') {
-                        return TagSrv.getTagsFor(scope.entity, query);
+                        return TagSrv.autoComplete(query);
                     } else if(field.type === 'user') {
                         promise = AuthenticationSrv.current()
                             .then(function(user) {

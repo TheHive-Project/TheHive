@@ -2,13 +2,11 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('OrgDetailsCtrl',
-        function($scope, $q, $uibModal, FilteringSrv, PaginatedQuerySrv, OrganisationSrv, NotificationSrv, UserSrv, organisation, /*users, */templates, fields, appConfig, uiConfig) {
+        function($scope, FilteringSrv, PaginatedQuerySrv, NotificationSrv, UserSrv, organisation, fields, appConfig, uiConfig) {
             var self = this;
 
             this.uiConfig = uiConfig;
             this.org = organisation;
-            //this.users = users;
-            this.templates = templates;
             this.fields = fields;
             this.canChangeMfa = appConfig.config.capabilities.indexOf('mfa') !== -1;
             this.canSetPass = appConfig.config.capabilities.indexOf('setPassword') !== -1;
@@ -46,6 +44,7 @@
                     sort: self.filtering.context.sort,
                     loadAll: false,
                     pageSize: self.filtering.context.pageSize,
+                    pageOptions: {organisation: self.org.name},
                     filter: this.filtering.buildQuery(),
                     operations: [{
                             '_name': 'getOrganisation',

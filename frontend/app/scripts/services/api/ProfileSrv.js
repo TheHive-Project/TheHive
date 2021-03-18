@@ -11,24 +11,28 @@
                 admin: {
                     hints: 'Permissions for administration user profiles',
                     keys: [
-                        'manageUser',
                         'manageOrganisation',
+                        'manageProfile',
+                        'manageUser',
                         'manageCustomField',
                         'manageConfig',
-                        'manageTag',
-                        'manageProfile',
                         'manageAnalyzerTemplate',
-                        'manageObservableTemplate'
+                        'manageObservableTemplate',
+                        'manageTaxonomy',
+                        'managePattern',
+                        'managePlatform'
                     ],
                     labels: {
-                        manageUser: 'Manage users',
                         manageOrganisation: 'Manage organisations',
+                        manageProfile: 'Manage profiles',
+                        manageUser: 'Manage users',
                         manageCustomField: 'Manage custom fields',
                         manageConfig: 'Manage configurations',
-                        manageTag: 'Manage tags',
-                        manageProfile: 'Manage profiles',
                         manageAnalyzerTemplate: 'Manage analyzer templates',
-                        manageObservableTemplate: 'Manage observable types'
+                        manageObservableTemplate: 'Manage observable types',
+                        manageTaxonomy: 'Manage taxonomies',
+                        managePattern: 'Manage attack patterns',
+                        managePlatform: 'Manage the platform'
                     }
                 },
                 org: {
@@ -36,6 +40,7 @@
                     keys: [
                         'manageUser',
                         'manageCaseTemplate',
+                        'manageTag',
                         'manageAlert',
                         'manageCase',
                         'manageShare',
@@ -48,6 +53,7 @@
                     labels: {
                         manageUser: 'Manage users',
                         manageCaseTemplate: 'Manage case templates',
+                        manageTag: 'Manage custom tags',
                         manageAlert: 'Manage alert',
                         manageCase: 'Manage case',
                         manageShare: 'Manage sharing',
@@ -61,7 +67,9 @@
             };
 
             this.list = function() {
-                return $http.get(baseUrl);
+                return $http.get(baseUrl, {params: {
+                    range: 'all'
+                }});
             };
 
             this.get = function(name) {

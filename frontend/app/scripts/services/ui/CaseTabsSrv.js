@@ -20,6 +20,12 @@
                 active: false,
                 label: 'Observables',
                 state: 'app.case.observables'
+            },
+            'procedures': {
+                name: 'procedures',
+                active: false,
+                label: 'TTPs',
+                state: 'app.case.procedures'
             }
         };
 

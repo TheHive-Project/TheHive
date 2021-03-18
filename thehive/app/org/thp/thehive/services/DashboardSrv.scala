@@ -1,28 +1,24 @@
 package org.thp.thehive.services
 
-import java.util.{List => JList, Map => JMap}
-
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.UserOps._
 import play.api.libs.json.{JsObject, Json}
 
+import java.util.{List => JList, Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
-class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv)(implicit
-    @Named("with-thehive-schema") db: Database
-) extends VertexSrv[Dashboard] {
+class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv) extends VertexSrv[Dashboard] {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
   val dashboardUserSrv         = new EdgeSrv[DashboardUser, Dashboard, User]
 
@@ -31,8 +27,9 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
       createdDashboard <- createEntity(dashboard)
       user             <- userSrv.current.getOrFail("User")
       _                <- dashboardUserSrv.create(DashboardUser(), createdDashboard, user)
-      _                <- auditSrv.dashboard.create(createdDashboard, RichDashboard(createdDashboard, Map.empty).toJson)
-    } yield RichDashboard(createdDashboard, Map.empty)
+      richDashboard = RichDashboard(createdDashboard, Map.empty, writable = true)
+      _ <- auditSrv.dashboard.create(createdDashboard, richDashboard.toJson)
+    } yield richDashboard
 
   override def update(
       traversal: Traversal.V[Dashboard],
@@ -87,7 +84,7 @@ object DashboardOps {
   implicit class DashboardOpsDefs(traversal: Traversal.V[Dashboard]) {
 
     def get(idOrName: EntityIdOrName): Traversal.V[Dashboard] =
-      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
+      idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
 
     def visible(implicit authContext: AuthContext): Traversal.V[Dashboard] =
       traversal.filter(_.or(_.user.current, _.organisation.current))
@@ -111,14 +108,15 @@ object DashboardOps {
         .fold
         .domainMap(_.map { case (writable, orgs) => (orgs.value[String]("name"), writable) })
 
-    def richDashboard: Traversal[RichDashboard, JMap[String, Any], Converter[RichDashboard, JMap[String, Any]]] =
+    def richDashboard(implicit authContext: AuthContext): Traversal[RichDashboard, JMap[String, Any], Converter[RichDashboard, JMap[String, Any]]] =
       traversal
         .project(
           _.by
             .by(_.organisationShares)
+            .by(_.choose(_.canUpdate, true, false))
         )
         .domainMap {
-          case (dashboard, organisationShares) => RichDashboard(dashboard, organisationShares.toMap)
+          case (dashboard, organisationShares, writable) => RichDashboard(dashboard, organisationShares.toMap, writable)
         }
 
   }

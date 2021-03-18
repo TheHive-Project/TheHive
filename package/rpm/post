@@ -11,3 +11,8 @@ chmod 0640 /etc/thehive/application.conf /etc/thehive/logback.xml /etc/thehive/s
 if test -x /bin/systemctl; then
  	/bin/systemctl daemon-reload || /bin/true
  fi
+
+mkdir -p /var/log/thehive /opt/thp/thehive/index /opt/thp/thehive/database /opt/thp/thehive/files
+touch /var/log/thehive/application.log
+chown -R thehive:thehive /var/log/thehive /opt/thp/thehive/index /opt/thp/thehive/database /opt/thp/thehive/files
+

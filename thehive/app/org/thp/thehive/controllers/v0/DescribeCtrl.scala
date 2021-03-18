@@ -1,9 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Boolean => JBoolean}
-import java.util.Date
-import javax.inject.{Inject, Named, Singleton}
-import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.PublicProperty
@@ -11,6 +7,7 @@ import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hash
+import org.thp.scalligraph.{EntityId, NotFoundError}
 import org.thp.thehive.services.CustomFieldSrv
 import play.api.Logger
 import play.api.cache.SyncCacheApi
@@ -18,6 +15,9 @@ import play.api.inject.Injector
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.lang.{Boolean => JBoolean}
+import java.util.Date
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
@@ -41,7 +41,7 @@ class DescribeCtrl @Inject() (
     userCtrl: UserCtrl,
     customFieldSrv: CustomFieldSrv,
     injector: Injector,
-    @Named("with-thehive-schema") db: Database,
+    db: Database,
     applicationConfig: ApplicationConfig
 ) {
 
@@ -88,7 +88,7 @@ class DescribeCtrl @Inject() (
     ).toOption
 
   def entityDescriptions: Seq[EntityDescription] =
-    cacheApi.getOrElseUpdate(s"describe.v0", cacheExpire) {
+    cacheApi.getOrElseUpdate("describe.v0", cacheExpire) {
       Seq(
         EntityDescription("case", "/case", caseCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case", _))),
         EntityDescription("case_task", "/case/task", taskCtrl.publicData.publicProperties.list.flatMap(propertyToJson("case_task", _))),
@@ -206,10 +206,12 @@ class DescribeCtrl @Inject() (
             )
           )
         )
+      case ("dashboard", "status") =>
+        Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")))))
       case _ => None
     }
 
-  def propertyToJson(model: String, prop: PublicProperty[_, _]): Seq[PropertyDescription] =
+  def propertyToJson(model: String, prop: PublicProperty): Seq[PropertyDescription] =
     customDescription(model, prop.propertyName).getOrElse {
       prop.mapping.domainTypeClass match {
         case c if c == classOf[Boolean] || c == classOf[JBoolean] => Seq(PropertyDescription(prop.propertyName, "boolean"))

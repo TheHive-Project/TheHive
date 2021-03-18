@@ -12,14 +12,14 @@
                     url: './api/case/:caseId/links',
                     isArray: true
                 },
-                merge: {
-                    method: 'POST',
-                    url: './api/case/:caseId/_merge/:mergedCaseId',
-                    params: {
-                        caseId: '@caseId',
-                        mergedCaseId: '@mergedCaseId',
-                    }
-                },
+                // merge: {
+                //     method: 'POST',
+                //     url: './api/case/:caseId/_merge/:mergedCaseId',
+                //     params: {
+                //         caseId: '@caseId',
+                //         mergedCaseId: '@mergedCaseId',
+                //     }
+                // },
                 forceRemove: {
                     method: 'DELETE',
                     url: './api/case/:caseId/force',
@@ -94,6 +94,10 @@
                 return defer.promise;
             };
 
+            this.merge = function(ids) {
+                return $http.post('./api/v1/case/_merge/' + ids.join(','));
+            };
+
             this.bulkUpdate = function(ids, update) {
                 return $http.patch('./api/case/_bulk', _.extend({ids: ids}, update));
             };
@@ -122,6 +126,10 @@
                     }
                 });
             };
+
+            this.removeCustomField = function(customfFieldValueId) {
+                return $http.delete('./api/v1/case/customField/' + customfFieldValueId)
+            }
         });
 
 })();

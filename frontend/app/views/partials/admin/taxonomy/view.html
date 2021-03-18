@@ -1,0 +1,65 @@
+<form class="form">
+
+    <div class="modal-header bg-primary">
+        <h3 class="modal-title">{{::$modal.taxonomy.namespace}} taxonomy</h3>
+    </div>
+
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Namespace</label>
+                    <div>{{::$modal.taxonomy.namespace}}</div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>Version</label>
+                    <div>{{::$modal.taxonomy.version}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Description</label>
+            <div>{{::$modal.taxonomy.description}}</div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="pl-0" width="200">Tag</th>
+                            <th>Predicate</th>
+                            <th>Value</th>
+                            <th width="100">Color</th>
+                            <th width="10"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="tag in $modal.taxonomy.tags">
+                            <td>
+                                <span class="label">
+                                    <tag value="tag"></tag>
+                                </span>
+                            </td>
+                            <td>{{::tag.predicate}}</td>
+                            <td>{{::tag.value || '-'}}</td>
+                            <td>{{::tag.colour}}</td>
+                            <td>
+                                <span ng-if="::tag.description" uib-tooltip="{{::tag.description}}" tooltip-placement="left">
+                                    <i class="fa fa-question-circle"></i>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-default pull-left" type="button" ng-click="$modal.cancel()">Cancel</button>
+        <button class="btn btn-primary pull-right" type="button" ng-click="$modal.cancel()">Close</button>
+    </div>
+</form>

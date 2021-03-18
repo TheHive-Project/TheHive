@@ -18,6 +18,13 @@
                     this.onSort({field: field});
                 };
 
+                self.addFilterValue = function(field, value) {
+                    self.onFilter({
+                        field: field,
+                        value: value
+                    });
+                }
+
                 self.reload = function() {
                     self.onReload();
                 };
@@ -210,7 +217,8 @@
                 setPasswordEnabled: '<',
                 onReload: '&',
                 onEdit: '&',
-                onSort: '&'
+                onSort: '&',
+                onFilter: '&'
             }
         });
 })();

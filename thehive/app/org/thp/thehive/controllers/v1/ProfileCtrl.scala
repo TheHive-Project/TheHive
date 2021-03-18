@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v1
 
-import javax.inject.{Inject, Named, Singleton}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -14,6 +13,7 @@ import org.thp.thehive.services.ProfileOps._
 import org.thp.thehive.services.ProfileSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Singleton}
 import scala.util.Failure
 
 @Singleton
@@ -21,12 +21,11 @@ class ProfileCtrl @Inject() (
     entrypoint: Entrypoint,
     properties: Properties,
     profileSrv: ProfileSrv,
-    @Named("with-thehive-schema") implicit val db: Database
+    implicit val db: Database
 ) extends QueryableCtrl {
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](
     "getProfile",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, _) => profileSrv.get(idOrName)(graph)
   )
   val entityName: String                 = "profile"
@@ -37,7 +36,6 @@ class ProfileCtrl @Inject() (
 
   val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Profile], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, profileSteps, _) => profileSteps.page(range.from, range.to, range.extraData.contains("total"))
   )
   override val outputQuery: Query = Query.output[Profile with Entity]

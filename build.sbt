@@ -2,8 +2,8 @@ import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.0.5-1"
-val scala212               = "2.12.12"
+val thehiveVersion         = "4.1.0-1"
+val scala212               = "2.12.13"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
 
@@ -62,7 +62,8 @@ libraryDependencies in ThisBuild ++= {
 }
 dependencyOverrides in ThisBuild ++= Seq(
 //  "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
-  "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.7.2"
+//  "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.7.2"
+  akkaActor
 )
 PlayKeys.includeDocumentationInBinary := false
 milestoneFilter := ((milestone: Milestone) => milestone.title.startsWith("4"))
@@ -170,7 +171,10 @@ lazy val thehiveDto = (project in file("dto"))
   .dependsOn(scalligraph)
   .settings(
     name := "thehive-dto",
-    version := thehiveVersion
+    version := thehiveVersion,
+    libraryDependencies ++= Seq(
+      aix
+    )
   )
 
 lazy val thehiveClient = (project in file("client"))
@@ -319,6 +323,7 @@ lazy val mispClient = (project in file("misp/client"))
     libraryDependencies ++= Seq(
       ws,
       alpakka,
+      akkaHttp,
       specs      % Test,
       playMockws % Test
     )
@@ -337,13 +342,12 @@ lazy val thehiveMigration = (project in file("migration"))
     libraryDependencies ++= Seq(
       elastic4sCore,
       elastic4sHttpStreams,
-      elastic4sHttp,
+      elastic4sClient,
 //      jts,
       ehcache,
       scopt,
       specs % Test
     ),
-    fork := true,
     normalizedName := "migrate"
   )
 

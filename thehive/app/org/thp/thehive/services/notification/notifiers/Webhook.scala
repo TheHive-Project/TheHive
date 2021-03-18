@@ -1,15 +1,12 @@
 package org.thp.thehive.services.notification.notifiers
 
-import java.util.{Date, Map => JMap}
-
 import akka.stream.Materializer
-import javax.inject.{Inject, Singleton}
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
-import org.thp.client.{ProxyWS, ProxyWSConfig}
+import org.apache.tinkerpop.gremlin.structure.Vertex
+import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
 import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
@@ -25,6 +22,8 @@ import play.api.libs.json.Json.WithDefaultValues
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
+import java.util.{Date, Map => JMap}
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -32,6 +31,7 @@ case class WebhookNotification(
     name: String,
     url: String,
     version: Int = 0,
+    auth: Authentication,
     wsConfig: ProxyWSConfig = ProxyWSConfig(),
     includedTheHiveOrganisations: Seq[String] = Seq("*"),
     excludedTheHiveOrganisations: Seq[String] = Nil
@@ -155,7 +155,7 @@ class Webhook(
       (_: Traversal.V[Audit])
         .coalesce(
           _.`object` //.out[Audited]
-            .choose(
+            .chooseValue(
               _.on(_.label)
                 .option("Case", t => caseToJson(t.v[Case]))
                 .option("Task", t => taskToJson(t.v[Task]))
@@ -260,7 +260,7 @@ class Webhook(
       val async = for {
         message <- Future.fromTry(buildMessage(config.version, audit))
         _ = logger.debug(s"Request webhook with message $message")
-        resp <- ws.url(config.url).post(message)
+        resp <- config.auth(ws.url(config.url)).post(message)
       } yield if (resp.status >= 400) logger.warn(s"Webhook call on ${config.url} returns ${resp.status} ${resp.statusText}") else ()
       async.andThen { case _ => ws.close() }
     }

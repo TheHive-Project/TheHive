@@ -4,7 +4,7 @@
             {{$vm.dashboard.title}}
         </h3>
         <div class="box-tools pull-right">
-            <a href class="mr-xxs btn btn-sm btn-primary" ng-click="$vm.enableEditMode()" ng-show="$vm.canEditDashboard() && !$vm.options.editLayout">
+            <a href class="mr-xxs btn btn-sm btn-primary" ng-click="$vm.enableEditMode()" ng-show="!!$vm.dashboard.writable && !$vm.options.editLayout">
                 <i class="fa fa-pencil"></i> Edit
             </a>
             <a href class="mr-xxs btn btn-default btn-sm" ng-click="$vm.exportDashboard()" ng-show="!$vm.options.editLayout">

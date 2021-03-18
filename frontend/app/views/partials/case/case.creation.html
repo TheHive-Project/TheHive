@@ -1,4 +1,4 @@
-<form class="form-horizontal" name="caseCreateForm" ng-submit="createNewCase(caseCreateForm.$valid);" novalidate>
+<form name="caseCreateForm" ng-submit="createNewCase(caseCreateForm.$valid);" novalidate>
     <div class="modal-header bg-primary">
         <h3 class="modal-title">Create a new case</h3>
     </div>
@@ -7,11 +7,10 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="form-group" ng-class="{ 'has-error' : caseCreateForm.title.$invalid && !caseCreateForm.title.$pristine }">
-                    <label class="col-md-3 control-label">Title
+                    <label class="control-label">Title
                         <i class="fa fa-asterisk text-danger"></i>
                     </label>
-                    <div class="col-md-9">
-
+                    <div>
                         <input class="form-control input-sm" name="title" ng-if="!fromTemplate" ng-model="newCase.title" placeholder="Title" required type="text"/>
 
                         <div class="input-group" ng-if="fromTemplate">
@@ -25,10 +24,10 @@
             </div>
             <div class="col-md-6">
                 <div class="form-group" ng-class="{ 'has-error' : caseCreateForm.startDate.$invalid && !caseCreateForm.startDate.$pristine }">
-                    <label class="col-md-3 control-label">Date
+                    <label class="control-label">Date
                         <i class="fa fa-asterisk text-danger"></i>
                     </label>
-                    <div class="col-md-9">
+                    <div>
                         <date-time-picker date="newCase.startDate" name="startDate"></date-time-picker>
                         <p class="help-block" ng-show="caseCreateForm.startDate.$invalid && !caseCreateForm.startDate.$pristine">The case start date is required.</p>
                     </div>
@@ -36,62 +35,75 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="form-group">
-                    <label class="col-md-3 control-label">Severity
+                    <label class="control-label">Severity
                         <i class="fa fa-asterisk text-danger"></i>
                     </label>
-                    <div class="col-md-9">
+                    <div>
                         <severity active="active" value="newCase.severity"></severity>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="form-group">
-                    <label class="col-md-3 control-label">TLP
+                    <label class="control-label">TLP
                         <i class="fa fa-asterisk text-danger"></i>
                     </label>
-                    <div class="col-md-9">
+                    <div>
                         <a href ng-click="activeTlp='active'">
                             <tlp format="activeTlp" on-update="updateTlp(newValue)" value="newCase.tlp"></tlp>
                         </a>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="form-group">
-                    <label class="col-md-3 control-label">Tags</label>
-                    <div class="col-md-9">
-                        <!-- <tags-input class="ti-input-sm" replace-spaces-with-dashes="false"></tags-input> -->
-                        <tags-input class="ti-input-sm input-sm form-control form-control-wrapper"
-                            name="tags"
-                            placeholder="Tags"
-                            min-length="2"
-                            ng-model="tags"
-                            replace-spaces-with-dashes="false">
-                                <auto-complete min-length="3" debounce-delay="400" source="getTags($query)"></auto-complete>
-                            </tags-input>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="col-md-3 control-label">PAP
+                    <label class="control-label">PAP
                         <i class="fa fa-asterisk text-danger"></i>
                     </label>
-                    <div class="col-md-9">
+                    <div>
                         <a href ng-click="activePap='active'">
                             <tlp format="activePap" on-update="updatePap(newValue)" value="newCase.pap" namespace="PAP"></tlp>
                         </a>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label class="control-label">Tags</label>
+
+                    <div class="input-group">
+                        <tags-input class="ti-input-sm input-sm form-control form-control-wrapper ti-tag-selector"
+                            name="tags"
+                            placeholder="Case tags"
+                            min-length="2"
+                            ng-model="tags"
+                            template="views/directives/tag-input-item.html"
+                            replace-spaces-with-dashes="false">
+                                <auto-complete min-length="3" debounce-delay="400" source="getTags($query)"></auto-complete>
+                        </tags-input>
+
+                        <span class="input-group-btn vtop">
+                            <button type="button" class="btn btn-block btn-sm btn-primary" ng-click="fromTagLibrary()" uib-tooltip="Add tag from library" tooltip-placement="left">
+                                <span class="fa fa-plus"></span>
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12">
                 <div class="form-group" ng-class="{ 'has-error' : caseCreateForm.description.$invalid && !caseCreateForm.description.$pristine }">
-                    <label class="col-sm-3 control-label">Description
+                    <label class="control-label">Description
                         <i class="fa fa-asterisk text-danger"></i>
                     </label>
-                    <div class="col-sm-9">
+                    <div>
                         <textarea class="form-control" name="description" ng-model="newCase.description" placeholder="Case description" required rows="3"></textarea>
                         <p class="help-block" ng-show="caseCreateForm.description.$invalid && !caseCreateForm.description.$pristine">The case description is required.</p>
                     </div>

@@ -1,9 +1,9 @@
 package org.thp.thehive.models
 
-import java.util.Date
-
 import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
+
+import java.util.Date
 
 @BuildVertexEntity
 @DefineIndex(IndexType.unique, "name")
@@ -19,6 +19,9 @@ case class OrganisationShare()
 
 @BuildEdgeEntity[Organisation, Organisation]
 case class OrganisationOrganisation()
+
+@BuildEdgeEntity[Organisation, Taxonomy]
+case class OrganisationTaxonomy()
 
 case class RichOrganisation(organisation: Organisation with Entity, links: Seq[Organisation with Entity]) {
   def name: String               = organisation.name

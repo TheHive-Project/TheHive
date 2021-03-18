@@ -21,6 +21,7 @@
                 this.scope = options.scope;
                 this.loadAll = !!options.loadAll;
                 this.pageSize = options.pageSize || 10;
+                this.pageOptions = options.pageOptions || {};
                 this.baseFilter = options.baseFilter;
                 this.filter = options.filter;
                 this.sort = options.sort;
@@ -84,10 +85,14 @@
                     var from = to - this.pageSize;
                     //range = start + '-' + end;
 
-                    return _.extend({
-                        from: from,
-                        to: to
-                    }, self.extraData ? {extraData: self.extraData} : {});
+                    return _.extend(
+                        {
+                            from: from,
+                            to: to
+                        },
+                        self.extraData ? {extraData: self.extraData} : {},
+                        self.pageOptions ? self.pageOptions : {}
+                    );
                 };
 
 

@@ -5,7 +5,7 @@
     'use strict';
 
     angular.module('theHiveControllers').controller('ObservableCreationCtrl',
-        function($scope, $stateParams, $uibModalInstance, clipboard, CaseArtifactSrv, ObservableTypeSrv, NotificationSrv, TagSrv, params) {
+        function($scope, $stateParams, $uibModalInstance, TaxonomyCacheSrv, clipboard, CaseArtifactSrv, ObservableTypeSrv, NotificationSrv, TagSrv, params) {
 
             $scope.activeTlp = 'active';
             $scope.pendingAsync = false;
@@ -62,6 +62,13 @@
                 return _.without(_.uniq(_.map(arr, function(data) {
                     return data.trim();
                 })), '', null, undefined).length;
+            };
+
+            $scope.fromTagLibrary = function() {
+                TaxonomyCacheSrv.openTagLibrary()
+                    .then(function(tags){
+                        $scope.params.tags = $scope.params.tags.concat(tags);
+                    })
             };
 
             $scope.add = function(form) {
@@ -189,7 +196,7 @@
             };
 
             $scope.getTags = function(query) {
-                return TagSrv.fromObservables(query);
+                return TagSrv.autoComplete(query);
             };
         }
     );

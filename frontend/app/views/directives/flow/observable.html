@@ -17,9 +17,9 @@
     <div class="flow-item-updates wrap" ng-switch-when="Creation">
         <div ng-if="base.object.message">description: {{base.object.message| limitTo: 250}}</div>
         <div ng-if="base.object.tags.length > 0">
-            Tags: 
+            Tags:
             <span ng-repeat="tag in base.object.tags">
-                <span class="label label-primary">{{tag}}</span>
+                <tag-item value="tag"></tag-item>
             </span>
         </div>
     </div>
@@ -32,7 +32,7 @@
             <div ng-switch-when="tags">
                 {{k}}:
                 <span ng-repeat="tag in v">
-                    <span class="label label-primary">{{tag}}</span>
+                    <tag-item value="tag"></tag-item>
                 </span>
                 <span ng-if="v.length === 0">
                     <em>None</em>

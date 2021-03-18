@@ -8,13 +8,13 @@
     <user-info value="base.createdBy" field="name"></user-info>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
-    Started on <span ng-bind="value.startDate | showDate"> </span>
+    Started on <span ng-bind="value.startDate | shortDate"> </span>
 
     <span ng-if="value.endDate" class="text-success">
         (
         <strong>Finished</strong>
         on
-        {{value.endDate | showDate}}
+        {{value.endDate | shortDate}}
         as
         <strong>{{value.status}}</strong>)
     </span>

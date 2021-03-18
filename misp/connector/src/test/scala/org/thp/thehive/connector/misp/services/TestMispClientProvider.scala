@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.misp.services
 
-import javax.inject.{Inject, Provider}
 import mockws.MockWS
 import org.thp.client.NoAuthentication
 import org.thp.misp.client.MispPurpose
@@ -9,6 +8,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{DefaultActionBuilder, Results}
 import play.api.test.Helpers.{GET, POST}
 
+import javax.inject.{Inject, Provider}
 import scala.concurrent.ExecutionContext
 import scala.io.Source
 

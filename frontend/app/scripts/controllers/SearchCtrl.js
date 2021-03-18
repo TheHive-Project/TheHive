@@ -10,8 +10,8 @@
                 {name: 'case_task_log', label: 'Tasks Logs', icon: 'glyphicon glyphicon-comment'},
                 {name: 'case_artifact', label: 'Observables', icon: 'glyphicon glyphicon-pushpin'},
                 {name: 'alert', label: 'Alerts', icon: 'glyphicon glyphicon-alert'},
-                {name: 'case_artifact_job', label: 'Jobs', icon: 'glyphicon glyphicon-cog'},
-                {name: 'audit', label: 'Audit Logs', icon: 'glyphicon glyphicon-list-alt'}
+                {name: 'case_artifact_job', label: 'Jobs', icon: 'glyphicon glyphicon-cog'}
+                // {name: 'audit', label: 'Audit Logs', icon: 'glyphicon glyphicon-list-alt'}
             ];
 
             $scope.getUserInfo = UserSrv.getCache;

@@ -1,0 +1,124 @@
+.ttp-item {
+    margin-bottom: 6px;
+    border: 1px solid #f5f5f5;
+}
+
+.ttp-tactic {
+    width: 250px;
+    vertical-align: middle;
+}
+.ttp-name {
+    flex: 1;
+}
+.ttp-action {
+    width: 100px;
+    text-align: right
+}
+.ttp-date {
+    width: 140px;
+}
+.ttp-user {
+    width: 200px;
+}
+
+.ttp-item .ttp-header {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    flex-direction: row;
+    border-bottom: 1px solid #f5f5f5;
+    background-color: #fcfcfc;
+}
+.ttp-item .ttp-header > div {
+    padding: 2px 10px;
+    vertical-align: middle;
+}
+
+.ttp-item .ttp-header .ttp-tactic {
+    background-color: #f5f5f5;
+    border-left: 4px solid #337ab7;
+    color: #337ab7;
+    display: flex;
+    align-items: center;
+}
+.ttp-item .ttp-header .ttp-tactic > div {
+    flex: 1
+}
+.ttp-item .ttp-header .ttp-name {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+.ttp-item .ttp-header .ttp-name > div {
+    flex: 1
+}
+.ttp-item .ttp-header .ttp-date {
+    display: flex;
+    align-items: center;
+}
+.ttp-item .ttp-header .ttp-actions {
+    display: flex;
+    align-items: center;
+}
+
+.ttp-item .ttp-body {
+    padding: 10px;
+}
+
+.ttp-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.ttp-item-header > div {
+    font-weight: bold;
+    padding: 4px 10px;
+}
+
+.procedure-techniques-list {
+    height: 40vh;
+    overflow-y: scroll;
+    border-radius: 0;
+    box-shadow: none;
+    border: 1px solid #d2d6de;
+}
+
+.procedure-techniques-list .tooltip {
+    width: 600px;
+    text-align: left;
+}
+.procedure-techniques-list .tooltip-inner {
+    max-width: 100%;
+    text-align: left;
+}
+
+.procedure-techniques-list .procedure-techniques-item {
+    display: block;
+    padding: 2px 5px;
+}
+
+.procedure-techniques-list .procedure-techniques-item:hover {
+    background-color: #f5f5f5;
+}
+
+.procedure-techniques-list .procedure-techniques-item.active,
+.procedure-techniques-list .procedure-techniques-item.active:hover {
+    background-color: #3c8dbc;
+    color: #fff;
+}
+
+.procedure-techniques-list .procedure-techniques-item.active a{
+    color: #fff;
+}
+
+.procedure-technique {
+    display: block;
+}
+
+.procedure-technique.sub-technique {
+    margin-left: 30px;
+}

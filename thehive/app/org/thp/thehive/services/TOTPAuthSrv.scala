@@ -1,21 +1,20 @@
 package org.thp.thehive.services
 
-import java.net.URI
-import java.util.concurrent.TimeUnit
-
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import javax.inject.{Inject, Named, Provider, Singleton}
 import org.apache.commons.codec.binary.Base32
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCodeRequired}
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
+import java.net.URI
+import java.util.concurrent.TimeUnit
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.immutable
 import scala.util.{Failure, Random, Success, Try}
 
@@ -24,7 +23,7 @@ class TOTPAuthSrv(
     appConfig: ApplicationConfig,
     availableAuthProviders: immutable.Set[AuthSrvProvider],
     userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends MultiAuthSrv(configuration, appConfig, availableAuthProviders) {
   override val name: String = "totp"
 
@@ -103,7 +102,7 @@ class TOTPAuthSrvProvider @Inject() (
     appConfig: ApplicationConfig,
     authProviders: immutable.Set[AuthSrvProvider],
     userSrv: UserSrv,
-    @Named("with-thehive-schema") db: Database
+    db: Database
 ) extends Provider[AuthSrv] {
   override def get(): AuthSrv = new TOTPAuthSrv(configuration, appConfig, authProviders, userSrv, db)
 }

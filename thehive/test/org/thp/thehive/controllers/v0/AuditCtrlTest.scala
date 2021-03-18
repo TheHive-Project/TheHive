@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.util.Date
-
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.{AppBuilder, EntityIdOrName}
@@ -10,6 +8,8 @@ import org.thp.thehive.models.{Case, CaseStatus, Permissions}
 import org.thp.thehive.services.{CaseSrv, FlowActor, OrganisationSrv}
 import play.api.libs.json.JsObject
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
   override def appConfigure: AppBuilder =
@@ -33,14 +33,26 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
 
     // Create an event first
     val `case` = app[Database].tryTransaction { implicit graph =>
+      val organisation = app[OrganisationSrv].getOrFail(EntityIdOrName("admin")).get
       app[CaseSrv].create(
-        Case(0, "case audit", "desc audit", 1, new Date(), None, flag = false, 1, 1, CaseStatus.Open, None),
-        None,
-        app[OrganisationSrv].getOrFail(EntityIdOrName("admin")).get,
-        Set.empty,
-        Seq.empty,
-        None,
-        Nil
+        `case` = Case(
+          title = "case audit",
+          description = "desc audit",
+          severity = 1,
+          startDate = new Date,
+          endDate = None,
+          flag = false,
+          tlp = 1,
+          pap = 1,
+          status = CaseStatus.Open,
+          summary = None,
+          tags = Nil
+        ),
+        assignee = None,
+        organisation = organisation,
+        customFields = Nil,
+        caseTemplate = None,
+        additionalTasks = Nil
       )(graph, authContext)
     }.get
 

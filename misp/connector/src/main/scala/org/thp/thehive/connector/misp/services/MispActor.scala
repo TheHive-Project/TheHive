@@ -2,7 +2,6 @@ package org.thp.thehive.connector.misp.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable}
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
-import org.thp.scalligraph.auth.UserSrv
 import play.api.Logger
 
 import javax.inject.{Inject, Named, Provider}

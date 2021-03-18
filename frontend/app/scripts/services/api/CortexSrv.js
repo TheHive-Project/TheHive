@@ -1,27 +1,30 @@
 (function() {
     'use strict';
-    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, QuerySrv, StatSrv, StreamSrv, AnalyzerSrv, PSearchSrv, ModalUtilsSrv) {
+    angular.module('theHiveServices').service('CortexSrv', function($q, $http, $rootScope, $uibModal, QuerySrv, PaginatedQuerySrv, StreamSrv, AnalyzerSrv, PSearchSrv, ModalUtilsSrv) {
         var self = this;
         var baseUrl = './api/connector/cortex';
 
-        this.list = function(scope, caseId, observableId, callback) {
-            return PSearchSrv(undefined, 'connector/cortex/job', {
+        this.listJobs = function(scope, caseId, observableId, callback) {
+            return new PaginatedQuerySrv({
+                name: 'observable-jobs-' + observableId,
+                version: 'v1',
                 scope: scope,
-                sort: ['-startDate'],
+                streamObjectType: 'case_artifact_job',
                 loadAll: false,
+                sort: ['-startDate'],
                 pageSize: 200,
                 onUpdate: callback || angular.noop,
-                streamObjectType: 'case_artifact_job',
-                filter: {
-                    _parent: {
-                        _type: 'case_artifact',
-                        _query: {
-                            _id: observableId
-                        }
-                    }
+                operations: [
+                    { '_name': 'getObservable', 'idOrName': observableId },
+                    { '_name': 'jobs' }
+                ],
+                guard: function(updates) {
+                    return _.find(updates, function(item) {
+                        return (item.base.details.objectType === 'Observable') && (item.base.details.objectId === observableId);
+                    }) !== undefined;
                 }
             });
-        };
+        }
 
         this.getJobs = function(caseId, observableId, analyzerId, limit) {
 

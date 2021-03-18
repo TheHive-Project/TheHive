@@ -1,0 +1,16 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="btn-toolbar" role="toolbar">
+
+            <div class="btn-group pull-right" role="group">
+                <page-sizer collection="$vm.list" sizes="[10, 15, 30, 100]"></page-sizer>
+            </div>
+
+            <div class="btn-group pull-right" role="group">
+                <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[$vm.filtering.context.showFilters]" type="button" ng-click="$vm.toggleFilters()">
+                    <i class="fa fa-search"></i> Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

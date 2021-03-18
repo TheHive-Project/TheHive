@@ -1,9 +1,9 @@
 package org.thp.thehive
 
-import java.io.File
-
 import play.api._
 import play.core.server.{RealServerProcess, ServerConfig, ServerProcess, ServerProvider}
+
+import java.io.File
 
 object DevStart extends App {
   val process = new RealServerProcess(args)

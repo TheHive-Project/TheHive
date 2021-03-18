@@ -7,6 +7,5 @@ case class InputCaseTemplate(
     metaData: MetaData,
     caseTemplate: CaseTemplate,
     organisation: String,
-    tags: Set[String],
     customFields: Seq[InputCustomFieldValue]
 )

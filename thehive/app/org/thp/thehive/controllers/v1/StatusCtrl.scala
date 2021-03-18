@@ -6,11 +6,10 @@ import akka.cluster.{Cluster, Member}
 import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
+import org.thp.scalligraph.models.UpdatableSchema
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.TheHiveModule
-import org.thp.thehive.models.TheHiveSchemaDefinition
-import org.thp.thehive.services.Connector
 import play.api.libs.json.{JsObject, JsString, Json, Writes}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
@@ -24,8 +23,7 @@ class StatusCtrl @Inject() (
     entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     authSrv: AuthSrv,
-    connectors: immutable.Set[Connector],
-    theHiveSchemaDefinition: TheHiveSchemaDefinition,
+    schemas: immutable.Set[UpdatableSchema],
     system: ActorSystem
 ) {
 
@@ -78,7 +76,7 @@ class StatusCtrl @Inject() (
               "pollingDuration" -> streamPollingDuration.toMillis
             ),
             "cluster" -> cluster.state,
-            "schemaStatus" -> (connectors.flatMap(_.schemaStatus) ++ theHiveSchemaDefinition.schemaStatus).map { schemaStatus =>
+            "schemaStatus" -> schemas.flatMap(_.schemaStatus).map { schemaStatus =>
               Json.obj(
                 "name"            -> schemaStatus.name,
                 "currentVersion"  -> schemaStatus.currentVersion,

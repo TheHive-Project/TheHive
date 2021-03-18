@@ -51,19 +51,53 @@
                 return $uibModalInstance.close(dashboard);
             };
         })
-        .controller('DashboardsCtrl', function($scope, $state, $uibModal, PSearchSrv, ModalUtilsSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
+        .controller('DashboardsCtrl', function($scope, $state, $uibModal, PaginatedQuerySrv, FilteringSrv, ModalUtilsSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
             this.dashboards = [];
             var self = this;
 
+            this.$onInit = function() {
+                self.filtering = new FilteringSrv('dashboard', 'dashboard.list', {
+                    version: 'v0',
+                    defaults: {
+                        showFilters: true,
+                        showStats: false,
+                        pageSize: 15,
+                        sort: ['+title']
+                    },
+                    defaultFilter: []
+                });
+
+                self.filtering.initContext('list')
+                    .then(function() {
+                        self.load();
+
+                        $scope.$watch('$vm.list.pageSize', function (newValue) {
+                            self.filtering.setPageSize(newValue);
+                        });
+                    });
+            }
+
             this.load = function() {
-                DashboardSrv.list().then(function(response) {
-                    self.dashboards = response.data;
-                }, function(err){
-                    NotificationSrv.error('DashboardsCtrl', err.data, err.status);
+
+                self.list = new PaginatedQuerySrv({
+                    name: 'dashboard-list',
+                    version: 'v0',
+                    skipStream: true,
+                    sort: self.filtering.context.sort,
+                    loadAll: false,
+                    pageSize: self.filtering.context.pageSize,
+                    filter: this.filtering.buildQuery(),
+                    operations: [
+                        {'_name': 'listDashboard'}
+                    ],
+                    onFailure: function(err) {
+                        if(err && err.status === 400) {
+                            self.filtering.resetContext();
+                            self.load();
+                        }
+                    }
                 });
             };
-
-            this.load();
 
             this.openDashboardModal = function(dashboard) {
                 return $uibModal.open({
@@ -186,5 +220,62 @@
                     }
                 });
             }
+
+            // Filtering
+            this.toggleFilters = function () {
+                this.filtering.toggleFilters();
+            };
+
+            this.filter = function () {
+                self.filtering.filter().then(this.applyFilters);
+            };
+
+            this.clearFilters = function () {
+                this.filtering.clearFilters()
+                    .then(self.search);
+            };
+
+            this.removeFilter = function (index) {
+                self.filtering.removeFilter(index)
+                    .then(self.search);
+            };
+
+            this.search = function () {
+                self.load();
+                self.filtering.storeContext();
+            };
+            this.addFilterValue = function (field, value) {
+                this.filtering.addFilterValue(field, value);
+                this.search();
+            };
+
+            this.filterBy = function(field, value) {
+                self.filtering.clearFilters()
+                    .then(function(){
+                        self.addFilterValue(field, value);
+                    });
+            };
+
+            this.sortBy = function(sort) {
+                self.list.sort = sort;
+                self.list.update();
+                self.filtering.setSort(sort);
+            };
+
+            this.sortByField = function(field) {
+                var context = this.filtering.context;
+                var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
+                var sort = null;
+
+                if(currentSort.substr(1) !== field) {
+                    sort = ['+' + field];
+                } else {
+                    sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                }
+
+                self.list.sort = sort;
+                self.list.update();
+                self.filtering.setSort(sort);
+            };
         });
 })();

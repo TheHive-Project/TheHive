@@ -1,6 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import javax.inject.{Inject, Named, Singleton}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
@@ -18,6 +17,7 @@ import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -28,7 +28,7 @@ class UserCtrl @Inject() (
     authSrv: AuthSrv,
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
-    @Named("with-thehive-schema") implicit override val db: Database,
+    override val db: Database,
     @Named("v0") override val queryExecutor: QueryExecutor,
     override val publicData: PublicUser
 ) extends QueryCtrl {
@@ -46,6 +46,7 @@ class UserCtrl @Inject() (
               .getOrFail("User")
           )
           .map(user => Results.Ok(user.toJson).withHeaders("X-Organisation" -> request.organisation.toString))
+          .recover { case _ => Results.Unauthorized.withHeaders("X-Logout" -> "1") }
       }
 
   def create: Action[AnyContent] =
@@ -226,18 +227,16 @@ class UserCtrl @Inject() (
 }
 
 @Singleton
-class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, @Named("with-thehive-schema") db: Database) extends PublicData {
+class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "user"
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[User]](
     "getUser",
-    FieldsParser[EntityIdOrName],
     (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
     "page",
-    FieldsParser[OutputParam],
     (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true)
   )
   override val outputQuery: Query =
@@ -245,14 +244,14 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, 
   override val extraQueries: Seq[ParamQuery[_]] = Seq()
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[User]
     .property("login", UMapping.string)(_.field.readonly)
-    .property("name", UMapping.string)(_.field.custom { (_, value, vertex, db, graph, authContext) =>
+    .property("name", UMapping.string)(_.field.custom { (_, value, vertex, graph, authContext) =>
       def isCurrentUser: Try[Unit] =
         userSrv.get(vertex)(graph).current(authContext).existsOrFail
 
       def isUserAdmin: Try[Unit] =
         userSrv
           .current(graph, authContext)
-          .organisations(Permissions.manageUser)(db)
+          .organisations(Permissions.manageUser)
           .users
           .getElement(vertex)
           .existsOrFail
@@ -266,10 +265,10 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv, 
     })
     .property("status", UMapping.string)(
       _.select(_.choose(predicate = _.value(_.locked).is(P.eq(true)), onTrue = "Locked", onFalse = "Ok"))
-        .custom { (_, value, vertex, _, graph, authContext) =>
+        .custom { (_, value, vertex, graph, authContext) =>
           userSrv
             .current(graph, authContext)
-            .organisations(Permissions.manageUser)(db)
+            .organisations(Permissions.manageUser)
             .users
             .getElement(vertex)
             .orFail(AuthorizationError("Operation not permitted"))

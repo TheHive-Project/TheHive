@@ -1,66 +1,51 @@
 (function() {
     'use strict';
     angular.module('theHiveServices')
-        .service('TagSrv', function(QuerySrv, $q) {
+        .service('TagSrv', function(QuerySrv, $q, $http) {
 
-            var self = this;
-
-            var getTags = function(objectType, term) {
+            this.getFreeTags = function() {
                 var defer = $q.defer();
+
                 var operations = [
-                    { _name: 'listTag' }
-                ];
+                    { _name: 'listTag'},
+                    { _name: 'freetags'},
+                ]
 
-                if(objectType) {
-                    operations.push({ _name: objectType });
-                }
-
-                operations.push({
-                    _name: 'filter',
-                    _like: {
-                        _field: 'text',
-                        _value: '*' + term + '*'
+                QuerySrv.query('v1', operations, {
+                    params: {
+                        name: 'list-tags'
                     }
+                }).then(function(response) {
+                    defer.resolve(response.data);
                 });
-
-                operations.push({ _name: 'text' });
-
-                // Get the list
-                QuerySrv.call('v0', operations, {name: 'tags-auto-complete'})
-                    .then(function(data) {
-                        defer.resolve(_.map(_.unique(data), function(tag) {
-                            return {text: tag};
-                        }));
-                    });
 
                 return defer.promise;
             };
 
-            this.getTagsFor = function(entity, query) {
+            this.updateTag = function(id, patch) {
+                return $http.patch('./api/v1/tag/' + id, patch);
+            }
 
-                switch(entity) {
-                    case 'case':
-                        return self.fromCases(query);
-                    case 'case_artifact':
-                        return self.fromObservables(query);
-                    case 'alert':
-                        return self.fromAlerts(query);
-                    default:
-                        return self.getTags(undefined, query);
-                }
+            this.removeTag = function(id) {
+                return $http.delete('./api/v1/tag/' + id);
+            }
 
-            };
+            this.autoComplete = function(term) {
+                var defer = $q.defer();
 
-            this.fromCases = function(term) {
-                return getTags('fromCase', term);
-            };
+                var operations = [
+                    { _name: 'tagAutoComplete', freeTag: term, limit: 20}
+                ]
 
-            this.fromObservables = function(term) {
-                return getTags('fromObservable', term);
-            };
+                QuerySrv.call('v1', operations, {
+                    name: 'tags-auto-complete'
+                }).then(function(response) {
+                    defer.resolve(_.map(response, function(tag) {
+                        return {text: tag};
+                    }));
+                });
 
-            this.fromAlerts = function(term) {
-                return getTags('fromAlert', term);
+                return defer.promise;
             };
 
         });

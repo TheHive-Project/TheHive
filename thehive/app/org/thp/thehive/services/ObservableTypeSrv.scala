@@ -1,23 +1,20 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.ObservableTypeOps._
 
+import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef)(implicit
-    @Named("with-thehive-schema") db: Database
-) extends VertexSrv[ObservableType] {
+class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[ObservableType] {
 
   val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
 
@@ -56,8 +53,7 @@ object ObservableTypeOps {
   }
 }
 
-class ObservableTypeIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: ObservableTypeSrv)
-    extends IntegrityCheckOps[ObservableType] {
+class ObservableTypeIntegrityCheckOps @Inject() (val db: Database, val service: ObservableTypeSrv) extends IntegrityCheckOps[ObservableType] {
   override def resolve(entities: Seq[ObservableType with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>
@@ -66,4 +62,6 @@ class ObservableTypeIntegrityCheckOps @Inject() (@Named("with-thehive-schema") v
         Success(())
       case _ => Success(())
     }
+
+  override def globalCheck(): Map[String, Long] = Map.empty
 }

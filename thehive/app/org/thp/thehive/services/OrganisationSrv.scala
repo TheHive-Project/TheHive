@@ -1,39 +1,39 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-
 import akka.actor.ActorRef
-import javax.inject.{Inject, Named, Singleton}
-import org.apache.tinkerpop.gremlin.structure.Graph
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.RoleOps._
 import org.thp.thehive.services.UserOps._
+import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class OrganisationSrv @Inject() (
+    taxonomySrvProvider: Provider[TaxonomySrv],
     roleSrv: RoleSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
-)(implicit
-    @Named("with-thehive-schema") db: Database
+    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    cache: SyncCacheApi
 ) extends VertexSrv[Organisation] {
-
-  val organisationOrganisationSrv = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
-  val organisationShareSrv        = new EdgeSrv[OrganisationShare, Organisation, Share]
+  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
+  val organisationOrganisationSrv   = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
+  val organisationShareSrv          = new EdgeSrv[OrganisationShare, Organisation, Share]
+  val organisationTaxonomySrv       = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
     integrityCheckActor ! EntityAdded("Organisation")
@@ -48,13 +48,23 @@ class OrganisationSrv @Inject() (
       _                   <- roleSrv.create(user, createdOrganisation, profileSrv.orgAdmin)
     } yield createdOrganisation
 
-  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
+  def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
+    val activeTaxos = getByName("admin").taxonomies.toSeq
     for {
-      createdOrganisation <- createEntity(e)
-      _                   <- auditSrv.organisation.create(createdOrganisation, createdOrganisation.toJson)
-    } yield createdOrganisation
+      newOrga <- createEntity(e)
+      _       <- taxonomySrv.createFreetagTaxonomy(newOrga)
+      _       <- activeTaxos.toTry(t => organisationTaxonomySrv.create(OrganisationTaxonomy(), newOrga, t))
+      _       <- auditSrv.organisation.create(newOrga, newOrga.toJson)
+    } yield newOrga
+  }
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
+
+  def currentId(implicit graph: Graph, authContext: AuthContext): EntityId =
+    getId(authContext.organisation)
+
+  def getId(organisationIdOrName: EntityIdOrName)(implicit graph: Graph): EntityId =
+    organisationIdOrName.fold(identity, oid => cache.getOrElseUpdate(s"organisation-$oid")(getByName(oid)._id.getOrFail("Organisation").get))
 
   def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
     userSrv.current.organisations.visibleOrganisationsFrom
@@ -139,6 +149,8 @@ object OrganisationOps {
 
     def shares: Traversal.V[Share] = traversal.out[OrganisationShare].v[Share]
 
+    def taxonomies: Traversal.V[Taxonomy] = traversal.out[OrganisationTaxonomy].v[Taxonomy]
+
     def caseTemplates: Traversal.V[CaseTemplate] = traversal.in[CaseTemplateOrganisation].v[CaseTemplate]
 
     def users(requiredPermission: Permission): Traversal.V[User] =
@@ -176,6 +188,8 @@ object OrganisationOps {
             RichOrganisation(organisation, linkedOrganisations)
         }
 
+    def notAdmin: Traversal.V[Organisation] = traversal.hasNot(_.name, Organisation.administration.name)
+
     def isAdmin: Boolean = traversal.has(_.name, Organisation.administration.name).exists
 
     def users: Traversal.V[User] = traversal.in[RoleOrganisation].in[UserRole].v[User]
@@ -196,8 +210,7 @@ object OrganisationOps {
 
 }
 
-class OrganisationIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val db: Database, val service: OrganisationSrv)
-    extends IntegrityCheckOps[Organisation] {
+class OrganisationIntegrityCheckOps @Inject() (val db: Database, val service: OrganisationSrv) extends IntegrityCheckOps[Organisation] {
   override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>
@@ -206,4 +219,6 @@ class OrganisationIntegrityCheckOps @Inject() (@Named("with-thehive-schema") val
         Success(())
       case _ => Success(())
     }
+
+  override def globalCheck(): Map[String, Long] = Map.empty
 }

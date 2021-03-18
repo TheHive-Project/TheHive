@@ -1,9 +1,9 @@
 package org.thp.thehive.dto.v1
 
-import java.util.Date
-
 import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json.{Json, OFormat, OWrites}
+
+import java.util.Date
 
 case class InputCaseTemplate(
     name: String,

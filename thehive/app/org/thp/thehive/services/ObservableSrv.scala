@@ -1,113 +1,112 @@
 package org.thp.thehive.services
 
-import java.util.{Map => JMap}
-
-import javax.inject.{Inject, Named, Provider, Singleton}
-import org.apache.tinkerpop.gremlin.process.traversal.{P => JP}
-import org.apache.tinkerpop.gremlin.structure.{Graph, Vertex}
+import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{Converter, StepLabel, Traversal}
+import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.utils.Hash
-import org.thp.scalligraph.{EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, Json}
 
-import scala.util.Try
+import java.util.{Map => JMap}
+import javax.inject.{Inject, Provider, Singleton}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ObservableSrv @Inject() (
-    keyValueSrv: KeyValueSrv,
     dataSrv: DataSrv,
+    observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
-    caseSrvProvider: Provider[CaseSrv],
     auditSrv: AuditSrv,
+    shareSrvProvider: Provider[ShareSrv],
+    caseSrvProvider: Provider[CaseSrv],
+    organisationSrv: OrganisationSrv,
     alertSrvProvider: Provider[AlertSrv]
-)(implicit
-    @Named("with-thehive-schema") db: Database
 ) extends VertexSrv[Observable] {
+  lazy val shareSrv: ShareSrv  = shareSrvProvider.get
   lazy val caseSrv: CaseSrv    = caseSrvProvider.get
   lazy val alertSrv: AlertSrv  = alertSrvProvider.get
-  val observableKeyValueSrv    = new EdgeSrv[ObservableKeyValue, Observable, KeyValue]
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
   val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
   val observableAttachmentSrv  = new EdgeSrv[ObservableAttachment, Observable, Attachment]
   val observableTagSrv         = new EdgeSrv[ObservableTag, Observable, Tag]
 
-  def create(observable: Observable, `type`: ObservableType with Entity, file: FFile, tagNames: Set[String], extensions: Seq[KeyValue])(implicit
+  def create(observable: Observable, file: FFile)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] =
     attachmentSrv.create(file).flatMap { attachment =>
-      create(observable, `type`, attachment, tagNames, extensions)
+      create(observable, attachment)
     }
 
   def create(
       observable: Observable,
-      `type`: ObservableType with Entity,
-      attachment: Attachment with Entity,
-      tagNames: Set[String],
-      extensions: Seq[KeyValue]
+      attachment: Attachment with Entity
   )(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] =
-    tagNames.toTry(tagSrv.getOrCreate).flatMap(tags => create(observable, `type`, attachment, tags, extensions))
+  ): Try[RichObservable] = {
+    val alreadyExists = startTraversal
+      .has(_.organisationIds, organisationSrv.currentId)
+      .has(_.relatedId, observable.relatedId)
+      .has(_.dataType, observable.dataType)
+      .filterOnAttachmentId(attachment.attachmentId)
+      .exists
+    if (alreadyExists) Failure(CreateError("Observable already exists"))
+    else
+      for {
+        observableType <- observableTypeSrv.getOrFail(EntityName(observable.dataType))
+        _ <-
+          if (!observableType.isAttachment) Failure(BadRequestError("A text observable doesn't accept attachment"))
+          else Success(())
+        tags              <- observable.tags.toTry(tagSrv.getOrCreate)
+        createdObservable <- createEntity(observable.copy(data = None))
+        _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, observableType)
+        _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
+        _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
+      } yield RichObservable(createdObservable, Some(attachment), None, Nil)
+  }
 
   def create(
       observable: Observable,
-      `type`: ObservableType with Entity,
-      attachment: Attachment with Entity,
-      tags: Seq[Tag with Entity],
-      extensions: Seq[KeyValue]
+      dataValue: String
   )(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[RichObservable] =
-    for {
-      createdObservable <- createEntity(observable)
-      _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
-      _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
-      _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
-      ext               <- addExtensions(createdObservable, extensions)
-    } yield RichObservable(createdObservable, `type`, None, Some(attachment), tags, None, ext, Nil)
-
-  def create(observable: Observable, `type`: ObservableType with Entity, dataValue: String, tagNames: Set[String], extensions: Seq[KeyValue])(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Try[RichObservable] =
-    for {
-      tags           <- tagNames.toTry(tagSrv.getOrCreate)
-      data           <- dataSrv.create(Data(dataValue))
-      richObservable <- create(observable, `type`, data, tags, extensions)
-    } yield richObservable
-
-  def create(
-      observable: Observable,
-      `type`: ObservableType with Entity,
-      data: Data with Entity,
-      tags: Seq[Tag with Entity],
-      extensions: Seq[KeyValue]
-  )(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Try[RichObservable] =
-    for {
-      createdObservable <- createEntity(observable)
-      _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, `type`)
-      _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
-      _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
-      ext               <- addExtensions(createdObservable, extensions)
-    } yield RichObservable(createdObservable, `type`, Some(data), None, tags, None, ext, Nil)
+  ): Try[RichObservable] = {
+    val alreadyExists = startTraversal
+      .has(_.organisationIds, organisationSrv.currentId)
+      .has(_.relatedId, observable.relatedId)
+      .has(_.data, dataValue)
+      .has(_.dataType, observable.dataType)
+      .exists
+    if (alreadyExists) Failure(CreateError("Observable already exists"))
+    else
+      for {
+        observableType <- observableTypeSrv.getOrFail(EntityName(observable.dataType))
+        _ <-
+          if (observableType.isAttachment) Failure(BadRequestError("A attachment observable doesn't accept string value"))
+          else Success(())
+        tags              <- observable.tags.toTry(tagSrv.getOrCreate)
+        data              <- dataSrv.create(Data(dataValue))
+        createdObservable <- createEntity(observable.copy(data = Some(dataValue)))
+        _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, observableType)
+        _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
+        _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
+      } yield RichObservable(createdObservable, None, None, Nil)
+  }
 
   def addTags(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Seq[Tag with Entity]] = {
     val currentTags = get(observable)
@@ -122,60 +121,43 @@ class ObservableSrv @Inject() (
     } yield createdTags
   }
 
-  private def addExtensions(observable: Observable with Entity, extensions: Seq[KeyValue])(implicit
+  def updateTags(observable: Observable with Entity, tags: Set[String])(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[Seq[KeyValue with Entity]] =
+  ): Try[(Seq[Tag with Entity], Seq[Tag with Entity])] =
     for {
-      keyValues <- extensions.toTry(keyValueSrv.create)
-      _         <- keyValues.toTry(kv => observableKeyValueSrv.create(ObservableKeyValue(), observable, kv))
-    } yield keyValues
-
-  def updateTagNames(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    tags.toTry(tagSrv.getOrCreate).flatMap(t => updateTags(observable, t.toSet))
-
-  def updateTags(observable: Observable with Entity, tags: Set[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val (tagsToAdd, tagsToRemove) = get(observable)
-      .tags
-      .toIterator
-      .foldLeft((tags, Set.empty[Tag with Entity])) {
-        case ((toAdd, toRemove), t) if toAdd.contains(t) => (toAdd - t, toRemove)
-        case ((toAdd, toRemove), t)                      => (toAdd, toRemove + t)
-      }
-    for {
+      tagsToAdd <- (tags -- observable.tags).toTry(tagSrv.getOrCreate)
+      tagsToRemove = get(observable).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
-      _ = get(observable).removeTags(tagsToRemove)
-      //      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags)) TODO add context (case or alert ?)
-    } yield ()
-  }
+      _ = if (tags.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ <- get(observable).update(_.tags, tags.toSeq).getOrFail("Observable")
+      _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))
+    } yield (tagsToAdd, tagsToRemove)
 
-  def duplicate(richObservable: RichObservable)(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Try[RichObservable] =
-    for {
-      createdObservable <- createEntity(richObservable.observable)
-      _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, richObservable.`type`)
-      _                 <- richObservable.data.map(data => observableDataSrv.create(ObservableData(), createdObservable, data)).flip
-      _                 <- richObservable.attachment.map(attachment => observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)).flip
-      _                 <- richObservable.tags.toTry(tag => observableTagSrv.create(ObservableTag(), createdObservable, tag))
-      // TODO copy or link key value ?
-    } yield richObservable.copy(observable = createdObservable)
-
-  def remove(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  override def delete(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(observable).alert.headOption match {
       case None =>
-        get(observable)
-          .shares
-          .toIterator
-          .toTry { share =>
-            auditSrv
-              .observable
-              .delete(observable, share)
+        get(observable).share.getOrFail("Share").flatMap {
+          case share if share.owner =>
+            get(observable)
+              .shares
+              .toIterator
+              .toTry { share =>
+                auditSrv
+                  .observable
+                  .delete(observable, share)
+              }
               .map(_ => get(observable).remove())
-          }
-          .map(_ => ())
-      case Some(alert) => alertSrv.removeObservable(alert, observable)
+          case share =>
+            for {
+              organisation <- organisationSrv.current.getOrFail("Organisation")
+              _            <- shareSrv.unshareObservable(observable, organisation)
+              _            <- auditSrv.observable.delete(observable, share)
+            } yield ()
+        }
+      case Some(alert) =>
+        get(observable).remove()
+        auditSrv.observableInAlert.delete(observable, alert)
     }
 
   override def update(
@@ -195,13 +177,13 @@ object ObservableOps {
 
   implicit class ObservableOpsDefs(traversal: Traversal.V[Observable]) {
     def get(idOrName: EntityIdOrName): Traversal.V[Observable] =
-      idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
+      idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
 
     def filterOnType(`type`: String): Traversal.V[Observable] =
-      traversal.filter(_.observableType.has(_.name, `type`))
+      traversal.has(_.dataType, `type`)
 
     def filterOnData(data: String): Traversal.V[Observable] =
-      traversal.filter(_.data.has(_.data, data))
+      traversal.has(_.data, data)
 
     def filterOnAttachmentName(name: String): Traversal.V[Observable] =
       traversal.filter(_.attachments.has(_.name, name))
@@ -218,21 +200,27 @@ object ObservableOps {
     def filterOnAttachmentId(attachmentId: String): Traversal.V[Observable] =
       traversal.filter(_.attachments.has(_.attachmentId, attachmentId))
 
+    def relatedTo(caseId: EntityId): Traversal.V[Observable] =
+      traversal.has(_.relatedId, caseId)
+
+    def inOrganisation(organisationId: EntityId): Traversal.V[Observable] =
+      traversal.has(_.organisationIds, organisationId)
+
     def isIoc: Traversal.V[Observable] =
       traversal.has(_.ioc, true)
 
-    def visible(implicit authContext: AuthContext): Traversal.V[Observable] =
-      traversal.filter(_.organisations.get(authContext.organisation))
+    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Observable] =
+      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Observable] =
       if (authContext.permissions.contains(permission))
         traversal.filter(_.shares.filter(_.filter(_.profile.has(_.permissions, permission))).organisation.current)
       else
-        traversal.limit(0)
+        traversal.empty
 
-    def canManage(implicit authContext: AuthContext): Traversal.V[Observable] =
+    def canManage(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Observable] =
       if (authContext.isPermitted(Permissions.manageAlert))
-        traversal.filter(_.or(_.alert.visible, _.can(Permissions.manageObservable)))
+        traversal.filter(_.or(_.alert.visible(organisationSrv), _.can(Permissions.manageObservable)))
       else
         can(Permissions.manageObservable)
 
@@ -247,84 +235,64 @@ object ObservableOps {
 
     def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
+    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+      traversal.choose(_.inE[ShareObservable].count.is(P.gt(1)), true, false)
+
     def richObservable: Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
       traversal
         .project(
           _.by
-            .by(_.observableType.fold)
-            .by(_.data.fold)
             .by(_.attachments.fold)
-            .by(_.tags.fold)
-            .by(_.keyValues.fold)
             .by(_.reportTags.fold)
         )
         .domainMap {
-          case (observable, tpe, data, attachment, tags, extensions, reportTags) =>
+          case (observable, attachment, reportTags) =>
             RichObservable(
               observable,
-              tpe.head,
-              data.headOption,
               attachment.headOption,
-              tags,
               None,
-              extensions,
               reportTags
             )
         }
 
-    def richObservableWithSeen(implicit
+    def richObservableWithSeen(organisationSrv: OrganisationSrv)(implicit
         authContext: AuthContext
     ): Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
       traversal
         .project(
           _.by
-            .by(_.observableType.fold)
-            .by(_.data.fold)
             .by(_.attachments.fold)
-            .by(_.tags.fold)
-            .by(_.filteredSimilar.visible.limit(1).count)
-            .by(_.keyValues.fold)
+            .by(_.filteredSimilar.visible(organisationSrv).limit(1).count)
             .by(_.reportTags.fold)
         )
         .domainMap {
-          case (observable, tpe, data, attachment, tags, count, extensions, reportTags) =>
+          case (observable, attachment, count, reportTags) =>
             RichObservable(
               observable,
-              tpe.head,
-              data.headOption,
               attachment.headOption,
-              tags,
               Some(count != 0),
-              extensions,
               reportTags
             )
         }
 
     def richObservableWithCustomRenderer[D, G, C <: Converter[D, G]](
+        organisationSrv: OrganisationSrv,
         entityRenderer: Traversal.V[Observable] => Traversal[D, G, C]
     )(implicit authContext: AuthContext): Traversal[(RichObservable, D), JMap[String, Any], Converter[(RichObservable, D), JMap[String, Any]]] =
       traversal
         .project(
           _.by
-            .by(_.observableType.fold)
-            .by(_.data.fold)
             .by(_.attachments.fold)
-            .by(_.tags.fold)
-            .by(_.filteredSimilar.visible.limit(1).count)
-            .by(_.keyValues.fold)
+            .by(_.filteredSimilar.visible(organisationSrv).limit(1).count)
             .by(_.reportTags.fold)
             .by(entityRenderer)
         )
         .domainMap {
-          case (observable, tpe, data, attachment, tags, count, extensions, reportTags, renderedEntity) =>
+          case (observable, attachment, count, reportTags, renderedEntity) =>
             RichObservable(
               observable,
-              tpe.head,
-              data.headOption,
               attachment.headOption,
-              tags,
               Some(count != 0),
-              extensions,
               reportTags
             ) -> renderedEntity
         }
@@ -357,7 +325,7 @@ object ObservableOps {
           _.out[ObservableAttachment]
             .in[ObservableAttachment] // FIXME this doesn't work. Link must be done with attachmentId
         )
-        .where(JP.without(originLabel.name))
+        .where(P.without(originLabel.name))
         .dedup
         .v[Observable]
     }
@@ -379,4 +347,20 @@ object ObservableOps {
     def share(organisationName: EntityIdOrName): Traversal.V[Share] =
       shares.filter(_.byOrganisation(organisationName))
   }
+}
+
+class ObservableIntegrityCheckOps @Inject() (val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] {
+  override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
+
+  override def globalCheck(): Map[String, Long] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        val orphanIds = service.startTraversal.filterNot(_.or(_.shares, _.alert, _.in("ReportObservable")))._id.toSeq
+        if (orphanIds.nonEmpty) {
+          logger.warn(s"Found ${orphanIds.length} observables orphan(s) (${orphanIds.mkString(",")})")
+          service.getByIds(orphanIds: _*).remove()
+        }
+        Map("orphans" -> orphanIds.size.toLong)
+      }
+    }.getOrElse(Map("globalFailure" -> 1L))
 }

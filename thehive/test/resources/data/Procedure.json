@@ -1,0 +1,32 @@
+[
+  {
+    "id": "testProcedure1",
+    "description": "The testProcedure 1",
+    "occurDate": 1531667370000,
+    "tactic": "tactic1"
+  },
+  {
+    "id": "testProcedure2",
+    "description": "The testProcedure 2",
+    "occurDate": 1531667370000,
+    "tactic": "tactic2"
+  },
+  {
+    "id": "mergeProcedure211",
+    "description": "merge Procedure 211",
+    "occurDate": 1531667370000,
+    "tactic": "tactic 21"
+  },
+  {
+    "id": "mergeProcedure221",
+    "description": "merge Procedure 221",
+    "occurDate": 1531667370000,
+    "tactic": "tactic 22"
+  },
+  {
+    "id": "mergeProcedure222",
+    "description": "merge Procedure 222",
+    "occurDate": 1531667370000,
+    "tactic": "tactic 22"
+  }
+]

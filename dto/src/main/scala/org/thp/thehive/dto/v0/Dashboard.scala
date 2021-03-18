@@ -1,8 +1,8 @@
 package org.thp.thehive.dto.v0
 
-import java.util.Date
-
 import play.api.libs.json.{Json, OFormat, OWrites}
+
+import java.util.Date
 
 case class InputDashboard(title: String, description: String, status: String, definition: String)
 
@@ -21,7 +21,8 @@ case class OutputDashboard(
     title: String,
     description: String,
     status: String,
-    definition: String
+    definition: String,
+    writable: Boolean
 )
 
 object OutputDashboard {

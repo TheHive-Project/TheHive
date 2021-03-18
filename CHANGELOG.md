@@ -1,5 +1,71 @@
 # Change Log
 
+## [4.1.0](https://github.com/TheHive-Project/TheHive/milestone/56) (2021-03-18)
+
+**Implemented enhancements:**
+
+- Suggestion: Marge cases on the oldest and close the newest as duplicated [\#960](https://github.com/TheHive-Project/TheHive/issues/960)
+- [Feature Request] Implement case merging feature [\#1264](https://github.com/TheHive-Project/TheHive/issues/1264)
+- [Enhancement] Enrich v1 API [\#1454](https://github.com/TheHive-Project/TheHive/issues/1454)
+- [Feature Request] Prompt to save changes to Case Templates before navigating away [\#1524](https://github.com/TheHive-Project/TheHive/issues/1524)
+- [Feature Request] allow user to choose the format of the date displayed [\#1583](https://github.com/TheHive-Project/TheHive/issues/1583)
+- [Feature Request] Add support to taxonomies [\#1670](https://github.com/TheHive-Project/TheHive/issues/1670)
+- [Enhancement] Improve search performance by using external index engine [\#1731](https://github.com/TheHive-Project/TheHive/issues/1731)
+- [Feature Request] Default filter of alert case similarity : add "No filter" as an option [\#1750](https://github.com/TheHive-Project/TheHive/issues/1750)
+- [Feature Request] Add MITRE ATT&CK support [\#1766](https://github.com/TheHive-Project/TheHive/issues/1766)
+- [Feature Request] Show case status in the default view (open / closed as FP / closed as TP, etc.)  [\#1781](https://github.com/TheHive-Project/TheHive/issues/1781)
+- [Enhancement] Create logfile after installation [\#1789](https://github.com/TheHive-Project/TheHive/issues/1789)
+- [Feature Request] Revamp case template admin section [\#1804](https://github.com/TheHive-Project/TheHive/issues/1804)
+- [Feature Request] Improve date fields in data lists [\#1807](https://github.com/TheHive-Project/TheHive/issues/1807)
+- [Feature Request] Enhance organisation list page [\#1813](https://github.com/TheHive-Project/TheHive/issues/1813)
+- [Feature Request] Add a platform status page [\#1815](https://github.com/TheHive-Project/TheHive/issues/1815)
+- [Feature Request] Add organisation free tags administration section [\#1816](https://github.com/TheHive-Project/TheHive/issues/1816)
+- [Feature Request] Enhance the dashboard list section [\#1817](https://github.com/TheHive-Project/TheHive/issues/1817)
+- [Enhancement] Add migration from TheHive 3.5.1 [\#1818](https://github.com/TheHive-Project/TheHive/issues/1818)
+- [Feature Request] Additional case bulk actions [\#1821](https://github.com/TheHive-Project/TheHive/issues/1821)
+- [Feature Request] Add support to "isEmpty" filter option [\#1824](https://github.com/TheHive-Project/TheHive/issues/1824)
+- [Feature Request] Improve task list page [\#1831](https://github.com/TheHive-Project/TheHive/issues/1831)
+- [Feature Request] Disk usage monitoring API route [\#1843](https://github.com/TheHive-Project/TheHive/issues/1843)
+- [Feature Request] Allow cancelling task action request [\#1844](https://github.com/TheHive-Project/TheHive/issues/1844)
+- [Feature Request] Add more quick filters to case list [\#1848](https://github.com/TheHive-Project/TheHive/issues/1848)
+- [Feature Request] Add support of authentication in webhooks [\#1850](https://github.com/TheHive-Project/TheHive/issues/1850)
+- [Feature Request] Allow removing a custom field from a case [\#1852](https://github.com/TheHive-Project/TheHive/issues/1852)
+
+**Closed issues:**
+
+- [Feature Request] Alphabetize Case Template view [\#1551](https://github.com/TheHive-Project/TheHive/issues/1551)
+- [Feature Request] Add the ability to directly close a task [\#1727](https://github.com/TheHive-Project/TheHive/issues/1727)
+- [Question] Tags and custom fields can be seen across organisations / potential for data leakage  [\#1778](https://github.com/TheHive-Project/TheHive/issues/1778)
+- [Feature Request] Allow user to reorder case templates, or display them in alphabetic order [\#1787](https://github.com/TheHive-Project/TheHive/issues/1787)
+- [Repository] Improve github issue templates [\#1840](https://github.com/TheHive-Project/TheHive/issues/1840)
+
+**Fixed bugs:**
+
+- Can not view or delete alert when delete the case that created by Import Alert [\#1123](https://github.com/TheHive-Project/TheHive/issues/1123)
+- Imported Alerts Cannot be Deleted [\#1201](https://github.com/TheHive-Project/TheHive/issues/1201)
+- [Bug] Creating Cases via API ignores the owner field [\#1473](https://github.com/TheHive-Project/TheHive/issues/1473)
+- [Bug] Missing cases migrating from TH3 to TH4 [\#1682](https://github.com/TheHive-Project/TheHive/issues/1682)
+- [Bug] Attachment files are not deleted from local filesystem storage when logs is deleted [\#1687](https://github.com/TheHive-Project/TheHive/issues/1687)
+- [Bug] Impossible to switch organization if organization name contains an accent [\#1741](https://github.com/TheHive-Project/TheHive/issues/1741)
+- [Bug] Filtering issue [\#1753](https://github.com/TheHive-Project/TheHive/issues/1753)
+- Identical URL Observables can still be added multiple times to the same case [\#1756](https://github.com/TheHive-Project/TheHive/issues/1756)
+- [Bug] Integrity checks for user deduplication is not run when an user is added [\#1759](https://github.com/TheHive-Project/TheHive/issues/1759)
+- [Bug] Deleting a shared case on org2 doesn't delete task from the Org1 resulting in log spam and undeletable task [\#1767](https://github.com/TheHive-Project/TheHive/issues/1767)
+- [Bug] Fix pivoting from donuts to search pages on custom fields based widgets [\#1777](https://github.com/TheHive-Project/TheHive/issues/1777)
+- [Bug] Unable to migrate to TH 4.0.5 [\#1785](https://github.com/TheHive-Project/TheHive/issues/1785)
+- [Bug] Elapsed time for re-opened cases is showed as "closed". [\#1796](https://github.com/TheHive-Project/TheHive/issues/1796)
+- [Bug] Observables list doesn't reload  [\#1802](https://github.com/TheHive-Project/TheHive/issues/1802)
+- [Bug] Error in handling users included in many organisations [\#1803](https://github.com/TheHive-Project/TheHive/issues/1803)
+- [Bug] Organisation users list doesn't include update date [\#1805](https://github.com/TheHive-Project/TheHive/issues/1805)
+- [Bug] Reveal API key not working for users with profile analyst [\#1806](https://github.com/TheHive-Project/TheHive/issues/1806)
+- [Bug] Observables not present in some events imported from MISP [\#1819](https://github.com/TheHive-Project/TheHive/issues/1819)
+- [Bug] Migration: parameter input is unusable [\#1827](https://github.com/TheHive-Project/TheHive/issues/1827)
+- [Bug] Migration of caseTemplate without task fails [\#1828](https://github.com/TheHive-Project/TheHive/issues/1828)
+- [Bug] - Use API v1 to fetch observable job history [\#1838](https://github.com/TheHive-Project/TheHive/issues/1838)
+- [Bug] File observables with special character in name can not be downloaded [\#1842](https://github.com/TheHive-Project/TheHive/issues/1842)
+- [Bug] Shared dashboards are not editable [\#1849](https://github.com/TheHive-Project/TheHive/issues/1849)
+- [Bug] Disable the Audit search section [\#1851](https://github.com/TheHive-Project/TheHive/issues/1851)
+
 ## [4.0.5](https://github.com/TheHive-Project/TheHive/milestone/68) (2021-02-08)
 
 **Implemented enhancements:**
@@ -26,7 +92,6 @@
 - [Bug] Sort field list in dashboard widget filters [\#1771](https://github.com/TheHive-Project/TheHive/issues/1771)
 - [Bug] Dashboard on organisation (and other) doesn't work [\#1772](https://github.com/TheHive-Project/TheHive/issues/1772)
 - [BUG] Cannot link multiple organisations together [\#1773](https://github.com/TheHive-Project/TheHive/issues/1773)
-- [Bug] Fix pivoting from donuts to search pages on custom fields based widgets [\#1777](https://github.com/TheHive-Project/TheHive/issues/1777)
 - [Bug] Fix custom field filters in v0 APIs [\#1779](https://github.com/TheHive-Project/TheHive/issues/1779)
 
 ## [4.0.4](https://github.com/TheHive-Project/TheHive/milestone/67) (2021-01-12)
