@@ -8,7 +8,7 @@
 
             this.currentUser = AuthenticationSrv.currentUser;
             this.createdBy = dashboard.createdBy;
-            this.dashboardStatus = dashboard.dashboardStatus;
+            this.dashboardStatus = dashboard.status;
             this.metadata = metadata;
             this.toolbox = DashboardSrv.toolbox;
             this.dashboardPeriods = DashboardSrv.dashboardPeriods;
@@ -52,10 +52,8 @@
                 }
             });
 
-
-
             this.canEditDashboard = function() {
-                return (this.createdBy === this.currentUser.login) || this.dashboardStatus === 'Shared';                
+                return (this.createdBy === this.currentUser.login) || this.dashboardStatus === 'Shared';
             };
 
             this.options = {

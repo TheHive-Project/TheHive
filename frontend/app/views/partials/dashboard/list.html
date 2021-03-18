@@ -100,20 +100,22 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
-                                            <a href ui-sref="app.dashboards-view({id: item._id})"><i class="fa fa-area-chart"></i>View</a>
-                                        </div>
-                                        <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
-                                            <a href ng-click="$vm.editDashboard(item)"><i class="fa fa-pencil"></i>Edit</a>
+                                        <div class="media-right ph-xs text-center">
+                                            <a href ui-sref="app.dashboards-view({id: item._id})"><i class="fa fa-area-chart"></i> <br />View</a>
                                         </div>
                                         <div class="media-right ph-xs text-center">
-                                            <a href ng-click="$vm.duplicateDashboard(item)"><i class="fa fa-copy"></i>Copy</a>
+                                            <a href ng-click="$vm.editDashboard(item)"><i class="fa fa-pencil"></i> <br />Edit</a>
                                         </div>
                                         <div class="media-right ph-xs text-center">
-                                            <a href ng-click="$vm.exportDashboard(item)"><i class="fa fa-download"></i> Export</a>
+                                            <a href ng-click="$vm.duplicateDashboard(item)"><i class="fa fa-copy"></i> <br />Copy</a>
                                         </div>
-                                        <div class="media-right ph-xs text-center" ng-if="(item.createdBy === currentUser.login)">
-                                            <a href class="text-danger" ng-click="$vm.deleteDashboard(item._id)"><i class="fa fa-trash"></i>Delete</a>
+                                        <div class="media-right ph-xs text-center">
+                                            <a href ng-click="$vm.exportDashboard(item)"><i class="fa fa-download"></i> <br />Export</a>
+                                        </div>
+                                        <div class="media-right ph-xs text-center">
+                                            <a href class="text-danger" ng-click="$vm.deleteDashboard(item._id)">
+                                                <i class="fa fa-trash"></i> <br />Delete
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
