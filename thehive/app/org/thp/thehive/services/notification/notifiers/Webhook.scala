@@ -2,7 +2,7 @@ package org.thp.thehive.services.notification.notifiers
 
 import akka.stream.Materializer
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
+import org.thp.client.{Authentication, NoAuthentication, ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -31,7 +31,7 @@ case class WebhookNotification(
     name: String,
     url: String,
     version: Int = 0,
-    auth: Authentication,
+    auth: Authentication = NoAuthentication,
     wsConfig: ProxyWSConfig = ProxyWSConfig(),
     includedTheHiveOrganisations: Seq[String] = Seq("*"),
     excludedTheHiveOrganisations: Seq[String] = Nil
