@@ -8,7 +8,7 @@ import java.util.Date
 @BuildEdgeEntity[Log, Attachment]
 case class LogAttachment()
 
-@DefineIndex(IndexType.fulltext, "message")
+@DefineIndex(IndexType.fulltextOnly, "message")
 @DefineIndex(IndexType.standard, "date")
 @DefineIndex(IndexType.standard, "taskId")
 @DefineIndex(IndexType.standard, "organisationIds")
