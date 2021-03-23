@@ -70,7 +70,7 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
           "pollingDuration"      -> 1000
         ),
         "schemaStatus" -> Json.arr(
-          Json.obj("name" -> "thehive", "currentVersion" -> 66, "expectedVersion" -> 66, "error" -> JsNull)
+          Json.obj("name" -> "thehive", "currentVersion" -> 67, "expectedVersion" -> 67, "error" -> JsNull)
         )
       )
 

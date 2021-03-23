@@ -262,6 +262,7 @@ class AlertSrv @Inject() (
           createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil)
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
+          _           <- get(alert.alert).update(_.caseId, Some(createdCase._id)).getOrFail("Alert")
           _           <- markAsRead(alert._id)
           _ = integrityCheckActor ! EntityAdded("Alert")
         } yield createdCase

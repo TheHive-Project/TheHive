@@ -399,6 +399,19 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .removeIndex("Log", IndexType.fulltext, "message")
     .removeIndex("Tag", IndexType.fulltext, "description")
     .removeIndex("Task", IndexType.fulltext, "description")
+    .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
+      traversal
+        .project(
+          _.by
+            .by(_.out("AlertCase")._id.option)
+        )
+        .foreach {
+          case (vertex, caseId) =>
+            caseId.foreach(vertex.property("caseId", _))
+          case _ =>
+        }
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
