@@ -507,11 +507,11 @@ object CaseOps {
         .value(_.`type`)
         .headOption
         .map {
-          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.map(_.as[Boolean])))
-          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.map(_.as[Date])))
-          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.map(_.as[Double])))
-          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.map(_.as[Int])))
-          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.map(_.as[String])))
+          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.mapValue(_.as[Boolean])))
+          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.mapValue(_.as[Date])))
+          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.mapValue(_.as[Double])))
+          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.mapValue(_.as[Int])))
+          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.mapValue(_.as[String])))
         }
         .getOrElse(traversal.empty)
 
