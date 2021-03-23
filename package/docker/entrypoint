@@ -1,6 +1,7 @@
 #!/bin/bash
 CQL_HOSTNAMES=${TH_CQL_HOSTNAMES:-cassandra}
 BDB_DIRECTORY=${TH_BDB_DIRECTORY:-/data/db}
+INDEX_DIRECTORY=${TH_INDEX_DIRECTORY:-/data/index}
 HDFS_URL=${TH_HDFS_URL}
 STORAGE_DIRECTORY=${TH_STORAGE_DIRECTORY:-/data/files}
 test "${TH_NO_CONFIG_SECRET}" == 1
@@ -60,6 +61,7 @@ do
     "--cql-username")      shift; CQL_USERNAME=$1 ;;
     "--cql-password")      shift; CQL_PASSWORD=$1 ;;
     "--bdb-directory")     shift; BDB_DIRECTORY=$1 ;;
+    "--index-directory")   shift; INDEX_DIRECTORY=$1 ;;
     "--no-config-storage") CONFIG_STORAGE=0 ;;
     "--hdfs-url")          shift; HDFS_URL=$1 ;;
     "--storage-directory") shift; STORAGE_DIRECTORY=$1 ;;
@@ -103,6 +105,12 @@ then
       echo "storage.backend = berkeleyje"             >> ${CONFIG_FILE}
       echo "storage.directory = \"${BDB_DIRECTORY}\"" >> ${CONFIG_FILE}
       echo "berkeleyje.freeDisk = 1"                  >> ${CONFIG_FILE}
+      if test -e "${BDB_DIRECTORY}"
+      then
+        test -w "${BDB_DIRECTORY}" || echo "WARNING the directory used to store database ($BDB_DIRECTORY) is not writable"
+      else
+        mkdir -p "${BDB_DIRECTORY}" || echo "WARNING the directory used to store database ($BDB_DIRECTORY) is not writable"
+      fi
     else
       echo "Using cassandra address = ${CQL[@]}"
       echo "storage.backend = cql"            >> ${CONFIG_FILE}
@@ -119,6 +127,14 @@ then
       echo "]"                                >> ${CONFIG_FILE}
       echo "Waiting until Cassandra DB is up"
       sleep 30   # Sleep until cassandra Db is up
+    fi
+    echo "index.search.backend = lucene"                   >> ${CONFIG_FILE}
+    echo "index.search.directory = \"${INDEX_DIRECTORY}\"" >> ${CONFIG_FILE}
+    if test -e "${INDEX_DIRECTORY}"
+    then
+      test -w "${INDEX_DIRECTORY}" || echo "WARNING the directory used to store index ($INDEX_DIRECTORY) is not writable"
+    else
+      mkdir -p "${INDEX_DIRECTORY}" || echo "WARNING the directory used to store index ($INDEX_DIRECTORY) is not writable"
     fi
     echo "}" >> ${CONFIG_FILE}
   fi
@@ -140,6 +156,12 @@ then
       mkdir -p "${STORAGE_DIRECTORY}"
       echo "provider: localfs"                           >> ${CONFIG_FILE}
       echo "localfs.directory: \"${STORAGE_DIRECTORY}\"" >> ${CONFIG_FILE}
+      if test -e "${STORAGE_DIRECTORY}"
+      then
+        test -w "${STORAGE_DIRECTORY}" || echo "WARNING the directory used to store files ($STORAGE_DIRECTORY) is not writable"
+      else
+        mkdir -p "${STORAGE_DIRECTORY}" || echo "WARNING the directory used to store files ($STORAGE_DIRECTORY) is not writable"
+      fi
     fi
     echo "}" >> ${CONFIG_FILE}
   fi

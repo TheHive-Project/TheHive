@@ -51,7 +51,7 @@ class Properties @Inject() (
       .property("_id", UMapping.entityId)(
         _.select(_._id)
           .filter[EntityId] {
-            case (_, t, _, Right(p))   => t.has(T.id, p.map(_.value))
+            case (_, t, _, Right(p))   => t.has(T.id, p.mapValue(_.value))
             case (_, t, _, Left(true)) => t
             case (_, t, _, _)          => t.empty
           }

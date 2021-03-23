@@ -17,7 +17,7 @@ case class ObservableData()
 @BuildEdgeEntity[Observable, Tag]
 case class ObservableTag()
 
-@DefineIndex(IndexType.fulltext, "message")
+@DefineIndex(IndexType.fulltextOnly, "message")
 @DefineIndex(IndexType.standard, "tlp")
 @DefineIndex(IndexType.standard, "ioc")
 @DefineIndex(IndexType.standard, "sighted")

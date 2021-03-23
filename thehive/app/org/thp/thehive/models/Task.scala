@@ -21,7 +21,7 @@ case class TaskLog()
 @BuildVertexEntity
 @DefineIndex(IndexType.fulltext, "title")
 @DefineIndex(IndexType.standard, "group")
-@DefineIndex(IndexType.fulltext, "description")
+@DefineIndex(IndexType.fulltextOnly, "description")
 @DefineIndex(IndexType.standard, "status")
 @DefineIndex(IndexType.standard, "flag")
 @DefineIndex(IndexType.standard, "startDate")

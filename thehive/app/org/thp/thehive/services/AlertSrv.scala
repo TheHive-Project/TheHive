@@ -262,6 +262,7 @@ class AlertSrv @Inject() (
           createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil)
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
+          _           <- get(alert.alert).update(_.caseId, Some(createdCase._id)).getOrFail("Alert")
           _           <- markAsRead(alert._id)
           _ = integrityCheckActor ! EntityAdded("Alert")
         } yield createdCase
@@ -481,11 +482,11 @@ object AlertOps {
         .value(_.`type`)
         .headOption
         .map {
-          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.map(_.as[Boolean])))
-          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.map(_.as[Date])))
-          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.map(_.as[Double])))
-          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.map(_.as[Int])))
-          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.map(_.as[String])))
+          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.mapValue(_.as[Boolean])))
+          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.mapValue(_.as[Date])))
+          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.mapValue(_.as[Double])))
+          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.mapValue(_.as[Int])))
+          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.mapValue(_.as[String])))
         }
         .getOrElse(traversal.empty)
 

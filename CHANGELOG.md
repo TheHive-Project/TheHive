@@ -1,5 +1,24 @@
 # Change Log
 
+## [4.1.1](https://github.com/TheHive-Project/TheHive/milestone/70) (2021-03-23)
+
+**Implemented enhancements:**
+
+- [Feature Request] Include organisation ID in webhooks [\#1865](https://github.com/TheHive-Project/TheHive/issues/1865)
+
+**Closed issues:**
+
+- [Bug] Importing the ATT&CK library fails on 4.1 [\#1862](https://github.com/TheHive-Project/TheHive/issues/1862)
+- Thehive4.1.0 Issues with Lucene [\#1863](https://github.com/TheHive-Project/TheHive/issues/1863)
+
+**Fixed bugs:**
+
+- [Bug] TheHive doesn't start if webhook is configured without authentication [\#1859](https://github.com/TheHive-Project/TheHive/issues/1859)
+- [Bug] Migration fails from 4.0.5 to 4.1 [\#1861](https://github.com/TheHive-Project/TheHive/issues/1861)
+- [Bug] Filter by "IMPORTED" does not work [\#1866](https://github.com/TheHive-Project/TheHive/issues/1866)
+- [Bug] TheHive doesn't start in cluster mode (serializer is missing) [\#1868](https://github.com/TheHive-Project/TheHive/issues/1868)
+- [Bug] Full-text search is slow [\#1870](https://github.com/TheHive-Project/TheHive/issues/1870)
+
 ## [4.1.0](https://github.com/TheHive-Project/TheHive/milestone/56) (2021-03-18)
 
 **Implemented enhancements:**

@@ -391,6 +391,27 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.outE("OrganisationDashboard").raw.property("writable", true).iterate()
       Success(())
     }
+    //=====[release 4.1.0]=====
+    .removeIndex("Alert", IndexType.fulltext, "description")
+    .removeIndex("Case", IndexType.fulltext, "description", "summary")
+    .removeIndex("Log", IndexType.fulltext, "message")
+    .removeIndex("Observable", IndexType.fulltext, "message")
+    .removeIndex("Log", IndexType.fulltext, "message")
+    .removeIndex("Tag", IndexType.fulltext, "description")
+    .removeIndex("Task", IndexType.fulltext, "description")
+    .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
+      traversal
+        .project(
+          _.by
+            .by(_.out("AlertCase")._id.option)
+        )
+        .foreach {
+          case (vertex, caseId) =>
+            caseId.foreach(vertex.property("caseId", _))
+          case _ =>
+        }
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
