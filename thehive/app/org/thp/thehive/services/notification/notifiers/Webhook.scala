@@ -258,7 +258,11 @@ class Webhook(
     else {
       val ws = new ProxyWS(config.wsConfig, mat)
       val async = for {
-        message <- Future.fromTry(buildMessage(config.version, audit))
+        message <- Future.fromTry(
+          buildMessage(config.version, audit).map(
+            _ + ("organisationId" -> JsString(organisation._id.toString)) + ("organisation" -> JsString(organisation.name))
+          )
+        )
         _ = logger.debug(s"Request webhook with message $message")
         resp <- config.auth(ws.url(config.url)).post(message)
       } yield if (resp.status >= 400) logger.warn(s"Webhook call on ${config.url} returns ${resp.status} ${resp.statusText}") else ()
