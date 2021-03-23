@@ -8,7 +8,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
-import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichSeq}
+import org.thp.scalligraph.{BadRequestError, CreateError, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseTemplateOps._
@@ -16,6 +16,7 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
+import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.{Map => JMap}
@@ -23,6 +24,7 @@ import javax.inject.{Inject, Named}
 import scala.util.{Failure, Success, Try}
 
 class CaseTemplateSrv @Inject() (
+    configuration: Configuration,
     customFieldSrv: CustomFieldSrv,
     organisationSrv: OrganisationSrv,
     tagSrv: TagSrv,
@@ -57,6 +59,7 @@ class CaseTemplateSrv @Inject() (
       Failure(CreateError(s"""The case template "${caseTemplate.name}" already exists"""))
     else
       for {
+        _                   <- checkCaseTemplateQuota(organisation)
         createdCaseTemplate <- createEntity(caseTemplate)
         _                   <- caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
         createdTasks        <- tasks.toTry(createTask(createdCaseTemplate, _))
@@ -65,6 +68,19 @@ class CaseTemplateSrv @Inject() (
         richCaseTemplate = RichCaseTemplate(createdCaseTemplate, organisation.name, createdTasks, cfs)
         _ <- auditSrv.caseTemplate.create(createdCaseTemplate, richCaseTemplate.toJson)
       } yield richCaseTemplate
+
+  private def checkCaseTemplateQuota(organisation: Organisation with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    val caseTemplateQuota = configuration.getOptional[Long]("quota.organisation.caseTemplate.count")
+    val caseTemplateCount = organisationSrv.get(organisation).caseTemplates.getCount
+
+    caseTemplateQuota.fold[Try[Unit]](Success(()))(quota =>
+      if (caseTemplateCount < quota) Success(())
+      else Failure(BadRequestError(s"Case template quota is reached, this organisation cannot have more case templates"))
+    )
+  }
 
   def createTask(caseTemplate: CaseTemplate with Entity, task: Task)(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
     for {

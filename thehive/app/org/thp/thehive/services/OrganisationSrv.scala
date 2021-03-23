@@ -13,6 +13,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.RoleOps._
 import org.thp.thehive.services.UserOps._
+import play.api.Configuration
 import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
@@ -22,6 +23,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class OrganisationSrv @Inject() (
+    configuration: Configuration,
     taxonomySrvProvider: Provider[TaxonomySrv],
     roleSrv: RoleSrv,
     profileSrv: ProfileSrv,
@@ -42,7 +44,10 @@ class OrganisationSrv @Inject() (
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Organisation] = startTraversal.getByName(name)
 
-  def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
+  def createWithUserAsOrgadmin(organisation: Organisation, user: User with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Organisation with Entity] =
     for {
       createdOrganisation <- create(organisation)
       _                   <- roleSrv.create(user, createdOrganisation, profileSrv.orgAdmin)
@@ -51,11 +56,25 @@ class OrganisationSrv @Inject() (
   def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
     val activeTaxos = getByName("admin").taxonomies.toSeq
     for {
+      _       <- checkOrganisationQuota
       newOrga <- createEntity(e)
       _       <- taxonomySrv.createFreetagTaxonomy(newOrga)
       _       <- activeTaxos.toTry(t => organisationTaxonomySrv.create(OrganisationTaxonomy(), newOrga, t))
       _       <- auditSrv.organisation.create(newOrga, newOrga.toJson)
     } yield newOrga
+  }
+
+  private def checkOrganisationQuota(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    val organisationQuota = configuration.getOptional[Long]("quota.organisation.count")
+    val organisationCount = startTraversal.getCount
+
+    organisationQuota.fold[Try[Unit]](Success(()))(quota =>
+      if (organisationCount < quota) Success(())
+      else Failure(BadRequestError(s"Organisation quota is reached, no more organisations can be created"))
+    )
   }
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)

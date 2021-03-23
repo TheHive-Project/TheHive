@@ -19,6 +19,8 @@ import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.OrganisationOps._
+import play.api.Configuration
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import java.lang.{Long => JLong}
@@ -28,6 +30,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class AlertSrv @Inject() (
+    configuration: Configuration,
     caseSrv: CaseSrv,
     tagSrv: TagSrv,
     organisationSrv: OrganisationSrv,
@@ -79,6 +82,7 @@ class AlertSrv @Inject() (
       Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exist in organisation ${organisation.name}"))
     else
       for {
+        _            <- checkAlertQuota(organisation)
         createdAlert <- createEntity(alert.copy(organisationId = organisation._id))
         _            <- alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _            <- caseTemplate.map(ct => alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct)).flip
@@ -87,6 +91,19 @@ class AlertSrv @Inject() (
         richAlert = RichAlert(createdAlert, cfs, None, caseTemplate.map(_.name), 0)
         _ <- auditSrv.alert.create(createdAlert, richAlert.toJson)
       } yield richAlert
+  }
+
+  private def checkAlertQuota(organisation: Organisation with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    val alertQuota = configuration.getOptional[Long]("quota.organisation.alert.count")
+    val alertCount = organisationSrv.get(organisation).alerts.getCount
+
+    alertQuota.fold[Try[Unit]](Success(()))(quota =>
+      if (alertCount < quota) Success(())
+      else Failure(BadRequestError(s"Alert quota is reached, this organisation cannot have more alerts"))
+    )
   }
 
   override def update(

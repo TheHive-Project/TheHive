@@ -67,7 +67,7 @@ class UserSrv @Inject() (
     else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
   }
 
-  def checkUserQuota(organisation: Organisation with Entity)(implicit
+  private def checkUserQuota(organisation: Organisation with Entity)(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {

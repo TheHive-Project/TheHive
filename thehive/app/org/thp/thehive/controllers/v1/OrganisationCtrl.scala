@@ -58,7 +58,7 @@ class OrganisationCtrl @Inject() (
         val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
           user         <- userSrv.current.getOrFail("User")
-          organisation <- organisationSrv.create(inputOrganisation.toOrganisation, user)
+          organisation <- organisationSrv.createWithUserAsOrgadmin(inputOrganisation.toOrganisation, user)
         } yield Results.Created(organisation.toJson)
       }
 

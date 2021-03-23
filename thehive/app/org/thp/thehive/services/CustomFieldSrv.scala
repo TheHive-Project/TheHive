@@ -8,19 +8,21 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
-import org.thp.scalligraph.{EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldOps._
+import play.api.Configuration
 import play.api.cache.SyncCacheApi
 import play.api.libs.json.{JsObject, JsValue}
 
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CustomFieldSrv @Inject() (
+    configuration: Configuration,
     auditSrv: AuditSrv,
     organisationSrv: OrganisationSrv,
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
@@ -36,9 +38,23 @@ class CustomFieldSrv @Inject() (
 
   def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] =
     for {
+      _       <- checkCustomFieldQuota
       created <- createEntity(e)
       _       <- auditSrv.customField.create(created, created.toJson)
     } yield created
+
+  private def checkCustomFieldQuota(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    val customFieldQuota = configuration.getOptional[Long]("quota.customField.count")
+    val customFieldCount = startTraversal.getCount
+
+    customFieldQuota.fold[Try[Unit]](Success(()))(quota =>
+      if (customFieldCount < quota) Success(())
+      else Failure(BadRequestError(s"Custom field quota is reached, no more custom fields can be created"))
+    )
+  }
 
   override def exists(e: CustomField)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
