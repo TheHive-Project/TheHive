@@ -137,7 +137,6 @@ then
       mkdir -p "${INDEX_DIRECTORY}" || echo "WARNING the directory used to store index ($INDEX_DIRECTORY) is not writable"
     fi
     echo "}" >> ${CONFIG_FILE}
-    if
   fi
 
   if test "${CONFIG_STORAGE}" = 1
