@@ -326,7 +326,7 @@ class Output @Inject() (
   override def createUser(inputUser: InputUser): Try[IdMapping] =
     authTransaction(inputUser.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create user ${inputUser.user.login}")
-      userSrv.checkUser(inputUser.user).flatMap(userSrv.createEntity).map { createdUser =>
+      userSrv.checkUserLogin(inputUser.user).flatMap(userSrv.createEntity).map { createdUser =>
         updateMetaData(createdUser, inputUser.metaData)
         inputUser
           .avatar

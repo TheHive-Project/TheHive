@@ -23,7 +23,7 @@ import play.api.libs.json.{JsObject, Json}
 
 import java.util.regex.Pattern
 import java.util.{List => JList, Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -32,20 +32,52 @@ class UserSrv @Inject() (
     roleSrv: RoleSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
+    organisationSrvProvider: Provider[OrganisationSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef
 ) extends VertexSrv[User] {
+  lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
+
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
 
   val userAttachmentSrv = new EdgeSrv[UserAttachment, User, Attachment]
 
-  def checkUser(user: User): Try[User] = {
+  def addOrCreateUser(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[RichUser] =
+    getByName(user.login)
+      .getOrFail("User")
+      .orElse {
+        for {
+          validUser   <- checkUserLogin(user)
+          _           <- checkUserQuota(organisation)
+          createdUser <- createEntity(validUser)
+          _           <- avatar.map(setAvatar(createdUser, _)).flip
+        } yield createdUser
+      }
+      .flatMap(addUserToOrganisation(_, organisation, profile))
+
+  def checkUserLogin(user: User): Try[User] = {
     val login =
       if (!user.login.contains('@') && defaultUserDomain.isDefined) s"${user.login}@${defaultUserDomain.get}".toLowerCase
       else user.login.toLowerCase
 
     if (fullUserNameRegex.matcher(login).matches() && login != "system@thehive.local") Success(user.copy(login = login))
     else Failure(BadRequestError(s"User login is invalid, it must be an email address (found: ${user.login})"))
+  }
+
+  def checkUserQuota(organisation: Organisation with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    val userQuota = configuration.getOptional[Long]("quota.organisation.user.count")
+    val userCount = organisationSrv.get(organisation).users.getCount
+
+    userQuota.fold[Try[Unit]](Success(()))(quota =>
+      if (userCount < quota) Success(())
+      else Failure(BadRequestError(s"User quota is reached, this organisation cannot have more users"))
+    )
   }
 
   // TODO return Try[Unit]
@@ -63,21 +95,6 @@ class UserSrv @Inject() (
         _        <- auditSrv.user.create(user, richUser.toJson)
       } yield richUser
     }
-
-  def addOrCreateUser(user: User, avatar: Option[FFile], organisation: Organisation with Entity, profile: Profile with Entity)(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Try[RichUser] =
-    getByName(user.login)
-      .getOrFail("User")
-      .orElse {
-        for {
-          validUser   <- checkUser(user)
-          createdUser <- createEntity(validUser)
-          _           <- avatar.map(setAvatar(createdUser, _)).flip
-        } yield createdUser
-      }
-      .flatMap(addUserToOrganisation(_, organisation, profile))
 
   def canSetPassword(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Boolean = {
     val userOrganisations     = get(user).organisations.value(_.name).toSet
