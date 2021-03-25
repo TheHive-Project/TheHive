@@ -327,7 +327,7 @@ object Conversion {
       .withFieldComputed(_.owner, _._createdBy)
       .withFieldConst(_.status, "Ok")
       .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toValue))
-      .withFieldConst(_.task, None)
+      .withFieldConst(_.case_task, None)
       .transform
   )
 
@@ -348,7 +348,7 @@ object Conversion {
           .withFieldComputed(_.owner, _._createdBy)
           .withFieldConst(_.status, "Ok")
           .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toValue))
-          .withFieldConst(_.task, Some(richTask.toValue))
+          .withFieldConst(_.case_task, Some(richTask.toValue))
           .transform
     }
 
