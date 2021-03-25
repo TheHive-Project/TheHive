@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: TheHive Community Support
+    url: https://chat.thehive-project.org/
+    about: Please ask and answer questions here.
+  - name: TheHive Documentation
+    url: https://docs.thehive-project.org/
+    about: Please read documentation here.
