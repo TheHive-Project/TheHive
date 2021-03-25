@@ -9,6 +9,7 @@ import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputLog
 import org.thp.thehive.models.{Log, Permissions, RichLog}
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{LogSrv, OrganisationSrv, TaskSrv}
@@ -82,8 +83,20 @@ class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) ext
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",
-    (range, logSteps, _) => logSteps.richPage(range.from, range.to, withTotal = true)(_.richLog)
+    {
+
+      case (OutputParam(from, to, _, 0), logSteps, _) => logSteps.richPage(from, to, withTotal = true)(_.richLog)
+      case (OutputParam(from, to, _, _), logSteps, authContext) =>
+        logSteps.richPage(from, to, withTotal = true)(
+          _.richLogWithCustomRenderer(
+            _.task.richTaskWithCustomRenderer(
+              _.`case`.richCase(authContext).option
+            )
+          )
+        )
+    }
   )
+
   override val outputQuery: Query = Query.output[RichLog, Traversal.V[Log]](_.richLog)
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Log]

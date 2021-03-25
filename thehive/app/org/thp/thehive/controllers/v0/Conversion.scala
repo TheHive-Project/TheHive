@@ -327,8 +327,30 @@ object Conversion {
       .withFieldComputed(_.owner, _._createdBy)
       .withFieldConst(_.status, "Ok")
       .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toValue))
+      .withFieldConst(_.task, None)
       .transform
   )
+
+  implicit val logOutputWithParent: Renderer.Aux[(RichLog, (RichTask, Option[RichCase])), OutputLog] =
+    Renderer.toJson[(RichLog, (RichTask, Option[RichCase])), OutputLog] {
+      case (richLog, richTask) =>
+        richLog
+          .into[OutputLog]
+          .withFieldConst(_._type, "case_task_log")
+          .withFieldComputed(_.id, _._id.toString)
+          .withFieldComputed(_._id, _._id.toString)
+          .withFieldComputed(_.updatedAt, _._updatedAt)
+          .withFieldComputed(_.updatedBy, _._updatedBy)
+          .withFieldComputed(_.createdAt, _._createdAt)
+          .withFieldComputed(_.createdBy, _._createdBy)
+          .withFieldComputed(_.message, _.message)
+          .withFieldComputed(_.startDate, _._createdAt)
+          .withFieldComputed(_.owner, _._createdBy)
+          .withFieldConst(_.status, "Ok")
+          .withFieldComputed(_.attachment, _.attachments.headOption.map(_.toValue))
+          .withFieldConst(_.task, Some(richTask.toValue))
+          .transform
+    }
 
   implicit class InputLogOps(inputLog: InputLog) {
 
