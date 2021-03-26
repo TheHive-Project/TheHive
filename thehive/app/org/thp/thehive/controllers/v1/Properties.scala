@@ -247,7 +247,7 @@ class Properties @Inject() (
       .property("owningOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
       )
-      .property("procedures", UMapping.entityId.sequence)(_.select(_.procedure.value(_._id)).readonly)
+      .property("patternId", UMapping.string.sequence)(_.select(_.procedure.pattern.value(_.patternId)).readonly)
       .build
 
   lazy val caseTemplate: PublicProperties =
