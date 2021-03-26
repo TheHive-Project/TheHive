@@ -3,12 +3,18 @@
     angular.module('theHiveServices')
         .service('TagSrv', function (QuerySrv, $q, VersionSrv, $http) {
 
+            var self = this;
+
+            this.tagsDefaultColour = '#000000';
+
             this.getFreeTags = function () {
                 var defer = $q.defer();
 
                 VersionSrv.get()
                     .then(function (appConfig) {
                         var defaultColour = appConfig.config.freeTagDefaultColour;
+
+                        self.tagsDefaultColour = defaultColour;
 
                         return QuerySrv.query('v1', [
                             { _name: 'listTag' },

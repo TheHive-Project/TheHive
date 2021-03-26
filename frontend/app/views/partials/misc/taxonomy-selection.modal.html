@@ -17,8 +17,8 @@
             <div ng-if="$modal.formData.selectedTags.length > 0">
                 <div class="empty-message">
                     <div class="tags-list flexwrap">
-                        <tag-item ng-repeat="tag in $modal.formData.selectedTags track by $index"
-                            value="tag" class="clickable" ng-click="$modal.selectTag(tag)"></tag-item>
+                        <tag-item ng-repeat="tag in $modal.formData.selectedTags track by $index" value="tag"
+                            class="clickable" ng-click="$modal.selectTag(tag)"></tag-item>
                     </div>
                 </div>
                 <p class="help-block">Click on a tag to unselect it</p>
@@ -32,9 +32,11 @@
             <div class="list-group">
                 <a href class="list-group-item" ng-repeat="taxonomy in $modal.taxonomies"
                     ng-click="$modal.selectTaxonomy(taxonomy)" class="clearfix">
-                    <span class="badge" uib-tooltip="{{taxonomy.description}}" tooltip-placement="left" tooltip-append-to-body="true"><i class="fa fa-question"></i></span>
+                    <span class="badge" uib-tooltip="{{taxonomy.description}}" tooltip-placement="left"
+                        tooltip-append-to-body="true"><i class="fa fa-question"></i></span>
                     <span>{{taxonomy.namespace}} </span>
-                    <small class="pull-right mr-m"><em class="text-muted">({{taxonomy.tags.length || 0}} tags)</em></small>
+                    <small class="pull-right mr-m"><em class="text-muted">({{taxonomy.tags.length || 0}}
+                            tags)</em></small>
                 </a>
             </div>
         </div>
@@ -44,13 +46,15 @@
                 <label>
                     Choose tags from taxonomy: {{$modal.formData.selectedTaxonomy.namespace}}
                 </label>
-                <a class="pull-right" href ng-click="$modal.formData.selectedTaxonomy = undefined">Show all taxonomies</a>
+                <a class="pull-right" href ng-click="$modal.formData.selectedTaxonomy = undefined">Show all
+                    taxonomies</a>
             </div>
 
             <div class="row mb-xxs">
                 <div class="col-sm-12">
                     <div class="has-feedback">
-                        <input type="text" ng-model="$modal.search" class="form-control" placeholder="Filter tags" autofocus>
+                        <input type="text" ng-model="$modal.search" class="form-control" placeholder="Filter tags"
+                            autofocus>
                         <span class="glyphicon glyphicon-search form-control-feedback"></span>
                     </div>
                 </div>
@@ -58,17 +62,20 @@
 
             <div style="height: 300px; max-height: 300px; overflow-y: scroll;">
                 <div class="list-group">
-                    <a href class="list-group-item" ng-repeat="tag in $modal.formData.selectedTaxonomy.tags | filter:$modal.search"
+                    <a href class="list-group-item"
+                        ng-repeat="tag in $modal.formData.selectedTaxonomy.tags | filter:$modal.search"
                         ng-click="$modal.selectTag(tag)">
-                        <span class="mr-xs" ng-class="{'text-primary': !!tag.selected, 'text-disabled': !!!tag.selected}">
+                        <span class="mr-xs"
+                            ng-class="{'text-primary': !!tag.selected, 'text-disabled': !!!tag.selected}">
                             <i class="fa fa-check"></i>
                         </span>
 
-                        <span class="badge" ng-if="::tag.description" uib-tooltip="{{::tag.description}}" tooltip-placement="left" tooltip-append-to-body="true">
+                        <span class="badge" ng-if="::tag.description" uib-tooltip="{{::tag.description}}"
+                            tooltip-placement="left" tooltip-append-to-body="true">
                             <i class="fa fa-question"></i>
                         </span>
 
-                        <tag value="tag"></tag>
+                        <tag-item value="tag"></tag-item>
                     </a>
                 </div>
             </div>
@@ -76,6 +83,7 @@
     </div>
     <div class="modal-footer">
         <button class="btn btn-default pull-left" type="button" ng-click="$modal.cancel()">Cancel</button>
-        <button class="btn btn-primary pull-right" type="submit" ng-disabled="$modal.formData.selectedTags === 0">Add Selected tags</button>
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="$modal.formData.selectedTags === 0">Add
+            Selected tags</button>
     </div>
 </form>
