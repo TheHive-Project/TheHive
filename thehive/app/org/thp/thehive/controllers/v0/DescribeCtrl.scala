@@ -209,7 +209,7 @@ class DescribeCtrl @Inject() (
       case ("dashboard", "status") =>
         Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")))))
       case (_, "patternId") =>
-        Some(Seq(PropertyDescription("patternId", "patternId", Nil)))
+        Some(Seq(PropertyDescription("patternId", "string", Nil)))
       case _ => None
     }
 
