@@ -291,6 +291,7 @@ class AlertSrv @Inject() (
             _ <- importCustomFields(alert, `case`)
             _ <- caseSrv.addTags(`case`, alert.tags.toSet)
             _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
+            _ <- get(alert).update(_.caseId, Some(`case`._id)).getOrFail("Alert")
             c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
             details <- Success(
               Json.obj(
