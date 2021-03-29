@@ -437,6 +437,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         }
       Success(())
     }
+  //=====[release 4.1.2]=====
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
