@@ -1,5 +1,24 @@
 # Change Log
 
+## [4.1.2](https://github.com/TheHive-Project/TheHive/milestone/71) (2021-03-29)
+
+**Implemented enhancements:**
+
+- [Feature Request] Add case search by TTP [\#1893](https://github.com/TheHive-Project/TheHive/issues/1893)
+
+**Fixed bugs:**
+
+- [Bug] Slow loading of TheHive because of Tags [\#1869](https://github.com/TheHive-Project/TheHive/issues/1869)
+- [Bug] After migration from 4.0.5 to 4.1.0 old tasklogs are not returned by "/api/v1/query?name=case-task-logs" query [\#1875](https://github.com/TheHive-Project/TheHive/issues/1875)
+- Dashboards - custom fields  [\#1877](https://github.com/TheHive-Project/TheHive/issues/1877)
+- [Bug] TH 4.1.1 : Filter by "IMPORTED" does not work for alerts imported into existing cases [\#1891](https://github.com/TheHive-Project/TheHive/issues/1891)
+- [Bug] Fix the S3 configuration options [\#1892](https://github.com/TheHive-Project/TheHive/issues/1892)
+- [Bug] All attachments in task logs disappeared following upgrade to 4.1.1 [\#1894](https://github.com/TheHive-Project/TheHive/issues/1894)
+- [Bug] Continued performance issues after upgrade to 4.1.1 [\#1896](https://github.com/TheHive-Project/TheHive/issues/1896)
+- [Bug] Fix issues dashboard list [\#1901](https://github.com/TheHive-Project/TheHive/issues/1901)
+- [Bug] Migration tool migrates unsupported elastic index [\#1907](https://github.com/TheHive-Project/TheHive/issues/1907)
+- [Bug] Folder permissions are not correctly set in docker image [\#1908](https://github.com/TheHive-Project/TheHive/issues/1908)
+
 ## [4.1.1](https://github.com/TheHive-Project/TheHive/milestone/70) (2021-03-23)
 
 **Implemented enhancements:**
