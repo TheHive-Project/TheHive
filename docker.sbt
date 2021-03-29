@@ -47,7 +47,7 @@ dockerCommands := Seq(
   Cmd("ADD", "--chown=thehive:thehive", "var", "/var"),
   Cmd("ADD", "--chown=thehive:thehive", "etc", "/etc"),
   ExecCmd("RUN", "chmod", "+x", "/opt/thehive/bin/thehive", "/opt/thehive/entrypoint"),
-  Cmd("RUN", "mkdir", "/data", "&&", "chown", "thehive:thehive", "/data"),
+  Cmd("RUN", "mkdir", "/data", "/opt/thp", "&&", "chown", "thehive:thehive", "/data", "/opt/thp"),
   Cmd("EXPOSE", "9000"),
   Cmd("USER", "thehive"),
   ExecCmd("ENTRYPOINT", "/opt/thehive/entrypoint"),
