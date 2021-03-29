@@ -1,6 +1,6 @@
-(function() {
+(function () {
     'use strict';
-    angular.module('theHiveServices').service('DashboardSrv', function(QueryBuilderSrv, localStorageService, $q, AuthenticationSrv, $http) {
+    angular.module('theHiveServices').service('DashboardSrv', function (QueryBuilderSrv, localStorageService, $q, AuthenticationSrv, $http) {
         var baseUrl = './api/dashboard';
         var self = this;
 
@@ -141,43 +141,43 @@
             }
         ];
 
-        this.skipFields = function(fields, types) {
-            return _.filter(fields, function(item) {
+        this.skipFields = function (fields, types) {
+            return _.filter(fields, function (item) {
                 return types.indexOf(item.type) === -1;
             });
         };
 
-        this.pickFields = function(fields, types) {
-            return _.filter(fields, function(item) {
+        this.pickFields = function (fields, types) {
+            return _.filter(fields, function (item) {
                 return types.indexOf(item.type) !== -1;
             });
         };
 
-        this.fieldsForAggregation = function(fields, agg) {
-            if(agg === 'count') {
+        this.fieldsForAggregation = function (fields, agg) {
+            if (agg === 'count') {
                 return [];
-            } else if(agg === 'sum' || agg === 'avg') {
-                return self.pickFields(fields, ['number']);
+            } else if (agg === 'sum' || agg === 'avg') {
+                return self.pickFields(fields, ['number', 'integer', 'float']);
             } else {
                 return fields;
             }
         };
 
         this.renderers = {
-            severity: function() {}
+            severity: function () { }
         };
 
-        this.create = function(dashboard) {
+        this.create = function (dashboard) {
             return $http.post(baseUrl, dashboard);
         };
 
-        this.update = function(id, dashboard) {
+        this.update = function (id, dashboard) {
             var db = _.pick(dashboard, 'id', 'title', 'description', 'status', 'definition');
 
             return $http.patch(baseUrl + '/' + id, db);
         };
 
-        this.list = function() {
+        this.list = function () {
             return $http.post(baseUrl + '/_search', {
                 range: 'all',
                 sort: ['-status', '-updatedAt', '-createdAt'],
@@ -194,28 +194,28 @@
             });
         };
 
-        this.get = function(id) {
+        this.get = function (id) {
             return $http.get(baseUrl + '/' + id);
         };
 
-        this.remove = function(id) {
+        this.remove = function (id) {
             return $http.delete(baseUrl + '/' + id);
         };
 
-        this._objectifyBy = function(collection, field) {
+        this._objectifyBy = function (collection, field) {
             var obj = {};
 
-            _.each(collection, function(item) {
+            _.each(collection, function (item) {
                 obj[item[field]] = item;
             });
 
             return obj;
         };
 
-        this.getMetadata = function(version) {
+        this.getMetadata = function (version) {
             var defer = $q.defer();
 
-            if(!version) {
+            if (!version) {
                 version = 'v0';
             }
 
@@ -224,13 +224,13 @@
             } else {
                 $http
                     .get('./api/' + version + '/describe/_all')
-                    .then(function(response) {
+                    .then(function (response) {
                         var data = response.data;
                         var metadata = {
                             entities: _.keys(data).sort()
                         };
 
-                        _.each(metadata.entities, function(entity) {
+                        _.each(metadata.entities, function (entity) {
                             metadata[entity] = _.omit(data[entity], 'attributes');
                             metadata[entity].attributes = self._objectifyBy(data[entity].attributes, 'name');
                             metadata[entity].attributeKeys = _.keys(metadata[entity].attributes).sort();
@@ -240,7 +240,7 @@
 
                         defer.resolve(metadata);
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         defer.reject(err);
                     });
             }
@@ -248,7 +248,7 @@
             return defer.promise;
         };
 
-        this.hasMinimalConfiguration = function(component) {
+        this.hasMinimalConfiguration = function (component) {
             switch (component.type) {
                 case 'multiline':
                 case 'text':
@@ -258,22 +258,22 @@
             }
         };
 
-        this.buildFiltersQuery = function(fields, filters) {
+        this.buildFiltersQuery = function (fields, filters) {
             return QueryBuilderSrv.buildFiltersQuery(fields, filters);
         };
 
-        this.buildChartQuery = function(filter, query) {
-            var criteria = _.filter(_.without([filter, query], null, undefined, '', '*'), function(c){return !_.isEmpty(c);});
+        this.buildChartQuery = function (filter, query) {
+            var criteria = _.filter(_.without([filter, query], null, undefined, '', '*'), function (c) { return !_.isEmpty(c); });
 
-            if(criteria.length === 0) {
+            if (criteria.length === 0) {
                 return {};
             } else {
                 return criteria.length === 1 ? criteria[0] : { _and: criteria };
             }
         };
 
-        this.buildPeriodQuery = function(period, field, start, end) {
-            if(!period && !start && !end) {
+        this.buildPeriodQuery = function (period, field, start, end) {
+            if (!period && !start && !end) {
                 return null;
             }
 
@@ -287,7 +287,7 @@
                 from = moment(today).subtract(30, 'days');
             } else if (period === 'last3Months') {
                 from = moment(today).subtract(3, 'months');
-            } else if(period === 'custom') {
+            } else if (period === 'custom') {
                 from = start && start !== null ? moment(start).valueOf() : null;
                 to = end && end !== null ? moment(end).hours(23).minutes(59).seconds(59).milliseconds(999).valueOf() : null;
 
@@ -311,7 +311,7 @@
             };
         };
 
-        this.exportDashboard = function(dashboard) {
+        this.exportDashboard = function (dashboard) {
             var fileName = dashboard.title.replace(/\s/gi, '_') + '.json';
             var content = _.omit(dashboard,
                 '_type',

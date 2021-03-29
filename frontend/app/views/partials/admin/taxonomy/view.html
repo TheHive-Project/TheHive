@@ -40,15 +40,14 @@
                     <tbody>
                         <tr ng-repeat="tag in $modal.taxonomy.tags">
                             <td>
-                                <span class="label">
-                                    <tag value="tag"></tag>
-                                </span>
+                                <tag-item class="label-lg" value="tag"></tag-item>
                             </td>
                             <td>{{::tag.predicate}}</td>
                             <td>{{::tag.value || '-'}}</td>
                             <td>{{::tag.colour}}</td>
                             <td>
-                                <span ng-if="::tag.description" uib-tooltip="{{::tag.description}}" tooltip-placement="left">
+                                <span ng-if="::tag.description" uib-tooltip="{{::tag.description}}"
+                                    tooltip-placement="left">
                                     <i class="fa fa-question-circle"></i>
                                 </span>
                             </td>

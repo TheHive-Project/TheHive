@@ -1,9 +1,9 @@
-(function() {
+(function () {
     'use strict';
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardViewCtrl', function($scope, $q, $interval, $timeout, $uibModal, AuthenticationSrv, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
+        .controller('DashboardViewCtrl', function ($scope, $q, $interval, $timeout, $uibModal, AuthenticationSrv, DashboardSrv, NotificationSrv, ModalUtilsSrv, UtilsSrv, dashboard, metadata) {
             var self = this;
 
             this.currentUser = AuthenticationSrv.currentUser;
@@ -15,13 +15,13 @@
             this.autoRefresh = null;
             this.authRefreshRunner = null;
 
-            this.buildDashboardPeriodFilter = function(period) {
+            this.buildDashboardPeriodFilter = function (period) {
                 return period === 'custom' ?
                     DashboardSrv.buildPeriodQuery(period, 'createdAt', this.definition.customPeriod.fromDate, this.definition.customPeriod.toDate) :
                     DashboardSrv.buildPeriodQuery(period, 'createdAt');
             };
 
-            this.loadDashboard = function(dashboard) {
+            this.loadDashboard = function (dashboard) {
                 this.dashboard = dashboard;
                 this.definition = JSON.parse(dashboard.definition) || {
                     period: 'all',
@@ -37,22 +37,22 @@
 
             this.loadDashboard(dashboard);
 
-            $scope.$watch('$vm.autoRefresh', function(value) {
-                if(value === self.authRefreshRunner || self.options.editLayout === true) {
+            $scope.$watch('$vm.autoRefresh', function (value) {
+                if (value === self.authRefreshRunner || self.options.editLayout === true) {
                     return;
                 }
 
-                if(value === null) {
+                if (value === null) {
                     $interval.cancel(self.authRefreshRunner);
                 } else {
                     $interval.cancel(self.authRefreshRunner);
-                    self.authRefreshRunner = $interval(function() {
+                    self.authRefreshRunner = $interval(function () {
                         $scope.$broadcast('refresh-chart', self.periodFilter);
                     }, value * 1000);
                 }
             });
 
-            this.canEditDashboard = function() {
+            this.canEditDashboard = function () {
                 return (this.createdBy === this.currentUser.login) || this.dashboardStatus === 'Shared';
             };
 
@@ -70,23 +70,23 @@
                     text: 'Text',
                     multiline: 'Multi Lines'
                 },
-                editLayout: !_.find(this.definition.items, function(row) {
+                editLayout: !_.find(this.definition.items, function (row) {
                     return row.items.length > 0;
                 }) && this.canEditDashboard()
             };
 
-            this.applyPeriod = function(period) {
+            this.applyPeriod = function (period) {
                 this.definition.period = period;
                 this.periodFilter = this.buildDashboardPeriodFilter(period);
 
                 $scope.$broadcast('refresh-chart', this.periodFilter);
             };
 
-            this.removeContainer = function(index) {
+            this.removeContainer = function (index) {
                 var row = this.definition.items[index];
 
                 var promise;
-                if(row.items.length === 0) {
+                if (row.items.length === 0) {
                     // If the container is empty, don't ask for confirmation
                     promise = $q.resolve();
                 } else {
@@ -96,54 +96,55 @@
                     });
                 }
 
-                promise.then(function() {
+                promise.then(function () {
                     self.definition.items.splice(index, 1);
                 });
             };
 
-            this.saveDashboard = function() {
-                var copy = _.pick(this.dashboard, 'title', 'description', 'status');
-                copy.definition = angular.toJson(this.definition);
+            this.saveDashboard = function () {
+                var copy = {
+                    definition: angular.toJson(this.definition)
+                };
 
                 DashboardSrv.update(this.dashboard.id, copy)
-                    .then(function(/*response*/) {
+                    .then(function (/*response*/) {
                         self.options.editLayout = false;
                         self.resizeCharts();
                         NotificationSrv.log('The dashboard has been successfully updated', 'success');
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         NotificationSrv.error('DashboardEditCtrl', err.data, err.status);
                     });
             };
 
-            this.removeItem = function(rowIndex, colIndex) {
+            this.removeItem = function (rowIndex, colIndex) {
 
                 ModalUtilsSrv.confirm('Remove widget', 'Are you sure you want to remove this item', {
                     okText: 'Yes, remove it',
                     flavor: 'danger'
-                }).then(function() {
+                }).then(function () {
                     var row = self.definition.items[rowIndex];
                     row.items.splice(colIndex, 1);
 
-                    $timeout(function() {
+                    $timeout(function () {
                         $scope.$broadcast('resize-chart-' + rowIndex);
                     }, 0);
                 });
 
             };
 
-            this.itemInserted = function(item, rows/*, rowIndex, index*/) {
-                if(!item.id){
+            this.itemInserted = function (item, rows/*, rowIndex, index*/) {
+                if (!item.id) {
                     item.id = UtilsSrv.guid();
                 }
 
-                for(var i=0; i < rows.length; i++) {
+                for (var i = 0; i < rows.length; i++) {
                     $scope.$broadcast('resize-chart-' + i);
                 }
 
                 if (this.options.containerAllowedTypes.indexOf(item.type) !== -1 && !item.options.entity) {
                     // The item is a widget
-                    $timeout(function() {
+                    $timeout(function () {
                         $scope.$broadcast('edit-chart-' + item.id);
                     }, 0);
                 }
@@ -151,34 +152,34 @@
                 return item;
             };
 
-            this.itemDragStarted = function(colIndex, row) {
+            this.itemDragStarted = function (colIndex, row) {
                 row.items.splice(colIndex, 1);
             };
 
-            this.exportDashboard = function() {
+            this.exportDashboard = function () {
                 DashboardSrv.exportDashboard(this.dashboard);
             };
 
-            this.resizeCharts = function() {
-                $timeout(function() {
-                    for(var i=0; i < self.definition.items.length; i++) {
+            this.resizeCharts = function () {
+                $timeout(function () {
+                    for (var i = 0; i < self.definition.items.length; i++) {
                         $scope.$broadcast('resize-chart-' + i);
                     }
                 }, 100);
             };
 
-            this.enableEditMode = function() {
+            this.enableEditMode = function () {
                 this.options.editLayout = true;
                 this.resizeCharts();
             };
 
-            this.enableViewMode = function() {
+            this.enableViewMode = function () {
                 DashboardSrv.get(this.dashboard.id)
-                    .then(function(response) {
+                    .then(function (response) {
                         self.loadDashboard(response.data);
                         self.options.editLayout = false;
                         self.resizeCharts();
-                    }, function(err) {
+                    }, function (err) {
                         NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
                     });
             };

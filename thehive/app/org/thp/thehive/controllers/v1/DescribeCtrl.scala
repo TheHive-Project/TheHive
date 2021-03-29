@@ -185,6 +185,7 @@ class DescribeCtrl @Inject() (
       case (_, "_createdBy")   => Some(Seq(PropertyDescription("_createdBy", "user")))
       case (_, "_updatedBy")   => Some(Seq(PropertyDescription("_updatedBy", "user")))
       case (_, "customFields") => Some(customFields)
+      case (_, "patternId")    => Some(Seq(PropertyDescription("patternId", "string", Nil)))
       case _                   => None
     }
 

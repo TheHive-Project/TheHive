@@ -17,6 +17,7 @@ import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json._
@@ -313,5 +314,6 @@ class PublicCase @Inject() (
       .property("owningOrganisation", UMapping.string)(
         _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
       )
+      .property("patternId", UMapping.string.sequence)(_.select(_.procedure.pattern.value(_.patternId)).readonly)
       .build
 }

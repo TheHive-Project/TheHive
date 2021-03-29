@@ -1,28 +1,28 @@
-(function() {
+(function () {
     'use strict';
 
     angular
         .module('theHiveControllers')
-        .controller('DashboardImportCtrl', function($scope, $uibModalInstance) {
+        .controller('DashboardImportCtrl', function ($scope, $uibModalInstance) {
             var self = this;
             this.formData = {
                 fileContent: {}
             };
 
-            $scope.$watch('vm.formData.attachment', function(file) {
-                if(!file) {
+            $scope.$watch('vm.formData.attachment', function (file) {
+                if (!file) {
                     self.formData.fileContent = {};
                     return;
                 }
                 var aReader = new FileReader();
                 aReader.readAsText(self.formData.attachment, 'UTF-8');
                 aReader.onload = function (evt) {
-                    $scope.$apply(function() {
+                    $scope.$apply(function () {
                         self.formData.fileContent = JSON.parse(aReader.result);
                     });
                 }
                 aReader.onerror = function (evt) {
-                    $scope.$apply(function() {
+                    $scope.$apply(function () {
                         self.formData.fileContent = {};
                     });
                 }
@@ -39,23 +39,26 @@
                 $uibModalInstance.dismiss('cancel');
             };
         })
-        .controller('DashboardModalCtrl', function($uibModalInstance, $state, statuses, dashboard) {
+        .controller('DashboardModalCtrl', function ($uibModalInstance, AuthenticationSrv, $state, statuses, dashboard) {
             this.dashboard = dashboard;
             this.statuses = statuses;
+            this.currentUser = AuthenticationSrv.currentUser;
 
-            this.cancel = function() {
+            this.cancel = function () {
                 $uibModalInstance.dismiss();
             };
 
-            this.ok = function() {
+            this.ok = function () {
                 return $uibModalInstance.close(dashboard);
             };
         })
-        .controller('DashboardsCtrl', function($scope, $state, $uibModal, PaginatedQuerySrv, FilteringSrv, ModalUtilsSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
+        .controller('DashboardsCtrl', function ($scope, $state, $uibModal, PaginatedQuerySrv, FilteringSrv, ModalUtilsSrv, NotificationSrv, DashboardSrv, AuthenticationSrv) {
             this.dashboards = [];
             var self = this;
 
-            this.$onInit = function() {
+            this.currentUser = AuthenticationSrv.currentUser;
+
+            this.$onInit = function () {
                 self.filtering = new FilteringSrv('dashboard', 'dashboard.list', {
                     version: 'v0',
                     defaults: {
@@ -68,7 +71,7 @@
                 });
 
                 self.filtering.initContext('list')
-                    .then(function() {
+                    .then(function () {
                         self.load();
 
                         $scope.$watch('$vm.list.pageSize', function (newValue) {
@@ -77,7 +80,7 @@
                     });
             }
 
-            this.load = function() {
+            this.load = function () {
 
                 self.list = new PaginatedQuerySrv({
                     name: 'dashboard-list',
@@ -88,10 +91,10 @@
                     pageSize: self.filtering.context.pageSize,
                     filter: this.filtering.buildQuery(),
                     operations: [
-                        {'_name': 'listDashboard'}
+                        { '_name': 'listDashboard' }
                     ],
-                    onFailure: function(err) {
-                        if(err && err.status === 400) {
+                    onFailure: function (err) {
+                        if (err && err.status === 400) {
                             self.filtering.resetContext();
                             self.load();
                         }
@@ -99,24 +102,24 @@
                 });
             };
 
-            this.openDashboardModal = function(dashboard) {
+            this.openDashboardModal = function (dashboard) {
                 return $uibModal.open({
                     templateUrl: 'views/partials/dashboard/create.dialog.html',
                     controller: 'DashboardModalCtrl',
                     controllerAs: '$vm',
                     size: 'lg',
                     resolve: {
-                        statuses: function() {
+                        statuses: function () {
                             return ['Private', 'Shared'];
                         },
-                        dashboard: function() {
+                        dashboard: function () {
                             return dashboard;
                         }
                     }
                 });
             };
 
-            this.addDashboard = function() {
+            this.addDashboard = function () {
                 var modalInstance = this.openDashboardModal({
                     title: null,
                     description: null,
@@ -125,79 +128,87 @@
                 });
 
                 modalInstance.result
-                    .then(function(dashboard) {
+                    .then(function (dashboard) {
                         return DashboardSrv.create(dashboard);
                     })
-                    .then(function(response) {
-                        $state.go('app.dashboards-view', {id: response.data.id});
+                    .then(function (response) {
+                        $state.go('app.dashboards-view', { id: response.data.id });
 
                         NotificationSrv.log('The dashboard has been successfully created', 'success');
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         if (err && err.status) {
                             NotificationSrv.error('DashboardsCtrl', err.data, err.status);
                         }
                     });
             };
 
-            this.duplicateDashboard = function(dashboard) {
+            this.duplicateDashboard = function (dashboard) {
                 var copy = _.pick(dashboard, 'title', 'description', 'status', 'definition');
                 copy.title = 'Copy of ' + copy.title;
 
                 this.openDashboardModal(copy)
-                    .result.then(function(dashboard) {
+                    .result.then(function (dashboard) {
                         return DashboardSrv.create(dashboard);
                     })
-                    .then(function(response) {
-                        $state.go('app.dashboards-view', {id: response.data.id});
+                    .then(function (response) {
+                        $state.go('app.dashboards-view', { id: response.data.id });
 
                         NotificationSrv.log('The dashboard has been successfully created', 'success');
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         if (err && err.status) {
                             NotificationSrv.error('DashboardsCtrl', err.data, err.status);
                         }
                     });
             };
 
-            this.editDashboard = function(dashboard) {
+            this.editDashboard = function (dashboard) {
                 var copy = _.extend({}, dashboard);
 
-                this.openDashboardModal(copy).result.then(function(dashboard) {
-                    return DashboardSrv.update(dashboard.id, _.omit(dashboard, 'id'));
-                })
-                .then(function(response) {
-                    self.load()
+                this.openDashboardModal(copy).result
+                    .then(function (dashboard) {
 
-                    NotificationSrv.log('The dashboard has been successfully updated', 'success');
-                })
-                .catch(function(err) {
-                    if (err && err.status) {
-                        NotificationSrv.error('DashboardsCtrl', err.data, err.status);
-                    }
-                });
+                        if (dashboard.createdBy === self.currentUser.login) {
+                            return DashboardSrv.update(dashboard.id, _.omit(dashboard, 'id', 'definition'));
+                        } else {
+                            return DashboardSrv.update(dashboard.id, _.omit(dashboard, 'id', 'status', 'definition'));
+                        }
+
+
+                    })
+                    .then(function (response) {
+                        self.load()
+
+                        NotificationSrv.log('The dashboard has been successfully updated', 'success');
+                    })
+                    .catch(function (err) {
+                        if (err && err.status) {
+                            NotificationSrv.error('DashboardsCtrl', err.data, err.status);
+                        }
+                    });
             };
 
-            this.deleteDashboard = function(id) {
+            this.deleteDashboard = function (id) {
                 ModalUtilsSrv.confirm('Remove dashboard', 'Are you sure you want to remove this dashboard', {
                     okText: 'Yes, remove it',
                     flavor: 'danger'
                 })
-                    .then(function() {
+                    .then(function () {
                         return DashboardSrv.remove(id);
                     })
-                    .then(function(response) {
+                    .then(function (response) {
                         self.load();
 
                         NotificationSrv.log('The dashboard has been successfully removed', 'success');
                     });
             };
 
-            this.exportDashboard = function(dashboard) {
+            this.exportDashboard = function (dashboard) {
                 DashboardSrv.exportDashboard(dashboard);
             }
 
-            this.importDashboard = function() {
+            this.importDashboard = function () {
                 var modalInstance = $uibModal.open({
                     animation: true,
                     templateUrl: 'views/partials/dashboard/import.dialog.html',
@@ -206,19 +217,19 @@
                     size: 'lg'
                 });
 
-                modalInstance.result.then(function(dashboard) {
+                modalInstance.result.then(function (dashboard) {
                     return DashboardSrv.create(dashboard);
                 })
-                .then(function(response) {
-                    $state.go('app.dashboards-view', {id: response.data.id});
+                    .then(function (response) {
+                        $state.go('app.dashboards-view', { id: response.data.id });
 
-                    NotificationSrv.log('The dashboard has been successfully imported', 'success');
-                })
-                .catch(function(err) {
-                    if (err && err.status) {
-                        NotificationSrv.error('DashboardsCtrl', err.data, err.status);
-                    }
-                });
+                        NotificationSrv.log('The dashboard has been successfully imported', 'success');
+                    })
+                    .catch(function (err) {
+                        if (err && err.status) {
+                            NotificationSrv.error('DashboardsCtrl', err.data, err.status);
+                        }
+                    });
             }
 
             // Filtering
@@ -249,28 +260,28 @@
                 this.search();
             };
 
-            this.filterBy = function(field, value) {
+            this.filterBy = function (field, value) {
                 self.filtering.clearFilters()
-                    .then(function(){
+                    .then(function () {
                         self.addFilterValue(field, value);
                     });
             };
 
-            this.sortBy = function(sort) {
+            this.sortBy = function (sort) {
                 self.list.sort = sort;
                 self.list.update();
                 self.filtering.setSort(sort);
             };
 
-            this.sortByField = function(field) {
+            this.sortByField = function (field) {
                 var context = this.filtering.context;
                 var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
                 var sort = null;
 
-                if(currentSort.substr(1) !== field) {
+                if (currentSort.substr(1) !== field) {
                     sort = ['+' + field];
                 } else {
-                    sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                    sort = [(currentSort === '+' + field) ? '-' + field : '+' + field];
                 }
 
                 self.list.sort = sort;

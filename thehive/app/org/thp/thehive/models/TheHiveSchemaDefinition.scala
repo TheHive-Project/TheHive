@@ -217,7 +217,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
 
             tags.foreach(vertex.property(Cardinality.list, "tags", _))
             vertex.property("organisationId", organisationId.value)
-            caseId.foreach(vertex.property("caseId", _))
+            caseId.foreach(cid => vertex.property("caseId", cid.value))
           case _ =>
         }
       Success(())
@@ -292,12 +292,12 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal
         .project(
           _.by
-            .by(_.in("TaskLog")._id)
+            .by(_.in("TaskLog")._id.option)
             .by(_.in("TaskLog").in("ShareTask").in("OrganisationShare")._id.fold)
         )
         .foreach {
           case (vertex, taskId, organisationIds) =>
-            vertex.property("taskId", taskId)
+            taskId.foreach(tid => vertex.property("taskId", tid.value))
             organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
         }
       Success(())
@@ -312,7 +312,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal
         .project(
           _.by
-            .by(_.out("ObservableObservableType").property("name", UMapping.string))
+            .by(_.out("ObservableObservableType").property("name", UMapping.string).option)
             .by(_.out("ObservableTag").valueMap("namespace", "predicate", "value").fold)
             .by(_.out("ObservableData").property("data", UMapping.string).option)
             .by(_.out("ObservableAttachment").property("attachmentId", UMapping.string).option)
@@ -338,7 +338,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
                 (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
                 value.fold("")(v => f"""="$v"""")
 
-            vertex.property("dataType", dataType)
+            dataType.foreach(vertex.property("dataType", _))
             tags.foreach(vertex.property(Cardinality.list, "tags", _))
             data.foreach(vertex.property("data", _))
             attachmentId.foreach(vertex.property("attachmentId", _))
@@ -399,6 +399,21 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .removeIndex("Log", IndexType.fulltext, "message")
     .removeIndex("Tag", IndexType.fulltext, "description")
     .removeIndex("Task", IndexType.fulltext, "description")
+//    .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
+//      traversal
+//        .project(
+//          _.by
+//            .by(_.out("AlertCase")._id.option)
+//        )
+//        .foreach {
+//          case (vertex, caseId) =>
+//            caseId.foreach(cid => vertex.property("caseId", cid.value))
+//          case _ =>
+//        }
+//      Success(())
+//    }
+    .noop
+    //=====[release 4.1.1]=====
     .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
       traversal
         .project(
@@ -407,11 +422,22 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         )
         .foreach {
           case (vertex, caseId) =>
-            caseId.foreach(vertex.property("caseId", _))
+            caseId.foreach(cid => vertex.property("caseId", cid.value))
           case _ =>
         }
       Success(())
     }
+    .updateGraph("Set taskId in logs", "Log") { traversal =>
+      traversal
+        .project(_.by.by(_.in("TaskLog")._id.option))
+        .foreach {
+          case (vertex, Some(taskId)) =>
+            vertex.property("taskId", taskId.value)
+          case _ =>
+        }
+      Success(())
+    }
+  //=====[release 4.1.2]=====
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

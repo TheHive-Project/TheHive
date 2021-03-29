@@ -207,10 +207,10 @@ class DBConfiguration @Inject() (
     */
   lazy val indexName: String = {
     val indexBaseName = config.get[String]("search.index")
-    val index_3_5_1   = indexBaseName + "_16"
-    val index_3_5_0   = indexBaseName + "_15"
+    val index_3_5_1   = indexBaseName + "_17"
+    val index_3_5_0   = indexBaseName + "_16"
     if (exists(index_3_5_1)) index_3_5_1
     else if (exists(index_3_5_0)) index_3_5_0
-    else ???
+    else sys.error(s"TheHive 3.x index $indexBaseName not found")
   }
 }

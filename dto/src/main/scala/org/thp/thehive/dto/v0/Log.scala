@@ -19,7 +19,8 @@ case class OutputLog(
     startDate: Date,
     attachment: Option[OutputAttachment] = None,
     status: String,
-    owner: String
+    owner: String,
+    case_task: Option[OutputTask]
 )
 
 object OutputLog {

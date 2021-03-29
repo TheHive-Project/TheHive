@@ -23,20 +23,18 @@
 
         <div class="form-group">
             <select class="form-control" ng-model="serie.agg"
-                ng-options="item.label as item.id for (key, item) in aggregations"
-                ng-change="setSerieAgg(serie)">
+                ng-options="item.label as item.id for (key, item) in aggregations" ng-change="setSerieAgg(serie)">
                 <option value="" disabled selected></option>
             </select>
         </div>
         <div class="form-group">
             <select class="form-control" ng-model="serie.field" ng-disabled="serie.agg === 'count'"
                 ng-options="item.name as item.name for (key, item) in fieldsForAggregation(metadata[serie.entity].attributes, serie.agg)">
-                    <option value="" disabled selected>-- Select field --</option>
+                <option value="" disabled selected>-- Select field --</option>
             </select>
         </div>
         <div class="form-group">
-            <select class="form-control" ng-model="serie.type"
-                ng-options="item for item in serieTypes"></select>
+            <select class="form-control" ng-model="serie.type" ng-options="item for item in serieTypes"></select>
         </div>
 
         <div class="form-group">
@@ -45,8 +43,10 @@
         <div class="input-group">
             <input type="text" class="form-control" ng-model="serie.color" placeholder="Color" size="8">
             <span class="input-group-btn">
-                <button colorpicker colorpicker-close-on-select class="btn btn-default" ng-model="serie.color" type="button">
-                    <i class="fa fa-stop" style="color: {{serie.color}};" ng-class="{'fa-stop': serie.color, 'fa-ellipsis-h': !serie.color}"></i>
+                <button colorpicker colorpicker-close-on-select class="btn btn-default" ng-model="serie.color"
+                    type="button">
+                    <i class="fa fa-stop" style="color: {{serie.color}};"
+                        ng-class="{'fa-stop': serie.color, 'fa-ellipsis-h': !serie.color}"></i>
                 </button>
             </span>
         </div>

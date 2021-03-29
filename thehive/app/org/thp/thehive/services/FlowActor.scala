@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.google.inject.Injector
-import org.apache.tinkerpop.gremlin.process.traversal.Order
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
@@ -61,6 +61,7 @@ class FlowActor extends Actor {
         auditSrv
           .startTraversal
           .has(_.mainAction, true)
+          .has(_._createdAt, P.gt(fromDate))
           .sort(_.by("_createdAt", Order.desc))
           .visible(organisationSrv)
           .limit(10)

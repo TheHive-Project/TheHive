@@ -34,6 +34,8 @@ class StatusCtrl @Inject() (
     appConfig.item[FiniteDuration]("stream.longPolling.pollingDuration", "amount of time the UI have to wait before polling the stream")
   def streamPollingDuration: FiniteDuration = streamPollingDurationConfig.get
 
+  val tagsDefaultColourConfig = appConfig.item[String]("tags.freeTagColour", "Default free tag colour")
+
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
   def get: Action[AnyContent] =
@@ -55,7 +57,8 @@ class StatusCtrl @Inject() (
               }),
               "capabilities"    -> authSrv.capabilities.map(c => JsString(c.toString)),
               "ssoAutoLogin"    -> authSrv.capabilities.contains(AuthCapability.sso),
-              "pollingDuration" -> streamPollingDuration.toMillis
+              "pollingDuration" -> streamPollingDuration.toMillis,
+              "freeTagDefaultColour" -> tagsDefaultColourConfig.get
             ),
             "schemaStatus" -> schemas.flatMap(_.schemaStatus).map { schemaStatus =>
               Json.obj(

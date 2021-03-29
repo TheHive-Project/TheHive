@@ -27,7 +27,8 @@
                 <i class="fa fa-asterisk text-danger"></i>
             </label>
             <div class="col-sm-10">
-                <select class="form-control" ng-model="$vm.dashboard.status" ng-options="s for s in $vm.statuses" required>
+                <select class="form-control" ng-model="$vm.dashboard.status" ng-options="s for s in $vm.statuses"
+                    required ng-disabled="$vm.dashboard.id && ($vm.dashboard.createdBy !== $vm.currentUser.login)">
                     <option value="">-- select an option --</option>
                 </select>
             </div>
@@ -35,6 +36,7 @@
     </div>
     <div class="modal-footer text-left">
         <button class="btn btn-default" ng-click="$vm.cancel()">Cancel</button>
-        <button class="btn btn-primary pull-right" type="submit" ng-disabled="form.$invalid">{{ $vm.dashboard.id ? 'Update' : 'Create' }}</button>
+        <button class="btn btn-primary pull-right" type="submit" ng-disabled="form.$invalid">{{ $vm.dashboard.id ?
+            'Update' : 'Create' }}</button>
     </div>
 </form>
