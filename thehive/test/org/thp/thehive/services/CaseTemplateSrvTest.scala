@@ -128,7 +128,10 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
           bool1        <- app[CustomFieldSrv].getOrFail(EntityName("boolean1"))
           integer1     <- app[CustomFieldSrv].getOrFail(EntityName("integer1"))
           caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _            <- app[CaseTemplateSrv].updateCustomField(caseTemplate, Seq((string1, JsString("hate")), (bool1, JsTrue), (integer1, JsNumber(1))))
+          _ <- app[CaseTemplateSrv].updateCustomField(
+            caseTemplate,
+            Seq((string1, JsString("hate"), None), (bool1, JsTrue, None), (integer1, JsNumber(1), None))
+          )
         } yield ()
       } must beSuccessfulTry
 

@@ -3,6 +3,9 @@ package org.thp.thehive.models
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph._
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.traversal.Traversal.{Domain, E}
+import org.thp.scalligraph.traversal.TraversalOps._
 import play.api.libs.json._
 
 import java.util.{Date, NoSuchElementException}
@@ -91,6 +94,10 @@ sealed abstract class CustomFieldType[T] {
 
   def getJsonValue(ccf: CustomFieldValue[_]): JsValue = getValue(ccf).fold[JsValue](JsNull)(writes.writes)
 
+  def getValue[C <: CustomFieldValue[_]](traversal: Traversal.E[C]): Traversal.Domain[T]
+
+  def getJsonValue[C <: CustomFieldValue[_]](traversal: Traversal.E[C]): Traversal.Domain[JsValue] = getValue(traversal).domainMap(writes.writes)
+
   override def toString: String = name
 
   protected def setValueFailure(value: Any): Failure[Nothing] =
@@ -117,6 +124,8 @@ object CustomFieldString extends CustomFieldType[String] {
     }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[String] = ccf.stringValue
+
+  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Traversal.Domain[String] = traversal.value(_.stringValue).castDomain
 }
 
 object CustomFieldBoolean extends CustomFieldType[Boolean] {
@@ -137,6 +146,8 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] {
     }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Boolean] = ccf.booleanValue
+
+  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Boolean] = traversal.value(_.booleanValue).castDomain
 }
 
 object CustomFieldInteger extends CustomFieldType[Int] {
@@ -158,6 +169,8 @@ object CustomFieldInteger extends CustomFieldType[Int] {
     }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Int] = ccf.integerValue
+
+  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Int] = traversal.value(_.integerValue).castDomain
 }
 
 object CustomFieldFloat extends CustomFieldType[Double] {
@@ -178,6 +191,8 @@ object CustomFieldFloat extends CustomFieldType[Double] {
     }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Double] = ccf.floatValue
+
+  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Double] = traversal.value(_.floatValue).castDomain
 }
 
 object CustomFieldDate extends CustomFieldType[Date] {
@@ -199,6 +214,8 @@ object CustomFieldDate extends CustomFieldType[Date] {
     }
 
   override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue
+
+  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Date] = traversal.value(_.dateValue).castDomain
 }
 
 @DefineIndex(IndexType.unique, "name")

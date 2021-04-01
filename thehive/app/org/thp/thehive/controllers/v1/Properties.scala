@@ -106,8 +106,7 @@ class Properties @Inject() (
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
           alerts
-            .customFields(EntityIdOrName(idOrName))
-            .jsonValue
+            .customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
         case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter[JsValue] {
@@ -209,8 +208,7 @@ class Properties @Inject() (
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
           caseSteps
-            .customFields(EntityIdOrName(idOrName))
-            .jsonValue
+            .customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter[JsValue] {
@@ -273,16 +271,34 @@ class Properties @Inject() (
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue
-        case (_, alertSteps)                                => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
-      }.custom {
-        case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
-          for {
-            c <- caseTemplateSrv.getOrFail(vertex)(graph)
-            _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
-          } yield Json.obj(s"customField.$name" -> value)
-        case _ => Failure(BadRequestError("Invalid custom fields format"))
-      })
+        case (FPathElem(_, FPathElem(idOrName, _)), caseTemplateSteps) =>
+          caseTemplateSteps
+            .customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
+        case (_, caseTemplateSteps) => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+      }
+        .filter[JsValue] {
+          case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
+            predicate match {
+              case Right(predicate) => caseTemplateTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+              case Left(true)       => caseTemplateTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
+              case Left(false)      => caseTemplateTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+            }
+          case (_, caseTraversal, _, _) => caseTraversal.empty
+        }
+        .custom {
+          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
+            for {
+              c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
+              _ <- caseTemplateSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
+            } yield Json.obj(s"customField.$idOrName" -> value)
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
+            for {
+              c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
+              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
+              _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
+            } yield Json.obj("customFields" -> values)
+          case _ => Failure(BadRequestError("Invalid custom fields format"))
+        })
       .build
 
   lazy val organisation: PublicProperties =

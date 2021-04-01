@@ -275,9 +275,7 @@ class PublicCase @Inject() (
       })
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
-          caseSteps
-            .customFields(EntityIdOrName(idOrName))
-            .jsonValue
+          caseSteps.customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter[JsValue] {

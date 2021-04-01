@@ -16,7 +16,7 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Named, Singleton}
@@ -134,22 +134,32 @@ class PublicCaseTemplate @Inject() (
     .property("summary", UMapping.string.optional)(_.field.updatable)
     .property("user", UMapping.string)(_.field.updatable)
     .property("customFields", UMapping.jsonNative)(_.subSelect {
-      case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFields(name).jsonValue
+      case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFieldJsonValue(customFieldSrv, EntityIdOrName(name))
       case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
-    }.custom {
-      case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
-        for {
-          c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-          _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
-        } yield Json.obj(s"customFields.$name" -> value)
-      case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-        for {
-          c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-          cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
-          _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
-        } yield Json.obj("customFields" -> values)
-      case _ => Failure(BadRequestError("Invalid custom fields format"))
-    })
+    }
+      .filter[JsValue] {
+        case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
+          predicate match {
+            case Right(predicate) => caseTemplateTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+            case Left(true)       => caseTemplateTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
+            case Left(false)      => caseTemplateTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+          }
+        case (_, caseTraversal, _, _) => caseTraversal.empty
+      }
+      .custom {
+        case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
+          for {
+            c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
+            _ <- caseTemplateSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)(graph, authContext)
+          } yield Json.obj(s"customField.$name" -> value)
+        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
+          for {
+            c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
+            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
+            _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
+          } yield Json.obj("customFields" -> values)
+        case _ => Failure(BadRequestError("Invalid custom fields format"))
+      })
     .property("tasks", UMapping.jsonNative.sequence)(
       _.select(_.tasks.richTaskWithoutActionRequired.domainMap(_.toJson)).custom { //  FIXME select the correct mapping
         (_, value, vertex, graph, authContext) =>

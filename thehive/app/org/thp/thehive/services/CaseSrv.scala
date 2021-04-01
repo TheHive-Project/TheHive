@@ -494,6 +494,14 @@ object CaseOps {
           name => customFields.filter(_.inV.v[CustomField].has(_.name, name))
         )
 
+    def customFieldJsonValue(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.Domain[JsValue] =
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map(t => CustomFieldType.map(t).getJsonValue(traversal.customFields(customField)))
+        .getOrElse(traversal.empty.castDomain)
+
     def richCustomFields: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] =
       customFields
         .project(_.by.by(_.inV.v[CustomField]))
