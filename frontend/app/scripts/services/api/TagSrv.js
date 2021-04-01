@@ -19,7 +19,7 @@
                         return QuerySrv.query('v1', [
                             { _name: 'listTag' },
                             { _name: 'freetags' },
-                            { _name: 'filter', _not: { colour: defaultColour } }
+                            { _name: 'filter', _not: { '_field': 'colour', '_value': defaultColour } }
                         ], {
                             params: {
                                 name: 'list-tags'
