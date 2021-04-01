@@ -497,7 +497,18 @@ class PublicAlert @Inject() (
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
       .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
-      .property("imported", UMapping.boolean)(_.select(_.imported).readonly)
+      .property("imported", UMapping.boolean)(
+        _.select(_.imported)
+          .filter[Boolean]((_, alertTraversal, _, predicate) =>
+            predicate.fold(
+              b => if (b) alertTraversal else alertTraversal.empty,
+              p =>
+                if (p.getValue) alertTraversal.has(_.caseId)
+                else alertTraversal.hasNot(_.caseId)
+            )
+          )
+          .readonly
+      )
       .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
       .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
       .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
