@@ -6,7 +6,6 @@ import akka.util.Timeout
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.GenIntegrityCheckOps
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CheckState, CheckStats, GetCheckStats, GlobalCheckRequest}
 import play.api.Logger
@@ -72,12 +71,12 @@ class AdminCtrl @Inject() (
     entrypoint("Get index status")
       .authPermittedRoTransaction(db, Permissions.managePlatform) { _ => graph =>
         val status = indexedModels.map { label =>
-          val mixedCount     = graph.V(label).getCount
-          val compositeCount = graph.underlying.traversal().V().has("_label", label).count().next().toLong
+//          val mixedCount     = graph.V(label).getCount
+//          val compositeCount = graph.underlying.traversal().V().has("_label", label).count().next().toLong
           label -> Json.obj(
-            "mixedCount"     -> mixedCount,
-            "compositeCount" -> compositeCount,
-            "status"         -> (if (mixedCount == compositeCount) "OK" else "Error")
+            "mixedCount"     -> -1,
+            "compositeCount" -> -1,
+            "status"         -> "OK"
           )
         }
         Success(Results.Ok(JsObject(status)))
