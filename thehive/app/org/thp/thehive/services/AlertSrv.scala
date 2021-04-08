@@ -491,11 +491,16 @@ object AlertOps {
         .value(_.`type`)
         .headOption
         .map {
-          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.mapValue(_.as[Boolean])))
-          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.mapValue(_.as[Date])))
-          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.mapValue(_.as[Double])))
-          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.mapValue(_.as[Int])))
-          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.mapValue(_.as[String])))
+          case CustomFieldType.boolean =>
+            traversal.filter(_.customFields.has(_.booleanValue, predicate.mapValue(_.as[Boolean])).inV.v[CustomField].get(customField))
+          case CustomFieldType.date =>
+            traversal.filter(_.customFields.has(_.dateValue, predicate.mapValue(_.as[Date])).inV.v[CustomField].get(customField))
+          case CustomFieldType.float =>
+            traversal.filter(_.customFields.has(_.floatValue, predicate.mapValue(_.as[Double])).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer =>
+            traversal.filter(_.customFields.has(_.integerValue, predicate.mapValue(_.as[Int])).inV.v[CustomField].get(customField))
+          case CustomFieldType.string =>
+            traversal.filter(_.customFields.has(_.stringValue, predicate.mapValue(_.as[String])).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
 
