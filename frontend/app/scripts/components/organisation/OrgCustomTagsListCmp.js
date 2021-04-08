@@ -44,9 +44,6 @@
                         filter: this.filtering.buildQuery(),
                         operations: [
                             {
-                                '_name': 'listTag'
-                            },
-                            {
                                 '_name': 'freetags'
                             }
                         ],

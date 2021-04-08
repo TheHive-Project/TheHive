@@ -17,9 +17,8 @@
                         self.tagsDefaultColour = defaultColour;
 
                         return QuerySrv.query('v1', [
-                            { _name: 'listTag' },
                             { _name: 'freetags' },
-                            { _name: 'filter', _not: { '_field': 'colour', '_value': defaultColour } }
+                            { _name: 'filter', _ne: { '_field': 'colour', '_value': defaultColour } }
                         ], {
                             params: {
                                 name: 'list-tags'
