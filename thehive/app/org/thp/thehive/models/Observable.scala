@@ -40,7 +40,7 @@ case class Observable(
     /* filled by the service */
     data: Option[String] = None,
     attachmentId: Option[String] = None,
-    relatedId: EntityId = EntityId(""),
+    relatedId: EntityId = EntityId.empty,
     organisationIds: Set[EntityId] = Set.empty
 )
 

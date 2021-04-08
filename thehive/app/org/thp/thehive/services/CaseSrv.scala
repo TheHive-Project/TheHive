@@ -365,7 +365,7 @@ class CaseSrv @Inject() (
             _ <-
               get(c)
                 .alert
-                .update(_.caseId, Some(richCase._id))
+                .update(_.caseId, richCase._id)
                 .toSeq
                 .toTry(alertSrv.alertCaseSrv.create(AlertCase(), _, richCase.`case`))
             _ <-

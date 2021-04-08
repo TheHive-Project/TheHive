@@ -162,7 +162,7 @@ class MispExportSrv @Inject() (
           read = false,
           follow = true,
           tags = Nil,
-          caseId = Some(`case`._id)
+          caseId = `case`._id
         )
       }
       createdAlert <- alertSrv.create(alert.copy(lastSyncDate = new Date(0L)), org, Set.empty, Nil, None)
