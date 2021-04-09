@@ -95,8 +95,8 @@ class Properties @Inject() (
             predicate.fold(
               b => if (b) alertTraversal else alertTraversal.empty,
               p =>
-                if (p.getValue) alertTraversal.has(_.caseId)
-                else alertTraversal.hasNot(_.caseId)
+                if (p.getValue) alertTraversal.nonEmptyId(_.caseId)
+                else alertTraversal.isEmptyId(_.caseId)
             )
           )
           .readonly

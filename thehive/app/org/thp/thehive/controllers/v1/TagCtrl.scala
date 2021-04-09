@@ -44,6 +44,7 @@ class TagCtrl @Inject() (
     (idOrName, graph, _) => tagSrv.get(idOrName)(graph)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[Traversal.V[Tag]]("freetags", (graph, authContext) => tagSrv.startTraversal(graph).freetags(organisationSrv)(authContext)),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("freetags", (tagSteps, authContext) => tagSteps.freetags(organisationSrv)(authContext)),
     Query.initWithParam[TagHint, Traversal[String, Vertex, Converter[String, Vertex]]](
       "tagAutoComplete",

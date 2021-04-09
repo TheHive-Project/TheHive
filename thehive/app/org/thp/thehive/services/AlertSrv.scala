@@ -262,7 +262,7 @@ class AlertSrv @Inject() (
           createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil)
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
-          _           <- get(alert.alert).update(_.caseId, Some(createdCase._id)).getOrFail("Alert")
+          _           <- get(alert.alert).update(_.caseId, createdCase._id).getOrFail("Alert")
           _           <- markAsRead(alert._id)
           _ = integrityCheckActor ! EntityAdded("Alert")
         } yield createdCase
@@ -291,7 +291,7 @@ class AlertSrv @Inject() (
             _ <- importCustomFields(alert, `case`)
             _ <- caseSrv.addTags(`case`, alert.tags.toSet)
             _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
-            _ <- get(alert).update(_.caseId, Some(`case`._id)).getOrFail("Alert")
+            _ <- get(alert).update(_.caseId, `case`._id).getOrFail("Alert")
             c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
             details <- Success(
               Json.obj(
@@ -402,10 +402,10 @@ object AlertOps {
       else traversal.empty
 
     def imported: Traversal[Boolean, Boolean, IdentityConverter[Boolean]] =
-      traversal.choose(_.has(_.caseId), onTrue = true, onFalse = false)
+      traversal.choose(_.nonEmptyId(_.caseId), onTrue = true, onFalse = false)
 
     def isImported: Boolean =
-      traversal.has(_.caseId).exists
+      traversal.nonEmptyId(_.caseId).exists
 
     def importDate: Traversal[Date, Date, Converter[Date, Date]] =
       traversal.outE[AlertCase].value(_._createdAt)
@@ -491,11 +491,16 @@ object AlertOps {
         .value(_.`type`)
         .headOption
         .map {
-          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.mapValue(_.as[Boolean])))
-          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.mapValue(_.as[Date])))
-          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.mapValue(_.as[Double])))
-          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.mapValue(_.as[Int])))
-          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.mapValue(_.as[String])))
+          case CustomFieldType.boolean =>
+            traversal.filter(_.customFields.has(_.booleanValue, predicate.mapValue(_.as[Boolean])).inV.v[CustomField].get(customField))
+          case CustomFieldType.date =>
+            traversal.filter(_.customFields.has(_.dateValue, predicate.mapValue(_.as[Date])).inV.v[CustomField].get(customField))
+          case CustomFieldType.float =>
+            traversal.filter(_.customFields.has(_.floatValue, predicate.mapValue(_.as[Double])).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer =>
+            traversal.filter(_.customFields.has(_.integerValue, predicate.mapValue(_.as[Int])).inV.v[CustomField].get(customField))
+          case CustomFieldType.string =>
+            traversal.filter(_.customFields.has(_.stringValue, predicate.mapValue(_.as[String])).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
 

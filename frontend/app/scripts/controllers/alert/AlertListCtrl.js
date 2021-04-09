@@ -1,8 +1,8 @@
 
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function($rootScope, $scope, $q, $state, $uibModal, TagSrv, StreamQuerySrv, CaseTemplateSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
+        .controller('AlertListCtrl', function ($rootScope, $scope, $q, $state, $uibModal, TagSrv, StreamQuerySrv, CaseTemplateSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
 
             self.urls = VersionSrv.mispUrls();
@@ -21,7 +21,7 @@
             self.lastSearch = null;
             self.responders = null;
 
-            this.$onInit = function() {
+            this.$onInit = function () {
                 self.filtering = new FilteringSrv('alert', 'alert.list', {
                     version: 'v1',
                     defaults: {
@@ -37,33 +37,16 @@
                     }]
                 });
                 self.filtering.initContext('list')
-                    .then(function() {
+                    .then(function () {
                         self.load();
 
                         $scope.$watch('$vm.list.pageSize', function (newValue) {
                             self.filtering.setPageSize(newValue);
                         });
                     });
-
-                StreamQuerySrv('v1', [
-                    {_name: 'listAlert'},
-                    {_name: 'count'}
-                ], {
-                    scope: $scope,
-                    rootId: 'any',
-                    objectType: 'alert',
-                    query: {
-                        params: {
-                            name: 'alert-count'
-                        }
-                    },
-                    onUpdate: function(data) {
-                        self.alertListCount = data;
-                    }
-                });
             };
 
-            self.load = function() {
+            self.load = function () {
                 var config = {
                     scope: $scope,
                     filter: this.filtering.buildQuery(),
@@ -90,22 +73,22 @@
             this.canMarkAsRead = AlertingSrv.canMarkAsRead;
             this.canMarkAsUnread = AlertingSrv.canMarkAsUnread;
 
-            this.markAsRead = function(event) {
+            this.markAsRead = function (event) {
                 var fn = angular.noop;
 
-                if(this.canMarkAsRead(event)) {
+                if (this.canMarkAsRead(event)) {
                     fn = AlertingSrv.markAsRead;
                 } else {
                     fn = AlertingSrv.markAsUnread;
                 }
 
-                fn(event._id).then(function( /*data*/ ) {
-                }, function(response) {
+                fn(event._id).then(function ( /*data*/) {
+                }, function (response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
-            self.follow = function(event) {
+            self.follow = function (event) {
                 var fn = angular.noop;
 
                 if (event.follow === true) {
@@ -114,13 +97,13 @@
                     fn = AlertingSrv.follow;
                 }
 
-                fn(event._id).then(function( /*data*/ ) {
-                }, function(response) {
+                fn(event._id).then(function ( /*data*/) {
+                }, function (response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
-            self.bulkFollow = function(follow) {
+            self.bulkFollow = function (follow) {
                 var ids = _.pluck(self.selection, 'id');
                 var fn = angular.noop;
 
@@ -130,59 +113,59 @@
                     fn = AlertingSrv.unfollow;
                 }
 
-                var promises = _.map(ids, function(id) {
+                var promises = _.map(ids, function (id) {
                     return fn(id);
                 });
 
-                $q.all(promises).then(function( /*response*/ ) {
+                $q.all(promises).then(function ( /*response*/) {
                     NotificationSrv.log('The selected events have been ' + (follow ? 'followed' : 'unfollowed'), 'success');
-                }, function(response) {
+                }, function (response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
-            self.bulkMarkAsRead = function(markAsReadFlag) {
+            self.bulkMarkAsRead = function (markAsReadFlag) {
                 var ids = _.pluck(self.selection, '_id');
                 var fn = angular.noop;
                 var markAsRead = markAsReadFlag && this.canMarkAsRead(self.selection[0]);
 
-                if(markAsRead) {
+                if (markAsRead) {
                     fn = AlertingSrv.markAsRead;
                 } else {
                     fn = AlertingSrv.markAsUnread;
                 }
 
-                var promises = _.map(ids, function(id) {
+                var promises = _.map(ids, function (id) {
                     return fn(id);
                 });
 
-                $q.all(promises).then(function( /*response*/ ) {
+                $q.all(promises).then(function ( /*response*/) {
                     self.list.update();
                     NotificationSrv.log('The selected events have been ' + (markAsRead ? 'marked as read' : 'marked as unread'), 'success');
-                }, function(response) {
+                }, function (response) {
                     NotificationSrv.error('AlertListCtrl', response.data, response.status);
                 });
             };
 
-            self.bulkDelete = function() {
+            self.bulkDelete = function () {
 
-              ModalUtilsSrv.confirm('Remove Alerts', 'Are you sure you want to delete the selected Alerts?', {
-                  okText: 'Yes, remove them',
-                  flavor: 'danger'
-              }).then(function() {
-                  var ids = _.pluck(self.selection, '_id');
+                ModalUtilsSrv.confirm('Remove Alerts', 'Are you sure you want to delete the selected Alerts?', {
+                    okText: 'Yes, remove them',
+                    flavor: 'danger'
+                }).then(function () {
+                    var ids = _.pluck(self.selection, '_id');
 
-                  AlertingSrv.bulkRemove(ids)
-                      .then(function(/*response*/) {
-                          NotificationSrv.log('The selected events have been deleted', 'success');
-                      })
-                      .catch(function(response) {
-                          NotificationSrv.error('AlertListCtrl', response.data, response.status);
-                      });
-              });
+                    AlertingSrv.bulkRemove(ids)
+                        .then(function (/*response*/) {
+                            NotificationSrv.log('The selected events have been deleted', 'success');
+                        })
+                        .catch(function (response) {
+                            NotificationSrv.error('AlertListCtrl', response.data, response.status);
+                        });
+                });
             };
 
-            self.import = function(event) {
+            self.import = function (event) {
                 var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/alert/event.dialog.html',
                     controller: 'AlertEventCtrl',
@@ -190,21 +173,21 @@
                     size: 'max',
                     resolve: {
                         event: event,
-                        templates: function() {
+                        templates: function () {
                             return CaseTemplateSrv.list();
                         },
                         readonly: false
                     }
                 });
 
-                modalInstance.result.catch(function(err) {
-                    if(err && !_.isString(err)) {
+                modalInstance.result.catch(function (err) {
+                    if (err && !_.isString(err)) {
                         NotificationSrv.error('AlertListCtrl', err.data, err.status);
                     }
                 });
             };
 
-            self.resetSelection = function() {
+            self.resetSelection = function () {
                 if (self.menu.selectAll) {
                     self.selectAll();
                 } else {
@@ -214,39 +197,39 @@
                 }
             };
 
-            this.getResponders = function(event, force) {
-                if(!force && this.responders !== null) {
-                   return;
+            this.getResponders = function (event, force) {
+                if (!force && this.responders !== null) {
+                    return;
                 }
 
                 this.responders = null;
                 CortexSrv.getResponders('alert', event._id)
-                  .then(function(responders) {
-                      self.responders = responders;
-                      return CortexSrv.promntForResponder(responders);
-                  })
-                  .then(function(response) {
-                      if(response && _.isString(response)) {
-                          NotificationSrv.log(response, 'warning');
-                      } else {
-                          return CortexSrv.runResponder(response.id, response.name, 'alert', _.pick(event, '_id', 'tlp'));
-                      }
-                  })
-                  .then(function(response){
-                      NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on alert', event.title].join(' '), 'success');
-                  })
-                  .catch(function(err) {
-                      if(err && !_.isString(err)) {
-                          NotificationSrv.error('AlertList', err.data, err.status);
-                      }
-                  });
+                    .then(function (responders) {
+                        self.responders = responders;
+                        return CortexSrv.promntForResponder(responders);
+                    })
+                    .then(function (response) {
+                        if (response && _.isString(response)) {
+                            NotificationSrv.log(response, 'warning');
+                        } else {
+                            return CortexSrv.runResponder(response.id, response.name, 'alert', _.pick(event, '_id', 'tlp'));
+                        }
+                    })
+                    .then(function (response) {
+                        NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on alert', event.title].join(' '), 'success');
+                    })
+                    .catch(function (err) {
+                        if (err && !_.isString(err)) {
+                            NotificationSrv.error('AlertList', err.data, err.status);
+                        }
+                    });
             };
 
-            self.cancel = function() {
+            self.cancel = function () {
                 self.modalInstance.close();
             };
 
-            self.updateMenu = function() {
+            self.updateMenu = function () {
                 var temp = _.uniq(_.pluck(self.selection, 'follow'));
 
                 self.menu.unfollow = temp.length === 1 && temp[0] === true;
@@ -267,11 +250,11 @@
                 self.menu.delete = temp.length === 0;
             };
 
-            self.select = function(event) {
+            self.select = function (event) {
                 if (event.selected) {
                     self.selection.push(event);
                 } else {
-                    self.selection = _.reject(self.selection, function(item) {
+                    self.selection = _.reject(self.selection, function (item) {
                         return item._id === event._id;
                     });
                 }
@@ -280,9 +263,9 @@
 
             };
 
-            self.selectAll = function() {
+            self.selectAll = function () {
                 var selected = self.menu.selectAll;
-                _.each(self.list.values, function(item) {
+                _.each(self.list.values, function (item) {
                     item.selected = selected;
                 });
 
@@ -296,109 +279,109 @@
 
             };
 
-            self.createNewCase = function() {
+            self.createNewCase = function () {
                 var alertIds = _.pluck(self.selection, '_id');
 
                 CaseTemplateSrv.list()
-                  .then(function(templates) {
+                    .then(function (templates) {
 
-                      if(!templates || templates.length === 0) {
-                          return $q.resolve(undefined);
-                      }
+                        if (!templates || templates.length === 0) {
+                            return $q.resolve(undefined);
+                        }
 
-                      // Open template selection dialog
-                      var modal = $uibModal.open({
-                          templateUrl: 'views/partials/case/case.templates.selector.html',
-                          controller: 'CaseTemplatesDialogCtrl',
-                          controllerAs: 'dialog',
-                          size: 'lg',
-                          resolve: {
-                              templates: function(){
-                                  return templates;
-                              },
-                              uiSettings: ['UiSettingsSrv', function(UiSettingsSrv) {
-                                  return UiSettingsSrv.all();
-                              }]
-                          }
-                      });
+                        // Open template selection dialog
+                        var modal = $uibModal.open({
+                            templateUrl: 'views/partials/case/case.templates.selector.html',
+                            controller: 'CaseTemplatesDialogCtrl',
+                            controllerAs: 'dialog',
+                            size: 'lg',
+                            resolve: {
+                                templates: function () {
+                                    return templates;
+                                },
+                                uiSettings: ['UiSettingsSrv', function (UiSettingsSrv) {
+                                    return UiSettingsSrv.all();
+                                }]
+                            }
+                        });
 
-                      return modal.result;
-                  })
-                  .then(function(template) {
+                        return modal.result;
+                    })
+                    .then(function (template) {
 
-                      // Open case creation dialog
-                      var modal = $uibModal.open({
-                          templateUrl: 'views/partials/case/case.creation.html',
-                          controller: 'CaseCreationCtrl',
-                          size: 'lg',
-                          resolve: {
-                              template: template
-                          }
-                      });
+                        // Open case creation dialog
+                        var modal = $uibModal.open({
+                            templateUrl: 'views/partials/case/case.creation.html',
+                            controller: 'CaseCreationCtrl',
+                            size: 'lg',
+                            resolve: {
+                                template: template
+                            }
+                        });
 
-                      return modal.result;
-                  })
-                  .then(function(createdCase) {
-                      // Bulk merge the selected alerts into the created case
-                      NotificationSrv.log('New case has been created', 'success');
+                        return modal.result;
+                    })
+                    .then(function (createdCase) {
+                        // Bulk merge the selected alerts into the created case
+                        NotificationSrv.log('New case has been created', 'success');
 
-                      return AlertingSrv.bulkMergeInto(alertIds, createdCase.id);
-                  })
-                  .then(function(response) {
-                      if(alertIds.length === 1) {
-                          NotificationSrv.log(alertIds.length + ' Alert has been merged into the newly created case.', 'success');
-                      } else {
-                          NotificationSrv.log(alertIds.length + ' Alert(s) have been merged into the newly created case.', 'success');
-                      }
+                        return AlertingSrv.bulkMergeInto(alertIds, createdCase.id);
+                    })
+                    .then(function (response) {
+                        if (alertIds.length === 1) {
+                            NotificationSrv.log(alertIds.length + ' Alert has been merged into the newly created case.', 'success');
+                        } else {
+                            NotificationSrv.log(alertIds.length + ' Alert(s) have been merged into the newly created case.', 'success');
+                        }
 
-                      $rootScope.$broadcast('alert:event-imported');
+                        $rootScope.$broadcast('alert:event-imported');
 
-                      $state.go('app.case.details', {
-                          caseId: response.data.id
-                      });
-                  })
-                  .catch(function(err) {
-                      if(err && !_.isString(err)) {
-                          NotificationSrv.error('AlertEventCtrl', err.data, err.status);
-                      }
-                  });
+                        $state.go('app.case.details', {
+                            caseId: response.data.id
+                        });
+                    })
+                    .catch(function (err) {
+                        if (err && !_.isString(err)) {
+                            NotificationSrv.error('AlertEventCtrl', err.data, err.status);
+                        }
+                    });
 
             };
 
-            self.mergeInCase = function() {
+            self.mergeInCase = function () {
                 var caseModal = $uibModal.open({
                     templateUrl: 'views/partials/case/case.merge.html',
                     controller: 'CaseMergeModalCtrl',
                     controllerAs: 'dialog',
                     size: 'lg',
                     resolve: {
-                        source: function() {
+                        source: function () {
                             return self.event;
                         },
-                        title: function() {
+                        title: function () {
                             return 'Merge selected Alert(s)';
                         },
-                        prompt: function() {
+                        prompt: function () {
                             return 'the ' + self.selection.length + ' selected Alert(s)';
                         }
                     }
                 });
 
-                caseModal.result.then(function(selectedCase) {
+                caseModal.result.then(function (selectedCase) {
                     return AlertingSrv.bulkMergeInto(_.pluck(self.selection, '_id'), selectedCase._id);
                 })
-                .then(function(response) {
-                    $rootScope.$broadcast('alert:event-imported');
+                    .then(function (response) {
+                        $rootScope.$broadcast('alert:event-imported');
 
-                    $state.go('app.case.details', {
-                        caseId: response.data.id
+                        $state.go('app.case.details', {
+                            caseId: response.data.id
+                        });
+                    })
+                    .catch(function (err) {
+                        if (err && !_.isString(err)) {
+                            NotificationSrv.error('AlertEventCtrl', err.data, err.status);
+                        }
                     });
-                })
-                .catch(function(err) {
-                    if(err && !_.isString(err)) {
-                        NotificationSrv.error('AlertEventCtrl', err.data, err.status);
-                    }
-                });
             };
 
             this.filter = function () {
@@ -428,47 +411,47 @@
                 this.search();
             };
 
-            this.filterByStatus = function(flag) {
+            this.filterByStatus = function (flag) {
                 self.filtering.clearFilters()
-                    .then(function(){
+                    .then(function () {
                         self.addFilterValue('imported', flag);
                     });
             };
 
-            this.filterByNewAndUpdated = function() {
+            this.filterByNewAndUpdated = function () {
                 self.filtering.clearFilters()
-                    .then(function(){
+                    .then(function () {
                         // TODO nadouani: how to support updated alerts
                         self.addFilterValue('imported', true);
                     });
             };
 
-            this.filterBySeverity = function(numericSev) {
+            this.filterBySeverity = function (numericSev) {
                 self.addFilterValue('severity', Severity.values[numericSev]);
             };
 
-            this.filterBy = function(field, value) {
+            this.filterBy = function (field, value) {
                 self.filtering.clearFilters()
-                    .then(function(){
+                    .then(function () {
                         self.addFilterValue(field, value);
                     });
             };
 
-            this.sortBy = function(sort) {
+            this.sortBy = function (sort) {
                 self.list.sort = sort;
                 self.list.update();
                 self.filtering.setSort(sort);
             };
 
-            this.sortByField = function(field) {
+            this.sortByField = function (field) {
                 var context = this.filtering.context;
                 var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
                 var sort = null;
 
-                if(currentSort.substr(1) !== field) {
+                if (currentSort.substr(1) !== field) {
                     sort = ['+' + field];
                 } else {
-                    sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                    sort = [(currentSort === '+' + field) ? '-' + field : '+' + field];
                 }
 
                 self.list.sort = sort;

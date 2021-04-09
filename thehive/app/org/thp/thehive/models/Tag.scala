@@ -5,6 +5,7 @@ import org.thp.scalligraph.models.{DefineIndex, IndexType}
 
 @DefineIndex(IndexType.unique, "namespace", "predicate", "value")
 @DefineIndex(IndexType.fulltext, "namespace", "predicate", "value")
+@DefineIndex(IndexType.standard, "colour")
 @DefineIndex(IndexType.fulltextOnly, "description")
 @BuildVertexEntity
 case class Tag(

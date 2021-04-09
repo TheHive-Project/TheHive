@@ -17,6 +17,8 @@ import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
+import ch.qos.logback.classic.{Level, LoggerContext}
+import org.slf4j.LoggerFactory
 
 @Singleton
 class AdminCtrl @Inject() (
@@ -39,6 +41,25 @@ class AdminCtrl @Inject() (
     )
   }
   lazy val logger: Logger = Logger(getClass)
+
+  def setLogLevel(packageName: String, levelName: String): Action[AnyContent] =
+    entrypoint("Update log level")
+      .authPermitted(Permissions.managePlatform) { _ =>
+        val level = levelName match {
+          case "ALL"   => Level.ALL
+          case "DEBUG" => Level.DEBUG
+          case "INFO"  => Level.INFO
+          case "WARN"  => Level.WARN
+          case "ERROR" => Level.ERROR
+          case "OFF"   => Level.OFF
+          case "TRACE" => Level.TRACE
+          case _       => Level.INFO
+        }
+        val loggerContext = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+        val logger        = loggerContext.getLogger(packageName)
+        logger.setLevel(level)
+        Success(Results.NoContent)
+      }
 
   def triggerCheck(name: String): Action[AnyContent] =
     entrypoint("Trigger check")

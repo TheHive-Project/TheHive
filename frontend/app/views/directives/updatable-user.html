@@ -1,6 +1,7 @@
 <div class="updatable-input updatable-input-user">
     <span class="updatable-input-value-wrapper" ng-hide="updatable.updating" ng-click="edit()">
-        <user-info class="updatable-value" value="value" field="name"></user-info>
+        <span ng-if="!!!value" class="updatable-value text-warning"><em>{{blankText || 'Not Specified'}}</em></span>
+        <user-info ng-if="!!value" class="updatable-value" value="value" field="name"></user-info>
 
         <small class="updatable-input-icon">
             <i class="glyphicon glyphicon-pencil"></i>

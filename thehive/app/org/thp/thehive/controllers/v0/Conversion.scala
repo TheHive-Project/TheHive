@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.{AuthContext, Permission, PermissionDesc}
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
@@ -104,7 +105,7 @@ object Conversion {
         .withFieldConst(_.lastSyncDate, new Date)
         .withFieldConst(_.follow, true)
         .withFieldConst(_.tags, inputAlert.tags.toSeq)
-        .withFieldConst(_.caseId, None)
+        .withFieldConst(_.caseId, EntityId.empty)
         .transform
   }
 

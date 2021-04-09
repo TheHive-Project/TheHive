@@ -70,8 +70,8 @@ case class Alert(
     follow: Boolean,
     tags: Seq[String],
     /* filled by the service */
-    organisationId: EntityId = EntityId(""),
-    caseId: Option[EntityId] = None
+    organisationId: EntityId = EntityId.empty,
+    caseId: EntityId = EntityId.empty // empty string means no related case (index optimisation)
 )
 
 case class RichAlert(

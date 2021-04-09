@@ -42,7 +42,7 @@ case class Task(
     dueDate: Option[Date],
     /* filled by the service */
     assignee: Option[String],
-    relatedId: EntityId = EntityId(""),
+    relatedId: EntityId = EntityId.empty,
     organisationIds: Set[EntityId] = Set.empty
 )
 

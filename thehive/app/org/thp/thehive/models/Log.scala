@@ -17,7 +17,7 @@ case class Log(
     message: String,
     date: Date,
     /* filled by the service */
-    taskId: EntityId = EntityId(""),
+    taskId: EntityId = EntityId.empty,
     organisationIds: Set[EntityId] = Set.empty
 )
 

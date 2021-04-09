@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveControllers')
         .controller('CaseListCtrl', CaseListCtrl)
@@ -19,7 +19,7 @@
             selectAll: false
         };
 
-        this.$onInit = function() {
+        this.$onInit = function () {
             self.filtering = new FilteringSrv('case', 'case.list', {
                 version: 'v1',
                 defaults: {
@@ -41,7 +41,7 @@
             });
 
             self.filtering.initContext('list')
-                .then(function() {
+                .then(function () {
                     self.load();
 
                     $scope.$watch('$vm.list.pageSize', function (newValue) {
@@ -49,55 +49,9 @@
                     });
                 });
 
-
-            // Case stats to build quick filter menu
-            StreamQuerySrv('v1', [
-                {
-                    _name: 'listCase'
-                },
-                {
-                    _name: 'aggregation',
-                    _agg: 'field',
-                    _field: 'status',
-                    _select: [
-                        {_agg: 'count'}
-                    ]
-                }
-            ], {
-                scope: $scope,
-                rootId: 'any',
-                objectType: 'case',
-                query: {
-                    params: {
-                        name: 'case-status-stats'
-                    }
-                },
-                onUpdate: function(updates) {
-                    self.caseStats = updates;
-                }
-            });
-
-            // Case total
-            StreamQuerySrv('v1', [
-                {_name: 'listCase'},
-                {_name: 'count'}
-            ], {
-                scope: $scope,
-                rootId: 'any',
-                objectType: 'case',
-                query: {
-                    params: {
-                        name: 'case-count-stats'
-                    }
-                },
-                onUpdate: function(updates) {
-                    self.caseCount = updates;
-                }
-            });
-
         };
 
-        this.load = function() {
+        this.load = function () {
 
             this.list = new PaginatedQuerySrv({
                 name: 'cases',
@@ -110,16 +64,16 @@
                 pageSize: self.filtering.context.pageSize,
                 filter: this.filtering.buildQuery(),
                 operations: [
-                    {'_name': 'listCase'}
+                    { '_name': 'listCase' }
                 ],
                 extraData: ['observableStats', 'taskStats', 'procedureCount', 'isOwner', 'shareCount', 'permissions', 'actionRequired'],
-                onUpdate: function() {
+                onUpdate: function () {
                     self.resetSelection();
                 }
             });
         };
 
-        self.resetSelection = function() {
+        self.resetSelection = function () {
             if (self.menu.selectAll) {
                 self.selectAll();
             } else {
@@ -129,7 +83,7 @@
             }
         };
 
-        self.updateMenu = function() {
+        self.updateMenu = function () {
             // Handle flag/unflag menu items
             var temp = _.uniq(_.pluck(self.selection, 'flag'));
             self.menu.unflag = temp.length === 1 && temp[0] === true;
@@ -143,28 +97,28 @@
             self.menu.delete = self.selection.length > 0;
         };
 
-        self.select = function(caze) {
+        self.select = function (caze) {
             if (caze.selected) {
                 self.selection.push(caze);
             } else {
-                self.selection = _.reject(self.selection, function(item) {
+                self.selection = _.reject(self.selection, function (item) {
                     return item._id === caze._id;
                 });
             }
             self.updateMenu();
         };
 
-        self.selectAll = function() {
+        self.selectAll = function () {
             var selected = self.menu.selectAll;
 
-            _.each(self.list.values, function(item) {
-                if(SecuritySrv.checkPermissions(['manageCase'], item.extraData.permissions)) {
+            _.each(self.list.values, function (item) {
+                if (SecuritySrv.checkPermissions(['manageCase'], item.extraData.permissions)) {
                     item.selected = selected;
                 }
             });
 
             if (selected) {
-                self.selection = _.filter(self.list.values, function(item) {
+                self.selection = _.filter(self.list.values, function (item) {
                     return !!item.selected;
                 });
             } else {
@@ -209,9 +163,9 @@
             this.search();
         };
 
-        this.filterMyCases = function() {
+        this.filterMyCases = function () {
             this.filtering.clearFilters()
-                .then(function() {
+                .then(function () {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
                         field: 'assignee',
@@ -227,9 +181,9 @@
                 });
         };
 
-        this.filterMyOrgCases = function() {
+        this.filterMyOrgCases = function () {
             this.filtering.clearFilters()
-                .then(function() {
+                .then(function () {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
                         field: 'owningOrganisation',
@@ -246,9 +200,9 @@
                 });
         };
 
-        this.filterSharedWithMyOrg = function() {
+        this.filterSharedWithMyOrg = function () {
             this.filtering.clearFilters()
-                .then(function() {
+                .then(function () {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
                         field: 'owningOrganisation',
@@ -265,9 +219,9 @@
                 });
         };
 
-        this.filterMyOpenCases = function() {
+        this.filterMyOpenCases = function () {
             this.filtering.clearFilters()
-                .then(function() {
+                .then(function () {
                     var currentUser = AuthenticationSrv.currentUser;
                     self.filtering.addFilter({
                         field: 'assignee',
@@ -283,36 +237,36 @@
                 });
         };
 
-        this.filterByStatus = function(status) {
+        this.filterByStatus = function (status) {
             this.filtering.clearFilters()
-                .then(function() {
+                .then(function () {
                     self.addFilterValue('status', status);
                 });
         };
 
-        this.filterByResolutionStatus = function(status) {
+        this.filterByResolutionStatus = function (status) {
             this.filtering.clearFilters()
-                .then(function() {
+                .then(function () {
                     self.filtering.addFilterValue('resolutionStatus', status);
                     self.addFilterValue('status', 'Resolved');
                 });
         };
 
-        this.sortBy = function(sort) {
+        this.sortBy = function (sort) {
             this.list.sort = sort;
             this.list.update();
             this.filtering.setSort(sort);
         };
 
-        this.sortByField = function(field) {
+        this.sortByField = function (field) {
             var context = this.filtering.context;
             var currentSort = Array.isArray(context.sort) ? _.without(context.sort, '-flag', '+flag')[0] : context.sort;
             var sort = null;
 
-            if(currentSort.substr(1) !== field) {
+            if (currentSort.substr(1) !== field) {
                 sort = ['-flag', '+' + field];
             } else {
-                sort = ['-flag', (currentSort === '+' + field) ? '-'+field : '+'+field];
+                sort = ['-flag', (currentSort === '+' + field) ? '-' + field : '+' + field];
             }
 
             self.list.sort = sort;
@@ -320,20 +274,20 @@
             self.filtering.setSort(sort);
         };
 
-        this.bulkFlag = function(flag) {
+        this.bulkFlag = function (flag) {
             var ids = _.pluck(self.selection, '_id');
 
-            return CaseSrv.bulkUpdate(ids, {flag: flag})
-                .then(function(/*responses*/) {
+            return CaseSrv.bulkUpdate(ids, { flag: flag })
+                .then(function (/*responses*/) {
                     NotificationSrv.log('Selected cases have been updated successfully', 'success');
                 })
-                .catch(function(err) {
+                .catch(function (err) {
                     NotificationSrv.error('Bulk flag cases', err.data, err.status);
                 });
 
         }
 
-        this.bulkEdit = function() {
+        this.bulkEdit = function () {
             var modal = $uibModal.open({
                 animation: 'true',
                 templateUrl: 'views/partials/case/case.update.html',
@@ -341,22 +295,22 @@
                 controllerAs: '$dialog',
                 size: 'lg',
                 resolve: {
-                    selection: function() {
+                    selection: function () {
                         return self.selection;
                     }
                 }
             });
 
-            modal.result.then(function(operations) {
-                $q.all(_.map(operations, function(operation) {
+            modal.result.then(function (operations) {
+                $q.all(_.map(operations, function (operation) {
                     return CaseSrv.bulkUpdate(operation.ids, operation.patch);
-                })).then(function(/*responses*/) {
+                })).then(function (/*responses*/) {
                     NotificationSrv.log('Selected cases have been updated successfully', 'success');
                 });
             });
         };
 
-        this.bulkRemove = function() {
+        this.bulkRemove = function () {
             var modal = $uibModal.open({
                 animation: 'true',
                 templateUrl: 'views/partials/case/case.bulk.delete.confirm.html',
@@ -364,49 +318,49 @@
                 controllerAs: '$dialog',
                 size: 'lg',
                 resolve: {
-                    selection: function() {
+                    selection: function () {
                         return self.selection;
                     }
                 }
             });
 
-            modal.result.catch(function(err) {
-                if(err && !_.isString(err)) {
+            modal.result.catch(function (err) {
+                if (err && !_.isString(err)) {
                     NotificationSrv.error('Case Remove', err.data, err.status);
                 }
             })
         }
 
-        this.bulkReopen = function() {
+        this.bulkReopen = function () {
             return ModalUtilsSrv.confirm('Reopen cases', 'Are you sure you want to reopen the selected cases?', {
                 okText: 'Yes, proceed'
-            }).then(function() {
+            }).then(function () {
                 var ids = _.pluck(self.selection, '_id');
 
-                return CaseSrv.bulkUpdate(ids, {status: 'Open'})
-                    .then(function(/*responses*/) {
+                return CaseSrv.bulkUpdate(ids, { status: 'Open' })
+                    .then(function (/*responses*/) {
                         NotificationSrv.log('Selected cases have been reopened successfully', 'success');
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                         NotificationSrv.error('Bulk reopen cases', err.data, err.status);
                     });
             });
         }
 
-        this.closeCase = function(caze) {
+        this.closeCase = function (caze) {
             var scope = $rootScope.$new();
 
             scope.CaseResolutionStatus = CaseResolutionStatus;
             scope.CaseImpactStatus = CaseImpactStatus;
             scope.caseId = caze._id;
-            scope.updateField = function(data) {
+            scope.updateField = function (data) {
                 return CaseSrv.update({
                     caseId: caze._id
                 }, data)
-                .$promise
-                .then(function(/*response*/) {
-                    return caze;
-                });
+                    .$promise
+                    .then(function (/*response*/) {
+                        return caze;
+                    });
             };
 
             var modal = $uibModal.open({
@@ -415,63 +369,63 @@
                 controller: 'CaseCloseModalCtrl',
                 size: 'lg',
                 resolve: {
-                    caze: function() {
+                    caze: function () {
                         return angular.copy(caze);
                     }
                 }
             })
 
-            return modal.result.catch(function(err){
-                if(err && !_.isString(err)) {
+            return modal.result.catch(function (err) {
+                if (err && !_.isString(err)) {
                     NotificationSrv.error('Case bulk close', err.data, err.status);
                 }
             });
         }
 
-        $scope.updateField = function(data) {
+        $scope.updateField = function (data) {
             return CaseSrv.update({
                 caseId: caseId
             }, data).$promise;
         };
 
-        this.bulkClose = function() {
-            return ModalUtilsSrv.confirm('Close cases', 'Are you sure you want to close the selected ' + self.selection.length+' case(s)?', {
+        this.bulkClose = function () {
+            return ModalUtilsSrv.confirm('Close cases', 'Are you sure you want to close the selected ' + self.selection.length + ' case(s)?', {
                 okText: 'Yes, proceed'
-            }).then(function() {
-                return self.selection.reduce(function(initialPromise, nextCase) {
+            }).then(function () {
+                return self.selection.reduce(function (initialPromise, nextCase) {
                     return initialPromise
                         .then(self.closeCase(nextCase));
                 }, $q.resolve());
-            }).catch(function(err){
-                if(err && !_.isString(err)) {
+            }).catch(function (err) {
+                if (err && !_.isString(err)) {
                     NotificationSrv.error('Case bulk close', err.data, err.status);
                 }
             });
         }
 
-        this.getCaseResponders = function(caze, force) {
+        this.getCaseResponders = function (caze, force) {
             if (!force && this.caseResponders !== null) {
                 return;
             }
 
             self.caseResponders = null;
             CortexSrv.getResponders('case', caze._id)
-                .then(function(responders){
+                .then(function (responders) {
                     self.caseResponders = responders;
                     return CortexSrv.promntForResponder(responders);
                 })
-                .then(function(response) {
-                    if(response && _.isString(response)) {
+                .then(function (response) {
+                    if (response && _.isString(response)) {
                         NotificationSrv.log(response, 'warning');
                     } else {
                         return CortexSrv.runResponder(response.id, response.name, 'case', _.pick(caze, '_id', 'tlp', 'pap'));
                     }
                 })
-                .then(function(response){
+                .then(function (response) {
                     NotificationSrv.log(['Responder', response.data.responderName, 'started successfully on case', caze.title].join(' '), 'success');
                 })
-                .catch(function(err) {
-                    if(err && !_.isString(err)) {
+                .catch(function (err) {
+                    if (err && !_.isString(err)) {
                         NotificationSrv.error('CaseList', err.data, err.status);
                     }
                 });
@@ -486,28 +440,28 @@
         this.typedCount = undefined;
         this.loading = false;
 
-        this.ok = function() {
+        this.ok = function () {
             $uibModalInstance.close();
         }
-        this.cancel = function() {
+        this.cancel = function () {
             $uibModalInstance.dismiss();
         }
-        this.confirm = function() {
+        this.confirm = function () {
             self.loading = true;
 
-            var promises = _.map(self.selection, function(caze) {
+            var promises = _.map(self.selection, function (caze) {
                 return CaseSrv.forceRemove({ caseId: caze._id }).$promise;
             });
 
             $q.all(promises)
-                .then(function(responses) {
+                .then(function (responses) {
                     self.loading = false;
                     NotificationSrv.log('Cases have been deleted successfully: ' + responses.length, 'success');
                     $uibModalInstance.close();
                 })
-                .catch(function(errors) {
+                .catch(function (errors) {
                     self.loading = false;
-                    _.each(errors, function(err) {
+                    _.each(errors, function (err) {
                         NotificationSrv.error('Bulk delete cases', err.data, err.status);
                     });
                 })

@@ -731,7 +731,7 @@ class Output @Inject() (
       val `case` = inputAlert.caseId.flatMap(c => getCase(EntityId.read(c)).toOption)
       for {
         organisation <- getOrganisation(inputAlert.organisation)
-        createdAlert <- alertSrv.createEntity(inputAlert.alert.copy(organisationId = organisation._id, caseId = `case`.map(_._id)))
+        createdAlert <- alertSrv.createEntity(inputAlert.alert.copy(organisationId = organisation._id, caseId = `case`.fold(EntityId.empty)(_._id)))
         tags = inputAlert.alert.tags.flatMap(getTag(_, organisation._id.value).toOption)
         _    = updateMetaData(createdAlert, inputAlert.metaData)
         _ <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)

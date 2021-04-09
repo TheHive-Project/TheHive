@@ -390,19 +390,19 @@ class PublicAlert @Inject() (
 
   def statusFilter(status: String): Traversal.V[Alert] => Traversal.V[Alert] =
     status match {
-      case "New"      => _.hasNot(_.caseId).has(_.read, false)
-      case "Updated"  => _.has(_.caseId).has(_.read, false)
-      case "Ignored"  => _.hasNot(_.caseId).has(_.read, true)
-      case "Imported" => _.has(_.caseId).has(_.read, true)
+      case "New"      => _.isEmptyId(_.caseId).has(_.read, false)
+      case "Updated"  => _.nonEmptyId(_.caseId).has(_.read, false)
+      case "Ignored"  => _.isEmptyId(_.caseId).has(_.read, true)
+      case "Imported" => _.nonEmptyId(_.caseId).has(_.read, true)
       case _          => _.empty
     }
 
   def statusNotFilter(status: String): Traversal.V[Alert] => Traversal.V[Alert] =
     status match {
-      case "New"      => _.or(_.has(_.caseId), _.has(_.read, true))
-      case "Updated"  => _.or(_.hasNot(_.caseId), _.has(_.read, true))
-      case "Ignored"  => _.or(_.has(_.caseId), _.has(_.read, false))
-      case "Imported" => _.or(_.hasNot(_.caseId), _.has(_.read, false))
+      case "New"      => _.or(_.nonEmptyId(_.caseId), _.has(_.read, true))
+      case "Updated"  => _.or(_.isEmptyId(_.caseId), _.has(_.read, true))
+      case "Ignored"  => _.or(_.nonEmptyId(_.caseId), _.has(_.read, false))
+      case "Imported" => _.or(_.isEmptyId(_.caseId), _.has(_.read, false))
       case _          => identity
     }
 
@@ -503,8 +503,8 @@ class PublicAlert @Inject() (
             predicate.fold(
               b => if (b) alertTraversal else alertTraversal.empty,
               p =>
-                if (p.getValue) alertTraversal.has(_.caseId)
-                else alertTraversal.hasNot(_.caseId)
+                if (p.getValue) alertTraversal.nonEmptyId(_.caseId)
+                else alertTraversal.isEmptyId(_.caseId)
             )
           )
           .readonly
