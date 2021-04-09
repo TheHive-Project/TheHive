@@ -1,15 +1,15 @@
-(function() {
+(function () {
     'use strict';
 
     angular.module('theHiveComponents')
         .component('orgCustomTagsList', {
-            controller: function($scope, PaginatedQuerySrv, FilteringSrv, TagSrv, UserSrv, ModalUtilsSrv, NotificationSrv) {
+            controller: function ($scope, PaginatedQuerySrv, FilteringSrv, TaxonomyCacheSrv, TagSrv, UserSrv, ModalUtilsSrv, NotificationSrv) {
                 var self = this;
 
                 self.tags = [];
                 self.getUserInfo = UserSrv.getCache;
 
-                this.$onInit = function() {
+                this.$onInit = function () {
                     // TODO: FIXME
                     self.filtering = new FilteringSrv('tag', 'custom-tags.list', {
                         version: 'v1',
@@ -23,7 +23,7 @@
                     });
 
                     self.filtering.initContext(self.organisation.name)
-                        .then(function() {
+                        .then(function () {
                             self.load();
 
                             $scope.$watch('$vm.list.pageSize', function (newValue) {
@@ -32,7 +32,7 @@
                         });
                 };
 
-                this.load = function() {
+                this.load = function () {
 
                     self.list = new PaginatedQuerySrv({
                         name: 'organisation-custom-tags',
@@ -48,8 +48,8 @@
                             }
                         ],
                         extraData: ['usage'],
-                        onFailure: function(err) {
-                            if(err && err.status === 400) {
+                        onFailure: function (err) {
+                            if (err && err.status === 400) {
                                 self.filtering.resetContext();
                                 self.load();
                             }
@@ -74,22 +74,24 @@
                         });
                 };
 
-                self.updateColour = function(id, colour) {
-                    TagSrv.updateTag(id, {colour: colour})
-                        .then(function(/*response*/) {
+                self.updateColour = function (id, colour) {
+                    TagSrv.updateTag(id, { colour: colour })
+                        .then(function (/*response*/) {
                             NotificationSrv.success('Tag colour updated successfully');
+                            TaxonomyCacheSrv.refreshFreeTags();
                         })
-                        .catch(function(err) {
+                        .catch(function (err) {
                             NotificationSrv.error('Tag list', err.data, err.status);
                         })
                 }
 
-                self.updateTag = function(id, value) {
-                    TagSrv.updateTag(id, {predicate: value})
-                        .then(function(/*response*/) {
+                self.updateTag = function (id, value) {
+                    TagSrv.updateTag(id, { predicate: value })
+                        .then(function (/*response*/) {
                             NotificationSrv.success('Tag value updated successfully');
+                            TaxonomyCacheSrv.refreshFreeTags();
                         })
-                        .catch(function(err) {
+                        .catch(function (err) {
                             NotificationSrv.error('Tag list', err.data, err.status);
                         })
                 }
@@ -122,28 +124,28 @@
                     this.search();
                 };
 
-                this.filterBy = function(field, value) {
+                this.filterBy = function (field, value) {
                     self.filtering.clearFilters()
-                        .then(function(){
+                        .then(function () {
                             self.addFilterValue(field, value);
                         });
                 };
 
-                this.sortBy = function(sort) {
+                this.sortBy = function (sort) {
                     self.list.sort = sort;
                     self.list.update();
                     self.filtering.setSort(sort);
                 };
 
-                this.sortByField = function(field) {
+                this.sortByField = function (field) {
                     var context = this.filtering.context;
                     var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
                     var sort = null;
 
-                    if(currentSort.substr(1) !== field) {
+                    if (currentSort.substr(1) !== field) {
                         sort = ['+' + field];
                     } else {
-                        sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                        sort = [(currentSort === '+' + field) ? '-' + field : '+' + field];
                     }
 
                     self.list.sort = sort;
