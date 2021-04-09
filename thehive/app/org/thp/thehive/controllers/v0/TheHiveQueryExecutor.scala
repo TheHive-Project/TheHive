@@ -5,6 +5,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FObject, Field, FieldsParser}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.RichType
@@ -37,6 +38,7 @@ object OutputParam {
 @Singleton
 class TheHiveQueryExecutor @Inject() (
     override val db: Database,
+    appConfig: ApplicationConfig,
     alert: PublicAlert,
     audit: PublicAudit,
     `case`: PublicCase,
@@ -56,6 +58,9 @@ class TheHiveQueryExecutor @Inject() (
 
   lazy val publicDatas: Seq[PublicData] =
     Seq(alert, audit, `case`, caseTemplate, customField, dashboard, log, observable, observableType, organisation, page, profile, tag, task, user)
+
+  val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
+  override val limitedCountThreshold: Long                = limitedCountThresholdConfig.get
 
   def metaProperties: PublicProperties =
     PublicPropertyListBuilder
