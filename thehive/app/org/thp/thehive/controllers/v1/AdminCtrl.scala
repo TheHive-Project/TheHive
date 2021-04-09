@@ -87,7 +87,7 @@ class AdminCtrl @Inject() (
           }
       }
 
-  private val indexedModels = Seq("Alert", "Attachment", "Audit", "Case", "Log", "Observable", "Tag", "Task")
+  private val indexedModels = Seq("global")
   def indexStatus: Action[AnyContent] =
     entrypoint("Get index status")
       .authPermittedRoTransaction(db, Permissions.managePlatform) { _ => graph =>
