@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
@@ -33,9 +34,13 @@ class CaseCtrl @Inject() (
     userSrv: UserSrv,
     taskSrv: TaskSrv,
     organisationSrv: OrganisationSrv,
-    db: Database
+    db: Database,
+    appConfig: ApplicationConfig
 ) extends QueryableCtrl
     with CaseRenderer {
+
+  val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
+  val limitedCountThreshold: Long                         = limitedCountThresholdConfig.get
 
   override val entityName: String                 = "case"
   override val publicProperties: PublicProperties = properties.`case`

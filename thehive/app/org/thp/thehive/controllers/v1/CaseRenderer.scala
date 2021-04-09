@@ -15,11 +15,12 @@ import java.lang.{Long => JLong}
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 trait CaseRenderer extends BaseRenderer[Case] {
+  val limitedCountThreshold: Long
 
   def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
     _.share
       .observables
-      .count
+      .limitedCount(limitedCountThreshold)
       .domainMap(count => Json.obj("total" -> count))
 
   def taskStats(implicit
