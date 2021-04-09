@@ -3,48 +3,51 @@
 <div class="empty-message" ng-show="$vm.list.total === 0">No records</div>
 
 <table class="table table-striped table-hover" ng-show="$vm.list.total > 0">
-	<thead>
-		<tr>
+    <thead>
+        <tr>
             <th width="70px"></th>
-			<th class="text-center" style="width: 60px;">Severity</th>
-			<th width="200px;">Group</th>
-			<th>Task</th>
-			<th width="100px;">Action</th>
-		</tr>
-	</thead>
+            <th class="text-center" style="width: 60px;">Severity</th>
+            <th width="200px;">Group</th>
+            <th>Task</th>
+            <th width="100px;">Action</th>
+        </tr>
+    </thead>
 
-	<tbody>
-		<tr class="task-row"
-			ng-repeat="item in $vm.list.values">
+    <tbody>
+        <tr class="task-row" ng-repeat="item in $vm.list.values">
             <td>
                 <task-flags task="item" inline="true"></task-flags>
             </td>
-			<td class="text-center">
-				<severity active="false" value="item.extraData.case.severity"></severity>
-			</td>
-			<td>{{item.group}}</td>
-			<td>
-				<div>
-					<span class="text-primary mr-xxxs" ng-if="item.flag">
-						<i class="glyphicon glyphicon-flag"></i>
-					</span>
+            <td class="text-center">
+                <severity active="false" value="item.extraData.case.severity"></severity>
+            </td>
+            <td>{{item.group}}</td>
+            <td>
+                <div>
+                    <span class="text-primary mr-xxxs" ng-if="item.flag">
+                        <i class="glyphicon glyphicon-flag"></i>
+                    </span>
 
-					<a href ui-sref="app.case.tasks-item({caseId: item.extraData.case._id, itemId:item._id})" ng-class="{'text-danger': !!item.extraData.actionRequired}">
-						<span ng-if="!!item.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
-							<i class="fa fa-exclamation-triangle"></i>
-						</span>
-						{{item.title}}
-					</a>
-				</div>
-				<div>
-					<small><entity-link value="item.extraData.case"></entity-link></small>
-				</div>
-			</td>
-			<td>
-				<button type="button" class="btn btn-sm btn-primary" ng-click="$vm.openWTask(value)">Take</button>
-			</td>
-		</tr>
-	</tbody>
+                    <a href ui-sref="app.case.tasks-item({caseId: item.extraData.case._id, itemId:item._id})"
+                        ng-class="{'text-danger': !!item.extraData.actionRequired}">
+                        <span ng-if="!!item.extraData.actionRequired" class="text-danger noline mr-xxxs"
+                            uib-tooltip="Action Required" tooltip-placement="left-middle">
+                            <i class="fa fa-exclamation-triangle"></i>
+                        </span>
+                        {{item.title}}
+                    </a>
+                </div>
+                <div>
+                    <small>
+                        <entity-link value="item.extraData.case"></entity-link>
+                    </small>
+                </div>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-primary" ng-click="$vm.openWTask(item)">Take</button>
+            </td>
+        </tr>
+    </tbody>
 
 </table>
 
