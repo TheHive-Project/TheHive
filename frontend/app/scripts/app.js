@@ -36,22 +36,22 @@ angular.module('thehive', [
     'theHiveFilters',
     'theHiveDirectives',
     'theHiveComponents'
-    ])
-    .config(function($resourceProvider) {
+])
+    .config(function ($resourceProvider) {
         'use strict';
 
         $resourceProvider.defaults.stripTrailingSlashes = true;
     })
-    .config(function($compileProvider) {
+    .config(function ($compileProvider) {
         'use strict';
         $compileProvider.debugInfoEnabled(false);
     })
-    .config(function($stateProvider, $urlRouterProvider) {
+    .config(function ($stateProvider, $urlRouterProvider) {
         'use strict';
 
         //$urlRouterProvider.otherwise('/index');
-        $urlRouterProvider.otherwise(function($injector){
-            $injector.invoke(['$state', function($state) {
+        $urlRouterProvider.otherwise(function ($injector) {
+            $injector.invoke(['$state', function ($state) {
                 $state.go('app.index');
             }]);
         });
@@ -62,8 +62,8 @@ angular.module('thehive', [
                 controller: 'AuthenticationCtrl',
                 templateUrl: 'views/login.html',
                 resolve: {
-                    appConfig: function(VersionSrv) {
-                       return VersionSrv.get();
+                    appConfig: function (VersionSrv) {
+                        return VersionSrv.get();
                     }
                 },
                 params: {
@@ -89,43 +89,43 @@ angular.module('thehive', [
                 templateUrl: 'views/app.html',
                 controller: 'RootCtrl',
                 resolve: {
-                    currentUser: function($q, $state, UserSrv, AuthenticationSrv, NotificationSrv) {
+                    currentUser: function ($q, $state, UserSrv, AuthenticationSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         AuthenticationSrv.current()
-                          .then(function(userData) {
-                              // Prepare user cache
-                              UserSrv.loadCache(userData.organisation);
+                            .then(function (userData) {
+                                // Prepare user cache
+                                UserSrv.loadCache(userData.organisation);
 
-                              return deferred.resolve(userData);
-                          })
-                          .catch( function(err) {
-                            NotificationSrv.error('App', err.data, err.status);
-                            return deferred.reject(err);
-                            //return deferred.resolve(err.status === 520 ? err.status : null);
-                          });
+                                return deferred.resolve(userData);
+                            })
+                            .catch(function (err) {
+                                NotificationSrv.error('App', err.data, err.status);
+                                return deferred.reject(err);
+                                //return deferred.resolve(err.status === 520 ? err.status : null);
+                            });
 
                         return deferred.promise;
                     },
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     },
-                    appLayout: function($q, $rootScope, AppLayoutSrv) {
+                    appLayout: function ($q, $rootScope, AppLayoutSrv) {
                         AppLayoutSrv.init();
                         return $q.resolve();
                     },
-                    uiConfig: function($q, UiSettingsSrv) {
+                    uiConfig: function ($q, UiSettingsSrv) {
                         return UiSettingsSrv.all();
                     },
-                    taxonomyCache: function(TaxonomyCacheSrv) {
+                    taxonomyCache: function (TaxonomyCacheSrv) {
                         return TaxonomyCacheSrv.all();
                     }
                 }
             })
             .state('app.index', {
                 url: 'index',
-                onEnter: function($state, AuthenticationSrv) {
-                    $state.go(AuthenticationSrv.getHomePage(), {}, {reload: true});
+                onEnter: function ($state, AuthenticationSrv) {
+                    $state.go(AuthenticationSrv.getHomePage(), {}, { reload: true });
                 }
             })
             .state('app.main', {
@@ -156,13 +156,13 @@ angular.module('thehive', [
                 controller: 'SearchCtrl',
                 title: 'Search',
                 resolve: {
-                    metadata: function($q, DashboardSrv, NotificationSrv) {
+                    metadata: function ($q, DashboardSrv, NotificationSrv) {
                         var defer = $q.defer();
 
                         DashboardSrv.getMetadata()
-                            .then(function(response) {
+                            .then(function (response) {
                                 defer.resolve(response);
-                            }, function(err) {
+                            }, function (err) {
                                 NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
                                 defer.reject(err);
                             });
@@ -180,22 +180,22 @@ angular.module('thehive', [
                 controller: 'SettingsCtrl',
                 title: 'Personal settings',
                 resolve: {
-                    currentUser: function($q, $state, $timeout, AuthenticationSrv, NotificationSrv) {
+                    currentUser: function ($q, $state, $timeout, AuthenticationSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         AuthenticationSrv.current()
-                          .then(function(userData) {
-                            return deferred.resolve(userData);
-                          })
-                          .catch( function(err) {
-                            NotificationSrv.error('SettingsCtrl', err.data, err.status);
+                            .then(function (userData) {
+                                return deferred.resolve(userData);
+                            })
+                            .catch(function (err) {
+                                NotificationSrv.error('SettingsCtrl', err.data, err.status);
 
-                            return deferred.reject(err);
-                          });
+                                return deferred.reject(err);
+                            });
 
                         return deferred.promise;
                     },
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     }
                 }
@@ -212,7 +212,7 @@ angular.module('thehive', [
                 controllerAs: '$vm',
                 title: 'Platform administration',
                 resolve: {
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     }
                 },
@@ -227,7 +227,7 @@ angular.module('thehive', [
                 controllerAs: '$vm',
                 title: 'Profiles administration',
                 resolve: {
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     }
                 },
@@ -242,7 +242,7 @@ angular.module('thehive', [
                 controllerAs: '$vm',
                 title: 'Taxonomies administration',
                 resolve: {
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     }
                 },
@@ -257,7 +257,7 @@ angular.module('thehive', [
                 controllerAs: '$vm',
                 title: 'ATT&CK patterns administration',
                 resolve: {
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     }
                 }
@@ -272,7 +272,7 @@ angular.module('thehive', [
                 controllerAs: '$vm',
                 title: 'Organisations administration',
                 resolve: {
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     }
                 },
@@ -286,16 +286,16 @@ angular.module('thehive', [
                 controller: 'OrgDetailsCtrl',
                 controllerAs: '$vm',
                 resolve: {
-                    organisation: function($stateParams, OrganisationSrv) {
+                    organisation: function ($stateParams, OrganisationSrv) {
                         return OrganisationSrv.get($stateParams.organisation);
                     },
-                    fields: function(CustomFieldsSrv){
+                    fields: function (CustomFieldsSrv) {
                         return CustomFieldsSrv.all();
                     },
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     },
-                    uiConfig: function($q, UiSettingsSrv) {
+                    uiConfig: function ($q, UiSettingsSrv) {
                         return UiSettingsSrv.all(true);
                     }
                 },
@@ -310,13 +310,13 @@ angular.module('thehive', [
                 controllerAs: 'vm',
                 title: 'Analyzer templates administration',
                 resolve: {
-                    appConfig: function($q, VersionSrv) {
+                    appConfig: function ($q, VersionSrv) {
                         var defer = $q.defer();
 
                         VersionSrv.get()
-                            .then(function(config) {
+                            .then(function (config) {
                                 // Check if Cortex is enabled
-                                if(VersionSrv.hasCortexConnector()) {
+                                if (VersionSrv.hasCortexConnector()) {
                                     defer.resolve(config);
                                 } else {
                                     defer.reject();
@@ -347,9 +347,9 @@ angular.module('thehive', [
                 controllerAs: '$vm',
                 title: 'Observable administration',
                 resolve: {
-                    types: function(ObservableTypeSrv, $q) {
+                    types: function (ObservableTypeSrv, $q) {
                         return ObservableTypeSrv.list()
-                            .then(function(response) {
+                            .then(function (response) {
                                 return $q.resolve(response.data);
                             });
                     }
@@ -365,13 +365,13 @@ angular.module('thehive', [
                 controller: 'CaseMainCtrl',
                 title: 'Case',
                 resolve: {
-                    caze: function($q, $rootScope, $stateParams, CaseSrv, NotificationSrv) {
+                    caze: function ($q, $stateParams, CaseSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         CaseSrv.getById($stateParams.caseId, true)
-                            .then(function(data) {
+                            .then(function (data) {
                                 deferred.resolve(data);
-                            }).catch(function(response) {
+                            }).catch(function (response) {
                                 deferred.reject(response);
                                 NotificationSrv.error('CaseMainCtrl', response.data, response.status);
                             });
@@ -419,29 +419,29 @@ angular.module('thehive', [
                 controller: 'CaseSharingCtrl',
                 controllerAs: '$vm',
                 resolve: {
-                    organisations: function(AuthenticationSrv, OrganisationSrv) {
+                    organisations: function (AuthenticationSrv, OrganisationSrv) {
                         return AuthenticationSrv.current()
-                            .then(function(user) {
+                            .then(function (user) {
                                 return OrganisationSrv.links(user.organisation);
                             })
-                            .then(function(response) {
-                                return _.map(response, function(item) {
+                            .then(function (response) {
+                                return _.map(response, function (item) {
                                     return _.pick(item, 'name', 'description');
                                 });
                             });
                     },
-                    profiles: function(ProfileSrv) {
+                    profiles: function (ProfileSrv) {
                         return ProfileSrv.list()
-                            .then(function(response) {
+                            .then(function (response) {
 
-                                return _.map(_.filter(response.data, function(item) {
+                                return _.map(_.filter(response.data, function (item) {
                                     return !item.isAdmin;
                                 }), 'name');
                             });
                     },
-                    shares: function(CaseSrv, $stateParams) {
+                    shares: function (CaseSrv, $stateParams) {
                         return CaseSrv.getShares($stateParams.caseId)
-                            .then(function(response) {
+                            .then(function (response) {
                                 return response.data;
                             });
                     }
@@ -455,7 +455,7 @@ angular.module('thehive', [
                 templateUrl: 'views/partials/case/case.alerts.html',
                 controller: 'CaseAlertsCtrl',
                 resolve: {
-                    alerts: function($stateParams, CaseSrv) {
+                    alerts: function ($stateParams, CaseSrv) {
                         return CaseSrv.alerts($stateParams.caseId);
                     }
                 },
@@ -468,14 +468,14 @@ angular.module('thehive', [
                 templateUrl: 'views/partials/case/case.tasks.item.html',
                 controller: 'CaseTasksItemCtrl',
                 resolve: {
-                    task: function($q, $stateParams, CaseTaskSrv, NotificationSrv) {
+                    task: function ($q, $stateParams, CaseTaskSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         CaseTaskSrv.getById($stateParams.itemId)
-                            .then(function(data) {
+                            .then(function (data) {
                                 deferred.resolve(data);
                             })
-                            .catch(function(response) {
+                            .catch(function (response) {
                                 deferred.reject(response);
                                 NotificationSrv.error('taskDetails', response.data, response.status);
                             });
@@ -503,17 +503,17 @@ angular.module('thehive', [
                 templateUrl: 'views/partials/case/case.observables.item.html',
                 controller: 'CaseObservablesItemCtrl',
                 resolve: {
-                    appConfig: function(VersionSrv) {
+                    appConfig: function (VersionSrv) {
                         return VersionSrv.get();
                     },
-                    artifact: function($q, $stateParams, CaseArtifactSrv, NotificationSrv) {
+                    artifact: function ($q, $stateParams, CaseArtifactSrv, NotificationSrv) {
                         var deferred = $q.defer();
 
                         CaseArtifactSrv.api().get({
                             'artifactId': $stateParams.itemId
-                        }).$promise.then(function(data) {
+                        }).$promise.then(function (data) {
                             deferred.resolve(data);
-                        }).catch(function(response) {
+                        }).catch(function (response) {
                             deferred.reject(response);
                             NotificationSrv.error('Observable Details', response.data, response.status);
                         });
@@ -561,26 +561,26 @@ angular.module('thehive', [
                 controller: 'DashboardViewCtrl',
                 controllerAs: '$vm',
                 resolve: {
-                    dashboard: function(NotificationSrv, DashboardSrv, $stateParams, $q) {
+                    dashboard: function (NotificationSrv, DashboardSrv, $stateParams, $q) {
                         var defer = $q.defer();
 
                         DashboardSrv.get($stateParams.id)
-                            .then(function(response) {
+                            .then(function (response) {
                                 defer.resolve(response.data);
-                            }, function(err) {
+                            }, function (err) {
                                 NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
                                 defer.reject(err);
                             });
 
                         return defer.promise;
                     },
-                    metadata: function($q, DashboardSrv, NotificationSrv) {
+                    metadata: function ($q, DashboardSrv, NotificationSrv) {
                         var defer = $q.defer();
 
                         DashboardSrv.getMetadata()
-                            .then(function(response) {
+                            .then(function (response) {
                                 defer.resolve(response);
-                            }, function(err) {
+                            }, function (err) {
                                 NotificationSrv.error('DashboardViewCtrl', err.data, err.status);
                                 defer.reject(err);
                             });
@@ -593,30 +593,30 @@ angular.module('thehive', [
                 }
             });
     })
-    .config(function($httpProvider) {
+    .config(function ($httpProvider) {
         'use strict';
 
         $httpProvider.defaults.xsrfCookieName = 'THEHIVE-XSRF-TOKEN';
         $httpProvider.defaults.xsrfHeaderName = 'X-THEHIVE-XSRF-TOKEN';
-        $httpProvider.interceptors.push(function($rootScope, $q) {
-            var isApiCall = function(url) {
+        $httpProvider.interceptors.push(function ($rootScope, $q) {
+            var isApiCall = function (url) {
                 return url && url.startsWith('./api') && !url.startsWith('./api/stream');
             };
 
             return {
-                request: function(config) {
+                request: function (config) {
                     if (isApiCall(config.url)) {
                         $rootScope.async += 1;
                     }
                     return config;
                 },
-                response: function(response) {
+                response: function (response) {
                     if (isApiCall(response.config.url)) {
                         $rootScope.async -= 1;
                     }
                     return response;
                 },
-                responseError: function(rejection) {
+                responseError: function (rejection) {
                     if (isApiCall(rejection.config.url)) {
                         $rootScope.async -= 1;
                     }
@@ -625,7 +625,7 @@ angular.module('thehive', [
             };
         });
     })
-    .config(function(localStorageServiceProvider) {
+    .config(function (localStorageServiceProvider) {
         'use strict';
 
         localStorageServiceProvider
@@ -633,7 +633,7 @@ angular.module('thehive', [
             .setStorageType('localStorage')
             .setNotify(false, false);
     })
-    .config(function(NotificationProvider) {
+    .config(function (NotificationProvider) {
         'use strict';
 
         NotificationProvider.setOptions({
@@ -647,14 +647,14 @@ angular.module('thehive', [
             maxCount: 5
         });
     })
-    .config(function($provide, markedProvider, hljsServiceProvider) {
+    .config(function ($provide, markedProvider, hljsServiceProvider) {
         'use strict';
 
         markedProvider.setOptions({
             gfm: true,
             tables: true,
             sanitize: true,
-            highlight: function(code, lang) {
+            highlight: function (code, lang) {
                 if (lang) {
                     return hljs.highlight(lang, code, true).value;
                 } else {
@@ -672,55 +672,55 @@ angular.module('thehive', [
         $provide.decorator('marked', [
             '$delegate',
             function markedDecorator($delegate) {
-              // Credits: https://github.com/markedjs/marked/issues/655#issuecomment-383226346
-              var defaults = markedProvider.defaults;
+                // Credits: https://github.com/markedjs/marked/issues/655#issuecomment-383226346
+                var defaults = markedProvider.defaults;
 
-              var renderer = defaults.renderer;
-              var linkRenderer = _.wrap(renderer.link, function(originalLink, href, title, text) {
-                  var html = originalLink.call(renderer, href, title, text);
-                  return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ');
-              });
+                var renderer = defaults.renderer;
+                var linkRenderer = _.wrap(renderer.link, function (originalLink, href, title, text) {
+                    var html = originalLink.call(renderer, href, title, text);
+                    return html.replace(/^<a /, '<a target="_blank" rel="nofollow" ');
+                });
 
-              // Customize the link renderer
-              defaults.renderer.link = linkRenderer;
+                // Customize the link renderer
+                defaults.renderer.link = linkRenderer;
 
-              // Patch the marked instance
-              $delegate.setOptions(defaults);
+                // Patch the marked instance
+                $delegate.setOptions(defaults);
 
-              return $delegate;
+                return $delegate;
             }
         ]);
     })
-    .run(function($rootScope, $state, $q, AuthenticationSrv) {
+    .run(function ($rootScope, $state, $q, AuthenticationSrv) {
         'use strict';
         $rootScope.async = 0;
 
         // Handle route guards
-        $rootScope.$on('$stateChangeSuccess', function(event, toState/*, toParams*/) {
+        $rootScope.$on('$stateChangeSuccess', function (event, toState/*, toParams*/) {
 
-            if(!toState.guard){
+            if (!toState.guard) {
                 return;
             }
 
             // Try Permissions
-            if(toState.guard.permissions !== undefined) {
+            if (toState.guard.permissions !== undefined) {
                 var permissions = toState.guard.permissions;
 
-                if(permissions && !AuthenticationSrv.hasPermission(permissions)) {
+                if (permissions && !AuthenticationSrv.hasPermission(permissions)) {
                     event.preventDefault();
                     $state.go('app.index');
                 }
             }
 
             // Try isSupperAdmin
-            if(toState.guard.isSuperAdmin !== undefined && AuthenticationSrv.isSuperAdmin() !== toState.guard.isSuperAdmin) {
+            if (toState.guard.isSuperAdmin !== undefined && AuthenticationSrv.isSuperAdmin() !== toState.guard.isSuperAdmin) {
                 event.preventDefault();
                 $state.go('app.index');
             }
         });
 
         // Update page title based on the route
-        $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams) {
+        $rootScope.$on('$stateChangeSuccess', function (event, toState, toParams) {
             if (_.isFunction(toState.title)) {
                 $rootScope.title = toState.title(toParams);
             } else {
@@ -729,8 +729,8 @@ angular.module('thehive', [
         });
 
         // Handle 401 errors when navigating to a route
-        $rootScope.$on('$stateChangeError',  function(event, toState, toParams, fromState, fromParams, error){
-            if(error && error.status && error.status === 401) {
+        $rootScope.$on('$stateChangeError', function (event, toState, toParams, fromState, fromParams, error) {
+            if (error && error.status && error.status === 401) {
                 event.preventDefault();
                 $state.go('login');
             }
