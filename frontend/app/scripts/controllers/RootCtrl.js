@@ -95,9 +95,7 @@ angular.module('theHiveControllers').controller('RootCtrl',
         });
 
         StreamQuerySrv('v1', [
-            {_name: 'listAlert'},
-            {_name: 'filter', _field: 'read', _value: false},
-            {_name: 'count'}
+            {_name: 'countUnreadAlert'},
         ], {
             scope: $scope,
             rootId: 'any',

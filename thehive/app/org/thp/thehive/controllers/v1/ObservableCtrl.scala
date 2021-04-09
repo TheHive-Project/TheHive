@@ -74,6 +74,13 @@ class ObservableCtrl @Inject() (
   override val outputQuery: Query = Query.output[RichObservable, Traversal.V[Observable]](_.richObservable)
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.initWithParam[InCase, Long](
+      "countObservable",
+      (inCase, graph, authContext) =>
+        graph.indexCountQuery(
+          s"""v."_label":Observable AND relatedId:${inCase.caseId.value} AND organisationIds:${organisationSrv.currentId(graph, authContext).value}"""
+        )
+    ),
     Query[Traversal.V[Observable], Traversal.V[Organisation]](
       "organisations",
       (observableSteps, authContext) => observableSteps.organisations.visible(authContext)

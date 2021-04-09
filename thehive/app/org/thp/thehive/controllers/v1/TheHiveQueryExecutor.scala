@@ -1,11 +1,14 @@
 package org.thp.thehive.controllers.v1
 
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.controllers.{FObject, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
 import javax.inject.{Inject, Singleton}
+
+case class InCase(caseId: EntityId)
 
 case class OutputParam(from: Long, to: Long, extraData: Set[String])
 

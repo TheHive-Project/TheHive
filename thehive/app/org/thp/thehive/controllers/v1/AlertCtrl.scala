@@ -56,6 +56,16 @@ class AlertCtrl @Inject() (
   implicit val caseFilterParser: FieldsParser[Option[InputQuery[Traversal.Unk, Traversal.Unk]]] =
     FilterQuery.default(caseProperties).paramParser(ru.typeOf[Traversal.V[Case]]).optional.on("caseFilter")
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[Long](
+      "countAlert",
+      (graph, authContext) =>
+        graph.indexCountQuery(s"""v."_label":Alert AND v.organisationId:${organisationSrv.currentId(graph, authContext).value}""")
+    ),
+    Query.init[Long](
+      "countUnreadAlert",
+      (graph, authContext) =>
+        graph.indexCountQuery(s"""v."_label":Alert AND v.organisationId:${organisationSrv.currentId(graph, authContext).value} AND v.read:false""")
+    ),
     Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
     Query[Traversal.V[Alert], Traversal.V[Case]]("case", (alertSteps, _) => alertSteps.`case`),
     Query.withParam[Option[InputQuery[Traversal.Unk, Traversal.Unk]], Traversal.V[Alert], Traversal[

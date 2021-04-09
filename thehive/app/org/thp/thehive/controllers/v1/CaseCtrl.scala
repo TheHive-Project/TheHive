@@ -56,6 +56,11 @@ class CaseCtrl @Inject() (
   )
   override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[Long](
+      "countCase",
+      (graph, authContext) =>
+        graph.indexCountQuery(s"""v."_label":Case AND v.organisationIds:${organisationSrv.currentId(graph, authContext).value} """)
+    ),
     Query[Traversal.V[Case], Traversal.V[Observable]](
       "observables",
       (caseSteps, authContext) =>
