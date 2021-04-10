@@ -163,6 +163,12 @@ class DescribeCtrl @Inject() (
       case ("case", "resolutionStatus") => Some(Seq(resolutionStatus))
       case ("dashboard", "status") =>
         Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")))))
+      case ("task", "status") =>
+        Some(
+          Seq(
+            PropertyDescription("status", "enumeration", Seq(JsString("Waiting"), JsString("InProgress"), JsString("Completed"), JsString("Cancel")))
+          )
+        )
       case (_, "tlp") =>
         Some(
           Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
