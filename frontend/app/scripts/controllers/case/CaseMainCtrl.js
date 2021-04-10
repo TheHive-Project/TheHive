@@ -128,9 +128,7 @@
 
             // Stats for case alerts counter
             StreamQuerySrv('v1', [
-                { _name: 'getCase', idOrName: caseId },
-                { _name: 'alerts' },
-                { _name: 'count' }
+                { _name: 'countImportedAlert', caseId: caseId },
             ], {
                 scope: $scope,
                 rootId: caseId,
