@@ -10,15 +10,16 @@ import play.api.libs.json._
 import java.util.{Map => JMap}
 
 trait TagRenderer extends BaseRenderer[Tag] {
+  val limitedCountThreshold: Long
 
   def usageStats(implicit
       authContext: AuthContext
   ): Traversal.V[Tag] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     _.project(
-      _.by(_.`case`.count)
-        .by(_.alert.count)
-        .by(_.observable.count)
-        .by(_.caseTemplate.count)
+      _.by(_.`case`.limitedCount(limitedCountThreshold))
+        .by(_.alert.limitedCount(limitedCountThreshold))
+        .by(_.observable.limitedCount(limitedCountThreshold))
+        .by(_.caseTemplate.limitedCount(limitedCountThreshold))
     ).domainMap {
       case (caseCount, alertCount, observableCount, caseTemplateCount) =>
         Json.obj(

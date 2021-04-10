@@ -6,6 +6,7 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
@@ -24,9 +25,14 @@ class TagCtrl @Inject() (
     db: Database,
     tagSrv: TagSrv,
     val organisationSrv: OrganisationSrv,
-    properties: Properties
+    properties: Properties,
+    appConfig: ApplicationConfig
 ) extends QueryableCtrl
     with TagRenderer {
+
+  val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
+  val limitedCountThreshold: Long                         = limitedCountThresholdConfig.get
+
   override val entityName: String                 = "Tag"
   override val publicProperties: PublicProperties = properties.tag
   override val initialQuery: Query =
