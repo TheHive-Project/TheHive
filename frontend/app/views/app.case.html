@@ -20,21 +20,22 @@
 
                             <span ng-switch-when="observables">
                                 <i class="glyphicon glyphicon-pushpin"></i>&nbsp;&nbsp; Observables&nbsp;&nbsp;
-                                <span class="badge badge-primary">{{observableCount}}</span>
+                                <span class="badge badge-primary">{{observablesCount}}</span>
                             </span>
 
                             <span ng-switch-when="procedures">
                                 <i class="glyphicon glyphicon-knight"></i>&nbsp;&nbsp; TTPs&nbsp;&nbsp;
-                                <!-- <span class="badge badge-primary">{{observableCount}}</span> -->
                             </span>
 
                             <span ng-switch-default>
                                 <span ng-switch on="name[0]">
                                     <span ng-switch-when="t">
-                                        <i class="glyphicon glyphicon-tasks"></i> <strong>&nbsp;&nbsp;{{tab.label | limitTo:25}}&nbsp;&nbsp;</strong>
+                                        <i class="glyphicon glyphicon-tasks"></i> <strong>&nbsp;&nbsp;{{tab.label |
+                                            limitTo:25}}&nbsp;&nbsp;</strong>
                                     </span>
                                     <span ng-switch-when="o">
-                                        <i class="glyphicon glyphicon-pushpin" ng-switch-when="o"></i> <strong>&nbsp;&nbsp;{{tab.label | fang | limitTo:25}}&nbsp;&nbsp;</strong>
+                                        <i class="glyphicon glyphicon-pushpin" ng-switch-when="o"></i>
+                                        <strong>&nbsp;&nbsp;{{tab.label | fang | limitTo:25}}&nbsp;&nbsp;</strong>
                                     </span>
                                     <span ng-switch-default>
                                         <strong>&nbsp;&nbsp;{{tab.label | limitTo:25}}&nbsp;&nbsp;</strong>
@@ -42,7 +43,8 @@
                                 </span>
 
                                 <a href ng-click="removeTab(name)" ng-if="tab.closable">
-                                    <i class="text-muted glyphicon glyphicon-remove-circle" ng-class="textTask" ng-mouseout="textTask='text-muted'" ng-mouseover="textTask='text-danger'"></i>
+                                    <i class="text-muted glyphicon glyphicon-remove-circle" ng-class="textTask"
+                                        ng-mouseout="textTask='text-muted'" ng-mouseover="textTask='text-danger'"></i>
                                 </a>
                             </span>
                         </uib-tab-heading>

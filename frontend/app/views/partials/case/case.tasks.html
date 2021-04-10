@@ -8,7 +8,7 @@
     <div class="col-md-12 clearfix">
         <div class="pull-left">
             <h4>
-                Tasks List ({{list.values.length || 0}} of {{list.total}})
+                List of tasks ({{list.total | limitedCount}} of {{tasksCount}})
             </h4>
         </div>
 

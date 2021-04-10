@@ -122,7 +122,7 @@
                 },
                 guard: UtilsSrv.hasAddDeleteEvents,
                 onUpdate: function (updates) {
-                    $scope.observableCount = updates;
+                    $scope.observablesCount = updates;
                 }
             });
 

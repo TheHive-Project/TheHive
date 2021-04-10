@@ -1,15 +1,14 @@
-
 <div class="col-md-12 mb-s clearfix">
     <div class="pull-left">
         <h4>
-            Observable List ({{artifacts.total || 0}} of {{observableCount}})
+            List of observables ({{artifacts.total | limitedCount}} of {{observablesCount}})
+            <!-- Observable List ({{artifacts.total || 0}} of {{observableCount}}) -->
             <small class="ml-xxs" ng-if="selection.artifacts.length > 0 ">
                 ({{selection.artifacts.length}} selected)
             </small>
         </h4>
     </div>
-    <filters-preview filters="filtering.context.filters"
-        on-clear-item="removeFilter(field)"
+    <filters-preview filters="filtering.context.filters" on-clear-item="removeFilter(field)"
         on-clear-all="clearFilters()"></filters-preview>
 </div>
 
@@ -18,7 +17,7 @@
 </div>
 
 <!-- list of artifacts-->
-<div class="col-md-12" ng-show="artifacts.total > 0">
+<div class="col-md-12" ng-show="artifacts.total !== 0">
     <psearch ng-if="!switchTEList" control="artifacts"></psearch>
 
     <table class="table table-striped table-hover case-list">
@@ -26,13 +25,16 @@
             <tr>
                 <!-- <th style="width: 10px;" class="p-0"></th> -->
                 <th style="width: 20px">
-                    <input type="checkbox" ng-change="selectAll()" ng-model="menu.selectAll" ng-disabled="switchTEList"></input>
+                    <input type="checkbox" ng-change="selectAll()" ng-model="menu.selectAll"
+                        ng-disabled="switchTEList"></input>
                 </th>
                 <th style="width: 100px">Flags</th>
                 <th style="width: 100px">
-                    <a href class="text-default ml-xxxs" ng-click="sortByField('dataType')" uib-tooltip="Sort by dataType">
+                    <a href class="text-default ml-xxxs" ng-click="sortByField('dataType')"
+                        uib-tooltip="Sort by dataType">
                         Type
-                        <i ng-show="filtering.context.sort.indexOf('+dataType') === -1 && filtering.context.sort.indexOf('-dataType') === -1" class="fa fa-sort"></i>
+                        <i ng-show="filtering.context.sort.indexOf('+dataType') === -1 && filtering.context.sort.indexOf('-dataType') === -1"
+                            class="fa fa-sort"></i>
                         <i ng-show="filtering.context.sort.indexOf('+dataType') !== -1" class="fa fa-caret-up"></i>
                         <i ng-show="filtering.context.sort.indexOf('-dataType') !== -1" class="fa fa-caret-down"></i>
                     </a>
@@ -40,11 +42,12 @@
                 <th>
                     <a href class="text-default ml-xxxs" ng-click="sortByField('data')" uib-tooltip="Sort by dataType">
                         Value/Filename
-                        <i ng-show="filtering.context.sort.indexOf('+data') === -1 && filtering.context.sort.indexOf('-data') === -1" class="fa fa-sort"></i>
+                        <i ng-show="filtering.context.sort.indexOf('+data') === -1 && filtering.context.sort.indexOf('-data') === -1"
+                            class="fa fa-sort"></i>
                         <i ng-show="filtering.context.sort.indexOf('+data') !== -1" class="fa fa-caret-up"></i>
                         <i ng-show="filtering.context.sort.indexOf('-data') !== -1" class="fa fa-caret-down"></i>
                     </a>
-                  <!-- <a href class="text-default" ng-click="sortByField('data')">
+                    <!-- <a href class="text-default" ng-click="sortByField('data')">
                     Value/Filename
                     <i ng-show="artifacts.sort !== '+data' && artifacts.sort !== '-data'" class="fa fa-sort"></i>
                     <i ng-show="artifacts.sort === '+data'" class="fa fa-caret-up"></i>
@@ -55,39 +58,49 @@
                 <th style="width: 150px">
                     Dates
 
-                    <a href class="text-default ml-xxxs" ng-click="sortByField('startDate')" uib-tooltip="Sort by add date">
+                    <a href class="text-default ml-xxxs" ng-click="sortByField('startDate')"
+                        uib-tooltip="Sort by add date">
                         S.
-                        <i ng-show="filtering.context.sort.indexOf('+startDate') === -1 && filtering.context.sort.indexOf('-startDate') === -1" class="fa fa-sort"></i>
+                        <i ng-show="filtering.context.sort.indexOf('+startDate') === -1 && filtering.context.sort.indexOf('-startDate') === -1"
+                            class="fa fa-sort"></i>
                         <i ng-show="filtering.context.sort.indexOf('+startDate') !== -1" class="fa fa-caret-up"></i>
                         <i ng-show="filtering.context.sort.indexOf('-startDate') !== -1" class="fa fa-caret-down"></i>
                     </a>
-                    <a href class="text-default ml-xxxs" ng-click="sortByField('_createdAt')" uib-tooltip="Sort by creation date">
+                    <a href class="text-default ml-xxxs" ng-click="sortByField('_createdAt')"
+                        uib-tooltip="Sort by creation date">
                         C.
-                        <i ng-show="filtering.context.sort.indexOf('+_createdAt') === -1 && filtering.context.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
+                        <i ng-show="filtering.context.sort.indexOf('+_createdAt') === -1 && filtering.context.sort.indexOf('-_createdAt') === -1"
+                            class="fa fa-sort"></i>
                         <i ng-show="filtering.context.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
                         <i ng-show="filtering.context.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
                     </a>
-                    <a href class="text-default ml-xxxs" ng-click="sortByField('_updatedAt')" uib-tooltip="Sort by last update date">
+                    <a href class="text-default ml-xxxs" ng-click="sortByField('_updatedAt')"
+                        uib-tooltip="Sort by last update date">
                         U.
-                        <i ng-show="filtering.context.sort.indexOf('+_updatedAt') === -1 && filtering.context.sort.indexOf('-_updatedAt') === -1" class="fa fa-sort"></i>
+                        <i ng-show="filtering.context.sort.indexOf('+_updatedAt') === -1 && filtering.context.sort.indexOf('-_updatedAt') === -1"
+                            class="fa fa-sort"></i>
                         <i ng-show="filtering.context.sort.indexOf('+_updatedAt') !== -1" class="fa fa-caret-up"></i>
                         <i ng-show="filtering.context.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
                     </a>
                 </th>
-                <th style="width: 40px;" if-permission="manageAction" allowed="{{userPermissions}}" ng-if="appConfig.connectors.cortex.enabled">Actions</th>
+                <th style="width: 40px;" if-permission="manageAction" allowed="{{userPermissions}}"
+                    ng-if="appConfig.connectors.cortex.enabled">Actions</th>
             </tr>
         </thead>
         <tbody>
             <tr ng-repeat="artifact in artifacts.values">
                 <!-- <td class="p-0 bg-tlp-{{artifact.tlp}} clickable" ng-click="filterByTlp(artifact.tlp)"></td> -->
                 <td>
-                    <input type="checkbox" ng-model="artifact.selected" ng-change="selectArtifact(artifact)" if-permission="manageObservable" allowed="{{artifact.extraData.permissions.join(',')}}">
+                    <input type="checkbox" ng-model="artifact.selected" ng-change="selectArtifact(artifact)"
+                        if-permission="manageObservable" allowed="{{artifact.extraData.permissions.join(',')}}">
                 </td>
                 <td>
-                    <observable-flags observable="artifact" on-filter="addFilterValue(fieldName, value)" inline="true"></observable-flags>
+                    <observable-flags observable="artifact" on-filter="addFilterValue(fieldName, value)" inline="true">
+                    </observable-flags>
                 </td>
                 <td>
-                    <a href ng-click="addFilterValue('dataType', artifact.dataType)"><span ng-bind="artifact.dataType"></span></a>
+                    <a href ng-click="addFilterValue('dataType', artifact.dataType)"><span
+                            ng-bind="artifact.dataType"></span></a>
                 </td>
                 <td class="wrap">
                     <!-- FIXME -->
@@ -99,35 +112,46 @@
                     </div>
                     <div class="case-tags flexwrap mt-xxs">
                         <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
-                        <strong class="text-muted mr-xxxs" ng-if="!artifact.tags || artifact.tags.length === 0">None</strong>
+                        <strong class="text-muted mr-xxxs"
+                            ng-if="!artifact.tags || artifact.tags.length === 0">None</strong>
                         <tag-item class="pointer" ng-repeat="tag in artifact.tags track by $index"
                             ng-click="addFilterValue('tags', tag)" value="tag"></tag-item>
                     </div>
 
-                    <mini-report-list observable="artifact" reports="artifact.reports" on-item-clicked="showReport(observable, analyzerId)"></mini-report-list>
+                    <mini-report-list observable="artifact" reports="artifact.reports"
+                        on-item-clicked="showReport(observable, analyzerId)"></mini-report-list>
                 </td>
                 <td align="center">
-                    <a href ng-if="artifact.extraData.shareCount > 0" ui-sref="app.case.observables-item({itemId: artifact._id})" class="noline"
-                            tooltip-placement="left-middle">
+                    <a href ng-if="artifact.extraData.shareCount > 0"
+                        ui-sref="app.case.observables-item({itemId: artifact._id})" class="noline"
+                        tooltip-placement="left-middle">
 
                         <i class="fa fa-users"></i>
                         ({{artifact.extraData.shareCount || 0}})
                     </a>
                 </td>
                 <td>
-                    <div ng-class="{'text-bold': filtering.context.sort.indexOf('+startDate') !== -1 || filtering.context.sort.indexOf('-startDate') !== -1}">
-                        S. <a href ng-click="addFilterValue('startDate', artifact.startDate)">{{artifact.startDate | shortDate}}</a>
+                    <div
+                        ng-class="{'text-bold': filtering.context.sort.indexOf('+startDate') !== -1 || filtering.context.sort.indexOf('-startDate') !== -1}">
+                        S. <a href ng-click="addFilterValue('startDate', artifact.startDate)">{{artifact.startDate |
+                            shortDate}}</a>
                     </div>
-                    <div ng-class="{'text-bold': filtering.context.sort.indexOf('+_createdAt') !== -1 || filtering.context.sort.indexOf('-_createdAt') !== -1}">
-                        C. <a href ng-click="addFilterValue('_createdAt', artifact._createdAt)">{{artifact._createdAt | shortDate}}</a>
+                    <div
+                        ng-class="{'text-bold': filtering.context.sort.indexOf('+_createdAt') !== -1 || filtering.context.sort.indexOf('-_createdAt') !== -1}">
+                        C. <a href ng-click="addFilterValue('_createdAt', artifact._createdAt)">{{artifact._createdAt |
+                            shortDate}}</a>
                     </div>
-                    <div ng-if="artifact._updatedAt > 0" ng-class="{'text-bold': filtering.context.sort.indexOf('+_updatedAt') !== -1 || filtering.context.sort.indexOf('-_updatedAt') !== -1}">
-                        U. <a href ng-click="addFilterValue('_updatedAt', artifact._updatedAt)">{{artifact._updatedAt | shortDate}}</a>
+                    <div ng-if="artifact._updatedAt > 0"
+                        ng-class="{'text-bold': filtering.context.sort.indexOf('+_updatedAt') !== -1 || filtering.context.sort.indexOf('-_updatedAt') !== -1}">
+                        U. <a href ng-click="addFilterValue('_updatedAt', artifact._updatedAt)">{{artifact._updatedAt |
+                            shortDate}}</a>
                     </div>
                 </td>
-                <td align="center" ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
+                <td align="center" ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction"
+                    allowed="{{userPermissions}}">
                     <span>
-                        <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact, true)" uib-dropdown-toggle>
+                        <a href class="text-primary noline nowrap" ng-click="getObsResponders(artifact, true)"
+                            uib-dropdown-toggle>
                             <i class="text-primary fa fa-cog"></i>
                         </a>
                     </span>
