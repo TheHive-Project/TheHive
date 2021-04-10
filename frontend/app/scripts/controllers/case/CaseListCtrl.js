@@ -4,7 +4,7 @@
         .controller('CaseListCtrl', CaseListCtrl)
         .controller('CaseBulkDeleteModalCtrl', CaseBulkDeleteModalCtrl);
 
-    function CaseListCtrl($scope, $rootScope, $q, $uibModal, StreamQuerySrv, FilteringSrv, SecuritySrv, ModalUtilsSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, CaseImpactStatus, NotificationSrv, CortexSrv) {
+    function CaseListCtrl($scope, $rootScope, $q, $uibModal, StreamQuerySrv, FilteringSrv, SecuritySrv, ModalUtilsSrv, PaginatedQuerySrv, EntitySrv, CaseSrv, UserSrv, AuthenticationSrv, CaseResolutionStatus, CaseImpactStatus, NotificationSrv, CortexSrv, UtilsSrv) {
         var self = this;
 
         this.openEntity = EntitySrv.open;
@@ -49,6 +49,22 @@
                     });
                 });
 
+            StreamQuerySrv('v1', [
+                { _name: 'countCase' }
+            ], {
+                scope: $scope,
+                rootId: 'any',
+                objectType: 'case',
+                query: {
+                    params: {
+                        name: 'case-count-all'
+                    }
+                },
+                guard: UtilsSrv.hasAddDeleteEvents,
+                onUpdate: function (data) {
+                    self.caseCountAll = data;
+                }
+            });
         };
 
         this.load = function () {
