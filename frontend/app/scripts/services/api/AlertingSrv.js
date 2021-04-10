@@ -1,7 +1,7 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveServices')
-        .factory('AlertingSrv', function($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, PaginatedQuerySrv) {
+        .factory('AlertingSrv', function ($q, $http, $rootScope, StatSrv, StreamSrv, PSearchSrv, PaginatedQuerySrv) {
 
             var baseUrl = './api/alert';
 
@@ -123,13 +123,13 @@
             };
 
             var factory = {
-                getSimilarityFilters: function() {
+                getSimilarityFilters: function () {
                     return similarityFilters;
                 },
-                getSimilarityFilter: function(name) {
+                getSimilarityFilter: function (name) {
                     return (similarityFilters[name] || {}).filters;
                 },
-                list: function(config, callback) {
+                list: function (config, callback) {
                     return new PaginatedQuerySrv({
                         name: 'alerts',
                         root: undefined,
@@ -138,67 +138,68 @@
                         scope: config.scope,
                         sort: config.sort || ['-date'],
                         loadAll: config.loadAll || false,
-                        pageSize: config.pageSize || 10,
-                        filter: config.filter || undefined,
+                        pageSize: config.pageSize || 10,
+                        filter: config.filter || undefined,
                         onUpdate: callback || undefined,
+                        limitedCount: config.limitedCount || false,
                         operations: [
-                            {'_name': 'listAlert'}
+                            { '_name': 'listAlert' }
                         ],
                         extraData: ['importDate']
                     });
                 },
 
-                get: function(alertId) {
+                get: function (alertId) {
                     return $http.get('./api/v1/alert/' + alertId)
-                        .then(function(response) {
+                        .then(function (response) {
                             return response.data;
                         });
                 },
 
-                create: function(alertId, data) {
+                create: function (alertId, data) {
                     return $http.post(baseUrl + '/' + alertId + '/createCase', data || {});
                 },
 
-                update: function(alertId, updates) {
+                update: function (alertId, updates) {
                     return $http.patch(baseUrl + '/' + alertId, updates);
                 },
 
-                mergeInto: function(alertId, caseId) {
+                mergeInto: function (alertId, caseId) {
                     return $http.post(baseUrl + '/' + alertId + '/merge/' + caseId);
                 },
 
-                bulkMergeInto: function(alertIds, caseId) {
+                bulkMergeInto: function (alertIds, caseId) {
                     return $http.post(baseUrl + '/merge/_bulk', {
                         caseId: caseId,
                         alertIds: alertIds
                     });
                 },
 
-                canMarkAsRead: function(event) {
+                canMarkAsRead: function (event) {
                     return !!!event.read;
                 },
 
-                canMarkAsUnread: function(event) {
+                canMarkAsUnread: function (event) {
                     return !!event.read;
                 },
 
-                markAsRead: function(alertId) {
+                markAsRead: function (alertId) {
                     return $http.post(baseUrl + '/' + alertId + '/markAsRead');
                 },
 
-                markAsUnread: function(alertId) {
+                markAsUnread: function (alertId) {
                     return $http.post(baseUrl + '/' + alertId + '/markAsUnread');
                 },
 
-                follow: function(alertId) {
+                follow: function (alertId) {
                     return $http.post(baseUrl + '/' + alertId + '/follow');
                 },
 
-                unfollow: function(alertId) {
+                unfollow: function (alertId) {
                     return $http.post(baseUrl + '/' + alertId + '/unfollow');
                 },
 
-                forceRemove: function(alertId) {
+                forceRemove: function (alertId) {
                     return $http.delete(baseUrl + '/' + alertId, {
                         params: {
                             force: 1
@@ -206,7 +207,7 @@
                     });
                 },
 
-                bulkRemove: function(alertIds) {
+                bulkRemove: function (alertIds) {
                     return $http.post(baseUrl + '/delete/_bulk', {
                         ids: alertIds
                     }, {
@@ -216,7 +217,7 @@
                     });
                 },
 
-                stats: function(scope) {
+                stats: function (scope) {
                     var field = 'status',
                         result = {},
                         statConfig = {
@@ -230,7 +231,7 @@
                         rootId: 'any',
                         objectType: 'alert',
                         scope: scope,
-                        callback: function() {
+                        callback: function () {
                             StatSrv.get(statConfig);
                         }
                     });

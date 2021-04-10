@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function ($rootScope, $scope, $q, $state, $uibModal, TagSrv, StreamQuerySrv, CaseTemplateSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
+        .controller('AlertListCtrl', function ($rootScope, $scope, $q, $state, $uibModal, TagSrv, StreamQuerySrv, CaseTemplateSrv, UtilsSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
 
             self.urls = VersionSrv.mispUrls();
@@ -44,6 +44,24 @@
                             self.filtering.setPageSize(newValue);
                         });
                     });
+
+
+                StreamQuerySrv('v1', [
+                    { _name: 'countAlert' }
+                ], {
+                    scope: $scope,
+                    rootId: 'any',
+                    objectType: 'alert',
+                    query: {
+                        params: {
+                            name: 'alert-count-all'
+                        }
+                    },
+                    guard: UtilsSrv.hasAddDeleteEvents,
+                    onUpdate: function (data) {
+                        self.alertCountAll = data;
+                    }
+                });
             };
 
             self.load = function () {
@@ -51,6 +69,7 @@
                     scope: $scope,
                     filter: this.filtering.buildQuery(),
                     loadAll: false,
+                    limitedCount: true,
                     sort: self.filtering.context.sort,
                     pageSize: self.filtering.context.pageSize,
                 };
@@ -104,7 +123,7 @@
             };
 
             self.bulkFollow = function (follow) {
-                var ids = _.pluck(self.selection, 'id');
+                var ids = _.pluck(self.selection, '_id');
                 var fn = angular.noop;
 
                 if (follow === true) {

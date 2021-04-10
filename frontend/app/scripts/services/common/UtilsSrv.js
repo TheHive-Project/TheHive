@@ -1,11 +1,11 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveServices')
-        .factory('UtilsSrv', function($location) {
+        .factory('UtilsSrv', function ($location) {
             var sensitiveTypes = ['url', 'ip', 'mail', 'domain', 'filename'];
 
             var service = {
-                guid: function() {
+                guid: function () {
                     function s4() {
                         return Math.floor((1 + Math.random()) * 0x10000)
                             .toString(16)
@@ -14,15 +14,15 @@
                     return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
                         s4() + '-' + s4() + s4() + s4();
                 },
-                objectify: function(arr, property) {
-                    return _.map(arr, function(str) {
+                objectify: function (arr, property) {
+                    return _.map(arr, function (str) {
                         var obj = {};
                         obj[property] = str;
                         return obj;
                     });
                 },
 
-                fangValue: function(value) {
+                fangValue: function (value) {
                     return value
                         .replace(/\[\.\]/g, ".")
                         .replace(/hxxp/gi, "http")
@@ -30,7 +30,7 @@
                         .replace(/http/gi, "hxxp");
                 },
 
-                fang: function(observable) {
+                fang: function (observable) {
                     if (sensitiveTypes.indexOf(observable.dataType) === -1) {
                         return observable.data;
                     }
@@ -38,16 +38,16 @@
                     return service.fangValue(observable.data);
                 },
 
-                unfang: function(observable) {
+                unfang: function (observable) {
                     return observable.data
                         .replace(/\[\.\]/g, ".")
                         .replace(/hxxp/gi, "http");
                 },
 
-                shallowClearAndCopy: function(src, dst) {
+                shallowClearAndCopy: function (src, dst) {
                     dst = dst || {};
 
-                    angular.forEach(dst, function(value, key) {
+                    angular.forEach(dst, function (value, key) {
                         delete dst[key];
                     });
 
@@ -59,7 +59,7 @@
                     return dst;
                 },
 
-                updatableLink: function(scope, element, attrs) {
+                updatableLink: function (scope, element, attrs) {
                     scope.updatable = {
                         'updating': false
                     };
@@ -67,10 +67,10 @@
                     if (!angular.isDefined(scope.active)) {
                         scope.active = false;
                     }
-                    scope.edit = function() {
+                    scope.edit = function () {
                         scope.updatable.updating = true;
                     };
-                    scope.update = function(newValue) {
+                    scope.update = function (newValue) {
                         if (angular.isDefined(newValue)) {
                             scope.value = newValue;
                         }
@@ -82,11 +82,11 @@
                                 updateResult = updateResult.$promise;
                             }
                             if (angular.isObject(updateResult) && angular.isFunction(updateResult.then)) {
-                                updateResult.then(function() {
+                                updateResult.then(function () {
                                     scope.oldValue = scope.value;
                                     scope.active = false;
                                     scope.format = 'static';
-                                }, function() {
+                                }, function () {
                                     scope.value = scope.oldValue;
                                 });
                             } else {
@@ -97,16 +97,16 @@
                         }
                         scope.updatable.updating = false;
                     };
-                    scope.cancel = function() {
+                    scope.cancel = function () {
                         scope.value = scope.oldValue;
                         scope.updatable.updating = false;
                     };
-                    scope.clear = function() {
+                    scope.clear = function () {
                         scope.value = null;
                     };
                 },
 
-                extractQueryParam: function(paramName, queryString) {
+                extractQueryParam: function (paramName, queryString) {
                     if (!queryString || !paramName) {
                         return;
                     }
@@ -116,17 +116,17 @@
                     if (param) {
                         return param;
                     } else {
-                        var parsedQuery = _.find(queryString.split('&'), function(str) {
+                        var parsedQuery = _.find(queryString.split('&'), function (str) {
                             return str.startsWith(paramName + '=');
                         });
                         return parsedQuery ? parsedQuery.substr(paramName.length + 1) : undefined;
                     }
                 },
 
-                getDateRange: function(operator) {
+                getDateRange: function (operator) {
                     var from;
 
-                    switch(operator) {
+                    switch (operator) {
                         case 'last7days':
                             from = moment().subtract(7, 'days');
                             break;
@@ -154,6 +154,15 @@
                         from: from.hour(0).minutes(0).seconds(0).toDate(),
                         to: to.hour(23).minutes(59).seconds(59).toDate()
                     };
+                },
+
+                hasAddDeleteEvents: function (updates) {
+                    if (!updates || updates.length === 0)
+                        return;
+
+                    return _.without(_.map(updates, function (u) {
+                        return u.base.operation;
+                    }), 'Update').length > 0;
                 }
             };
 

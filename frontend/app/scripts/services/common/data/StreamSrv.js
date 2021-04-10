@@ -131,7 +131,7 @@
                         var pollingDuration;
                         try {
                             pollingDuration = appConfig.config.pollingDuration
-                        } catch {
+                        } catch (error) {
                             pollingDuration = 0
                         }
 

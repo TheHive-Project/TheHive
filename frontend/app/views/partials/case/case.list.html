@@ -255,9 +255,14 @@
 
                                             <a ui-sref="app.case.observables({caseId: currentCase._id})">
                                                 <span>Observables</span>
-                                                <strong class="pull-right">{{currentCase.extraData.observableStats.total < 0 ?
-                                                    -currentCase.extraData.observableStats.total + "+" :
-                                                    currentCase.extraData.observableStats.total || 0}}</strong>
+                                                <strong class="pull-right"
+                                                    ng-if="currentCase.extraData.observableStats.total < 0">
+                                                    {{-currentCase.extraData.observableStats.total + '+'}}
+                                                </strong>
+                                                <strong class="pull-right"
+                                                    ng-if="currentCase.extraData.observableStats.total >= 0">
+                                                    {{currentCase.extraData.observableStats.total || 0}}
+                                                </strong>
                                             </a>
                                         </div>
 
