@@ -3,7 +3,7 @@
         <div class="box">
             <div class="box-header with-border">
                 <!-- <h3 class="box-title">List of cases ({{$vm.list.values.length || 0}} of {{$vm.list.total}})</h3> -->
-                <h3 class="box-title">List of alerts ({{$vm.list.total || 0}} of {{$vm.caseCountAll}})</h3>
+                <h3 class="box-title">List of alerts ({{$vm.list.total | limitedCount}} of {{$vm.caseCountAll}})</h3>
                 <div class="box-tools pull-right" ng-show="!appLayout.showFlow">
                     <span class="ml-xs" tooltip="Open in new window">
                         <a class="text-muted" href ng-click="layoutSrv.showFlow(true)">
@@ -34,7 +34,7 @@
                         <div class="empty-message">No records</div>
                     </div>
 
-                    <div class="col-md-12" ng-show="$vm.list.total > 0">
+                    <div class="col-md-12" ng-show="$vm.list.total !== 0">
                         <psearch control="$vm.list"></psearch>
 
                         <table class="table table-striped case-list">

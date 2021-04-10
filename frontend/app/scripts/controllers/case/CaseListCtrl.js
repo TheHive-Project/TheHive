@@ -77,6 +77,7 @@
                 scope: $scope,
                 sort: self.filtering.context.sort,
                 loadAll: false,
+                limitedCount: true,
                 pageSize: self.filtering.context.pageSize,
                 filter: this.filtering.buildQuery(),
                 operations: [
