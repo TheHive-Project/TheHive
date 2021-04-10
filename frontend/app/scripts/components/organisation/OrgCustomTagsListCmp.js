@@ -3,7 +3,7 @@
 
     angular.module('theHiveComponents')
         .component('orgCustomTagsList', {
-            controller: function ($scope, PaginatedQuerySrv, FilteringSrv, TaxonomyCacheSrv, TagSrv, UserSrv, ModalUtilsSrv, NotificationSrv) {
+            controller: function ($scope, PaginatedQuerySrv, QuerySrv, FilteringSrv, TaxonomyCacheSrv, TagSrv, UserSrv, ModalUtilsSrv, NotificationSrv) {
                 var self = this;
 
                 self.tags = [];
@@ -30,6 +30,18 @@
                                 self.filtering.setPageSize(newValue);
                             });
                         });
+
+                    QuerySrv.query(
+                        'v1',
+                        [{ '_name': 'countFreetags' }],
+                        {
+                            params: {
+                                name: 'all-custom-tags.count'
+                            }
+                        })
+                        .then(function (response) {
+                            self.freetagsCount = response.data;
+                        });
                 };
 
                 this.load = function () {
@@ -40,6 +52,7 @@
                         skipStream: true,
                         sort: self.filtering.context.sort,
                         loadAll: false,
+                        limitedCount: true,
                         pageSize: self.filtering.context.pageSize,
                         filter: this.filtering.buildQuery(),
                         operations: [
