@@ -34,6 +34,7 @@ class CaseCtrl @Inject() (
     userSrv: UserSrv,
     taskSrv: TaskSrv,
     organisationSrv: OrganisationSrv,
+    alertSrv: AlertSrv,
     db: Database,
     appConfig: ApplicationConfig
 ) extends QueryableCtrl
@@ -80,7 +81,12 @@ class CaseCtrl @Inject() (
     ),
     Query[Traversal.V[Case], Traversal.V[User]]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
     Query[Traversal.V[Case], Traversal.V[Organisation]]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
-    Query[Traversal.V[Case], Traversal.V[Alert]]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(organisationSrv)(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Alert]](
+      "alerts",
+      (caseSteps, authContext) =>
+//      caseSteps.alert.visible(organisationSrv)(authContext)
+        alertSrv.startTraversal(caseSteps.graph).has(_.caseId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
+    ),
     Query[Traversal.V[Case], Traversal.V[Share]]("shares", (caseSteps, authContext) => caseSteps.shares.visible(authContext)),
     Query[Traversal.V[Case], Traversal.V[Procedure]]("procedures", (caseSteps, _) => caseSteps.procedure)
   )
