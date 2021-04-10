@@ -38,7 +38,7 @@
     <logger name="org.thp.scalligraph.traversal" level="INFO"/>
     <logger name="org.reflections8.Reflections" level="ERROR" />
 
-    <logger name="org.thp.scalligraph.models" level="DEBUG"/>
+    <logger name="org.thp.scalligraph.models" level="INFO"/>
     <logger name="org.thp" level="INFO"/>
 
     <root level="INFO">
