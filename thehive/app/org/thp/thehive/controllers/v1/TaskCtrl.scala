@@ -57,7 +57,10 @@ class TaskCtrl @Inject() (
       "countTask",
       (inCase, graph, authContext) =>
         graph.indexCountQuery(
-          s"""v."_label":Task AND relatedId:${inCase.caseId.value} AND organisationIds:${organisationSrv.currentId(graph, authContext).value}"""
+          s"""v."_label":Task AND """ +
+            "v.relatedId:${inCase.caseId.value} AND " +
+            "v.organisationIds:${organisationSrv.currentId(graph, authContext).value} AND " +
+            "NOT v.status:Cancel"
         )
     ),
     Query.init[Traversal.V[Task]](
