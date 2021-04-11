@@ -33,7 +33,7 @@ class CaseCtrl @Inject() (
     observableSrv: ObservableSrv,
     userSrv: UserSrv,
     taskSrv: TaskSrv,
-    organisationSrv: OrganisationSrv,
+    val organisationSrv: OrganisationSrv,
     alertSrv: AlertSrv,
     db: Database,
     appConfig: ApplicationConfig

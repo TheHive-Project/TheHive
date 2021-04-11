@@ -7,6 +7,7 @@ import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.{Alert, AlertCase, Case}
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.OrganisationSrv
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
@@ -16,11 +17,20 @@ import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 trait CaseRenderer extends BaseRenderer[Case] {
   val limitedCountThreshold: Long
+  val organisationSrv: OrganisationSrv
 
   def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsObject, AnyRef, Converter[JsObject, AnyRef]] =
     t =>
       t._id.domainMap { caseId =>
-        Json.obj("total" -> t.graph.indexCountQuery(s"""v."_label":Case AND v.relatedId:${caseId.value}"""))
+        Json.obj(
+          "total" -> t
+            .graph
+            .indexCountQuery(
+              s"""v."_label":Observable AND """ +
+                s"v.relatedId:${caseId.value} AND " +
+                s"v.organisationIds:${organisationSrv.currentId(t.graph, authContext).value}"
+            )
+        )
       }
 //    _.share
 //      .observables
