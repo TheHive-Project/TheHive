@@ -35,6 +35,8 @@
                 this.extraData = options.extraData || undefined;
                 this.name = options.name || undefined;
                 this.config = options.config || {};
+                this.loading = false;
+                this.loadingCount = false;
 
                 this.operations = options.operations;
 
@@ -134,6 +136,7 @@
                     var filters = self.getFilter();
 
                     // Get the list
+                    this.loading = true;
                     QuerySrv.call(this.version, this.operations, {
                         filter: filters,
                         sort: self.getSort(),
@@ -141,24 +144,29 @@
                         config: self.config,
                         withParent: false,
                         name: self.name
-                    }).then(function (data) {
-                        if (self.loadAll) {
-                            self.allValues = data;
+                    })
+                        .then(function (data) {
+                            if (self.loadAll) {
+                                self.allValues = data;
 
-                            self.total = data.length;
+                                self.total = data.length;
 
-                            self.changePage();
-                        } else {
-                            self.values = data;
-                            if (angular.isFunction(self.onUpdate)) {
-                                self.onUpdate(updates);
+                                self.changePage();
+                            } else {
+                                self.values = data;
+                                if (angular.isFunction(self.onUpdate)) {
+                                    self.onUpdate(updates);
+                                }
                             }
-                        }
-                    }).catch(function (err) {
-                        if (self.onFailure) {
-                            self.onFailure(err);
-                        }
-                    });
+                        })
+                        .catch(function (err) {
+                            if (self.onFailure) {
+                                self.onFailure(err);
+                            }
+                        })
+                        .finally(function () {
+                            self.loading = false;
+                        });
 
                     // get the total if not cached
                     var hash = $filter('md5')(JSON.stringify(this.filter));
@@ -166,6 +174,7 @@
                         this.filterHash = hash;
 
                         // Compute the total again
+                        self.loadingCount = true;
                         QuerySrv.count('v1', this.operations, {
                             filter: filters,
                             name: self.name,
@@ -173,6 +182,8 @@
                             limitedCount: self.limitedCount
                         }).then(function (total) {
                             self.total = total;
+                        }).finally(function () {
+                            self.loadingCount = false;
                         });
                     }
 

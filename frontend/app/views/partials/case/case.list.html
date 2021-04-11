@@ -2,7 +2,9 @@
     <div ng-Class="{ 'col-md-9': appLayout.showFlow, 'col-md-12': !appLayout.showFlow}">
         <div class="box">
             <div class="box-header with-border">
-                <h3 class="box-title">List of alerts ({{$vm.list.total | limitedCount}} of {{$vm.caseCountAll}})</h3>
+                <h3 class="box-title">
+                    <datalist-header title="List of cases" list="$vm.list" total="$vm.caseCountAll"></datalist-header>
+                </h3>
                 <div class="box-tools pull-right" ng-show="!appLayout.showFlow">
                     <span class="ml-xs" tooltip="Open in new window">
                         <a class="text-muted" href ng-click="layoutSrv.showFlow(true)">
@@ -29,11 +31,11 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+                    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0 && $vm.list.values.length === 0">
                         <div class="empty-message">No records</div>
                     </div>
 
-                    <div class="col-md-12" ng-show="$vm.list.total !== 0">
+                    <div class="col-md-12" ng-show="!$vm.list.loading && $vm.list.values.length !== 0">
                         <psearch control="$vm.list"></psearch>
 
                         <table class="table table-striped case-list">

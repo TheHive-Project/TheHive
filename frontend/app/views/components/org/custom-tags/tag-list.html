@@ -8,7 +8,8 @@
     <div class="col-md-12 clearfix">
         <div class="pull-left">
             <h4>
-                List of custom tags ({{$vm.list.total | limitedCount}} of {{$vm.freetagsCount}})
+                <datalist-header title="List of custom tags" list="$vm.list" total="$vm.freetagsCount">
+                </datalist-header>
             </h4>
         </div>
 
@@ -19,11 +20,11 @@
 
 <!-- Datalist  -->
 <div class="row mt-xs">
-    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0 && $vm.list.values.length === 0">
         <div class="empty-message">No records</div>
     </div>
 
-    <div class="col-md-12" ng-show="$vm.list.total != 0">
+    <div class="col-md-12" ng-show="!$vm.list.loading && $vm.list.values.length !== 0">
         <psearch control="$vm.list"></psearch>
 
         <table class="table table-striped case-tags">

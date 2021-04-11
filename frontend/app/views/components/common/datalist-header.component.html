@@ -1,0 +1,11 @@
+<span>
+    <span class="mr-xxxs">{{$ctrl.title}}</span>
+    <span ng-if="!!$ctrl.list.total">({{$ctrl.list.total | limitedCount}}</span>
+    <span ng-if="!!!$ctrl.list.total">(<i class="fa fa-spinner fa-pulse"></i></span>
+    <span ng-if="!!$ctrl.total"> of {{$ctrl.total}})</span>
+    <span ng-if="!!!$ctrl.total"> of <i class="fa fa-spinner fa-pulse"></i>)</span>
+    <em class="ml-xxxs text-muted" ng-show="$ctrl.list.loading"><i class="fa fa-spinner fa-pulse"></i> Fetching
+        data...</em>
+    <em class="ml-xxxs text-muted" ng-show="!$ctrl.list.loading && $ctrl.list.loadingCount"><i
+            class="fa fa-spinner fa-pulse"></i> Counting records...</em>
+</span>

@@ -2,7 +2,9 @@
     <div class="col-md-12">
         <div class="box">
             <div class="box-header with-border">
-                <h3 class="box-title">List of alerts ({{$vm.list.total | limitedCount}} of {{$vm.alertCountAll}})</h3>
+                <h3 class="box-title">
+                    <datalist-header title="List of alerts" list="$vm.list" total="$vm.alertCountAll"></datalist-header>
+                </h3>
             </div>
             <div class="box-body">
                 <div ng-include="'views/partials/alert/list/toolbar.html'"></div>
@@ -23,11 +25,12 @@
 
                 <!-- Datalist  -->
                 <div class="row mt-xs">
-                    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0">
+
+                    <div class="col-md-12 mv-s" ng-show="$vm.list.total === 0 && $vm.list.values.length === 0">
                         <div class="empty-message">No records</div>
                     </div>
 
-                    <div class="col-md-12" ng-show="$vm.list.total !== 0">
+                    <div class="col-md-12" ng-show="!$vm.list.loading && $vm.list.values.length !== 0">
                         <psearch control="$vm.list"></psearch>
 
                         <table class="table tbody-stripped case-list">
@@ -156,12 +159,14 @@
                                     <td align="center">
                                         <span class="clickable label label-default"
                                             ng-class="{'label-danger': !event.caseId}"
-                                            ng-click="$vm.addFilterValue('imported', !!event.caseId)">{{event.caseId ?
+                                            ng-click="$vm.addFilterValue('imported', !!event.caseId)">{{event.caseId
+                                            ?
                                             'Imported' : 'New'}}</span>
                                     </td>
                                     <td align="center">
                                         <span class="clickable label label-default"
-                                            ng-click="$vm.addFilterValue('read', !!event.read)">{{event.read ? 'Read' :
+                                            ng-click="$vm.addFilterValue('read', !!event.read)">{{event.read ?
+                                            'Read' :
                                             'Unread'}}</span>
                                     </td>
                                     <td class="wrap">

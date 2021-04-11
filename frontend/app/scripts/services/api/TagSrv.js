@@ -21,7 +21,7 @@
                             { _name: 'filter', _ne: { '_field': 'colour', '_value': defaultColour } }
                         ], {
                             params: {
-                                name: 'list-tags'
+                                name: 'freetags-cache'
                             }
                         })
                     })
