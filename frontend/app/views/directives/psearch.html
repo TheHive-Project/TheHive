@@ -1,11 +1,11 @@
 <div class="text-center list-pagination">
-    <div class="text-center" ng-show="control.total > 0 && control.total > control.pageSize">
+    <div class="text-center" ng-if="control.total > 0 && control.total > control.pageSize">
         <ul uib-pagination total-items="control.total" ng-change="control.changePage()" ng-model="control.currentPage"
             class="pagination-sm" boundary-links="true" items-per-page="control.pageSize" max-size="5" rotate="false">
         </ul>
     </div>
 
-    <div class="text-center" ng-show="control.total < 0 && (-1*control.total) > control.pageSize">
+    <div class="text-center" ng-if="control.total < 0 && (-1*control.total) > control.pageSize">
         <ul uib-pagination total-items="-1*control.total" ng-change="control.changePage()"
             ng-model="control.currentPage" class="pagination-sm" boundary-links="true" items-per-page="control.pageSize"
             max-size="5" rotate="false"></ul>

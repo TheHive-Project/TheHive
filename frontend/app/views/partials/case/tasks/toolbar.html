@@ -3,8 +3,11 @@
         <div class="btn-toolbar" role="toolbar">
 
             <div class="btn-group" uib-dropdown if-permission="manageTask" allowed="{{userPermissions}}">
-                <button type="button" class="btn btn-sm btn-default" uib-dropdown-toggle ng-disabled="selection.length === 0">
-                    <ng-pluralize count="selection.length" when="{'0': 'No tasks selected', 'one': '{} selected task', 'other': '{} selected tasks'}"></ng-pluralize>
+                <button type="button" class="btn btn-sm btn-default" uib-dropdown-toggle
+                    ng-disabled="selection.length === 0">
+                    <ng-pluralize count="selection.length"
+                        when="{'0': 'No tasks selected', 'one': '{} selected task', 'other': '{} selected tasks'}">
+                    </ng-pluralize>
                     <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu" uib-dropdown-menu>
@@ -49,7 +52,8 @@
                     </li>
                     <li class="divider"></li>
                     <li>
-                        <a ng-click="filterBy('status', 'InProgress')"><i class="glyphicon glyphicon-play"></i> In progress tasks</a>
+                        <a ng-click="filterBy('status', 'InProgress')"><i class="glyphicon glyphicon-play"></i> In
+                            progress tasks</a>
                     </li>
                     <li>
                         <a ng-click="filterBy('status', 'Waiting')"><i class="fa fa-hourglass-o"></i> Waiting tasks</a>
@@ -65,11 +69,13 @@
             </div>
 
             <div class="btn-group pull-right" role="group">
-                <page-sizer collection="tasks" sizes="[10, 15, 30, 100]"></page-sizer>
+                <page-sizer collection="list" sizes="[10, 15, 30, 100]"></page-sizer>
             </div>
 
             <div class="btn-group pull-right" role="group">
-                <button class="btn btn-sm" ng-class="{true: 'btn-primary', false:'btn-default'}[filtering.context.showFilters]" type="button" ng-click="toggleFilters()">
+                <button class="btn btn-sm"
+                    ng-class="{true: 'btn-primary', false:'btn-default'}[filtering.context.showFilters]" type="button"
+                    ng-click="toggleFilters()">
                     <i class="fa fa-search"></i> Filters
                 </button>
             </div>
