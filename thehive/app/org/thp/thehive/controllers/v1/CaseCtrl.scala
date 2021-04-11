@@ -65,7 +65,7 @@ class CaseCtrl @Inject() (
     Query.init[Long](
       "countCase",
       (graph, authContext) =>
-        graph.indexCountQuery(s"""v."_label":Case AND v.organisationIds:${organisationSrv.currentId(graph, authContext).value} """)
+        graph.indexCountQuery(s"""v."_label":Case AND v.organisationIds:${organisationSrv.currentId(graph, authContext).value}""")
     ),
     Query[Traversal.V[Case], Traversal.V[Observable]](
       "observables",

@@ -17,11 +17,15 @@ import java.util.{Collection => JCollection, List => JList, Map => JMap}
 trait CaseRenderer extends BaseRenderer[Case] {
   val limitedCountThreshold: Long
 
-  def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsValue, JLong, Converter[JsValue, JLong]] =
-    _.share
-      .observables
-      .limitedCount(limitedCountThreshold)
-      .domainMap(count => Json.obj("total" -> count))
+  def observableStats(implicit authContext: AuthContext): Traversal.V[Case] => Traversal[JsObject, AnyRef, Converter[JsObject, AnyRef]] =
+    t =>
+      t._id.domainMap { caseId =>
+        Json.obj("total" -> t.graph.indexCountQuery(s"""v."_label":Case AND v.relatedId:${caseId.value}"""))
+      }
+//    _.share
+//      .observables
+//      .limitedCount(limitedCountThreshold)
+//      .domainMap(count => Json.obj("total" -> count))
 
   def taskStats(implicit
       authContext: AuthContext

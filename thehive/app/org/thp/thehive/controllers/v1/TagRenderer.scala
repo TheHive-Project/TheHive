@@ -15,20 +15,36 @@ trait TagRenderer extends BaseRenderer[Tag] {
   def usageStats(implicit
       authContext: AuthContext
   ): Traversal.V[Tag] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
-    _.project(
-      _.by(_.`case`.limitedCount(limitedCountThreshold))
-        .by(_.alert.limitedCount(limitedCountThreshold))
-        .by(_.observable.limitedCount(limitedCountThreshold))
-        .by(_.caseTemplate.limitedCount(limitedCountThreshold))
-    ).domainMap {
-      case (caseCount, alertCount, observableCount, caseTemplateCount) =>
-        Json.obj(
-          "case"         -> caseCount,
-          "alert"        -> alertCount,
-          "observable"   -> observableCount,
-          "caseTemplate" -> caseTemplateCount
-        )
-    }
+    t =>
+      t.project(
+        _.by(_.value(_.predicate))
+          .by(_.caseTemplate.limitedCount(limitedCountThreshold))
+      ).domainMap {
+        case (tag, caseTemplateCount) =>
+          Json.obj(
+            "case"         -> t.graph.indexCountQuery(s"""v."_label":Case AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}""""),
+            "alert"        -> t.graph.indexCountQuery(s"""v."_label":Alert AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}""""),
+            "observable"   -> t.graph.indexCountQuery(s"""v."_label":Observable AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}""""),
+            "caseTemplate" -> caseTemplateCount
+          )
+      }
+//  def usageStats(implicit
+//      authContext: AuthContext
+//  ): Traversal.V[Tag] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
+//    _.project(
+//      _.by(_.`case`.limitedCount(limitedCountThreshold))
+//        .by(_.alert.limitedCount(limitedCountThreshold))
+//        .by(_.observable.limitedCount(limitedCountThreshold))
+//        .by(_.caseTemplate.limitedCount(limitedCountThreshold))
+//    ).domainMap {
+//      case (caseCount, alertCount, observableCount, caseTemplateCount) =>
+//        Json.obj(
+//          "case"         -> caseCount,
+//          "alert"        -> alertCount,
+//          "observable"   -> observableCount,
+//          "caseTemplate" -> caseTemplateCount
+//        )
+//    }
 
   def tagStatsRenderer(extraData: Set[String])(implicit
       authContext: AuthContext
