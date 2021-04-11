@@ -449,7 +449,6 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .removeIndex("Case", IndexType.basic, "status")
     .removeIndex("Task", IndexType.basic, "status")
     .removeIndex("Alert", IndexType.basic, "type", "source", "sourceRef")
-    //=====[release 4.1.3]=====
     .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
       traversal
         .project(
@@ -462,6 +461,15 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         }
       Success(())
     }
+    .removeIndex("Alert", IndexType.standard)
+    .removeIndex("Attachment", IndexType.standard)
+    .removeIndex("Audit", IndexType.standard)
+    .removeIndex("Case", IndexType.standard)
+    .removeIndex("Log", IndexType.standard)
+    .removeIndex("Observable", IndexType.standard)
+    .removeIndex("Tag", IndexType.standard)
+    .removeIndex("Task", IndexType.standard)
+  //=====[release 4.1.3]=====
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
