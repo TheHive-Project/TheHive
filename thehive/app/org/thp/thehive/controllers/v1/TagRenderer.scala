@@ -4,6 +4,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.Tag
+import org.thp.thehive.services.OrganisationSrv
 import org.thp.thehive.services.TagOps._
 import play.api.libs.json._
 
@@ -11,6 +12,7 @@ import java.util.{Map => JMap}
 
 trait TagRenderer extends BaseRenderer[Tag] {
   val limitedCountThreshold: Long
+  val organisationSrv: OrganisationSrv
 
   def usageStats(implicit
       authContext: AuthContext
@@ -22,9 +24,24 @@ trait TagRenderer extends BaseRenderer[Tag] {
       ).domainMap {
         case (tag, caseTemplateCount) =>
           Json.obj(
-            "case"         -> t.graph.indexCountQuery(s"""v."_label":Case AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}""""),
-            "alert"        -> t.graph.indexCountQuery(s"""v."_label":Alert AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}""""),
-            "observable"   -> t.graph.indexCountQuery(s"""v."_label":Observable AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}""""),
+            "case" -> t
+              .graph
+              .indexCountQuery(
+                s"""v."_label":Case AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}" AND """ +
+                  s"v.organisationIds:${organisationSrv.currentId(t.graph, authContext).value}"
+              ),
+            "alert" -> t
+              .graph
+              .indexCountQuery(
+                s"""v."_label":Alert AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}" AND """ +
+                  s"v.organisationId:${organisationSrv.currentId(t.graph, authContext).value}"
+              ),
+            "observable" -> t
+              .graph
+              .indexCountQuery(
+                s"""v."_label":Observable AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}" AND """ +
+                  s"v.organisationIds:${organisationSrv.currentId(t.graph, authContext).value}"
+              ),
             "caseTemplate" -> caseTemplateCount
           )
       }
