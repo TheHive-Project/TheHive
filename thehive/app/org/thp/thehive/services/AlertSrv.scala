@@ -551,11 +551,11 @@ object AlertOps {
             .by(_.richCustomFields.fold)
             .by(_.`case`._id.option)
             .by(_.caseTemplate.value(_.name).option)
-            .by(_.observables.count)
             .by(entityRenderer)
         )
         .domainMap {
-          case (alert, customFields, caseId, caseTemplate, observableCount, renderedEntity) =>
+          case (alert, customFields, caseId, caseTemplate, renderedEntity) =>
+            val observableCount = traversal.graph.indexCountQuery(s"""v."_label":Observable AND v.relatedId:${alert._id.value}""")
             RichAlert(
               alert,
               customFields,
