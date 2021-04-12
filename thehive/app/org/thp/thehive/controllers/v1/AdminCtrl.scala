@@ -3,8 +3,10 @@ package org.thp.thehive.controllers.v1
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import ch.qos.logback.classic.{Level, LoggerContext}
+import org.slf4j.LoggerFactory
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, UpdatableSchema, VertexModel}
 import org.thp.scalligraph.services.GenIntegrityCheckOps
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CheckState, CheckStats, GetCheckStats, GlobalCheckRequest}
@@ -17,8 +19,6 @@ import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
-import ch.qos.logback.classic.{Level, LoggerContext}
-import org.slf4j.LoggerFactory
 
 @Singleton
 class AdminCtrl @Inject() (
@@ -26,6 +26,7 @@ class AdminCtrl @Inject() (
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
     integrityCheckOps: immutable.Set[GenIntegrityCheckOps],
     db: Database,
+    schemas: immutable.Set[UpdatableSchema],
     implicit val ec: ExecutionContext
 ) {
 
@@ -87,20 +88,14 @@ class AdminCtrl @Inject() (
           }
       }
 
-  private val indexedModels = Seq("global")
   def indexStatus: Action[AnyContent] =
     entrypoint("Get index status")
       .authPermittedRoTransaction(db, Permissions.managePlatform) { _ => graph =>
-        val status = indexedModels.map { label =>
-//          val mixedCount     = graph.V(label).getCount
-//          val compositeCount = graph.underlying.traversal().V().has("_label", label).count().next().toLong
-          label -> Json.obj(
-            "mixedCount"     -> -1,
-            "compositeCount" -> -1,
-            "status"         -> "OK"
-          )
+        val indices = schemas.flatMap(_.modelList).collect {
+          case v: VertexModel => Json.obj("name" -> v.label, "count" -> graph.indexCountQuery(s"""v."_label":${v.label}"""))
         }
-        Success(Results.Ok(JsObject(status)))
+        val indexCount = Json.obj("name" -> "global", "indices" -> indices)
+        Success(Results.Ok(Json.obj("index" -> Seq(indexCount))))
       }
 
   def reindex(label: String): Action[AnyContent] =
