@@ -26,7 +26,6 @@ class AdminCtrl @Inject() (
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
     integrityCheckOps: immutable.Set[GenIntegrityCheckOps],
     db: Database,
-    schemas: immutable.Set[UpdatableSchema],
     implicit val ec: ExecutionContext
 ) {
 
@@ -88,11 +87,37 @@ class AdminCtrl @Inject() (
           }
       }
 
+  val labels = Seq(
+    "Config",
+    "ReportTag",
+    "KeyValue",
+    "Pattern",
+    "Case",
+    "Procedure",
+    "Alert",
+    "Dashboard",
+    "Observable",
+    "User",
+    "AnalyzerTemplate",
+    "Taxonomy",
+    "CustomField",
+    "Data",
+    "Organisation",
+    "Profile",
+    "Task",
+    "Action",
+    "Log",
+    "CaseTemplate",
+    "Audit",
+    "Tag",
+    "Job",
+    "Attachment"
+  )
   def indexStatus: Action[AnyContent] =
     entrypoint("Get index status")
       .authPermittedRoTransaction(db, Permissions.managePlatform) { _ => graph =>
-        val indices = schemas.flatMap(_.modelList).collect {
-          case v: VertexModel => Json.obj("name" -> v.label, "count" -> graph.indexCountQuery(s"""v."_label":${v.label}"""))
+        val indices = labels.map { label =>
+          Json.obj("name" -> label, "count" -> graph.indexCountQuery(s"""v."_label":$label"""))
         }
         val indexCount = Json.obj("name" -> "global", "indices" -> indices)
         Success(Results.Ok(Json.obj("index" -> Seq(indexCount))))
