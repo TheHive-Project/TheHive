@@ -6,7 +6,7 @@ import akka.util.Timeout
 import ch.qos.logback.classic.{Level, LoggerContext}
 import org.slf4j.LoggerFactory
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.models.{Database, UpdatableSchema, VertexModel}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.GenIntegrityCheckOps
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CheckState, CheckStats, GetCheckStats, GlobalCheckRequest}
