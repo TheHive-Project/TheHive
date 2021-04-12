@@ -1,5 +1,30 @@
 # Change Log
 
+## [4.1.3](https://github.com/TheHive-Project/TheHive/milestone/72) (2021-04-12)
+
+**Implemented enhancements:**
+
+- [Improvement] Cleanup deprecated filter usage [\#1922](https://github.com/TheHive-Project/TheHive/issues/1922)
+- [Improvement] Make the property "Imported" in alerts optimised for index [\#1923](https://github.com/TheHive-Project/TheHive/issues/1923)
+- [Feature Request] Display case templates in alphabetic order in "New case" menu [\#1925](https://github.com/TheHive-Project/TheHive/issues/1925)
+- [Enhancement] Prevent the application to start if database initialisation fails [\#1935](https://github.com/TheHive-Project/TheHive/issues/1935)
+- [Enhancement] Improve performance [\#1946](https://github.com/TheHive-Project/TheHive/issues/1946)
+- [Enhancement] Remove blocking queries in some UI pages [\#1948](https://github.com/TheHive-Project/TheHive/issues/1948)
+- [Enhancement] Use polluingDuration config from the UI [\#1951](https://github.com/TheHive-Project/TheHive/issues/1951)
+- [Enhancement] Disable confirm buttons in import dialogs [\#1953](https://github.com/TheHive-Project/TheHive/issues/1953)
+- [Enhancement] Add environment file in service [\#1954](https://github.com/TheHive-Project/TheHive/issues/1954)
+
+**Fixed bugs:**
+
+- [Bug] Add "Not assigned" to Assignee field on task page for tasks without an assigned user [\#1508](https://github.com/TheHive-Project/TheHive/issues/1508)
+- [Bug] (Still) slow loading of list-tags endpoint with 4.1.2 [\#1914](https://github.com/TheHive-Project/TheHive/issues/1914)
+- [Bug] Aggregation on custom fields provides incorect result [\#1921](https://github.com/TheHive-Project/TheHive/issues/1921)
+- [Bug] Very slow load of Case Task list in UI in 4.1.2 [\#1927](https://github.com/TheHive-Project/TheHive/issues/1927)
+- [Bug] Task "Take" Button not working [\#1931](https://github.com/TheHive-Project/TheHive/issues/1931)
+- [Bug] Cluster: new nodes fail to start when the oldest node has been restarted [\#1934](https://github.com/TheHive-Project/TheHive/issues/1934)
+- [Bug] Index status page is very slow [\#1936](https://github.com/TheHive-Project/TheHive/issues/1936)
+- [Bug] Update of color in tags [\#1950](https://github.com/TheHive-Project/TheHive/issues/1950)
+
 ## [4.1.2](https://github.com/TheHive-Project/TheHive/milestone/71) (2021-03-29)
 
 **Implemented enhancements:**
