@@ -110,7 +110,7 @@
 
             // Stats for case observables counter
             StreamQuerySrv('v1', [
-                { _name: 'countObservable', caseId: caseId },
+                { _name: 'countCaseObservable', caseId: caseId },
             ], {
                 scope: $scope,
                 rootId: caseId,

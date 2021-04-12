@@ -9,6 +9,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import javax.inject.{Inject, Singleton}
 
 case class InCase(caseId: EntityId)
+case class InAlert(alertId: EntityId)
 
 case class OutputParam(from: Long, to: Long, extraData: Set[String])
 

@@ -75,10 +75,19 @@ class ObservableCtrl @Inject() (
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.initWithParam[InCase, Long](
-      "countObservable",
+      "countCaseObservable",
       (inCase, graph, authContext) =>
         graph.indexCountQuery(
           s"""v."_label":Observable AND relatedId:${inCase.caseId.value} AND organisationIds:${organisationSrv.currentId(graph, authContext).value}"""
+        )
+    ),
+    Query.initWithParam[InAlert, Long](
+      "countAlertObservable",
+      (inAlert, graph, authContext) =>
+        graph.indexCountQuery(
+          s"""v."_label":Observable AND relatedId:${inAlert
+            .alertId
+            .value} AND organisationIds:${organisationSrv.currentId(graph, authContext).value}"""
         )
     ),
     Query[Traversal.V[Observable], Traversal.V[Organisation]](
