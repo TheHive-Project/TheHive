@@ -20,6 +20,7 @@
 
             self.lastSearch = null;
             self.responders = null;
+            self.alertCountAll = null;
 
             this.$onInit = function () {
                 self.filtering = new FilteringSrv('alert', 'alert.list', {

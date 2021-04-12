@@ -24,6 +24,10 @@
             $scope.newestLink = null;
             $scope.oldestLink = null;
 
+            $scope.tasksCount = null;
+            $scope.observablesCount = null;
+            $scope.alertCount = null;
+
             $scope.caze = caze;
             $scope.userPermissions = (caze.extraData.permissions || []).join(',');
             $rootScope.title = 'Case #' + caze.number + ': ' + caze.title;
@@ -84,15 +88,6 @@
             // Stats for case tasks counter
             StreamQuerySrv('v1', [
                 { _name: 'countTask', caseId: caseId },
-                // {_name: 'getCase', idOrName: caseId},
-                // {_name: 'tasks'},
-                // {_name: 'filter',
-                //     _not: {
-                //         '_field': 'status',
-                //         '_value': 'Cancel'
-                //     }
-                // },
-                // {_name: 'count'}
             ], {
                 scope: $scope,
                 rootId: caseId,

@@ -6,6 +6,8 @@
             controller: function ($scope, FilteringSrv, QuerySrv, PaginatedQuerySrv) {
                 var self = this;
 
+                self.observablesCount = null;
+
                 self.$onInit = function () {
                     this.filtering = new FilteringSrv('observable', 'alert.dialog.observables', {
                         version: 'v1',

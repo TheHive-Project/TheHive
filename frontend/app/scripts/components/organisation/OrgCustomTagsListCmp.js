@@ -9,8 +9,9 @@
                 self.tags = [];
                 self.getUserInfo = UserSrv.getCache;
 
+                self.freetagsCount = null;
+
                 this.$onInit = function () {
-                    // TODO: FIXME
                     self.filtering = new FilteringSrv('tag', 'custom-tags.list', {
                         version: 'v1',
                         defaults: {

@@ -11,6 +11,7 @@
         this.getUserInfo = UserSrv.getCache;
         this.CaseResolutionStatus = CaseResolutionStatus;
         this.caseResponders = null;
+        self.caseCountAll = null;
 
         this.lastQuery = null;
 
