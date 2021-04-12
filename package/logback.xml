@@ -37,6 +37,7 @@
     <!-- do not set the following logger to TRACE -->
     <logger name="org.thp.scalligraph.traversal" level="INFO"/>
     <logger name="org.reflections8.Reflections" level="ERROR" />
+    <logger name="org.janusgraph.graphdb.database.IndexSerializer" level="ERROR"/>
 
     <logger name="org.thp" level="INFO"/>
 
