@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
 
     angular.module('theHiveControllers')
@@ -11,7 +11,7 @@
 
         this.appConfig = appConfig;
 
-        self.load = function() {
+        self.load = function () {
             this.loading = true;
 
             this.list = new PaginatedQuerySrv({
@@ -26,19 +26,19 @@
                 filter: this.filtering.buildQuery(),
                 baseFilter: {
                     _field: 'patternType',
-                    _value:'attack-pattern'
+                    _value: 'attack-pattern'
                 },
                 operations: [
-                    {'_name': 'listPattern'}
+                    { '_name': 'listPattern' }
                 ],
                 extraData: ['enabled', 'parent'],
-                onUpdate: function() {
+                onUpdate: function () {
                     self.loading = false;
                 }
             });
         };
 
-        self.show = function(patternId) {
+        self.show = function (patternId) {
             $uibModal.open({
                 animation: true,
                 templateUrl: 'views/partials/admin/attack/view.html',
@@ -46,7 +46,7 @@
                 controllerAs: '$modal',
                 size: 'max',
                 resolve: {
-                    pattern: function() {
+                    pattern: function () {
                         return AttackPatternSrv.get(patternId);
                     }
                 }
@@ -67,11 +67,11 @@
             });
 
             modalInstance.result
-                .then(function() {
+                .then(function () {
                     self.load();
                 })
-                .catch(function(err){
-                    if(err && !_.isString(err)) {
+                .catch(function (err) {
+                    if (err && !_.isString(err)) {
                         NotificationSrv.error('Pattern import', err.data, err.status);
                     }
                 });
@@ -104,7 +104,7 @@
             this.search();
         };
 
-        self.$onInit = function() {
+        self.$onInit = function () {
             self.filtering = new FilteringSrv('pattern', 'attack-pattern.list', {
                 version: 'v1',
                 defaults: {
@@ -117,7 +117,7 @@
             });
 
             self.filtering.initContext('list')
-                .then(function() {
+                .then(function () {
                     self.load();
 
                     $scope.$watch('$vm.list.pageSize', function (newValue) {
@@ -138,7 +138,7 @@
             $uibModalInstance.dismiss('cancel');
         };
 
-        this.$onInit = function() {
+        this.$onInit = function () {
             if (this.pattern.extraData.parent) {
                 this.pattern.isSubTechnique = true;
                 this.pattern.parentId = this.pattern.extraData.parent.patternId;
@@ -152,13 +152,19 @@
     function AttackPatternImportCtrl($uibModalInstance, AttackPatternSrv, NotificationSrv, appConfig) {
         this.appConfig = appConfig;
         this.formData = {};
+        this.loading = false;
 
         this.ok = function () {
+            this.loading = true;
             AttackPatternSrv.import(this.formData)
-                .then(function() {
+                .then(function () {
                     $uibModalInstance.close();
-                }, function(response) {
+                })
+                .catch(function (response) {
                     NotificationSrv.error('AttackPatternImportCtrl', response.data, response.status);
+                })
+                .fincally(function () {
+                    this.loading = false;
                 });
         };
 

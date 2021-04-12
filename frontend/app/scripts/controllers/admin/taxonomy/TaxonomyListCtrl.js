@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
 
     angular.module('theHiveControllers')
@@ -11,7 +11,7 @@
 
         this.appConfig = appConfig;
 
-        self.load = function() {
+        self.load = function () {
             this.loading = true;
 
             this.list = new PaginatedQuerySrv({
@@ -25,16 +25,16 @@
                 pageSize: self.filtering.context.pageSize,
                 filter: this.filtering.buildQuery(),
                 operations: [
-                    {'_name': 'listTaxonomy'}
+                    { '_name': 'listTaxonomy' }
                 ],
                 extraData: ['enabled'],
-                onUpdate: function() {
+                onUpdate: function () {
                     self.loading = false;
                 }
             });
         };
 
-        self.show = function(taxonomy) {
+        self.show = function (taxonomy) {
             // var modalInstance = $uibModal.open({
 
             $uibModal.open({
@@ -73,52 +73,52 @@
             });
 
             modalInstance.result
-                .then(function() {
+                .then(function () {
                     self.load();
                 })
-                .catch(function(err){
-                    if(err && !_.isString(err)) {
+                .catch(function (err) {
+                    if (err && !_.isString(err)) {
                         NotificationSrv.error('Taxonomies import', err.data, err.status);
                     }
                 });
         };
 
-        this.toggleActive = function(taxonomy) {
+        this.toggleActive = function (taxonomy) {
             var active = !taxonomy.extraData.enabled;
 
             TaxonomySrv.toggleActive(taxonomy._id, active)
-                .then(function() {
+                .then(function () {
                     NotificationSrv.log(['Taxonomy [', taxonomy.namespace, '] has been successfully', (active ? 'activated' : 'deactivated')].join(' '), 'success');
 
                     self.load();
                 })
-                .catch(function(err){
-                    if(err && !_.isString(err)) {
+                .catch(function (err) {
+                    if (err && !_.isString(err)) {
                         NotificationSrv.error('Taxonomies ' + active ? 'activation' : 'deactivation', err.data, err.status);
                     }
                 });
         };
 
-        self.remove = function(taxonomy) {
+        self.remove = function (taxonomy) {
             var modalInstance = ModalSrv.confirm(
                 'Remove taxonomy',
                 'Are you sure you want to remove the selected taxonomy?', {
-                    flavor: 'danger',
-                    okText: 'Yes, remove it'
-                }
+                flavor: 'danger',
+                okText: 'Yes, remove it'
+            }
             );
 
             modalInstance.result
-                .then(function() {
+                .then(function () {
                     return TaxonomySrv.remove(taxonomy._id);
                 })
-                .then(function( /*response*/ ) {
+                .then(function ( /*response*/) {
                     self.load();
                     NotificationSrv.success(
                         'Taxonomy ' + taxonomy.namespace + ' has been successfully removed.'
                     );
                 })
-                .catch(function(err) {
+                .catch(function (err) {
                     if (err && !_.isString(err)) {
                         NotificationSrv.error('TaxonomyListCtrl', err.data, err.status);
                     }
@@ -152,7 +152,7 @@
             this.search();
         };
 
-        self.$onInit = function() {
+        self.$onInit = function () {
             self.filtering = new FilteringSrv('taxonomy', 'taxonomy.list', {
                 version: 'v1',
                 defaults: {
@@ -165,7 +165,7 @@
             });
 
             self.filtering.initContext('list')
-                .then(function() {
+                .then(function () {
                     self.load();
 
                     $scope.$watch('$vm.list.pageSize', function (newValue) {
@@ -190,13 +190,19 @@
     function TaxonomyImportCtrl($uibModalInstance, TaxonomySrv, NotificationSrv, appConfig) {
         this.appConfig = appConfig;
         this.formData = {};
+        this.loading = false;
 
         this.ok = function () {
+            this.loading = true;
             TaxonomySrv.import(this.formData)
-                .then(function() {
+                .then(function () {
                     $uibModalInstance.close();
-                }, function(response) {
+                })
+                .catch(function (response) {
                     NotificationSrv.error('TaxonomyImportCtrl', response.data, response.status);
+                })
+                .finally(function () {
+                    this.loading = false;
                 });
         };
 
