@@ -17,7 +17,7 @@ import play.api.mvc._
 
 import java.nio.file.Files
 import javax.inject.{Inject, Singleton}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 @Singleton
 class AttachmentCtrl @Inject() (

@@ -53,13 +53,23 @@ class TaskCtrl @Inject() (
   override val outputQuery: Query =
     Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, _) => taskSteps.richTask)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.initWithParam[InCase, Long](
+      "countTask",
+      (inCase, graph, authContext) =>
+        graph.indexCountQuery(
+          s"""v."_label":Task AND """ +
+            s"v.relatedId:${graph.escapeQueryParameter(inCase.caseId.value)} AND " +
+            s"v.organisationIds:${organisationSrv.currentId(graph, authContext).value} AND " +
+            "NOT v.status:Cancel"
+        )
+    ),
     Query.init[Traversal.V[Task]](
       "waitingTasks",
-      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).inCase.visible(organisationSrv)(authContext)
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(organisationSrv)(authContext).inCase
     ),
     Query.init[Traversal.V[Task]]( // DEPRECATED
       "waitingTask",
-      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).inCase.visible(organisationSrv)(authContext)
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(organisationSrv)(authContext).inCase
     ),
     Query.init[Traversal.V[Task]](
       "myTasks",
@@ -68,6 +78,7 @@ class TaskCtrl @Inject() (
           .startTraversal(graph)
           .assignTo(authContext.userId)
           .visible(organisationSrv)(authContext)
+          .inCase
     ),
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),

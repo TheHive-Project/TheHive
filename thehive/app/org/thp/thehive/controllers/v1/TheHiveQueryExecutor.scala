@@ -1,10 +1,15 @@
 package org.thp.thehive.controllers.v1
 
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.controllers.{FObject, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
 import javax.inject.{Inject, Singleton}
+
+case class InCase(caseId: EntityId)
+case class InAlert(alertId: EntityId)
 
 case class OutputParam(from: Long, to: Long, extraData: Set[String])
 
@@ -21,6 +26,7 @@ object OutputParam {
 
 @Singleton
 class TheHiveQueryExecutor @Inject() (
+    appConfig: ApplicationConfig,
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,
     caseCtrl: CaseCtrl,
@@ -65,6 +71,9 @@ class TheHiveQueryExecutor @Inject() (
       userCtrl,
       taxonomyCtrl
     )
+
+  val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
+  override val limitedCountThreshold: Long                = limitedCountThresholdConfig.get
 
   override val version: (Int, Int) = 1 -> 1
 

@@ -95,8 +95,8 @@ class Properties @Inject() (
             predicate.fold(
               b => if (b) alertTraversal else alertTraversal.empty,
               p =>
-                if (p.getValue) alertTraversal.has(_.caseId)
-                else alertTraversal.hasNot(_.caseId)
+                if (p.getValue) alertTraversal.nonEmptyId(_.caseId)
+                else alertTraversal.isEmptyId(_.caseId)
             )
           )
           .readonly
@@ -106,8 +106,7 @@ class Properties @Inject() (
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
           alerts
-            .customFields(EntityIdOrName(idOrName))
-            .jsonValue
+            .customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
         case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter[JsValue] {
@@ -134,7 +133,6 @@ class Properties @Inject() (
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
       .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
-      .property("imported", UMapping.boolean)(_.select(_.imported).readonly)
       .property("importDate", UMapping.date.optional)(_.select(_.importDate).readonly)
       .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
       .property("computed.handlingDurationInSeconds", UMapping.long)(_.select(_.handlingDuration.math("_ / 1000").domainMap(_.toLong)).readonly)
@@ -209,8 +207,7 @@ class Properties @Inject() (
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
           caseSteps
-            .customFields(EntityIdOrName(idOrName))
-            .jsonValue
+            .customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter[JsValue] {
@@ -273,16 +270,34 @@ class Properties @Inject() (
       .property("summary", UMapping.string.optional)(_.field.updatable)
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(name, _)), alertSteps) => alertSteps.customFields(name).jsonValue
-        case (_, alertSteps)                                => alertSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
-      }.custom {
-        case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
-          for {
-            c <- caseTemplateSrv.getOrFail(vertex)(graph)
-            _ <- caseTemplateSrv.setOrCreateCustomField(c, name, Some(value), None)(graph, authContext)
-          } yield Json.obj(s"customField.$name" -> value)
-        case _ => Failure(BadRequestError("Invalid custom fields format"))
-      })
+        case (FPathElem(_, FPathElem(idOrName, _)), caseTemplateSteps) =>
+          caseTemplateSteps
+            .customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
+        case (_, caseTemplateSteps) => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+      }
+        .filter[JsValue] {
+          case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
+            predicate match {
+              case Right(predicate) => caseTemplateTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
+              case Left(true)       => caseTemplateTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
+              case Left(false)      => caseTemplateTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+            }
+          case (_, caseTraversal, _, _) => caseTraversal.empty
+        }
+        .custom {
+          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
+            for {
+              c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
+              _ <- caseTemplateSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
+            } yield Json.obj(s"customField.$idOrName" -> value)
+          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
+            for {
+              c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
+              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
+              _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
+            } yield Json.obj("customFields" -> values)
+          case _ => Failure(BadRequestError("Invalid custom fields format"))
+        })
       .build
 
   lazy val organisation: PublicProperties =
@@ -406,13 +421,13 @@ class Properties @Inject() (
       )
       .property("message", UMapping.string)(_.field.updatable)
       .property("tlp", UMapping.int)(_.field.updatable)
-      .property("dataType", UMapping.string)(_.select(_.observableType.value(_.name)).readonly)
-      .property("data", UMapping.string.optional)(_.select(_.data.value(_.data)).readonly)
+      .property("dataType", UMapping.string)(_.field.readonly)
+      .property("data", UMapping.string.optional)(_.field.readonly)
       .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
       .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
       .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
       .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
-      .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
+      .property("attachment.id", UMapping.string.optional)(_.field.readonly)
       .build
 
   lazy val taxonomy: PublicProperties =

@@ -1,9 +1,9 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveServices')
-        .service('PaginatedQuerySrv', function($filter, StreamSrv, QuerySrv) {
+        .service('PaginatedQuerySrv', function ($filter, StreamSrv, QuerySrv) {
 
-            return function(options) {
+            return function (options) {
                 var self = this;
 
                 // Internal fields
@@ -22,6 +22,7 @@
                 this.loadAll = !!options.loadAll;
                 this.pageSize = options.pageSize || 10;
                 this.pageOptions = options.pageOptions || {};
+                this.limitedCount = options.limitedCount || false;
                 this.baseFilter = options.baseFilter;
                 this.filter = options.filter;
                 this.sort = options.sort;
@@ -34,6 +35,8 @@
                 this.extraData = options.extraData || undefined;
                 this.name = options.name || undefined;
                 this.config = options.config || {};
+                this.loading = false;
+                this.loadingCount = false;
 
                 this.operations = options.operations;
 
@@ -43,8 +46,8 @@
                         scope: self.scope,
                         rootId: self.root,
                         objectType: self.streamObjectType,
-                        callback: function(updates) {
-                            if(!self.guard || self.guard(updates)) {
+                        callback: function (updates) {
+                            if (!self.guard || self.guard(updates)) {
                                 self.update(updates, true);
                             }
                         }
@@ -56,12 +59,12 @@
                 /*
                 Function to change the page
                 */
-                this.changePage = function() {
+                this.changePage = function () {
                     if (this.loadAll) {
                         this.values.length = 0;
                         var end = this.currentPage * this.pageSize;
                         var start = end - this.pageSize;
-                        angular.forEach(this.allValues.slice(start, end), function(d) {
+                        angular.forEach(this.allValues.slice(start, end), function (d) {
                             self.values.push(d);
                         });
 
@@ -76,7 +79,7 @@
                 /*
                 Function to compute the range of the page
                 */
-                this.getPage = function() {
+                this.getPage = function () {
                     if (this.loadAll) {
                         return;
                     }
@@ -90,7 +93,7 @@
                             from: from,
                             to: to
                         },
-                        self.extraData ? {extraData: self.extraData} : {},
+                        self.extraData ? { extraData: self.extraData } : {},
                         self.pageOptions ? self.pageOptions : {}
                     );
                 };
@@ -101,20 +104,20 @@
                  *
                  * @return {type}  filters definition
                  */
-                this.getFilter = function() {
-                    if(!this.baseFilter && !this.filter) {
+                this.getFilter = function () {
+                    if (!this.baseFilter && !this.filter) {
                         return;
                     }
 
-                    var predicates = _.filter([this.baseFilter, this.filter], function(item) {
+                    var predicates = _.filter([this.baseFilter, this.filter], function (item) {
                         return !_.isEmpty(item);
                     });
 
-                    if(predicates.length === 0) {
+                    if (predicates.length === 0) {
                         return [];
                     }
 
-                    return predicates.length === 1 ? predicates[0] : {'_and': predicates};
+                    return predicates.length === 1 ? predicates[0] : { '_and': predicates };
                 };
 
                 /**
@@ -122,17 +125,18 @@
                  *
                  * @return {type}  sort definition
                  */
-                this.getSort = function() {
+                this.getSort = function () {
                     return self.sort;
                 };
 
                 /*
                 Function to change the page
                 */
-                this.update = function(updates, forceCount) {
+                this.update = function (updates, forceCount) {
                     var filters = self.getFilter();
 
                     // Get the list
+                    this.loading = true;
                     QuerySrv.call(this.version, this.operations, {
                         filter: filters,
                         sort: self.getSort(),
@@ -140,37 +144,46 @@
                         config: self.config,
                         withParent: false,
                         name: self.name
-                    }).then(function(data) {
-                        if (self.loadAll) {
-                            self.allValues = data;
+                    })
+                        .then(function (data) {
+                            if (self.loadAll) {
+                                self.allValues = data;
 
-                            self.total = data.length;
+                                self.total = data.length;
 
-                            self.changePage();
-                        } else {
-                            self.values = data;
-                            if (angular.isFunction(self.onUpdate)) {
-                                self.onUpdate(updates);
+                                self.changePage();
+                            } else {
+                                self.values = data;
+                                if (angular.isFunction(self.onUpdate)) {
+                                    self.onUpdate(updates);
+                                }
                             }
-                        }
-                    }).catch(function(err) {
-                        if(self.onFailure) {
-                            self.onFailure(err);
-                        }
-                    });
+                        })
+                        .catch(function (err) {
+                            if (self.onFailure) {
+                                self.onFailure(err);
+                            }
+                        })
+                        .finally(function () {
+                            self.loading = false;
+                        });
 
                     // get the total if not cached
                     var hash = $filter('md5')(JSON.stringify(this.filter));
-                    if(forceCount || (!!!this.loadAll && this.filterHash !== hash)) {
+                    if (forceCount || (!!!this.loadAll && this.filterHash !== hash)) {
                         this.filterHash = hash;
 
                         // Compute the total again
+                        self.loadingCount = true;
                         QuerySrv.count('v1', this.operations, {
                             filter: filters,
                             name: self.name,
                             config: self.config,
-                        }).then(function(total) {
+                            limitedCount: self.limitedCount
+                        }).then(function (total) {
                             self.total = total;
+                        }).finally(function () {
+                            self.loadingCount = false;
                         });
                     }
 

@@ -3,10 +3,11 @@ package org.thp.thehive.controllers.v1
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import ch.qos.logback.classic.{Level, LoggerContext}
+import org.slf4j.LoggerFactory
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.GenIntegrityCheckOps
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.{CheckState, CheckStats, GetCheckStats, GlobalCheckRequest}
 import play.api.Logger
@@ -41,6 +42,25 @@ class AdminCtrl @Inject() (
   }
   lazy val logger: Logger = Logger(getClass)
 
+  def setLogLevel(packageName: String, levelName: String): Action[AnyContent] =
+    entrypoint("Update log level")
+      .authPermitted(Permissions.managePlatform) { _ =>
+        val level = levelName match {
+          case "ALL"   => Level.ALL
+          case "DEBUG" => Level.DEBUG
+          case "INFO"  => Level.INFO
+          case "WARN"  => Level.WARN
+          case "ERROR" => Level.ERROR
+          case "OFF"   => Level.OFF
+          case "TRACE" => Level.TRACE
+          case _       => Level.INFO
+        }
+        val loggerContext = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+        val logger        = loggerContext.getLogger(packageName)
+        logger.setLevel(level)
+        Success(Results.NoContent)
+      }
+
   def triggerCheck(name: String): Action[AnyContent] =
     entrypoint("Trigger check")
       .authPermitted(Permissions.managePlatform) { _ =>
@@ -67,20 +87,40 @@ class AdminCtrl @Inject() (
           }
       }
 
-  private val indexedModels = Seq("Alert", "Attachment", "Audit", "Case", "Log", "Observable", "Tag", "Task")
+  val labels = Seq(
+    "Config",
+    "ReportTag",
+    "KeyValue",
+    "Pattern",
+    "Case",
+    "Procedure",
+    "Alert",
+    "Dashboard",
+    "Observable",
+    "User",
+    "AnalyzerTemplate",
+    "Taxonomy",
+    "CustomField",
+    "Data",
+    "Organisation",
+    "Profile",
+    "Task",
+    "Action",
+    "Log",
+    "CaseTemplate",
+    "Audit",
+    "Tag",
+    "Job",
+    "Attachment"
+  )
   def indexStatus: Action[AnyContent] =
     entrypoint("Get index status")
       .authPermittedRoTransaction(db, Permissions.managePlatform) { _ => graph =>
-        val status = indexedModels.map { label =>
-          val mixedCount     = graph.V(label).getCount
-          val compositeCount = graph.underlying.traversal().V().has("_label", label).count().next().toLong
-          label -> Json.obj(
-            "mixedCount"     -> mixedCount,
-            "compositeCount" -> compositeCount,
-            "status"         -> (if (mixedCount == compositeCount) "OK" else "Error")
-          )
+        val indices = labels.map { label =>
+          Json.obj("name" -> label, "count" -> graph.indexCountQuery(s"""v."_label":$label"""))
         }
-        Success(Results.Ok(JsObject(status)))
+        val indexCount = Json.obj("name" -> "global", "indices" -> indices)
+        Success(Results.Ok(Json.obj("index" -> Seq(indexCount))))
       }
 
   def reindex(label: String): Action[AnyContent] =

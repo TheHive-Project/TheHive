@@ -73,7 +73,7 @@ class MispImportSrv @Inject() (
           follow = true,
           organisationId = organisationId,
           tags = event.tags.map(_.name),
-          caseId = None
+          caseId = EntityId.empty
         )
       }
 

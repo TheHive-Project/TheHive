@@ -365,7 +365,7 @@ class CaseSrv @Inject() (
             _ <-
               get(c)
                 .alert
-                .update(_.caseId, Some(richCase._id))
+                .update(_.caseId, richCase._id)
                 .toSeq
                 .toTry(alertSrv.alertCaseSrv.create(AlertCase(), _, richCase.`case`))
             _ <-
@@ -494,6 +494,14 @@ object CaseOps {
           name => customFields.filter(_.inV.v[CustomField].has(_.name, name))
         )
 
+    def customFieldJsonValue(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.Domain[JsValue] =
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map(t => CustomFieldType.map(t).getJsonValue(traversal.customFields(customField)))
+        .getOrElse(traversal.empty.castDomain)
+
     def richCustomFields: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] =
       customFields
         .project(_.by.by(_.inV.v[CustomField]))
@@ -507,47 +515,46 @@ object CaseOps {
         .value(_.`type`)
         .headOption
         .map {
-          case CustomFieldType.boolean => traversal.filter(_.customFields(customField).has(_.booleanValue, predicate.mapValue(_.as[Boolean])))
-          case CustomFieldType.date    => traversal.filter(_.customFields(customField).has(_.dateValue, predicate.mapValue(_.as[Date])))
-          case CustomFieldType.float   => traversal.filter(_.customFields(customField).has(_.floatValue, predicate.mapValue(_.as[Double])))
-          case CustomFieldType.integer => traversal.filter(_.customFields(customField).has(_.integerValue, predicate.mapValue(_.as[Int])))
-          case CustomFieldType.string  => traversal.filter(_.customFields(customField).has(_.stringValue, predicate.mapValue(_.as[String])))
+          case CustomFieldType.boolean =>
+            traversal.filter(_.customFields.has(_.booleanValue, predicate.mapValue(_.as[Boolean])).inV.v[CustomField].get(customField))
+          case CustomFieldType.date =>
+            traversal.filter(_.customFields.has(_.dateValue, predicate.mapValue(_.as[Date])).inV.v[CustomField].get(customField))
+          case CustomFieldType.float =>
+            traversal.filter(_.customFields.has(_.floatValue, predicate.mapValue(_.as[Double])).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer =>
+            traversal.filter(_.customFields.has(_.integerValue, predicate.mapValue(_.as[Int])).inV.v[CustomField].get(customField))
+          case CustomFieldType.string =>
+            traversal.filter(_.customFields.has(_.stringValue, predicate.mapValue(_.as[String])).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
 
-    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
         .headOption
         .map {
-          case CustomFieldType.boolean => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.booleanValue).inV.v[CustomField]))
-          case CustomFieldType.date    => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.dateValue).inV.v[CustomField]))
-          case CustomFieldType.float   => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.floatValue).inV.v[CustomField]))
-          case CustomFieldType.integer => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.integerValue).inV.v[CustomField]))
-          case CustomFieldType.string  => traversal.filter(t => cfFilter(t.outE[CaseCustomField].has(_.stringValue).inV.v[CustomField]))
+          case CustomFieldType.boolean => traversal.filter(_.customFields.has(_.booleanValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.date    => traversal.filter(_.customFields.has(_.dateValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.float   => traversal.filter(_.customFields.has(_.floatValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer => traversal.filter(_.customFields.has(_.integerValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.string  => traversal.filter(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
 
-    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Case] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
         .headOption
         .map {
-          case CustomFieldType.boolean => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.booleanValue).inV.v[CustomField]))
-          case CustomFieldType.date    => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.dateValue).inV.v[CustomField]))
-          case CustomFieldType.float   => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.floatValue).inV.v[CustomField]))
-          case CustomFieldType.integer => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.integerValue).inV.v[CustomField]))
-          case CustomFieldType.string  => traversal.filterNot(t => cfFilter(t.outE[CaseCustomField].has(_.stringValue).inV.v[CustomField]))
+          case CustomFieldType.boolean => traversal.filterNot(_.customFields.has(_.booleanValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.date    => traversal.filterNot(_.customFields.has(_.dateValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.float   => traversal.filterNot(_.customFields.has(_.floatValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer => traversal.filterNot(_.customFields.has(_.integerValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.string  => traversal.filterNot(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
 
     def share(implicit authContext: AuthContext): Traversal.V[Share] = share(authContext.organisation)
 

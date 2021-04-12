@@ -422,13 +422,13 @@ class PublicObservable @Inject() (
     )
     .property("message", UMapping.string)(_.field.updatable)
     .property("tlp", UMapping.int)(_.field.updatable)
-    .property("dataType", UMapping.string)(_.select(_.observableType.value(_.name)).readonly)
-    .property("data", UMapping.string.optional)(_.select(_.data.value(_.data)).readonly)
+    .property("dataType", UMapping.string)(_.field.readonly)
+    .property("data", UMapping.string.optional)(_.field.readonly)
     .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
     .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
     .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
     .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
-    .property("attachment.id", UMapping.string.optional)(_.select(_.attachments.value(_.attachmentId)).readonly)
+    .property("attachment.id", UMapping.string.optional)(_.field.readonly)
     .property("relatedId", UMapping.entityId)(_.field.readonly)
     .build
 }

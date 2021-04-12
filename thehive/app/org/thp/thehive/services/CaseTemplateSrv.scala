@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -16,9 +17,9 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Named}
 import scala.util.{Failure, Success, Try}
 
@@ -61,7 +62,9 @@ class CaseTemplateSrv @Inject() (
         _                   <- caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
         createdTasks        <- tasks.toTry(createTask(createdCaseTemplate, _))
         _                   <- caseTemplate.tags.toTry(tagSrv.getOrCreate(_).flatMap(t => caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t)))
-        cfs                 <- customFields.zipWithIndex.toTry { case ((name, value), order) => createCustomField(createdCaseTemplate, name, value, Some(order + 1)) }
+        cfs <- customFields.zipWithIndex.toTry {
+          case ((name, value), order) => createCustomField(createdCaseTemplate, EntityIdOrName(name), value, Some(order + 1))
+        }
         richCaseTemplate = RichCaseTemplate(createdCaseTemplate, organisation.name, createdTasks, cfs)
         _ <- auditSrv.caseTemplate.create(createdCaseTemplate, richCaseTemplate.toJson)
       } yield richCaseTemplate
@@ -101,12 +104,12 @@ class CaseTemplateSrv @Inject() (
   def addTags(caseTemplate: CaseTemplate with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     updateTags(caseTemplate, tags ++ caseTemplate.tags).map(_ => ())
 
-  def getCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
-    get(caseTemplate).customFields(customFieldName).richCustomField.headOption
+  def getCustomField(caseTemplate: CaseTemplate with Entity, customFieldIdOrName: EntityIdOrName)(implicit graph: Graph): Option[RichCustomField] =
+    get(caseTemplate).customFields(customFieldIdOrName).richCustomField.headOption
 
   def updateCustomField(
       caseTemplate: CaseTemplate with Entity,
-      customFieldValues: Seq[(CustomField, Any)]
+      customFieldValues: Seq[(CustomField, Any, Option[Int])]
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
     val customFieldNames = customFieldValues.map(_._1.name)
     get(caseTemplate)
@@ -114,32 +117,32 @@ class CaseTemplateSrv @Inject() (
       .richCustomField
       .toIterator
       .filterNot(rcf => customFieldNames.contains(rcf.name))
-      .foreach(rcf => get(caseTemplate).customFields(rcf.name).remove())
+      .foreach(rcf => get(caseTemplate).customFields(EntityName(rcf.name)).remove())
     customFieldValues
-      .zipWithIndex
-      .toTry { case ((cf, v), o) => setOrCreateCustomField(caseTemplate, cf.name, Some(v), Some(o + 1)) }
+      .toTry { case (cf, v, o) => setOrCreateCustomField(caseTemplate, EntityName(cf.name), Some(v), o) }
       .map(_ => ())
   }
 
-  def setOrCreateCustomField(caseTemplate: CaseTemplate with Entity, customFieldName: String, value: Option[Any], order: Option[Int])(implicit
+  def setOrCreateCustomField(caseTemplate: CaseTemplate with Entity, customFieldIdOrName: EntityIdOrName, value: Option[Any], order: Option[Int])(
+      implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val cfv = get(caseTemplate).customFields(customFieldName)
+    val cfv = get(caseTemplate).customFields(customFieldIdOrName)
     if (cfv.clone().exists)
       cfv.setValue(value)
     else
-      createCustomField(caseTemplate, customFieldName, value, order).map(_ => ())
+      createCustomField(caseTemplate, customFieldIdOrName, value, order).map(_ => ())
   }
 
   def createCustomField(
       caseTemplate: CaseTemplate with Entity,
-      customFieldName: String,
+      customFieldIdOrName: EntityIdOrName,
       customFieldValue: Option[Any],
       order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(EntityIdOrName(customFieldName))
+      cf   <- customFieldSrv.getOrFail(customFieldIdOrName)
       ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), customFieldValue)
       ccfe <- caseTemplateCustomFieldSrv.create(ccf, caseTemplate, cf)
     } yield RichCustomField(cf, ccfe)
@@ -197,11 +200,76 @@ object CaseTemplateOps {
 
     def tags: Traversal.V[Tag] = traversal.out[CaseTemplateTag].v[Tag]
 
-    def customFields(name: String): Traversal.E[CaseTemplateCustomField] =
-      traversal.outE[CaseTemplateCustomField].filter(_.inV.v[CustomField].has(_.name, name))
+    def customFields(idOrName: EntityIdOrName): Traversal.E[CaseTemplateCustomField] =
+      idOrName
+        .fold(
+          id => customFields.filter(_.inV.getByIds(id)),
+          name => customFields.filter(_.inV.v[CustomField].has(_.name, name))
+        )
 
     def customFields: Traversal.E[CaseTemplateCustomField] =
       traversal.outE[CaseTemplateCustomField]
+
+    def customFieldJsonValue(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.Domain[JsValue] =
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map(t => CustomFieldType.map(t).getJsonValue(traversal.customFields(customField)))
+        .getOrElse(traversal.empty.castDomain)
+
+    def customFieldFilter(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName, predicate: P[JsValue]): Traversal.V[CaseTemplate] =
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean =>
+            traversal.filter(_.customFields.has(_.booleanValue, predicate.mapValue(_.as[Boolean])).inV.v[CustomField].get(customField))
+          case CustomFieldType.date =>
+            traversal.filter(_.customFields.has(_.dateValue, predicate.mapValue(_.as[Date])).inV.v[CustomField].get(customField))
+          case CustomFieldType.float =>
+            traversal.filter(_.customFields.has(_.floatValue, predicate.mapValue(_.as[Double])).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer =>
+            traversal.filter(_.customFields.has(_.integerValue, predicate.mapValue(_.as[Int])).inV.v[CustomField].get(customField))
+          case CustomFieldType.string =>
+            traversal.filter(_.customFields.has(_.stringValue, predicate.mapValue(_.as[String])).inV.v[CustomField].get(customField))
+        }
+        .getOrElse(traversal.empty)
+
+    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
+      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
+
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filter(_.customFields.has(_.booleanValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.date    => traversal.filter(_.customFields.has(_.dateValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.float   => traversal.filter(_.customFields.has(_.floatValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer => traversal.filter(_.customFields.has(_.integerValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.string  => traversal.filter(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
+        }
+        .getOrElse(traversal.empty)
+    }
+
+    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
+      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
+
+      customFieldSrv
+        .get(customField)(traversal.graph)
+        .value(_.`type`)
+        .headOption
+        .map {
+          case CustomFieldType.boolean => traversal.filterNot(_.customFields.has(_.booleanValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.date    => traversal.filterNot(_.customFields.has(_.dateValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.float   => traversal.filterNot(_.customFields.has(_.floatValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.integer => traversal.filterNot(_.customFields.has(_.integerValue).inV.v[CustomField].get(customField))
+          case CustomFieldType.string  => traversal.filterNot(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
+        }
+        .getOrElse(traversal.empty)
+    }
   }
 
   implicit class CaseTemplateCustomFieldsOpsDefs(traversal: Traversal.E[CaseTemplateCustomField]) extends CustomFieldValueOpsDefs(traversal)

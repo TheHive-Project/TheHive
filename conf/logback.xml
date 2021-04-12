@@ -34,18 +34,13 @@
         <appender-ref ref="STDOUT"/>
     </appender>
 
-    <logger name="org.thp.scalligraph.models" level="TRACE"/>
-    <logger name="org.thp.scalligraph.traversal" level="TRACE"/>
-    <logger name="org.thp.thehive.services.StreamSrv" level="INFO"/>
-    <logger name="org.thp.thehive.services.StreamActor" level="INFO"/>
-    <!--
-    <logger name="org.janusgraph.graphdb" level="INFO" />
-    <logger name="org.thp.thehive.client" level="DEBUG" />
-    <logger name="org.thp.thehive.services.LocalAuthSrv" level="TRACE" />
-    <logger name="org.thp.scalligraph.graphql" level="TRACE" />
-    <logger name="org.janusgraph.graphdb.transaction.StandardJanusGraphTx" level="ERROR" />
-    -->
-    <logger name="org.thp.thehive" level="TRACE"/>
+    <!-- do not set the following logger to TRACE -->
+    <logger name="org.thp.scalligraph.traversal" level="INFO"/>
+    <logger name="org.reflections8.Reflections" level="ERROR" />
+    <logger name="org.janusgraph.graphdb.database.IndexSerializer" level="ERROR"/>
+
+    <logger name="org.thp.scalligraph.models" level="INFO"/>
+    <logger name="org.thp" level="INFO"/>
 
     <root level="INFO">
         <appender-ref ref="ASYNCFILE"/>

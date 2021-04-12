@@ -31,7 +31,8 @@
                             <div class="flex-col flex-w-120 vertical centered">
                                 <span class="label label-lg label-default" ng-class="{
                                         true: 'label-success',
-                                        false: 'label-danger'}[schema.error === null]">{{schema.error === null ? 'OK' : 'ERROR'}}</span>
+                                        false: 'label-danger'}[schema.error === null]">{{schema.error === null ? 'OK' :
+                                    'ERROR'}}</span>
                             </div>
                             <div class="flex-col flex-2">
                                 <h4 class="media-heading text-primary">
@@ -49,37 +50,33 @@
                     </div>
                 </div>
 
-                <h4 class="text-primary mt-m">Data index status <small class="ml-m clickable" ng-click="$vm.loadIndexStatus()"><i class="fa fa-refresh"></i> Reload</small></h4>
+                <h4 class="text-primary mt-m">Data index status <small class="ml-m clickable"
+                        ng-click="$vm.loadIndexStatus()"><i class="fa fa-refresh"></i> Reload</small></h4>
                 <div class="empty-message" ng-if="$vm.loading.index">Loading index status...</div>
-                <div class="flex-table" ng-show="!$vm.loading.index">
+                <div class="flex-table" ng-show="!$vm.loading.index" ng-repeat="index in $vm.indexStatus.index">
                     <div class="flex-header mt-xs">
-                        <div class="flex-col flex-w-120 text-center">Status</div>
-                        <div class="flex-col flex-2">Index name</div>
+                        <div class="flex-col flex-2">Index: <strong>{{index.name | uppercase}}</strong></div>
                         <div class="flex-col flex-1"># Entities</div>
-                        <div class="flex-col flex-w-100"></div>
+                        <div class="flex-col flex-w-100">
+                            <a href class="text-primary" ng-click="$vm.reindex(index.name)"><i
+                                    class="fa fa-cog mr-xxxs"></i> Reindex</a>
+                        </div>
                     </div>
-                    <div ng-repeat="(indexName, data) in $vm.indexStatus" class="flex-table">
+                    <div class="flex-table" ng-repeat="item in index.indices">
                         <div class="flex-row mt-xs">
-                            <div class="flex-col flex-w-120 vertical centered">
-                                <span class="label label-lg label-default" ng-class="{
-                                        'OK': 'label-success',
-                                        'Error': 'label-danger'}[data.status]">{{data.status | uppercase}}</span>
-                            </div>
                             <div class="flex-col flex-2 vertical">
                                 <h4 class="media-heading text-primary">
-                                    {{indexName}}
+                                    {{item.name}}
                                 </h4>
                             </div>
 
                             <div class="flex-col flex-1 vertical">
                                 <span class="label label-lg label-default">
-                                    {{data.mixedCount}}
+                                    {{item.count}}
                                 </span>
                             </div>
 
-                            <div class="flex-col flex-w-100">
-                                <a href class="text-primary" ng-click="$vm.reindex(indexName)"><i class="fa fa-edit mr-xxxs"></i> Reindex</a>
-                            </div>
+                            <div class="flex-col flex-w-100"></div>
                         </div>
                     </div>
                 </div>
@@ -102,7 +99,7 @@
 
                             <div class="flex-col flex-w-100">
                                 <a href class="text-primary" ng-click="$vm.checkControl(checkName)"><i
-                                        class="fa fa-edit mr-xxxs"></i> Trigger</a>
+                                        class="fa fa-cog mr-xxxs"></i> Trigger</a>
                             </div>
                         </div>
                     </div>

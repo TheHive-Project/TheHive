@@ -126,21 +126,23 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     }
     .updateGraph("Add each tag to its Organisation's FreeTags taxonomy", "Tag") { tags =>
       tags
+        .unsafeHas("namespace", TextP.notStartingWith("_freetags_"))
         .project(
-          _.by.by(
-            _.unionFlat(
-              _.in("CaseTag").in("ShareCase").in("OrganisationShare"),
-              _.in("ObservableTag").unionFlat(_.in("ShareObservable").in("OrganisationShare"), _.in("AlertObservable").out("AlertOrganisation")),
-              _.in("AlertTag").out("AlertOrganisation"),
-              _.in("CaseTemplateTag").out("CaseTemplateOrganisation")
+          _.by
+            .by(
+              _.unionFlat(
+                _.in("CaseTag").in("ShareCase").in("OrganisationShare"),
+                _.in("ObservableTag").unionFlat(_.in("ShareObservable").in("OrganisationShare"), _.in("AlertObservable").out("AlertOrganisation")),
+                _.in("AlertTag").out("AlertOrganisation"),
+                _.in("CaseTemplateTag").out("CaseTemplateOrganisation")
+              )
+                .dedup
+                .sort(_.by("_createdAt", Order.desc))
+                .limit(1)
+                .out("OrganisationTaxonomy")
+                .unsafeHas("namespace", TextP.startingWith("_freetags_"))
+                .option
             )
-              .dedup
-              .sort(_.by("_createdAt", Order.desc))
-              .limit(1)
-              .out("OrganisationTaxonomy")
-              .unsafeHas("namespace", TextP.startingWith("_freetags_"))
-              .option
-          )
         )
         .foreach {
           case (tag, Some(freetagsTaxo)) =>
@@ -197,6 +199,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .addProperty[Option[EntityId]]("Alert", "caseId")
     .updateGraph("Add tags, organisationId and caseId in alerts", "Alert") { traversal =>
       traversal
+        .unsafeHasNot("organisationId")
         .project(
           _.by
             .by(_.out("AlertTag").valueMap("namespace", "predicate", "value").fold)
@@ -290,6 +293,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .addProperty[Set[EntityId]]("Log", "organisationIds")
     .updateGraph("Add taskId and organisationIds data in logs", "Log") { traversal =>
       traversal
+        .unsafeHasNot("organisationIds")
         .project(
           _.by
             .by(_.in("TaskLog")._id.option)
@@ -310,6 +314,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .addProperty[Set[EntityId]]("Observable", "organisationIds")
     .updateGraph("Add dataType, tags, data, relatedId and organisationIds data in observables", "Observable") { traversal =>
       traversal
+        .unsafeHasNot("organisationIds")
         .project(
           _.by
             .by(_.out("ObservableObservableType").property("name", UMapping.string).option)
@@ -354,6 +359,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .addProperty[EntityId]("Task", "relatedId")
     .updateGraph("Add assignee, relatedId and organisationIds data in tasks", "Task") { traversal =>
       traversal
+        .unsafeHasNot("organisationIds")
         .project(
           _.by
             .by(_.out("TaskUser").property("login", UMapping.string).option)
@@ -408,25 +414,24 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
 //        .foreach {
 //          case (vertex, caseId) =>
 //            caseId.foreach(cid => vertex.property("caseId", cid.value))
-//          case _ =>
 //        }
 //      Success(())
 //    }
     .noop
     //=====[release 4.1.1]=====
-    .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
-      traversal
-        .project(
-          _.by
-            .by(_.out("AlertCase")._id.option)
-        )
-        .foreach {
-          case (vertex, caseId) =>
-            caseId.foreach(cid => vertex.property("caseId", cid.value))
-          case _ =>
-        }
-      Success(())
-    }
+//    .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
+//      traversal
+//        .project(
+//          _.by
+//            .by(_.out("AlertCase")._id.option)
+//        )
+//        .foreach {
+//          case (vertex, caseId) =>
+//            caseId.foreach(cid => vertex.property("caseId", cid.value))
+//        }
+//      Success(())
+//    }
+    .noop
     .updateGraph("Set taskId in logs", "Log") { traversal =>
       traversal
         .project(_.by.by(_.in("TaskLog")._id.option))
@@ -437,7 +442,34 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         }
       Success(())
     }
-  //=====[release 4.1.2]=====
+    //=====[release 4.1.2]=====
+    .removeIndex("Audit", IndexType.basic, "requestId", "mainAction")
+    .removeIndex("Alert", IndexType.unique, "type", "source", "sourceRef", "organisationId")
+    .removeIndex("_label_vertex_index", IndexType.basic)
+    .removeIndex("Case", IndexType.basic, "status")
+    .removeIndex("Task", IndexType.basic, "status")
+    .removeIndex("Alert", IndexType.basic, "type", "source", "sourceRef")
+    .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
+      traversal
+        .project(
+          _.by
+            .by(_.out("AlertCase")._id.option)
+        )
+        .foreach {
+          case (vertex, caseId) =>
+            vertex.property("caseId", caseId.fold("")(_.value))
+        }
+      Success(())
+    }
+    .removeIndex("Alert", IndexType.standard)
+    .removeIndex("Attachment", IndexType.standard)
+    .removeIndex("Audit", IndexType.standard)
+    .removeIndex("Case", IndexType.standard)
+    .removeIndex("Log", IndexType.standard)
+    .removeIndex("Observable", IndexType.standard)
+    .removeIndex("Tag", IndexType.standard)
+    .removeIndex("Task", IndexType.standard)
+  //=====[release 4.1.3]=====
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

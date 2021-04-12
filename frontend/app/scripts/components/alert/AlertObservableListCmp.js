@@ -1,12 +1,14 @@
-(function() {
+(function () {
     'use strict';
 
     angular.module('theHiveComponents')
         .component('alertObservableList', {
-            controller: function($scope, FilteringSrv, PaginatedQuerySrv) {
+            controller: function ($scope, FilteringSrv, QuerySrv, PaginatedQuerySrv) {
                 var self = this;
 
-                self.$onInit = function() {
+                self.observablesCount = null;
+
+                self.$onInit = function () {
                     this.filtering = new FilteringSrv('observable', 'alert.dialog.observables', {
                         version: 'v1',
                         defaults: {
@@ -19,37 +21,44 @@
                     });
 
                     self.filtering.initContext(this.alertId)
-                        .then(function() {
+                        .then(function () {
                             self.load();
 
                             $scope.$watch('$cmp.list.pageSize', function (newValue) {
                                 self.filtering.setPageSize(newValue);
                             });
+                        });
 
-                            $scope.$watch('$cmp.list.total', function (total) {
-                                self.onListLoad({count: total});
-                            });
+                    QuerySrv.query(
+                        'v1',
+                        [{ '_name': 'countAlertObservable', 'alertId': self.alertId }],
+                        {
+                            params: {
+                                name: 'alert-all-observables.count'
+                            }
+                        })
+                        .then(function (response) {
+                            self.observablesCount = response.data;
+                            self.onListLoad({ count: self.observablesCount });
                         });
                 };
 
-                this.load = function() {
+                this.load = function () {
                     this.list = new PaginatedQuerySrv({
                         name: 'alert-observables',
                         skipStream: true,
                         version: 'v1',
                         sort: self.filtering.context.sort,
                         loadAll: false,
+                        limitedCount: true,
                         pageSize: self.filtering.context.pageSize,
                         filter: this.filtering.buildQuery(),
                         operations: [
-                            {'_name': 'getAlert', 'idOrName': this.alertId},
-                            {'_name': 'observables'}
+                            { '_name': 'getAlert', 'idOrName': this.alertId },
+                            { '_name': 'observables' }
                         ],
                         extraData: ['seen'],
-                        onUpdate: function() {
-                            //self.resetSelection();
-
-                        }
+                        onUpdate: function () { }
                     });
                 };
 
@@ -63,9 +72,9 @@
                     this.search();
                 };
 
-                this.filterBy = function(field, value) {
+                this.filterBy = function (field, value) {
                     this.filtering.clearFilters()
-                        .then(function() {
+                        .then(function () {
                             self.addFilterValue(field, value);
                         });
                 };

@@ -44,6 +44,13 @@
                 });
             };
 
+            this.refreshFreeTags = function () {
+                return TagSrv.getFreeTags()
+                    .then(function (freeTags) {
+                        self.cacheTagColors(freeTags);
+                    });
+            }
+
             this.all = function (reload) {
                 var deferred = $q.defer();
 

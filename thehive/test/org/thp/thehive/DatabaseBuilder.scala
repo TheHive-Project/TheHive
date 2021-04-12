@@ -215,7 +215,7 @@ class DatabaseBuilder @Inject() (
             .foreach {
               case (alert, organisationId, caseId) =>
                 alert.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(alertSrv.alertTagSrv.create(AlertTag(), alert, _)).get)
-                alertSrv.get(alert).update(_.organisationId, organisationId).update(_.caseId, caseId).iterate()
+                alertSrv.get(alert).update(_.organisationId, organisationId).update(_.caseId, caseId.getOrElse(EntityId.empty)).iterate()
             }
 
           observableSrv

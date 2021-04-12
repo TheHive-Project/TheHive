@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{EntityIdOrName, EntityName}
+import org.thp.scalligraph.{EntityId, EntityIdOrName, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -40,7 +40,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
             follow = false,
             organisationId = organisation._id,
             tags = Seq("tag1", "tag2"),
-            caseId = None
+            caseId = EntityId.empty
           ),
           organisation,
           Set("tag1", "tag2"),

@@ -6,7 +6,8 @@
             </h4>
             <div>
                 This task requires an action from your organisation.
-                <button if-permission="manageTask" allowed="{{userPermissions}}" class="ml-m btn btn-sm btn-default" ng-click="markAsDone(task)">Mark as Done</button>
+                <button if-permission="manageTask" allowed="{{userPermissions}}" class="ml-m btn btn-sm btn-default"
+                    ng-click="markAsDone(task)">Mark as Done</button>
             </div>
         </div>
     </div>
@@ -55,7 +56,8 @@
                 </span>
             </a>
 
-            <span class="action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
+            <span class="action-button" uib-dropdown ng-if="appConfig.connectors.cortex.enabled"
+                if-permission="manageAction" allowed="{{userPermissions}}">
 
                 <span class="mh-xxs text-primary">|</span>
 
@@ -88,7 +90,7 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Title</dt>
             <dd ng-if="canEdit">
-                <updatable-simple-text on-update="updateField('title', newValue)" value="task.title"/>
+                <updatable-simple-text on-update="updateField('title', newValue)" value="task.title" />
             </dd>
             <dd ng-if="!canEdit">
                 {{task.title}}
@@ -98,7 +100,7 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Group</dt>
             <dd ng-if="canEdit">
-                <updatable-simple-text on-update="updateField('group', newValue)" value="task.group"/>
+                <updatable-simple-text on-update="updateField('group', newValue)" value="task.group" />
             </dd>
             <dd ng-if="!canEdit">
                 {{task.group}}
@@ -108,7 +110,8 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Assignee</dt>
             <dd ng-if="canEdit">
-                <updatable-user on-update="updateField('owner', newValue)" value="task.assignee" query="assignableUsersQuery"/>
+                <updatable-user blank-text="Not Assigned" on-update="updateField('owner', newValue)"
+                    value="task.assignee" query="assignableUsersQuery" />
             </dd>
             <dd ng-if="!canEdit">
                 <user-info value="task.assignee" field="name"></user-info>
@@ -120,7 +123,7 @@
         <dl class="dl-horizontal">
             <dt class="pull-left">Start date</dt>
             <dd ng-if="canEdit && task.status !== 'Waiting'">
-                <updatable-date on-update="updateField('startDate', newValue)" value="task.startDate"/>
+                <updatable-date on-update="updateField('startDate', newValue)" value="task.startDate" />
             </dd>
             <dd ng-if="!canEdit && task.status !== 'Waiting'">
                 <span ng-bind="task.startDate | shortDate"></span>
@@ -162,14 +165,15 @@
     </div>
 
     <div class="col-md-12">
-         <h4 class="vpad10 text-primary">Description</h4>
-         <div ng-if="canEdit" class="description-pane">
-             <updatable-text on-update="updateField('description', newValue)" placeholder="Task description" value="task.description"></updatable-text>
-         </div>
-         <div ng-if="!canEdit" class="description-pane">
-             <div marked="task.description" class="markdown"></div>
-             <em ng-if="!task.description" class="text-warning">Not specified</em>
-         </div>
+        <h4 class="vpad10 text-primary">Description</h4>
+        <div ng-if="canEdit" class="description-pane">
+            <updatable-text on-update="updateField('description', newValue)" placeholder="Task description"
+                value="task.description"></updatable-text>
+        </div>
+        <div ng-if="!canEdit" class="description-pane">
+            <div marked="task.description" class="markdown"></div>
+            <em ng-if="!task.description" class="text-warning">Not specified</em>
+        </div>
     </div>
 
     <!-- New Log -->
@@ -206,17 +210,24 @@
         <div class="row" ng-show="adding">
             <div class="col-md-12">
                 <div class="clearfix">
-                    <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank"><i class="fa fa-question-circle"></i> Markdown Reference</a>
+                    <a class="pull-right" href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet"
+                        target="_blank"><i class="fa fa-question-circle"></i> Markdown Reference</a>
                 </div>
-                <textarea name="newLog" autofocus="beforeNewLogShow" class="content-box" markdown-editor="markdownEditorOptions" rows="10" ng-model="newLog.message"></textarea>
-                <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed" preview="false"></div>
+                <textarea name="newLog" autofocus="beforeNewLogShow" class="content-box"
+                    markdown-editor="markdownEditorOptions" rows="10" ng-model="newLog.message"></textarea>
+                <div control="state" file-chooser="" filemodel="newLog.attachment" ng-show="!state.attachmentCollapsed"
+                    preview="false"></div>
                 <div class="btn-toolbar mt-xxs">
-                    <button class="btn btn-sm btn-default" ng-click="cancelAddLog();" ng-disabled="loading">Cancel</button>
-                    <button class="btn btn-sm btn-primary pull-right" ng-click="addLog();" ng-disabled="loading || newLog.message.length === 0">
+                    <button class="btn btn-sm btn-default" ng-click="cancelAddLog();"
+                        ng-disabled="loading">Cancel</button>
+                    <button class="btn btn-sm btn-primary pull-right" ng-click="addLog();"
+                        ng-disabled="loading || newLog.message.length === 0">
                         <i class="glyphicon glyphicon-comment"></i>
                         Add log
                     </button>
-                    <button uib-btn-checkbox btn-checkbox-false="true" btn-checkbox-true="false" class="btn btn-sm btn-default pull-right" ng-model="state.attachmentCollapsed" ng-disabled="loading">
+                    <button uib-btn-checkbox btn-checkbox-false="true" btn-checkbox-true="false"
+                        class="btn btn-sm btn-default pull-right" ng-model="state.attachmentCollapsed"
+                        ng-disabled="loading">
                         <i class="text-default glyphicon glyphicon-paperclip"></i>
                         {{state.attachmentCollapsed ? 'Add' : 'Discard'}}
                         attachment
@@ -241,26 +252,21 @@
 
     <!-- <div class="col-md-12" id="task-sharings" if-permission="manageShare" allowed="{{userPermissions}}"> -->
     <div class="col-md-12" id="task-sharings">
-         <h4 class="vpad10 text-primary">Task sharing</h4>
-         <div class="btn-toolbar" role="toolbar" if-permission="manageShare" allowed="{{userPermissions}}">
-             <div class="btn-group">
-                 <button class="btn btn-sm btn-primary" ng-click="addTaskShare()">
-                     <i class="fa fa-plus"></i>
-                     Add share
-                 </button>
-             </div>
-         </div>
-         <div class="mv-s">
-             <task-sharing-list
-                 task="task"
-                 shares="shares"
-                 read-only="true"
-                 on-require-action="markShareAsActionRequired(task, org)"
-                 on-cancel-require-action="markShareAsActionDone(task, org)"
-                 on-delete="removeShare(share)"
-                 permissions="userPermissions"
-                 ></task-sharing-list>
-         </div>
+        <h4 class="vpad10 text-primary">Task sharing</h4>
+        <div class="btn-toolbar" role="toolbar" if-permission="manageShare" allowed="{{userPermissions}}">
+            <div class="btn-group">
+                <button class="btn btn-sm btn-primary" ng-click="addTaskShare()">
+                    <i class="fa fa-plus"></i>
+                    Add share
+                </button>
+            </div>
+        </div>
+        <div class="mv-s">
+            <task-sharing-list task="task" shares="shares" read-only="true"
+                on-require-action="markShareAsActionRequired(task, org)"
+                on-cancel-require-action="markShareAsActionDone(task, org)" on-delete="removeShare(share)"
+                permissions="userPermissions"></task-sharing-list>
+        </div>
     </div>
 
     <div class="col-md-12">

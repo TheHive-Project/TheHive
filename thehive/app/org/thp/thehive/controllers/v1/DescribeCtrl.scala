@@ -163,6 +163,12 @@ class DescribeCtrl @Inject() (
       case ("case", "resolutionStatus") => Some(Seq(resolutionStatus))
       case ("dashboard", "status") =>
         Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")))))
+      case ("task", "status") =>
+        Some(
+          Seq(
+            PropertyDescription("status", "enumeration", Seq(JsString("Waiting"), JsString("InProgress"), JsString("Completed"), JsString("Cancel")))
+          )
+        )
       case (_, "tlp") =>
         Some(
           Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
@@ -198,6 +204,7 @@ class DescribeCtrl @Inject() (
         case c if classOf[Number].isAssignableFrom(c)             => Seq(PropertyDescription(prop.propertyName, "number"))
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if c == classOf[EntityId]                          => Seq(PropertyDescription(prop.propertyName, "string"))
+        case c if c == classOf[JsValue]                           => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>
           logger.warn(s"Unrecognized property ${prop.propertyName}:${prop.mapping.domainTypeClass.getSimpleName}. Add a custom description")
           Seq(PropertyDescription(prop.propertyName, "unknown"))

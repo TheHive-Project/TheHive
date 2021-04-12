@@ -6,6 +6,7 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
@@ -24,9 +25,14 @@ class TagCtrl @Inject() (
     db: Database,
     tagSrv: TagSrv,
     val organisationSrv: OrganisationSrv,
-    properties: Properties
+    properties: Properties,
+    appConfig: ApplicationConfig
 ) extends QueryableCtrl
     with TagRenderer {
+
+  val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
+  val limitedCountThreshold: Long                         = limitedCountThresholdConfig.get
+
   override val entityName: String                 = "Tag"
   override val publicProperties: PublicProperties = properties.tag
   override val initialQuery: Query =
@@ -44,6 +50,12 @@ class TagCtrl @Inject() (
     (idOrName, graph, _) => tagSrv.get(idOrName)(graph)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[Traversal.V[Tag]]("freetags", (graph, authContext) => tagSrv.startTraversal(graph).freetags(organisationSrv)(authContext)),
+    Query.init[Long](
+      "countFreetags",
+      (graph, authContext) =>
+        graph.indexCountQuery(s"""v."_label":Tag AND v.namespace:_freetags_${organisationSrv.currentId(graph, authContext).value}""")
+    ),
     Query[Traversal.V[Tag], Traversal.V[Tag]]("freetags", (tagSteps, authContext) => tagSteps.freetags(organisationSrv)(authContext)),
     Query.initWithParam[TagHint, Traversal[String, Vertex, Converter[String, Vertex]]](
       "tagAutoComplete",

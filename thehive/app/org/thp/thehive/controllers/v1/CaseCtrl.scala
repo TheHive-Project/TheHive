@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
@@ -32,10 +33,15 @@ class CaseCtrl @Inject() (
     observableSrv: ObservableSrv,
     userSrv: UserSrv,
     taskSrv: TaskSrv,
-    organisationSrv: OrganisationSrv,
-    db: Database
+    val organisationSrv: OrganisationSrv,
+    alertSrv: AlertSrv,
+    db: Database,
+    appConfig: ApplicationConfig
 ) extends QueryableCtrl
     with CaseRenderer {
+
+  val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
+  val limitedCountThreshold: Long                         = limitedCountThresholdConfig.get
 
   override val entityName: String                 = "case"
   override val publicProperties: PublicProperties = properties.`case`
@@ -56,6 +62,11 @@ class CaseCtrl @Inject() (
   )
   override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
+    Query.init[Long](
+      "countCase",
+      (graph, authContext) =>
+        graph.indexCountQuery(s"""v."_label":Case AND v.organisationIds:${organisationSrv.currentId(graph, authContext).value}""")
+    ),
     Query[Traversal.V[Case], Traversal.V[Observable]](
       "observables",
       (caseSteps, authContext) =>
@@ -70,7 +81,12 @@ class CaseCtrl @Inject() (
     ),
     Query[Traversal.V[Case], Traversal.V[User]]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
     Query[Traversal.V[Case], Traversal.V[Organisation]]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
-    Query[Traversal.V[Case], Traversal.V[Alert]]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(organisationSrv)(authContext)),
+    Query[Traversal.V[Case], Traversal.V[Alert]](
+      "alerts",
+      (caseSteps, authContext) =>
+//      caseSteps.alert.visible(organisationSrv)(authContext)
+        alertSrv.startTraversal(caseSteps.graph).has(_.caseId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
+    ),
     Query[Traversal.V[Case], Traversal.V[Share]]("shares", (caseSteps, authContext) => caseSteps.shares.visible(authContext)),
     Query[Traversal.V[Case], Traversal.V[Procedure]]("procedures", (caseSteps, _) => caseSteps.procedure)
   )

@@ -222,6 +222,7 @@ class DescribeCtrl @Inject() (
         case c if classOf[Number].isAssignableFrom(c)             => Seq(PropertyDescription(prop.propertyName, "number"))
         case c if c == classOf[String]                            => Seq(PropertyDescription(prop.propertyName, "string"))
         case c if c == classOf[EntityId]                          => Seq(PropertyDescription(prop.propertyName, "string"))
+        case c if c == classOf[JsValue]                           => Seq(PropertyDescription(prop.propertyName, "string"))
         case _ =>
           logger.warn(s"Unrecognized property $prop. Add a custom description")
           Seq(PropertyDescription(prop.propertyName, "unknown"))

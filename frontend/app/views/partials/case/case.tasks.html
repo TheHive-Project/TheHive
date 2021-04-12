@@ -1,23 +1,23 @@
 <div ng-include="'views/partials/case/tasks/toolbar.html'"></div>
 
-<div class="mt-s filter-panel" ng-include="'views/partials/case/tasks/filters.html'" ng-show="filtering.context.showFilters"></div>
+<div class="mt-s filter-panel" ng-include="'views/partials/case/tasks/filters.html'"
+    ng-show="filtering.context.showFilters"></div>
 
 <!-- Filters preview  -->
 <div class="row mt-s">
     <div class="col-md-12 clearfix">
         <div class="pull-left">
             <h4>
-                Tasks List ({{list.values.length || 0}} of {{list.total}})
+                <datalist-header title="List of tasks" list="list" total="tasksCount"></datalist-header>
             </h4>
         </div>
 
-        <filters-preview filters="filtering.context.filters"
-            on-clear-item="removeFilter(field)"
+        <filters-preview filters="filtering.context.filters" on-clear-item="removeFilter(field)"
             on-clear-all="clearFilters()"></filters-preview>
     </div>
 </div>
 
-<div class="row mv-s" ng-show="list.total === 0">
+<div class="row mv-s" ng-show="list.total === 0 && list.values.length === 0">
     <div class="col-md-12">
         <div class="empty-message">No task found for this case.</div>
     </div>
@@ -28,278 +28,325 @@
         <form name="form" ng-submit="addTask(); state.isNewTask = false;" class="filter-panel">
             <div class="row">
                 <div class="col-sm-3">
-                  <div class="form-group">
-                      <input name="group" class="form-control" ng-model="newTask.group" type="text" placeholder="Task group"
-                          uib-typeahead="g for g in groups | filter:$viewValue"
-                          typeahead-min-length="0">
-                  </div>
+                    <div class="form-group">
+                        <input name="group" class="form-control" ng-model="newTask.group" type="text"
+                            placeholder="Task group" uib-typeahead="g for g in groups | filter:$viewValue"
+                            typeahead-min-length="0">
+                    </div>
                 </div>
                 <div class="col-sm-9">
-                  <div class="input-group input-group">
-                      <input name="title"class="form-control" ng-model="newTask.title" type="text" placeholder="Task title" required>
-                      <span class="input-group-btn">
-                          <button class="btn btn-default" ng-disabled="form.$invalid" type="submit">
-                              <i class="text-success glyphicon glyphicon-ok"></i>
-                          </button>
-                          <button class="btn btn-default" ng-click="state.isNewTask = false" type="button">
-                              <i class="text-danger glyphicon glyphicon-remove"></i>
-                          </button>
-                      </span>
-                  </div>
+                    <div class="input-group input-group">
+                        <input name="title" class="form-control" ng-model="newTask.title" type="text"
+                            placeholder="Task title" required>
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" ng-disabled="form.$invalid" type="submit">
+                                <i class="text-success glyphicon glyphicon-ok"></i>
+                            </button>
+                            <button class="btn btn-default" ng-click="state.isNewTask = false" type="button">
+                                <i class="text-danger glyphicon glyphicon-remove"></i>
+                            </button>
+                        </span>
+                    </div>
                 </div>
             </div>
         </form>
     </div>
 </div>
 
-<div class="row" ng-if="!state.showGrouped && list.total !== 0">
+<div class="row" ng-if="!list.loading && list.values.length !== 0">
     <div class="col-md-12">
 
         <psearch control="list"></psearch>
 
-        <table class="table table-hover valigned tasks-table data-list">
-            <thead>
-                <tr>
-                    <th width="20px">
-                        <input if-permission="manageTask" allowed="{{userPermissions}}" type="checkbox" ng-model="menu.selectAll" ng-change="selectAll()">
-                    </th>
-                    <th style="width: 70px"></th>
-                    <th style="width: 150px">Group</th>
-                    <th>Task</th>
-                    <th style="width: 70px;"></th>
-                    <th style="width: 150px">Date</th>
-                    <th style="width: 150px">Assignee</th>
-                    <th style="width: 100px" class="text-right" if-permission="manageTask" allowed="{{userPermissions}}">Actions</th>
-                </tr>
-            </thead>
-            <tbody ng-repeat="task in list.values">
-                <tr class="task-row" ng-class="{'warning': task.flag == true}">
-                    <td>
-                        <input if-permission="manageTask" allowed="{{userPermissions}}"
-                            type="checkbox" ng-model="task.selected" ng-change="select(task)">
-                    </td>
-                    <td class="task-status" align="center" ng-switch="task.status">
-                        <task-flags task="task" on-filter="addFilterValue(fieldName, value)" inline="true"></task-flags>
-                    </td>
-                    <td ng-if="canEdit">
-                        <updatable-select options="groups" on-update="updateField('group', newValue, task)" value="task.group"></updatable-select>
-                    </td>
-                    <td ng-if="!canEdit">
-                        {{task.group}}
-                    </td>
-                    <td>
-                        <div>
-                          <!-- FIXME -->
-                          <!-- <span class="mr-xxs text-primary clickable" ng-if="!!!task.extraData.isOwner"><i class="fa fa-share-square"
-                              uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
-                          <span class="mr-xxs text-primary clickable" ng-if="!!task.extraData.isOwner"><i class="fa fa-building-o"
-                              uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span> -->
-                            <a href ng-click="collapseOptions[task._id] = !collapseOptions[task._id]" ng-show="task.description" uib-tooltip="Show/Hide description" tooltip-placement="right">
-                                <i class="fa" ng-class="{
-                                    true: 'fa-chevron-up',
-                                    false: 'fa-chevron-down'
-                                }[!!collapseOptions[task._id]]"></i>
-                            </a>
-                          <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" ng-class="{'text-danger': !!task.extraData.actionRequired}">
-                              <span ng-if="!!task.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
-                                  <i class="fa fa-exclamation-triangle"></i>
-                              </span>
-                              {{task.title}}
-                          </a>
-                      </div>
-                      <div ng-show="task.status === 'Completed'" class="text-success">
-                          Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
-                      </div>
-                      <div ng-show="task.status === 'InProgress'" class="text-warning">
-                          Started <em am-time-ago="task.startDate"></em>
-                      </div>
-                    </td>
-                    <td align="center">
-                        <div ng-if="task.extraData.shareCount > 0">
-                            <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
-                                tooltip-placement="left-middle">
-
-                                <i class="fa fa-users"></i>
-                                ({{task.extraData.shareCount || 0}})
-                            </a>
-                        </div>
-
-                    </td>
-                    <td>{{task.startDate | shortDate}}</td>
-                    <td ng-if="canEdit">
-                        <span ng-show="task.assignee">
-                            <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee" query="getAssignableUsers" query-params="[task._id]"/>
-                        </span>
-                        <span ng-show="!task.assignee">
-                            <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned"  query="getAssignableUsers" query-params="[task._id]"/>
-                        </span>
-                    </td>
-                    <td ng-if="!canEdit">
-                        <span ng-show="task.assignee">
-                            <user-info value="task.assignee" field="name"></user-info>
-                        </span>
-                        <span ng-show="!task.assignee">
-                            <em class="text-warning">Not Assigned</em>
-                        </span>
-                    </td>
-                    <!--  class="task-delete" -->
-                    <td align="right" class="task-actions" if-permission="manageTask" allowed="{{userPermissions}}">
-
-                        <a class="btn btn-icon btn-clear" ng-click="removeTask(task)" uib-tooltip="Delete">
-                            <i class="fa fa-trash text-danger"></i>
-                        </a>
-                        <a class="btn btn-icon btn-clear"  ng-show="task.status == 'Completed'" ng-click="openTask(task)" uib-tooltip="Reopen">
-                            <i class="fa fa-play text-success"></i>
-                        </a>
-                        <a class="btn btn-icon btn-clear" ng-show="task.status == 'InProgress'" ng-click="closeTask(task)" uib-tooltip="Close">
-                            <i class="fa fa-check-circle-o text-muted"></i>
-                        </a>
-                        <a class="btn btn-icon btn-clear" ng-show="task.status == 'Waiting'" ng-click="startTask(task)" uib-tooltip="Start">
-                            <i class="fa fa-play text-primary"></i>
-                        </a>
-                        <a href class="btn btn-icon btn-clear" ng-click="getTaskResponders(task, true)" ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
-                            <i class="text-primary fa fa-cog"></i>
-                        </a>
-                    </td>
-                </tr>
-
-                <tr ng-if="task.description && collapseOptions[task._id]">
-                    <td colspan="9" class="wrap">
-                        <div marked="task.description" class="mt-xxs filter-panel markdown"></div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <psearch control="list"></psearch>
-    </div>
-</div>
-
-<div class="row" ng-if="state.showGrouped && list.total !== 0">
-    <div class="col-md-12">
-
-        <psearch control="list"></psearch>
-
-        <div class="panel panel-default" ng-repeat="group in groupedTasks">
-            <div class="panel-heading">
-                <strong>{{group.group || 'Not Specified'}}</strong> <small>({{group.list.length}} task(s))</small>
-            </div>
-            <div class="panel-body p-0">
-                <table class="table table-hover valigned tasks-table data-list">
-                    <thead>
-                        <tr>
-                            <th width="20px">
-                                <input if-permission="manageTask" allowed="{{userPermissions}}" type="checkbox" ng-model="menu.selectAll" ng-change="selectAll()">
-                            </th>
-                            <th style="width: 70px"></th>
-                            <th style="width: 150px">Group</th>
-                            <th>Task</th>
-                            <th style="width: 70px;"></th>
-                            <th style="width: 150px">Date</th>
-                            <th style="width: 150px">Assignee</th>
-                            <th style="width: 100px" class="text-right" if-permission="manageTask" allowed="{{userPermissions}}">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody ng-repeat="task in group.tasks">
-                        <tr class="task-row" ng-class="{'warning': task.flag == true}">
-                            <td>
-                                <input if-permission="manageTask" allowed="{{userPermissions}}" type="checkbox" ng-model="task.selected" ng-change="select(task)">
-                            </td>
-
-                            <td class="task-status" align="center" ng-switch="task.status">
-                                <task-flags task="task" on-filter="addFilterValue(fieldName, value)" inline="true"></task-flags>
-                                <!-- <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok" uib-tooltip="Completed"></i>
-                                <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]" uib-tooltip="In Porgress"></i>
-                                <i ng-switch-when="Waiting" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag'}[task.flag]"></i> -->
-                            </td>
-                            <td ng-if="canEdit">
-                                <updatable-select options="groups" on-update="updateField('group', newValue, task)" value="task.group"></updatable-select>
-                            </td>
-                            <td ng-if="!canEdit">
-                                {{task.group}}
-                            </td>
-                            <td>
-                              <div>
-                                <a href ng-click="collapseOptions[task._id] = !collapseOptions[task._id]" ng-show="task.description" uib-tooltip="Show/Hide description" tooltip-placement="right">
+        <!-- Show flat table -->
+        <div ng-if="!state.showGrouped">
+            <table class="table table-hover valigned tasks-table data-list">
+                <thead>
+                    <tr>
+                        <th width="20px">
+                            <input if-permission="manageTask" allowed="{{userPermissions}}" type="checkbox"
+                                ng-model="menu.selectAll" ng-change="selectAll()">
+                        </th>
+                        <th style="width: 70px"></th>
+                        <th style="width: 150px">Group</th>
+                        <th style="width: 15px"></th>
+                        <th>Task</th>
+                        <th style="width: 70px;"></th>
+                        <th style="width: 150px">Date</th>
+                        <th style="width: 150px">Assignee</th>
+                        <th style="width: 100px" class="text-right" if-permission="manageTask"
+                            allowed="{{userPermissions}}">Actions</th>
+                    </tr>
+                </thead>
+                <tbody ng-repeat="task in list.values">
+                    <tr class="task-row" ng-class="{'warning': task.flag == true}">
+                        <td>
+                            <input if-permission="manageTask" allowed="{{userPermissions}}" type="checkbox"
+                                ng-model="task.selected" ng-change="select(task)">
+                        </td>
+                        <td class="task-status" align="center" ng-switch="task.status">
+                            <task-flags task="task" on-filter="addFilterValue(fieldName, value)" inline="true">
+                            </task-flags>
+                        </td>
+                        <td ng-if="canEdit">
+                            <updatable-select options="groups" on-update="updateField('group', newValue, task)"
+                                value="task.group"></updatable-select>
+                        </td>
+                        <td>
+                            <a href class="pull-right" ng-click="addFilterValue('group', task.group)"><i
+                                    class="fa fa-filter"></i></a>
+                        </td>
+                        <td ng-if="!canEdit">
+                            {{task.group}}
+                        </td>
+                        <td>
+                            <div>
+                                <!-- FIXME -->
+                                <!-- <span class="mr-xxs text-primary clickable" ng-if="!!!task.extraData.isOwner"><i class="fa fa-share-square"
+                                  uib-tooltip="Shared from another organisation" tooltip-placement="right"></i></span>
+                              <span class="mr-xxs text-primary clickable" ng-if="!!task.extraData.isOwner"><i class="fa fa-building-o"
+                                  uib-tooltip="Created by my organisation" tooltip-placement="right"></i></span> -->
+                                <a href ng-click="collapseOptions[task._id] = !collapseOptions[task._id]"
+                                    ng-show="task.description" uib-tooltip="Show/Hide description"
+                                    tooltip-placement="right">
                                     <i class="fa" ng-class="{
-                                      true: 'fa-chevron-up',
-                                      false: 'fa-chevron-down'
+                                        true: 'fa-chevron-up',
+                                        false: 'fa-chevron-down'
                                     }[!!collapseOptions[task._id]]"></i>
-                                  </a>
-                                  <a href ng-class="{'text-danger': !!task.extraData.actionRequired}" ng-click="addFilterValue('actionRequired', true)">
-                                      <span ng-if="!!task.extraData.actionRequired" class="text-danger noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="left-middle">
-                                          <i class="fa fa-exclamation-triangle"></i>
-                                      </span>
-                                  </a>
-                                  <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" ng-class="{'text-danger': !!task.extraData.actionRequired}">
-                                      {{task.title}}
-                                  </a>
-                              </div>
-                              <div ng-show="task.status === 'Completed'" class="text-success">
-                                  Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat : 'milliseconds'}}</em>
-                              </div>
-                              <div ng-show="task.status === 'InProgress'" class="text-warning">
-                                  Started <em am-time-ago="task.startDate"></em>
-                              </div>
-                            </td>
-                            <td align="center">
-                                <div ng-if="task.extraData.shareCount > 0">
-                                    <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
-                                        tooltip-placement="left-middle">
+                                </a>
+                                <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})"
+                                    ng-class="{'text-danger': !!task.extraData.actionRequired}">
+                                    <span ng-if="!!task.extraData.actionRequired" class="text-danger noline mr-xxxs"
+                                        uib-tooltip="Action Required" tooltip-placement="left-middle">
+                                        <i class="fa fa-exclamation-triangle"></i>
+                                    </span>
+                                    {{task.title}}
+                                </a>
+                            </div>
+                            <div ng-show="task.status === 'Completed'" class="text-success">
+                                Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat :
+                                    'milliseconds'}}</em>
+                            </div>
+                            <div ng-show="task.status === 'InProgress'" class="text-warning">
+                                Started <em am-time-ago="task.startDate"></em>
+                            </div>
+                        </td>
+                        <td align="center">
+                            <div ng-if="task.extraData.shareCount > 0">
+                                <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})" class="noline"
+                                    tooltip-placement="left-middle">
 
-                                        <i class="fa fa-users"></i>
-                                        ({{task.extraData.shareCount || 0}})
+                                    <i class="fa fa-users"></i>
+                                    ({{task.extraData.shareCount || 0}})
+                                </a>
+                            </div>
+
+                        </td>
+                        <td>{{task.startDate | shortDate}}</td>
+                        <td ng-if="canEdit">
+                            <span ng-show="task.assignee">
+                                <updatable-user blank-text="Not Assigned"
+                                    on-update="updateField('owner', newValue, task)" value="task.assignee"
+                                    query="getAssignableUsers" query-params="[task._id]" />
+                            </span>
+                            <span ng-show="!task.assignee">
+                                <updatable-user blank-text="Not Assigned"
+                                    on-update="updateField('owner', newValue, task)" value="notassigned"
+                                    query="getAssignableUsers" query-params="[task._id]" />
+                            </span>
+                        </td>
+                        <td ng-if="!canEdit">
+                            <span ng-show="task.assignee">
+                                <user-info value="task.assignee" field="name"></user-info>
+                            </span>
+                            <span ng-show="!task.assignee">
+                                <em class="text-warning">Not Assigned</em>
+                            </span>
+                        </td>
+                        <!--  class="task-delete" -->
+                        <td align="right" class="task-actions" if-permission="manageTask" allowed="{{userPermissions}}">
+
+                            <a class="btn btn-icon btn-clear" ng-click="removeTask(task)" uib-tooltip="Delete">
+                                <i class="fa fa-trash text-danger"></i>
+                            </a>
+                            <a class="btn btn-icon btn-clear" ng-show="task.status == 'Completed'"
+                                ng-click="openTask(task)" uib-tooltip="Reopen">
+                                <i class="fa fa-play text-success"></i>
+                            </a>
+                            <a class="btn btn-icon btn-clear" ng-show="task.status == 'InProgress'"
+                                ng-click="closeTask(task)" uib-tooltip="Close">
+                                <i class="fa fa-check-circle-o text-muted"></i>
+                            </a>
+                            <a class="btn btn-icon btn-clear" ng-show="task.status == 'Waiting'"
+                                ng-click="startTask(task)" uib-tooltip="Start">
+                                <i class="fa fa-play text-primary"></i>
+                            </a>
+                            <a href class="btn btn-icon btn-clear" ng-click="getTaskResponders(task, true)"
+                                ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction"
+                                allowed="{{userPermissions}}">
+                                <i class="text-primary fa fa-cog"></i>
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr ng-if="task.description && collapseOptions[task._id]">
+                        <td colspan="10" class="wrap">
+                            <div marked="task.description" class="mt-xxs filter-panel markdown"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Show group table -->
+        <div ng-if="state.showGrouped">
+            <div class="panel panel-default" ng-repeat="group in groupedTasks">
+                <div class="panel-heading">
+                    <strong>{{group.group || 'Not Specified'}}</strong> <small>({{group.tasks.length}} task(s))</small>
+                </div>
+                <div class="panel-body p-0">
+                    <table class="table table-hover valigned tasks-table data-list">
+                        <thead>
+                            <tr>
+                                <th width="20px">
+                                    <input if-permission="manageTask" allowed="{{userPermissions}}" type="checkbox"
+                                        ng-model="menu.selectAll" ng-change="selectAll()">
+                                </th>
+                                <th style="width: 70px"></th>
+                                <th style="width: 150px">Group</th>
+                                <th style="width: 15px"></th>
+                                <th>Task</th>
+                                <th style="width: 70px;"></th>
+                                <th style="width: 150px">Date</th>
+                                <th style="width: 150px">Assignee</th>
+                                <th style="width: 100px" class="text-right" if-permission="manageTask"
+                                    allowed="{{userPermissions}}">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody ng-repeat="task in group.tasks">
+                            <tr class="task-row" ng-class="{'warning': task.flag == true}">
+                                <td>
+                                    <input if-permission="manageTask" allowed="{{userPermissions}}" type="checkbox"
+                                        ng-model="task.selected" ng-change="select(task)">
+                                </td>
+
+                                <td class="task-status" align="center" ng-switch="task.status">
+                                    <task-flags task="task" on-filter="addFilterValue(fieldName, value)" inline="true">
+                                    </task-flags>
+                                    <!-- <i ng-switch-when="Completed" class="text-success glyphicon glyphicon-ok" uib-tooltip="Completed"></i>
+                                    <i ng-switch-when="InProgress" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag', false:'text-primary glyphicon-play'}[task.flag]" uib-tooltip="In Porgress"></i>
+                                    <i ng-switch-when="Waiting" class="glyphicon" ng-class="{true:'text-yellow glyphicon-flag'}[task.flag]"></i> -->
+                                </td>
+                                <td ng-if="canEdit">
+                                    <updatable-select options="groups" on-update="updateField('group', newValue, task)"
+                                        value="task.group"></updatable-select>
+                                </td>
+                                <td ng-if="!canEdit">
+                                    {{task.group}}
+                                </td>
+                                <td>
+                                    <a href class="pull-right" ng-click="addFilterValue('group', task.group)"><i
+                                            class="fa fa-filter"></i></a>
+                                </td>
+                                <td>
+                                    <div>
+                                        <a href ng-click="collapseOptions[task._id] = !collapseOptions[task._id]"
+                                            ng-show="task.description" uib-tooltip="Show/Hide description"
+                                            tooltip-placement="right">
+                                            <i class="fa" ng-class="{
+                                          true: 'fa-chevron-up',
+                                          false: 'fa-chevron-down'
+                                        }[!!collapseOptions[task._id]]"></i>
+                                        </a>
+                                        <a href ng-class="{'text-danger': !!task.extraData.actionRequired}"
+                                            ng-click="addFilterValue('actionRequired', true)">
+                                            <span ng-if="!!task.extraData.actionRequired"
+                                                class="text-danger noline mr-xxxs" uib-tooltip="Action Required"
+                                                tooltip-placement="left-middle">
+                                                <i class="fa fa-exclamation-triangle"></i>
+                                            </span>
+                                        </a>
+                                        <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})"
+                                            ng-class="{'text-danger': !!task.extraData.actionRequired}">
+                                            {{task.title}}
+                                        </a>
+                                    </div>
+                                    <div ng-show="task.status === 'Completed'" class="text-success">
+                                        Closed after <em>{{(task.endDate - task.startDate) | amDurationFormat :
+                                            'milliseconds'}}</em>
+                                    </div>
+                                    <div ng-show="task.status === 'InProgress'" class="text-warning">
+                                        Started <em am-time-ago="task.startDate"></em>
+                                    </div>
+                                </td>
+                                <td align="center">
+                                    <div ng-if="task.extraData.shareCount > 0">
+                                        <a href ui-sref="app.case.tasks-item({caseId: caseId, itemId:task._id})"
+                                            class="noline" tooltip-placement="left-middle">
+
+                                            <i class="fa fa-users"></i>
+                                            ({{task.extraData.shareCount || 0}})
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>{{task.startDate | shortDate}}</td>
+                                <td ng-if="canEdit">
+                                    <span ng-show="task.assignee">
+                                        <updatable-user blank-text="Not Assigned"
+                                            on-update="updateField('owner', newValue, task)" value="task.assignee"
+                                            query="getAssignableUsers" query-params="[task._id]" />
+                                    </span>
+                                    <span ng-show="!task.assignee">
+                                        <updatable-user blank-text="Not Assigned"
+                                            on-update="updateField('owner', newValue, task)" value="notassigned"
+                                            query="getAssignableUsers" query-params="[task._id]" />
+                                    </span>
+                                </td>
+                                <td ng-if="!canEdit">
+                                    <span ng-show="task.assignee">
+                                        <user-info value="task.assignee" field="name"></user-info>
+                                    </span>
+                                    <span ng-show="!task.assignee">
+                                        <em class="text-warning">Not Assigned</em>
+                                    </span>
+                                </td>
+                                <!--  class="task-delete" -->
+                                <td align="right" class="task-actions" if-permission="manageTask"
+                                    allowed="{{userPermissions}}">
+
+                                    <a class="btn btn-icon btn-clear" ng-click="removeTask(task)" uib-tooltip="Delete">
+                                        <i class="fa fa-trash text-danger"></i>
                                     </a>
-                                </div>
-                            </td>
-                            <td>{{task.startDate | shortDate}}</td>
-                            <td ng-if="canEdit">
-                                <span ng-show="task.assignee">
-                                    <updatable-user on-update="updateField('owner', newValue, task)" value="task.assignee" query="getAssignableUsers" query-params="[task._id]"/>
-                                </span>
-                                <span ng-show="!task.assignee">
-                                    <updatable-user on-update="updateField('owner', newValue, task)" value="notassigned" query="getAssignableUsers" query-params="[task._id]"/>
-                                </span>
-                            </td>
-                            <td ng-if="!canEdit">
-                                <span ng-show="task.assignee">
-                                    <user-info value="task.assignee" field="name"></user-info>
-                                </span>
-                                <span ng-show="!task.assignee">
-                                    <em class="text-warning">Not Assigned</em>
-                                </span>
-                            </td>
-                            <!--  class="task-delete" -->
-                            <td align="right" class="task-actions" if-permission="manageTask" allowed="{{userPermissions}}">
-
-                                <a class="btn btn-icon btn-clear" ng-click="removeTask(task)" uib-tooltip="Delete">
-                                    <i class="fa fa-trash text-danger"></i>
-                                </a>
-                                <a class="btn btn-icon btn-clear"  ng-show="task.status == 'Completed'" ng-click="openTask(task)" uib-tooltip="Reopen">
-                                    <i class="fa fa-play text-success"></i>
-                                </a>
-                                <a class="btn btn-icon btn-clear" ng-show="task.status == 'InProgress'" ng-click="closeTask(task)" uib-tooltip="Close">
-                                    <i class="fa fa-check-circle-o text-muted"></i>
-                                </a>
-                                <a class="btn btn-icon btn-clear" ng-show="task.status == 'Waiting'" ng-click="startTask(task)" uib-tooltip="Start">
-                                    <i class="fa fa-play text-primary"></i>
-                                </a>
-                                <a href class="btn btn-icon btn-clear" ng-click="getTaskResponders(task, true)" ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction" allowed="{{userPermissions}}">
-                                    <i class="text-primary fa fa-cog"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        <tr ng-if="task.description && collapseOptions[task._id]">
-                            <td colspan="7" class="wrap">
-                                <div marked="task.description" class="mt-xxs filter-panel markdown"></div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                    <a class="btn btn-icon btn-clear" ng-show="task.status == 'Completed'"
+                                        ng-click="openTask(task)" uib-tooltip="Reopen">
+                                        <i class="fa fa-play text-success"></i>
+                                    </a>
+                                    <a class="btn btn-icon btn-clear" ng-show="task.status == 'InProgress'"
+                                        ng-click="closeTask(task)" uib-tooltip="Close">
+                                        <i class="fa fa-check-circle-o text-muted"></i>
+                                    </a>
+                                    <a class="btn btn-icon btn-clear" ng-show="task.status == 'Waiting'"
+                                        ng-click="startTask(task)" uib-tooltip="Start">
+                                        <i class="fa fa-play text-primary"></i>
+                                    </a>
+                                    <a href class="btn btn-icon btn-clear" ng-click="getTaskResponders(task, true)"
+                                        ng-if="appConfig.connectors.cortex.enabled" if-permission="manageAction"
+                                        allowed="{{userPermissions}}">
+                                        <i class="text-primary fa fa-cog"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr ng-if="task.description && collapseOptions[task._id]">
+                                <td colspan="10" class="wrap">
+                                    <div marked="task.description" class="mt-xxs filter-panel markdown"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <psearch control="list"></psearch>
-
     </div>
 </div>

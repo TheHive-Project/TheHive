@@ -13,8 +13,9 @@ class QueryTest extends PlaySpecification with Mockito {
   val publicTask = new PublicTask(mock[TaskSrv], mock[OrganisationSrv], mock[UserSrv])
 
   val queryExecutor: QueryExecutor = new QueryExecutor {
-    override val db: Database        = mock[Database]
-    override val version: (Int, Int) = 0 -> 0
+    override val limitedCountThreshold: Long = 1000
+    override val db: Database                = mock[Database]
+    override val version: (Int, Int)         = 0 -> 0
     override lazy val queries: Seq[ParamQuery[_]] =
       publicTask.initialQuery +: publicTask.getQuery +: publicTask.outputQuery +: publicTask.outputQuery +: publicTask.extraQueries
     override lazy val publicProperties: PublicProperties = publicTask.publicProperties
@@ -56,7 +57,7 @@ class QueryTest extends PlaySpecification with Mockito {
 
       val queryOrError = taskCtrl.statsParser(Field(input))
       queryOrError.isGood must beTrue.updateMessage(s => s"$s\n$queryOrError")
-      queryOrError.get must not be empty
+      queryOrError.get    must not be empty
     }
   }
 }

@@ -1,7 +1,7 @@
 ---
 name: Feature Request for TheHive4
 about: Create a feature request for TheHive 4.
-title: "[Bug]"
+title: "[Feature Request]"
 labels: feature request, TheHive4
 assignees: ''
 ---

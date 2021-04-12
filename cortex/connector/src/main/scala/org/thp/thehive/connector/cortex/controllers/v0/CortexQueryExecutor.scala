@@ -5,6 +5,7 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FieldsParser
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query._
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
@@ -18,7 +19,8 @@ import javax.inject.{Inject, Singleton}
 import scala.reflect.runtime.{universe => ru}
 
 @Singleton
-class CortexQueryExecutor @Inject() (implicit
+class CortexQueryExecutor @Inject() (
+    appConfig: ApplicationConfig,
     override val db: Database,
     job: PublicJob,
     report: PublicAnalyzerTemplate,
@@ -26,6 +28,9 @@ class CortexQueryExecutor @Inject() (implicit
     analyzerTemplate: PublicAnalyzerTemplate
 ) extends QueryExecutor {
   lazy val controllers: List[PublicData] = action :: report :: job :: analyzerTemplate :: Nil
+
+  val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
+  override val limitedCountThreshold: Long                = limitedCountThresholdConfig.get
 
   override lazy val publicProperties: PublicProperties = controllers.map(_.publicProperties).reduce(_ ++ _)
 

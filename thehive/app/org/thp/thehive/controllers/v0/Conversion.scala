@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import io.scalaland.chimney.dsl._
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.{AuthContext, Permission, PermissionDesc}
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
@@ -45,7 +46,7 @@ object Conversion {
       .withFieldComputed(_.id, _._id.toString)
       .withFieldComputed(_.id, _._id.toString)
       .withFieldConst(_._type, "alert")
-      .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+      .withFieldComputed(_.tags, _.tags.toSet)
       .withFieldComputed(_.`case`, _.caseId.map(_.toString))
       .withFieldComputed(
         _.status,
@@ -73,7 +74,7 @@ object Conversion {
         .withFieldRenamed(_._createdAt, _.createdAt)
         .withFieldRenamed(_._createdBy, _.createdBy)
         .withFieldConst(_._type, "alert")
-        .withFieldComputed(_.tags, _.tags.map(_.toString).toSet)
+        .withFieldComputed(_.tags, _.tags.toSet)
         .withFieldComputed(_.`case`, _.caseId.map(_.toString))
         .withFieldComputed(
           _.status,
@@ -104,7 +105,7 @@ object Conversion {
         .withFieldConst(_.lastSyncDate, new Date)
         .withFieldConst(_.follow, true)
         .withFieldConst(_.tags, inputAlert.tags.toSeq)
-        .withFieldConst(_.caseId, None)
+        .withFieldConst(_.caseId, EntityId.empty)
         .transform
   }
 
