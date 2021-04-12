@@ -27,19 +27,22 @@ trait TagRenderer extends BaseRenderer[Tag] {
             "case" -> t
               .graph
               .indexCountQuery(
-                s"""v."_label":Case AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}" AND """ +
+                s"""v."_label":Case AND """ +
+                  s"v.tags:${t.graph.escapeQueryParameter(tag)} AND " +
                   s"v.organisationIds:${organisationSrv.currentId(t.graph, authContext).value}"
               ),
             "alert" -> t
               .graph
               .indexCountQuery(
-                s"""v."_label":Alert AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}" AND """ +
+                s"""v."_label":Alert AND """ +
+                  s"v.tags:${t.graph.escapeQueryParameter(tag)} AND " +
                   s"v.organisationId:${organisationSrv.currentId(t.graph, authContext).value}"
               ),
             "observable" -> t
               .graph
               .indexCountQuery(
-                s"""v."_label":Observable AND v.tags:"${tag.replaceAllLiterally("\"", "\\\"")}" AND """ +
+                s"""v."_label":Observable AND """ +
+                  s"v.tags:${t.graph.escapeQueryParameter(tag)} AND " +
                   s"v.organisationIds:${organisationSrv.currentId(t.graph, authContext).value}"
               ),
             "caseTemplate" -> caseTemplateCount

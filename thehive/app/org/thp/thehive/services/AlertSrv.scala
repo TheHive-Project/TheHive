@@ -555,7 +555,12 @@ object AlertOps {
         )
         .domainMap {
           case (alert, customFields, caseId, caseTemplate, renderedEntity) =>
-            val observableCount = traversal.graph.indexCountQuery(s"""v."_label":Observable AND v.relatedId:${alert._id.value}""")
+            val observableCount = traversal
+              .graph
+              .indexCountQuery(
+                s"""v."_label":Observable AND """ +
+                  s"v.relatedId:${traversal.graph.escapeQueryParameter(alert._id.value)}"
+              )
             RichAlert(
               alert,
               customFields,

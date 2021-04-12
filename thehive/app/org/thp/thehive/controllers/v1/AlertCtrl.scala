@@ -77,7 +77,9 @@ class AlertCtrl @Inject() (
       "countRelatedAlert",
       (inCase, graph, authContext) =>
         graph.indexCountQuery(
-          s"""v."_label":Alert AND v.organisationId:${organisationSrv.currentId(graph, authContext).value} AND v.caseId:${inCase.caseId.value}"""
+          s"""v."_label":Alert AND """ +
+            s"v.organisationId:${organisationSrv.currentId(graph, authContext).value} AND " +
+            s"v.caseId:${graph.escapeQueryParameter(inCase.caseId.value)}"
         )
     ),
     Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),

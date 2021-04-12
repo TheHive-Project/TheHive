@@ -78,16 +78,18 @@ class ObservableCtrl @Inject() (
       "countCaseObservable",
       (inCase, graph, authContext) =>
         graph.indexCountQuery(
-          s"""v."_label":Observable AND relatedId:${inCase.caseId.value} AND organisationIds:${organisationSrv.currentId(graph, authContext).value}"""
+          s"""v."_label":Observable AND """ +
+            s"relatedId:${graph.escapeQueryParameter(inCase.caseId.value)} AND " +
+            s"organisationIds:${organisationSrv.currentId(graph, authContext).value}"
         )
     ),
     Query.initWithParam[InAlert, Long](
       "countAlertObservable",
       (inAlert, graph, authContext) =>
         graph.indexCountQuery(
-          s"""v."_label":Observable AND relatedId:${inAlert
-            .alertId
-            .value} AND organisationIds:${organisationSrv.currentId(graph, authContext).value}"""
+          s"""v."_label":Observable AND """ +
+            s"relatedId:${graph.escapeQueryParameter(inAlert.alertId.value)} AND " +
+            s"organisationIds:${organisationSrv.currentId(graph, authContext).value}"
         )
     ),
     Query[Traversal.V[Observable], Traversal.V[Organisation]](

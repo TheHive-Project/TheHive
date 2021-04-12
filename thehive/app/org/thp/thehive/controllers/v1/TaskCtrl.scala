@@ -58,7 +58,7 @@ class TaskCtrl @Inject() (
       (inCase, graph, authContext) =>
         graph.indexCountQuery(
           s"""v."_label":Task AND """ +
-            s"v.relatedId:${inCase.caseId.value} AND " +
+            s"v.relatedId:${graph.escapeQueryParameter(inCase.caseId.value)} AND " +
             s"v.organisationIds:${organisationSrv.currentId(graph, authContext).value} AND " +
             "NOT v.status:Cancel"
         )

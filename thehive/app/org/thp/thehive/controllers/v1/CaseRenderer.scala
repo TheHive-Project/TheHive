@@ -27,7 +27,7 @@ trait CaseRenderer extends BaseRenderer[Case] {
             .graph
             .indexCountQuery(
               s"""v."_label":Observable AND """ +
-                s"v.relatedId:${caseId.value} AND " +
+                s"v.relatedId:${t.graph.escapeQueryParameter(caseId.value)} AND " +
                 s"v.organisationIds:${organisationSrv.currentId(t.graph, authContext).value}"
             )
         )
