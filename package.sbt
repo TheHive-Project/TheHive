@@ -40,6 +40,7 @@ linuxPackageMappings ++= Seq(
     file("package/thehive.service") -> "/usr/lib/systemd/system/thehive.service"
   ).withPerms("644"),
   packageMapping(
+    file("package/thehive.default")       -> "/etc/default/thehive",
     file("conf/application.sample.conf")  -> "/etc/thehive/application.conf",
     file("package/logback.xml")           -> "/etc/thehive/logback.xml",
     file("package/logback-migration.xml") -> "/etc/thehive/logback-migration.xml"

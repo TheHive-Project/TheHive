@@ -5,6 +5,7 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
+EnvironmentFile=-/etc/default/thehive
 WorkingDirectory=/opt/thehive
 
 User=thehive
