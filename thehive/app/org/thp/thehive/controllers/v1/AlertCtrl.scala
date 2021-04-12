@@ -73,6 +73,13 @@ class AlertCtrl @Inject() (
           s"""v."_label":Alert AND v.organisationId:${organisationSrv.currentId(graph, authContext).value} AND NOT v.caseId:[* TO 'ZZZZZZZZ']"""
         )
     ),
+    Query.initWithParam[InCase, Long](
+      "countRelatedAlert",
+      (inCase, graph, authContext) =>
+        graph.indexCountQuery(
+          s"""v."_label":Alert AND v.organisationId:${organisationSrv.currentId(graph, authContext).value} AND v.caseId:${inCase.caseId.value}"""
+        )
+    ),
     Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
     Query[Traversal.V[Alert], Traversal.V[Case]]("case", (alertSteps, _) => alertSteps.`case`),
     Query.withParam[Option[InputQuery[Traversal.Unk, Traversal.Unk]], Traversal.V[Alert], Traversal[
