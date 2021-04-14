@@ -469,7 +469,8 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .removeIndex("Observable", IndexType.standard)
     .removeIndex("Tag", IndexType.standard)
     .removeIndex("Task", IndexType.standard)
-  //=====[release 4.1.3]=====
+    //=====[release 4.1.3]=====
+    .removeIndex("global", IndexType.fulltext)
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
