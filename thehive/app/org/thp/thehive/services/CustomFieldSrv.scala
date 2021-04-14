@@ -131,13 +131,6 @@ object CustomFieldOps {
             name -> CustomFieldType.map(tpe).getJsonValue(new CustomFieldValueEdge(edge))
         }
 
-    def jsonValue: Traversal[JsValue, JMap[String, Any], Converter[JsValue, JMap[String, Any]]] =
-      edgeNameType
-        .domainMap {
-          case (edge, _, tpe) =>
-            CustomFieldType.map(tpe).getJsonValue(new CustomFieldValueEdge(edge))
-        }
-
     def nameValue: Traversal[(String, Option[_]), JMap[String, Any], Converter[(String, Option[_]), JMap[String, Any]]] =
       edgeNameType
         .domainMap {

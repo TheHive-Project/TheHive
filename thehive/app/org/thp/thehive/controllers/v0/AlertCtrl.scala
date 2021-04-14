@@ -468,9 +468,7 @@ class PublicAlert @Inject() (
       .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
-          alerts
-            .customFields(EntityIdOrName(idOrName))
-            .jsonValue
+          alerts.customFieldJsonValue(customFieldSrv, EntityIdOrName(idOrName))
         case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
         .filter[JsValue] {
