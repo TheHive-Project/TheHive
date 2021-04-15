@@ -114,9 +114,11 @@ class ObservableSrv @Inject() (
       .toSeq
       .map(_.toString)
       .toSet
+    val newTags = tags -- currentTags
     for {
-      createdTags <- (tags -- currentTags).filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
+      createdTags <- newTags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
       _           <- createdTags.toTry(observableTagSrv.create(ObservableTag(), observable, _))
+      _           <- get(observable).update(_.tags, (currentTags ++ newTags).toSeq).getOrFail("Observable")
 //      _           <- auditSrv.observable.update(observable, Json.obj("tags" -> (currentTags ++ tags)))
     } yield createdTags
   }
