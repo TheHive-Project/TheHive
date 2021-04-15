@@ -16,8 +16,14 @@ Bug
 | -------------------------- | ------------------------------------- |
 | OS version (server)        | Debian, Ubuntu, CentOS, RedHat, ...   |
 | OS version (client)        | XP, Seven, 10, Ubuntu, ...            |
-| TheHive version / git hash | 3.x, hash of the commit               |
+| Virtualized  Env.          | True / False                          |
+| Dedicated RAM              | XX GB                                 |
+| vCPU                       | 4 / 8 / 16 / 32                       |
+| TheHive version / git hash | 4.x, hash of the commit               |
 | Package Type               | RPM, DEB, Docker, Binary, From source |
+| Database                   | Cassandra / BerlkelyDB                |
+| Index type                 | Lucene / Elasticsearch                |
+| Attachments storage        | Local, NFS, S3, HDFS                  |
 | Browser type & version     | If applicable                         |
 
 
