@@ -471,7 +471,12 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .removeIndex("Tag", IndexType.standard)
     .removeIndex("Task", IndexType.standard)
     //=====[release 4.1.3]=====
-    .removeIndex("global", IndexType.fulltext)
+    .dbOperation[JanusDatabase]("Remove global index if ElasticSearch is used") { db =>
+      db.managementTransaction(mgmt => Try(mgmt.get("index.search.backend"))).flatMap {
+        case "elasticsearch" => db.removeIndex("global", IndexType.fulltext, Nil)
+        case _               => Success(())
+      }
+    }
     .updateGraph("Add manageProcedure permission to org-admin and analyst profiles", "Profile") { traversal =>
       traversal
         .unsafeHas("name", P.within("org-admin", "analyst"))
