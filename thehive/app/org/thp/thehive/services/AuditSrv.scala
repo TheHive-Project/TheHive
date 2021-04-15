@@ -286,6 +286,7 @@ class AuditSrv @Inject() (
         graph: Graph,
         authContext: AuthContext
     ): Try[Unit] = {
+      auditSrv.create(Audit(Audit.update, alert, Some(Json.obj("caseId" -> `case`._id).toString)), `case`, Some(`case`))
       val detailsWithAlert = details + ("fromAlert" -> Json.obj(
         "_id"       -> alert._id.toString,
         "type"      -> alert.`type`,
@@ -299,6 +300,7 @@ class AuditSrv @Inject() (
         graph: Graph,
         authContext: AuthContext
     ): Try[Unit] = {
+      auditSrv.create(Audit(Audit.update, alert, Some(Json.obj("caseId" -> `case`._id).toString)), `case`, Some(`case`))
       val detailsWithAlert = details + ("fromAlert" -> Json.obj(
         "_id"       -> alert._id.toString,
         "type"      -> alert.`type`,

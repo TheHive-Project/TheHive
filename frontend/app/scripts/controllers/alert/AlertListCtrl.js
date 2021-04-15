@@ -262,11 +262,10 @@
                 self.menu.markAsUnread = temp.length === 1 && temp[0] === true;
 
                 // TODO nadouani: don't rely on alert status
-                self.menu.createNewCase = temp.indexOf('Imported') === -1;
-                self.menu.mergeInCase = temp.indexOf('Imported') === -1;
+                temp = _.without(_.uniq(_.pluck(self.selection, 'caseId')), null, undefined);
 
-                temp = _.without(_.uniq(_.pluck(self.selection, 'case')), null, undefined);
-
+                self.menu.createNewCase = temp.length === 0;
+                self.menu.mergeInCase = temp.length === 0;
                 self.menu.delete = temp.length === 0;
             };
 

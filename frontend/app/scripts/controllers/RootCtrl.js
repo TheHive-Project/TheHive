@@ -106,7 +106,6 @@ angular.module('theHiveControllers').controller('RootCtrl',
                     name: 'unread-alert-count'
                 }
             },
-            guard: UtilsSrv.hasAddDeleteEvents,
             onUpdate: function (data) {
                 $scope.unreadAlertCount = data;
             }
