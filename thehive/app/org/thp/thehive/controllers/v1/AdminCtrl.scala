@@ -117,7 +117,15 @@ class AdminCtrl @Inject() (
     entrypoint("Get index status")
       .authPermittedRoTransaction(db, Permissions.managePlatform) { _ => graph =>
         val indices = labels.map { label =>
-          Json.obj("name" -> label, "count" -> graph.indexCountQuery(s"""v."_label":$label"""))
+          val count =
+            try graph.indexCountQuery(s"""v."_label":$label""")
+            catch {
+              case error: Throwable =>
+                logger.error("Index fetch error", error)
+                0
+            }
+          Json.obj("name" -> label, "count" -> count)
+
         }
         val indexCount = Json.obj("name" -> "global", "indices" -> indices)
         Success(Results.Ok(Json.obj("index" -> Seq(indexCount))))

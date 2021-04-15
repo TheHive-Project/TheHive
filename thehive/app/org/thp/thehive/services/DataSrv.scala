@@ -3,6 +3,7 @@ package org.thp.thehive.services
 import akka.actor.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.T
+import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
@@ -13,6 +14,7 @@ import org.thp.thehive.services.DataOps._
 
 import java.lang.{Long => JLong}
 import javax.inject.{Inject, Named, Singleton}
+import scala.collection.mutable
 import scala.util.{Success, Try}
 
 @Singleton
@@ -58,6 +60,23 @@ object DataOps {
 }
 
 class DataIntegrityCheckOps @Inject() (val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
+
+  override def findDuplicates(): Seq[Seq[Data with Entity]] =
+    db.roTransaction { implicit graph =>
+      val map = mutable.Map.empty[String, mutable.Buffer[EntityId]]
+      service
+        .startTraversal
+        .foreach { data =>
+          map.getOrElseUpdate(data.data, mutable.Buffer.empty[EntityId]) += EntityId(data._id)
+        }
+      map
+        .values
+        .collect {
+          case vertexIds if vertexIds.lengthCompare(1) > 0 => service.getByIds(vertexIds: _*).toList
+        }
+        .toSeq
+    }
+
   override def resolve(entities: Seq[Data with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

@@ -184,14 +184,15 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.unsafeHas("name", "admin").raw.property("permissions", "managePattern").iterate()
       Success(())
     }
-    .updateGraph("Add manageProcedure permission to org-admin and analyst profiles", "Profile") { traversal =>
-      traversal
-        .unsafeHas("name", P.within("org-admin", "analyst"))
-        .raw
-        .property("permissions", "manageProcedure")
-        .iterate()
-      Success(())
-    }
+    .noop
+//    .updateGraph("Add manageProcedure permission to org-admin and analyst profiles", "Profile") { traversal =>
+//      traversal
+//        .unsafeHas("name", P.within("org-admin", "analyst"))
+//        .raw
+//        .property("permissions", "manageProcedure")
+//        .iterate()
+//      Success(())
+//    }
     // Index backend
     /* Alert index  */
     .addProperty[Seq[String]]("Alert", "tags")
@@ -266,7 +267,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     }
     /* CaseTemplate index  */
     .addProperty[Seq[String]]("CaseTemplate", "tags")
-    .updateGraph("Add tags in caseTempates", "CaseTemplate") { traversal =>
+    .updateGraph("Add tags in caseTemplates", "CaseTemplate") { traversal =>
       traversal
         .project(
           _.by
@@ -469,7 +470,22 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     .removeIndex("Observable", IndexType.standard)
     .removeIndex("Tag", IndexType.standard)
     .removeIndex("Task", IndexType.standard)
-  //=====[release 4.1.3]=====
+    //=====[release 4.1.3]=====
+    .dbOperation[JanusDatabase]("Remove global index if ElasticSearch is used") { db =>
+      db.managementTransaction(mgmt => Try(mgmt.get("index.search.backend"))).flatMap {
+        case "elasticsearch" => db.removeIndex("global", IndexType.fulltext, Nil)
+        case _               => Success(())
+      }
+    }
+    .updateGraph("Add manageProcedure permission to org-admin and analyst profiles", "Profile") { traversal =>
+      traversal
+        .unsafeHas("name", P.within("org-admin", "analyst"))
+        .raw
+        .property("permissions", "manageProcedure")
+        .iterate()
+      Success(())
+    }
+    .removeIndex("Data", IndexType.unique, "data")
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

@@ -4,21 +4,19 @@
     </div>
 </div>
 
-<div class="case-links" ng-show="alerts.length > 0" ng-init="filteredLinks = (alerts | filter:filtering | orderBy:sorting.field)">
+<div class="case-links" ng-show="alerts.length > 0"
+    ng-init="filteredLinks = (alerts | filter:filtering | orderBy:sorting.field)">
     <div class="mv-s" ng-if="alertStats">
-        <span class="label label-lg label-default mr-xxs clickable"
-            ng-click="filterBy('');"
+        <span class="label label-lg label-default mr-xxs clickable" ng-click="filterBy('');"
             ng-class="{'label-primary': currentFilter===''}">All ({{alerts.length || 0}})</span>
 
         <span><strong>Type:</strong></span>
-        <span class="label label-lg label-default mr-xxs clickable"
-            ng-repeat="statsItem in alertStats.type"
+        <span class="label label-lg label-default mr-xxs clickable" ng-repeat="statsItem in alertStats.type"
             ng-click="filterBy('type', statsItem.key)"
             ng-class="{'label-primary': currentFilter===statsItem.key}">{{statsItem.key}} ({{statsItem.value}})</span>
 
         <span><strong>Source:</strong></span>
-        <span class="label label-lg label-default mr-xxs clickable"
-            ng-repeat="statsItem in alertStats.source"
+        <span class="label label-lg label-default mr-xxs clickable" ng-repeat="statsItem in alertStats.source"
             ng-click="filterBy('source', statsItem.key)"
             ng-class="{'label-primary': currentFilter===statsItem.key}">{{statsItem.key}} ({{statsItem.value}})</span>
     </div>
@@ -33,55 +31,57 @@
         <thead>
             <tr>
                 <th width="150px">
-                  <a href class="text-default" ng-click="sortBy('sourceRef')">
-                    Reference
-                    <i ng-show="sorting.field !== '+sourceRef' && sorting.field !== '-sourceRef'" class="fa fa-sort"></i>
-                    <i ng-show="sorting.field === '+sourceRef'" class="fa fa-caret-up"></i>
-                    <i ng-show="sorting.field === '-sourceRef'" class="fa fa-caret-down"></i>
-                  </a>
+                    <a href class="text-default" ng-click="sortBy('sourceRef')">
+                        Reference
+                        <i ng-show="sorting.field !== '+sourceRef' && sorting.field !== '-sourceRef'"
+                            class="fa fa-sort"></i>
+                        <i ng-show="sorting.field === '+sourceRef'" class="fa fa-caret-up"></i>
+                        <i ng-show="sorting.field === '-sourceRef'" class="fa fa-caret-down"></i>
+                    </a>
                 </th>
                 <th width="160px">
-                  <a href class="text-default" ng-click="sortBy('type')">
-                    Type
-                    <i ng-show="sorting.field !== '+type' && sorting.field !== '-type'" class="fa fa-sort"></i>
-                    <i ng-show="sorting.field === '+type'" class="fa fa-caret-up"></i>
-                    <i ng-show="sorting.field === '-type'" class="fa fa-caret-down"></i>
-                  </a>
+                    <a href class="text-default" ng-click="sortBy('type')">
+                        Type
+                        <i ng-show="sorting.field !== '+type' && sorting.field !== '-type'" class="fa fa-sort"></i>
+                        <i ng-show="sorting.field === '+type'" class="fa fa-caret-up"></i>
+                        <i ng-show="sorting.field === '-type'" class="fa fa-caret-down"></i>
+                    </a>
                 </th>
                 <th>
-                  <a href class="text-default" ng-click="sortBy('title')">
-                    Title
-                    <i ng-show="sorting.field !== '+title' && sorting.field !== '-title'" class="fa fa-sort"></i>
-                    <i ng-show="sorting.field === '+title'" class="fa fa-caret-up"></i>
-                    <i ng-show="sorting.field === '-title'" class="fa fa-caret-down"></i>
-                  </a>
+                    <a href class="text-default" ng-click="sortBy('title')">
+                        Title
+                        <i ng-show="sorting.field !== '+title' && sorting.field !== '-title'" class="fa fa-sort"></i>
+                        <i ng-show="sorting.field === '+title'" class="fa fa-caret-up"></i>
+                        <i ng-show="sorting.field === '-title'" class="fa fa-caret-down"></i>
+                    </a>
                 </th>
                 <th width="150px">
-                  <a href class="text-default" ng-click="sortBy('source')">
-                    Source
-                    <i ng-show="sorting.field !== '+source' && sorting.field !== '-source'" class="fa fa-sort"></i>
-                    <i ng-show="sorting.field === '+source'" class="fa fa-caret-up"></i>
-                    <i ng-show="sorting.field === '-source'" class="fa fa-caret-down"></i>
-                  </a>
+                    <a href class="text-default" ng-click="sortBy('source')">
+                        Source
+                        <i ng-show="sorting.field !== '+source' && sorting.field !== '-source'" class="fa fa-sort"></i>
+                        <i ng-show="sorting.field === '+source'" class="fa fa-caret-up"></i>
+                        <i ng-show="sorting.field === '-source'" class="fa fa-caret-down"></i>
+                    </a>
                 </th>
                 <th width="80px">
-                  <a href class="text-default" ng-click="sortBy('severity')">
-                    Severity
-                    <i ng-show="sorting.field !== '+severity' && sorting.field !== '-severity'" class="fa fa-sort"></i>
-                    <i ng-show="sorting.field === '+severity'" class="fa fa-caret-up"></i>
-                    <i ng-show="sorting.field === '-severity'" class="fa fa-caret-down"></i>
-                  </a>
+                    <a href class="text-default" ng-click="sortBy('severity')">
+                        Severity
+                        <i ng-show="sorting.field !== '+severity' && sorting.field !== '-severity'"
+                            class="fa fa-sort"></i>
+                        <i ng-show="sorting.field === '+severity'" class="fa fa-caret-up"></i>
+                        <i ng-show="sorting.field === '-severity'" class="fa fa-caret-down"></i>
+                    </a>
                 </th>
                 <th width="80px">
-                  Attributes
+                    Attributes
                 </th>
                 <th style="width: 160px">
-                  <a href class="text-default" ng-click="sortBy('date')">
-                    Date
-                    <i ng-show="sorting.field !== '+date' && sorting.field !== '-date'" class="fa fa-sort"></i>
-                    <i ng-show="sorting.field === '+date'" class="fa fa-caret-up"></i>
-                    <i ng-show="sorting.field === '-date'" class="fa fa-caret-down"></i>
-                  </a>
+                    <a href class="text-default" ng-click="sortBy('date')">
+                        Date
+                        <i ng-show="sorting.field !== '+date' && sorting.field !== '-date'" class="fa fa-sort"></i>
+                        <i ng-show="sorting.field === '+date'" class="fa fa-caret-up"></i>
+                        <i ng-show="sorting.field === '-date'" class="fa fa-caret-down"></i>
+                    </a>
                 </th>
                 <th style="width: 60px"></th>
             </tr>
@@ -112,7 +112,7 @@
                         <severity active="false" value="event.severity"></severity>
                     </div>
                 </td>
-                <td class="text-center">{{::event.artifacts.length || 0}}</td>
+                <td class="text-center">{{::event.observableCount || 0}}</td>
                 <td>{{event.date | shortDate}}</td>
                 <td>
                     <a class="btn btn-xs btn-icon btn-clear" href ng-click="previewEvent(event)" uib-tooltip="Preview">
@@ -125,14 +125,16 @@
                     <div class="case-tags flexwrap">
                         <span class="mr-xxxs text-muted"><i class="fa fa-tags"></i></span>
                         <strong class="text-muted mr-xxxs" ng-if="!event.tags || event.tags.length === 0">None</strong>
-                        <span ng-repeat="tag in event.tags track by $index" class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
+                        <span ng-repeat="tag in event.tags track by $index"
+                            class="label label-primary mb-xxxs mr-xxxs pointer">{{tag}}</span>
                     </div>
                 </td>
                 <td></td>
             </tr>
             <tr>
                 <td colspan="7">
-                    <custom-field-labels custom-fields="event.customFields"><custom-field-labels>
+                    <custom-field-labels custom-fields="event.customFields">
+                        <custom-field-labels>
                 </td>
                 <td></td>
             </tr>

@@ -86,15 +86,6 @@ class ShareSrv @Inject() (implicit
     } yield newShareProfile
   }
 
-  private def delete(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      share <- getOrFail(shareId)
-      tasks = get(share).tasks.toSeq
-      obs   = get(share).observables.toSeq
-      _ <- tasks.toTry(taskSrv.delete(_))
-      _ <- obs.toTry(observableSrv.delete(_))
-    } yield get(shareId).remove()
-
   def unshareCase(shareId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       organisation <- get(shareId).organisation.getOrFail("Organisation")
@@ -102,8 +93,7 @@ class ShareSrv @Inject() (implicit
       _ = get(shareId).observables.removeValue(_.organisationIds, organisation._id).barrier().filterNot(_.shares.range(1, 2)).remove()
       _ = get(shareId).tasks.removeValue(_.organisationIds, organisation._id).barrier().filterNot(_.shares.range(1, 2)).remove()
       _ <- auditSrv.share.unshareCase(case0, organisation)
-      _ <- delete(shareId)
-    } yield ()
+    } yield get(shareId).remove()
 
   def unshareTask(
       task: Task with Entity,

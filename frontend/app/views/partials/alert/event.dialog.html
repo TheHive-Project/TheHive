@@ -1,6 +1,7 @@
 <div class="modal-header bg-primary">
     <h3 class="modal-title">
-      Alert Preview <span class="label label-default" ng-class="{'label-danger': !!!dialog.event.read}">{{dialog.event.caseId ? 'Imported' : 'New'}}</span>
+        Alert Preview <span class="label label-default"
+            ng-class="{'label-danger': !!!dialog.event.read}">{{dialog.event.caseId ? 'Imported' : 'New'}}</span>
     </h3>
 </div>
 <div class="modal-body">
@@ -20,7 +21,8 @@
                 <div class="mt-xxs">
                     <span>
                         <strong><i class="fa fa-copy"></i> ID: </strong>
-                        <span class="clickable"><a ng-click="dialog.copyId(dialog.event._id)">{{dialog.event._id}}</a></span>
+                        <span class="clickable"><a
+                                ng-click="dialog.copyId(dialog.event._id)">{{dialog.event._id}}</a></span>
                     </span>
                     <span class="ml-xxs">
                         <strong><i class="fa fa-calendar"></i> Date: </strong>
@@ -41,7 +43,8 @@
                 </div>
                 <div class="case-tags flexwrap mt-xxs">
                     <strong><i class="fa fa-tags mr-xxxs"></i></strong>
-                    <strong class="text-muted mr-xxxs" ng-if="!dialog.event.tags || dialog.event.tags.length === 0">None</strong>
+                    <strong class="text-muted mr-xxxs"
+                        ng-if="!dialog.event.tags || dialog.event.tags.length === 0">None</strong>
                     <tag-item ng-repeat="tag in dialog.event.tags track by $index" value="tag"></tag-item>
                 </div>
 
@@ -89,7 +92,8 @@
                         </span>
                     </uib-tab-heading>
                     <div>
-                        <alert-observable-list alert-id="dialog.eventId" on-list-load="dialog.updateObservableCount(count)"></alert-observable-list>
+                        <alert-observable-list alert-id="dialog.eventId"
+                            on-list-load="dialog.updateObservableCount(count)"></alert-observable-list>
                     </div>
                 </uib-tab>
                 <uib-tab index="1">
@@ -116,40 +120,46 @@
 
 
 
-    <button class="btn btn-default" type="button"
-        ng-if="dialog.canMarkAsRead(dialog.event) && !dialog.readonly"
-        ng-disabled="dialog.loading"
-        ng-click="dialog.markAsRead(dialog.event)">
+    <button class="btn btn-default" type="button" ng-if="dialog.canMarkAsRead(dialog.event) && !dialog.readonly"
+        ng-disabled="dialog.loading" ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope"></i> Mark as read
     </button>
-    <button class="btn btn-default" type="button"
-        ng-if="dialog.canMarkAsUnread(dialog.event) && !dialog.readonly"
-        ng-disabled="dialog.loading"
-        ng-click="dialog.markAsRead(dialog.event)">
+    <button class="btn btn-default" type="button" ng-if="dialog.canMarkAsUnread(dialog.event) && !dialog.readonly"
+        ng-disabled="dialog.loading" ng-click="dialog.markAsRead(dialog.event)">
         <i class="fa fa-envelope-open-o"></i> Mark as unread
     </button>
 
-    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading" ng-click="dialog.follow()">
-        <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i> {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
+    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading"
+        ng-click="dialog.follow()">
+        <i class="fa" ng-class="{'fa-eye': dialog.event.follow, 'fa-eye-slash': !dialog.event.follow}"></i>
+        {{dialog.event.follow ? 'Ignore new updates' : 'Track new updates'}}
     </button>
 
-    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading" ng-click="dialog.merge()">
+    <button class="btn btn-default" type="button" ng-if="!dialog.readonly" ng-disabled="dialog.loading"
+        ng-click="dialog.merge()">
         <i class="fa fa-compress"></i> Merge into case
     </button>
 
-    <button ng-if="!dialog.readonly" class="btn btn-danger" type="button" ng-disabled="dialog.loading" ng-click="dialog.delete()">
+    <button ng-if="!dialog.readonly" class="btn btn-danger" type="button" ng-disabled="dialog.loading"
+        ng-click="dialog.delete()">
         <i class="fa fa-trash"></i> Delete
     </button>
 
-    <form ng-if="!dialog.readonly" name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;" ng-submit="dialog.import()">
+    <form ng-if="!dialog.readonly" name="eventForm" class="form-horizontal pull-right mr-xs" style="width:450px;"
+        ng-submit="dialog.import()">
         <div class="form-group">
             <label class="col-sm-4 control-label">Import alert as</label>
             <div class="col-sm-8 input-group">
-                <select class="form-control" ng-model="dialog.event.caseTemplate" ng-options="template for template in dialog.templates">
-                    <option value="" ng-if="dialog.templates.length === 0 || !!!dialog.hideEmptyCaseButton">Empty case</option>
+                <select class="form-control" ng-model="dialog.event.caseTemplate"
+                    ng-options="template for template in dialog.templates | orderBy:displayName | orderBy:name">
+                    <option value="" ng-if="dialog.templates.length === 0 || !!!dialog.hideEmptyCaseButton">-- Empty
+                        case --
+                    </option>
                 </select>
                 <span class="input-group-btn">
-                    <button class="btn btn-primary" type="submit" ng-disabled="dialog.loading || (!dialog.event.caseTemplate && !!dialog.hideEmptyCaseButton && dialog.templates.length > 0)"><i class="fa fa-download"></i> Yes, Import</button>
+                    <button class="btn btn-primary" type="submit"
+                        ng-disabled="dialog.loading || (!dialog.event.caseTemplate && !!dialog.hideEmptyCaseButton && dialog.templates.length > 0)"><i
+                            class="fa fa-download"></i> Yes, Import</button>
                 </span>
             </div>
 

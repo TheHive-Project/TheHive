@@ -354,12 +354,15 @@ class AlertSrv @Inject() (
       .map(_ => ())
 
   def remove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    for {
-      organisation <- organisationSrv.getOrFail(authContext.organisation)
-      _            <- get(alert).observables.toIterator.toTry(observableSrv.delete(_))
-      _ = get(alert).remove()
-      _ <- auditSrv.alert.delete(alert, organisation)
-    } yield ()
+    auditSrv.mergeAudits {
+      get(alert).observables.toIterator.foreach(observableSrv.delete(_))
+      Success(())
+    } { _ =>
+      for {
+        organisation <- organisationSrv.getOrFail(authContext.organisation)
+        _            <- auditSrv.alert.delete(alert, organisation)
+      } yield get(alert).remove()
+    }
 }
 
 object AlertOps {

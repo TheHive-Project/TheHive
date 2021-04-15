@@ -66,6 +66,6 @@ case class RichObservable(
   def tags: Seq[String]                                        = observable.tags
 }
 
-@DefineIndex(IndexType.unique, "data")
+@DefineIndex(IndexType.standard, "data")
 @BuildVertexEntity
 case class Data(data: String)

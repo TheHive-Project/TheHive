@@ -114,9 +114,11 @@ class ObservableSrv @Inject() (
       .toSeq
       .map(_.toString)
       .toSet
+    val newTags = tags -- currentTags
     for {
-      createdTags <- (tags -- currentTags).filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
+      createdTags <- newTags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
       _           <- createdTags.toTry(observableTagSrv.create(ObservableTag(), observable, _))
+      _           <- get(observable).update(_.tags, (currentTags ++ newTags).toSeq).getOrFail("Observable")
 //      _           <- auditSrv.observable.update(observable, Json.obj("tags" -> (currentTags ++ tags)))
     } yield createdTags
   }
@@ -137,24 +139,28 @@ class ObservableSrv @Inject() (
   override def delete(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     get(observable).alert.headOption match {
       case None =>
-        get(observable).share.getOrFail("Share").flatMap {
-          case share if share.owner =>
-            get(observable)
-              .shares
-              .toIterator
-              .toTry { share =>
-                auditSrv
-                  .observable
-                  .delete(observable, share)
-              }
-              .map(_ => get(observable).remove())
-          case share =>
-            for {
-              organisation <- organisationSrv.current.getOrFail("Organisation")
-              _            <- shareSrv.unshareObservable(observable, organisation)
-              _            <- auditSrv.observable.delete(observable, share)
-            } yield ()
-        }
+        get(observable)
+          .share
+          .toIterator
+          .toTry {
+            case share if share.owner =>
+              get(observable)
+                .shares
+                .toIterator
+                .toTry { share =>
+                  auditSrv
+                    .observable
+                    .delete(observable, share)
+                }
+                .map(_ => get(observable).remove())
+            case share =>
+              for {
+                organisation <- organisationSrv.current.getOrFail("Organisation")
+                _            <- shareSrv.unshareObservable(observable, organisation)
+                _            <- auditSrv.observable.delete(observable, share)
+              } yield ()
+          }
+          .map(_ => ())
       case Some(alert) =>
         get(observable).remove()
         auditSrv.observableInAlert.delete(observable, alert)

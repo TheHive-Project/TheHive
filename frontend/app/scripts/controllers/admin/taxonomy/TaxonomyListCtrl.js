@@ -6,10 +6,43 @@
         .controller('TaxonomyDialogCtrl', TaxonomyDialogCtrl)
         .controller('TaxonomyImportCtrl', TaxonomyImportCtrl);
 
-    function TaxonomyListCtrl($scope, $uibModal, PaginatedQuerySrv, FilteringSrv, TaxonomySrv, NotificationSrv, ModalSrv, appConfig) {
+    function TaxonomyListCtrl($scope, $uibModal, PaginatedQuerySrv, FilteringSrv, TaxonomySrv, NotificationSrv, ModalSrv, QuerySrv, appConfig) {
         var self = this;
 
         this.appConfig = appConfig;
+        this.allTaxonomyCount = null;
+
+        self.$onInit = function () {
+            self.filtering = new FilteringSrv('taxonomy', 'taxonomy.list', {
+                version: 'v1',
+                defaults: {
+                    showFilters: true,
+                    showStats: false,
+                    pageSize: 15,
+                    sort: ['+namespace']
+                },
+                defaultFilter: []
+            });
+
+            self.filtering.initContext('list')
+                .then(function () {
+                    self.load();
+
+                    $scope.$watch('$vm.list.pageSize', function (newValue) {
+                        self.filtering.setPageSize(newValue);
+                    });
+                });
+
+            QuerySrv.count(
+                'v1',
+                [{ '_name': 'listTaxonomy' }],
+                {
+                    name: 'all-taxonomy'
+                })
+                .then(function (total) {
+                    self.allTaxonomyCount = total;
+                });
+        };
 
         self.load = function () {
             this.loading = true;
@@ -152,27 +185,6 @@
             this.search();
         };
 
-        self.$onInit = function () {
-            self.filtering = new FilteringSrv('taxonomy', 'taxonomy.list', {
-                version: 'v1',
-                defaults: {
-                    showFilters: true,
-                    showStats: false,
-                    pageSize: 15,
-                    sort: ['+namespace']
-                },
-                defaultFilter: []
-            });
-
-            self.filtering.initContext('list')
-                .then(function () {
-                    self.load();
-
-                    $scope.$watch('$vm.list.pageSize', function (newValue) {
-                        self.filtering.setPageSize(newValue);
-                    });
-                });
-        };
     }
 
     function TaxonomyDialogCtrl($uibModalInstance, TaxonomySrv, NotificationSrv, taxonomy) {

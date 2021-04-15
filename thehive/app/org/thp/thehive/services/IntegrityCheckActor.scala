@@ -125,9 +125,9 @@ class IntegrityCheckActor() extends Actor {
         Success(integrityCheck.initialCheck())
       }
     }
-//    integrityCheckOps.foreach { integrityCheck =>
-//      self ! DuplicationCheck(integrityCheck.name)
-//    }
+    integrityCheckOps.foreach { integrityCheck =>
+      self ! DuplicationCheck(integrityCheck.name)
+    }
     globalTimers = integrityCheckOps.map { integrityCheck =>
       val interval     = globalInterval(integrityCheck.name)
       val initialDelay = FiniteDuration((interval.toNanos * Random.nextDouble()).round, NANOSECONDS)
