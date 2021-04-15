@@ -485,6 +485,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         .iterate()
       Success(())
     }
+    .removeIndex("Data", IndexType.unique, "data")
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
