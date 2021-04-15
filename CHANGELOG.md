@@ -1,5 +1,24 @@
 # Change Log
 
+## [4.1.4](https://github.com/TheHive-Project/TheHive/milestone/73) (2021-04-15)
+
+**Implemented enhancements:**
+
+- [Feature Request] Sort case templates in alert Import drop down menu [\#1956](https://github.com/TheHive-Project/TheHive/issues/1956)
+- [Enhancement] Make alert deletion more robust [\#1967](https://github.com/TheHive-Project/TheHive/issues/1967)
+
+**Fixed bugs:**
+
+- [Bug] Alert counter refresh not working [\#1911](https://github.com/TheHive-Project/TheHive/issues/1911)
+- [Bug] Enabled or Disabled Taxonomies doesn't work [\#1957](https://github.com/TheHive-Project/TheHive/issues/1957)
+- [Bug] TheHive 4.1.3-1 Task in Case is not visible [\#1964](https://github.com/TheHive-Project/TheHive/issues/1964)
+- [Bug] Aggregation on custom fields provides incorect result (again) [\#1965](https://github.com/TheHive-Project/TheHive/issues/1965)
+- [Bug] TheHive startup times out if schema evolution is long [\#1966](https://github.com/TheHive-Project/TheHive/issues/1966)
+- [Bug] Default analyst rol cant add TTPs [\#1968](https://github.com/TheHive-Project/TheHive/issues/1968)
+- [Bug] Links section should not be empty in Observables details view [\#1972](https://github.com/TheHive-Project/TheHive/issues/1972)
+- [Bug] Deleting a shared rule case for org2 - deleting observables (sharing to org2) from the org1. [\#1973](https://github.com/TheHive-Project/TheHive/issues/1973)
+- [Bug] AddTagToArtifact operation not working in 4.1.3 [\#1974](https://github.com/TheHive-Project/TheHive/issues/1974)
+
 ## [4.1.3](https://github.com/TheHive-Project/TheHive/milestone/72) (2021-04-12)
 
 **Implemented enhancements:**
