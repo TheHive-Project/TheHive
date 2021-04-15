@@ -1,7 +1,7 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveServices')
-        .service('ProfileSrv', function($http) {
+        .service('ProfileSrv', function ($http) {
             var self = this;
             var baseUrl = './api/profile';
 
@@ -46,6 +46,7 @@
                         'manageShare',
                         'manageObservable',
                         'manageTask',
+                        'manageProcedure',
                         'manageAction',
                         'manageAnalyse',
                         'accessTheHiveFS'
@@ -59,6 +60,7 @@
                         manageShare: 'Manage sharing',
                         manageObservable: 'Manage observables',
                         manageTask: 'Manage tasks',
+                        manageProcedure: 'Manage TTPs',
                         manageAction: 'Run Cortex responders',
                         manageAnalyse: 'Run Cortex analyzer',
                         accessTheHiveFS: 'Access to TheHiveFS service'
@@ -66,32 +68,34 @@
                 }
             };
 
-            this.list = function() {
-                return $http.get(baseUrl, {params: {
-                    range: 'all'
-                }});
+            this.list = function () {
+                return $http.get(baseUrl, {
+                    params: {
+                        range: 'all'
+                    }
+                });
             };
 
-            this.get = function(name) {
+            this.get = function (name) {
                 return $http.get(baseUrl + '/' + name);
             };
 
-            this.map = function() {
+            this.map = function () {
                 return self.list()
-                    .then(function(response) {
+                    .then(function (response) {
                         return _.indexBy(response.data, 'name');
                     });
             };
 
-            this.create = function(profile) {
+            this.create = function (profile) {
                 return $http.post(baseUrl, profile);
             };
 
-            this.update = function(id, profile) {
+            this.update = function (id, profile) {
                 return $http.patch(baseUrl + '/' + id, profile);
             };
 
-            this.remove = function(id) {
+            this.remove = function (id) {
                 return $http.delete(baseUrl + '/' + id);
             };
         });
