@@ -11,11 +11,12 @@
                 return QuerySrv.call('v1', [
                     { _name: 'listTaxonomy' }
                 ], {
-                    name: 'list-taxonomies'
-                }, {
-                    name: 'filter',
-                    _field: 'enabled',
-                    _value: true
+                    name: 'list-taxonomies-cache',
+                    filter: {
+                        name: 'filter',
+                        _field: 'enabled',
+                        _value: true
+                    }
                 });
             };
 

@@ -2,18 +2,20 @@
     <div class="col-md-12">
         <div class="box">
             <div class="box-header with-border">
-                <h3 class="box-title">List of taxonomies</h3>
+                <!-- <h3 class="box-title">List of taxonomies</h3> -->
+                <datalist-header title="List of taxonomies" list="$vm.list" total="$vm.allTaxonomyCount">
+                </datalist-header>
             </div>
             <div class="box-body">
                 <div ng-include="'views/partials/admin/taxonomy/list/toolbar.html'"></div>
 
-                <div class="mt-xs filter-panel" ng-include="'views/partials/admin/taxonomy/list/filters.html'" ng-show="$vm.filtering.context.showFilters"></div>
+                <div class="mt-xs filter-panel" ng-include="'views/partials/admin/taxonomy/list/filters.html'"
+                    ng-show="$vm.filtering.context.showFilters"></div>
 
                 <div class="row mt-xs">
                     <div class="col-md-12 clearfix">
 
-                        <filters-preview filters="$vm.filtering.context.filters"
-                            on-clear-item="$vm.removeFilter(field)"
+                        <filters-preview filters="$vm.filtering.context.filters" on-clear-item="$vm.removeFilter(field)"
                             on-clear-all="$vm.clearFilters()"></filters-preview>
                     </div>
                 </div>
@@ -52,7 +54,8 @@
                             <tbody>
                                 <tr ng-repeat="taxonomy in $vm.list.values">
                                     <td>
-                                        <span class="clickable" ng-click="$vm.addFilterValue('enabled', !!taxonomy.extraData.enabled)">
+                                        <span class="clickable"
+                                            ng-click="$vm.addFilterValue('enabled', !!taxonomy.extraData.enabled)">
                                             <i class="fa" ng-class="{
                                                     true: 'text-tlp-green fa-circle',
                                                     false: 'text-tlp-red fa-circle',
@@ -75,7 +78,7 @@
                                     </td>
                                     <td class="clearfix">
                                         <div class="pull-right">
-                                            <a class="btn btn-icon btn-clear" href  ng-click="$vm.toggleActive(taxonomy)"
+                                            <a class="btn btn-icon btn-clear" href ng-click="$vm.toggleActive(taxonomy)"
                                                 uib-tooltip="{{!!taxonomy.extraData.enabled ? 'Disable taxonomy' : 'Enable taxonomy'}}">
 
                                                 <i class="fa" ng-class="{
@@ -84,11 +87,13 @@
                                                 }[!!taxonomy.extraData.enabled]"></i>
                                             </a>
 
-                                            <a class="btn btn-icon btn-clear" href  ng-click="$vm.show(taxonomy)" uib-tooltip="Edit taxonomy">
+                                            <a class="btn btn-icon btn-clear" href ng-click="$vm.show(taxonomy)"
+                                                uib-tooltip="Edit taxonomy">
                                                 <i class="text-primary fa fa-search"></i>
                                             </a>
 
-                                            <a class="btn btn-icon btn-clear" href  ng-click="$vm.remove(taxonomy)" uib-tooltip="Delete taxonomy">
+                                            <a class="btn btn-icon btn-clear" href ng-click="$vm.remove(taxonomy)"
+                                                uib-tooltip="Delete taxonomy">
                                                 <i class="text-danger fa fa-trash"></i>
                                             </a>
                                         </div>
