@@ -8,11 +8,9 @@ import play.api.libs.json.{Format, JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.io.File
-import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
-@Singleton
-class MonitoringCtrl @Inject() (
+class MonitoringCtrl(
     appConfig: ApplicationConfig,
     entrypoint: Entrypoint,
     db: Database
@@ -29,19 +27,18 @@ class MonitoringCtrl @Inject() (
 
   def diskUsage: Action[AnyContent] =
     entrypoint("monitor disk usage")
-      .authPermittedTransaction(db, Permissions.managePlatform)(implicit request =>
-        implicit graph =>
-          for {
-            _ <- Success(())
-            locations = diskLocations.map { dl =>
-              val file = new File(dl.location)
-              Json.obj(
-                "location"   -> dl.location,
-                "freeSpace"  -> file.getFreeSpace,
-                "totalSpace" -> file.getTotalSpace
-              )
-            }
-          } yield Results.Ok(JsArray(locations))
+      .authPermitted(Permissions.managePlatform)(_ =>
+        for {
+          _ <- Success(())
+          locations = diskLocations.map { dl =>
+            val file = new File(dl.location)
+            Json.obj(
+              "location"   -> dl.location,
+              "freeSpace"  -> file.getFreeSpace,
+              "totalSpace" -> file.getTotalSpace
+            )
+          }
+        } yield Results.Ok(JsArray(locations))
       )
 
 }

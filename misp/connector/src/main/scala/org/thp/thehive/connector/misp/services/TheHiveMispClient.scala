@@ -12,7 +12,6 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.libs.ws.ahc.AhcWSClientConfig
 
-import javax.inject.Inject
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -123,7 +122,7 @@ class TheHiveMispClient(
       whitelistTags
     ) {
 
-  @Inject() def this(config: TheHiveMispClientConfig, mat: Materializer) =
+  def this(config: TheHiveMispClientConfig, mat: Materializer) =
     this(
       config.name,
       config.url,

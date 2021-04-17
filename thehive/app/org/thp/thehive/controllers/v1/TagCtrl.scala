@@ -16,11 +16,9 @@ import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.{OrganisationSrv, TagSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.Inject
-
 case class TagHint(freeTag: Option[String], namespace: Option[String], predicate: Option[String], value: Option[String], limit: Option[Long])
 
-class TagCtrl @Inject() (
+class TagCtrl(
     entrypoint: Entrypoint,
     db: Database,
     tagSrv: TagSrv,

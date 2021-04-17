@@ -16,17 +16,15 @@ import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
-@Singleton
-class DashboardCtrl @Inject() (
+class DashboardCtrl(
     override val entrypoint: Entrypoint,
     dashboardSrv: DashboardSrv,
     userSrv: UserSrv,
     implicit val db: Database,
     override val publicData: PublicDashboard,
-    @Named("v0") override val queryExecutor: QueryExecutor
+    override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create dashboard")
@@ -81,8 +79,7 @@ class DashboardCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicDashboard @Inject() (
+class PublicDashboard(
     dashboardSrv: DashboardSrv,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv

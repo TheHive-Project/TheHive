@@ -22,13 +22,11 @@ import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 
 import java.io.File
-import javax.inject.{Inject, Singleton}
 import scala.io.Source
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class DatabaseBuilder @Inject() (
+class DatabaseBuilder(
     schema: Schema,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,

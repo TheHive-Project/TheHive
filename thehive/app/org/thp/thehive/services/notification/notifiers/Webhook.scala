@@ -23,7 +23,6 @@ import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
 import java.util.{Date, Map => JMap}
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -47,8 +46,7 @@ object WebhookNotification {
   implicit val format: Format[WebhookNotification] = Json.using[WithDefaultValues].format[WebhookNotification]
 }
 
-@Singleton
-class WebhookProvider @Inject() (
+class WebhookProvider(
     appConfig: ApplicationConfig,
     auditSrv: AuditSrv,
     customFieldSrv: CustomFieldSrv,

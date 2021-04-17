@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import com.google.inject.name.Named
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -19,15 +18,13 @@ import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.zip.ZipFile
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success}
 
-@Singleton
-class AnalyzerTemplateCtrl @Inject() (
+class AnalyzerTemplateCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     analyzerTemplateSrv: AnalyzerTemplateSrv,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicAnalyzerTemplate
 ) extends QueryCtrl {
 
@@ -92,8 +89,7 @@ class AnalyzerTemplateCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicAnalyzerTemplate @Inject() (analyzerTemplateSrv: AnalyzerTemplateSrv) extends PublicData {
+class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv) extends PublicData {
   override val entityName: String = "analyzerTemplate"
   override val initialQuery: Query =
     Query.init[Traversal.V[AnalyzerTemplate]]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.startTraversal(graph))

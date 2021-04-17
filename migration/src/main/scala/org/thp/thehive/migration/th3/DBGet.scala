@@ -4,11 +4,9 @@ import com.sksamuel.elastic4s.ElasticDsl._
 import org.thp.scalligraph.NotFoundError
 import play.api.libs.json.JsObject
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton
-class DBGet @Inject() (db: DBConfiguration, implicit val ec: ExecutionContext) {
+class DBGet(db: DBConfiguration, implicit val ec: ExecutionContext) {
 
   /**
     * Retrieve entities from ElasticSearch

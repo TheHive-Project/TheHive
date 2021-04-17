@@ -5,11 +5,9 @@ import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.{Audit, Organisation, User}
 import play.api.Configuration
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class CaseCreatedProvider @Inject() extends TriggerProvider {
+class CaseCreatedProvider extends TriggerProvider {
   override val name: String                               = "CaseCreated"
   override def apply(config: Configuration): Try[Trigger] = Success(new CaseCreated())
 }

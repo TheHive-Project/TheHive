@@ -11,7 +11,6 @@ import org.thp.scalligraph.{InternalError, SearchError}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
-import javax.inject.{Inject, Singleton}
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationLong, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,10 +19,10 @@ import scala.util.{Failure, Success, Try}
 /**
   * Service class responsible for entity search
   */
-@Singleton
+
 class DBFind(pageSize: Int, keepAlive: FiniteDuration, db: DBConfiguration, implicit val ec: ExecutionContext, implicit val mat: Materializer) {
 
-  @Inject def this(configuration: Configuration, db: DBConfiguration, ec: ExecutionContext, mat: Materializer) =
+  def this(configuration: Configuration, db: DBConfiguration, ec: ExecutionContext, mat: Materializer) =
     this(configuration.get[Int]("search.pagesize"), configuration.getMillis("search.keepalive").millis, db, ec, mat)
 
   val keepAliveStr: String        = keepAlive.toMillis + "ms"

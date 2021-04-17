@@ -9,10 +9,7 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class VFS @Inject() (caseSrv: CaseSrv, organisationSrv: OrganisationSrv) {
+class VFS(caseSrv: CaseSrv, organisationSrv: OrganisationSrv) {
 
   def get(path: List[String])(implicit graph: Graph, authContext: AuthContext): Seq[Resource] =
     path match {

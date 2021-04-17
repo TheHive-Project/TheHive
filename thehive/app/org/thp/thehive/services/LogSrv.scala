@@ -15,13 +15,12 @@ import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.JsObject
 
 import java.util
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class LogSrv @Inject() (attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, taskSrv: TaskSrv) extends VertexSrv[Log] {
-  val taskLogSrv       = new EdgeSrv[TaskLog, Task, Log]
-  val logAttachmentSrv = new EdgeSrv[LogAttachment, Log, Attachment]
+class LogSrv(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, _taskSrv: => TaskSrv) extends VertexSrv[Log] {
+  lazy val taskSrv: TaskSrv = _taskSrv
+  val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
+  val logAttachmentSrv      = new EdgeSrv[LogAttachment, Log, Attachment]
 
   def create(log: Log, task: Task with Entity, file: Option[FFile])(implicit graph: Graph, authContext: AuthContext): Try[RichLog] =
     for {
@@ -109,7 +108,7 @@ object LogOps {
   }
 }
 
-class LogIntegrityCheckOps @Inject() (val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] {
+class LogIntegrityCheckOps(val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] {
   override def resolve(entities: Seq[Log with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
   override def globalCheck(): Map[String, Long] = {

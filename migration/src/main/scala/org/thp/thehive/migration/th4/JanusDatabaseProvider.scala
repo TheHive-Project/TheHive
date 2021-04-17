@@ -7,13 +7,10 @@ import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import play.api.Configuration
 
-import javax.inject.{Inject, Provider, Singleton}
+import javax.inject.Provider
 import scala.collection.JavaConverters._
-import scala.collection.immutable
 
-@Singleton
-class JanusDatabaseProvider @Inject() (configuration: Configuration, system: ActorSystem, schemas: immutable.Set[UpdatableSchema])
-    extends Provider[Database] {
+class JanusDatabaseProvider(configuration: Configuration, system: ActorSystem, schemas: Set[UpdatableSchema]) extends Provider[Database] {
 
   def dropOtherConnections(db: JanusGraph): Unit = {
     val mgmt = db.openManagement()

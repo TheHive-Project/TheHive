@@ -15,11 +15,9 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, UserSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
-@Singleton
-class DashboardCtrl @Inject() (
+class DashboardCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     db: Database,

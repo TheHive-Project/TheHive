@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityIdOrName
@@ -16,18 +17,16 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
-@Singleton
-class TagSrv @Inject() (
-    organisationSrv: OrganisationSrv,
-    taxonomySrvProvider: Provider[TaxonomySrv],
+class TagSrv(
+    _organisationSrv: => OrganisationSrv,
+    taxonomySrv: TaxonomySrv,
     appConfig: ApplicationConfig,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag
 ) extends VertexSrv[Tag] {
-  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
+  lazy val organisationSrv: OrganisationSrv = _organisationSrv
 
   val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   private val freeTagColourConfig: ConfigItem[String, String] =
@@ -173,7 +172,7 @@ object TagOps {
   }
 }
 
-class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
+class TagIntegrityCheckOps(val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
 
   override def resolve(entities: Seq[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
     firstCreatedEntity(entities).foreach {

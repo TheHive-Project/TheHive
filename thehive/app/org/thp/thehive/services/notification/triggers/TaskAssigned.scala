@@ -10,11 +10,9 @@ import org.thp.thehive.services.TaskSrv
 import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class TaskAssignedProvider @Inject() (taskSrv: TaskSrv) extends TriggerProvider {
+class TaskAssignedProvider(taskSrv: TaskSrv) extends TriggerProvider {
   override val name: String                               = "TaskAssigned"
   override def apply(config: Configuration): Try[Trigger] = Success(new TaskAssigned(taskSrv))
 }

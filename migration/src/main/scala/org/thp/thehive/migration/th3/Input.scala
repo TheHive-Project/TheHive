@@ -2,24 +2,19 @@ package org.thp.thehive.migration.th3
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.google.inject.Guice
 import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.requests.searches.queries.{Query, RangeQuery}
 import com.sksamuel.elastic4s.requests.searches.queries.term.TermsQuery
-import net.codingwell.scalaguice.ScalaModule
+import com.sksamuel.elastic4s.requests.searches.queries.{Query, RangeQuery}
 import org.thp.thehive.migration
 import org.thp.thehive.migration.Filter
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
-import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
 import java.util.{Base64, Date}
-import javax.inject.{Inject, Singleton}
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.{classTag, ClassTag}
@@ -27,24 +22,21 @@ import scala.util.{Failure, Success, Try}
 
 object Input {
 
-  def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Input =
-    Guice
-      .createInjector(new ScalaModule {
-        override def configure(): Unit = {
-          bind[Configuration].toInstance(configuration)
-          bind[ActorSystem].toInstance(actorSystem)
-          bind[Materializer].toInstance(Materializer(actorSystem))
-          bind[ExecutionContext].toInstance(actorSystem.dispatcher)
-          bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-        }
-      })
-      .getInstance(classOf[Input])
+  def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Input = ???
+//    Guice
+//      .createInjector(new ScalaModule {
+//        override def configure(): Unit = {
+//          bind[Configuration].toInstance(configuration)
+//          bind[ActorSystem].toInstance(actorSystem)
+//          bind[Materializer].toInstance(Materializer(actorSystem))
+//          bind[ExecutionContext].toInstance(actorSystem.dispatcher)
+//          bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
+//        }
+//      })
+//      .getInstance(classOf[Input])
 }
 
-@Singleton
-class Input @Inject() (configuration: Configuration, dbFind: DBFind, dbGet: DBGet, implicit val ec: ExecutionContext)
-    extends migration.Input
-    with Conversion {
+class Input(configuration: Configuration, dbFind: DBFind, dbGet: DBGet, implicit val ec: ExecutionContext) extends migration.Input with Conversion {
   lazy val logger: Logger               = Logger(getClass)
   override val mainOrganisation: String = configuration.get[String]("mainOrganisation")
 

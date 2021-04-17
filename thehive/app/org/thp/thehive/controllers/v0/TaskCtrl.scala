@@ -16,16 +16,13 @@ import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
-
-@Singleton
-class TaskCtrl @Inject() (
+class TaskCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicTask
 ) extends QueryCtrl {
 
@@ -93,8 +90,7 @@ class TaskCtrl @Inject() (
   }
 }
 
-@Singleton
-class PublicTask @Inject() (taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv) extends PublicData {
+class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv) extends PublicData {
   override val entityName: String = "task"
   override val initialQuery: Query =
     Query.init[Traversal.V[Task]](

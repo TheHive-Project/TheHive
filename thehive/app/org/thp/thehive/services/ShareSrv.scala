@@ -17,19 +17,17 @@ import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Try}
 
-@Singleton
-class ShareSrv @Inject() (implicit
+class ShareSrv(
     auditSrv: AuditSrv,
-    caseSrvProvider: Provider[CaseSrv],
-    taskSrv: TaskSrv,
-    observableSrvProvider: Provider[ObservableSrv],
-    organisationSrv: OrganisationSrv
+    _caseSrv: => CaseSrv,
+    _taskSrv: => TaskSrv,
+    _observableSrv: => ObservableSrv
 ) extends VertexSrv[Share] {
-  lazy val caseSrv: CaseSrv             = caseSrvProvider.get
-  lazy val observableSrv: ObservableSrv = observableSrvProvider.get
+  lazy val caseSrv: CaseSrv             = _caseSrv
+  lazy val observableSrv: ObservableSrv = _observableSrv
+  lazy val taskSrv: TaskSrv             = _taskSrv
 
   val organisationShareSrv = new EdgeSrv[OrganisationShare, Organisation, Share]
   val shareProfileSrv      = new EdgeSrv[ShareProfile, Share, Profile]

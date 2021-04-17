@@ -7,15 +7,15 @@ val scala212               = "2.12.13"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
 
-organization in ThisBuild := "org.thp"
-scalaVersion in ThisBuild := scala212
-crossScalaVersions in ThisBuild := supportedScalaVersions
-resolvers in ThisBuild ++= Seq(
+ThisBuild / organization := "org.thp"
+ThisBuild / scalaVersion := scala212
+ThisBuild / crossScalaVersions := supportedScalaVersions
+ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   "Oracle Released Java Packages" at "https://download.oracle.com/maven",
   "TheHive project repository" at "https://dl.bintray.com/thehive-project/maven/"
 )
-scalacOptions in ThisBuild ++= Seq(
+ThisBuild / scalacOptions ++= Seq(
   "-encoding",
   "UTF-8",
   "-deprecation",         // Emit warning and location for usages of deprecated APIs.
@@ -38,8 +38,8 @@ scalacOptions in ThisBuild ++= Seq(
   "-Xlog-free-terms",
   "-Xprint-types"
 )
-fork in Test in ThisBuild := true
-javaOptions in ThisBuild ++= Seq(
+ThisBuild / Test / fork := true
+ThisBuild / javaOptions ++= Seq(
   "-Xms512M",
   "-Xmx2048M",
   "-Xss1M",
@@ -47,20 +47,20 @@ javaOptions in ThisBuild ++= Seq(
   "-XX:MaxPermSize=256M",
   "-XX:MaxMetaspaceSize=512m"
 )
-scalafmtConfig in ThisBuild := file(".scalafmt.conf")
-scalacOptions in ThisBuild ++= {
+ThisBuild / scalafmtConfig := file(".scalafmt.conf")
+ThisBuild / scalacOptions ++= {
   CrossVersion.partialVersion((Compile / scalaVersion).value) match {
     case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
     case _                       => Nil
   }
 }
-libraryDependencies in ThisBuild ++= {
+ThisBuild / libraryDependencies ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, n)) if n >= 13 => Nil
     case _                       => compilerPlugin(macroParadise) :: Nil
   }
 }
-dependencyOverrides in ThisBuild ++= Seq(
+ThisBuild / dependencyOverrides ++= Seq(
 //  "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
 //  "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.7.2"
   akkaActor
@@ -85,8 +85,8 @@ lazy val thehive = (project in file("."))
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated
     },
-    discoveredMainClasses in Compile := Seq("play.core.server.ProdServerStart", "org.thp.thehive.migration.Migrate"),
-    mainClass in (Compile, bashScriptDefines) := None,
+    Compile / discoveredMainClasses := Seq("play.core.server.ProdServerStart", "org.thp.thehive.migration.Migrate"),
+    Compile / bashScriptDefines / mainClass := None,
     makeBashScripts ~= {
       _.map {
         case (f, "bin/prod-server-start") => (f, "bin/thehive")
@@ -94,46 +94,46 @@ lazy val thehive = (project in file("."))
       }
     },
     clean := {
-      (clean in scalligraph).value
-      (clean in thehiveCore).value
-      (clean in thehiveDto).value
-      (clean in thehiveClient).value
-      (clean in thehiveFrontend).value
-      (clean in thehiveCortex).value
-      (clean in thehiveMisp).value
-      (clean in cortexClient).value
-      (clean in mispClient).value
-      (clean in thehiveMigration).value
-      (clean in clientCommon).value
-      (clean in cortexDto).value
+      (scalligraph / clean).value
+      (thehiveCore / clean).value
+      (thehiveDto / clean).value
+      (thehiveClient / clean).value
+      (thehiveFrontend / clean).value
+      (thehiveCortex / clean).value
+      (thehiveMisp / clean).value
+      (cortexClient / clean).value
+      (mispClient / clean).value
+      (thehiveMigration / clean).value
+      (clientCommon / clean).value
+      (cortexDto / clean).value
     },
     test := {
-      (test in Test in scalligraph).value
-      (test in Test in thehiveCore).value
-      (test in Test in thehiveDto).value
-      (test in Test in thehiveClient).value
-      (test in Test in thehiveFrontend).value
-      (test in Test in thehiveCortex).value
-      (test in Test in thehiveMisp).value
-      (test in Test in cortexClient).value
-      (test in Test in mispClient).value
-      (test in Test in thehiveMigration).value
-      (test in Test in clientCommon).value
-      (test in Test in cortexDto).value
+      (scalligraph / Test / test).value
+      (thehiveCore / Test / test).value
+      (thehiveDto / Test / test).value
+      (thehiveClient / Test / test).value
+      (thehiveFrontend / Test / test).value
+      (thehiveCortex / Test / test).value
+      (thehiveMisp / Test / test).value
+      (cortexClient / Test / test).value
+      (mispClient / Test / test).value
+      (thehiveMigration / Test / test).value
+      (clientCommon / Test / test).value
+      (cortexDto / Test / test).value
     },
     testQuick := {
-      (testQuick in Test in scalligraph).evaluated
-      (testQuick in Test in thehiveCore).evaluated
-      (testQuick in Test in thehiveDto).evaluated
-      (testQuick in Test in thehiveClient).evaluated
-      (testQuick in Test in thehiveFrontend).evaluated
-      (testQuick in Test in thehiveCortex).evaluated
-      (testQuick in Test in thehiveMisp).evaluated
-      (testQuick in Test in cortexClient).evaluated
-      (testQuick in Test in mispClient).evaluated
-      (testQuick in Test in thehiveMigration).evaluated
-      (testQuick in Test in clientCommon).evaluated
-      (testQuick in Test in cortexDto).evaluated
+      (scalligraph / Test / testQuick).evaluated
+      (thehiveCore / Test / testQuick).evaluated
+      (thehiveDto / Test / testQuick).evaluated
+      (thehiveClient / Test / testQuick).evaluated
+      (thehiveFrontend / Test / testQuick).evaluated
+      (thehiveCortex / Test / testQuick).evaluated
+      (thehiveMisp / Test / testQuick).evaluated
+      (cortexClient / Test / testQuick).evaluated
+      (mispClient / Test / testQuick).evaluated
+      (thehiveMigration / Test / testQuick).evaluated
+      (clientCommon / Test / testQuick).evaluated
+      (cortexDto / Test / testQuick).evaluated
     }
   )
 
@@ -150,7 +150,6 @@ lazy val thehiveCore = (project in file("thehive"))
     version := thehiveVersion,
     libraryDependencies ++= Seq(
       chimney,
-      guice,
       akkaCluster,
       akkaClusterTyped,
       akkaClusterTools,
@@ -159,11 +158,13 @@ lazy val thehiveCore = (project in file("thehive"))
       specs % Test,
       handlebars,
       playMailer,
-      playMailerGuice,
       pbkdf2,
       commonCodec,
-      scalaGuice,
-      reflections
+      reflections,
+      macWireMacros,
+      macWireMacrosakka,
+      macWireUtil,
+      macWireProxy
     )
   )
 
@@ -271,7 +272,11 @@ lazy val thehiveCortex = (project in file("cortex/connector"))
     version := thehiveVersion,
     libraryDependencies ++= Seq(
       reflections,
-      specs % Test
+      specs % Test,
+      macWireMacros,
+      macWireMacrosakka,
+      macWireUtil,
+      macWireProxy
     )
   )
 
@@ -310,7 +315,11 @@ lazy val thehiveMisp = (project in file("misp/connector"))
     version := thehiveVersion,
     libraryDependencies ++= Seq(
       specs      % Test,
-      playMockws % Test
+      playMockws % Test,
+      macWireMacros,
+      macWireMacrosakka,
+      macWireUtil,
+      macWireProxy
     )
   )
 
@@ -361,13 +370,13 @@ lazy val rpmPackageRelease = (project in file("package/rpm-release"))
     rpmVendor := "TheHive Project",
     rpmUrl := Some("http://thehive-project.org/"),
     rpmLicense := Some("AGPL"),
-    maintainerScripts in Rpm := Map.empty,
-    linuxPackageSymlinks in Rpm := Nil,
+    Rpm / maintainerScripts := Map.empty,
+    Rpm / linuxPackageSymlinks := Nil,
     packageSummary := "TheHive-Project RPM repository",
     packageDescription :=
       """This package contains the TheHive-Project packages repository
         |GPG key as well as configuration for yum.""".stripMargin,
-    linuxPackageMappings in Rpm := Seq(
+    Rpm / linuxPackageMappings := Seq(
       packageMapping(
         file("PGP-PUBLIC-KEY")                       -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
         file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",

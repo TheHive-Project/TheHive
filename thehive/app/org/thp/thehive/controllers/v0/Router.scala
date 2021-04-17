@@ -4,10 +4,7 @@ import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class Router @Inject() (
+class Router(
     alertCtrl: AlertCtrl,
     attachmentCtrl: AttachmentCtrl,
     auditCtrl: AuditCtrl,

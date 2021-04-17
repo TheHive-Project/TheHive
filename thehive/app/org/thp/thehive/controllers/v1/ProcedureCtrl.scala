@@ -13,10 +13,7 @@ import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.ProcedureSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class ProcedureCtrl @Inject() (
+class ProcedureCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     procedureSrv: ProcedureSrv,

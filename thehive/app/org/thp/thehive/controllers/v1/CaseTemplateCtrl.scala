@@ -14,11 +14,9 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{CaseTemplateSrv, OrganisationSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
-@Singleton
-class CaseTemplateCtrl @Inject() (
+class CaseTemplateCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     caseTemplateSrv: CaseTemplateSrv,

@@ -20,24 +20,17 @@ import org.thp.thehive.services.ShareOps._
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class ObservableSrv @Inject() (
+class ObservableSrv(
     dataSrv: DataSrv,
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     tagSrv: TagSrv,
     auditSrv: AuditSrv,
-    shareSrvProvider: Provider[ShareSrv],
-    caseSrvProvider: Provider[CaseSrv],
-    organisationSrv: OrganisationSrv,
-    alertSrvProvider: Provider[AlertSrv]
+    shareSrv: ShareSrv,
+    organisationSrv: OrganisationSrv
 ) extends VertexSrv[Observable] {
-  lazy val shareSrv: ShareSrv  = shareSrvProvider.get
-  lazy val caseSrv: CaseSrv    = caseSrvProvider.get
-  lazy val alertSrv: AlertSrv  = alertSrvProvider.get
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
   val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
   val observableAttachmentSrv  = new EdgeSrv[ObservableAttachment, Observable, Attachment]
@@ -355,7 +348,7 @@ object ObservableOps {
   }
 }
 
-class ObservableIntegrityCheckOps @Inject() (val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] {
+class ObservableIntegrityCheckOps(val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] {
   override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
   override def globalCheck(): Map[String, Long] =

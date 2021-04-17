@@ -23,7 +23,6 @@ import play.api.{Configuration, Logger}
 
 import java.nio.file.{Files, Paths}
 import java.security.KeyStore
-import javax.inject.{Inject, Singleton}
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
@@ -34,8 +33,8 @@ import scala.concurrent.{Await, ExecutionContext, Future, Promise}
   * It builds the client using configuration (ElasticSearch addresses, cluster and index name)
   * It add timed annotation in order to measure storage metrics
   */
-@Singleton
-class DBConfiguration @Inject() (
+
+class DBConfiguration(
     config: Configuration,
     lifecycle: ApplicationLifecycle,
     implicit val actorSystem: ActorSystem

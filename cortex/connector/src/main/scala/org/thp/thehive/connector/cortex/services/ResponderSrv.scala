@@ -4,18 +4,16 @@ import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
+import org.thp.thehive.connector.cortex.CortexConnector
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
 import org.thp.thehive.models.Permissions
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-@Singleton
-class ResponderSrv @Inject() (
-    connector: Connector,
+class ResponderSrv(
     db: Database,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
@@ -43,7 +41,7 @@ class ResponderSrv @Inject() (
       (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       responders <-
         Future
-          .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation))(client =>
+          .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, authContext.organisation))(client =>
             client
               .getRespondersByType(entityType)
               .transform {
@@ -69,7 +67,7 @@ class ResponderSrv @Inject() (
 
   def searchResponders(query: JsObject, organisation: EntityIdOrName): Future[Map[OutputWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(connector.clients, organisation)) { client =>
+      .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, organisation)) { client =>
         client
           .searchResponders(query)
           .transform {

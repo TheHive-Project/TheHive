@@ -18,13 +18,11 @@ import play.api.Logger
 
 import java.lang.reflect.Modifier
 import java.util.Date
-import javax.inject.{Inject, Singleton}
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Success, Try}
 
-@Singleton
-class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
+object TheHiveSchemaDefinition extends Schema with UpdatableSchema {
 
   // Make sure TypeDefinitionCategory has been initialised before ModifierType to prevent ExceptionInInitializerError
   TypeDefinitionCategory.BACKING_INDEX
@@ -503,7 +501,6 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       .filterNot(c => Modifier.isAbstract(c.getModifiers))
       .map { modelClass =>
         val hasModel = rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance.asInstanceOf[HasModel]
-        logger.info(s"Loading model ${hasModel.model.label}")
         hasModel.model
       }
       .toSeq

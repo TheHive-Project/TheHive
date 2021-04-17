@@ -1,11 +1,10 @@
 package org.thp.thehive.controllers.dav
 
-import java.text.SimpleDateFormat
-import java.util.Date
-
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.Attachment
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import scala.xml.{Elem, Node}
 
 trait Resource {
@@ -32,17 +31,18 @@ trait Resource {
     df
   }
 
-  def property(prop: Node): Option[Node] = prop match {
-    case p @ <displayname/>                 => setValue(p, displayName)
-    case p @ <creationdate/>                => setValue(p, formatter.format(creationTime))
-    case p @ <getlastmodified/>             => setValue(p, formatter.format(lastModified))
-    case p @ <getcontentlength/>            => setValue(p, contentLength.toString)
-    case p @ <resourcetype/> if hasChildren => setNodeValue(p, <D:collection/>)
-    case p @ <resourcetype/>                => Some(p)
-    case p @ <getetag/>                     => etag.flatMap(setValue(p, _))
-    case p @ <getcontenttype/>              => contentType.flatMap(setValue(p, _))
-    case _                                  => None
-  }
+  def property(prop: Node): Option[Node] =
+    prop match {
+      case p @ <displayname/>                 => setValue(p, displayName)
+      case p @ <creationdate/>                => setValue(p, formatter.format(creationTime))
+      case p @ <getlastmodified/>             => setValue(p, formatter.format(lastModified))
+      case p @ <getcontentlength/>            => setValue(p, contentLength.toString)
+      case p @ <resourcetype/> if hasChildren => setNodeValue(p, <D:collection/>)
+      case p @ <resourcetype/>                => Some(p)
+      case p @ <getetag/>                     => etag.flatMap(setValue(p, _))
+      case p @ <getcontenttype/>              => contentType.flatMap(setValue(p, _))
+      case _                                  => None
+    }
 }
 
 case class StaticResource(url: String) extends Resource {

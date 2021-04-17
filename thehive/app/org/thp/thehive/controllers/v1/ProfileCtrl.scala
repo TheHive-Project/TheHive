@@ -13,11 +13,9 @@ import org.thp.thehive.services.ProfileOps._
 import org.thp.thehive.services.ProfileSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Failure
 
-@Singleton
-class ProfileCtrl @Inject() (
+class ProfileCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     profileSrv: ProfileSrv,

@@ -1,8 +1,7 @@
 package org.thp.thehive.migration
-import java.io.{PrintWriter, StringWriter}
-
 import play.api.Logger
 
+import java.io.{PrintWriter, StringWriter}
 import scala.util.Try
 
 class ProgressBar(terminal: Terminal, message: String, max: Int) {

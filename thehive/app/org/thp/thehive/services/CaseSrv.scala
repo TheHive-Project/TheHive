@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -29,11 +30,9 @@ import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import java.lang.{Long => JLong}
 import java.util.{Date, List => JList, Map => JMap}
-import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class CaseSrv @Inject() (
+class CaseSrv(
     tagSrv: TagSrv,
     customFieldSrv: CustomFieldSrv,
     organisationSrv: OrganisationSrv,
@@ -46,11 +45,11 @@ class CaseSrv @Inject() (
     observableSrv: ObservableSrv,
     attachmentSrv: AttachmentSrv,
     userSrv: UserSrv,
-    alertSrvProvider: Provider[AlertSrv],
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    _alertSrv: => AlertSrv,
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
     cache: SyncCacheApi
 ) extends VertexSrv[Case] {
-  lazy val alertSrv: AlertSrv = alertSrvProvider.get
+  lazy val alertSrv: AlertSrv = _alertSrv
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
@@ -682,7 +681,7 @@ object CaseOps {
   }
 }
 
-class CaseIntegrityCheckOps @Inject() (val db: Database, val service: CaseSrv, userSrv: UserSrv, caseTemplateSrv: CaseTemplateSrv)
+class CaseIntegrityCheckOps(val db: Database, val service: CaseSrv, userSrv: UserSrv, caseTemplateSrv: CaseTemplateSrv)
     extends IntegrityCheckOps[Case] {
   def removeDuplicates(): Unit =
     findDuplicates()

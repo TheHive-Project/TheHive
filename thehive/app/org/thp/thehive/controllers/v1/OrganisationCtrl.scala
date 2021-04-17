@@ -14,10 +14,7 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class OrganisationCtrl @Inject() (
+class OrganisationCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     organisationSrv: OrganisationSrv,

@@ -1,8 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import java.lang.{Long => JLong}
-import java.util.{Collection => JCollection, List => JList, Map => JMap}
-
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.Converter.CList
@@ -14,6 +11,9 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
+
+import java.lang.{Long => JLong}
+import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
 trait CaseRenderer {
 

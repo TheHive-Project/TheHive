@@ -34,12 +34,10 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.function.BiPredicate
 import java.util.{Base64, List => JList, Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class AlertCtrl @Inject() (
+class AlertCtrl(
     override val entrypoint: Entrypoint,
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
@@ -52,7 +50,7 @@ class AlertCtrl @Inject() (
     organisationSrv: OrganisationSrv,
     override val publicData: PublicAlert,
     implicit val db: Database,
-    @Named("v0") override val queryExecutor: QueryExecutor
+    override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create alert")
@@ -342,8 +340,7 @@ class AlertCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicAlert @Inject() (
+class PublicAlert(
     alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
     customFieldSrv: CustomFieldSrv,

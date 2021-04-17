@@ -23,18 +23,16 @@ import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
-@Singleton
-class CaseCtrl @Inject() (
+class CaseCtrl(
     override val entrypoint: Entrypoint,
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,
     override val publicData: PublicCase,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     implicit override val db: Database
 ) extends CaseRenderer
     with QueryCtrl {
@@ -173,8 +171,7 @@ class CaseCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicCase @Inject() (
+class PublicCase(
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv,
     observableSrv: ObservableSrv,

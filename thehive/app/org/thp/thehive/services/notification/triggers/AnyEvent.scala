@@ -4,10 +4,8 @@ import org.thp.scalligraph.models.Entity
 import org.thp.thehive.models.{Audit, Organisation}
 import play.api.Configuration
 
-import javax.inject.Singleton
 import scala.util.{Success, Try}
 
-@Singleton
 class AnyEventProvider extends TriggerProvider {
   override val name: String = "AnyEvent"
 

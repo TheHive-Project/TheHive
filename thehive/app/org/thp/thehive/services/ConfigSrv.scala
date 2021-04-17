@@ -14,15 +14,13 @@ import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
 import play.api.libs.json.{JsValue, Reads}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
-@Singleton
-class ConfigSrv @Inject() (
+class ConfigSrv(
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv
-)(implicit val db: Database)
-    extends VertexSrv[Config] {
+    userSrv: UserSrv,
+    db: Database
+) extends VertexSrv[Config] {
   val organisationConfigSrv = new EdgeSrv[OrganisationConfig, Organisation, Config]
   val userConfigSrv         = new EdgeSrv[UserConfig, User, Config]
 

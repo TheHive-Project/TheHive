@@ -10,11 +10,9 @@ import org.thp.thehive.models.{Observable, ObservableReportTag, ReportTag}
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.ReportTagOps._
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
-@Singleton
-class ReportTagSrv @Inject() (observableSrv: ObservableSrv) extends VertexSrv[ReportTag] {
+class ReportTagSrv(observableSrv: ObservableSrv) extends VertexSrv[ReportTag] {
   val observableReportTagSrv = new EdgeSrv[ObservableReportTag, Observable, ReportTag]
 
   def updateTags(observable: Observable with Entity, origin: String, reportTags: Seq[ReportTag])(implicit

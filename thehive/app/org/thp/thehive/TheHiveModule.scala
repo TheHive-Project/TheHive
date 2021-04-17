@@ -1,112 +1,157 @@
 package org.thp.thehive
 
 import akka.actor.ActorRef
-import com.google.inject.AbstractModule
-import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
-import org.thp.scalligraph.SingleInstance
 import org.thp.scalligraph.auth._
-import org.thp.scalligraph.janus.JanusDatabaseProvider
-import org.thp.scalligraph.models.{Database, UpdatableSchema}
-import org.thp.scalligraph.services.{GenIntegrityCheckOps, HadoopStorageSrv, S3StorageSrv}
-import org.thp.thehive.controllers.v0.QueryExecutorVersion0Provider
+import org.thp.scalligraph.controllers.{AuthenticatedRequest, Entrypoint}
+import org.thp.scalligraph.models.UpdatableSchema
+import org.thp.scalligraph.query.QueryExecutor
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigActor, ConfigTag}
+import org.thp.scalligraph.services.{EventSrv, GenIntegrityCheckOps}
+import org.thp.scalligraph.{ErrorHandler, NotFoundError, ScalligraphModule}
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{UserSrv => _, _}
-import play.api.libs.concurrent.AkkaGuiceSupport
-//import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.services.notification.NotificationActor
-import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
-//import org.thp.scalligraph.neo4j.Neo4jDatabase
-//import org.thp.scalligraph.orientdb.OrientDatabase
-import org.thp.scalligraph.query.QueryExecutor
-import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor => TheHiveQueryExecutorV0}
-import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
-import play.api.routing.{Router => PlayRouter}
-import play.api.{Configuration, Environment, Logger}
+import org.thp.thehive.services.notification.{NotificationActor, NotificationSrv, NotificationTag}
+import org.thp.thehive.services.{UserSrv => TheHiveUserSrv, _}
+import play.api.Logger
+import play.api.mvc.{ActionFunction, Request, Result}
+import play.api.routing.sird._
+import play.api.routing.{Router, SimpleRouter}
 
-class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
+import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.{universe => ru}
+
+object TheHiveModule extends ScalligraphModule { module =>
+  import com.softwaremill.macwire._
+  import com.softwaremill.macwire.akkasupport._
+  import com.softwaremill.tagging._
+  import scalligraphApplication._
+
   lazy val logger: Logger = Logger(getClass)
 
-  override def configure(): Unit = {
-//    bind[UserSrv].to[LocalUserSrv]
-    bind(classOf[UserSrv]).to(classOf[LocalUserSrv])
-//    bind[AuthSrv].toProvider[MultiAuthSrvProvider]
-    bind(classOf[AuthSrv]).toProvider(classOf[TOTPAuthSrvProvider])
+  lazy val notificationActor: ActorRef @@ NotificationTag = wireActor[NotificationActor]("notification").taggedWith[NotificationTag]
+  lazy val configActor: ActorRef @@ ConfigTag             = wireActorSingleton(wireProps[ConfigActor], "config-actor").taggedWith[ConfigTag]
+  lazy val flowActor: ActorRef @@ FlowTag                 = wireActorSingleton(wireProps[FlowActor], "flow-actor").taggedWith[FlowTag]
+  lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag =
+    wireActorSingleton(wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
 
-    val authBindings = ScalaMultibinder.newSetBinder[AuthSrvProvider](binder)
-    authBindings.addBinding.to[ADAuthProvider]
-    authBindings.addBinding.to[LdapAuthProvider]
-    authBindings.addBinding.to[LocalPasswordAuthProvider]
-    authBindings.addBinding.to[LocalKeyAuthProvider]
-    authBindings.addBinding.to[BasicAuthProvider]
-    authBindings.addBinding.to[HeaderAuthProvider]
-    authBindings.addBinding.to[PkiAuthProvider]
-    authBindings.addBinding.to[SessionAuthProvider]
-    authBindings.addBinding.to[OAuth2Provider]
+  lazy val eventSrv: EventSrv                       = wire[EventSrv]
+  lazy val auditSrv: AuditSrv                       = wire[AuditSrv]
+  lazy val roleSrv: RoleSrv                         = wire[RoleSrv]
+  lazy val organisationSrv: OrganisationSrv         = wire[OrganisationSrv]
+  lazy val applicationConfig: ApplicationConfig     = wire[ApplicationConfig]
+  lazy val thehiveUserSrv: TheHiveUserSrv           = wire[TheHiveUserSrv]
+  lazy val userSrv: LocalUserSrv                    = wire[LocalUserSrv]
+  lazy val taxonomySrv: TaxonomySrv                 = wire[TaxonomySrv]
+  lazy val tagSrv: TagSrv                           = wire[TagSrv]
+  lazy val configSrv: ConfigSrv                     = wire[ConfigSrv]
+  lazy val attachmentSrv: AttachmentSrv             = wire[AttachmentSrv]
+  lazy val profileSrv: ProfileSrv                   = wire[ProfileSrv]
+  lazy val NotificationSrv: NotificationSrv         = wire[NotificationSrv]
+  lazy val logSrv: LogSrv                           = wire[LogSrv]
+  lazy val taskSrv: TaskSrv                         = wire[TaskSrv]
+  lazy val shareSrv: ShareSrv                       = wire[ShareSrv]
+  lazy val customFieldSrv: CustomFieldSrv           = wire[CustomFieldSrv]
+  lazy val caseSrv: CaseSrv                         = wire[CaseSrv]
+  lazy val impactStatusSrv: ImpactStatusSrv         = wire[ImpactStatusSrv]
+  lazy val resolutionStatusSrv: ResolutionStatusSrv = wire[ResolutionStatusSrv]
+  lazy val observableSrv: ObservableSrv             = wire[ObservableSrv]
+  lazy val requestOrganisation: RequestOrganisation = wire[RequestOrganisation]
+  lazy val dataSrv: DataSrv                         = wire[DataSrv]
+  lazy val alertSrv: AlertSrv                       = wire[AlertSrv]
+  lazy val observableTypeSrv: ObservableTypeSrv     = wire[ObservableTypeSrv]
+  lazy val caseTemplateSrv: CaseTemplateSrv         = wire[CaseTemplateSrv]
+  lazy val dashboardSrv: DashboardSrv               = wire[DashboardSrv]
+  lazy val pageSrv: PageSrv                         = wire[PageSrv]
+  lazy val streamSrv: StreamSrv                     = wire[StreamSrv]
+  lazy val patternSrv: PatternSrv                   = wire[PatternSrv]
+  lazy val procedureSrv: ProcedureSrv               = wire[ProcedureSrv]
 
-    val triggerBindings = ScalaMultibinder.newSetBinder[TriggerProvider](binder)
-    triggerBindings.addBinding.to[AlertCreatedProvider]
-    triggerBindings.addBinding.to[AnyEventProvider]
-    triggerBindings.addBinding.to[CaseCreatedProvider]
-    triggerBindings.addBinding.to[FilteredEventProvider]
-    triggerBindings.addBinding.to[JobFinishedProvider]
-    triggerBindings.addBinding.to[LogInMyTaskProvider]
-    triggerBindings.addBinding.to[TaskAssignedProvider]
-    triggerBindings.addBinding.to[CaseShareProvider]
+  lazy val connectors: Set[Connector] = {
+    val rm: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
+    configuration
+      .get[Seq[String]]("thehive.connectors")
+      .flatMap { moduleName =>
+        rm.reflectModule(rm.staticModule(moduleName)).instance match {
+          case obj: Connector =>
+            logger.info(s"Loading connector ${obj.getClass.getSimpleName.stripSuffix("$")}")
+            obj.configure(scalligraphApplication)
+            Some(obj)
+          case obj =>
+            logger.error(s"Fail to load connector ${obj.getClass.getSimpleName}")
+            None
+        }
+      }
+  }.toSet
 
-    val notifierBindings = ScalaMultibinder.newSetBinder[NotifierProvider](binder)
-    notifierBindings.addBinding.to[AppendToFileProvider]
-    notifierBindings.addBinding.to[EmailerProvider]
-    notifierBindings.addBinding.to[MattermostProvider]
-    notifierBindings.addBinding.to[WebhookProvider]
+  lazy val authSrv: AuthSrv = wire[TOTPAuthSrv]
+  override lazy val authSrvProviders: Set[AuthSrvProvider] = Set(
+    wire[ADAuthProvider],
+    wire[LdapAuthProvider],
+    wire[LocalPasswordAuthProvider],
+    wire[LocalKeyAuthProvider],
+    wire[BasicAuthProvider],
+    wire[HeaderAuthProvider],
+    wire[PkiAuthProvider],
+    wire[SessionAuthProvider],
+    wire[OAuth2Provider]
+  )
 
-    configuration.get[String]("db.provider") match {
-      case "janusgraph" => bind[Database].toProvider[JanusDatabaseProvider]
-      case other        => sys.error(s"Authentication provider [$other] is not recognized")
-    }
+  lazy val triggerProviders: Set[TriggerProvider] = Set(
+    wire[AlertCreatedProvider],
+    wire[AnyEventProvider],
+    wire[CaseCreatedProvider],
+    wire[FilteredEventProvider],
+    wire[JobFinishedProvider],
+    wire[LogInMyTaskProvider],
+    wire[TaskAssignedProvider],
+    wire[CaseShareProvider]
+  )
 
-    configuration.get[String]("storage.provider") match {
-      case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
-      case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
-      case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
-      case "s3"       => bind(classOf[StorageSrv]).to(classOf[S3StorageSrv])
-      case other      => sys.error(s"Storage provider [$other] is not recognized")
-    }
+  lazy val schema: UpdatableSchema = TheHiveSchemaDefinition
+  lazy val notifierProviders: Set[NotifierProvider] = Set(
+    wire[AppendToFileProvider],
+    wire[EmailerProvider],
+    wire[MattermostProvider],
+    wire[WebhookProvider]
+  )
+  lazy val integrityChecks: Set[GenIntegrityCheckOps] = Set(
+    wire[ProfileIntegrityCheckOps],
+    wire[OrganisationIntegrityCheckOps],
+    wire[TagIntegrityCheckOps],
+    wire[UserIntegrityCheckOps],
+    wire[ImpactStatusIntegrityCheckOps],
+    wire[ResolutionStatusIntegrityCheckOps],
+    wire[ObservableTypeIntegrityCheckOps],
+    wire[CustomFieldIntegrityCheckOps],
+    wire[CaseTemplateIntegrityCheckOps],
+    wire[DataIntegrityCheckOps],
+    wire[CaseIntegrityCheckOps],
+    wire[AlertIntegrityCheckOps]
+  )
 
-    val routerBindings = ScalaMultibinder.newSetBinder[PlayRouter](binder)
-    routerBindings.addBinding.toProvider[TheHiveRouter]
-    val queryExecutorBindings = ScalaMultibinder.newSetBinder[QueryExecutor](binder)
-    queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV0]
-    queryExecutorBindings.addBinding.to[TheHiveQueryExecutorV1]
-    bind[QueryExecutor].annotatedWithName("v0").toProvider[QueryExecutorVersion0Provider]
-    ScalaMultibinder.newSetBinder[Connector](binder)
-    val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
-    schemaBindings.addBinding.to[TheHiveSchemaDefinition]
+  lazy val entrypoint: Entrypoint     = wire[Entrypoint]
+  val errorHandler: ErrorHandler.type = ErrorHandler
 
-    bindActor[ConfigActor]("config-actor")
-    bindActor[NotificationActor]("notification-actor")
-
-    val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[GenIntegrityCheckOps](binder)
-    integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[OrganisationIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[TagIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[UserIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[ImpactStatusIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[ResolutionStatusIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[ObservableTypeIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[CustomFieldIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[CaseTemplateIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[DataIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[CaseIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[AlertIntegrityCheckOps]
-    bind[ActorRef].annotatedWithName("integrity-check-actor").toProvider[IntegrityCheckActorProvider]
-
-    bind[ActorRef].annotatedWithName("flow-actor").toProvider[FlowActorProvider]
-
-    bind[SingleInstance].to[ClusterSetup].asEagerSingleton()
-    ()
+  val defaultAction: ActionFunction[Request, AuthenticatedRequest] = new ActionFunction[Request, AuthenticatedRequest] {
+    override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
+      Future.failed(NotFoundError(request.path))
+    override protected def executionContext: ExecutionContext = scalligraphApplication.executionContext
   }
+
+  override def routers: Set[Router] =
+    Set(
+      SimpleRouter {
+        case POST(p"/api/v${int(version)}/query") =>
+          val queryExecutor = scalligraphApplication.getQueryExecutor(version)
+          entrypoint("query")
+            .extract("query", queryExecutor.parser.on("query"))
+            .auth { request =>
+              queryExecutor.execute(request.body("query"), request)
+            }
+      }
+    )
+
+  override def queryExecutors: Set[QueryExecutor] = Set.empty
+  override def schemas: Set[UpdatableSchema]      = Set(TheHiveSchemaDefinition)
 }

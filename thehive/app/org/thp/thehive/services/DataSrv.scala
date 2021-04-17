@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.EntityId
@@ -13,12 +14,10 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.DataOps._
 
 import java.lang.{Long => JLong}
-import javax.inject.{Inject, Named, Singleton}
 import scala.collection.mutable
 import scala.util.{Success, Try}
 
-@Singleton
-class DataSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[Data] {
+class DataSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[Data] {
   override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     super.createEntity(e).map { data =>
       integrityCheckActor ! EntityAdded("Data")
@@ -59,7 +58,7 @@ object DataOps {
 
 }
 
-class DataIntegrityCheckOps @Inject() (val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
+class DataIntegrityCheckOps(val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
 
   override def findDuplicates(): Seq[Seq[Data with Entity]] =
     db.roTransaction { implicit graph =>
@@ -76,7 +75,6 @@ class DataIntegrityCheckOps @Inject() (val db: Database, val service: DataSrv) e
         }
         .toSeq
     }
-
   override def resolve(entities: Seq[Data with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

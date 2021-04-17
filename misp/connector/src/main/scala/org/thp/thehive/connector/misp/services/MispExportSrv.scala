@@ -6,6 +6,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
+import org.thp.thehive.connector.misp.MispConnector
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -14,13 +15,10 @@ import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationS
 import play.api.Logger
 
 import java.util.Date
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-@Singleton
-class MispExportSrv @Inject() (
-    connector: Connector,
+class MispExportSrv(
     caseSrv: CaseSrv,
     attachmentSrv: AttachmentSrv,
     alertSrv: AlertSrv,
@@ -51,7 +49,7 @@ class MispExportSrv @Inject() (
         case 128 => "sha512"
       }
       .map("Payload delivery" -> _)
-      .orElse(connector.attributeConverter(observable.dataType))
+      .orElse(MispConnector.attributeConverter(observable.dataType))
       .map {
         case (cat, tpe) =>
           Attribute(
@@ -80,7 +78,7 @@ class MispExportSrv @Inject() (
   }
 
   def getMispClient(mispId: String): Future[TheHiveMispClient] =
-    connector
+    MispConnector
       .clients
       .find(_.name == mispId)
       .fold[Future[TheHiveMispClient]](Future.failed(NotFoundError(s"MISP server $mispId not found"))) {

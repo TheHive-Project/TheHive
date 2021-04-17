@@ -14,11 +14,9 @@ import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Result, Results}
 import play.api.{ConfigLoader, Configuration, Logger}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class ConfigCtrl @Inject() (
+class ConfigCtrl(
     configuration: Configuration,
     appConfig: ApplicationConfig,
     userConfigContext: UserConfigContext,

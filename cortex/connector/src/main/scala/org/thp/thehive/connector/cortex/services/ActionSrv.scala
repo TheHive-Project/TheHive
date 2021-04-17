@@ -1,7 +1,7 @@
 package org.thp.thehive.connector.cortex.services
 
 import akka.actor.ActorRef
-import com.google.inject.name.Named
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.structure.Element
 import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
@@ -11,6 +11,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{EntityId, NotFoundError}
+import org.thp.thehive.connector.cortex.CortexConnector
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.ActionOps._
@@ -26,24 +27,23 @@ import org.thp.thehive.services.{LogSrv, OrganisationSrv}
 import play.api.libs.json.{JsObject, Json, OWrites}
 
 import java.util.{Date, Map => JMap}
-import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class ActionSrv @Inject() (
-    @Named("cortex-actor") cortexActor: ActorRef,
+class ActionSrv(
+    _cortexActor: => ActorRef @@ CortexTag,
     actionOperationSrv: ActionOperationSrv,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
     logSrv: LogSrv,
-    connector: Connector,
     implicit val schema: Schema,
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[Action] {
 
-  val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
+  lazy val cortexActor: ActorRef @@ CortexTag = _cortexActor
+  val actionContextSrv                        = new EdgeSrv[ActionContext, Action, Product]
 
   /**
     * Executes an Action on user demand,
@@ -58,7 +58,7 @@ class ActionSrv @Inject() (
       writes: OWrites[Entity],
       authContext: AuthContext
   ): Future[RichAction] = {
-    val cortexClients = serviceHelper.availableCortexClients(connector.clients, authContext.organisation)
+    val cortexClients = serviceHelper.availableCortexClients(CortexConnector.clients, authContext.organisation)
     for {
       client <- cortexId match {
         case Some(cortexId) =>

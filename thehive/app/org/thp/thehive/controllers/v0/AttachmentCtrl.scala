@@ -16,11 +16,9 @@ import play.api.http.HttpEntity
 import play.api.mvc._
 
 import java.nio.file.Files
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Try}
 
-@Singleton
-class AttachmentCtrl @Inject() (
+class AttachmentCtrl(
     entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     attachmentSrv: AttachmentSrv,

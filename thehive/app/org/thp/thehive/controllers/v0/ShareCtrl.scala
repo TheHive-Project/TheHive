@@ -17,11 +17,9 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class ShareCtrl @Inject() (
+class ShareCtrl(
     entrypoint: Entrypoint,
     shareSrv: ShareSrv,
     organisationSrv: OrganisationSrv,

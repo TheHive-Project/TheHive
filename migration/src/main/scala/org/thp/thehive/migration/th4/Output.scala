@@ -1,79 +1,72 @@
 package org.thp.thehive.migration.th4
 
 import akka.actor.ActorSystem
-import akka.actor.typed.Scheduler
-import akka.stream.Materializer
-import com.google.inject.{Guice, Injector => GInjector}
-import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
+import com.google.inject.{Injector => GInjector}
+//import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.janusgraph.core.schema.{SchemaStatus => JanusSchemaStatus}
 import org.thp.scalligraph._
-import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
+import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.connector.cortex.models.{CortexSchemaDefinition, TheHiveCortexSchemaProvider}
+import org.thp.thehive.connector.cortex.models.CortexSchemaDefinition
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
+import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import org.thp.thehive.{migration, ClusterSetup}
-import play.api.cache.ehcache.EhCacheModule
-import play.api.inject.guice.GuiceInjector
-import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
-import play.api.libs.concurrent.{AkkaGuiceSupport, AkkaSchedulerProvider}
-import play.api.{Configuration, Environment, Logger}
+//import play.api.inject.guice.GuiceInjector
+//import play.api.libs.concurrent.{AkkaGuiceSupport, AkkaSchedulerProvider}
+import play.api.{Configuration, Logger}
 
-import javax.inject.{Inject, Provider, Singleton}
-import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext
+import javax.inject.Provider
 import scala.util.{Failure, Success, Try}
 
 object Output {
 
-  private def buildApp(configuration: Configuration)(implicit actorSystem: ActorSystem): GInjector =
-    Guice
-      .createInjector(
-        (play.api.inject.guice.GuiceableModule.guiceable(new EhCacheModule).guiced(Environment.simple(), configuration, Set.empty) :+
-          new ScalaModule with AkkaGuiceSupport {
-            override def configure(): Unit = {
-              bind[Configuration].toInstance(configuration)
-              bind[ActorSystem].toInstance(actorSystem)
-              bind[Scheduler].toProvider[AkkaSchedulerProvider]
-              bind[Materializer].toInstance(Materializer(actorSystem))
-              bind[ExecutionContext].toInstance(actorSystem.dispatcher)
-              bind[Injector].to[GuiceInjector]
-              bind[UserDB].to[LocalUserSrv]
-              bindActor[DummyActor]("notification-actor")
-              bindActor[DummyActor]("config-actor")
-              bindActor[DummyActor]("cortex-actor")
-              bindActor[DummyActor]("integrity-check-actor")
-
-              val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
-              schemaBindings.addBinding.to[TheHiveSchemaDefinition]
-              schemaBindings.addBinding.to[CortexSchemaDefinition]
-              bind[SingleInstance].toInstance(new SingleInstance(true))
-
-              bind[AuditSrv].to[NoAuditSrv]
-              bind[Database].toProvider[JanusDatabaseProvider]
-              bind[Environment].toInstance(Environment.simple())
-              bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-              bind[Schema].toProvider[TheHiveCortexSchemaProvider]
-              configuration.get[String]("storage.provider") match {
-                case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
-                case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
-                case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
-                case "s3"       => bind(classOf[StorageSrv]).to(classOf[S3StorageSrv])
-              }
-              bind[ClusterSetup].asEagerSingleton()
-              ()
-            }
-          }).asJava
-      )
+  private def buildApp(configuration: Configuration)(implicit actorSystem: ActorSystem): GInjector = ???
+//    Guice
+//      .createInjector(
+//        (play.api.inject.guice.GuiceableModule.guiceable(new EhCacheModule).guiced(Environment.simple(), configuration, Set.empty) :+
+//          new ScalaModule with AkkaGuiceSupport {
+//            override def configure(): Unit = {
+//              bind[Configuration].toInstance(configuration)
+//              bind[ActorSystem].toInstance(actorSystem)
+//              bind[Scheduler].toProvider[AkkaSchedulerProvider]
+//              bind[Materializer].toInstance(Materializer(actorSystem))
+//              bind[ExecutionContext].toInstance(actorSystem.dispatcher)
+//              bind[Injector].to[GuiceInjector]
+//              bind[UserDB].to[LocalUserSrv]
+//              bindActor[DummyActor]("notification-actor")
+//              bindActor[DummyActor]("config-actor")
+//              bindActor[DummyActor]("cortex-actor")
+//              bindActor[DummyActor]("integrity-check-actor")
+//
+//              val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
+////              schemaBindings.addBinding.to[TheHiveSchemaDefinition]
+////              schemaBindings.addBinding.to[CortexSchemaDefinition]
+//              bind[SingleInstance].toInstance(new SingleInstance(true))
+//
+//              bind[AuditSrv].to[NoAuditSrv]
+//              bind[Database].toProvider[JanusDatabaseProvider]
+//              bind[Environment].toInstance(Environment.simple())
+//              bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
+////              bind[Schema].toProvider[TheHiveCortexSchemaProvider]
+//              configuration.get[String]("storage.provider") match {
+//                case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
+//                case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
+//                case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
+//                case "s3"       => bind(classOf[StorageSrv]).to(classOf[S3StorageSrv])
+//              }
+//              bind[ClusterSetup].asEagerSingleton()
+//              ()
+//            }
+//          }).asJava
+//      )
 
   def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Output = {
     if (configuration.getOptional[Boolean]("dropDatabase").contains(true)) {
@@ -84,11 +77,10 @@ object Output {
   }
 }
 
-@Singleton
-class Output @Inject() (
+class Output(
     configuration: Configuration,
-    theHiveSchema: TheHiveSchemaDefinition,
-    cortexSchema: CortexSchemaDefinition,
+//    theHiveSchema: TheHiveSchemaDefinition,
+//    cortexSchema: CortexSchemaDefinition,
     caseSrv: CaseSrv,
     observableSrvProvider: Provider[ObservableSrv],
     dataSrv: DataSrv,
@@ -251,8 +243,8 @@ class Output @Inject() (
   def startMigration(): Try[Unit] = Success(retrieveExistingData())
 
   def endMigration(): Try[Unit] = {
-    db.addSchemaIndexes(theHiveSchema)
-      .flatMap(_ => db.addSchemaIndexes(cortexSchema))
+    db.addSchemaIndexes(TheHiveSchemaDefinition)
+      .flatMap(_ => db.addSchemaIndexes(CortexSchemaDefinition))
     Try(db.close())
   }
 

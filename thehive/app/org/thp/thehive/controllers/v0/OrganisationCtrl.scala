@@ -14,16 +14,14 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success}
 
-@Singleton
-class OrganisationCtrl @Inject() (
+class OrganisationCtrl(
     override val entrypoint: Entrypoint,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     implicit override val db: Database,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicOrganisation
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
@@ -125,8 +123,7 @@ class OrganisationCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicOrganisation @Inject() (organisationSrv: OrganisationSrv) extends PublicData {
+class PublicOrganisation(organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "organisation"
 
   override val initialQuery: Query =

@@ -19,12 +19,10 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, Json, OWrites}
 import play.api.mvc.{AnyContent, Results, Action => PlayAction}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.{universe => ru}
 
-@Singleton
-class ActionCtrl @Inject() (
+class ActionCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     actionSrv: ActionSrv,
@@ -35,7 +33,7 @@ class ActionCtrl @Inject() (
     logSrv: LogSrv,
     alertSrv: AlertSrv,
     implicit val executionContext: ExecutionContext,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicAction
 ) extends AuditRenderer
     with QueryCtrl {
@@ -75,8 +73,7 @@ class ActionCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicAction @Inject() (actionSrv: ActionSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
+class PublicAction(actionSrv: ActionSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
 
   override val entityName: String = "action"
   override val initialQuery: Query =

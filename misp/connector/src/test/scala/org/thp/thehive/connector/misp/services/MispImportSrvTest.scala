@@ -6,7 +6,7 @@ import org.thp.misp.dto.{Event, Organisation, Tag, User}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{AppBuilder, EntityId, EntityName}
+import org.thp.scalligraph.{EntityId, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.AlertOps._
@@ -24,10 +24,10 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .bindToProvider[TheHiveMispClient, TestMispClientProvider]
+//  override def appConfigure: AppBuilder =
+//    super
+//      .appConfigure
+//      .bindToProvider[TheHiveMispClient, TestMispClientProvider]
 
   "MISP client" should {
     "get current user name" in testApp { app =>

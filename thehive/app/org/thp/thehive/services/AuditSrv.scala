@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import com.google.inject.name.Named
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Transaction.Status
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -20,23 +20,22 @@ import org.thp.thehive.services.DashboardOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.notification.AuditNotificationMessage
+import org.thp.thehive.services.notification.{AuditNotificationMessage, NotificationTag}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Success, Try}
 
 case class PendingAudit(audit: Audit, context: Product with Entity, `object`: Option[Product with Entity])
 
-@Singleton
-class AuditSrv @Inject() (
-    userSrvProvider: Provider[UserSrv],
-    @Named("notification-actor") notificationActor: ActorRef,
+class AuditSrv(
+    _userSrv: => UserSrv,
+    _notificationActor: => ActorRef @@ NotificationTag,
     eventSrv: EventSrv,
     db: Database
 ) extends VertexSrv[Audit] { auditSrv =>
-  lazy val userSrv: UserSrv                                = userSrvProvider.get
+  lazy val userSrv: UserSrv                                = _userSrv
+  lazy val notificationActor: ActorRef @@ NotificationTag  = _notificationActor
   val auditUserSrv                                         = new EdgeSrv[AuditUser, Audit, User]
   val auditedSrv                                           = new EdgeSrv[Audited, Audit, Product]
   val auditContextSrv                                      = new EdgeSrv[AuditContext, Audit, Product]

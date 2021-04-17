@@ -17,13 +17,12 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Singleton}
 import scala.reflect.runtime.{universe => ru}
 import scala.util.Success
 
 case class SimilarCaseFilter()
-@Singleton
-class AlertCtrl @Inject() (
+
+class AlertCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     alertSrv: AlertSrv,

@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
@@ -10,11 +11,9 @@ import org.thp.scalligraph.{CreateError, EntityIdOrName}
 import org.thp.thehive.models.ImpactStatus
 import org.thp.thehive.services.ImpactStatusOps._
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class ImpactStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[ImpactStatus] {
+class ImpactStatusSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ImpactStatus] {
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ImpactStatus] =
     startTraversal.getByName(name)
@@ -42,7 +41,7 @@ object ImpactStatusOps {
   }
 }
 
-class ImpactStatusIntegrityCheckOps @Inject() (val db: Database, val service: ImpactStatusSrv) extends IntegrityCheckOps[ImpactStatus] {
+class ImpactStatusIntegrityCheckOps(val db: Database, val service: ImpactStatusSrv) extends IntegrityCheckOps[ImpactStatus] {
   override def resolve(entities: Seq[ImpactStatus with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

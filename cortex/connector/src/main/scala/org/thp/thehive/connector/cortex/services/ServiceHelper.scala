@@ -12,10 +12,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class ServiceHelper @Inject() (
+class ServiceHelper(
     db: Database,
     organisationSrv: OrganisationSrv
 ) {

@@ -1,13 +1,13 @@
 package org.thp.thehive.connector.cortex.services
 
-import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
+import org.thp.cortex.client.CortexClient
 import org.thp.cortex.dto.v0.OutputJob
+import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
+import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{AppBuilder, EntityName}
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.connector.cortex.models.{Job, JobStatus, TheHiveCortexSchemaProvider}
+import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.ObservableOps._
@@ -24,13 +24,13 @@ import scala.io.Source
 
 class JobSrvTest extends PlaySpecification with TestAppBuilder {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all).authContext
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .bindActor[CortexActor]("cortex-actor")
-      .bindToProvider[CortexClient, TestCortexClientProvider]
-      .bind[Connector, TestConnector]
-      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
+//  override def appConfigure: AppBuilder =
+//    super
+//      .appConfigure
+//      .bindActor[CortexActor]("cortex-actor")
+//      .bindToProvider[CortexClient, TestCortexClientProvider]
+//      .bind[Connector, TestConnector]
+////      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
 
   "job service" should {
     "handle creation and then finished job" in testApp { app =>

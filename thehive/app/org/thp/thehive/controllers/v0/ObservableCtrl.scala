@@ -19,7 +19,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
 import play.api.Configuration
-import play.api.libs.Files.DefaultTemporaryFileCreator
+import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 import shapeless._
@@ -27,12 +27,10 @@ import shapeless._
 import java.io.FilterInputStream
 import java.nio.file.Files
 import java.util.Base64
-import javax.inject.{Inject, Named, Singleton}
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class ObservableCtrl @Inject() (
+class ObservableCtrl(
     configuration: Configuration,
     override val entrypoint: Entrypoint,
     override val db: Database,
@@ -42,10 +40,9 @@ class ObservableCtrl @Inject() (
     organisationSrv: OrganisationSrv,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
-    errorHandler: ErrorHandler,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservable,
-    temporaryFileCreator: DefaultTemporaryFileCreator
+    temporaryFileCreator: TemporaryFileCreator
 ) extends ObservableRenderer
     with QueryCtrl {
 
@@ -102,7 +99,7 @@ class ObservableCtrl @Inject() (
         caseSrv.createObservable(`case`, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
-      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+      case Failure(error) => Left(ErrorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
     }
 
   private def createAttachmentObservableInCase(
@@ -183,7 +180,7 @@ class ObservableCtrl @Inject() (
         alertSrv.createObservable(alert, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
-      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+      case Failure(error) => Left(ErrorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
     }
 
   private def createAttachmentObservableInAlert(
@@ -354,8 +351,7 @@ class ObservableCtrl @Inject() (
     }
 }
 
-@Singleton
-class PublicObservable @Inject() (
+class PublicObservable(
     observableSrv: ObservableSrv,
     organisationSrv: OrganisationSrv
 ) extends PublicData

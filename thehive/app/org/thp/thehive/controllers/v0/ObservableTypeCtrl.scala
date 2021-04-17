@@ -12,14 +12,11 @@ import org.thp.thehive.models.{ObservableType, Permissions}
 import org.thp.thehive.services.ObservableTypeSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
-
-@Singleton
-class ObservableTypeCtrl @Inject() (
+class ObservableTypeCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     observableTypeSrv: ObservableTypeSrv,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservableType
 ) extends QueryCtrl {
   def get(idOrName: String): Action[AnyContent] =
@@ -47,8 +44,7 @@ class ObservableTypeCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicObservableType @Inject() (observableTypeSrv: ObservableTypeSrv) extends PublicData {
+class PublicObservableType(observableTypeSrv: ObservableTypeSrv) extends PublicData {
   override val entityName: String = "ObservableType"
   override val initialQuery: Query =
     Query.init[Traversal.V[ObservableType]]("listObservableType", (graph, _) => observableTypeSrv.startTraversal(graph))

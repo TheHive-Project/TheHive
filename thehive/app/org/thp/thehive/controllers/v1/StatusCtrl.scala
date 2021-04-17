@@ -3,27 +3,25 @@ package org.thp.thehive.controllers.v1
 import akka.actor.ActorSystem
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.{Cluster, Member}
-import org.thp.scalligraph.ScalligraphApplicationLoader
+import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.UpdatableSchema
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.thehive.TheHiveModule
+import org.thp.scalligraph.{Global, ScalligraphApplicationLoader}
+import org.thp.thehive.models.User
 import play.api.libs.json.{JsObject, JsString, Json, Writes}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
-import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
 
-@Singleton
-class StatusCtrl @Inject() (
+class StatusCtrl(
     entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     authSrv: AuthSrv,
-    schemas: immutable.Set[UpdatableSchema],
+    schemas: Set[UpdatableSchema] @@ Global,
     system: ActorSystem
 ) {
 
@@ -61,7 +59,7 @@ class StatusCtrl @Inject() (
           Json.obj(
             "versions" -> Json.obj(
               "Scalligraph" -> getVersion(classOf[ScalligraphApplicationLoader]),
-              "TheHive"     -> getVersion(classOf[TheHiveModule]),
+              "TheHive"     -> getVersion(classOf[User]),
               "Play"        -> getVersion(classOf[AbstractController])
             ),
             "connectors" -> JsObject.empty,

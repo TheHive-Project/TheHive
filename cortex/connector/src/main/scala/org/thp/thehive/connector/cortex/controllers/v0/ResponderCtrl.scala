@@ -9,11 +9,9 @@ import org.thp.thehive.controllers.v0.Conversion._
 import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
-@Singleton
-class ResponderCtrl @Inject() (
+class ResponderCtrl(
     entrypoint: Entrypoint,
     implicit val db: Database,
     responderSrv: ResponderSrv,

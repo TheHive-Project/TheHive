@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -20,16 +21,15 @@ import org.thp.thehive.services.UserOps._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import java.util.{Date, Map => JMap}
-import javax.inject.{Inject, Named}
 import scala.util.{Failure, Success, Try}
 
-class CaseTemplateSrv @Inject() (
+class CaseTemplateSrv(
     customFieldSrv: CustomFieldSrv,
     organisationSrv: OrganisationSrv,
     tagSrv: TagSrv,
     taskSrv: TaskSrv,
     auditSrv: AuditSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag
 ) extends VertexSrv[CaseTemplate] {
 
   val caseTemplateTagSrv          = new EdgeSrv[CaseTemplateTag, CaseTemplate, Tag]
@@ -237,9 +237,7 @@ object CaseTemplateOps {
         }
         .getOrElse(traversal.empty)
 
-    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
@@ -252,11 +250,8 @@ object CaseTemplateOps {
           case CustomFieldType.string  => traversal.filter(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
 
-    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
@@ -269,13 +264,12 @@ object CaseTemplateOps {
           case CustomFieldType.string  => traversal.filterNot(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
   }
 
   implicit class CaseTemplateCustomFieldsOpsDefs(traversal: Traversal.E[CaseTemplateCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-class CaseTemplateIntegrityCheckOps @Inject() (
+class CaseTemplateIntegrityCheckOps(
     val db: Database,
     val service: CaseTemplateSrv,
     organisationSrv: OrganisationSrv

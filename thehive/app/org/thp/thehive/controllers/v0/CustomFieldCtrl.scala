@@ -13,16 +13,14 @@ import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.{JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.Success
 
-@Singleton
-class CustomFieldCtrl @Inject() (
+class CustomFieldCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     customFieldSrv: CustomFieldSrv,
     override val publicData: PublicCustomField,
-    @Named("v0") override val queryExecutor: QueryExecutor
+    override val queryExecutor: QueryExecutor
 ) extends QueryCtrl
     with AuditRenderer {
   def create: Action[AnyContent] =
@@ -86,8 +84,7 @@ class CustomFieldCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends PublicData {
+class PublicCustomField(customFieldSrv: CustomFieldSrv) extends PublicData {
   override val entityName: String  = "CustomField"
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](

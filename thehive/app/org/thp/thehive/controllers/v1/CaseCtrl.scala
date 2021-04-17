@@ -22,12 +22,9 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
-
-import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
-@Singleton
-class CaseCtrl @Inject() (
+class CaseCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     caseSrv: CaseSrv,

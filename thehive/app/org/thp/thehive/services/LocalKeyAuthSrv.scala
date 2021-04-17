@@ -9,7 +9,6 @@ import play.api.Configuration
 import play.api.mvc.RequestHeader
 
 import java.util.Base64
-import javax.inject.{Inject, Provider, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Random, Success, Try}
 
@@ -66,16 +65,15 @@ class LocalKeyAuthSrv(
     }
 }
 
-@Singleton
-class LocalKeyAuthProvider @Inject() (
+class LocalKeyAuthProvider(
     db: Database,
     userSrv: UserSrv,
     localUserSrv: LocalUserSrv,
-    authSrvProvider: Provider[AuthSrv],
+    _authSrv: => AuthSrv,
     requestOrganisation: RequestOrganisation,
     ec: ExecutionContext
 ) extends AuthSrvProvider {
-  lazy val authSrv: AuthSrv = authSrvProvider.get
+  lazy val authSrv: AuthSrv = _authSrv
   override val name: String = "key"
   override def apply(config: Configuration): Try[AuthSrv] =
     Success(new LocalKeyAuthSrv(db, userSrv, localUserSrv, authSrv, requestOrganisation, ec))

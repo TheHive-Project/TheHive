@@ -9,7 +9,6 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
 object EventFilterOnMissingUser extends Exception
@@ -128,8 +127,7 @@ object EventFilter {
       (JsPath \ "_like").read[(String, String)].map(fv => LikeEventFilter(fv._1, fv._2))
 }
 
-@Singleton
-class FilteredEventProvider @Inject() extends TriggerProvider {
+class FilteredEventProvider extends TriggerProvider {
   override val name: String = "FilteredEvent"
   override def apply(config: Configuration): Try[Trigger] = {
     val filter = Json.parse(config.underlying.getValue("filter").render(ConfigRenderOptions.concise())).as[EventFilter]

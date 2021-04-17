@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.services
 
-import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
 import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
@@ -8,7 +7,7 @@ import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AppBuilder, EntityName}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.connector.cortex.controllers.v0.ActionCtrl
-import org.thp.thehive.connector.cortex.models.{JobStatus, TheHiveCortexSchemaProvider}
+import org.thp.thehive.connector.cortex.models.JobStatus
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.TaskOps._
@@ -23,27 +22,27 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
 
   override val databaseName: String = "thehiveCortex"
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
-      .`override`(
-        _.bindActor[CortexActor]("cortex-actor")
-          .bindToProvider[CortexClient, TestCortexClientProvider]
-          .bind[Connector, TestConnector]
-          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-      )
+//  override def appConfigure: AppBuilder =
+//    super
+//      .appConfigure
+////      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
+//      .`override`(
+//        _.bindActor[CortexActor]("cortex-actor")
+//          .bindToProvider[CortexClient, TestCortexClientProvider]
+//          .bind[Connector, TestConnector]
+////          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+//      )
 
   def testAppBuilder[A](body: AppBuilder => A): A =
     testApp { app =>
       body(
         app
-          .`override`(
-            _.bindActor[CortexActor]("cortex-actor")
-              .bindToProvider[CortexClient, TestCortexClientProvider]
-              .bind[Connector, TestConnector]
-              .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-          )
+//          .`override`(
+//            _.bindActor[CortexActor]("cortex-actor")
+//              .bindToProvider[CortexClient, TestCortexClientProvider]
+//              .bind[Connector, TestConnector]
+////              .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+//          )
       )
     }
 
@@ -101,7 +100,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder {
       }
 
       app[Database].roTransaction { implicit graph =>
-        app[TaskSrv].startTraversal.has(_.title, "case 2 task 2").has(_.status, TaskStatus.Completed).exists must beTrue
+        app[TaskSrv].startTraversal.has(_.title, "case 2 task 2").has(_.status, TaskStatus.Completed).exists         must beTrue
         app[TaskSrv].startTraversal.has(_.title, "case 2 task 2").logs.has(_.message, "test log from action").exists must beTrue
       }
     }

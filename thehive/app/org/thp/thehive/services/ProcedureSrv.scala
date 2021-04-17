@@ -13,11 +13,9 @@ import org.thp.thehive.services.ProcedureOps._
 import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
-@Singleton
-class ProcedureSrv @Inject() (
+class ProcedureSrv(
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
     patternSrv: PatternSrv

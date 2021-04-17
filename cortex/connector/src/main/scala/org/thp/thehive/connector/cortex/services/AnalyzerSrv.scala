@@ -3,15 +3,14 @@ package org.thp.thehive.connector.cortex.services
 import org.thp.cortex.dto.v0.{OutputWorker => CortexWorker}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
+import org.thp.thehive.connector.cortex.CortexConnector
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-@Singleton
-class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper, implicit val ec: ExecutionContext) {
+class AnalyzerSrv(serviceHelper: ServiceHelper, implicit val ec: ExecutionContext) {
 
   lazy val logger: Logger = Logger(getClass)
 
@@ -22,7 +21,7 @@ class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper,
     */
   def listAnalyzer(range: Option[String])(implicit authContext: AuthContext): Future[Map[CortexWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
+      .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, authContext.organisation)) { client =>
         client
           .listAnalyser(range)
           .transform {
@@ -36,7 +35,7 @@ class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper,
 
   def listAnalyzerByType(dataType: String)(implicit authContext: AuthContext): Future[Map[CortexWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
+      .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, authContext.organisation)) { client =>
         client
           .listAnalyzersByType(dataType)
           .transform {
@@ -50,7 +49,7 @@ class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper,
 
   def getAnalyzer(id: String)(implicit authContext: AuthContext): Future[(CortexWorker, Seq[String])] =
     Future
-      .traverse(serviceHelper.availableCortexClients(connector.clients, authContext.organisation)) { client =>
+      .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, authContext.organisation)) { client =>
         client
           .getAnalyzer(id)
           .map(_ -> client.name)
@@ -72,7 +71,7 @@ class AnalyzerSrv @Inject() (connector: Connector, serviceHelper: ServiceHelper,
 
   def searchAnalyzers(query: JsObject, organisation: EntityIdOrName): Future[Map[CortexWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(connector.clients, organisation)) { client =>
+      .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, organisation)) { client =>
         client
           .searchResponders(query)
           .transform {

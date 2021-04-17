@@ -8,11 +8,9 @@ import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.RoleOps._
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
-@Singleton
-class RoleSrv @Inject() extends VertexSrv[Role] {
+class RoleSrv extends VertexSrv[Role] {
 
   val roleOrganisationSrv = new EdgeSrv[RoleOrganisation, Role, Organisation]
   val userRoleSrv         = new EdgeSrv[UserRole, User, Role]

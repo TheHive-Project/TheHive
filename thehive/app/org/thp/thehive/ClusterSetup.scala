@@ -3,17 +3,12 @@ package org.thp.thehive
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberEvent, _}
-import com.google.inject.Injector
 import org.thp.scalligraph.SingleInstance
 import play.api.{Configuration, Logger}
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class ClusterSetup @Inject() (
+class ClusterSetup(
     configuration: Configuration,
-    system: ActorSystem,
-    injector: Injector
+    system: ActorSystem
 ) extends SingleInstance(configuration.get[Seq[String]]("akka.cluster.seed-nodes").isEmpty) {
   system.actorOf(Props[ClusterListener])
   if (value) {
@@ -22,8 +17,6 @@ class ClusterSetup @Inject() (
     val cluster = Cluster(system)
     cluster.join(cluster.system.provider.getDefaultAddress)
   }
-  GuiceAkkaExtension(system).set(injector)
-
 }
 
 class ClusterListener extends Actor {

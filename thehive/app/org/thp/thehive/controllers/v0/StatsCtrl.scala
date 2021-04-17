@@ -8,10 +8,7 @@ import play.api.Logger
 import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class StatsCtrl @Inject() (
+class StatsCtrl(
     entrypoint: Entrypoint,
     caseCtrl: CaseCtrl,
     taskCtrl: TaskCtrl,

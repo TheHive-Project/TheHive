@@ -1,27 +1,26 @@
 package org.thp.thehive.connector.cortex.services
 
-import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.cortex.client.CortexClient
+import org.thp.scalligraph.EntityName
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{AppBuilder, EntityName}
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Organisation
 import org.thp.thehive.services._
 import play.api.test.PlaySpecification
 
 class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
   override val databaseName: String = "thehiveCortex"
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
-      .`override`(
-        _.bindActor[CortexActor]("cortex-actor")
-          .bindToProvider[CortexClient, TestCortexClientProvider]
-          .bind[Connector, TestConnector]
-          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-      )
+//  override def appConfigure: AppBuilder =
+//    super
+//      .appConfigure
+////      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
+//      .`override`(
+//        _.bindActor[CortexActor]("cortex-actor")
+//          .bindToProvider[CortexClient, TestCortexClientProvider]
+//          .bind[Connector, TestConnector]
+////          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+//      )
 
   "service helper" should {
     "filter properly organisations according to supplied config" in testApp { app =>

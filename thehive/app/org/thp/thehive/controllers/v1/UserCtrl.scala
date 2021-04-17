@@ -20,13 +20,11 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import play.api.mvc._
 
 import java.util.{Base64, Date}
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 case class UserOutputParam(from: Long, to: Long, extraData: Set[String], organisation: Option[String])
 
-@Singleton
-class UserCtrl @Inject() (
+class UserCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     caseSrv: CaseSrv,

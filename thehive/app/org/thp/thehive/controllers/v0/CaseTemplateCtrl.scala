@@ -19,11 +19,9 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.Failure
 
-@Singleton
-class CaseTemplateCtrl @Inject() (
+class CaseTemplateCtrl(
     override val entrypoint: Entrypoint,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
@@ -31,7 +29,7 @@ class CaseTemplateCtrl @Inject() (
     auditSrv: AuditSrv,
     override val publicData: PublicCaseTemplate,
     implicit override val db: Database,
-    @Named("v0") override val queryExecutor: QueryExecutor
+    override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create case template")
@@ -89,8 +87,7 @@ class CaseTemplateCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicCaseTemplate @Inject() (
+class PublicCaseTemplate(
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
     customFieldSrv: CustomFieldSrv

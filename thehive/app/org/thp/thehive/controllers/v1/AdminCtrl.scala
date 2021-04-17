@@ -4,27 +4,25 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import ch.qos.logback.classic.{Level, LoggerContext}
+import com.softwaremill.tagging.@@
 import org.slf4j.LoggerFactory
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.GenIntegrityCheckOps
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{CheckState, CheckStats, GetCheckStats, GlobalCheckRequest}
+import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json, OWrites}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
-import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-@Singleton
-class AdminCtrl @Inject() (
+class AdminCtrl(
     entrypoint: Entrypoint,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
-    integrityCheckOps: immutable.Set[GenIntegrityCheckOps],
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
+    integrityCheckOps: Set[GenIntegrityCheckOps],
     db: Database,
     implicit val ec: ExecutionContext
 ) {
@@ -122,7 +120,7 @@ class AdminCtrl @Inject() (
             catch {
               case error: Throwable =>
                 logger.error("Index fetch error", error)
-                0
+                0L
             }
           Json.obj("name" -> label, "count" -> count)
 

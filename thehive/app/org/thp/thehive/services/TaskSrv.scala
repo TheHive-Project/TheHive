@@ -19,25 +19,20 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 
 import java.lang.{Boolean => JBoolean}
 import java.util.{Date, Map => JMap}
-import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Try}
 
-@Singleton
-class TaskSrv @Inject() (
-    caseSrvProvider: Provider[CaseSrv],
+class TaskSrv(
+//    caseSrv: CaseSrv,
     auditSrv: AuditSrv,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
-    shareSrvProvider: Provider[ShareSrv],
-    logSrvProvider: Provider[LogSrv]
+    shareSrv: ShareSrv,
+    logSrv: LogSrv
 ) extends VertexSrv[Task] {
 
-  lazy val shareSrv: ShareSrv = shareSrvProvider.get
-  lazy val caseSrv: CaseSrv   = caseSrvProvider.get
-  lazy val logSrv: LogSrv     = logSrvProvider.get
-  val caseTemplateTaskSrv     = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
-  val taskUserSrv             = new EdgeSrv[TaskUser, Task, User]
-  val taskLogSrv              = new EdgeSrv[TaskLog, Task, Log]
+  val caseTemplateTaskSrv = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
+  val taskUserSrv         = new EdgeSrv[TaskUser, Task, User]
+  val taskLogSrv          = new EdgeSrv[TaskLog, Task, Log]
 
   def create(task: Task, assignee: Option[User with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTask] =
     for {
@@ -64,11 +59,13 @@ class TaskSrv @Inject() (
     if (get(t).isShared.head)
       for {
         orga <- organisationSrv.getOrFail(authContext.organisation)
-      } yield shareSrv.unshareTask(t, orga)
+        _    <- shareSrv.unshareTask(t, orga)
+      } yield ()
     else
       for {
         _ <- get(t).logs.toSeq.toTry(logSrv.delete(_))
-      } yield remove(t)
+        _ <- remove(t)
+      } yield ()
 
   override def update(
       traversal: Traversal.V[Task],

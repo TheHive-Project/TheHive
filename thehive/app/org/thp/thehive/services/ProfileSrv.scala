@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -13,19 +14,15 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.ProfileOps._
 import play.api.libs.json.JsObject
 
-import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class ProfileSrv @Inject() (
+class ProfileSrv(
     auditSrv: AuditSrv,
-    organisationSrvProvider: Provider[OrganisationSrv],
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
-)(implicit
-    val db: Database
+    organisationSrv: OrganisationSrv,
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
+    db: Database
 ) extends VertexSrv[Profile] {
-  lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
-  lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
+  lazy val orgAdmin: Profile with Entity = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
     integrityCheckActor ! EntityAdded("Profile")
@@ -82,7 +79,7 @@ object ProfileOps {
 
 }
 
-class ProfileIntegrityCheckOps @Inject() (val db: Database, val service: ProfileSrv) extends IntegrityCheckOps[Profile] {
+class ProfileIntegrityCheckOps(val db: Database, val service: ProfileSrv) extends IntegrityCheckOps[Profile] {
   override def resolve(entities: Seq[Profile with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

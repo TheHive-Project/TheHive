@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
@@ -16,14 +17,12 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.{JsObject, JsValue}
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class CustomFieldSrv @Inject() (
+class CustomFieldSrv(
     auditSrv: AuditSrv,
     organisationSrv: OrganisationSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
     cacheApi: SyncCacheApi
 ) extends VertexSrv[CustomField] {
 
@@ -178,7 +177,7 @@ object CustomFieldOps {
 
 }
 
-class CustomFieldIntegrityCheckOps @Inject() (val db: Database, val service: CustomFieldSrv) extends IntegrityCheckOps[CustomField] {
+class CustomFieldIntegrityCheckOps(val db: Database, val service: CustomFieldSrv) extends IntegrityCheckOps[CustomField] {
   override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

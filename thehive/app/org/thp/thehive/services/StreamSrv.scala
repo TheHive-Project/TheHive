@@ -17,8 +17,6 @@ import play.api.Logger
 import play.api.libs.json.Json
 
 import java.io.NotSerializableException
-import javax.inject.{Inject, Singleton}
-import scala.collection.immutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Try}
@@ -132,8 +130,7 @@ class StreamActor(
   }
 }
 
-@Singleton
-class StreamSrv @Inject() (
+class StreamSrv(
     appConfig: ApplicationConfig,
     eventSrv: EventSrv,
     organisationSrv: OrganisationSrv,
@@ -143,9 +140,9 @@ class StreamSrv @Inject() (
     implicit val ec: ExecutionContext
 ) {
 
-  lazy val logger: Logger                      = Logger(getClass)
-  val streamLength                             = 20
-  val alphanumeric: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
+  lazy val logger: Logger            = Logger(getClass)
+  val streamLength                   = 20
+  val alphanumeric: IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
 
   val refreshConfig: ConfigItem[FiniteDuration, FiniteDuration] =
     appConfig.item[FiniteDuration]("stream.longPolling.refresh", "Response time when there is no message")

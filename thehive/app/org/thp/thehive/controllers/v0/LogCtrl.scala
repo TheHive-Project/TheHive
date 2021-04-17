@@ -15,15 +15,12 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{LogSrv, OrganisationSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
-
-@Singleton
-class LogCtrl @Inject() (
+class LogCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     logSrv: LogSrv,
     taskSrv: TaskSrv,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicLog
 ) extends QueryCtrl {
 
@@ -72,8 +69,7 @@ class LogCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) extends PublicData {
+class PublicLog(logSrv: LogSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "log"
   override val initialQuery: Query =
     Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => logSrv.startTraversal(graph).visible(organisationSrv)(authContext))

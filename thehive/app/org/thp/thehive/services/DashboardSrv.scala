@@ -14,11 +14,9 @@ import org.thp.thehive.services.UserOps._
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.{List => JList, Map => JMap}
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv) extends VertexSrv[Dashboard] {
+class DashboardSrv(organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv) extends VertexSrv[Dashboard] {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
   val dashboardUserSrv         = new EdgeSrv[DashboardUser, Dashboard, User]
 

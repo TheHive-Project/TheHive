@@ -1,30 +1,27 @@
 package org.thp.thehive.controllers.v0
 
+import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.{EntityName, ScalligraphApplicationLoader}
-import org.thp.thehive.TheHiveModule
+import org.thp.scalligraph.{EntityName, Global, ScalligraphApplicationLoader}
 import org.thp.thehive.models.{HealthStatus, User}
 import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
-import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
 
-@Singleton
-class StatusCtrl @Inject() (
+class StatusCtrl(
     entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     authSrv: AuthSrv,
     userSrv: UserSrv,
-    connectors: immutable.Set[Connector],
-    schemas: immutable.Set[UpdatableSchema],
+    connectors: Set[Connector],
+    schemas: Set[UpdatableSchema] @@ Global,
     db: Database
 ) {
 
@@ -34,7 +31,7 @@ class StatusCtrl @Inject() (
     appConfig.item[FiniteDuration]("stream.longPolling.pollingDuration", "amount of time the UI have to wait before polling the stream")
   def streamPollingDuration: FiniteDuration = streamPollingDurationConfig.get
 
-  val tagsDefaultColourConfig = appConfig.item[String]("tags.freeTagColour", "Default free tag colour")
+  val tagsDefaultColourConfig: ConfigItem[String, String] = appConfig.item[String]("tags.freeTagColour", "Default free tag colour")
 
   private def getVersion(c: Class[_]): String = Option(c.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
@@ -45,7 +42,7 @@ class StatusCtrl @Inject() (
           Json.obj(
             "versions" -> Json.obj(
               "Scalligraph" -> getVersion(classOf[ScalligraphApplicationLoader]),
-              "TheHive"     -> getVersion(classOf[TheHiveModule]),
+              "TheHive"     -> getVersion(classOf[User]),
               "Play"        -> getVersion(classOf[AbstractController])
             ),
             "connectors" -> JsObject(connectors.map(c => c.name -> c.status).toSeq),
@@ -55,9 +52,9 @@ class StatusCtrl @Inject() (
                 case multiAuthSrv: MultiAuthSrv => Json.toJson(multiAuthSrv.providerNames)
                 case _                          => JsString(authSrv.name)
               }),
-              "capabilities"    -> authSrv.capabilities.map(c => JsString(c.toString)),
-              "ssoAutoLogin"    -> authSrv.capabilities.contains(AuthCapability.sso),
-              "pollingDuration" -> streamPollingDuration.toMillis,
+              "capabilities"         -> authSrv.capabilities.map(c => JsString(c.toString)),
+              "ssoAutoLogin"         -> authSrv.capabilities.contains(AuthCapability.sso),
+              "pollingDuration"      -> streamPollingDuration.toMillis,
               "freeTagDefaultColour" -> tagsDefaultColourConfig.get
             ),
             "schemaStatus" -> schemas.flatMap(_.schemaStatus).map { schemaStatus =>

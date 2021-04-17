@@ -1,12 +1,9 @@
 package org.thp.thehive.connector.cortex.services
 
-import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.scalligraph.AppBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
 import play.api.libs.json.Json
@@ -17,16 +14,16 @@ class ResponderSrvTest extends PlaySpecification with TestAppBuilder {
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
 
   override val databaseName: String = "thehiveCortex"
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
-      .`override`(
-        _.bindActor[CortexActor]("cortex-actor")
-          .bindToProvider[CortexClient, TestCortexClientProvider]
-          .bind[Connector, TestConnector]
-          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-      )
+//  override def appConfigure: AppBuilder =
+//    super
+//      .appConfigure
+////      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
+//      .`override`(
+//        _.bindActor[CortexActor]("cortex-actor")
+//          .bindToProvider[CortexClient, TestCortexClientProvider]
+//          .bind[Connector, TestConnector]
+////          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+//      )
 
   "responder service" should {
     "fetch responders by type" in testApp { app =>

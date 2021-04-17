@@ -13,10 +13,9 @@ import org.thp.thehive.services._
 import play.api.Logger
 
 import java.util.Date
-import javax.inject.Inject
 import scala.util.{Failure, Success, Try}
 
-class ActionOperationSrv @Inject() (
+class ActionOperationSrv(
     caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
     taskSrv: TaskSrv,

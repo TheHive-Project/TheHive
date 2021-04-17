@@ -15,13 +15,11 @@ import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.{OrganisationSrv, TagSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
-
-class TagCtrl @Inject() (
+class TagCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     tagSrv: TagSrv,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicTag
 ) extends QueryCtrl {
 
@@ -38,8 +36,7 @@ class TagCtrl @Inject() (
 
 case class TagHint(freeTag: Option[String], namespace: Option[String], predicate: Option[String], value: Option[String], limit: Option[Long])
 
-@Singleton
-class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData {
+class PublicTag(tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "tag"
   override val initialQuery: Query =
     Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))

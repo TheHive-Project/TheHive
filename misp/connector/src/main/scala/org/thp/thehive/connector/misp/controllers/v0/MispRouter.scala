@@ -5,10 +5,7 @@ import play.api.routing.Router.Routes
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class Router @Inject() (mispCtrl: MispCtrl) extends SimpleRouter {
+class MispRouter(mispCtrl: MispCtrl) extends SimpleRouter {
 
   override val routes: Routes = {
     case GET(p"/_syncAlerts") => mispCtrl.sync

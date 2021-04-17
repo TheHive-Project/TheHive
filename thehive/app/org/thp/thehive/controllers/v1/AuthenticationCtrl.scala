@@ -13,11 +13,9 @@ import org.thp.thehive.services.{TOTPAuthSrv, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class AuthenticationCtrl @Inject() (
+class AuthenticationCtrl(
     entrypoint: Entrypoint,
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,

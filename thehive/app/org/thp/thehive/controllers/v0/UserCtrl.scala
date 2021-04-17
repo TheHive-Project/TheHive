@@ -17,11 +17,9 @@ import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class UserCtrl @Inject() (
+class UserCtrl(
     override val entrypoint: Entrypoint,
     userSrv: UserSrv,
     profileSrv: ProfileSrv,
@@ -29,7 +27,7 @@ class UserCtrl @Inject() (
     organisationSrv: OrganisationSrv,
     auditSrv: AuditSrv,
     override val db: Database,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicUser
 ) extends QueryCtrl {
   def current: Action[AnyContent] =
@@ -226,8 +224,7 @@ class UserCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv) extends PublicData {
+class PublicUser(userSrv: UserSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "user"
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)

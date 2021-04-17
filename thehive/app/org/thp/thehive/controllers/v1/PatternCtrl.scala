@@ -16,11 +16,9 @@ import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.io.FileInputStream
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class PatternCtrl @Inject() (
+class PatternCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     patternSrv: PatternSrv,

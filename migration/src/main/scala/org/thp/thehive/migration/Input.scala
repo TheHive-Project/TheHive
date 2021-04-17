@@ -1,13 +1,12 @@
 package org.thp.thehive.migration
 
-import java.text.{ParseException, SimpleDateFormat}
-import java.util.Date
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.config.Config
 import org.thp.thehive.migration.dto._
 
+import java.text.{ParseException, SimpleDateFormat}
+import java.util.Date
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Try}

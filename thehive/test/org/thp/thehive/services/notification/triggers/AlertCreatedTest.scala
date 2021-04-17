@@ -1,7 +1,5 @@
 package org.thp.thehive.services.notification.triggers
 
-import java.util.Date
-
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityIdOrName, EntityName}
@@ -11,6 +9,8 @@ import org.thp.thehive.dto.v0.{InputAlert, OutputAlert}
 import org.thp.thehive.services.{AlertSrv, AuditSrv, OrganisationSrv, UserSrv}
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
+
+import java.util.Date
 
 class AlertCreatedTest extends PlaySpecification with TestAppBuilder {
 

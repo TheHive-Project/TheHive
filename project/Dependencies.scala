@@ -4,6 +4,7 @@ object Dependencies {
   val janusVersion        = "0.5.3"
   val akkaVersion: String = play.core.PlayVersion.akkaVersion
   val elastic4sVersion    = "7.10.2"
+  val macWireVersion      = "2.3.7"
 
   lazy val specs                   = "com.typesafe.play"        %% "play-specs2"                        % play.core.PlayVersion.current
   lazy val playLogback             = "com.typesafe.play"        %% "play-logback"                       % play.core.PlayVersion.current
@@ -23,7 +24,7 @@ object Dependencies {
   lazy val janusGraphElasticSearch = "org.janusgraph"            % "janusgraph-es"                      % janusVersion
   lazy val janusGraphCassandra     = "org.janusgraph"            % "janusgraph-cql"                     % janusVersion
   lazy val janusGraphInMemory      = "org.janusgraph"            % "janusgraph-inmemory"                % janusVersion
-  lazy val tinkerpop               = "org.apache.tinkerpop"      % "gremlin-core"                       % "3.4.6" // align with janusgraph
+  lazy val tinkerpop               = "org.apache.tinkerpop"      % "gremlin-core"                       % "3.4.6"         // align with janusgraph
   lazy val scalactic               = "org.scalactic"            %% "scalactic"                          % "3.2.3"
   lazy val scalaGuice              = "net.codingwell"           %% "scala-guice"                        % "4.2.11"
   lazy val shapeless               = "com.chuusai"              %% "shapeless"                          % "2.3.3"
@@ -46,6 +47,10 @@ object Dependencies {
   lazy val commonCodec             = "commons-codec"             % "commons-codec"                      % "1.15"
   lazy val scopt                   = "com.github.scopt"         %% "scopt"                              % "4.0.0"
   lazy val aix                     = "ai.x"                     %% "play-json-extensions"               % "0.42.0"
+  lazy val macWireMacros           = "com.softwaremill.macwire" %% "macros"                             % macWireVersion % "provided"
+  lazy val macWireMacrosakka       = "com.softwaremill.macwire" %% "macrosakka"                         % macWireVersion % "provided"
+  lazy val macWireUtil             = "com.softwaremill.macwire" %% "util"                               % macWireVersion
+  lazy val macWireProxy            = "com.softwaremill.macwire" %% "proxy"                              % macWireVersion
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang" % "scala-reflect"  % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang" % "scala-compiler" % scalaVersion

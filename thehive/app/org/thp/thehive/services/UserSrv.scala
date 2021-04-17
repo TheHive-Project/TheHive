@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
@@ -23,16 +24,14 @@ import play.api.libs.json.{JsObject, Json}
 
 import java.util.regex.Pattern
 import java.util.{List => JList, Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class UserSrv @Inject() (
+class UserSrv(
     configuration: Configuration,
     roleSrv: RoleSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag
 ) extends VertexSrv[User] {
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
   val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
@@ -308,8 +307,7 @@ object UserOps {
   }
 }
 
-@Singleton
-class UserIntegrityCheckOps @Inject() (
+class UserIntegrityCheckOps(
     val db: Database,
     val service: UserSrv,
     profileSrv: ProfileSrv,

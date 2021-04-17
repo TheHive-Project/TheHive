@@ -11,12 +11,10 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-@Singleton
-class StreamCtrl @Inject() (
+class StreamCtrl(
     entrypoint: Entrypoint,
     streamSrv: StreamSrv,
     auditSrv: AuditSrv,

@@ -28,11 +28,9 @@ import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Failure
 
-@Singleton
-class Properties @Inject() (
+class Properties(
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
     taskSrv: TaskSrv,

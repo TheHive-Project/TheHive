@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
@@ -23,11 +24,9 @@ import play.api.libs.json.{JsObject, JsValue, Json}
 
 import java.lang.{Long => JLong}
 import java.util.{Date, Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class AlertSrv @Inject() (
+class AlertSrv(
     caseSrv: CaseSrv,
     tagSrv: TagSrv,
     organisationSrv: OrganisationSrv,
@@ -36,7 +35,7 @@ class AlertSrv @Inject() (
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag
 ) extends VertexSrv[Alert] {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
@@ -597,7 +596,7 @@ object AlertOps {
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Alert] {
+class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Alert] {
 
   override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = {
     val (imported, notImported) = entities.partition(_.caseId.isDefined)

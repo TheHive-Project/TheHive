@@ -11,11 +11,9 @@ import play.api.Configuration
 import play.api.libs.json.JsObject
 import play.api.mvc.RequestHeader
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class LocalUserSrv @Inject() (
+class LocalUserSrv(
     db: Database,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv,

@@ -6,10 +6,10 @@ import org.thp.client.ApplicationError
 import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob}
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
+import org.thp.thehive.connector.cortex.CortexConnector
 import play.api.Logger
 
 import java.util.Date
-import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
@@ -26,12 +26,14 @@ case class CheckJob(
 private case object CheckJobs extends CortexActorMessage
 private case object CheckJobsKey
 private case object FirstCheckJobs extends CortexActorMessage
-// FIXME Add serializer
+
+sealed trait CortexTag
+
 /**
   * This actor is primarily used to check Job statuses on regular
   * ticks using the provided client for each job
   */
-class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers {
+class CortexActor(jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers {
   implicit val ec: ExecutionContext = context.dispatcher
   lazy val logger: Logger           = Logger(getClass)
 
@@ -39,8 +41,8 @@ class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: Ac
 
   private def receive(checkedJobs: List[CheckJob], failuresCount: Int): Receive = {
     case FirstCheckJobs =>
-      logger.debug(s"CortexActor starting check jobs ticking every ${connector.refreshDelay}")
-      timers.startTimerAtFixedRate(CheckJobsKey, CheckJobs, connector.refreshDelay)
+      logger.debug(s"CortexActor starting check jobs ticking every ${CortexConnector.refreshDelay}")
+      timers.startTimerAtFixedRate(CheckJobsKey, CheckJobs, CortexConnector.refreshDelay)
 
     case cj @ CheckJob(jobId, cortexJobId, actionId, cortexId, _) =>
       logger.info(s"CortexActor received job or action (${jobId.getOrElse(actionId.get)}, $cortexJobId, $cortexId) to check, added to $checkedJobs")
@@ -56,7 +58,7 @@ class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: Ac
       checkedJobs
         .foreach {
           case CheckJob(_, cortexJobId, _, cortexId, _) =>
-            connector
+            CortexConnector
               .clients
               .find(_.name == cortexId)
               .fold(logger.error(s"Receive a CheckJob for an unknown cortexId: $cortexId")) { client =>
@@ -91,15 +93,15 @@ class CortexActor @Inject() (connector: Connector, jobSrv: JobSrv, actionSrv: Ac
           logger.error(s"CortexActor received job output $job but did not have it in state $checkedJobs")
       }
     case RemoteJob(job) if job.status == JobStatus.InProgress || job.status == JobStatus.Waiting =>
-      logger.info(s"CortexActor received ${job.status} from client, retrying in ${connector.refreshDelay}")
+      logger.info(s"CortexActor received ${job.status} from client, retrying in ${CortexConnector.refreshDelay}")
 
     case _: RemoteJob =>
-      logger.warn(s"CortexActor received JobStatus.Unknown from client, retrying in ${connector.refreshDelay}")
+      logger.warn(s"CortexActor received JobStatus.Unknown from client, retrying in ${CortexConnector.refreshDelay}")
 
-    case Status.Failure(e) if failuresCount < connector.maxRetryOnError =>
+    case Status.Failure(e) if failuresCount < CortexConnector.maxRetryOnError =>
       logger.error(
         s"CortexActor received ${failuresCount + 1} failure(s), last: ${e.getMessage}, " +
-          s"retrying again ${connector.maxRetryOnError - failuresCount} time(s)"
+          s"retrying again ${CortexConnector.maxRetryOnError - failuresCount} time(s)"
       )
       context.become(receive(checkedJobs, failuresCount + 1))
 

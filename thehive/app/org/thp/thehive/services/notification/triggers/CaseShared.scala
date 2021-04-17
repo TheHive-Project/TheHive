@@ -5,11 +5,9 @@ import org.thp.thehive.models.{Audit, Organisation}
 import play.api.Configuration
 import play.api.libs.json.Json
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class CaseShareProvider @Inject() extends TriggerProvider {
+class CaseShareProvider extends TriggerProvider {
   override val name: String                               = "CaseShared"
   override def apply(config: Configuration): Try[Trigger] = Success(new CaseShared())
 }

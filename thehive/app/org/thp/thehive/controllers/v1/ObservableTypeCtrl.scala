@@ -12,10 +12,7 @@ import org.thp.thehive.models.{ObservableType, Permissions}
 import org.thp.thehive.services.ObservableTypeSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class ObservableTypeCtrl @Inject() (
+class ObservableTypeCtrl(
     val entrypoint: Entrypoint,
     db: Database,
     observableTypeSrv: ObservableTypeSrv

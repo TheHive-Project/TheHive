@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -17,20 +18,22 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class OrganisationSrv @Inject() (
-    taxonomySrvProvider: Provider[TaxonomySrv],
-    roleSrv: RoleSrv,
-    profileSrv: ProfileSrv,
-    auditSrv: AuditSrv,
-    userSrv: UserSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+class OrganisationSrv(
+    _taxonomySrv: => TaxonomySrv,
+    _roleSrv: => RoleSrv,
+    _profileSrv: => ProfileSrv,
+    _auditSrv: => AuditSrv,
+    _userSrv: => UserSrv,
+    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
     cache: SyncCacheApi
 ) extends VertexSrv[Organisation] {
-  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
+  lazy val taxonomySrv: TaxonomySrv = _taxonomySrv
+  lazy val roleSrv: RoleSrv         = _roleSrv
+  lazy val profileSrv: ProfileSrv   = _profileSrv
+  lazy val auditSrv: AuditSrv       = _auditSrv
+  lazy val userSrv: UserSrv         = _userSrv
   val organisationOrganisationSrv   = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
   val organisationShareSrv          = new EdgeSrv[OrganisationShare, Organisation, Share]
   val organisationTaxonomySrv       = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
@@ -210,7 +213,7 @@ object OrganisationOps {
 
 }
 
-class OrganisationIntegrityCheckOps @Inject() (val db: Database, val service: OrganisationSrv) extends IntegrityCheckOps[Organisation] {
+class OrganisationIntegrityCheckOps(val db: Database, val service: OrganisationSrv) extends IntegrityCheckOps[Organisation] {
   override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>

@@ -11,11 +11,9 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PageOps._
 import play.api.libs.json.Json
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Try
 
-@Singleton
-class PageSrv @Inject() (organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page] {
+class PageSrv(organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page] {
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 

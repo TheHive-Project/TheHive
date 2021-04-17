@@ -13,12 +13,10 @@ import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvid
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json, OWrites}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
 
-@Singleton
-class RunResponderProvider @Inject() (
+class RunResponderProvider(
     responderSrv: ResponderSrv,
     actionSrv: ActionSrv,
     taskSrv: TaskSrv,

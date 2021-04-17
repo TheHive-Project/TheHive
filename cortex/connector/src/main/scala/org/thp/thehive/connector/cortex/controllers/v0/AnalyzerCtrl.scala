@@ -7,11 +7,9 @@ import org.thp.thehive.connector.cortex.services.AnalyzerSrv
 import org.thp.thehive.controllers.v0.Conversion._
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
-@Singleton
-class AnalyzerCtrl @Inject() (
+class AnalyzerCtrl(
     entrypoint: Entrypoint,
     analyzerSrv: AnalyzerSrv,
     implicit val system: ActorSystem,

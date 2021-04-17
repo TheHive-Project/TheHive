@@ -10,7 +10,6 @@
         "url": "https://github.com/TheHive-Project/TheHive/issues"
     },
     "homepage": "https://thehive-project.org/",
-    "dependencies": {},
     "devDependencies": {
         "autoprefixer": "^9.7.6",
         "grunt": "^1.1.0",

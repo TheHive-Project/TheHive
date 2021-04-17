@@ -6,8 +6,6 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 
-import javax.inject.{Inject, Singleton}
-
 case class InCase(caseId: EntityId)
 case class InAlert(alertId: EntityId)
 
@@ -24,8 +22,7 @@ object OutputParam {
   }
 }
 
-@Singleton
-class TheHiveQueryExecutor @Inject() (
+class TheHiveQueryExecutor(
     appConfig: ApplicationConfig,
     alertCtrl: AlertCtrl,
     auditCtrl: AuditCtrl,

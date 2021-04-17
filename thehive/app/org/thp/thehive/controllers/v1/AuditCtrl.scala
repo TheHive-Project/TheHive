@@ -12,11 +12,9 @@ import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.{AuditSrv, OrganisationSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
-@Singleton
-class AuditCtrl @Inject() (
+class AuditCtrl(
     entrypoint: Entrypoint,
     db: Database,
     properties: Properties,

@@ -1,6 +1,5 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import com.google.inject.name.Named
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
@@ -18,18 +17,15 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.ObservableSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton
-class JobCtrl @Inject() (
+class JobCtrl(
     override val entrypoint: Entrypoint,
     override val db: Database,
     jobSrv: JobSrv,
     observableSrv: ObservableSrv,
-    errorHandler: ErrorHandler,
     implicit val ec: ExecutionContext,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicJob
 ) extends QueryCtrl {
   def get(jobId: String): Action[AnyContent] =
@@ -59,7 +55,7 @@ class JobCtrl @Inject() (
               c <- observableSrv.get(EntityIdOrName(artifactId)).`case`.getOrFail("Case")
             } yield (o, c)
           }.fold(
-            error => errorHandler.onServerError(request, error),
+            error => ErrorHandler.onServerError(request, error),
             {
               case (o, c) =>
                 jobSrv
@@ -71,8 +67,7 @@ class JobCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
+class PublicJob(jobSrv: JobSrv) extends PublicData with JobRenderer {
   override val entityName: String = "job"
   override val initialQuery: Query =
     Query.init[Traversal.V[Job]]("listJob", (graph, authContext) => jobSrv.startTraversal(graph).visible(authContext))

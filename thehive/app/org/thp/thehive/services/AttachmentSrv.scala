@@ -18,14 +18,11 @@ import play.api.Configuration
 
 import java.io.InputStream
 import java.nio.file.Files
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 import scala.util.Try
 
-@Singleton
-class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: StorageSrv)(implicit
-    mat: Materializer
-) extends VertexSrv[Attachment] {
+class AttachmentSrv(configuration: Configuration, storageSrv: StorageSrv, mat: Materializer) extends VertexSrv[Attachment] {
+  implicit val _mat: Materializer = mat
 
   val hashers: Hasher = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
 

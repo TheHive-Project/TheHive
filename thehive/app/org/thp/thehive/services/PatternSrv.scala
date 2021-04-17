@@ -13,11 +13,9 @@ import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ProcedureOps._
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class PatternSrv @Inject() (
+class PatternSrv(
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
     organisationSrv: OrganisationSrv

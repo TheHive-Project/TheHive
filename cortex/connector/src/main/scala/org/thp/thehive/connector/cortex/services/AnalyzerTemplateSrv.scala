@@ -15,13 +15,11 @@ import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.zip.{ZipEntry, ZipFile}
-import javax.inject.{Inject, Singleton}
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Try}
 
-@Singleton
-class AnalyzerTemplateSrv @Inject() (
+class AnalyzerTemplateSrv(
     auditSrv: CortexAuditSrv,
     organisationSrv: OrganisationSrv
 ) extends VertexSrv[AnalyzerTemplate] {

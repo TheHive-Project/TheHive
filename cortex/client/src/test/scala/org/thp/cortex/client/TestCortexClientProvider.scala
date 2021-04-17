@@ -11,12 +11,12 @@ import play.api.test.Helpers._
 
 import java.net.URLEncoder
 import java.nio.file.{Path, Paths}
-import javax.inject.{Inject, Provider}
+import javax.inject.Provider
 import scala.concurrent.ExecutionContext
 import scala.io.Source
 import scala.util.matching.Regex
 
-class TestCortexClientProvider @Inject() (Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
+class TestCortexClientProvider(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
     extends Provider[CortexClient] {
   lazy val analyzers: Seq[OutputWorker]  = readResourceAsJson("/analyzers.json").as[Seq[OutputWorker]]
   lazy val jobs: Seq[OutputJob]          = readResourceAsJson("/jobs.json").as[Seq[OutputJob]]

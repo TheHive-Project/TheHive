@@ -12,6 +12,7 @@ import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.scalligraph.{CreateError, EntityId, EntityName, RichSeq}
+import org.thp.thehive.connector.misp.MispConnector
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -23,14 +24,11 @@ import play.api.libs.json._
 
 import java.nio.file.Files
 import java.util.Date
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class MispImportSrv @Inject() (
-    connector: Connector,
+class MispImportSrv(
     alertSrv: AlertSrv,
     observableSrv: ObservableSrv,
     organisationSrv: OrganisationSrv,
@@ -80,7 +78,7 @@ class MispImportSrv @Inject() (
   def convertAttributeType(attributeCategory: String, attributeType: String)(implicit
       graph: Graph
   ): Try[(ObservableType with Entity, Seq[String])] = {
-    val obsTypeFromConfig = connector
+    val obsTypeFromConfig = MispConnector
       .attributeConverter(attributeCategory, attributeType)
       .flatMap { attrConv =>
         observableTypeSrv

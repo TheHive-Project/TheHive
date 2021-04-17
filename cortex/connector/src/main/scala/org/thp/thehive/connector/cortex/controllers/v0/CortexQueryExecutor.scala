@@ -15,11 +15,9 @@ import org.thp.thehive.controllers.v0._
 import org.thp.thehive.models.Observable
 import org.thp.thehive.services.ObservableOps._
 
-import javax.inject.{Inject, Singleton}
 import scala.reflect.runtime.{universe => ru}
 
-@Singleton
-class CortexQueryExecutor @Inject() (
+class CortexQueryExecutor(
     appConfig: ApplicationConfig,
     override val db: Database,
     job: PublicJob,

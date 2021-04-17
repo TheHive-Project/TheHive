@@ -1,8 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
-import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
-import com.google.inject.Injector
+import akka.actor.Actor
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
@@ -12,7 +10,6 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
-import org.thp.thehive.GuiceAkkaExtension
 import org.thp.thehive.models.{Audit, AuditContext}
 import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services.CaseOps._
@@ -21,7 +18,6 @@ import org.thp.thehive.services.TaskOps._
 import play.api.cache.SyncCacheApi
 
 import java.util.Date
-import javax.inject.{Inject, Provider, Singleton}
 import scala.concurrent.duration.FiniteDuration
 
 sealed trait FlowMessage
@@ -34,22 +30,23 @@ object FlowId {
 }
 case class AuditIds(ids: Seq[EntityId]) extends FlowMessage
 
-class FlowActor extends Actor {
+sealed trait FlowTag
+class FlowActor(
+    cache: SyncCacheApi,
+    caseSrv: CaseSrv,
+    observableSrv: ObservableSrv,
+    organisationSrv: OrganisationSrv,
+    taskSrv: TaskSrv,
+    db: Database,
+    appConfig: ApplicationConfig,
+    eventSrv: EventSrv,
+    auditSrv: AuditSrv
+) extends Actor {
 
-  lazy val injector: Injector               = GuiceAkkaExtension(context.system).injector
-  lazy val cache: SyncCacheApi              = injector.getInstance(classOf[SyncCacheApi])
-  lazy val auditSrv: AuditSrv               = injector.getInstance(classOf[AuditSrv])
-  lazy val caseSrv: CaseSrv                 = injector.getInstance(classOf[CaseSrv])
-  lazy val observableSrv: ObservableSrv     = injector.getInstance(classOf[ObservableSrv])
-  lazy val organisationSrv: OrganisationSrv = injector.getInstance(classOf[OrganisationSrv])
-  lazy val taskSrv: TaskSrv                 = injector.getInstance(classOf[TaskSrv])
-  lazy val db: Database                     = injector.getInstance(classOf[Database])
-  lazy val appConfig: ApplicationConfig     = injector.getInstance(classOf[ApplicationConfig])
   lazy val maxAgeConfig: ConfigItem[FiniteDuration, FiniteDuration] =
     appConfig.item[FiniteDuration]("flow.maxAge", "Max age of audit logs shown in initial flow")
   def fromDate: Date = new Date(System.currentTimeMillis() - maxAgeConfig.get.toMillis)
 
-  lazy val eventSrv: EventSrv   = injector.getInstance(classOf[EventSrv])
   override def preStart(): Unit = eventSrv.subscribe(StreamTopic(), self)
   override def postStop(): Unit = eventSrv.unsubscribe(StreamTopic(), self)
 
@@ -120,28 +117,5 @@ class FlowActor extends Actor {
           }
       }
     case _ =>
-  }
-}
-
-@Singleton
-class FlowActorProvider @Inject() (system: ActorSystem) extends Provider[ActorRef] {
-  override lazy val get: ActorRef = {
-    val singletonManager =
-      system.actorOf(
-        ClusterSingletonManager.props(
-          singletonProps = Props[FlowActor],
-          terminationMessage = PoisonPill,
-          settings = ClusterSingletonManagerSettings(system)
-        ),
-        name = "flowSingletonManager"
-      )
-
-    system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = singletonManager.path.toStringWithoutAddress,
-        settings = ClusterSingletonProxySettings(system)
-      ),
-      name = "flowSingletonProxy"
-    )
   }
 }

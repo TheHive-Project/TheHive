@@ -15,14 +15,13 @@ import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaxonomyOps._
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class TaxonomySrv @Inject() (organisationSrv: OrganisationSrv, tagSrv: TagSrv) extends VertexSrv[Taxonomy] {
-
-  val taxonomyTagSrv          = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
-  val organisationTaxonomySrv = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
+class TaxonomySrv(_organisationSrv: => OrganisationSrv, _tagSrv: => TagSrv) extends VertexSrv[Taxonomy] {
+  lazy val organisationSrv: OrganisationSrv = _organisationSrv
+  lazy val tagSrv: TagSrv                   = _tagSrv
+  val taxonomyTagSrv                        = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
+  val organisationTaxonomySrv               = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   def create(taxo: Taxonomy, tags: Seq[Tag with Entity])(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {

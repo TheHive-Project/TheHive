@@ -14,14 +14,11 @@ import org.thp.thehive.services.PageOps._
 import org.thp.thehive.services.{OrganisationSrv, PageSrv}
 import play.api.mvc._
 
-import javax.inject.{Inject, Named, Singleton}
-
-@Singleton
-class PageCtrl @Inject() (
+class PageCtrl(
     override val entrypoint: Entrypoint,
     pageSrv: PageSrv,
     override val db: Database,
-    @Named("v0") override val queryExecutor: QueryExecutor,
+    override val queryExecutor: QueryExecutor,
     override val publicData: PublicPage
 ) extends QueryCtrl {
   def get(idOrTitle: String): Action[AnyContent] =
@@ -67,8 +64,7 @@ class PageCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicPage @Inject() (pageSrv: PageSrv, organisationSrv: OrganisationSrv) extends PublicData {
+class PublicPage(pageSrv: PageSrv, organisationSrv: OrganisationSrv) extends PublicData {
   override val entityName: String = "page"
   override val initialQuery: Query =
     Query.init[Traversal.V[Page]]("listPage", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).pages)

@@ -1,12 +1,9 @@
 package org.thp.thehive.controllers.v0
 
-import akka.stream.Materializer
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.dto.v0.OutputTag
 import org.thp.thehive.services.TagSrv
-import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class TagCtrlTest extends PlaySpecification with TestAppBuilder {

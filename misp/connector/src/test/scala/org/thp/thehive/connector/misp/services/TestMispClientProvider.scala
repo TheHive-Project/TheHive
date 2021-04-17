@@ -8,11 +8,11 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{DefaultActionBuilder, Results}
 import play.api.test.Helpers.{GET, POST}
 
-import javax.inject.{Inject, Provider}
+import javax.inject.Provider
 import scala.concurrent.ExecutionContext
 import scala.io.Source
 
-class TestMispClientProvider @Inject() (Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
+class TestMispClientProvider(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
     extends Provider[TheHiveMispClient] {
   val baseUrl = "https://misp.test/"
 

@@ -3,6 +3,7 @@ package org.thp.thehive.controllers.v0
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import com.softwaremill.tagging.@@
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.{Database, UMapping}
@@ -16,19 +17,17 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
-@Singleton
-class AuditCtrl @Inject() (
+class AuditCtrl(
     override val entrypoint: Entrypoint,
     auditSrv: AuditSrv,
-    @Named("flow-actor") flowActor: ActorRef,
+    flowActor: ActorRef @@ FlowTag,
     override val publicData: PublicAudit,
     implicit override val db: Database,
     implicit val ec: ExecutionContext,
-    @Named("v0") override val queryExecutor: QueryExecutor
+    override val queryExecutor: QueryExecutor
 ) extends AuditRenderer
     with QueryCtrl {
   implicit val timeout: Timeout = Timeout(5.minutes)
@@ -63,8 +62,7 @@ class AuditCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicAudit @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
+class PublicAudit(auditSrv: AuditSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
     (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)

@@ -1,11 +1,11 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.{EntityIdOrName, _}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.{EntityIdOrName, _}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models._
@@ -17,11 +17,9 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{CaseSrv, OrganisationSrv, TaskSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.Success
 
-@Singleton
-class TaskCtrl @Inject() (
+class TaskCtrl(
     entrypoint: Entrypoint,
     db: Database,
     properties: Properties,

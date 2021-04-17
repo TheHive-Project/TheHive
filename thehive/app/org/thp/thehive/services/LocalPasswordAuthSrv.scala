@@ -10,7 +10,6 @@ import org.thp.thehive.models.User
 import play.api.mvc.RequestHeader
 import play.api.{Configuration, Logger}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
 object LocalPasswordAuthSrv {
@@ -67,8 +66,7 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
     }
 }
 
-@Singleton
-class LocalPasswordAuthProvider @Inject() (db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrvProvider {
+class LocalPasswordAuthProvider(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrvProvider {
   override val name: String                               = "local"
   override def apply(config: Configuration): Try[AuthSrv] = Success(new LocalPasswordAuthSrv(db, userSrv, localUserSrv))
 }

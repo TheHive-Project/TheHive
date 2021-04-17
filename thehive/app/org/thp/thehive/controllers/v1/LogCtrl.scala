@@ -15,10 +15,7 @@ import org.thp.thehive.services.{LogSrv, OrganisationSrv, TaskSrv}
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class LogCtrl @Inject() (
+class LogCtrl(
     entrypoint: Entrypoint,
     db: Database,
     properties: Properties,

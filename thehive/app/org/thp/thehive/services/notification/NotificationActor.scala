@@ -2,7 +2,7 @@ package org.thp.thehive.services.notification
 
 import akka.actor.{Actor, ActorIdentity, Identify}
 import akka.util.Timeout
-import org.thp.scalligraph.models.{Database, Entity, Schema}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -18,8 +18,6 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.{Format, JsValue, Json}
 import play.api.{Configuration, Logger}
 
-import javax.inject.Inject
-import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
@@ -40,9 +38,9 @@ object AuditNotificationMessage {
   implicit val format: Format[AuditNotificationMessage] = Json.format[AuditNotificationMessage]
 }
 
-class NotificationSrv @Inject() (
-    availableTriggers: immutable.Set[TriggerProvider],
-    availableNotifiers: immutable.Set[NotifierProvider]
+class NotificationSrv(
+    availableTriggers: Set[TriggerProvider],
+    availableNotifiers: Set[NotifierProvider]
 ) {
 
   val triggers: Map[String, TriggerProvider] = availableTriggers.map(t => t.name -> t).toMap
@@ -73,7 +71,8 @@ class NotificationSrv @Inject() (
     } yield notifier
 }
 
-class NotificationActor @Inject() (
+sealed trait NotificationTag
+class NotificationActor(
     configuration: Configuration,
     eventSrv: EventSrv,
     auditSrv: AuditSrv,
@@ -82,8 +81,7 @@ class NotificationActor @Inject() (
     userSrv: UserSrv,
     notificationSrv: NotificationSrv,
     cache: SyncCacheApi,
-    implicit val db: Database,
-    implicit val schema: Schema
+    db: Database
 ) extends Actor {
   import context.dispatcher
   lazy val logger: Logger = Logger(getClass)

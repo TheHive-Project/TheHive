@@ -1,22 +1,14 @@
 package org.thp.thehive.services
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable, PoisonPill, Props}
-import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
-import com.google.inject.util.Types
-import com.google.inject.{Injector, Key, TypeLiteral}
+import akka.actor.{Actor, Cancellable}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Schema}
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{GenIntegrityCheckOps, IntegrityCheckOps}
-import org.thp.thehive.GuiceAkkaExtension
 import play.api.Logger
 
 import java.util.concurrent.Executors
-import java.util.{Set => JSet}
-import javax.inject.{Inject, Provider, Singleton}
-import scala.collection.JavaConverters._
-import scala.collection.immutable
 import scala.concurrent.duration.{Duration, FiniteDuration, NANOSECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Success}
@@ -50,20 +42,14 @@ case class CheckState(
     globalCheckRequestTime: Long
 )
 
-class IntegrityCheckActor() extends Actor {
+sealed trait IntegrityCheckTag
+class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrityCheckOps: Set[GenIntegrityCheckOps]) extends Actor {
 
   import context.dispatcher
 
-  lazy val logger: Logger               = Logger(getClass)
-  lazy val injector: Injector           = GuiceAkkaExtension(context.system).injector
-  lazy val appConfig: ApplicationConfig = injector.getInstance(classOf[ApplicationConfig])
-  lazy val integrityCheckOps: immutable.Set[IntegrityCheckOps[_ <: Product]] = injector
-    .getInstance(Key.get(TypeLiteral.get(Types.setOf(classOf[GenIntegrityCheckOps]))))
-    .asInstanceOf[JSet[IntegrityCheckOps[_ <: Product]]]
-    .asScala
-    .toSet
-  lazy val db: Database                            = injector.getInstance(classOf[Database])
-  lazy val schema: Schema                          = injector.getInstance(classOf[Schema])
+  lazy val logger: Logger = Logger(getClass)
+  lazy val integrityCheckOps: Set[IntegrityCheckOps[_ <: Product]] = _integrityCheckOps
+    .asInstanceOf[Set[IntegrityCheckOps[_ <: Product]]]
   lazy val checkExecutionContext: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
 
   val defaultInitialDelayConfig: ConfigItem[FiniteDuration, FiniteDuration] =
@@ -80,12 +66,6 @@ class IntegrityCheckActor() extends Actor {
     appConfig.item[FiniteDuration]("integrityCheck.default.globalInterval", "Default interval between two global checks")
 
   def defaultGlobalCheckInterval: FiniteDuration = defaultGlobalCheckIntervalConfig.get
-
-  integrityCheckOps.map(_.name).foreach { name =>
-    appConfig.item[FiniteDuration](s"integrityCheck.$name.initialDelay", s"Delay between the creation of data and the check for $name")
-    appConfig.item[FiniteDuration](s"integrityCheck.$name.interval", s"Interval between two checks for $name")
-    appConfig.item[FiniteDuration](s"integrityCheck.$name.globalInterval", s"Interval between two global checks for $name")
-  }
 
   def initialDelay(name: String): FiniteDuration =
     appConfig
@@ -119,6 +99,13 @@ class IntegrityCheckActor() extends Actor {
 
   override def preStart(): Unit = {
     super.preStart()
+
+    integrityCheckOps.map(_.name).foreach { name =>
+      appConfig.item[FiniteDuration](s"integrityCheck.$name.initialDelay", s"Delay between the creation of data and the check for $name")
+      appConfig.item[FiniteDuration](s"integrityCheck.$name.interval", s"Interval between two checks for $name")
+      appConfig.item[FiniteDuration](s"integrityCheck.$name.globalInterval", s"Interval between two global checks for $name")
+    }
+
     implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
     integrityCheckOps.foreach { integrityCheck =>
       db.tryTransaction { implicit graph =>
@@ -225,28 +212,5 @@ class IntegrityCheckActor() extends Actor {
 
     case GetCheckStats(name) =>
       sender() ! states.getOrElse(name, CheckStats(Map("checkNotFound" -> 1L), Map("checkNotFound" -> 1L), 0L))
-  }
-}
-
-@Singleton
-class IntegrityCheckActorProvider @Inject() (system: ActorSystem) extends Provider[ActorRef] {
-  override lazy val get: ActorRef = {
-    val singletonManager =
-      system.actorOf(
-        ClusterSingletonManager.props(
-          singletonProps = Props[IntegrityCheckActor],
-          terminationMessage = PoisonPill,
-          settings = ClusterSingletonManagerSettings(system)
-        ),
-        name = "integrityCheckSingletonManager"
-      )
-
-    system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = singletonManager.path.toStringWithoutAddress,
-        settings = ClusterSingletonProxySettings(system)
-      ),
-      name = "integrityCheckSingletonProxy"
-    )
   }
 }

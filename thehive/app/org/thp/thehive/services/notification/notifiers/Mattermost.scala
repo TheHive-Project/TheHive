@@ -10,7 +10,6 @@ import play.api.libs.json.{Json, Reads, Writes}
 import play.api.libs.ws.WSClient
 import play.api.{Configuration, Logger}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
@@ -20,8 +19,7 @@ object MattermostNotification {
   implicit val writes: Writes[MattermostNotification] = Json.writes[MattermostNotification]
 }
 
-@Singleton
-class MattermostProvider @Inject() (appConfig: ApplicationConfig, ec: ExecutionContext, schema: Schema, mat: Materializer) extends NotifierProvider {
+class MattermostProvider(appConfig: ApplicationConfig, ec: ExecutionContext, schema: Schema, mat: Materializer) extends NotifierProvider {
   override val name: String                            = "Mattermost"
   implicit val optionStringRead: Reads[Option[String]] = Reads.optionNoError[String]
 

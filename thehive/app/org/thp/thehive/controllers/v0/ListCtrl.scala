@@ -12,11 +12,9 @@ import org.thp.thehive.services.CustomFieldSrv
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success}
 
-@Singleton
-class ListCtrl @Inject() (
+class ListCtrl(
     entrypoint: Entrypoint,
     db: Database,
     customFieldSrv: CustomFieldSrv

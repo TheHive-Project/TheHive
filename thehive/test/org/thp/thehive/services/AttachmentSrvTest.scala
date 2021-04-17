@@ -1,9 +1,5 @@
 package org.thp.thehive.services
 
-import java.io.{File, InputStream}
-import java.nio.file.{Path, Files => JFiles}
-import java.util.UUID
-
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
@@ -14,6 +10,9 @@ import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.test.{NoTemporaryFileCreator, PlaySpecification}
 
+import java.io.{File, InputStream}
+import java.nio.file.{Path, Files => JFiles}
+import java.util.UUID
 import scala.annotation.tailrec
 
 class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {

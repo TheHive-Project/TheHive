@@ -14,11 +14,9 @@ import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Try}
 
-@Singleton
-class EntityHelper @Inject() (
+class EntityHelper(
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     alertSrv: AlertSrv,

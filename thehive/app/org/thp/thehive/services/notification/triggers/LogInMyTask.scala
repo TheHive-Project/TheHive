@@ -10,11 +10,9 @@ import org.thp.thehive.services.LogSrv
 import org.thp.thehive.services.TaskOps._
 import play.api.Configuration
 
-import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
-@Singleton
-class LogInMyTaskProvider @Inject() (logSrv: LogSrv) extends TriggerProvider {
+class LogInMyTaskProvider(logSrv: LogSrv) extends TriggerProvider {
   override val name: String                               = "LogInMyTask"
   override def apply(config: Configuration): Try[Trigger] = Success(new LogInMyTask(logSrv))
 }

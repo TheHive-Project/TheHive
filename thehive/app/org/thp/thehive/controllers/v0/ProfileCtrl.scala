@@ -13,16 +13,14 @@ import org.thp.thehive.services.ProfileOps._
 import org.thp.thehive.services.ProfileSrv
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.Failure
 
-@Singleton
-class ProfileCtrl @Inject() (
+class ProfileCtrl(
     override val entrypoint: Entrypoint,
     profileSrv: ProfileSrv,
     override val publicData: PublicProfile,
     implicit val db: Database,
-    @Named("v0") override val queryExecutor: QueryExecutor
+    override val queryExecutor: QueryExecutor
 ) extends QueryCtrl {
   def create: Action[AnyContent] =
     entrypoint("create profile")
@@ -69,8 +67,7 @@ class ProfileCtrl @Inject() (
       }
 }
 
-@Singleton
-class PublicProfile @Inject() (profileSrv: ProfileSrv) extends PublicData {
+class PublicProfile(profileSrv: ProfileSrv) extends PublicData {
   val entityName: String = "profile"
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](

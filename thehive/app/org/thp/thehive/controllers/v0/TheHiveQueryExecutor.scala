@@ -9,7 +9,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.RichType
-import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, GlobalQueryExecutor}
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -18,7 +18,6 @@ import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
 
-import javax.inject.{Inject, Provider, Singleton}
 import scala.reflect.runtime.{universe => ru}
 
 case class OutputParam(from: Long, to: Long, withStats: Boolean, withParents: Int)
@@ -35,8 +34,7 @@ object OutputParam {
   }
 }
 
-@Singleton
-class TheHiveQueryExecutor @Inject() (
+class TheHiveQueryExecutor(
     override val db: Database,
     appConfig: ApplicationConfig,
     alert: PublicAlert,
@@ -246,9 +244,4 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't child $childType"))
   }
-}
-
-@Singleton
-class QueryExecutorVersion0Provider @Inject() (globalQueryExecutor: GlobalQueryExecutor) extends Provider[QueryExecutor] {
-  override def get(): QueryExecutor = globalQueryExecutor.get(0)
 }

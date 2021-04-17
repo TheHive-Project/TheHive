@@ -1,29 +1,24 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import org.thp.cortex.client.{CortexClient, TestCortexClientProvider}
-import org.thp.scalligraph.AppBuilder
-import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.query.QueryExecutor
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.connector.cortex.models.TheHiveCortexSchemaProvider
-import org.thp.thehive.connector.cortex.services.{Connector, CortexActor, TestConnector}
 import org.thp.thehive.services.ObservableSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class JobCtrlTest extends PlaySpecification with TestAppBuilder {
   override val databaseName: String = "thehiveCortex"
-  override def appConfigure: AppBuilder =
-    super
-      .appConfigure
-      .`override`(
-        _.bindActor[CortexActor]("cortex-actor")
-          .bindToProvider[CortexClient, TestCortexClientProvider]
-          .bind[Connector, TestConnector]
-          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-          .bindNamedToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]("v0")
-      )
+//  override def appConfigure: AppBuilder =
+//    super
+//      .appConfigure
+//      .`override`(
+//        _.bindActor[CortexActor]("cortex-actor")
+//          .bindToProvider[CortexClient, TestCortexClientProvider]
+//          .bind[Connector, TestConnector]
+////          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
+//          .bindNamedToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]("v0")
+//      )
 
   "job controller" should {
     "get a job" in testApp { app =>

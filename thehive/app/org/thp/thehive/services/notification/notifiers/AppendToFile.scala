@@ -8,12 +8,10 @@ import play.api.Configuration
 
 import java.nio.charset.Charset
 import java.nio.file.{Files, Paths, StandardOpenOption}
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-@Singleton
-class AppendToFileProvider @Inject() (appConfig: ApplicationConfig, schema: Schema, ec: ExecutionContext) extends NotifierProvider {
+class AppendToFileProvider(appConfig: ApplicationConfig, schema: Schema, ec: ExecutionContext) extends NotifierProvider {
   override val name: String = "AppendToFile"
 
   val templateConfig: ConfigItem[String, String] =

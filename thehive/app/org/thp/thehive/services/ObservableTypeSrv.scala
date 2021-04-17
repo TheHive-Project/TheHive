@@ -1,6 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
@@ -10,11 +11,9 @@ import org.thp.scalligraph.{BadRequestError, CreateError, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.ObservableTypeOps._
 
-import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
-@Singleton
-class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[ObservableType] {
+class ObservableTypeSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ObservableType] {
 
   val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
 
@@ -53,7 +52,7 @@ object ObservableTypeOps {
   }
 }
 
-class ObservableTypeIntegrityCheckOps @Inject() (val db: Database, val service: ObservableTypeSrv) extends IntegrityCheckOps[ObservableType] {
+class ObservableTypeIntegrityCheckOps(val db: Database, val service: ObservableTypeSrv) extends IntegrityCheckOps[ObservableType] {
   override def resolve(entities: Seq[ObservableType with Entity])(implicit graph: Graph): Try[Unit] =
     entities match {
       case head :: tail =>
