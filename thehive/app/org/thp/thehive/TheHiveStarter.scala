@@ -1,29 +1,42 @@
 package org.thp.thehive
 
+import org.thp.scalligraph.ScalligraphApplicationImpl
 import play.api._
+import play.api.libs.concurrent.ActorSystemProvider.ApplicationShutdownReason
 import play.core.server.{RealServerProcess, ServerConfig, ServerProcess, ServerProvider}
 
 import java.io.File
 
-object DevStart extends App {
-  val process = new RealServerProcess(args)
-  val config  = readConfig(process)
+object TheHiveStarter extends App {
 
-  val application: Application = {
-    val environment = Environment(config.rootDir, process.classLoader, Mode.Dev)
-    val context     = ApplicationLoader.Context.create(environment)
-    val loader      = ApplicationLoader(context)
-    loader.load(context)
-  }
-  Play.start(application)
+  val mode: Mode = if (args.contains("--dev")) Mode.Dev else Mode.Prod
+  startService(mode)
 
-  // Start the server
-  val serverProvider = ServerProvider.fromConfiguration(process.classLoader, config.configuration)
-  val server         = serverProvider.createServer(config, application)
+  def startService(mode: Mode): Unit = {
+    val process = new RealServerProcess(args)
+    val config  = readConfig(process)
 
-  process.addShutdownHook {
-    if (application.coordinatedShutdown.shutdownReason().isEmpty)
-      server.stop()
+    val application = {
+      val scalligraphApplication = new ScalligraphApplicationImpl(config.rootDir, process.classLoader, mode)
+      try {
+        scalligraphApplication.router
+        scalligraphApplication.application
+      } catch {
+        case e: Throwable =>
+          scalligraphApplication.coordinatedShutdown.run(ApplicationShutdownReason).map(_ => System.exit(1))(scalligraphApplication.executionContext)
+          throw e
+      }
+    }
+    Play.start(application)
+
+    // Start the server
+    val serverProvider = ServerProvider.fromConfiguration(process.classLoader, config.configuration)
+    val server         = serverProvider.createServer(config, application)
+
+    process.addShutdownHook {
+      if (application.coordinatedShutdown.shutdownReason().isEmpty)
+        server.stop()
+    }
   }
 
   def readConfig(process: ServerProcess) = {

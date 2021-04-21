@@ -1,11 +1,8 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputPage
-import org.thp.thehive.services.PageSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -15,7 +12,7 @@ class PageCtrlTest extends PlaySpecification with TestAppBuilder {
 //      val request = FakeRequest("POST", "/api/page")
 //        .withHeaders("user" -> "certuser@thehive.local")
 //        .withJsonBody(Json.parse(s"""{"title": "$title", "content": "$content", "slug": "$slug", "category": "$cat", "order": $order}"""))
-//      val result = app[PageCtrl].create(request)
+//      val result = pageCtrl.create(request)
 //
 //      status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 //
@@ -24,10 +21,12 @@ class PageCtrlTest extends PlaySpecification with TestAppBuilder {
 
   s"page controller" should {
     "create a simple page if allowed" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("POST", "/api/page")
         .withHeaders("user" -> "certadmin@thehive.local")
         .withJsonBody(Json.parse(s"""{"title": "test title", "content": "test content", "category": "test cat", "order": 0}"""))
-      val result = app[PageCtrl].create(request)
+      val result = pageCtrl.create(request)
 
       status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
@@ -41,9 +40,11 @@ class PageCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a page by id or title" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("GET", s"/api/page/how_to_create_a_case")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[PageCtrl].get("how_to_create_a_case")(request)
+      val result = pageCtrl.get("how_to_create_a_case")(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultPage = contentAsJson(result).as[OutputPage]
@@ -52,10 +53,12 @@ class PageCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a page if allowed" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("PATCH", s"/api/page/how_to_create_a_case")
         .withHeaders("user" -> "certadmin@thehive.local")
         .withJsonBody(Json.parse("""{"title": "lol"}"""))
-      val result = app[PageCtrl].update("how_to_create_a_case")(request)
+      val result = pageCtrl.update("how_to_create_a_case")(request)
 
       status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val r = contentAsJson(result).as[OutputPage]
@@ -64,13 +67,17 @@ class PageCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "remove a page" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("DELETE", s"/api/page/how_to_create_a_case")
         .withHeaders("user" -> "certadmin@thehive.local")
-      val result = app[PageCtrl].delete("how_to_create_a_case")(request)
+      val result = pageCtrl.delete("how_to_create_a_case")(request)
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      app[Database].roTransaction { implicit graph =>
-        app[PageSrv].get(EntityName("how_to_create_a_case")).exists
+      database.roTransaction { implicit graph =>
+        pageSrv.get(EntityName("how_to_create_a_case")).exists
       } must beFalse
     }
   }

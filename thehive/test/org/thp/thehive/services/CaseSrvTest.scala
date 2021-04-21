@@ -8,7 +8,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityName}
-import org.thp.thehive.TestAppBuilder
+
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.LogOps._
@@ -28,14 +28,20 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
   "case service" should {
 
     "list all cases" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].startTraversal.toSeq.map(_.number) must contain(allOf(1, 2, 3))
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        caseSrv.startTraversal.toSeq.map(_.number) must contain(allOf(1, 2, 3))
       }
     }
 
     "get a case without impact status" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        val richCase = app[CaseSrv].get(EntityName("1")).richCase.head
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        val richCase = caseSrv.get(EntityName("1")).richCase.head
         richCase must_== RichCase(
           richCase._id,
           authContext.userId,
@@ -67,7 +73,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.manageAnalyse,
             Permissions.manageShare,
             Permissions.managePage,
-            Permissions.accessTheHiveFS
+            Permissions.accessTheHiveFS,
+            Permissions.manageProcedure
           ),
           richCase.`case`.organisationIds
         )
@@ -76,8 +83,11 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a case with impact status" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        val richCase = app[CaseSrv].get(EntityName("2")).richCase.head
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        val richCase = caseSrv.get(EntityName("2")).richCase.head
         richCase must_== RichCase(
           richCase._id,
           authContext.userId,
@@ -109,7 +119,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
             Permissions.manageAnalyse,
             Permissions.manageShare,
             Permissions.managePage,
-            Permissions.accessTheHiveFS
+            Permissions.accessTheHiveFS,
+            Permissions.manageProcedure
           ),
           richCase.`case`.organisationIds
         )
@@ -119,9 +130,12 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a case with custom fields" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
         val richCase =
-          app[CaseSrv].get(EntityName("3")).richCase(DummyUserSrv(userId = "socuser@thehive.local", organisation = "soc").authContext).head
+          caseSrv.get(EntityName("3")).richCase(DummyUserSrv(userId = "socuser@thehive.local", organisation = "soc").authContext).head
         richCase.number must_=== 3
         richCase.title must_=== "case#3"
         richCase.description must_=== "description of case #3"
@@ -147,77 +161,101 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "add custom field with wrong type" in testApp { app =>
-      app[Database].transaction { implicit graph =>
-        app[CaseSrv].getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
-          app[CaseSrv].setOrCreateCustomField(`case`, EntityName("boolean1"), Some("plop"), None) must beFailedTry
+      import app._
+      import app.thehiveModule._
+
+      database.transaction { implicit graph =>
+        caseSrv.getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
+          caseSrv.setOrCreateCustomField(`case`, EntityName("boolean1"), Some("plop"), None) must beFailedTry
         }
       }
     }
 
     "add custom field" in testApp { app =>
-      app[Database].transaction { implicit graph =>
-        app[CaseSrv].getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
-          app[CaseSrv].setOrCreateCustomField(`case`, EntityName("boolean1"), Some(true), None) must beSuccessfulTry
-          app[CaseSrv].getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)          must beSome.which(_ == true)
+      import app._
+      import app.thehiveModule._
+
+      database.transaction { implicit graph =>
+        caseSrv.getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
+          caseSrv.setOrCreateCustomField(`case`, EntityName("boolean1"), Some(true), None) must beSuccessfulTry
+          caseSrv.getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)          must beSome.which(_ == true)
         }
       }
     }
 
     "update custom field" in testApp { app =>
-      app[Database].transaction { implicit graph =>
-        app[CaseSrv].getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
-          app[CaseSrv].setOrCreateCustomField(`case`, EntityName("boolean1"), Some(false), None) must beSuccessfulTry
-          app[CaseSrv].getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)           must beSome.which(_ == false)
+      import app._
+      import app.thehiveModule._
+
+      database.transaction { implicit graph =>
+        caseSrv.getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
+          caseSrv.setOrCreateCustomField(`case`, EntityName("boolean1"), Some(false), None) must beSuccessfulTry
+          caseSrv.getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)           must beSome.which(_ == false)
         }
       }
     }
 
     "update case title" in testApp { app =>
-      app[Database].transaction { implicit graph =>
-        app[CaseSrv].get(EntityName("3")).update(_.title, "new title").getOrFail("Case")
-        app[CaseSrv].getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
+      import app._
+      import app.thehiveModule._
+
+      database.transaction { implicit graph =>
+        caseSrv.get(EntityName("3")).update(_.title, "new title").getOrFail("Case")
+        caseSrv.getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
           `case`.title must_=== "new title"
         }
       }
     }
 
     "get correct next case number" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].nextCaseNumber shouldEqual 36
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        caseSrv.nextCaseNumber shouldEqual 36
       }
     }
 
     "close a case properly" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+
       val updates = Seq(PropertyUpdater(FPathElem("status"), CaseStatus.Resolved) { (vertex, _, _) =>
         vertex.property("status", CaseStatus.Resolved)
         Success(Json.obj("status" -> CaseStatus.Resolved))
       })
 
-      val r = app[Database].tryTransaction(implicit graph => app[CaseSrv].update(app[CaseSrv].get(EntityName("1")), updates))
+      val r = database.tryTransaction(implicit graph => caseSrv.update(caseSrv.get(EntityName("1")), updates))
 
       r must beSuccessfulTry
 
-      val updatedCase = app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityName("1")).getOrFail("Case").get)
+      val updatedCase = database.roTransaction(implicit graph => caseSrv.get(EntityName("1")).getOrFail("Case").get)
       updatedCase.status shouldEqual CaseStatus.Resolved
       updatedCase.endDate must beSome
     }
 
     "upsert case tags" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
         for {
-          c3 <- app[CaseSrv].get(EntityName("3")).getOrFail("Case")
-          _  <- app[CaseSrv].updateTags(c3, Set("t2", "yolo"))
-        } yield app[CaseSrv].get(c3).tags.toList.map(_.toString)
+          c3 <- caseSrv.get(EntityName("3")).getOrFail("Case")
+          _  <- caseSrv.updateTags(c3, Set("t2", "yolo"))
+        } yield caseSrv.get(c3).tags.toList.map(_.toString)
       } must beASuccessfulTry.which { tags =>
         tags must contain(exactly("t2", "yolo"))
       }
     }
 
     "add new tags and not previous ones" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+
       // Create a case with tags first
-      val c = app[Database].tryTransaction { implicit graph =>
-        val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
-        app[CaseSrv].create(
+      val c = database.tryTransaction { implicit graph =>
+        val organisation = organisationSrv.getOrFail(EntityName("cert")).get
+        caseSrv.create(
           Case(
             title = "case 5",
             description = "desc 5",
@@ -243,30 +281,33 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
 
       val currentLen = c.tags.length
 
-      app[Database].tryTransaction(implicit graph => app[CaseSrv].addTags(c.`case`, Set("tag1", "tag3"))) must beSuccessfulTry
+      database.tryTransaction(implicit graph => caseSrv.addTags(c.`case`, Set("tag1", "tag3"))) must beSuccessfulTry
 
-      app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].startTraversal.has(_.title, "case 5").tags.toList.length shouldEqual currentLen + 1
+      database.roTransaction { implicit graph =>
+        caseSrv.startTraversal.has(_.title, "case 5").tags.toList.length shouldEqual currentLen + 1
       }
     }
 
     "add an observable if not existing" in testApp { app =>
-      //      app[Database].roTransaction { implicit graph =>
-      //        val c1          = app[CaseSrv].get(EntityName("1")).getOrFail("Case").get
-      //        val observables = app[ObservableSrv].startTraversal.richObservable.toList
+//      import app._
+//      import app.thehiveModule._
+
+      //      database.roTransaction { implicit graph =>
+      //        val c1          = caseSrv.get(EntityName("1")).getOrFail("Case").get
+      //        val observables = observableSrv.startTraversal.richObservable.toList
       //
       //        observables must not(beEmpty)
       //
       //        val hfr = observables.find(_.message.contains("Some weird domain")).get
       //
-      //        app[Database].tryTransaction { implicit graph =>
-      ////          app[CaseSrv].addObservable(c1, hfr)
-      //          app[CaseSrv].createObservable(c1, hfr, hfr.data.get)
+      //        database.tryTransaction { implicit graph =>
+      ////          caseSrv.addObservable(c1, hfr)
+      //          caseSrv.createObservable(c1, hfr, hfr.data.get)
       //        }.get must throwA[CreateError]
       //
-      //        val newObs = app[Database].tryTransaction { implicit graph =>
-      //          val organisation = app[OrganisationSrv].current.getOrFail("Organisation").get
-      //          app[ObservableSrv].create(
+      //        val newObs = database.tryTransaction { implicit graph =>
+      //          val organisation = organisationSrv.current.getOrFail("Organisation").get
+      //          observableSrv.create(
       //            Observable(
       //              message = Some("if you feel lost"),
       //              tlp = 1,
@@ -282,17 +323,20 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       //          )
       //        }.get
       //
-      //        app[Database].tryTransaction { implicit graph =>
-      //          app[CaseSrv].addObservable(c1, newObs)
+      //        database.tryTransaction { implicit graph =>
+      //          caseSrv.addObservable(c1, newObs)
       //        } must beSuccessfulTry
       //      }
       pending
     }
 
     "remove a case and its dependencies" in testApp { app =>
-      val c1 = app[Database].tryTransaction { implicit graph =>
-        val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
-        app[CaseSrv].create(
+      import app._
+      import app.thehiveModule._
+
+      val c1 = database.tryTransaction { implicit graph =>
+        val organisation = organisationSrv.getOrFail(EntityName("cert")).get
+        caseSrv.create(
           Case(
             title = "case 9",
             description = "desc 9",
@@ -314,18 +358,21 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         )
       }.get
 
-      app[Database].tryTransaction(implicit graph => app[CaseSrv].delete(c1.`case`)) must beSuccessfulTry
-      app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].get(c1._id).exists must beFalse
+      database.tryTransaction(implicit graph => caseSrv.delete(c1.`case`)) must beSuccessfulTry
+      database.roTransaction { implicit graph =>
+        caseSrv.get(c1._id).exists must beFalse
       }
     }
 
     "set or unset case impact status" in testApp { app =>
-      app[Database]
+      import app._
+      import app.thehiveModule._
+
+      database
         .tryTransaction { implicit graph =>
           for {
-            organisation <- app[OrganisationSrv].getOrFail(EntityName("cert"))
-            case0 <- app[CaseSrv].create(
+            organisation <- organisationSrv.getOrFail(EntityName("cert"))
+            case0 <- caseSrv.create(
               Case(
                 title = "case 6",
                 description = "desc 6",
@@ -346,20 +393,23 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
               Nil
             )
 
-            _ = app[CaseSrv].get(case0._id).impactStatus.exists must beFalse
-            _ <- app[CaseSrv].setImpactStatus(case0.`case`, "WithImpact")
-            _ <- app[CaseSrv].get(case0._id).impactStatus.getOrFail("Case")
-            _ <- app[CaseSrv].unsetImpactStatus(case0.`case`)
-            _ = app[CaseSrv].get(case0._id).impactStatus.exists must beFalse
+            _ = caseSrv.get(case0._id).impactStatus.exists must beFalse
+            _ <- caseSrv.setImpactStatus(case0.`case`, "WithImpact")
+            _ <- caseSrv.get(case0._id).impactStatus.getOrFail("Case")
+            _ <- caseSrv.unsetImpactStatus(case0.`case`)
+            _ = caseSrv.get(case0._id).impactStatus.exists must beFalse
           } yield ()
         } must beASuccessfulTry
     }
 
     "set or unset case resolution status" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        val c7 = app[Database].tryTransaction { implicit graph =>
-          val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
-          app[CaseSrv].create(
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        val c7 = database.tryTransaction { implicit graph =>
+          val organisation = organisationSrv.getOrFail(EntityName("cert")).get
+          caseSrv.create(
             Case(
               title = "case 7",
               description = "desc 7",
@@ -381,20 +431,23 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           )
         }.get
 
-        app[CaseSrv].get(c7._id).resolutionStatus.exists                                                          must beFalse
-        app[Database].tryTransaction(implicit graph => app[CaseSrv].setResolutionStatus(c7.`case`, "Duplicated")) must beSuccessfulTry
-        app[Database].roTransaction(implicit graph => app[CaseSrv].get(c7._id).resolutionStatus.exists must beTrue)
-        app[Database].tryTransaction(implicit graph => app[CaseSrv].unsetResolutionStatus(c7.`case`)) must beSuccessfulTry
-        app[Database].roTransaction(implicit graph => app[CaseSrv].get(c7._id).resolutionStatus.exists must beFalse)
+        caseSrv.get(c7._id).resolutionStatus.exists                                                     must beFalse
+        database.tryTransaction(implicit graph => caseSrv.setResolutionStatus(c7.`case`, "Duplicated")) must beSuccessfulTry
+        database.roTransaction(implicit graph => caseSrv.get(c7._id).resolutionStatus.exists must beTrue)
+        database.tryTransaction(implicit graph => caseSrv.unsetResolutionStatus(c7.`case`)) must beSuccessfulTry
+        database.roTransaction(implicit graph => caseSrv.get(c7._id).resolutionStatus.exists must beFalse)
       }
     }
 
     "assign/unassign a case" in testApp { app =>
-      val c8 = app[Database]
+      import app._
+      import app.thehiveModule._
+
+      val c8 = database
         .tryTransaction { implicit graph =>
-          val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
-          val certuser     = app[UserSrv].getOrFail(EntityName("certuser@thehive.local")).get
-          app[CaseSrv].create(
+          val organisation = organisationSrv.getOrFail(EntityName("cert")).get
+          val certuser     = userSrv.getOrFail(EntityName("certuser@thehive.local")).get
+          caseSrv.create(
             Case(
               title = "case 8",
               description = "desc 8",
@@ -420,26 +473,32 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         .`case`
 
       def checkAssignee(status: Matcher[Boolean]) =
-        app[Database].roTransaction(implicit graph => app[CaseSrv].get(c8).assignee.exists must status)
+        database.roTransaction(implicit graph => caseSrv.get(c8).assignee.exists must status)
 
       checkAssignee(beTrue)
-      app[Database].tryTransaction(implicit graph => app[CaseSrv].unassign(c8)) must beSuccessfulTry
+      database.tryTransaction(implicit graph => caseSrv.unassign(c8)) must beSuccessfulTry
       checkAssignee(beFalse)
-      app[Database].tryTransaction(implicit graph =>
-        app[CaseSrv].assign(c8, app[UserSrv].get(EntityName("certuser@thehive.local")).getOrFail("Case").get)
+      database.tryTransaction(implicit graph =>
+        caseSrv.assign(c8, userSrv.get(EntityName("certuser@thehive.local")).getOrFail("Case").get)
       ) must beSuccessfulTry
       checkAssignee(beTrue)
     }
 
     "show only visible cases" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        app[CaseSrv].get(EntityName("3")).visible(app[OrganisationSrv]).getOrFail("Case") must beFailedTry
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        caseSrv.get(EntityName("3")).visible(organisationSrv).getOrFail("Case") must beFailedTry
       }
     }
 
     "forbid correctly case access" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        app[CaseSrv]
+      import app._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        caseSrv
           .get(EntityName("1"))
           .can(Permissions.manageCase)(DummyUserSrv(userId = "certro@thehive.local", organisation = "cert").authContext)
           .exists must beFalse
@@ -447,27 +506,33 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "show linked cases" in testApp { app =>
-      //      app[Database].roTransaction { implicit graph =>
-      //        app[CaseSrv].get(EntityName("1")).linkedCases must beEmpty
-      //        val observables = app[ObservableSrv].startTraversal.richObservable.toList
+      import app._
+      import app.thehiveModule._
+
+      //      database.roTransaction { implicit graph =>
+      //        caseSrv.get(EntityName("1")).linkedCases must beEmpty
+      //        val observables = observableSrv.startTraversal.richObservable.toList
       //        val hfr         = observables.find(_.message.contains("Some weird domain")).get
       //
-      //        app[Database].tryTransaction { implicit graph =>
-      //          app[CaseSrv].addObservable(app[CaseSrv].get(EntityName("2")).getOrFail("Case").get, hfr)
+      //        database.tryTransaction { implicit graph =>
+      //          caseSrv.addObservable(caseSrv.get(EntityName("2")).getOrFail("Case").get, hfr)
       //        }
       //
-      //        app[Database].roTransaction(implicit graph => app[CaseSrv].get(EntityName("1")).linkedCases must not(beEmpty))
+      //        database.roTransaction(implicit graph => caseSrv.get(EntityName("1")).linkedCases must not(beEmpty))
       //      }
       pending
     }
 
     "merge cases, happy path with one organisation" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
-        def case21 = app[CaseSrv].get(EntityName("21")).clone()
+      import app._
+      import app.thehiveModule._
 
-        def case22 = app[CaseSrv].get(EntityName("22")).clone()
+      database.tryTransaction { implicit graph =>
+        def case21 = caseSrv.get(EntityName("21")).clone()
 
-        def case23 = app[CaseSrv].get(EntityName("23")).clone()
+        def case22 = caseSrv.get(EntityName("22")).clone()
+
+        def case23 = caseSrv.get(EntityName("23")).clone()
         // Procedures
         case21.procedure.getCount must beEqualTo(1).updateMessage(s => s"$s: invalid number of procedure in case 21")
         case22.procedure.getCount must beEqualTo(2).updateMessage(s => s"$s: invalid number of procedure in case 22")
@@ -493,11 +558,11 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           c21     <- case21.getOrFail("Case")
           c22     <- case22.getOrFail("Case")
           c23     <- case23.getOrFail("Case")
-          newCase <- app[CaseSrv].merge(Seq(c21, c22, c23))
+          newCase <- caseSrv.merge(Seq(c21, c22, c23))
         } yield newCase
       } must beASuccessfulTry.which { richCase =>
-        app[Database].roTransaction { implicit graph =>
-          def mergedCase = app[CaseSrv].get(EntityName(richCase.number.toString)).clone()
+        database.roTransaction { implicit graph =>
+          def mergedCase = caseSrv.get(EntityName(richCase.number.toString)).clone()
 
           mergedCase.procedure.getCount    must beEqualTo(3).updateMessage(s => s"$s: invalid number of procedure in merged case")
           mergedCase.customFields.getCount must beEqualTo(2).updateMessage(s => s"$s: invalid number of customFields in merged case")
@@ -505,29 +570,35 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
           mergedCase.observables.getCount  must beEqualTo(3).updateMessage(s => s"$s: invalid number of observables in merged case")
           mergedCase.alert.getCount        must beEqualTo(1).updateMessage(s => s"$s: invalid number of alert in merged case")
 
-          app[CaseSrv].get(EntityName("21")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 21 is not removed")
-          app[CaseSrv].get(EntityName("22")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 22 is not removed")
-          app[CaseSrv].get(EntityName("23")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 23 is not removed")
+          caseSrv.get(EntityName("21")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 21 is not removed")
+          caseSrv.get(EntityName("22")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 22 is not removed")
+          caseSrv.get(EntityName("23")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 23 is not removed")
         }
       }
     }
 
     "refuse to merge cases with different shares" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
-        val case21 = app[CaseSrv].getOrFail(EntityName("21")).get
-        val case24 = app[CaseSrv].getOrFail(EntityName("24")).get
-        val case26 = app[CaseSrv].getOrFail(EntityName("26")).get
-        app[CaseSrv].merge(Seq(case21, case24, case26))
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
+        val case21 = caseSrv.getOrFail(EntityName("21")).get
+        val case24 = caseSrv.getOrFail(EntityName("24")).get
+        val case26 = caseSrv.getOrFail(EntityName("26")).get
+        caseSrv.merge(Seq(case21, case24, case26))
       } must beFailedTry.withThrowable[BadRequestError]
     }
 
     "merge cases, happy path with three organisations" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+
       implicit val authContext: AuthContext =
         DummyUserSrv(organisation = "soc", permissions = Profile.analyst.permissions).authContext
 
-      def getCase(number: Int)(implicit graph: Graph): Traversal.V[Case] = app[CaseSrv].getByName(number.toString)
+      def getCase(number: Int)(implicit graph: Graph): Traversal.V[Case] = caseSrv.getByName(number.toString)
 
-      app[Database].tryTransaction { implicit graph =>
+      database.tryTransaction { implicit graph =>
         // Tasks
         getCase(24).share(EntityName("cert")).tasks.getCount mustEqual 1
         getCase(24).share(EntityName("soc")).tasks.getCount mustEqual 2
@@ -543,10 +614,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         for {
           c24     <- getCase(24).getOrFail("Case")
           c25     <- getCase(25).getOrFail("Case")
-          newCase <- app[CaseSrv].merge(Seq(c24, c25))
+          newCase <- caseSrv.merge(Seq(c24, c25))
         } yield newCase
       } must beASuccessfulTry.which { richCase =>
-        app[Database].roTransaction { implicit graph =>
+        database.roTransaction { implicit graph =>
           getCase(richCase.number).share(EntityName("cert")).tasks.getCount mustEqual 1
           getCase(richCase.number).share(EntityName("soc")).tasks.getCount mustEqual 2
           getCase(richCase.number).share(EntityName("cert")).observables.getCount mustEqual 2
@@ -559,13 +630,16 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "cascade remove, case not shared" in testApp { app =>
-      app[Database].transaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.transaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert", permissions = Set(Permissions.manageCase)).authContext
 
-        def caze = app[CaseSrv].startTraversal.has(_.number, 35).getOrFail("Case")
+        def caze = caseSrv.startTraversal.has(_.number, 35).getOrFail("Case")
         caze must beSuccessfulTry
 
-        def taskTraversal = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-simple")
+        def taskTraversal = taskSrv.startTraversal.has(_.title, "task-cascade-remove-simple")
         def taskDelete    = taskTraversal.getOrFail("Task")
         def logs          = taskTraversal.logs.toSeq.size
         def logsAttach    = taskTraversal.logs.attachments.toSeq.size
@@ -573,13 +647,13 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
         logs       must beEqualTo(1)
         logsAttach must beEqualTo(1)
 
-        def obsTraversal = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-simple")
+        def obsTraversal = observableSrv.startTraversal.has(_.message, "obs-cascade-remove-simple")
         def obsDelete    = obsTraversal.getOrFail("Observable")
         def obsAttach    = obsTraversal.attachments.toSeq.size
         obsDelete must beSuccessfulTry
         obsAttach must beEqualTo(1)
 
-        app[CaseSrv].delete(caze.get) must beASuccessfulTry
+        caseSrv.delete(caze.get) must beASuccessfulTry
 
         taskDelete must beAFailedTry
         logs       must beEqualTo(0)
@@ -591,93 +665,97 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "cascade remove, shared" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        // Check users of soc have access to case 4
-        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
-
-        app[CaseSrv]
-          .startTraversal
-          .has(_.number, 34)
-          .getOrFail("Case") must beSuccessfulTry
-
-        app[TaskSrv]
-          .startTraversal
-          .has(_.title, "task-cascade-remove-unshare")
-          .getOrFail("Task") must beSuccessfulTry
-
-        app[ObservableSrv]
-          .startTraversal
-          .has(_.message, "obs-cascade-remove-unshare")
-          .getOrFail("Observable") must beSuccessfulTry
-      }
-
-      app[Database].transaction { implicit graph =>
-        // Check entities & cascade remove the case
-        implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert", permissions = Set(Permissions.manageCase)).authContext
-
-        def caze = app[CaseSrv].startTraversal.has(_.number, 34).getOrFail("Case")
-        caze must beSuccessfulTry
-
-        def taskTraversal  = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-delete")
-        def taskTraversal2 = app[TaskSrv].startTraversal.has(_.title, "task-cascade-remove-unshare")
-        def taskDelete     = taskTraversal.getOrFail("Task")
-        def taskUnshare    = taskTraversal2.getOrFail("Task")
-        def logs           = taskTraversal.logs.toSeq.size
-        def logs2          = taskTraversal2.logs.toSeq.size
-        def taskAttach     = taskTraversal.logs.attachments.toSeq.size
-        def taskAttach2    = taskTraversal2.logs.attachments.toSeq.size
-        taskDelete  must beSuccessfulTry
-        logs        must beEqualTo(1)
-        taskAttach  must beEqualTo(1)
-        taskUnshare must beSuccessfulTry
-        logs2       must beEqualTo(0)
-        taskAttach2 must beEqualTo(0)
-
-        def obsTraversal  = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-delete")
-        def obsTraversal2 = app[ObservableSrv].startTraversal.has(_.message, "obs-cascade-remove-unshare")
-        def obsDelete     = obsTraversal.getOrFail("Observable")
-        def obsUnshare    = obsTraversal2.getOrFail("Observable")
-        def obsAttach     = obsTraversal.attachments.toSeq.size
-        def obsAttach2    = obsTraversal2.attachments.toSeq.size
-        obsDelete  must beSuccessfulTry
-        obsAttach  must beEqualTo(1)
-        obsUnshare must beSuccessfulTry
-        obsAttach2 must beEqualTo(0)
-
-        app[CaseSrv].delete(caze.get) must beASuccessfulTry
-
-        caze        must beASuccessfulTry
-        taskDelete  must beAFailedTry
-        taskUnshare must beASuccessfulTry
-        logs        must beEqualTo(0)
-        taskAttach  must beEqualTo(0)
-        logs2       must beEqualTo(0)
-        taskAttach2 must beEqualTo(0)
-        obsDelete   must beAFailedTry
-        obsUnshare  must beASuccessfulTry
-        obsAttach   must beEqualTo(0)
-        obsAttach2  must beEqualTo(0)
-      }
-
-      app[Database].roTransaction { implicit graph =>
-        // Users of soc should still have access to case
-        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
-
-        app[CaseSrv]
-          .startTraversal
-          .has(_.number, 4)
-          .getOrFail("Case") must beSuccessfulTry
-
-        app[TaskSrv]
-          .startTraversal
-          .has(_.title, "task-cascade-remove-unshare")
-          .getOrFail("Task") must beSuccessfulTry
-
-        app[ObservableSrv]
-          .startTraversal
-          .has(_.message, "obs-cascade-remove-unshare")
-          .getOrFail("Observable") must beSuccessfulTry
-      }
+//      import app._
+//      import app.thehiveModule._
+//
+//      database.roTransaction { implicit graph =>
+//        // Check users of soc have access to case 4
+//        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
+//
+//        caseSrv
+//          .startTraversal
+//          .has(_.number, 34)
+//          .getOrFail("Case") must beSuccessfulTry
+//
+//        taskSrv
+//          .startTraversal
+//          .has(_.title, "task-cascade-remove-unshare")
+//          .getOrFail("Task") must beSuccessfulTry
+//
+//        observableSrv
+//          .startTraversal
+//          .has(_.message, "obs-cascade-remove-unshare")
+//          .getOrFail("Observable") must beSuccessfulTry
+//      }
+//
+//      database.transaction { implicit graph =>
+//        // Check entities & cascade remove the case
+//        implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert", permissions = Set(Permissions.manageCase)).authContext
+//
+//        def caze = caseSrv.startTraversal.has(_.number, 34).getOrFail("Case")
+//        caze must beSuccessfulTry
+//
+//        def taskTraversal  = taskSrv.startTraversal.has(_.title, "task-cascade-remove-delete")
+//        def taskTraversal2 = taskSrv.startTraversal.has(_.title, "task-cascade-remove-unshare")
+//        def taskDelete     = taskTraversal.getOrFail("Task")
+//        def taskUnshare    = taskTraversal2.getOrFail("Task")
+//        def logs           = taskTraversal.logs.toSeq.size
+//        def logs2          = taskTraversal2.logs.toSeq.size
+//        def taskAttach     = taskTraversal.logs.attachments.toSeq.size
+//        def taskAttach2    = taskTraversal2.logs.attachments.toSeq.size
+//        taskDelete  must beSuccessfulTry
+//        logs        must beEqualTo(1)
+//        taskAttach  must beEqualTo(1)
+//        taskUnshare must beSuccessfulTry
+//        logs2       must beEqualTo(0)
+//        taskAttach2 must beEqualTo(0)
+//
+//        def obsTraversal  = observableSrv.startTraversal.has(_.message, "obs-cascade-remove-delete")
+//        def obsTraversal2 = observableSrv.startTraversal.has(_.message, "obs-cascade-remove-unshare")
+//        def obsDelete     = obsTraversal.getOrFail("Observable")
+//        def obsUnshare    = obsTraversal2.getOrFail("Observable")
+//        def obsAttach     = obsTraversal.attachments.toSeq.size
+//        def obsAttach2    = obsTraversal2.attachments.toSeq.size
+//        obsDelete  must beSuccessfulTry
+//        obsAttach  must beEqualTo(1)
+//        obsUnshare must beSuccessfulTry
+//        obsAttach2 must beEqualTo(0)
+//
+//        caseSrv.delete(caze.get) must beASuccessfulTry
+//
+//        caze        must beASuccessfulTry
+//        taskDelete  must beAFailedTry
+//        taskUnshare must beASuccessfulTry
+//        logs        must beEqualTo(0)
+//        taskAttach  must beEqualTo(0)
+//        logs2       must beEqualTo(0)
+//        taskAttach2 must beEqualTo(0)
+//        obsDelete   must beAFailedTry
+//        obsUnshare  must beASuccessfulTry
+//        obsAttach   must beEqualTo(0)
+//        obsAttach2  must beEqualTo(0)
+//      }
+//
+//      database.roTransaction { implicit graph =>
+//        // Users of soc should still have access to case
+//        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc", permissions = Set(Permissions.manageCase)).authContext
+//
+//        caseSrv
+//          .startTraversal
+//          .has(_.number, 4)
+//          .getOrFail("Case") must beSuccessfulTry
+//
+//        taskSrv
+//          .startTraversal
+//          .has(_.title, "task-cascade-remove-unshare")
+//          .getOrFail("Task") must beSuccessfulTry
+//
+//        observableSrv
+//          .startTraversal
+//          .has(_.message, "obs-cascade-remove-unshare")
+//          .getOrFail("Observable") must beSuccessfulTry
+//      }
+      pending
     }
 
   }

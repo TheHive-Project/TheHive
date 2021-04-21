@@ -4,8 +4,7 @@ import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.services.{AuditSrv, CaseSrv, UserSrv}
+import org.thp.thehive.services.{AuditSrv, CaseSrv, TestAppBuilder, UserSrv}
 import play.api.test.PlaySpecification
 
 import java.util.{HashMap => JHashMap}
@@ -20,6 +19,8 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
 
   "template engine" should {
     "format message" in testApp { app =>
+      import app.thehiveModule._
+
       val template =
         """Dear {{user.name}},
           |you have a new notification:
@@ -51,7 +52,7 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
       model.put("object", Map("_type" -> "Case", "title" -> "case title").asJava)
       model.put("user", Map("name" -> "Thomas").asJava)
       model.put("context", Map("_id" -> "2231").asJava)
-      val message = templateEngine(app[Schema]).handlebars.compileInline(template).apply(model)
+      val message = templateEngine(schema).handlebars.compileInline(template).apply(model)
       message must beEqualTo("""Dear Thomas,
                                |you have a new notification:
                                |
@@ -65,6 +66,9 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
     }
 
     "build properly message" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+
       val template =
         """Dear {{user.name}},
           |you have a new notification:
@@ -82,14 +86,14 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
           |Audit ({{audit.requestId}}): {{audit.action}} {{audit.objectType}} {{audit.objectId}} by {{audit._createdBy}}
           |Context {{context._id}}""".stripMargin
 
-      val message = app[Database].tryTransaction { implicit graph =>
+      val message = database.tryTransaction { implicit graph =>
         for {
-          case4 <- app[CaseSrv].get(EntityName("1")).getOrFail("Case")
-          _     <- app[CaseSrv].addTags(case4, Set("emailer test"))
-          _     <- app[CaseSrv].addTags(case4, Set("emailer test")) // this is needed to make AuditSrv write Audit in DB
-          audit <- app[AuditSrv].startTraversal.has(_.objectId, case4._id.toString).getOrFail("Audit")
-          user  <- app[UserSrv].get(EntityName("certuser@thehive.local")).getOrFail("User")
-          msg   <- templateEngine(app[Schema]).buildMessage(template, audit, Some(case4), Some(case4), Some(user), "http://localhost/")
+          case4 <- caseSrv.get(EntityName("1")).getOrFail("Case")
+          _     <- caseSrv.addTags(case4, Set("emailer test"))
+          _     <- caseSrv.addTags(case4, Set("emailer test")) // this is needed to make AuditSrv write Audit in DB
+          audit <- auditSrv.startTraversal.has(_.objectId, case4._id.toString).getOrFail("Audit")
+          user  <- userSrv.get(EntityName("certuser@thehive.local")).getOrFail("User")
+          msg   <- templateEngine(schema).buildMessage(template, audit, Some(case4), Some(case4), Some(user), "http://localhost/")
         } yield msg
       }
       message must beSuccessfulTry.which { m =>

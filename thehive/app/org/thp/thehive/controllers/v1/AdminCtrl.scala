@@ -18,11 +18,12 @@ import play.api.mvc.{Action, AnyContent, Results}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
+import scala.util.control.NonFatal
 
 class AdminCtrl(
     entrypoint: Entrypoint,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
-    integrityCheckOps: Set[GenIntegrityCheckOps],
+    integrityCheckOps: Seq[GenIntegrityCheckOps],
     db: Database,
     implicit val ec: ExecutionContext
 ) {
@@ -118,7 +119,7 @@ class AdminCtrl(
           val count =
             try graph.indexCountQuery(s"""v."_label":$label""")
             catch {
-              case error: Throwable =>
+              case NonFatal(error) =>
                 logger.error("Index fetch error", error)
                 0L
             }

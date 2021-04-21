@@ -5,7 +5,6 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.test.{NoTemporaryFileCreator, PlaySpecification}
@@ -28,38 +27,47 @@ class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {
 
   "attachment service" should {
     "create an attachment from a file" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+
       WithFakeScalligraphFile { tempFile =>
         val r =
-          app[Database].tryTransaction(implicit graph => app[AttachmentSrv].create(FFile("test.txt", tempFile.path, "text/plain")))
+          database.tryTransaction(implicit graph => attachmentSrv.create(FFile("test.txt", tempFile.path, "text/plain")))
 
         r must beSuccessfulTry.which { a =>
           a.name shouldEqual "test.txt"
           a.contentType shouldEqual "text/plain"
           a.size shouldEqual JFiles.size(tempFile.path)
-          a.hashes must containAllOf(app[AttachmentSrv].hashers.fromPath(tempFile.path))
+          a.hashes must containAllOf(attachmentSrv.hashers.fromPath(tempFile.path))
         }
       }
     }
 
     "create an attachment from file data" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+
       WithFakeScalligraphFile { tempFile =>
-        val r = app[Database].tryTransaction(implicit graph => app[AttachmentSrv].create("test2.txt", "text/plain", JFiles.readAllBytes(tempFile)))
+        val r = database.tryTransaction(implicit graph => attachmentSrv.create("test2.txt", "text/plain", JFiles.readAllBytes(tempFile)))
 
         r must beSuccessfulTry.which { a =>
           a.name shouldEqual "test2.txt"
           a.contentType shouldEqual "text/plain"
           a.size shouldEqual JFiles.size(tempFile.path)
-          a.hashes must containAllOf(app[AttachmentSrv].hashers.fromPath(tempFile.path))
+          a.hashes must containAllOf(attachmentSrv.hashers.fromPath(tempFile.path))
         }
       }
     }
 
     "get an attachment" in testApp { app =>
-      val allAttachments = app[Database].roTransaction(implicit graph => app[AttachmentSrv].startTraversal.toSeq)
+      import app._
+      import app.thehiveModule._
+
+      val allAttachments = database.roTransaction(implicit graph => attachmentSrv.startTraversal.toSeq)
       allAttachments must not(beEmpty)
 
-      app[Database].roTransaction { implicit graph =>
-        app[AttachmentSrv].get(EntityName(allAttachments.head.attachmentId)).exists must beTrue
+      database.roTransaction { implicit graph =>
+        attachmentSrv.get(EntityName(allAttachments.head.attachmentId)).exists must beTrue
       }
     }
   }

@@ -1,9 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
-import org.thp.thehive.services.ObservableSrv
+import org.thp.thehive.connector.cortex.TestAppBuilder
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -22,8 +20,12 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
 
   "job controller" should {
     "get a job" in testApp { app =>
-      val observable = app[Database].roTransaction { implicit graph =>
-        app[ObservableSrv].startTraversal.has(_.message, "Some weird domain").getOrFail("Observable").get
+      import app._
+      import app.cortexConnector.jobCtrl
+      import app.thehiveModule._
+
+      val observable = database.roTransaction { implicit graph =>
+        observableSrv.startTraversal.has(_.message, "Some weird domain").getOrFail("Observable").get
       }
 
       val requestSearch = FakeRequest("POST", s"/api/connector/cortex/job/_search?range=0-200&sort=-startDate")
@@ -44,11 +46,13 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
                  }
               }
             """.stripMargin))
-      val resultSearch = app[JobCtrl].search(requestSearch)
+      val resultSearch = jobCtrl.search(requestSearch)
       status(resultSearch) shouldEqual 200
     }
 
     "get stats for a job" in testApp { app =>
+      import app.cortexConnector.jobCtrl
+
       val request = FakeRequest("POST", s"/api/connector/cortex/job/_stats")
         .withHeaders("user" -> "certuser@thehive.local")
         .withJsonBody(Json.parse(s"""
@@ -72,7 +76,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder {
                                      }]
                                    }
             """.stripMargin))
-      val result = app[JobCtrl].stats(request)
+      val result = jobCtrl.stats(request)
 
       status(result) shouldEqual 200
     }

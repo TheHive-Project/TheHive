@@ -4,7 +4,7 @@ import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
+
 import org.thp.thehive.models._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.TagOps._
@@ -16,8 +16,11 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
 
   "case template service" should {
     "create a case template" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
-        app[CaseTemplateSrv].create(
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
+        caseTemplateSrv.create(
           caseTemplate = CaseTemplate(
             name = "case template test 1",
             displayName = "case template test 1",
@@ -30,7 +33,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
             pap = Some(3),
             summary = Some("summary case template test 1")
           ),
-          organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get,
+          organisation = organisationSrv.getOrFail(EntityName("cert")).get,
           tasks = Seq(
             Task(
               title = "task case template case template test 1",
@@ -49,20 +52,23 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
         )
       } must beASuccessfulTry
 
-      app[Database].roTransaction { implicit graph =>
-        val orgId = app[OrganisationSrv].currentId.value
-        app[TagSrv].startTraversal.getByName(s"_freetags_$orgId", "newOne", None).exists           must beTrue
-        app[TaskSrv].startTraversal.has(_.title, "task case template case template test 1").exists must beTrue
-        val richCT = app[CaseTemplateSrv].startTraversal.getByName("case template test 1").richCaseTemplate.getOrFail("CaseTemplate").get
+      database.roTransaction { implicit graph =>
+        val orgId = organisationSrv.currentId.value
+        tagSrv.startTraversal.getByName(s"_freetags_$orgId", "newOne", None).exists           must beTrue
+        taskSrv.startTraversal.has(_.title, "task case template case template test 1").exists must beTrue
+        val richCT = caseTemplateSrv.startTraversal.getByName("case template test 1").richCaseTemplate.getOrFail("CaseTemplate").get
         richCT.customFields.length shouldEqual 2
       }
     }
 
     "add a task to a template" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
         for {
-          caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _ <- app[CaseTemplateSrv].createTask(
+          caseTemplate <- caseTemplateSrv.getOrFail(EntityName("spam"))
+          _ <- caseTemplateSrv.createTask(
             caseTemplate,
             Task(
               title = "t1",
@@ -80,37 +86,43 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
         } yield ()
       } must beSuccessfulTry
 
-      app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get(EntityName("spam")).tasks.has(_.title, "t1").exists
+      database.roTransaction { implicit graph =>
+        caseTemplateSrv.get(EntityName("spam")).tasks.has(_.title, "t1").exists
       } must beTrue
     }
 
     "update case template tags" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
         for {
-          caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _ <- app[CaseTemplateSrv].updateTags(
+          caseTemplate <- caseTemplateSrv.getOrFail(EntityName("spam"))
+          _ <- caseTemplateSrv.updateTags(
             caseTemplate,
             Set("""t2""", """newOne2""", """newNspc:newPred="newOne3"""")
           )
         } yield ()
       } must beSuccessfulTry
-      app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get(EntityName("spam")).tags.toList.map(_.toString)
+      database.roTransaction { implicit graph =>
+        caseTemplateSrv.get(EntityName("spam")).tags.toList.map(_.toString)
       } must containTheSameElementsAs(
         Seq("t2", "newOne2", "newNspc:newPred=\"newOne3\"")
       )
     }
 
     "add tags to a case template" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
         for {
-          caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _            <- app[CaseTemplateSrv].addTags(caseTemplate, Set("""t2""", """newOne2"""))
+          caseTemplate <- caseTemplateSrv.getOrFail(EntityName("spam"))
+          _            <- caseTemplateSrv.addTags(caseTemplate, Set("""t2""", """newOne2"""))
         } yield ()
       } must beSuccessfulTry
-      app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get(EntityName("spam")).tags.toList.map(_.toString)
+      database.roTransaction { implicit graph =>
+        caseTemplateSrv.get(EntityName("spam")).tags.toList.map(_.toString)
       } must containTheSameElementsAs(
         Seq(
           "t2",
@@ -122,13 +134,16 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update/create case template custom fields" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
         for {
-          string1      <- app[CustomFieldSrv].getOrFail(EntityName("string1"))
-          bool1        <- app[CustomFieldSrv].getOrFail(EntityName("boolean1"))
-          integer1     <- app[CustomFieldSrv].getOrFail(EntityName("integer1"))
-          caseTemplate <- app[CaseTemplateSrv].getOrFail(EntityName("spam"))
-          _ <- app[CaseTemplateSrv].updateCustomField(
+          string1      <- customFieldSrv.getOrFail(EntityName("string1"))
+          bool1        <- customFieldSrv.getOrFail(EntityName("boolean1"))
+          integer1     <- customFieldSrv.getOrFail(EntityName("integer1"))
+          caseTemplate <- caseTemplateSrv.getOrFail(EntityName("spam"))
+          _ <- caseTemplateSrv.updateCustomField(
             caseTemplate,
             Seq((string1, JsString("hate"), None), (bool1, JsTrue, None), (integer1, JsNumber(1), None))
           )
@@ -136,8 +151,8 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
       } must beSuccessfulTry
 
       val expected: Seq[(String, JsValue)] = Seq("string1" -> JsString("hate"), "boolean1" -> JsTrue, "integer1" -> JsNumber(1))
-      app[Database].roTransaction { implicit graph =>
-        app[CaseTemplateSrv].get(EntityName("spam")).customFields.nameJsonValue.toSeq
+      database.roTransaction { implicit graph =>
+        caseTemplateSrv.get(EntityName("spam")).customFields.nameJsonValue.toSeq
       } must contain(exactly(expected: _*))
     }
   }

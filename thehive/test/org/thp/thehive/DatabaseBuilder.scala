@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{EntityId, EntityName, RichOption}
+import org.thp.scalligraph.{EntityId, EntityName, RichOption, ScalligraphApplication, ScalligraphModule}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -24,7 +24,17 @@ import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import java.io.File
 import scala.io.Source
 import scala.reflect.runtime.{universe => ru}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
+
+class DatabaseBuilderModule(thehiveModule: TheHiveModule) extends ScalligraphModule {
+
+  def this(app: ScalligraphApplication) = this(app.getModule[TheHiveModule])
+
+  import com.softwaremill.macwire._
+
+  lazy val databaseBuilder: DatabaseBuilder = wire[DatabaseBuilder]
+}
 
 class DatabaseBuilder(
     schema: Schema,
@@ -36,7 +46,6 @@ class DatabaseBuilder(
     dashboardSrv: DashboardSrv,
     dataSrv: DataSrv,
     impactStatusSrv: ImpactStatusSrv,
-    keyValueSrv: KeyValueSrv,
     logSrv: LogSrv,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
@@ -52,12 +61,12 @@ class DatabaseBuilder(
     taskSrv: TaskSrv,
     taxonomySrv: TaxonomySrv,
     userSrv: UserSrv,
-    integrityChecks: Set[GenIntegrityCheckOps]
+    integrityChecks: Seq[GenIntegrityCheckOps]
 ) {
 
   lazy val logger: Logger = Logger(getClass)
 
-  def build()(implicit db: Database): Try[Unit] = {
+  def build(db: Database): Try[Unit] = {
 
     lazy val logger: Logger = Logger(getClass)
     logger.info("Initialize database schema")
@@ -318,7 +327,7 @@ class DatabaseBuilder(
             .getOrElse(Nil)
       } yield FObject(json)
     } catch {
-      case error: Throwable =>
+      case NonFatal(error) =>
         logger.warn(s"$path error: ${error.getMessage}")
         Nil
     }

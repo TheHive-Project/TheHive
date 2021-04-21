@@ -3,7 +3,7 @@ package org.thp.thehive.connector.cortex.services
 import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.connector.cortex.TestAppBuilder
 import org.thp.thehive.models.Permissions
 import play.api.test.PlaySpecification
 
@@ -24,7 +24,9 @@ class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
   "analyzer service" should {
     "get a list of Cortex workers" in testApp { app =>
-      val r = await(app[AnalyzerSrv].listAnalyzer(Some("all")))
+      import app.cortexConnector.analyzerSrv
+
+      val r = await(analyzerSrv.listAnalyzer(Some("all")))
       val outputWorker2 =
         OutputWorker(
           "anaTest2",
@@ -50,7 +52,9 @@ class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get Cortex worker by id" in testApp { app =>
-      val r = await(app[AnalyzerSrv].getAnalyzer("anaTest2"))
+      import app.cortexConnector.analyzerSrv
+
+      val r = await(analyzerSrv.getAnalyzer("anaTest2"))
       val outputWorker =
         OutputWorker(
           "anaTest2",
@@ -66,7 +70,9 @@ class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a list of Cortex workers by dataType" in testApp { app =>
-      val r = await(app[AnalyzerSrv].listAnalyzerByType("test"))
+      import app.cortexConnector.analyzerSrv
+
+      val r = await(analyzerSrv.listAnalyzerByType("test"))
       val outputWorker2 =
         OutputWorker(
           "anaTest2",

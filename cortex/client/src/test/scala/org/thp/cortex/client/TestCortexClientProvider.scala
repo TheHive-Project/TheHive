@@ -62,8 +62,8 @@ class TestCortexClientProvider(Action: DefaultActionBuilder, implicit val fileMi
   def fileResource(id: String): Path = Paths.get(getClass.getResource(s"/$id.test.txt").getPath)
 
   def apply[T](block: CortexClient => T): T =
-    block(get())
+    block(get)
 
-  override def get(): CortexClient =
+  override lazy val get: CortexClient =
     new CortexClient("test", "", Seq("*"), Nil, ws, NoAuthentication, ec)
 }

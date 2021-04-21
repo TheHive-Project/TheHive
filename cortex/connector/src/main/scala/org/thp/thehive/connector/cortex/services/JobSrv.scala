@@ -7,16 +7,16 @@ import akka.stream.scaladsl.FileIO
 import com.softwaremill.tagging.@@
 import io.scalaland.chimney.dsl._
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.thp.cortex.client.CortexClient
+import org.thp.cortex.client.{CortexClient, CortexClientConfig}
 import org.thp.cortex.dto.v0.{InputArtifact, OutputArtifact, Attachment => CortexAttachment, JobStatus => CortexJobStatus, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName, NotFoundError}
-import org.thp.thehive.connector.cortex.CortexConnector
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.Conversion._
@@ -42,6 +42,7 @@ class JobSrv(
     reportTagSrv: ReportTagSrv,
     serviceHelper: ServiceHelper,
     auditSrv: CortexAuditSrv,
+    clientsConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]],
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
@@ -50,6 +51,8 @@ class JobSrv(
   lazy val cortexActor: ActorRef @@ CortexTag = _cortexActor
   val observableJobSrv                        = new EdgeSrv[ObservableJob, Observable, Job]
   val reportObservableSrv                     = new EdgeSrv[ReportObservable, Job, Observable]
+
+  def clients: Seq[CortexClient] = clientsConfig.get
 
   /**
     * Submits an observable for analysis to cortex client and stores
@@ -68,7 +71,7 @@ class JobSrv(
     for {
       cortexClient <-
         serviceHelper
-          .availableCortexClients(CortexConnector.clients, authContext.organisation)
+          .availableCortexClients(clients, authContext.organisation)
           .find(_.name == cortexId)
           .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       analyzer <- cortexClient.getAnalyzer(workerId).recoverWith {
@@ -147,7 +150,7 @@ class JobSrv(
     for {
       cortexClient <-
         serviceHelper
-          .availableCortexClients(CortexConnector.clients, authContext.organisation)
+          .availableCortexClients(clients, authContext.organisation)
           .find(_.name == cortexId)
           .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
       job <- Future.fromTry(updateJobStatus(jobId, cortexJob))

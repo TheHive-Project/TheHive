@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.scalligraph.controllers.FakeTemporaryFile
-import org.thp.thehive.TestAppBuilder
+
 import org.thp.thehive.dto.v1._
 import play.api.libs.Files
 import play.api.libs.json.{JsArray, Json}
@@ -65,11 +65,15 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     )
 
     "create a valid taxonomy" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/taxonomy")
         .withJsonBody(Json.toJson(inputTaxo))
         .withHeaders("user" -> "admin@thehive.local")
 
-      val result = app[TaxonomyCtrl].create(request)
+      val result = taxonomyCtrl.create(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val resultTaxo = contentAsJson(result).as[OutputTaxonomy]
@@ -87,33 +91,45 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return error if not admin" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/taxonomy")
         .withJsonBody(Json.toJson(inputTaxo))
         .withHeaders("user" -> "certuser@thehive.local")
 
-      val result = app[TaxonomyCtrl].create(request)
-      status(result) must beEqualTo(403).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val result = taxonomyCtrl.create(request)
+      status(result)                              must beEqualTo(403).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("AuthorizationError")
     }
 
     "return error if namespace is empty" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val emptyNamespace = inputTaxo.copy(namespace = "")
 
       val request = FakeRequest("POST", "/api/v1/taxonomy")
         .withJsonBody(Json.toJson(emptyNamespace))
         .withHeaders("user" -> "admin@thehive.local")
 
-      val result = app[TaxonomyCtrl].create(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val result = taxonomyCtrl.create(request)
+      status(result)                              must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
 
     }
 
     "get a taxonomy present" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
         .withHeaders("user" -> "certuser@thehive.local")
 
-      val result = app[TaxonomyCtrl].get("taxonomy1")(request)
+      val result = taxonomyCtrl.get("taxonomy1")(request)
       status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultCase = contentAsJson(result).as[OutputTaxonomy]
 
@@ -126,67 +142,91 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return error if taxonomy is not present in database" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("GET", "/api/v1/taxonomy/taxonomy404")
         .withHeaders("user" -> "admin@thehive.local")
 
-      val result = app[TaxonomyCtrl].get("taxonomy404")(request)
-      status(result) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val result = taxonomyCtrl.get("taxonomy404")(request)
+      status(result)                              must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("NotFoundError")
     }
 
     "import zip file correctly" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
         .withHeaders("user" -> "admin@thehive.local")
         .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag.zip")))
 
-      val result = app[TaxonomyCtrl].importZip(request)
+      val result = taxonomyCtrl.importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsString(result) must not contain "Failure"
+      contentAsString(result)                      must not contain "Failure"
       contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
     "import zip file with folders correctly" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
         .withHeaders("user" -> "admin@thehive.local")
         .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag-folders.zip")))
 
-      val result = app[TaxonomyCtrl].importZip(request)
+      val result = taxonomyCtrl.importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsString(result) must not contain "Failure"
+      contentAsString(result)                      must not contain "Failure"
       contentAsJson(result).as[JsArray].value.size must beEqualTo(2)
     }
 
     "return no error if zip file contains other files than taxonomies" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
         .withHeaders("user" -> "admin@thehive.local")
         .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag-otherfiles.zip")))
 
-      val result = app[TaxonomyCtrl].importZip(request)
+      val result = taxonomyCtrl.importZip(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      contentAsString(result) must not contain "Failure"
+      contentAsString(result)                      must not contain "Failure"
       contentAsJson(result).as[JsArray].value.size must beEqualTo(1)
     }
 
     "return error if zip file contains a bad formatted taxonomy" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
         .withHeaders("user" -> "admin@thehive.local")
         .withBody(AnyContentAsMultipartFormData(multipartZipFile("machinetag-badformat.zip")))
 
-      val result = app[TaxonomyCtrl].importZip(request)
-      status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
-      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
+      val result = taxonomyCtrl.importZip(request)
+      status(result)                                 must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
+      (contentAsJson(result) \ "type").as[String]    must beEqualTo("BadRequest")
       (contentAsJson(result) \ "message").as[String] must contain("formatting")
     }
 
     "update a taxonomies and their tags" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/taxonomy")
         .withJsonBody(Json.toJson(updateTaxo))
         .withHeaders("user" -> "admin@thehive.local")
 
-      val result = app[TaxonomyCtrl].create(request)
+      val result = taxonomyCtrl.create(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val resultTaxo = contentAsJson(result).as[OutputTaxonomy]
@@ -203,53 +243,65 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "activate a taxonomy" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy2")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result1 = app[TaxonomyCtrl].get("taxonomy2")(request1)
+      val result1 = taxonomyCtrl.get("taxonomy2")(request1)
       status(result1) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
       val request2 = FakeRequest("PUT", "/api/v1/taxonomy/taxonomy2")
         .withHeaders("user" -> "admin@thehive.local")
-      val result2 = app[TaxonomyCtrl].toggleActivation("taxonomy2", isActive = true)(request2)
+      val result2 = taxonomyCtrl.toggleActivation("taxonomy2", isActive = true)(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       val request3 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy2")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result3 = app[TaxonomyCtrl].get("taxonomy2")(request3)
+      val result3 = taxonomyCtrl.get("taxonomy2")(request3)
       status(result3) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result3)}")
     }
 
     "deactivate a taxonomy" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result1 = app[TaxonomyCtrl].get("taxonomy1")(request1)
+      val result1 = taxonomyCtrl.get("taxonomy1")(request1)
       status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
       val request2 = FakeRequest("PUT", "/api/v1/taxonomy/taxonomy1/deactivate")
         .withHeaders("user" -> "admin@thehive.local")
-      val result2 = app[TaxonomyCtrl].toggleActivation("taxonomy1", isActive = false)(request2)
+      val result2 = taxonomyCtrl.toggleActivation("taxonomy1", isActive = false)(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       val request3 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result3 = app[TaxonomyCtrl].get("taxonomy1")(request3)
+      val result3 = taxonomyCtrl.get("taxonomy1")(request3)
       status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")
     }
 
     "delete a taxonomy" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
       val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result1 = app[TaxonomyCtrl].get("taxonomy1")(request1)
+      val result1 = taxonomyCtrl.get("taxonomy1")(request1)
       status(result1) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result1)}")
 
       val request2 = FakeRequest("DELETE", "/api/v1/taxonomy/taxonomy1")
         .withHeaders("user" -> "admin@thehive.local")
-      val result2 = app[TaxonomyCtrl].delete("taxonomy1")(request2)
+      val result2 = taxonomyCtrl.delete("taxonomy1")(request2)
       status(result2) must beEqualTo(204).updateMessage(s => s"$s\n${contentAsString(result2)}")
 
       val request3 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result3 = app[TaxonomyCtrl].get("taxonomy1")(request3)
+      val result3 = taxonomyCtrl.get("taxonomy1")(request3)
       status(result3) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(result3)}")
     }
 

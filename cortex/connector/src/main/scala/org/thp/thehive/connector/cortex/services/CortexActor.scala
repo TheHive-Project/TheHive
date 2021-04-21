@@ -2,11 +2,14 @@ package org.thp.thehive.connector.cortex.services
 
 import akka.actor._
 import akka.pattern.pipe
+import akka.stream.Materializer
 import org.thp.client.ApplicationError
+import org.thp.cortex.client.{CortexClient, CortexClientConfig}
 import org.thp.cortex.dto.v0.{JobStatus, JobType, OutputJob}
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.thehive.connector.cortex.CortexConnector
+import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import play.api.Logger
 
 import java.util.Date
@@ -33,16 +36,36 @@ sealed trait CortexTag
   * This actor is primarily used to check Job statuses on regular
   * ticks using the provided client for each job
   */
-class CortexActor(jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timers {
+class CortexActor(
+    jobSrv: JobSrv,
+    actionSrv: ActionSrv,
+    applicationConfig: ApplicationConfig,
+    materializer: Materializer,
+    executionContext: ExecutionContext
+) extends Actor
+    with Timers {
   implicit val ec: ExecutionContext = context.dispatcher
   lazy val logger: Logger           = Logger(getClass)
+
+  val clientsConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]] =
+    applicationConfig.mapItem[Seq[CortexClientConfig], Seq[CortexClient]](
+      "cortex.servers",
+      "",
+      _.map(new CortexClient(_, materializer, executionContext))
+    )
+  val refreshDelayConfig: ConfigItem[FiniteDuration, FiniteDuration] = applicationConfig.item[FiniteDuration]("cortex.refreshDelay", "")
+  val maxRetryOnErrorConfig: ConfigItem[Int, Int]                    = applicationConfig.item[Int]("cortex.maxRetryOnError", "")
+
+  def clients: Seq[CortexClient]   = clientsConfig.get
+  def refreshDelay: FiniteDuration = refreshDelayConfig.get
+  def maxRetryOnError: Int         = maxRetryOnErrorConfig.get
 
   def receive: Receive = receive(Nil, 0)
 
   private def receive(checkedJobs: List[CheckJob], failuresCount: Int): Receive = {
     case FirstCheckJobs =>
-      logger.debug(s"CortexActor starting check jobs ticking every ${CortexConnector.refreshDelay}")
-      timers.startTimerAtFixedRate(CheckJobsKey, CheckJobs, CortexConnector.refreshDelay)
+      logger.debug(s"CortexActor starting check jobs ticking every $refreshDelay")
+      timers.startTimerAtFixedRate(CheckJobsKey, CheckJobs, refreshDelay)
 
     case cj @ CheckJob(jobId, cortexJobId, actionId, cortexId, _) =>
       logger.info(s"CortexActor received job or action (${jobId.getOrElse(actionId.get)}, $cortexJobId, $cortexId) to check, added to $checkedJobs")
@@ -58,8 +81,7 @@ class CortexActor(jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timer
       checkedJobs
         .foreach {
           case CheckJob(_, cortexJobId, _, cortexId, _) =>
-            CortexConnector
-              .clients
+            clients
               .find(_.name == cortexId)
               .fold(logger.error(s"Receive a CheckJob for an unknown cortexId: $cortexId")) { client =>
                 client
@@ -93,15 +115,15 @@ class CortexActor(jobSrv: JobSrv, actionSrv: ActionSrv) extends Actor with Timer
           logger.error(s"CortexActor received job output $job but did not have it in state $checkedJobs")
       }
     case RemoteJob(job) if job.status == JobStatus.InProgress || job.status == JobStatus.Waiting =>
-      logger.info(s"CortexActor received ${job.status} from client, retrying in ${CortexConnector.refreshDelay}")
+      logger.info(s"CortexActor received ${job.status} from client, retrying in $refreshDelay")
 
     case _: RemoteJob =>
-      logger.warn(s"CortexActor received JobStatus.Unknown from client, retrying in ${CortexConnector.refreshDelay}")
+      logger.warn(s"CortexActor received JobStatus.Unknown from client, retrying in $refreshDelay")
 
-    case Status.Failure(e) if failuresCount < CortexConnector.maxRetryOnError =>
+    case Status.Failure(e) if failuresCount < maxRetryOnError =>
       logger.error(
         s"CortexActor received ${failuresCount + 1} failure(s), last: ${e.getMessage}, " +
-          s"retrying again ${CortexConnector.maxRetryOnError - failuresCount} time(s)"
+          s"retrying again ${maxRetryOnError - failuresCount} time(s)"
       )
       context.become(receive(checkedJobs, failuresCount + 1))
 

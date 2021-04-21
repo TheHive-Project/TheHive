@@ -1,47 +1,44 @@
 package org.thp.thehive
 
 import akka.actor.ActorRef
+import com.softwaremill.macwire.Module
 import org.thp.scalligraph.auth._
-import org.thp.scalligraph.controllers.{AuthenticatedRequest, Entrypoint}
-import org.thp.scalligraph.models.UpdatableSchema
-import org.thp.scalligraph.query.QueryExecutor
+import org.thp.scalligraph.controllers.Entrypoint
+import org.thp.scalligraph.models.Schema
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigActor, ConfigTag}
 import org.thp.scalligraph.services.{EventSrv, GenIntegrityCheckOps}
-import org.thp.scalligraph.{ErrorHandler, NotFoundError, ScalligraphModule}
+import org.thp.scalligraph.{ActorSingletonUtils, ErrorHandler, ScalligraphApplication, ScalligraphModule, SemiMutableSeq}
+import org.thp.thehive.controllers.ModelDescription
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.notification.{NotificationActor, NotificationSrv, NotificationTag}
 import org.thp.thehive.services.{UserSrv => TheHiveUserSrv, _}
 import play.api.Logger
-import play.api.mvc.{ActionFunction, Request, Result}
+import play.api.routing.SimpleRouter
 import play.api.routing.sird._
-import play.api.routing.{Router, SimpleRouter}
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.runtime.{universe => ru}
-
-object TheHiveModule extends ScalligraphModule { module =>
+@Module
+class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with ActorSingletonUtils {
+  import app.actorSystem
   import com.softwaremill.macwire._
   import com.softwaremill.macwire.akkasupport._
   import com.softwaremill.tagging._
-  import scalligraphApplication._
 
-  lazy val logger: Logger = Logger(getClass)
-
+  lazy val logger: Logger                                 = Logger(getClass)
   lazy val notificationActor: ActorRef @@ NotificationTag = wireActor[NotificationActor]("notification").taggedWith[NotificationTag]
-  lazy val configActor: ActorRef @@ ConfigTag             = wireActorSingleton(wireProps[ConfigActor], "config-actor").taggedWith[ConfigTag]
-  lazy val flowActor: ActorRef @@ FlowTag                 = wireActorSingleton(wireProps[FlowActor], "flow-actor").taggedWith[FlowTag]
+  lazy val configActor: ActorRef @@ ConfigTag             = wireActorSingleton(actorSystem, wireProps[ConfigActor], "config-actor").taggedWith[ConfigTag]
+  lazy val flowActor: ActorRef @@ FlowTag                 = wireActorSingleton(actorSystem, wireProps[FlowActor], "flow-actor").taggedWith[FlowTag]
   lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag =
-    wireActorSingleton(wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
+    wireActorSingleton(actorSystem, wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
 
   lazy val eventSrv: EventSrv                       = wire[EventSrv]
   lazy val auditSrv: AuditSrv                       = wire[AuditSrv]
   lazy val roleSrv: RoleSrv                         = wire[RoleSrv]
   lazy val organisationSrv: OrganisationSrv         = wire[OrganisationSrv]
   lazy val applicationConfig: ApplicationConfig     = wire[ApplicationConfig]
-  lazy val thehiveUserSrv: TheHiveUserSrv           = wire[TheHiveUserSrv]
-  lazy val userSrv: LocalUserSrv                    = wire[LocalUserSrv]
+  lazy val userSrv: TheHiveUserSrv                  = wire[TheHiveUserSrv]
+  lazy val localUsrSrv: LocalUserSrv                = wire[LocalUserSrv]
   lazy val taxonomySrv: TaxonomySrv                 = wire[TaxonomySrv]
   lazy val tagSrv: TagSrv                           = wire[TagSrv]
   lazy val configSrv: ConfigSrv                     = wire[ConfigSrv]
@@ -67,91 +64,67 @@ object TheHiveModule extends ScalligraphModule { module =>
   lazy val patternSrv: PatternSrv                   = wire[PatternSrv]
   lazy val procedureSrv: ProcedureSrv               = wire[ProcedureSrv]
 
-  lazy val connectors: Set[Connector] = {
-    val rm: ru.Mirror = ru.runtimeMirror(getClass.getClassLoader)
-    configuration
-      .get[Seq[String]]("thehive.connectors")
-      .flatMap { moduleName =>
-        rm.reflectModule(rm.staticModule(moduleName)).instance match {
-          case obj: Connector =>
-            logger.info(s"Loading connector ${obj.getClass.getSimpleName.stripSuffix("$")}")
-            obj.configure(scalligraphApplication)
-            Some(obj)
-          case obj =>
-            logger.error(s"Fail to load connector ${obj.getClass.getSimpleName}")
-            None
-        }
-      }
-  }.toSet
+  lazy val connectors: SemiMutableSeq[Connector] = SemiMutableSeq[Connector]
 
   lazy val authSrv: AuthSrv = wire[TOTPAuthSrv]
-  override lazy val authSrvProviders: Set[AuthSrvProvider] = Set(
-    wire[ADAuthProvider],
-    wire[LdapAuthProvider],
-    wire[LocalPasswordAuthProvider],
-    wire[LocalKeyAuthProvider],
-    wire[BasicAuthProvider],
-    wire[HeaderAuthProvider],
-    wire[PkiAuthProvider],
-    wire[SessionAuthProvider],
-    wire[OAuth2Provider]
+
+  app.authSrvProviders += wire[ADAuthProvider]
+  app.authSrvProviders += wire[LdapAuthProvider]
+  app.authSrvProviders += wire[LocalPasswordAuthProvider]
+  app.authSrvProviders += wire[LocalKeyAuthProvider]
+  app.authSrvProviders += wire[BasicAuthProvider]
+  app.authSrvProviders += wire[HeaderAuthProvider]
+  app.authSrvProviders += wire[PkiAuthProvider]
+  app.authSrvProviders += wire[SessionAuthProvider]
+  app.authSrvProviders += wire[OAuth2Provider]
+
+  lazy val triggerProviders: SemiMutableSeq[TriggerProvider] = SemiMutableSeq[TriggerProvider](
+    () => wire[AlertCreatedProvider],
+    () => wire[AnyEventProvider],
+    () => wire[CaseCreatedProvider],
+    () => wire[FilteredEventProvider],
+    () => wire[JobFinishedProvider],
+    () => wire[LogInMyTaskProvider],
+    () => wire[TaskAssignedProvider],
+    () => wire[CaseShareProvider]
   )
 
-  lazy val triggerProviders: Set[TriggerProvider] = Set(
-    wire[AlertCreatedProvider],
-    wire[AnyEventProvider],
-    wire[CaseCreatedProvider],
-    wire[FilteredEventProvider],
-    wire[JobFinishedProvider],
-    wire[LogInMyTaskProvider],
-    wire[TaskAssignedProvider],
-    wire[CaseShareProvider]
+  lazy val schema: Schema = app.schemas.reduceOption[Schema](_ + _).getOrElse(???)
+  lazy val notifierProviders: SemiMutableSeq[NotifierProvider] = SemiMutableSeq(
+    () => wire[AppendToFileProvider],
+    () => wire[EmailerProvider],
+    () => wire[MattermostProvider],
+    () => wire[WebhookProvider]
   )
-
-  lazy val schema: UpdatableSchema = TheHiveSchemaDefinition
-  lazy val notifierProviders: Set[NotifierProvider] = Set(
-    wire[AppendToFileProvider],
-    wire[EmailerProvider],
-    wire[MattermostProvider],
-    wire[WebhookProvider]
-  )
-  lazy val integrityChecks: Set[GenIntegrityCheckOps] = Set(
-    wire[ProfileIntegrityCheckOps],
-    wire[OrganisationIntegrityCheckOps],
-    wire[TagIntegrityCheckOps],
-    wire[UserIntegrityCheckOps],
-    wire[ImpactStatusIntegrityCheckOps],
-    wire[ResolutionStatusIntegrityCheckOps],
-    wire[ObservableTypeIntegrityCheckOps],
-    wire[CustomFieldIntegrityCheckOps],
-    wire[CaseTemplateIntegrityCheckOps],
-    wire[DataIntegrityCheckOps],
-    wire[CaseIntegrityCheckOps],
-    wire[AlertIntegrityCheckOps]
+  lazy val integrityChecks: SemiMutableSeq[GenIntegrityCheckOps] = SemiMutableSeq(
+    () => wire[ProfileIntegrityCheckOps],
+    () => wire[OrganisationIntegrityCheckOps],
+    () => wire[TagIntegrityCheckOps],
+    () => wire[UserIntegrityCheckOps],
+    () => wire[ImpactStatusIntegrityCheckOps],
+    () => wire[ResolutionStatusIntegrityCheckOps],
+    () => wire[ObservableTypeIntegrityCheckOps],
+    () => wire[CustomFieldIntegrityCheckOps],
+    () => wire[CaseTemplateIntegrityCheckOps],
+    () => wire[DataIntegrityCheckOps],
+    () => wire[CaseIntegrityCheckOps],
+    () => wire[AlertIntegrityCheckOps]
   )
 
   lazy val entrypoint: Entrypoint     = wire[Entrypoint]
   val errorHandler: ErrorHandler.type = ErrorHandler
 
-  val defaultAction: ActionFunction[Request, AuthenticatedRequest] = new ActionFunction[Request, AuthenticatedRequest] {
-    override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
-      Future.failed(NotFoundError(request.path))
-    override protected def executionContext: ExecutionContext = scalligraphApplication.executionContext
+  app.routers += SimpleRouter {
+    case POST(p"/api/v${int(version)}/query") =>
+      val queryExecutor = app.getQueryExecutor(version)
+      entrypoint("query")
+        .extract("query", queryExecutor.parser.on("query"))
+        .auth { request =>
+          queryExecutor.execute(request.body("query"), request)
+        }
   }
 
-  override def routers: Set[Router] =
-    Set(
-      SimpleRouter {
-        case POST(p"/api/v${int(version)}/query") =>
-          val queryExecutor = scalligraphApplication.getQueryExecutor(version)
-          entrypoint("query")
-            .extract("query", queryExecutor.parser.on("query"))
-            .auth { request =>
-              queryExecutor.execute(request.body("query"), request)
-            }
-      }
-    )
+  app.schemas += TheHiveSchemaDefinition
 
-  override def queryExecutors: Set[QueryExecutor] = Set.empty
-  override def schemas: Set[UpdatableSchema]      = Set(TheHiveSchemaDefinition)
+  val entityDescriptions: SemiMutableSeq[(Int, ModelDescription)] = SemiMutableSeq[(Int, ModelDescription)]
 }

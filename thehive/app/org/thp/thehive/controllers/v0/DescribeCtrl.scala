@@ -178,15 +178,16 @@ class DescribeCtrl(
     applicationConfig: ApplicationConfig,
     cacheApi: SyncCacheApi,
     entrypoint: Entrypoint,
-    modelDescriptions: Seq[ModelDescription]
+    versionedModelDescriptions: Seq[(Int, ModelDescription)]
 ) {
-
   val cacheExpireConfig: ConfigItem[Duration, Duration] =
     applicationConfig.item[Duration]("describe.cache.expire", "Custom fields refresh in describe")
   def cacheExpire: Duration = cacheExpireConfig.get
 
   def entityDescriptions: Seq[EntityDescription] =
-    cacheApi.getOrElseUpdate("describe.v0", cacheExpire)(modelDescriptions.flatMap(_.entityDescriptions))
+    cacheApi.getOrElseUpdate("describe.v0", cacheExpire)(versionedModelDescriptions.collect {
+      case (0, desc) => desc.entityDescriptions
+    }.flatten)
 
   def describe(modelName: String): Action[AnyContent] =
     entrypoint("describe model")

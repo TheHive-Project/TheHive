@@ -2,10 +2,8 @@ package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv}
-import org.thp.thehive.TestAppBuilder
+import org.thp.scalligraph.models.DummyUserSrv
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, OrganisationSrv}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
@@ -13,28 +11,34 @@ import java.util.Date
 class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
   "stream controller" should {
     "create a stream" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("POST", "/api/stream")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[StreamCtrl].create(request)
+      val result = streamCtrl.create(request)
 
       status(result)          must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       contentAsString(result) must not(beEmpty)
     }
 
     "get a case related stream" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV0._
+
       implicit val authContext: AuthContext = DummyUserSrv(permissions = Permissions.all).authContext
 
       val createStreamRequest = FakeRequest("POST", "/api/stream")
         .withHeaders("user" -> "certuser@thehive.local")
-      val createStreamResult = app[StreamCtrl].create(createStreamRequest)
+      val createStreamResult = streamCtrl.create(createStreamRequest)
 
       status(createStreamResult) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(createStreamResult)}")
       val streamId = contentAsString(createStreamResult)
 
       // Add an event
-      app[Database].tryTransaction { implicit graph =>
-        val organisation = app[OrganisationSrv].getOrFail(EntityName("cert")).get
-        app[CaseSrv].create(
+      database.tryTransaction { implicit graph =>
+        val organisation = organisationSrv.getOrFail(EntityName("cert")).get
+        caseSrv.create(
           Case(
             title = "case audit",
             description = "desc audit",
@@ -58,7 +62,7 @@ class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
 
       val getStreamRequest = FakeRequest("GET", s"/api/stream/$streamId")
         .withHeaders("user" -> "certuser@thehive.local")
-      val getStreamResult = app[StreamCtrl].get(streamId)(getStreamRequest)
+      val getStreamResult = streamCtrl.get(streamId)(getStreamRequest)
 
       status(getStreamResult) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(getStreamResult)}")
       val stream = contentAsJson(getStreamResult)

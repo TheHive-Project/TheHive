@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v1
 
 import io.scalaland.chimney.dsl.TransformerOps
-import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
 import play.api.libs.json.{JsNull, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -45,6 +44,8 @@ object TestCase {
 class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
   "case controller" should {
     "create a new case" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val now = new Date()
       val request = FakeRequest("POST", "/api/v1/case")
         .withJsonBody(
@@ -63,7 +64,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           )
         )
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[CaseCtrl].create(request)
+      val result = caseCtrl.create(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultCase = contentAsJson(result).as[OutputCase]
       val expected = TestCase(
@@ -86,6 +87,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "create a new case using a template" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val now = new Date()
       val request = FakeRequest("POST", "/api/v1/case")
         .withJsonBody(
@@ -103,7 +106,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           ) + ("caseTemplate" -> JsString("spam"))
         )
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[CaseCtrl].create(request)
+      val result = caseCtrl.create(request)
       status(result) must_=== 201
       val resultCase = contentAsJson(result).as[OutputCase]
       val expected = TestCase(
@@ -129,9 +132,11 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a case" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("GET", s"/api/v1/case/1")
         .withHeaders("user" -> "certuser@thehive.local")
-      val result     = app[CaseCtrl].get("1")(request)
+      val result     = caseCtrl.get("1")(request)
       val resultCase = contentAsJson(result).as[OutputCase]
       val expected = TestCase(
         title = "case#1",
@@ -161,11 +166,11 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 //              "status" → "resolved"
 //            ))
 //          .withHeaders("user" → "certuser@thehive.local")
-//        val updateResult = app[CaseCtrl].update("#2")(updateRequest)
+//        val updateResult = caseCtrl.update("#2")(updateRequest)
 //        status(updateResult) must_=== 204
 //
 //        val getRequest = FakeRequest("GET", s"/api/v1/case/#2")
-//        val getResult  = app[CaseCtrl].get("#2")(getRequest)
+//        val getResult  = caseCtrl.get("#2")(getRequest)
 //        val resultCase = contentAsJson(getResult).as[OutputCase]
 //        val expected = TestCase(
 //          title = "new title",
@@ -186,16 +191,18 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "merge 3 cases correctly" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val request21 = FakeRequest("GET", s"/api/v1/case/#21")
         .withHeaders("user" -> "certuser@thehive.local")
-      val case21 = app[CaseCtrl].get("21")(request21)
+      val case21 = caseCtrl.get("21")(request21)
       status(case21) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(case21)}")
       val output21 = contentAsJson(case21).as[OutputCase]
 
       val request = FakeRequest("GET", "/api/v1/case/_merge/21,22,23")
         .withHeaders("user" -> "certuser@thehive.local")
 
-      val result = app[CaseCtrl].merge("21,22,23")(request)
+      val result = caseCtrl.merge("21,22,23")(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val outputCase = contentAsJson(result).as[OutputCase]
@@ -222,28 +229,32 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       )
 
       // Merged cases should be deleted
-      val deleted21 = app[CaseCtrl].get("21")(request)
+      val deleted21 = caseCtrl.get("21")(request)
       status(deleted21) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted21)}")
-      val deleted22 = app[CaseCtrl].get("22")(request)
+      val deleted22 = caseCtrl.get("22")(request)
       status(deleted22) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted22)}")
-      val deleted23 = app[CaseCtrl].get("23")(request)
+      val deleted23 = caseCtrl.get("23")(request)
       status(deleted23) must beEqualTo(404).updateMessage(s => s"$s\n${contentAsString(deleted23)}")
     }
 
     "merge two cases error, not same organisation" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("GET", "/api/v1/case/_merge/21,24")
         .withHeaders("user" -> "certuser@thehive.local")
 
-      val result = app[CaseCtrl].merge("21,24")(request)
+      val result = caseCtrl.merge("21,24")(request)
       // User shouldn't be able to see others cases, resulting in 404
       status(result) must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
     }
 
     "merge two cases error, not same profile" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("GET", "/api/v1/case/_merge/21,25")
         .withHeaders("user" -> "certuser@thehive.local")
 
-      val result = app[CaseCtrl].merge("21,25")(request)
+      val result = caseCtrl.merge("21,25")(request)
       status(result)                              must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
     }

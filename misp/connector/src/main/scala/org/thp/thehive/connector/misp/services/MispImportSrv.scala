@@ -4,15 +4,15 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
+import org.thp.misp.dto.{Attribute, Event, Tag => MTag}
 import org.thp.scalligraph.auth.{AuthContext, UserSrv}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
+import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.scalligraph.{CreateError, EntityId, EntityName, RichSeq}
-import org.thp.thehive.connector.misp.MispConnector
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -37,11 +37,15 @@ class MispImportSrv(
     db: Database,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
+    attributeConvertersConfig: ConfigItem[Seq[AttributeConverter], Seq[AttributeConverter]],
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
 
   lazy val logger: Logger = Logger(getClass)
+
+  def attributeConverter(attributeCategory: String, attributeType: String): Option[AttributeConverter] =
+    attributeConvertersConfig.get.reverseIterator.find(a => a.mispCategory == attributeCategory && a.mispType == attributeType)
 
   def eventToAlert(client: TheHiveMispClient, event: Event, organisationId: EntityId): Try[Alert] =
     client
@@ -60,10 +64,10 @@ class MispImportSrv(
           tlp = event
             .tags
             .collectFirst {
-              case MispTag(_, "tlp:white", _, _) => 0
-              case MispTag(_, "tlp:green", _, _) => 1
-              case MispTag(_, "tlp:amber", _, _) => 2
-              case MispTag(_, "tlp:red", _, _)   => 3
+              case MTag(_, "tlp:white", _, _) => 0
+              case MTag(_, "tlp:green", _, _) => 1
+              case MTag(_, "tlp:amber", _, _) => 2
+              case MTag(_, "tlp:red", _, _)   => 3
             }
             .getOrElse(2),
           pap = 2,
@@ -78,8 +82,7 @@ class MispImportSrv(
   def convertAttributeType(attributeCategory: String, attributeType: String)(implicit
       graph: Graph
   ): Try[(ObservableType with Entity, Seq[String])] = {
-    val obsTypeFromConfig = MispConnector
-      .attributeConverter(attributeCategory, attributeType)
+    val obsTypeFromConfig = attributeConverter(attributeCategory, attributeType)
       .flatMap { attrConv =>
         observableTypeSrv
           .get(attrConv.`type`)
@@ -337,7 +340,7 @@ class MispImportSrv(
       }
   }
 
-//  def convertTag(mispTag: MispTag): Tag = tagSrv.parseString(mispTag.name + mispTag.colour.fold("")(c => f"#$c%06X"))
+//  def convertTag(mispTag: MTag): Tag = tagSrv.parseString(mispTag.name + mispTag.colour.fold("")(c => f"#$c%06X"))
 
   def updateOrCreateAlert(
       client: TheHiveMispClient,

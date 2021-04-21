@@ -1,18 +1,15 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.auth.AuthSrvProvider
-import org.thp.scalligraph.models.UpdatableSchema
-import org.thp.scalligraph.query.QueryExecutor
-import org.thp.scalligraph.{ErrorHandler, ScalligraphModule}
-import org.thp.thehive.controllers.ModelDescription
+import org.thp.scalligraph.{ErrorHandler, ScalligraphApplication, ScalligraphModule}
+import org.thp.thehive.TheHiveModule
 import org.thp.thehive.services._
 import play.api.http.HttpErrorHandler
-import play.api.routing.{Router => PlayRouter}
 
-object TheHiveModuleV1 extends ScalligraphModule {
+class TheHiveModuleV1(app: ScalligraphApplication, theHiveModule: TheHiveModule) extends ScalligraphModule {
+
+  def this(app: ScalligraphApplication) = this(app, app.getModule[TheHiveModule])
+
   import com.softwaremill.macwire._
-  import org.thp.thehive.TheHiveModule._
-  import scalligraphApplication._
 
   lazy val authenticationCtrl: AuthenticationCtrl = wire[AuthenticationCtrl]
 
@@ -36,9 +33,7 @@ object TheHiveModuleV1 extends ScalligraphModule {
   lazy val taxonomyCtrl: TaxonomyCtrl                       = wire[TaxonomyCtrl]
   lazy val monitoringCtrl: MonitoringCtrl                   = wire[MonitoringCtrl]
   lazy val theHiveModelDescription: TheHiveModelDescription = wire[TheHiveModelDescription]
-  lazy val entityDescriptions: Seq[ModelDescription] = connectors
-    .toSeq
-    .flatMap(_.modelDescriptions.get(1)) :+ theHiveModelDescription
+  theHiveModule.entityDescriptions += (1 -> theHiveModelDescription)
 
   lazy val properties: Properties     = wire[Properties]
   lazy val shareCtrl: ShareCtrl       = wire[ShareCtrl]
@@ -52,8 +47,6 @@ object TheHiveModuleV1 extends ScalligraphModule {
 
   lazy val errorHandler: HttpErrorHandler = ErrorHandler
 
-  override lazy val routers: Set[PlayRouter]           = Set(wire[Router].withPrefix("/api/v1"))
-  override lazy val queryExecutors: Set[QueryExecutor] = Set(queryExecutor)
-  override val schemas: Set[UpdatableSchema]           = Set.empty
-  override val authSrvProviders: Set[AuthSrvProvider]  = Set.empty
+  app.routers += wire[Router].withPrefix("/api/v1")
+  app.queryExecutors += queryExecutor
 }

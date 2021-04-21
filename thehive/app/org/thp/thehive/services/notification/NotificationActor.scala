@@ -39,8 +39,8 @@ object AuditNotificationMessage {
 }
 
 class NotificationSrv(
-    availableTriggers: Set[TriggerProvider],
-    availableNotifiers: Set[NotifierProvider]
+    availableTriggers: Seq[TriggerProvider],
+    availableNotifiers: Seq[NotifierProvider]
 ) {
 
   val triggers: Map[String, TriggerProvider] = availableTriggers.map(t => t.name -> t).toMap

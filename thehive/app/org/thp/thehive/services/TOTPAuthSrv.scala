@@ -1,13 +1,12 @@
 package org.thp.thehive.services
 
-import com.softwaremill.tagging.@@
 import org.apache.commons.codec.binary.Base32
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, Global, MultiFactorCodeRequired}
+import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCodeRequired}
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
@@ -21,7 +20,7 @@ import scala.util.{Failure, Random, Success, Try}
 class TOTPAuthSrv(
     configuration: Configuration,
     appConfig: ApplicationConfig,
-    availableAuthProviders: Set[AuthSrvProvider],
+    availableAuthProviders: Seq[AuthSrvProvider],
     userSrv: UserSrv,
     db: Database
 ) extends MultiAuthSrv(configuration, appConfig, availableAuthProviders) {
@@ -99,7 +98,7 @@ class TOTPAuthSrv(
 class TOTPAuthSrvProvider(
     configuration: Configuration,
     appConfig: ApplicationConfig,
-    authProviders: Set[AuthSrvProvider] @@ Global,
+    authProviders: Seq[AuthSrvProvider],
     userSrv: UserSrv,
     db: Database
 ) extends Provider[AuthSrv] {

@@ -3,7 +3,7 @@
 //import org.thp.scalligraph.RichSeq
 //import org.thp.scalligraph.auth.AuthContext
 //import org.thp.scalligraph.models.{Database, DummyUserSrv}
-//import org.thp.thehive.TestAppBuilder
+//
 //import org.thp.thehive.models._
 //import play.api.test.PlaySpecification
 //
@@ -20,16 +20,16 @@
 //
 //  "observable service" should {
 //    "create observable" in testApp { app =>
+//      import app._
+//      import app.testModule._
+//
 //      val observable        = Observable(Some("test observable message"), 2, ioc = false, sighted = false)
-//      val observableSrv     = app[ObservableSrv]
-//      val observableTypeSrv = app[ObservableTypeSrv]
-//      val dataSrv           = app[DataSrv]
 //      val tagNames          = Set("t1", "t2", "t3")
 //
 //      (1 to 100).map(i => s"data$i").toTry { dataValue =>
 //        println("====================================")
 //        printTiming("transaction") {
-//          app[Database].tryTransaction { implicit graph =>
+//          database.tryTransaction { implicit graph =>
 //            printTiming("createObservable") {
 //              for {
 //                createdObservable <- printTiming("createEntity")(observableSrv.createEntity(observable))

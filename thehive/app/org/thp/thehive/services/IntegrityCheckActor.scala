@@ -43,7 +43,7 @@ case class CheckState(
 )
 
 sealed trait IntegrityCheckTag
-class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrityCheckOps: Set[GenIntegrityCheckOps]) extends Actor {
+class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrityCheckOps: Seq[GenIntegrityCheckOps]) extends Actor {
 
   import context.dispatcher
 

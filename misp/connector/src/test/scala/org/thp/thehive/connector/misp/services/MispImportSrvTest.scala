@@ -1,25 +1,22 @@
 package org.thp.thehive.connector.misp.services
 
-import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv}
+import org.thp.scalligraph.models.DummyUserSrv
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityId, EntityName}
-import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.connector.misp.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 import play.api.test.PlaySpecification
 
 import java.util.{Date, UUID}
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 
-class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification with TestAppBuilder {
+class MispImportSrvTest extends PlaySpecification with TestAppBuilder {
   sequential
 
   implicit val authContext: AuthContext =
@@ -31,23 +28,34 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
   "MISP client" should {
     "get current user name" in testApp { app =>
-      await(app[TheHiveMispClient].getCurrentUser) must beEqualTo(User("1", "1", "admin@admin.test"))
+      import app._
+      import app.mispConnector._
+
+      await(theHiveMispClient.getCurrentUser) must beEqualTo(User("1", "1", "admin@admin.test"))
     }
 
     "get organisation" in testApp { app =>
-      await(app[TheHiveMispClient].getOrganisation("1")) must beEqualTo(
+      import app._
+      import app.mispConnector._
+
+      await(theHiveMispClient.getOrganisation("1")) must beEqualTo(
         Organisation("1", "ORGNAME", Some("Automatically generated admin organisation"), UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
       )
     }
 
     "get current organisation" in testApp { app =>
-      app[TheHiveMispClient].currentOrganisationName must beSuccessfulTry("ORGNAME")
+      import app.mispConnector._
+
+      theHiveMispClient.currentOrganisationName must beSuccessfulTry("ORGNAME")
     }
 
     "retrieve events" in testApp { app =>
-      val events = app[TheHiveMispClient]
+      import app._
+      import app.mispConnector._
+
+      val events = theHiveMispClient
         .searchEvents(None)
-        .runWith(Sink.seq)(app[Materializer])
+        .runWith(Sink.seq)(materializer)
       val e = await(events)
       Seq(1, 2, 3) must contain(2)
       e must contain(
@@ -72,9 +80,13 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
   "MISP service" should {
     "import events" in testApp { app =>
-      app[Database].roTransaction { implicit graph =>
-        app[MispImportSrv].syncMispEvents(app[TheHiveMispClient])
-        app[AlertSrv].startTraversal.getBySourceId("misp", "ORGNAME", "1").visible(app[OrganisationSrv]).getOrFail("Alert")
+      import app._
+      import app.mispConnector._
+      import app.thehiveModule._
+
+      database.roTransaction { implicit graph =>
+        mispImportSrv.syncMispEvents(theHiveMispClient)
+        alertSrv.startTraversal.getBySourceId("misp", "ORGNAME", "1").visible(organisationSrv).getOrFail("Alert")
       } must beSuccessfulTry
         .which { alert: Alert =>
           alert must beEqualTo(
@@ -100,10 +112,10 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
         }
         .eventually(5, 100.milliseconds)
 
-      val observables = app[Database]
+      val observables = database
         .roTransaction { implicit graph =>
-          app[OrganisationSrv]
-            .get(EntityName("admin"))
+          organisationSrv
+            .get(EntityName("cert"))
             .alerts
             .getBySourceId("misp", "ORGNAME", "1")
             .observables
@@ -113,7 +125,7 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
         .map(o => (o.dataType, o.data, o.tlp, o.message, o.tags.toSet))
 //        println(observables.mkString("\n"))
       observables must contain(
-        ("filename", Some("plop"), 0, Some(""), Set("TEST", "TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
+        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp.category=\"Artifacts dropped\"", "misp.type=\"filename\""))
       )
     }
   }

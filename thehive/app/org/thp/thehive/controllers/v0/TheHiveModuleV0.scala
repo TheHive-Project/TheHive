@@ -1,18 +1,16 @@
 package org.thp.thehive.controllers.v0
 
-import org.thp.scalligraph.auth.AuthSrvProvider
-import org.thp.scalligraph.models.UpdatableSchema
-import org.thp.scalligraph.query.QueryExecutor
-import org.thp.scalligraph.{ErrorHandler, ScalligraphModule}
-import org.thp.thehive.controllers.ModelDescription
+import com.softwaremill.macwire.Module
+import org.thp.scalligraph.{ErrorHandler, ScalligraphApplication, ScalligraphModule}
+import org.thp.thehive.TheHiveModule
 import org.thp.thehive.services.{OrganisationConfigContext, UserConfigContext}
 import play.api.http.HttpErrorHandler
-import play.api.routing.{Router => PlayRouter}
 
-object TheHiveModuleV0 extends ScalligraphModule {
+@Module
+class TheHiveModuleV0(app: ScalligraphApplication, theHiveModule: TheHiveModule) extends ScalligraphModule {
+  def this(app: ScalligraphApplication) = this(app, app.getModule[TheHiveModule])
+
   import com.softwaremill.macwire._
-  import org.thp.thehive.TheHiveModule._
-  import scalligraphApplication._
 
   lazy val authenticationCtrl: AuthenticationCtrl = wire[AuthenticationCtrl]
 
@@ -52,9 +50,7 @@ object TheHiveModuleV0 extends ScalligraphModule {
   lazy val statusCtrl: StatusCtrl                           = wire[StatusCtrl]
   lazy val statsCtrl: StatsCtrl                             = wire[StatsCtrl]
   lazy val theHiveModelDescription: TheHiveModelDescription = wire[TheHiveModelDescription]
-  lazy val entityDescriptions: Seq[ModelDescription] = connectors
-    .toSeq
-    .flatMap(_.modelDescriptions.get(0)) :+ theHiveModelDescription
+  theHiveModule.entityDescriptions += (0 -> theHiveModelDescription)
 
   lazy val permissionCtrl: PermissionCtrl = wire[PermissionCtrl]
   lazy val describeCtrl: DescribeCtrl     = wire[DescribeCtrl]
@@ -69,9 +65,8 @@ object TheHiveModuleV0 extends ScalligraphModule {
 
   lazy val errorHandler: HttpErrorHandler = ErrorHandler
 
-  lazy val router: Router                              = wire[Router]
-  override lazy val routers: Set[PlayRouter]           = Set(router.withPrefix("/api"), router.withPrefix("/api/v0"))
-  override lazy val queryExecutors: Set[QueryExecutor] = Set(queryExecutor)
-  override val schemas: Set[UpdatableSchema]           = Set.empty
-  override val authSrvProviders: Set[AuthSrvProvider]  = Set.empty
+  lazy val router: Router = wire[Router]
+  app.routers += router.withPrefix("/api")
+  app.routers += router.withPrefix("/api/v0")
+  app.queryExecutors += queryExecutor
 }

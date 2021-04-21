@@ -4,7 +4,7 @@ import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
+
 import org.thp.thehive.models._
 import org.thp.thehive.services.DashboardOps._
 import play.api.libs.json.{JsObject, Json}
@@ -15,6 +15,9 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
 
   s" dashboard service" should {
     "create dashboards" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+
       val definition =
         Json
           .parse("""{
@@ -53,8 +56,8 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
              }
           }""")
           .as[JsObject]
-      app[Database].tryTransaction { implicit graph =>
-        app[DashboardSrv].create(Dashboard("dashboard test 1", "desc dashboard test 1", definition))
+      database.tryTransaction { implicit graph =>
+        dashboardSrv.create(Dashboard("dashboard test 1", "desc dashboard test 1", definition))
       } must beASuccessfulTry.which { d =>
         d.title shouldEqual "dashboard test 1"
         d.organisationShares must beEmpty
@@ -63,30 +66,38 @@ class DashboardSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "share a dashboard" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].startTraversal.has(_.title, "dashboard soc").getOrFail("Dashboard")
-          _ = app[DashboardSrv].get(dashboard).visible.headOption must beNone
-          _ <- app[DashboardSrv].share(dashboard, EntityName("cert"), writable = false)
-          _ = app[DashboardSrv].get(dashboard).visible.headOption must beSome
+          dashboard <- dashboardSrv.startTraversal.has(_.title, "dashboard soc").getOrFail("Dashboard")
+          _ = dashboardSrv.get(dashboard).visible.headOption must beNone
+          _ <- dashboardSrv.share(dashboard, EntityName("cert"), writable = false)
+          _ = dashboardSrv.get(dashboard).visible.headOption must beSome
         } yield ()
       } must beASuccessfulTry
     }
 //    "update dashboard share status" in testApp { app =>
-//      app[Database].tryTransaction { implicit graph =>
+//    import app._
+//    import app.testModule._
+//      database.tryTransaction { implicit graph =>
 //        for {
-//          dashboard <- app[DashboardSrv].initSteps.has("title", "dashboard-cert").getOrFail()
-//          _         <- app[DashboardSrv].shareUpdate(dashboard, status = true)
+//          dashboard <- dashboardSrv.initSteps.has("title", "dashboard-cert").getOrFail()
+//          _         <- dashboardSrv.shareUpdate(dashboard, status = true)
 //        } yield ()
 //      } must beSuccessfulTry
 //    }
 
     "remove a dashboard" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
         for {
-          dashboard <- app[DashboardSrv].startTraversal.has(_.title, "dashboard soc").getOrFail("Dashboard")
-          _         <- app[DashboardSrv].remove(dashboard)
-        } yield app[DashboardSrv].startTraversal.has(_.title, "dashboard soc").exists
+          dashboard <- dashboardSrv.startTraversal.has(_.title, "dashboard soc").getOrFail("Dashboard")
+          _         <- dashboardSrv.remove(dashboard)
+        } yield dashboardSrv.startTraversal.has(_.title, "dashboard soc").exists
       } must beASuccessfulTry(false)
     }
   }

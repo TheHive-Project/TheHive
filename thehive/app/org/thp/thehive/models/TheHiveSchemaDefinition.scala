@@ -506,10 +506,6 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema {
       .toSeq
   }
 
-  override lazy val initialValues: Seq[InitialValue[_]] = modelList.collect {
-    case vertexModel: VertexModel => vertexModel.getInitialValues
-  }.flatten
-
   private def tagString(namespace: String, predicate: String, value: String): String =
     (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
       (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +

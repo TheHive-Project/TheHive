@@ -3,15 +3,15 @@ package org.thp.thehive.connector.cortex.services
 import akka.actor.ActorRef
 import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.structure.Element
-import org.thp.cortex.client.CortexClient
+import org.thp.cortex.client.{CortexClient, CortexClientConfig}
 import org.thp.cortex.dto.v0.{InputAction => CortexAction, OutputJob => CortexJob}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
+import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{EntityId, NotFoundError}
-import org.thp.thehive.connector.cortex.CortexConnector
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.ActionOps._
@@ -36,6 +36,7 @@ class ActionSrv(
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
     logSrv: LogSrv,
+    clientsConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]],
     implicit val schema: Schema,
     implicit val db: Database,
     implicit val ec: ExecutionContext,
@@ -44,6 +45,8 @@ class ActionSrv(
 
   lazy val cortexActor: ActorRef @@ CortexTag = _cortexActor
   val actionContextSrv                        = new EdgeSrv[ActionContext, Action, Product]
+
+  def clients: Seq[CortexClient] = clientsConfig.get
 
   /**
     * Executes an Action on user demand,
@@ -58,7 +61,7 @@ class ActionSrv(
       writes: OWrites[Entity],
       authContext: AuthContext
   ): Future[RichAction] = {
-    val cortexClients = serviceHelper.availableCortexClients(CortexConnector.clients, authContext.organisation)
+    val cortexClients = serviceHelper.availableCortexClients(clients, authContext.organisation)
     for {
       client <- cortexId match {
         case Some(cortexId) =>

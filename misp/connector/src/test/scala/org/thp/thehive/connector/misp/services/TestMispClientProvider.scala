@@ -12,16 +12,16 @@ import javax.inject.Provider
 import scala.concurrent.ExecutionContext
 import scala.io.Source
 
-class TestMispClientProvider(Action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
+class TestMispClientProvider(action: DefaultActionBuilder, implicit val fileMimeTypes: FileMimeTypes, implicit val ec: ExecutionContext)
     extends Provider[TheHiveMispClient] {
   val baseUrl = "https://misp.test/"
 
   val ws: MockWS = MockWS {
-    case (GET, "https://misp.test/users/view/me")        => Action(Results.Ok.sendResource("user.json"))
-    case (GET, "https://misp.test/organisations/view/1") => Action(Results.Ok.sendResource("organisation.json"))
-    case (POST, "https://misp.test/events/index")        => Action(Results.Ok.sendResource("events.json"))
+    case (GET, "https://misp.test/users/view/me")        => action(Results.Ok.sendResource("user.json"))
+    case (GET, "https://misp.test/organisations/view/1") => action(Results.Ok.sendResource("organisation.json"))
+    case (POST, "https://misp.test/events/index")        => action(Results.Ok.sendResource("events.json"))
     case (POST, "https://misp.test/attributes/restSearch/json") =>
-      Action { request =>
+      action { request =>
         val predicate = request
           .body
           .asJson
@@ -30,7 +30,7 @@ class TestMispClientProvider(Action: DefaultActionBuilder, implicit val fileMime
 //            println(s"Filter is $json")
               (attr: JsValue) =>
                 (json \ "request" \ "timestamp").asOpt[Long].fold(true)(d => (attr \ "timestamp").asOpt[String].exists(_.toLong > d * 1000)) &&
-                (json \ "request" \ "eventid").asOpt[String].fold(true)(e => (attr \ "event_id").asOpt[String].filter(_ == "1").contains(e))
+                (json \ "request" \ "eventid").asOpt[String].fold(true)(e => (attr \ "event_id").asOpt[String].contains(e))
           }
         val attributes = readResourceAsJson("/attributes.json").as[Seq[JsValue]].filter { a =>
           val f = predicate(a)
@@ -39,9 +39,9 @@ class TestMispClientProvider(Action: DefaultActionBuilder, implicit val fileMime
         }
         Results.Ok(Json.obj("response" -> Json.obj("Attribute" -> attributes)))
       }
-    case (GET, "https://misp.test/attributes/download/3") => Action(Results.Ok.sendResource("user.json"))
-    case (GET, "https://misp.test/attributes/download/9") => Action(Results.Ok.sendResource("user.json"))
-    case _                                                => Action(Results.NotFound)
+    case (GET, "https://misp.test/attributes/download/3") => action(Results.Ok.sendResource("user.json"))
+    case (GET, "https://misp.test/attributes/download/9") => action(Results.Ok.sendResource("user.json"))
+    case _                                                => action(Results.NotFound)
   }
 
   def readResourceAsJson(name: String): JsValue = {

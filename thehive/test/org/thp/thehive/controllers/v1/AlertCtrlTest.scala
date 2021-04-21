@@ -1,11 +1,9 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertSrv
 import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -49,10 +47,12 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
   "alert controller" should {
 
     "create a new alert" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/alert")
         .withJsonBody(Json.toJson(InputAlert("test", "source1", "sourceRef1", None, "new alert", "test alert")))
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[AlertCtrl].create(request)
+      val result = alertCtrl.create(request)
       status(result) must_=== 201
       val createdAlert = contentAsJson(result).as[OutputAlert]
       val expected = OutputAlert(
@@ -86,21 +86,25 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "fail to create a duplicated alert" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/alert")
         .withJsonBody(Json.toJson(InputAlert("testType", "testSource", "ref2", None, "new alert", "test alert")))
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[AlertCtrl].create(request)
+      val result = alertCtrl.create(request)
       status(result) must_=== 400
     }
 
     "create an alert with a case template" in testApp { app =>
+      import app.thehiveModuleV1._
+
       val request = FakeRequest("POST", "/api/v1/alert")
         .withJsonBody(
           Json.toJsObject(InputAlert("test", "source1", "sourceRef1Template", None, "new alert", "test alert"))
             + ("caseTemplate" -> JsString("spam"))
         )
         .withHeaders("user" -> "certuser@thehive.local")
-      val result = app[AlertCtrl].create(request)
+      val result = alertCtrl.create(request)
       status(result) must_=== 201
       val createdAlert = contentAsJson(result).as[OutputAlert]
       val expected = OutputAlert(
@@ -134,12 +138,15 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get an alert" in testApp { app =>
-      val alertSrv = app.apply[AlertSrv]
-      app.apply[Database].roTransaction { implicit graph =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
+      database.roTransaction { implicit graph =>
         alertSrv.startTraversal.has(_.sourceRef, "ref1").getOrFail("Alert")
       } must beSuccessfulTry.which { alert: Alert with Entity =>
         val request = FakeRequest("GET", s"/api/v1/alert/${alert._id}").withHeaders("user" -> "socuser@thehive.local")
-        val result  = app[AlertCtrl].get(alert._id.toString)(request)
+        val result  = alertCtrl.get(alert._id.toString)(request)
         status(result) must_=== 200
         val resultAlert = contentAsJson(result).as[OutputAlert]
         val expected = TestAlert(

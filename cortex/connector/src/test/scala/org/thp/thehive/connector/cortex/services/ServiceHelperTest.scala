@@ -1,12 +1,10 @@
 package org.thp.thehive.connector.cortex.services
 
-import org.thp.cortex.client.CortexClient
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
+import org.thp.thehive.connector.cortex.TestAppBuilder
 import org.thp.thehive.models.Organisation
-import org.thp.thehive.services._
+import org.thp.thehive.services.{TestAppBuilder => _}
 import play.api.test.PlaySpecification
 
 class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
@@ -24,10 +22,14 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
 
   "service helper" should {
     "filter properly organisations according to supplied config" in testApp { app =>
-      val r = app[Database].roTransaction { implicit graph =>
-        app[ServiceHelper]
+      import app._
+      import app.cortexConnector._
+      import app.thehiveModule._
+
+      val r = database.roTransaction { implicit graph =>
+        serviceHelper
           .organisationFilter(
-            app.apply[OrganisationSrv].startTraversal,
+            organisationSrv.startTraversal,
             List("*"),
             List("cert")
           )
@@ -35,10 +37,10 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
       }
       r must contain(Organisation.administration)
 
-      val r2 = app[Database].roTransaction { implicit graph =>
-        app[ServiceHelper]
+      val r2 = database.roTransaction { implicit graph =>
+        serviceHelper
           .organisationFilter(
-            app.apply[OrganisationSrv].startTraversal,
+            organisationSrv.startTraversal,
             Nil,
             Nil
           )
@@ -48,10 +50,11 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return the correct filtered CortexClient list" in testApp { app =>
-      val client = app[CortexClient]
-      val r      = app[ServiceHelper].availableCortexClients(Seq(client), EntityName(Organisation.administration.name))
+      import app.cortexConnector._
 
-      r must contain(client)
+      val r = serviceHelper.availableCortexClients(Seq(cortexClient), EntityName(Organisation.administration.name))
+
+      r must contain(cortexClient)
     }
   }
 }

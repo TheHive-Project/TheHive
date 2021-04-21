@@ -1,12 +1,11 @@
 package org.thp.thehive.controllers.v0
 
-import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.{EntityName, Global, ScalligraphApplicationLoader}
+import org.thp.scalligraph.{EntityName, ScalligraphApplicationLoader}
 import org.thp.thehive.models.{HealthStatus, User}
 import org.thp.thehive.services.{Connector, UserSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
@@ -20,8 +19,8 @@ class StatusCtrl(
     appConfig: ApplicationConfig,
     authSrv: AuthSrv,
     userSrv: UserSrv,
-    connectors: Set[Connector],
-    schemas: Set[UpdatableSchema] @@ Global,
+    connectors: Seq[Connector],
+    schemas: Seq[UpdatableSchema],
     db: Database
 ) {
 
@@ -75,7 +74,7 @@ class StatusCtrl(
       val dbStatus = db
         .roTransaction(graph => userSrv.getOrFail(EntityName(User.system.login))(graph))
         .fold(_ => HealthStatus.Error, _ => HealthStatus.Ok)
-      val connectorStatus = connectors.map(c => c.health)
+      val connectorStatus = connectors.map(c => c.health).toSet
       val distinctStatus  = connectorStatus + dbStatus
       val globalStatus =
         if (distinctStatus.contains(HealthStatus.Ok))

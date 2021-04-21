@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.thehive.TestAppBuilder
+
 import org.thp.thehive.models._
 import play.api.libs.json._
 import play.api.test.PlaySpecification
@@ -13,8 +13,11 @@ class CustomFieldSrvTest extends PlaySpecification with TestAppBuilder {
 
   "custom field service" should {
     "create a custom field" in testApp { app =>
-      app[Database].tryTransaction { implicit graph =>
-        app[CustomFieldSrv].create(
+      import app._
+      import app.thehiveModule._
+
+      database.tryTransaction { implicit graph =>
+        customFieldSrv.create(
           CustomField(
             "cf 1",
             "displayed cf 1",
@@ -32,17 +35,23 @@ class CustomFieldSrvTest extends PlaySpecification with TestAppBuilder {
       }
 
       "delete custom fields" in testApp { app =>
-        app[Database].tryTransaction { implicit graph =>
+        import app._
+        import app.thehiveModule._
+
+        database.tryTransaction { implicit graph =>
           for {
-            cf <- app[CustomFieldSrv].getOrFail(EntityName("boolean1"))
-            _  <- app[CustomFieldSrv].delete(cf, force = true)
+            cf <- customFieldSrv.getOrFail(EntityName("boolean1"))
+            _  <- customFieldSrv.delete(cf, force = true)
           } yield ()
         } must beSuccessfulTry
       }
 
       "count use of custom fields" in testApp { app =>
-        app[Database].roTransaction { implicit graph =>
-          app[CustomFieldSrv].useCount(app[CustomFieldSrv].getOrFail(EntityName("boolean1")).get)
+        import app._
+        import app.thehiveModule._
+
+        database.roTransaction { implicit graph =>
+          customFieldSrv.useCount(customFieldSrv.getOrFail(EntityName("boolean1")).get)
         } shouldEqual Map("Case" -> 1, "CaseTemplate" -> 1)
       }
     }

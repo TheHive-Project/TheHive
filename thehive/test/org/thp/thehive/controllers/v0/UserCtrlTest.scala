@@ -1,12 +1,8 @@
 package org.thp.thehive.controllers.v0
 
-import akka.stream.Materializer
-import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthenticationError, EntityName}
-import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.dto.v0.OutputUser
-import org.thp.thehive.services.UserSrv
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -21,6 +17,9 @@ object TestUser {
 class UserCtrlTest extends PlaySpecification with TestAppBuilder {
   "user controller" should {
     "search users" in testApp { app =>
+      import app._
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("POST", "/api/v0/user/_search?range=all&sort=%2Bname")
         .withJsonBody(
           Json.parse(
@@ -29,10 +28,10 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
         )
         .withHeaders("user" -> "socadmin@thehive.local")
 
-      val result = app[UserCtrl].search(request)
+      val result = userCtrl.search(request)
       status(result) must_=== 200
 
-      val resultUsers = contentAsJson(result)(defaultAwaitTimeout, app[Materializer])
+      val resultUsers = contentAsJson(result)(defaultAwaitTimeout, materializer)
       val expected =
         Seq(
           TestUser(
@@ -49,11 +48,13 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "create a new user" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("POST", "/api/v0/user")
         .withJsonBody(Json.parse("""{"login": "certXX@thehive.local", "name": "new user", "roles": ["read", "write", "alert"]}"""))
         .withHeaders("user" -> "certadmin@thehive.local")
 
-      val result = app[UserCtrl].create(request)
+      val result = userCtrl.create(request)
       status(result) must_=== 201
 
       val resultUser = contentAsJson(result).as[OutputUser]
@@ -70,11 +71,13 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a user" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("POST", "/api/v0/user/certuser@thehive.local")
         .withJsonBody(Json.parse("""{"name": "new name"}"""))
         .withHeaders("user" -> "certadmin@thehive.local")
 
-      val result = app[UserCtrl].update("certuser@thehive.local")(request)
+      val result = userCtrl.update("certuser@thehive.local")(request)
       status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       val resultUser = contentAsJson(result).as[OutputUser]
@@ -82,16 +85,18 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "lock an user" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val authRequest1 = FakeRequest("POST", "/api/v0/login")
         .withJsonBody(Json.parse("""{"user": "certuser@thehive.local", "password": "my-secret-password"}"""))
-      val authResult1 = app[AuthenticationCtrl].login(authRequest1)
+      val authResult1 = authenticationCtrl.login(authRequest1)
       status(authResult1) must_=== 200
 
       val request = FakeRequest("POST", "/api/v0/user/certuser@thehive.local")
         .withJsonBody(Json.parse("""{"status": "Locked"}"""))
         .withHeaders("user" -> "certadmin@thehive.local")
 
-      val result = app[UserCtrl].update("certuser@thehive.local")(request)
+      val result = userCtrl.update("certuser@thehive.local")(request)
       status(result) must_=== 200
       val resultUser = contentAsJson(result).as[OutputUser]
       resultUser.status must_=== "Locked"
@@ -99,52 +104,60 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
       // then authentication must fail
       val authRequest2 = FakeRequest("POST", "/api/v0/login")
         .withJsonBody(Json.parse("""{"user": "certuser@thehive.local", "password": "my-secret-password"}"""))
-      val authResult2 = app[AuthenticationCtrl].login(authRequest2)
+      val authResult2 = authenticationCtrl.login(authRequest2)
       status(authResult2) must_=== 401
     }
 
     "unlock an user" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val keyAuthRequest = FakeRequest("GET", "/api/v0/user/current")
         .withHeaders("Authorization" -> "Bearer azertyazerty")
 
-      status(app[UserCtrl].current(keyAuthRequest)) must throwA[AuthenticationError]
+      status(userCtrl.current(keyAuthRequest)) must throwA[AuthenticationError]
 
       val request = FakeRequest("POST", "/api/v0/user/certro@thehive.local")
         .withJsonBody(Json.parse("""{"status": "Ok"}"""))
         .withHeaders("user" -> "certadmin@thehive.local")
 
-      val result = app[UserCtrl].update("certro@thehive.local")(request)
+      val result = userCtrl.update("certro@thehive.local")(request)
       status(result) must beEqualTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
       val resultUser = contentAsJson(result).as[OutputUser]
       resultUser.status must_=== "Ok"
 
-      status(app[UserCtrl].current(keyAuthRequest)) must_=== 200
+      status(userCtrl.current(keyAuthRequest)) must_=== 200
     }
 
     "remove a user (lock)" in testApp { app =>
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("DELETE", "/api/v0/user/certro@thehive.local")
         .withHeaders("user" -> "certadmin@thehive.local")
-      val result = app[UserCtrl].lock("certro@thehive.local")(request)
+      val result = userCtrl.lock("certro@thehive.local")(request)
 
       status(result) must beEqualTo(204)
 
       val requestGet = FakeRequest("POST", "/api/v0/user/certro@thehive.local")
         .withHeaders("user" -> "certadmin@thehive.local")
-      val resultGet = app[UserCtrl].get("certro@thehive.local")(requestGet)
+      val resultGet = userCtrl.get("certro@thehive.local")(requestGet)
 
       status(resultGet) must_=== 200
       contentAsJson(resultGet).as[OutputUser].status must beEqualTo("Locked")
     }
 
     "remove a user (force)" in testApp { app =>
+      import app._
+      import app.thehiveModule._
+      import app.thehiveModuleV0._
+
       val request = FakeRequest("DELETE", "/api/v0/user/certro@thehive.local/force")
         .withHeaders("user" -> "certadmin@thehive.local")
-      val result = app[UserCtrl].delete("certro@thehive.local")(request)
+      val result = userCtrl.delete("certro@thehive.local")(request)
 
       status(result) must beEqualTo(204)
 
-      app[Database].roTransaction { implicit graph =>
-        app[UserSrv].get(EntityName("certro@thehive.local")).exists
+      database.roTransaction { implicit graph =>
+        userSrv.get(EntityName("certro@thehive.local")).exists
       } must beFalse
     }
   }

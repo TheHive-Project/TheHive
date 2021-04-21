@@ -5,7 +5,7 @@ import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.TestAppBuilder
+
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
 
@@ -17,12 +17,15 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
 
   "audit service" should {
     "get main audits by ids and sorted" in testApp { app =>
-      val org = app[Database].roTransaction { implicit graph =>
-        app[OrganisationSrv].getOrFail(EntityName("cert")).get
+      import app._
+      import app.thehiveModule._
+
+      val org = database.roTransaction { implicit graph =>
+        organisationSrv.getOrFail(EntityName("cert")).get
       }
       // Create 3 case events first
-      val c1 = app[Database].tryTransaction { implicit graph =>
-        val c = app[CaseSrv]
+      val c1 = database.tryTransaction { implicit graph =>
+        val c = caseSrv
           .create(
             Case(
               title = "case audit",
@@ -44,12 +47,12 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
             Nil
           )
           .get
-        app[CaseSrv].updateTags(c.`case`, Set("lol")).get
+        caseSrv.updateTags(c.`case`, Set("lol")).get
         Success(c)
       }.get
 
-      app[Database].tryTransaction { implicit graph =>
-        app[CaseSrv].createTask(
+      database.tryTransaction { implicit graph =>
+        caseSrv.createTask(
           c1.`case`,
           Task(
             title = "test audit",
@@ -65,10 +68,10 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
           )
         )
       }
-      app[Database].roTransaction { implicit graph =>
-        val audits = app[AuditSrv].startTraversal.toSeq
+      database.roTransaction { implicit graph =>
+        val audits = auditSrv.startTraversal.toSeq
 
-        val r = app[AuditSrv].getMainByIds(Order.asc, audits.map(_._id): _*).toSeq
+        val r = auditSrv.getMainByIds(Order.asc, audits.map(_._id): _*).toSeq
 
         // Only the main ones
         r.head shouldEqual audits.filter(_.mainAction).minBy(_._createdAt)
@@ -76,9 +79,12 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "merge audits" in testApp { app =>
-      val auditedTask = app[Database]
+      import app._
+      import app.thehiveModule._
+
+      val auditedTask = database
         .tryTransaction(implicit graph =>
-          app[TaskSrv].create(
+          taskSrv.create(
             Task(
               title = "test audit 1",
               group = "",
@@ -95,13 +101,13 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder {
           )
         )
         .get
-      app[Database].tryTransaction { implicit graph =>
-        app[AuditSrv].mergeAudits(app[TaskSrv].update(app[TaskSrv].get(auditedTask._id), Nil)) {
+      database.tryTransaction { implicit graph =>
+        auditSrv.mergeAudits(taskSrv.update(taskSrv.get(auditedTask._id), Nil)) {
           case (taskSteps, updatedFields) =>
             taskSteps
               .clone()
               .getOrFail("Task")
-              .flatMap(app[AuditSrv].task.update(_, updatedFields))
+              .flatMap(auditSrv.task.update(_, updatedFields))
         }
       } must beSuccessfulTry
     }

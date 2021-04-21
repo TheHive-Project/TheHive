@@ -3,13 +3,12 @@ package org.thp.thehive.controllers.v1
 import akka.actor.ActorSystem
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.{Cluster, Member}
-import com.softwaremill.tagging.@@
+import org.thp.scalligraph.ScalligraphApplicationLoader
 import org.thp.scalligraph.auth.{AuthCapability, AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.UpdatableSchema
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.{Global, ScalligraphApplicationLoader}
 import org.thp.thehive.models.User
 import play.api.libs.json.{JsObject, JsString, Json, Writes}
 import play.api.mvc.{AbstractController, Action, AnyContent, Results}
@@ -21,7 +20,7 @@ class StatusCtrl(
     entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     authSrv: AuthSrv,
-    schemas: Set[UpdatableSchema] @@ Global,
+    schemas: Seq[UpdatableSchema],
     system: ActorSystem
 ) {
 

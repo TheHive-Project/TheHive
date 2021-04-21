@@ -152,7 +152,7 @@ class DescribeCtrl(
     applicationConfig: ApplicationConfig,
     cacheApi: SyncCacheApi,
     entrypoint: Entrypoint,
-    modelDescriptions: Seq[ModelDescription]
+    versionedModelDescriptions: Seq[(Int, ModelDescription)]
 ) {
 
   val cacheExpireConfig: ConfigItem[Duration, Duration] =
@@ -160,7 +160,9 @@ class DescribeCtrl(
   def cacheExpire: Duration = cacheExpireConfig.get
 
   def entityDescriptions: Seq[EntityDescription] =
-    cacheApi.getOrElseUpdate("describe.v1", cacheExpire)(modelDescriptions.flatMap(_.entityDescriptions))
+    cacheApi.getOrElseUpdate("describe.v1", cacheExpire)(versionedModelDescriptions.collect {
+      case (0, desc) => desc.entityDescriptions
+    }.flatten)
 
   def describe(modelName: String): Action[AnyContent] =
     entrypoint("describe model")

@@ -1,9 +1,9 @@
 package org.thp.client
 
+import org.specs2.mutable.Specification
 import play.api.libs.json.{JsObject, Json}
-import play.api.test.PlaySpecification
 
-class ProxyWSTest extends PlaySpecification {
+class ProxyWSTest extends Specification {
   "WS config" should {
     "be serializable" in {
       val proxyWSConfig = JsObject.empty.as[ProxyWSConfig]

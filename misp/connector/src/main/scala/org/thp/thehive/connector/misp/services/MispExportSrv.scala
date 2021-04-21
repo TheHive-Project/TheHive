@@ -1,12 +1,12 @@
 package org.thp.thehive.connector.misp.services
 
-import org.thp.misp.dto.{Attribute, Tag => MispTag}
+import org.thp.misp.dto.{Attribute, Tag => MTag}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
-import org.thp.thehive.connector.misp.MispConnector
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -23,15 +23,22 @@ class MispExportSrv(
     attachmentSrv: AttachmentSrv,
     alertSrv: AlertSrv,
     organisationSrv: OrganisationSrv,
-    db: Database
+    db: Database,
+    clientsConfig: ConfigItem[Seq[TheHiveMispClientConfig], Seq[TheHiveMispClient]],
+    attributeConvertersConfig: ConfigItem[Seq[AttributeConverter], Seq[AttributeConverter]]
 ) {
 
   lazy val logger: Logger = Logger(getClass)
 
+  def clients: Seq[TheHiveMispClient] = clientsConfig.get
+
+  def attributeConverter(observableType: String): Option[(String, String)] =
+    attributeConvertersConfig.get.reverseIterator.find(_.`type`.value == observableType).map(a => a.mispCategory -> a.mispType)
+
   def observableToAttribute(observable: RichObservable, exportTags: Boolean): Option[Attribute] = {
     lazy val mispTags =
       if (exportTags)
-        observable.tags.map(t => MispTag(None, t, None, None)) ++ tlpTags.get(observable.tlp) // FIXME Add colour
+        observable.tags.map(t => MTag(None, t, None, None)) ++ tlpTags.get(observable.tlp) // FIXME Add colour
       else
         tlpTags.get(observable.tlp).toSeq
 
@@ -49,7 +56,7 @@ class MispExportSrv(
         case 128 => "sha512"
       }
       .map("Payload delivery" -> _)
-      .orElse(MispConnector.attributeConverter(observable.dataType))
+      .orElse(attributeConverter(observable.dataType))
       .map {
         case (cat, tpe) =>
           Attribute(
@@ -78,8 +85,7 @@ class MispExportSrv(
   }
 
   def getMispClient(mispId: String): Future[TheHiveMispClient] =
-    MispConnector
-      .clients
+    clients
       .find(_.name == mispId)
       .fold[Future[TheHiveMispClient]](Future.failed(NotFoundError(s"MISP server $mispId not found"))) {
         case client if client.canExport => Future.successful(client)
@@ -111,10 +117,10 @@ class MispExportSrv(
   }
 
   val tlpTags = Map(
-    0 -> MispTag(None, "tlp:white", None, None),
-    1 -> MispTag(None, "tlp:green", None, None),
-    2 -> MispTag(None, "tlp:amber", None, None),
-    3 -> MispTag(None, "tlp:red", None, None)
+    0 -> MTag(None, "tlp:white", None, None),
+    1 -> MTag(None, "tlp:green", None, None),
+    2 -> MTag(None, "tlp:amber", None, None),
+    3 -> MTag(None, "tlp:red", None, None)
   )
   def createEvent(client: TheHiveMispClient, `case`: Case with Entity, attributes: Seq[Attribute], extendsEvent: Option[String])(implicit
       ec: ExecutionContext
@@ -122,7 +128,7 @@ class MispExportSrv(
     val mispTags =
       if (client.exportCaseTags)
         db.roTransaction { implicit graph =>
-          caseSrv.get(`case`._id).tags.toSeq.map(t => MispTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(`case`.tlp)
+          caseSrv.get(`case`._id).tags.toSeq.map(t => MTag(None, t.toString, Some(t.colour), None)) ++ tlpTags.get(`case`.tlp)
         }
       else tlpTags.get(`case`.tlp).toSeq
     client.createEvent(

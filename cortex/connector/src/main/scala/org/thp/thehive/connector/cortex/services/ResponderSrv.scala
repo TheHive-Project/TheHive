@@ -1,10 +1,11 @@
 package org.thp.thehive.connector.cortex.services
 
+import org.thp.cortex.client.{CortexClient, CortexClientConfig}
 import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
-import org.thp.thehive.connector.cortex.CortexConnector
+import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.thehive.controllers.v0.Conversion.toObjectType
 import org.thp.thehive.models.Permissions
 import play.api.Logger
@@ -17,10 +18,13 @@ class ResponderSrv(
     db: Database,
     entityHelper: EntityHelper,
     serviceHelper: ServiceHelper,
+    clientsConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]],
     implicit val ec: ExecutionContext
 ) {
 
   lazy val logger: Logger = Logger(getClass)
+
+  def clients: Seq[CortexClient] = clientsConfig.get
 
   /**
     * Gets a list of OutputCortexWorker from all available CortexClients
@@ -41,7 +45,7 @@ class ResponderSrv(
       (_, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
       responders <-
         Future
-          .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, authContext.organisation))(client =>
+          .traverse(serviceHelper.availableCortexClients(clients, authContext.organisation))(client =>
             client
               .getRespondersByType(entityType)
               .transform {
@@ -67,7 +71,7 @@ class ResponderSrv(
 
   def searchResponders(query: JsObject, organisation: EntityIdOrName): Future[Map[OutputWorker, Seq[String]]] =
     Future
-      .traverse(serviceHelper.availableCortexClients(CortexConnector.clients, organisation)) { client =>
+      .traverse(serviceHelper.availableCortexClients(clients, organisation)) { client =>
         client
           .searchResponders(query)
           .transform {
