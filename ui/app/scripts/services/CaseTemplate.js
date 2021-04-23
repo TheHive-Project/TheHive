@@ -5,7 +5,8 @@
             var defer = $q.defer();
             $http.post('./api/case/template/_search', {}, {
                 params: {
-                    range: 'all'
+                    range: 'all',
+                    sort: '+name'
                 }
             }).then(function(response) {
                 defer.resolve(response.data);
