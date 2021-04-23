@@ -2,6 +2,7 @@
     <div ng-Class="{ 'col-md-9': appLayout.showFlow, 'col-md-12': !appLayout.showFlow}">
         <div class="box">
             <div class="box-header with-border">
+                <h3 class="box-title" ng-if="view.data == 'mycases'">My Cases ({{list.total}})</h3>
                 <h3 class="box-title" ng-if="view.data == 'mytasks'">My tasks ({{list.total}})</h3>
                 <h3 class="box-title" ng-if="view.data == 'waitingtasks'">Waiting tasks ({{list.total}})</h3>
 
@@ -29,6 +30,10 @@
                 <div ng-switch="view.data">
                     <div class="main-fadein" ng-switch-when="waitingtasks">
                         <div ng-include="'views/partials/index-waitingtasks.html'"></div>
+                    </div>
+
+                    <div class="main-fadein" ng-switch-when="mycases">
+                        <div ng-include="'views/partials/index-mycases.html'"></div>
                     </div>
 
                     <div class="main-fadein" ng-switch-default>

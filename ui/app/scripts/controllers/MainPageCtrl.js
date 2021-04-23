@@ -38,6 +38,24 @@
                     sort: '-startDate',
                     nparent: 1
                 });
+            }  else if ($stateParams.viewId === 'mycases') {
+                $rootScope.title = 'My cases';
+                $scope.view.data = 'mycases';
+                $scope.list = PSearchSrv(undefined, 'case', {
+                    scope: $scope,
+                    baseFilter: {
+                        '_and': [{
+                            '_in': {
+                                '_field': 'status',
+                                '_values': ['Open']
+                            }
+                        }, {
+                            'owner': $scope.currentUser.id
+                        }]
+                    },
+                    sort: ['-flag', '-startDate'],
+                    nparent: 1
+                });
             }
 
             // init values

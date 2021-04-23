@@ -44,6 +44,11 @@
                     </ul>
                 </li> -->
                 <li ui-sref-active="active">
+                    <a ui-sref="app.main({viewId: 'mycases'})">My cases
+                        <span class="badge alert-danger">{{myCases.count}}</span>
+                    </a>
+                </li>
+                <li ui-sref-active="active">
                     <a ui-sref="app.main({viewId: 'mytasks'})">My tasks
                         <span class="badge alert-danger">{{myCurrentTasks.count}}</span>
                     </a>
