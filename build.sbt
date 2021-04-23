@@ -189,6 +189,22 @@ lazy val thehiveClient = (project in file("client"))
     )
   )
 
+lazy val thehiveShell = (project in file("shell"))
+  .dependsOn(thehiveCore)
+  .dependsOn(scalligraph % "compile -> test")
+  .dependsOn(thehiveCore % "compile -> test")
+  .settings(
+    name := "thehive-shell",
+    version := thehiveVersion,
+    libraryDependencies ++= Seq(
+      ammonite,
+      macWireMacros,
+      macWireMacrosakka,
+      macWireUtil,
+      macWireProxy
+    )
+  )
+
 lazy val npm        = taskKey[Unit]("Install npm dependencies")
 lazy val bower      = taskKey[Unit]("Install bower dependencies")
 lazy val gruntDev   = taskKey[Unit]("Inject bower dependencies in index.html")

@@ -51,6 +51,7 @@ object Dependencies {
   lazy val macWireMacrosakka       = "com.softwaremill.macwire" %% "macrosakka"                         % macWireVersion % "provided"
   lazy val macWireUtil             = "com.softwaremill.macwire" %% "util"                               % macWireVersion
   lazy val macWireProxy            = "com.softwaremill.macwire" %% "proxy"                              % macWireVersion
+  lazy val ammonite                = "com.lihaoyi"               % "ammonite"                           % "2.3.8-58-aa8b2ab1" cross CrossVersion.full
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang" % "scala-reflect"  % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang" % "scala-compiler" % scalaVersion
