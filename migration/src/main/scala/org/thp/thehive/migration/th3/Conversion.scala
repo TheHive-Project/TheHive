@@ -300,7 +300,7 @@ trait Conversion {
             val data = Base64.getDecoder.decode(base64)
             InputAttachment(s"$login.avatar", data.size.toLong, "image/png", Nil, Source.single(ByteString(data)))
           }
-    } yield InputUser(metaData, User(normaliseLogin(login), name, apikey, locked, password, None), organisationProfiles, avatar)
+    } yield InputUser(metaData, User(normaliseLogin(login), name, None, None, apikey, locked, password, None), organisationProfiles, avatar)
   }
 
   val metricsReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>

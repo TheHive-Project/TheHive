@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.{refineT, refineV}
+import eu.timepit.refined.refineV
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityId
@@ -617,6 +617,8 @@ object Conversion {
       inputUser
         .into[User]
         .withFieldComputed(_.id, _.login.value)
+        .withFieldConst(_.email, None)
+        .withFieldConst(_.resetSecret, None)
         .withFieldConst(_.apikey, None)
         .withFieldConst(_.password, None)
         .withFieldConst(_.locked, false)

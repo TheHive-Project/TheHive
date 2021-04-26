@@ -15,8 +15,16 @@ case class UserAttachment()
 
 @DefineIndex(IndexType.unique, "login")
 @BuildVertexEntity
-case class User(login: String, name: String, apikey: Option[String], locked: Boolean, password: Option[String], totpSecret: Option[String])
-    extends ScalligraphUser {
+case class User(
+    login: String,
+    name: String,
+    email: Option[String],
+    resetSecret: Option[String],
+    apikey: Option[String],
+    locked: Boolean,
+    password: Option[String],
+    totpSecret: Option[String]
+) extends ScalligraphUser {
   override val id: String          = login
   override def getUserName: String = name
 
@@ -29,6 +37,8 @@ object User {
   val init: User = User(
     login = "admin@thehive.local",
     name = "Default admin user",
+    email = None,
+    resetSecret = None,
     apikey = None,
     locked = false,
     password = Some(LocalPasswordAuthSrv.hashPassword(initPassword)),
@@ -36,7 +46,16 @@ object User {
   )
 
   val system: User =
-    User(login = "system@thehive.local", name = "TheHive system user", apikey = None, locked = false, password = None, totpSecret = None)
+    User(
+      login = "system@thehive.local",
+      name = "TheHive system user",
+      email = None,
+      resetSecret = None,
+      apikey = None,
+      locked = false,
+      password = None,
+      totpSecret = None
+    )
 
   val initialValues: Seq[User] = Seq(init, system)
 }
@@ -45,15 +64,17 @@ object User {
 //    preference: JsObject)
 
 case class RichUser(user: User with Entity, avatar: Option[String], profile: String, permissions: Set[Permission], organisation: String) {
-  def _id: EntityId              = user._id
-  def _createdBy: String         = user._createdBy
-  def _updatedBy: Option[String] = user._updatedBy
-  def _createdAt: Date           = user._createdAt
-  def _updatedAt: Option[Date]   = user._updatedAt
-  def login: String              = user.login
-  def name: String               = user.name
-  def hasPassword: Boolean       = user.password.isDefined
-  def hasMFA: Boolean            = user.totpSecret.isDefined
-  def apikey: Option[String]     = user.apikey
-  def locked: Boolean            = user.locked
+  def _id: EntityId               = user._id
+  def _createdBy: String          = user._createdBy
+  def _updatedBy: Option[String]  = user._updatedBy
+  def _createdAt: Date            = user._createdAt
+  def _updatedAt: Option[Date]    = user._updatedAt
+  def login: String               = user.login
+  def name: String                = user.name
+  def email: Option[String]       = user.email
+  def resetSecret: Option[String] = user.resetSecret
+  def hasPassword: Boolean        = user.password.isDefined
+  def hasMFA: Boolean             = user.totpSecret.isDefined
+  def apikey: Option[String]      = user.apikey
+  def locked: Boolean             = user.locked
 }

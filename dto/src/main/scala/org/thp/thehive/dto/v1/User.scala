@@ -10,6 +10,7 @@ import be.venneborg.refined.play.RefinedJsonFormats._
 case class InputUser(
     login: String128,
     name: String128,
+    email: Option[String128],
     password: Option[String128],
     profile: String64,
     organisation: Option[String128],
@@ -33,6 +34,7 @@ case class OutputUser(
     _updatedAt: Option[Date],
     login: String,
     name: String,
+    email: Option[String],
     hasKey: Boolean,
     hasPassword: Boolean,
     hasMFA: Boolean,

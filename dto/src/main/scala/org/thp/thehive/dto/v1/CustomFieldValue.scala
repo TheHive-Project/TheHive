@@ -4,7 +4,7 @@ import org.scalactic.Accumulation._
 import org.scalactic.{Bad, Good, One}
 import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers._
-import org.thp.thehive.dto.{Description, String128, String16, String64}
+import org.thp.thehive.dto.{Description, String16, String64}
 import play.api.libs.json._
 
 import java.util.Date

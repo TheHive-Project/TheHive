@@ -52,6 +52,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
             InputUser(
               login = "test_user_1@thehive.local",
               name = "create user test",
+              email = None,
               password = Some("azerty"),
               profile = "read-only",
               organisation = Some(Organisation.administration.name),
@@ -83,6 +84,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
             InputUser(
               login = "test_user_3@thehive.local",
               name = "create user test",
+              email = None,
               password = Some("azerty"),
               profile = "analyst",
               organisation = Some("cert"),

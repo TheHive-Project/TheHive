@@ -19,7 +19,16 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       database.transaction { implicit graph =>
         userSrv.createEntity(
-          User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None, totpSecret = None)
+          User(
+            login = "getByIdTest",
+            name = "test user (getById)",
+            email = None,
+            resetSecret = None,
+            apikey = None,
+            locked = false,
+            password = None,
+            totpSecret = None
+          )
         ) must beSuccessfulTry
           .which { user =>
             userSrv.getOrFail(user._id) must beSuccessfulTry(user)
@@ -36,6 +45,8 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
           User(
             login = "getbylogintest@thehive.local",
             name = "test user (getByLogin)",
+            email = None,
+            resetSecret = None,
             apikey = None,
             locked = false,
             password = None,
