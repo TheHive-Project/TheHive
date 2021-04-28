@@ -18,7 +18,7 @@ class AnalyzerTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
 //      }
 
     "import valid templates contained in a zip file and fetch them by id and type" in testApp { app =>
-      import app.cortexConnector.analyzerTemplateCtrl
+      import app.cortexModule.analyzerTemplateCtrl
 
       val file = FilePart("templates", "report-templates.zip", Option("application/zip"), FakeTemporaryFile.fromResource("/report-templates.zip"))
       val request = FakeRequest("POST", s"/api/connector/cortex/report/template/_import")

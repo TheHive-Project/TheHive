@@ -8,23 +8,12 @@ import org.thp.thehive.models.Permissions
 import play.api.test.PlaySpecification
 
 class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
-  override val databaseName: String = "thehiveCortex"
-//  override def appConfigure: AppBuilder =
-//    super
-//      .appConfigure
-////      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
-//      .`override`(
-//        _.bindActor[CortexActor]("cortex-actor")
-//          .bindToProvider[CortexClient, TestCortexClientProvider]
-//          .bind[Connector, TestConnector]
-////          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-//      )
-
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
+
   "analyzer service" should {
     "get a list of Cortex workers" in testApp { app =>
-      import app.cortexConnector.analyzerSrv
+      import app.cortexModule.analyzerSrv
 
       val r = await(analyzerSrv.listAnalyzer(Some("all")))
       val outputWorker2 =
@@ -52,7 +41,7 @@ class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get Cortex worker by id" in testApp { app =>
-      import app.cortexConnector.analyzerSrv
+      import app.cortexModule.analyzerSrv
 
       val r = await(analyzerSrv.getAnalyzer("anaTest2"))
       val outputWorker =
@@ -70,7 +59,7 @@ class AnalyzerSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a list of Cortex workers by dataType" in testApp { app =>
-      import app.cortexConnector.analyzerSrv
+      import app.cortexModule.analyzerSrv
 
       val r = await(analyzerSrv.listAnalyzerByType("test"))
       val outputWorker2 =

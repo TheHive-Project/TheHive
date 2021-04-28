@@ -6,22 +6,11 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class JobCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
-  override val databaseName: String = "thehiveCortex"
-//  override def appConfigure: AppBuilder =
-//    super
-//      .appConfigure
-//      .`override`(
-//        _.bindActor[CortexActor]("cortex-actor")
-//          .bindToProvider[CortexClient, TestCortexClientProvider]
-//          .bind[Connector, TestConnector]
-////          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-//          .bindNamedToProvider[QueryExecutor, TheHiveCortexQueryExecutorProvider]("v0")
-//      )
 
   "job controller" should {
     "get a job" in testApp { app =>
       import app._
-      import app.cortexConnector.jobCtrl
+      import app.cortexModule.jobCtrl
       import app.thehiveModule._
 
       val observable = database.roTransaction { implicit graph =>
@@ -51,7 +40,7 @@ class JobCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOp
     }
 
     "get stats for a job" in testApp { app =>
-      import app.cortexConnector.jobCtrl
+      import app.cortexModule.jobCtrl
 
       val request = FakeRequest("POST", s"/api/connector/cortex/job/_stats")
         .withHeaders("user" -> "certuser@thehive.local")

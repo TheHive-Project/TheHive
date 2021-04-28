@@ -3,29 +3,29 @@ package org.thp.thehive.connector.cortex
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
 import org.thp.cortex.client.{CortexClient, CortexClientConfig, TestCortexClientProvider}
+import org.thp.scalligraph.ScalligraphApplication
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ConfigItem
-import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl}
+import org.thp.thehive._
 import org.thp.thehive.connector.cortex.services.{CortexActor, CortexTag}
 import org.thp.thehive.services.{TheHiveTestModule, WithTheHiveModule}
-import org.thp.thehive._
-import play.api.{Configuration, Mode}
+import play.api.Configuration
 
-import java.io.File
 import scala.util.Try
 
 trait TestAppBuilder extends LogFileConfig {
-  val databaseName: String      = "default"
-  val testApplicationNoDatabase = new ScalligraphApplicationImpl(new File("."), getClass.getClassLoader, Mode.Test)
+  val databaseName: String = "thehiveCortex"
 
   def buildTheHiveModule(app: ScalligraphApplication): TheHiveModule = new TheHiveTestModule(app)
+  def destroyTheHiveModule(thehiveModule: TheHiveModule): Unit       = ()
 
-  def buildCortexConnector(app: ScalligraphApplication): CortexTestModule = new CortexTestModule(app)
+  def buildCortexModule(app: ScalligraphApplication): CortexTestModule = new CortexTestModule(app)
+  def destroyCortexModule(cortexModule: CortexTestModule): Unit        = ()
 
   def buildDatabase(db: Database): Try[Unit] = new DatabaseBuilderModule(buildApp(db)).databaseBuilder.build(db)
 
   def buildApp(db: Database): TestApplication with WithTheHiveModule with WithCortexModule =
-    new TestApplication(db, testApplicationNoDatabase) with WithTheHiveModule with WithCortexModule {
+    new TestApplication(db) with WithTheHiveModule with WithCortexModule {
       override lazy val configuration: Configuration = Configuration(
         ConfigFactory.parseString(
           """
@@ -36,24 +36,32 @@ trait TestAppBuilder extends LogFileConfig {
             |]
             |""".stripMargin
         )
-      ).withFallback(testApplicationNoDatabase.configuration)
+      ).withFallback(TestApplicationNoDatabase.configuration)
 
       override val thehiveModule: TheHiveModule = buildTheHiveModule(this)
       injectModule(thehiveModule)
-      override val cortexConnector: CortexTestModule = buildCortexConnector(this)
-      injectModule(cortexConnector)
+      override val cortexModule: CortexTestModule = buildCortexModule(this)
+      injectModule(cortexModule)
     }
+
+  def destroyApp(app: TestApplication with WithTheHiveModule with WithCortexModule): Unit = {
+    destroyTheHiveModule(app.thehiveModule)
+    destroyCortexModule(app.cortexModule)
+  }
 
   def testApp[A](body: TestApplication with WithTheHiveModule with WithCortexModule => A): A =
     JanusDatabaseProvider
-      .withDatabase(databaseName, buildDatabase, testApplicationNoDatabase.actorSystem) { db =>
-        body(buildApp(db))
+      .withDatabase(databaseName, buildDatabase, TestApplicationNoDatabase.actorSystem) { db =>
+        val app = buildApp(db)
+        val res = body(app)
+        destroyApp(app)
+        res
       }
       .get
 }
 
 trait WithCortexModule {
-  val cortexConnector: CortexTestModule
+  val cortexModule: CortexTestModule
 }
 
 class CortexTestModule(app: ScalligraphApplication) extends CortexModule(app) {

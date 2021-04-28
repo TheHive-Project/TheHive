@@ -13,12 +13,10 @@ class ResponderSrvTest extends PlaySpecification with TestAppBuilder with Traver
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
 
-  override val databaseName: String = "thehiveCortex"
-
   "responder service" should {
     "fetch responders by type" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       val task = database.roTransaction { implicit graph =>
@@ -31,7 +29,7 @@ class ResponderSrvTest extends PlaySpecification with TestAppBuilder with Traver
     }
 
     "search responders" in testApp { app =>
-      import app.cortexConnector._
+      import app.cortexModule._
 
       val r = await(responderSrv.searchResponders(Json.obj("query" -> Json.obj())))
 

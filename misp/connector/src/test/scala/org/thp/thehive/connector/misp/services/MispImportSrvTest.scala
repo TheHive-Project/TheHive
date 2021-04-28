@@ -26,14 +26,14 @@ class MispImportSrvTest extends PlaySpecification with TestAppBuilder with TheHi
   "MISP client" should {
     "get current user name" in testApp { app =>
       import app._
-      import app.mispConnector._
+      import app.mispModule._
 
       await(theHiveMispClient.getCurrentUser) must beEqualTo(User("1", "1", "admin@admin.test"))
     }
 
     "get organisation" in testApp { app =>
       import app._
-      import app.mispConnector._
+      import app.mispModule._
 
       await(theHiveMispClient.getOrganisation("1")) must beEqualTo(
         Organisation("1", "ORGNAME", Some("Automatically generated admin organisation"), UUID.fromString("5d5d066f-cfa4-49da-995c-6d5b68257ab4"))
@@ -41,14 +41,14 @@ class MispImportSrvTest extends PlaySpecification with TestAppBuilder with TheHi
     }
 
     "get current organisation" in testApp { app =>
-      import app.mispConnector._
+      import app.mispModule._
 
       theHiveMispClient.currentOrganisationName must beSuccessfulTry("ORGNAME")
     }
 
     "retrieve events" in testApp { app =>
       import app._
-      import app.mispConnector._
+      import app.mispModule._
 
       val events = theHiveMispClient
         .searchEvents(None)
@@ -78,7 +78,7 @@ class MispImportSrvTest extends PlaySpecification with TestAppBuilder with TheHi
   "MISP service" should {
     "import events" in testApp { app =>
       import app._
-      import app.mispConnector._
+      import app.mispModule._
       import app.thehiveModule._
 
       TheHiveOps(organisationSrv, customFieldSrv) { ops =>

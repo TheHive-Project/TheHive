@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import eu.timepit.refined.collection.MaxSize
-import eu.timepit.refined.{W, refineMV}
+import eu.timepit.refined.{refineMV, W}
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.DummyUserSrv
@@ -150,17 +150,12 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOps
         )
       )
 
-      val requestList = FakeRequest("GET", "/api/case/task").withHeaders("user" -> "certuser@thehive.local")
-      val resultList  = taskCtrl.search(requestList)
+      database.roTransaction { implicit graph =>
+        taskSrv.startTraversal.has(_.title, "task x").exists must beTrue
 
-      status(resultList) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(resultList)}")
-      val tasksList = contentAsJson(resultList)(defaultAwaitTimeout, materializer).as[Seq[OutputTask]]
-      tasksList.find(_.title == "task x") must beSome
-
-      val assignee = database.roTransaction(implicit graph => caseSrv.get(EntityIdOrName(outputCase._id)).assignee.getOrFail("Case"))
-
-      assignee must beSuccessfulTry
-      assignee.get.login shouldEqual "certro@thehive.local"
+        val assignee = caseSrv.get(EntityIdOrName(outputCase._id)).assignee.value(_.login).getOrFail("Case")
+        assignee must beSuccessfulTry("certro@thehive.local")
+      }
     }
 
     "try to get a case" in testApp { app =>

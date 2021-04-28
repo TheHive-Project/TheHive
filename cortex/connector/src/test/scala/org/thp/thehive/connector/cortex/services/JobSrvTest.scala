@@ -23,7 +23,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder with CortexOps {
   "job service" should {
     "handle creation and then finished job" in testApp { app =>
       import app._
-      import app.cortexConnector.{cortexClient, jobSrv}
+      import app.cortexModule.{cortexClient, jobSrv}
       import app.thehiveModule._
 
       val job = Job(
@@ -75,7 +75,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder with CortexOps {
 
     "submit a job" in testApp { app =>
       import app._
-      import app.cortexConnector.jobSrv
+      import app.cortexModule.jobSrv
       import app.thehiveModule._
 
       val x = for {

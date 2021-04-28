@@ -8,7 +8,7 @@ class AnalyzerCtrlTest extends PlaySpecification with TestAppBuilder {
 
   "analyzer controller" should {
     "list analyzers" in testApp { app =>
-      import app.cortexConnector.analyzerCtrl
+      import app.cortexModule.analyzerCtrl
 
       val request = FakeRequest("GET", s"/api/connector/cortex/analyzer?range=all").withHeaders("user" -> "certuser@thehive.local")
       val result  = analyzerCtrl.list(request)

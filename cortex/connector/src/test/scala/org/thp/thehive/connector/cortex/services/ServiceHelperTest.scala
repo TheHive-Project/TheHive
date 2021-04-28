@@ -8,22 +8,10 @@ import org.thp.thehive.services.{TestAppBuilder => _}
 import play.api.test.PlaySpecification
 
 class ServiceHelperTest extends PlaySpecification with TestAppBuilder with TraversalOps {
-  override val databaseName: String = "thehiveCortex"
-//  override def appConfigure: AppBuilder =
-//    super
-//      .appConfigure
-////      .`override`(_.bindToProvider[Schema, TheHiveCortexSchemaProvider])
-//      .`override`(
-//        _.bindActor[CortexActor]("cortex-actor")
-//          .bindToProvider[CortexClient, TestCortexClientProvider]
-//          .bind[Connector, TestConnector]
-////          .bindToProvider[Schema, TheHiveCortexSchemaProvider]
-//      )
-
   "service helper" should {
     "filter properly organisations according to supplied config" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       val r = database.roTransaction { implicit graph =>
@@ -50,7 +38,7 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder with Trave
     }
 
     "return the correct filtered CortexClient list" in testApp { app =>
-      import app.cortexConnector._
+      import app.cortexModule._
 
       val r = serviceHelper.availableCortexClients(Seq(cortexClient), EntityName(Organisation.administration.name))
 

@@ -17,12 +17,10 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOp
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
 
-  override val databaseName: String = "thehiveCortex"
-
   "action service" should {
     "execute, create and handle finished action operations" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       database.roTransaction { implicit graph =>
@@ -52,7 +50,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOp
 
     "handle action related to Task and Log" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       database.roTransaction { implicit graph =>
@@ -88,7 +86,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOp
 
     "handle action related to an Alert" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       TheHiveOps(organisationSrv, customFieldSrv) { ops =>

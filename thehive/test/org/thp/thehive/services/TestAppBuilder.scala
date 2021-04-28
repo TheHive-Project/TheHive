@@ -2,33 +2,37 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import com.softwaremill.macwire.akkasupport.wireAnonymousActor
+import org.thp.scalligraph.ScalligraphApplication
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl, ScalligraphModule}
 import org.thp.thehive._
 import org.thp.thehive.services.notification.NotificationTag
-import play.api.Mode
 
-import java.io.File
 import scala.util.Try
 
 trait TestAppBuilder extends LogFileConfig {
-  val databaseName: String      = "default"
-  val testApplicationNoDatabase = new ScalligraphApplicationImpl(new File("."), getClass.getClassLoader, Mode.Test)
+  val databaseName: String = "default"
 
   def buildTheHiveModule(app: ScalligraphApplication): TheHiveModule = new TheHiveTestModule(app)
+  def destroyTheHiveModule(thehiveModule: TheHiveModule): Unit       = ()
 
   def buildApp(db: Database): TestApplication with WithTheHiveModule =
-    new TestApplication(db, testApplicationNoDatabase) with WithTheHiveModule {
+    new TestApplication(db) with WithTheHiveModule {
       override val thehiveModule: TheHiveModule = buildTheHiveModule(this)
       injectModule(thehiveModule)
     }
+
+  def destroyApp(app: TestApplication with WithTheHiveModule): Unit =
+    destroyTheHiveModule(app.thehiveModule)
 
   def buildDatabase(db: Database): Try[Unit] = new DatabaseBuilderModule(buildApp(db)).databaseBuilder.build(db)
 
   def testApp[A](body: TestApplication with WithTheHiveModule => A): A =
     JanusDatabaseProvider
-      .withDatabase(databaseName, buildDatabase, testApplicationNoDatabase.actorSystem) { db =>
-        body(buildApp(db))
+      .withDatabase(databaseName, buildDatabase, TestApplicationNoDatabase.actorSystem) { db =>
+        val app = buildApp(db)
+        val res = body(app)
+        destroyApp(app)
+        res
       }
       .get
 }
@@ -37,7 +41,7 @@ trait WithTheHiveModule {
   val thehiveModule: TheHiveModule
 }
 
-class TheHiveTestModule(app: ScalligraphApplication) extends TheHiveModule(app) with ScalligraphModule {
+class TheHiveTestModule(app: ScalligraphApplication) extends TheHiveModule(app) {
   import com.softwaremill.tagging._
 
   lazy val dummyActor: ActorRef                                        = wireAnonymousActor[DummyActor]

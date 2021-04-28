@@ -1,9 +1,41 @@
 package org.thp.thehive.controllers.v0
 
+import akka.actor.ActorRef
+import com.softwaremill.macwire.akkasupport.wireAnonymousActor
+import com.softwaremill.tagging._
+import com.typesafe.config.ConfigFactory
+import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.services.config.{ConfigActor, ConfigTag}
+import org.thp.thehive.services.WithTheHiveModule
+import org.thp.thehive.{TestApplication, TestApplicationNoDatabase, TheHiveModule}
+import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
+
+  override def buildApp(db: Database): TestApplication with WithTheHiveModule with WithTheHiveModuleV0 =
+    new TestApplication(db) with WithTheHiveModule with WithTheHiveModuleV0 {
+      override lazy val configuration: Configuration = Configuration(
+        ConfigFactory.parseString(
+          """
+            |auth.providers: [
+            |  {name: header, userHeader: user}
+            |  {name: local}
+            |  {name: key}
+            |]
+            |""".stripMargin
+        )
+      ).withFallback(TestApplicationNoDatabase.configuration)
+
+      override lazy val configActor: ActorRef @@ ConfigTag =
+        wireAnonymousActor[ConfigActor].taggedWith[ConfigTag]
+
+      override val thehiveModule: TheHiveModule = buildTestModule(this)
+      injectModule(thehiveModule)
+      override val thehiveModuleV0: TheHiveModuleV0 = buildTestModuleV0(this)
+      injectModule(thehiveModuleV0)
+    }
 
   s"config controller" should {
     "list configuration items" in testApp { app =>
@@ -24,7 +56,7 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
       import app.thehiveModule._
       import app.thehiveModuleV0._
 
-      tagSrv
+      tagSrv.freeTagColour
       val request = FakeRequest("PUT", "/api/config/tags.freeTagColour")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"value": "#00FF00"}"""))
@@ -33,6 +65,7 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
       tagSrv.freeTagColour must beEqualTo("#00FF00")
+
     }
 // TODO leave unused tests ?
 //

@@ -35,16 +35,12 @@
     </appender>
 
     <!-- do not set the following logger to TRACE -->
-    <logger name="org.thp.scalligraph.traversal" level="INFO"/>
-    <logger name="org.reflections8.Reflections" level="ERROR" />
-    <logger name="org.janusgraph.graphdb.database.management.ManagementLogger" level="OFF"/>
-    <logger name="org.janusgraph.graphdb.database.IndexSerializer" level="ERROR"/>
+<!--    <logger name="org.thp.scalligraph.traversal.Gremlin" level="DEBUG"/>-->
+<!--    <logger name="org.reflections8.Reflections" level="ERROR" />-->
+<!--    <logger name="org.janusgraph.graphdb.database.management.ManagementLogger" level="OFF"/>-->
+<!--    <logger name="org.janusgraph.graphdb.database.IndexSerializer" level="ERROR"/>-->
 
-<!--    <logger name="org.thp.scalligraph.traversal.TraversalOps.Gremlin" level="DEBUG"/>-->
-<!--    <logger name="org.thp.scalligraph.models" level="TRACE"/>-->
-<!--    <logger name="org.thp" level="TRACE"/>-->
-
-    <root level="WARN">
+    <root level="OFF">
         <appender-ref ref="ASYNCFILE"/>
         <appender-ref ref="ASYNCSTDOUT"/>
     </root>

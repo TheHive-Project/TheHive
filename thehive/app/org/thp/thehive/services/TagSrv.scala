@@ -28,7 +28,7 @@ class TagSrv(
   override lazy val organisationSrv: OrganisationSrv = _organisationSrv
 
   val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
-  private val freeTagColourConfig: ConfigItem[String, String] =
+  private lazy val freeTagColourConfig: ConfigItem[String, String] =
     appConfig.item[String]("tags.freeTagColour", "Default colour for free tags")
 
   def freeTagColour: String = freeTagColourConfig.get

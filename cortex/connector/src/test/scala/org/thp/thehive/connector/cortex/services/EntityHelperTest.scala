@@ -15,7 +15,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder with TheHiv
 
     "return task info" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       database.roTransaction { implicit graph =>
@@ -33,7 +33,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder with TheHiv
 
     "return observable info" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       database.roTransaction { implicit graph =>
@@ -51,7 +51,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder with TheHiv
 
     "find a manageable entity only (task)" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       database.roTransaction { implicit graph =>
@@ -64,7 +64,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder with TheHiv
 
     "find a manageable entity only (alert)" in testApp { app =>
       import app._
-      import app.cortexConnector._
+      import app.cortexModule._
       import app.thehiveModule._
 
       TheHiveOps(organisationSrv, customFieldSrv) { ops =>
