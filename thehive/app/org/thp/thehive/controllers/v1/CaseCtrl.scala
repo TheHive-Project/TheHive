@@ -20,9 +20,11 @@ import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
+import play.api.libs.json.{JsArray, JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
+import scala.util.Success
 
 @Singleton
 class CaseCtrl @Inject() (
@@ -179,5 +181,22 @@ class CaseCtrl @Inject() (
               )
           mergedCase <- caseSrv.merge(cases)
         } yield Results.Created(mergedCase.toJson)
+      }
+
+  def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
+    entrypoint("case link")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        val relatedCases = caseSrv
+          .get(EntityIdOrName(caseIdOrNumber))
+          .visible(organisationSrv)
+          .linkedCases
+          .map {
+            case (c, o) =>
+              c.toJson.as[JsObject] +
+                ("linkedWith" -> o.toJson) +
+                ("linksCount" -> JsNumber(o.size))
+          }
+
+        Success(Results.Ok(JsArray(relatedCases)))
       }
 }

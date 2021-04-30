@@ -65,7 +65,7 @@ class Router @Inject() (
     case DELETE(p"/case/customField/$cfId") => caseCtrl.deleteCustomField(cfId)
     //    case PATCH(p"api/case/_bulk") =>                          caseCtrl.bulkUpdate()
 //    case POST(p"/case/_stats") =>                        caseCtrl.stats()
-//    case GET(p"/case/$caseId/links") =>                  caseCtrl.linkedCases(caseId)
+    case GET(p"/case/$caseId/links") => caseCtrl.linkedCases(caseId)
 
     case POST(p"/case/$caseId/observable")    => observableCtrl.createInCase(caseId)
     case POST(p"/alert/$alertId/artifact")    => observableCtrl.createInAlert(alertId)
