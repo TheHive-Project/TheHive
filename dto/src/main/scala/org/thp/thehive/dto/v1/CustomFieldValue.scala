@@ -8,7 +8,14 @@ import play.api.libs.json._
 
 import java.util.Date
 
-case class InputCustomField(name: String, description: String, `type`: String, mandatory: Option[Boolean])
+case class InputCustomField(
+    name: String,
+    displayName: Option[String],
+    description: String,
+    `type`: String,
+    mandatory: Option[Boolean],
+    options: Seq[JsValue] = Nil
+)
 
 object InputCustomField {
   implicit val writes: Writes[InputCustomField] = Json.writes[InputCustomField]
@@ -22,6 +29,7 @@ case class OutputCustomField(
     _createdAt: Date,
     _updatedAt: Option[Date] = None,
     name: String,
+    displayName: String,
     description: String,
     `type`: String,
     options: Seq[JsValue],

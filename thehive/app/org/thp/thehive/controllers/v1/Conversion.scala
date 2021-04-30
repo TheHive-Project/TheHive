@@ -181,6 +181,17 @@ object Conversion {
         .transform
     )
 
+  implicit class InputCustomFieldOps(inputCustomField: InputCustomField) {
+
+    def toCustomField: CustomField =
+      inputCustomField
+        .into[CustomField]
+        .withFieldComputed(_.`type`, icf => CustomFieldType.withName(icf.`type`))
+        .withFieldComputed(_.mandatory, _.mandatory.getOrElse(false))
+        .withFieldComputed(_.displayName, c => c.displayName.getOrElse(c.name))
+        .transform
+  }
+
   implicit val customFieldOutput: Renderer.Aux[CustomField with Entity, OutputCustomField] =
     Renderer.toJson[CustomField with Entity, OutputCustomField](customField =>
       customField
