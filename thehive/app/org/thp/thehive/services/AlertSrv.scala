@@ -10,6 +10,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
+import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
@@ -427,12 +428,12 @@ object AlertOps {
 
     def similarCases(organisationSrv: OrganisationSrv, caseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
         authContext: AuthContext
-    ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] = {
-      val similarObservables = observables
+    ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] =
+      observables
         .filteredSimilar
         .visible(organisationSrv)
-      caseFilter
-        .fold(similarObservables)(caseFilter => similarObservables.filter(o => caseFilter(o.`case`)))
+        .merge(caseFilter)((obs, cf) => obs.filter(o => cf(o.`case`)))
+        .filter(_.in[ShareObservable])
         .group(_.by(_.`case`))
         .unfold
         .project(
@@ -461,7 +462,6 @@ object AlertOps {
               observableTypeStats
             )
         }
-    }
 
     def customFields(idOrName: EntityIdOrName): Traversal.E[AlertCustomField] =
       idOrName
