@@ -30,7 +30,7 @@ trait TestAppBuilder extends LogFileConfig {
             |]
             |""".stripMargin
         )
-      ).withFallback(TestApplicationNoDatabase.configuration)
+      ).withFallback(TestApplication.appWithoutDatabase.configuration)
 
       override val thehiveModule: TheHiveModule = buildTestModule(this)
       injectModule(thehiveModule)
@@ -47,7 +47,7 @@ trait TestAppBuilder extends LogFileConfig {
 
   def testApp[A](body: TestApplication with WithTheHiveModule with WithTheHiveModuleV0 => A): A =
     JanusDatabaseProvider
-      .withDatabase(databaseName, buildDatabase, TestApplicationNoDatabase.actorSystem) { db =>
+      .withDatabase(databaseName, buildDatabase, TestApplication.appWithoutDatabase.actorSystem) { db =>
         val app = buildApp(db)
         val res = body(app)
         destroyApp(app)

@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import org.thp.scalligraph.auth._
+import org.thp.scalligraph.auth.{UserSrv => _, _}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
 import play.api.Configuration

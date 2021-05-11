@@ -12,7 +12,6 @@ import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
-import eu.timepit.refined.W
 
 case class TestAlert(
     `type`: String,
@@ -85,7 +84,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
         Json
           .toJson(
             InputAlert(
-              `type` = refineMV[MaxSize[W.`16`.T]]("test"),
+              `type` = refineMV[MaxSize[16]]("test"),
               source = "alert_creation_test",
               sourceRef = "#1",
               externalLink = None,

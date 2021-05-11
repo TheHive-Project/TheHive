@@ -65,7 +65,7 @@ class StreamActor(
       val graceTimer =
         if (messages.isEmpty) None
         else Some(context.system.scheduler.scheduleOnce(graceDuration, self, Commit))
-      context.become(receive(messages, sender, newKeepAliveTimer, commitTimer, graceTimer))
+      context.become(receive(messages, sender(), newKeepAliveTimer, commitTimer, graceTimer))
 
     case AuditStreamMessage(ids @ _*) =>
       db.roTransaction { implicit graph =>
@@ -98,7 +98,7 @@ class StreamActor(
       val newGraceTimer =
         if (messages.isEmpty) None
         else Some(context.system.scheduler.scheduleOnce(graceDuration, self, Commit))
-      context.become(receive(messages, sender, newKeepAliveTimer, newCommitTimer, newGraceTimer))
+      context.become(receive(messages, sender(), newKeepAliveTimer, newCommitTimer, newGraceTimer))
 
     case Commit =>
       logger.debug(s"[$self] Commit")

@@ -21,7 +21,7 @@ import shapeless.{:+:, CNil, Coproduct, Poly1}
 import java.io.FilterInputStream
 import java.nio.file.Files
 import java.util.Base64
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 class ObservableCtrl(

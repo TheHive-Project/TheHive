@@ -8,7 +8,7 @@ import play.api.{Configuration, Environment}
 import scopt.OParser
 
 import java.io.File
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext}
 

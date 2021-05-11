@@ -120,7 +120,7 @@ class ObservableSrv(
       tagsToAdd <- (tags -- observable.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(observable).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
-      _ = if (tags.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tags.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV().hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(observable).update(_.tags, tags.toSeq).getOrFail("Observable")
       _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
@@ -251,7 +251,7 @@ trait ObservableOpsNoDeps { _: TheHiveOpsNoDeps =>
 
     def removeTags(tags: Set[Tag with Entity]): Unit =
       if (tags.nonEmpty)
-        traversal.outE[ObservableTag].filter(_.otherV.hasId(tags.map(_._id).toSeq: _*)).remove()
+        traversal.outE[ObservableTag].filter(_.otherV().hasId(tags.map(_._id).toSeq: _*)).remove()
 
     def filteredSimilar: Traversal.V[Observable] =
       traversal

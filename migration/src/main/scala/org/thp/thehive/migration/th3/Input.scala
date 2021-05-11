@@ -15,7 +15,6 @@ import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
 import java.util.{Base64, Date}
-import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.{classTag, ClassTag}
 import scala.util.{Failure, Success, Try}
@@ -447,7 +446,7 @@ class Input(configuration: Configuration, dbFind: DBFind, dbGet: DBGet, implicit
           .map { json =>
             val metaData = json.as[MetaData]
             val tasks    = (json \ "tasks").asOpt(Reads.seq(caseTemplateTaskReads(metaData))).getOrElse(Nil)
-            Source(tasks.to[immutable.Iterable].map(t => Success(caseTemplateId -> t)))
+            Source(tasks.map(t => Success(caseTemplateId -> t)))
           }
           .recover {
             case error =>

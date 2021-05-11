@@ -122,15 +122,19 @@ trait ConfigOps { _: TheHiveOpsNoDeps =>
       (organisationTriggers ++ userTriggers)
         .toSeq
         .groupBy(_._1)
+        .view
         .mapValues { tuple =>
           tuple
             .groupBy(_._2)
+            .view
             .mapValues { tuple2 =>
               val inOrg   = tuple2.exists(_._3.isEmpty)
               val userIds = tuple2.flatMap(_._3.toSeq)
               (inOrg, userIds)
             }
+            .toMap
         }
+        .toMap
     }
 
     def getValue[A: Reads](name: String): Traversal[JsValue, String, Converter[JsValue, String]] = traversal.has(_.name, name).value(_.value)

@@ -7,7 +7,7 @@ import org.thp.thehive.migration.dto._
 
 import java.text.{ParseException, SimpleDateFormat}
 import java.util.Date
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
@@ -72,14 +72,14 @@ object Filter {
       caseFromNumber -> caseUntilNumber,
       alertFromDate  -> alertUntilDate,
       auditFromDate  -> auditUntilDate,
-      config.getStringList("includeAlertTypes").asScala,
-      config.getStringList("excludeAlertTypes").asScala,
-      config.getStringList("includeAlertSources").asScala,
-      config.getStringList("excludeAlertSources").asScala,
-      config.getStringList("includeAuditActions").asScala,
-      config.getStringList("excludeAuditActions").asScala,
-      config.getStringList("includeAuditObjectTypes").asScala,
-      config.getStringList("excludeAuditObjectTypes").asScala
+      config.getStringList("includeAlertTypes").asScala.toSeq,
+      config.getStringList("excludeAlertTypes").asScala.toSeq,
+      config.getStringList("includeAlertSources").asScala.toSeq,
+      config.getStringList("excludeAlertSources").asScala.toSeq,
+      config.getStringList("includeAuditActions").asScala.toSeq,
+      config.getStringList("excludeAuditActions").asScala.toSeq,
+      config.getStringList("includeAuditObjectTypes").asScala.toSeq,
+      config.getStringList("excludeAuditObjectTypes").asScala.toSeq
     )
   }
 }

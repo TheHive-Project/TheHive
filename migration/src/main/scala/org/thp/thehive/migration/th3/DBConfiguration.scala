@@ -24,7 +24,7 @@ import play.api.{Configuration, Logger}
 import java.nio.file.{Files, Paths}
 import java.security.KeyStore
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManagerFactory}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
@@ -167,7 +167,7 @@ class DBConfiguration(
       override def onFailure(resp: BulkResponseItem, original: T): Unit =
         logger.warn(s"Document index failure ${resp.id}: ${resp.error.fold("unexpected")(_.toString)}\n$original")
     }
-    val end = Promise[Unit]
+    val end = Promise[Unit]()
     val complete = () => {
       if (!end.isCompleted)
         end.success(())

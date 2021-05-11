@@ -43,5 +43,3 @@ tmp
 .bloop/
 .metals/
 metals.sbt
-
-.jvmopts

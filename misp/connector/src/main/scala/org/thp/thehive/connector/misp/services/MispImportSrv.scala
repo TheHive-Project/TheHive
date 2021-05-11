@@ -294,7 +294,7 @@ class MispImportSrv(
         .mapConcat { m =>
           m.values.toList
         }
-        .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])])
+        .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])]())
     QueueIterator(queue).foreach {
       case (observable, Left(data)) =>
         updateOrCreateSimpleObservable(alert, observable, data)
@@ -412,7 +412,7 @@ class MispImportSrv(
           logger.debug(s"Last synchronisation is $lastSynchro")
           val queue = client
             .searchEvents(publishDate = lastSynchro)
-            .runWith(Sink.queue[Event])
+            .runWith(Sink.queue[Event]())
           QueueIterator(queue).foreach { event =>
             logger.debug(s"Importing event ${client.name}#${event.id} in organisation(s): ${organisations.mkString(",")}")
             organisations.foreach { organisation =>

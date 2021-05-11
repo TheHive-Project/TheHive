@@ -105,7 +105,7 @@ class OrganisationSrv(
     Success(
       get(fromOrg)
         .outE[OrganisationOrganisation]
-        .filter(_.otherV.hasId(toOrg._id))
+        .filter(_.otherV().hasId(toOrg._id))
         .remove()
     )
 

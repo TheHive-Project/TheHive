@@ -12,7 +12,7 @@ import play.core.server.RealServerProcess
 import scala.util.Success
 
 object Shell extends App {
-  val process = new RealServerProcess(args)
+  val process = new RealServerProcess(args.toSeq)
   val config  = readConfig(process)
 
   val app = new ScalligraphApplicationImpl(config.rootDir, process.classLoader, Mode.Dev, Map("config.file" -> "conf/application.conf"))

@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.{Entity, Schema}
 import org.thp.thehive.models.{Audit, User}
 
 import java.util.{HashMap => JHashMap}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 trait Template {

@@ -157,7 +157,7 @@ class CaseSrv(
       tagsToAdd <- (tags -- `case`.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(`case`).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(caseTagSrv.create(CaseTag(), `case`, _))
-      _ = if (tagsToRemove.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tagsToRemove.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV().hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(`case`).update(_.tags, tags.toSeq).getOrFail("Case")
       _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
@@ -723,6 +723,8 @@ class CaseIntegrityCheckOps(val db: Database, val service: CaseSrv, userSrv: Use
       }
     }.getOrElse(Seq("globalFailure"))
       .groupBy(identity)
+      .view
       .mapValues(_.size.toLong)
+      .toMap
   }
 }

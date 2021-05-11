@@ -8,7 +8,7 @@ import org.thp.thehive.services.TestAppBuilder
 import play.api.test.PlaySpecification
 
 import java.util.{HashMap => JHashMap}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class NotificationTemplateTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext

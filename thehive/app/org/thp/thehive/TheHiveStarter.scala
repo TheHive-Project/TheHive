@@ -14,7 +14,7 @@ object TheHiveStarter extends App {
   startService(mode)
 
   def startService(mode: Mode): Unit = {
-    val process = new RealServerProcess(args)
+    val process = new RealServerProcess(args.toSeq)
     val config  = readConfig(process)
 
     val application = {

@@ -87,7 +87,7 @@ class FlowActor(
           flowQuery(flowId.caseId)(graph, flowId.authContext).toSeq
         }
       }
-      sender ! AuditIds(auditIds)
+      sender() ! AuditIds(auditIds)
     case AuditStreamMessage(ids @ _*) =>
       db.roTransaction { implicit graph =>
         auditSrv

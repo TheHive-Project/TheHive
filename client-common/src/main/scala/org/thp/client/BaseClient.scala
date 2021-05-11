@@ -58,7 +58,7 @@ class BaseClient[Input: Writes, Output: Reads](baseUrl: String)(implicit ws: WSC
     val url = range.fold(s"$baseUrl$urlFragments")(r => s"$baseUrl$urlFragments?range=$r")
     logger.debug(s"Request GET $url")
     auth(ws.url(s"$url"))
-      .get
+      .get()
       .transform {
         case Success(r) if r.status == Status.OK => Success(r.body[JsValue].as[Seq[Output]])
         case Success(r)                          => Failure(ApplicationError(r))

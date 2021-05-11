@@ -15,7 +15,7 @@ import org.thp.thehive.services.{TagSrv, TaxonomySrv}
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 class TaxonomyCtrl(

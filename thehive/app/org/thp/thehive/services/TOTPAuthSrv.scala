@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import org.apache.commons.codec.binary.Base32
-import org.thp.scalligraph.auth._
+import org.thp.scalligraph.auth.{UserSrv => _, _}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.{Graph, TraversalOps}

@@ -28,7 +28,7 @@ trait TestAppBuilder extends LogFileConfig {
 
   def testApp[A](body: TestApplication with WithTheHiveModule => A): A =
     JanusDatabaseProvider
-      .withDatabase(databaseName, buildDatabase, TestApplicationNoDatabase.actorSystem) { db =>
+      .withDatabase(databaseName, buildDatabase, TestApplication.appWithoutDatabase.actorSystem) { db =>
         val app = buildApp(db)
         val res = body(app)
         destroyApp(app)

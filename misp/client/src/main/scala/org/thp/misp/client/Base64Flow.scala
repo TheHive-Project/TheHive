@@ -49,7 +49,7 @@ class Base64EncoderFlow extends GraphStage[FlowShape[ByteString, ByteString]] {
               pull(in)
             else {
               push(out, ByteString(encoder.encode(remainingBytes.toArray)))
-              completeStage
+              completeStage()
             }
         }
       )

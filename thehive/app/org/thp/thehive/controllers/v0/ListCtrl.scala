@@ -55,14 +55,13 @@ class ListCtrl(
       .auth { request =>
         val value: JsObject = request.body("value")
         listName match {
-          case "custom_fields" => {
-              for {
-                inputCustomField <- value.validate[InputCustomField]
-              } yield inputCustomField
-            } fold (
-              errors => Failure(new Exception(errors.mkString)),
-              _ => Success(Results.Ok)
-            )
+          case "custom_fields" =>
+            value
+              .validate[InputCustomField]
+              .fold(
+                errors => Failure(new Exception(errors.mkString)),
+                _ => Success(Results.Ok)
+              )
           case _ => Success(Results.Locked(""))
         }
       }

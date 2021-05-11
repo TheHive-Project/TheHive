@@ -29,7 +29,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.function.BiPredicate
 import java.util.{Base64, List => JList, Map => JMap}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 class AlertCtrl(
@@ -451,7 +451,7 @@ class PublicAlert(
               predicate.getBiPredicate.asInstanceOf[BiPredicate[_, _]] match {
                 case Compare.eq       => statusFilter(predicate.getValue)(alerts)
                 case Compare.neq      => statusNotFilter(predicate.getValue)(alerts)
-                case Contains.within  => alerts.or(predicate.getValue.asInstanceOf[JList[String]].asScala.map(statusFilter): _*)
+                case Contains.within  => alerts.or(predicate.getValue.asInstanceOf[JList[String]].asScala.map(statusFilter).toSeq: _*)
                 case Contains.without => predicate.getValue.asInstanceOf[JList[String]].asScala.map(statusNotFilter).foldRight(alerts)(_ apply _)
                 case p =>
                   logger.error(s"The predicate $p is not supported for alert status")

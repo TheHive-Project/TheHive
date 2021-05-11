@@ -13,7 +13,7 @@ import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.zip.{ZipEntry, ZipFile}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.io.Source
 import scala.util.{Failure, Try}
 

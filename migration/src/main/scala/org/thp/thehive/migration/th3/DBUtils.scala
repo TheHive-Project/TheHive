@@ -5,25 +5,43 @@ import com.sksamuel.elastic4s.requests.searches.SearchHit
 import com.sksamuel.elastic4s.requests.searches.sort.{Sort, SortOrder}
 import play.api.libs.json._
 
-import scala.collection.IterableLike
-import scala.collection.generic.CanBuildFrom
+import scala.annotation.tailrec
+import scala.collection.{AbstractIterator, AbstractView, Factory, SeqOps}
+import scala.collection.generic.IsSeq
+import scala.language.implicitConversions
 
 object DBUtils {
 
-  def distinctBy[A, B, Repr, That](xs: IterableLike[A, Repr])(f: A => B)(implicit cbf: CanBuildFrom[Repr, A, That]): That = {
-    val builder = cbf(xs.repr)
-    val i       = xs.iterator
-    var set     = Set[B]()
-    while (i.hasNext) {
-      val o = i.next
-      val b = f(o)
-      if (!set(b)) {
-        set += b
-        builder += o
-      }
-    }
-    builder.result
+  class DistinctByOperation[A](seqOps: SeqOps[A, Iterable, _]) {
+    def distinctBy[B >: A, That](f: A => B)(implicit factory: Factory[B, That]): That =
+      factory.fromSpecific(new AbstractView[B] {
+        override def iterator: AbstractIterator[B] =
+          new AbstractIterator[B] {
+            var set: Set[B]         = Set[B]()
+            val it: Iterator[A]     = seqOps.iterator
+            def hasNext: Boolean    = nextElem.isDefined
+            var nextElem: Option[A] = if (it.hasNext) Some(it.next()) else None
+            @tailrec
+            def getNext(): Unit =
+              if (it.hasNext) {
+                val a = it.next()
+                val b = f(a)
+                if (!set(b)) {
+                  set += b
+                  nextElem = Some(a)
+                } else getNext()
+              } else nextElem = None
+            def next(): B = {
+              val elem = nextElem
+              getNext()
+              elem.getOrElse(throw new NoSuchElementException)
+            }
+          }
+      })
   }
+
+  implicit def DistinctByOperation[Repr](coll: Repr)(implicit seq: IsSeq[Repr]): DistinctByOperation[seq.A] =
+    new DistinctByOperation(seq(coll))
 
   def sortDefinition(sortBy: Seq[String]): Seq[Sort] = {
     val byFieldList: Seq[(String, Sort)] = sortBy
@@ -34,7 +52,7 @@ object DBUtils {
       }
     // then remove duplicates
     // Same as : val fieldSortDefs = byFieldList.groupBy(_._1).map(_._2.head).values.toSeq
-    distinctBy(byFieldList)(_._1).map(_._2)
+    byFieldList.distinctBy(_._1).map(_._2)
   }
 
   /**

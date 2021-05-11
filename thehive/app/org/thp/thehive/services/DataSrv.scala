@@ -69,7 +69,7 @@ class DataIntegrityCheckOps(val db: Database, val service: DataSrv) extends Inte
       map
         .values
         .collect {
-          case vertexIds if vertexIds.lengthCompare(1) > 0 => service.getByIds(vertexIds: _*).toList
+          case vertexIds if vertexIds.lengthCompare(1) > 0 => service.getByIds(vertexIds.toSeq: _*).toList
         }
         .toSeq
     }

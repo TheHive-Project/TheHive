@@ -8,7 +8,7 @@ import org.thp.scalligraph.models._
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect.runtime.{universe => ru}
 
 object CortexSchemaDefinition extends Schema with UpdatableSchema {

@@ -30,7 +30,6 @@ object Dependencies {
   lazy val shapeless               = "com.chuusai"              %% "shapeless"                          % "2.3.3"
   lazy val bouncyCastle            = "org.bouncycastle"          % "bcprov-jdk15on"                     % "1.68"
   lazy val apacheConfiguration     = "commons-configuration"     % "commons-configuration"              % "1.10"
-  lazy val macroParadise           = "org.scalamacros"           % "paradise"                           % "2.1.1" cross CrossVersion.full
   lazy val chimney                 = "io.scalaland"             %% "chimney"                            % "0.6.1"
   lazy val elastic4sCore           = "com.sksamuel.elastic4s"   %% "elastic4s-core"                     % elastic4sVersion
   lazy val elastic4sHttpStreams    = "com.sksamuel.elastic4s"   %% "elastic4s-http-streams"             % elastic4sVersion

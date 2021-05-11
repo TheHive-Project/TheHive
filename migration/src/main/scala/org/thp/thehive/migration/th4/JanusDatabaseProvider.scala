@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import play.api.Configuration
 
 import javax.inject.Provider
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class JanusDatabaseProvider(configuration: Configuration, system: ActorSystem, schemas: Set[UpdatableSchema]) extends Provider[Database] {
 

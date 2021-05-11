@@ -204,17 +204,18 @@ class CortexClient(
     */
   def getCurrentUser: Future[String] =
     auth(ws.url(s"$strippedUrl/api/user/current"))
-      .get
+      .get()
       .transform {
         case Success(r) if r.status == Status.OK => Try((r.json \ "id").as[String])
         case Success(r)                          => Failure(ApplicationError(r))
         case Failure(t)                          => throw t
       }
 
-  def getHealth: Future[String] = getVersion.transform {
-    case _: Success[_] => Success("Ok")
-    case _             => Success("Error")
-  }
+  def getHealth: Future[String] =
+    getVersion.transform {
+      case _: Success[_] => Success("Ok")
+      case _             => Success("Error")
+    }
 
   /**
     * Retrieve version of remote cortex
@@ -222,7 +223,7 @@ class CortexClient(
     */
   def getVersion: Future[String] =
     auth(ws.url(s"$strippedUrl/api/status"))
-      .get
+      .get()
       .transform {
         case Success(r) if r.status == Status.OK => Try((r.json \ "versions" \ "Cortex").as[String])
         case Success(r)                          => Failure(ApplicationError(r))

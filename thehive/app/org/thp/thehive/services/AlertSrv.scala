@@ -103,7 +103,7 @@ class AlertSrv(
       tagsToAdd <- (tags -- alert.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(alert).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
-      _ = if (tags.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tags.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV().hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(alert).update(_.tags, tags.toSeq).getOrFail("Alert")
       _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
@@ -515,8 +515,8 @@ trait AlertOps { alertOps: TheHiveOps =>
         )
         .domainMap {
           case ((richCase, obsStats), (iocStats, observableTypeStats)) =>
-            val obsStatsMap     = obsStats.mapValues(_.toInt)
-            val similarStatsMap = iocStats.mapValues(_.toInt)
+            val obsStatsMap     = obsStats.view.mapValues(_.toInt).toMap
+            val similarStatsMap = iocStats.view.mapValues(_.toInt).toMap
             richCase -> SimilarStats(
               similarStatsMap.values.sum         -> obsStatsMap.values.sum,
               similarStatsMap.getOrElse(true, 0) -> obsStatsMap.getOrElse(true, 0),
@@ -641,7 +641,9 @@ class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, organisati
       }
       .getOrElse(Seq("globalFailure"))
       .groupBy(identity)
+      .view
       .mapValues(_.size.toLong)
+      .toMap
 
     orgMetrics + ("multiImport" -> multiImport.getOrElse(0L))
   }

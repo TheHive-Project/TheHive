@@ -88,13 +88,12 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOps
         tags = Set("spam", "src:mail", "tag1", "tag2"),
         summary = None,
         owner = Some("certuser@thehive.local"),
-        customFields = Json.obj(
-          "boolean1" -> Json.obj("boolean" -> true, "order" -> 2),
-          "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 0),
-          "date1"    -> Json.obj("date" -> now.getTime, "order" -> 1)
-        ),
+        customFields = resultCaseOutput.customFields,
         stats = Json.obj()
       )
+      (resultCaseOutput.customFields \ "boolean1" \ "boolean").as[Boolean] must beTrue
+      (resultCaseOutput.customFields \ "string1" \ "string").as[String]    must beEqualTo("string1 custom field")
+      (resultCaseOutput.customFields \ "date1" \ "date").as[Long]          must beEqualTo(now.getTime)
 
       TestCase(resultCaseOutput) shouldEqual expected
     }

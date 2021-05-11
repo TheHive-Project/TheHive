@@ -10,7 +10,7 @@ class ClusterSetup(
     configuration: Configuration,
     system: ActorSystem
 ) extends SingleInstance(configuration.get[Seq[String]]("akka.cluster.seed-nodes").isEmpty) {
-  system.actorOf(Props[ClusterListener])
+  system.actorOf(Props[ClusterListener]())
   if (value) {
     val logger: Logger = Logger(getClass)
     logger.info("Initialising cluster")

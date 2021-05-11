@@ -7,7 +7,7 @@ import com.typesafe.config.ConfigFactory
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ConfigActor, ConfigTag}
 import org.thp.thehive.services.WithTheHiveModule
-import org.thp.thehive.{TestApplication, TestApplicationNoDatabase, TheHiveModule}
+import org.thp.thehive.{TestApplication, TheHiveModule}
 import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -26,7 +26,7 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
             |]
             |""".stripMargin
         )
-      ).withFallback(TestApplicationNoDatabase.configuration)
+      ).withFallback(TestApplication.appWithoutDatabase.configuration)
 
       override lazy val configActor: ActorRef @@ ConfigTag =
         wireAnonymousActor[ConfigActor].taggedWith[ConfigTag]

@@ -31,11 +31,14 @@ import java.io.File
 import scala.concurrent.ExecutionContext
 import scala.reflect.{classTag, ClassTag}
 
-object TestApplicationNoDatabase extends ScalligraphApplicationImpl(new File("."), getClass.getClassLoader, Mode.Test) {
-  override lazy val database: Database = throw new IllegalStateException("Database from root application should not be used")
-}
+object TestApplication {
+  lazy val appWithoutDatabase: ScalligraphApplication = new ScalligraphApplicationImpl(new File("."), getClass.getClassLoader, Mode.Test) {
+    override lazy val database: Database = throw new IllegalStateException("Database from root application should not be used")
+  }
 
+}
 class TestApplication(override val database: Database) extends ScalligraphApplication {
+  import TestApplication._
   override def getQueryExecutor(version: Int): QueryExecutor =
     syncCacheApi.getOrElseUpdate(s"QueryExecutor.$version") {
       queryExecutors()
@@ -44,31 +47,31 @@ class TestApplication(override val database: Database) extends ScalligraphApplic
         .getOrElse(throw BadRequestError(s"No available query executor for version $version"))
     }
 
-  override lazy val fileMimeTypes: FileMimeTypes                 = TestApplicationNoDatabase.fileMimeTypes
+  override lazy val fileMimeTypes: FileMimeTypes                 = appWithoutDatabase.fileMimeTypes
   override val routers: LazyMutableSeq[Router]                   = LazyMutableSeq[Router]
-  override lazy val tempFileCreator: TemporaryFileCreator        = TestApplicationNoDatabase.tempFileCreator
-  override lazy val tempFileReaper: TemporaryFileReaper          = TestApplicationNoDatabase.tempFileReaper
-  override lazy val singleInstance: SingleInstance               = TestApplicationNoDatabase.singleInstance
-  override lazy val defaultActionBuilder: DefaultActionBuilder   = TestApplicationNoDatabase.defaultActionBuilder
-  override lazy val wsClient: WSClient                           = TestApplicationNoDatabase.wsClient
-  override lazy val materializer: Materializer                   = TestApplicationNoDatabase.materializer
-  override lazy val storageSrv: StorageSrv                       = TestApplicationNoDatabase.storageSrv
-  override lazy val syncCacheApi: SyncCacheApi                   = TestApplicationNoDatabase.syncCacheApi
-  override lazy val actorSystem: ActorSystem                     = TestApplicationNoDatabase.actorSystem
-  override lazy val application: Application                     = TestApplicationNoDatabase.application
-  override lazy val configuration: Configuration                 = TestApplicationNoDatabase.configuration
-  override lazy val context: ApplicationLoader.Context           = TestApplicationNoDatabase.context
-  override lazy val httpConfiguration: HttpConfiguration         = TestApplicationNoDatabase.httpConfiguration
-  implicit override val executionContext: ExecutionContext       = TestApplicationNoDatabase.executionContext
-  override def assets: Assets                                    = TestApplicationNoDatabase.assets
+  override lazy val tempFileCreator: TemporaryFileCreator        = appWithoutDatabase.tempFileCreator
+  override lazy val tempFileReaper: TemporaryFileReaper          = appWithoutDatabase.tempFileReaper
+  override lazy val singleInstance: SingleInstance               = appWithoutDatabase.singleInstance
+  override lazy val defaultActionBuilder: DefaultActionBuilder   = appWithoutDatabase.defaultActionBuilder
+  override lazy val wsClient: WSClient                           = appWithoutDatabase.wsClient
+  override lazy val materializer: Materializer                   = appWithoutDatabase.materializer
+  override lazy val storageSrv: StorageSrv                       = appWithoutDatabase.storageSrv
+  override lazy val syncCacheApi: SyncCacheApi                   = appWithoutDatabase.syncCacheApi
+  override lazy val actorSystem: ActorSystem                     = appWithoutDatabase.actorSystem
+  override lazy val application: Application                     = appWithoutDatabase.application
+  override lazy val configuration: Configuration                 = appWithoutDatabase.configuration
+  override lazy val context: ApplicationLoader.Context           = appWithoutDatabase.context
+  override lazy val httpConfiguration: HttpConfiguration         = appWithoutDatabase.httpConfiguration
+  implicit override val executionContext: ExecutionContext       = appWithoutDatabase.executionContext
+  override def assets: Assets                                    = appWithoutDatabase.assets
   override val schemas: LazyMutableSeq[UpdatableSchema]          = LazyMutableSeq[UpdatableSchema]
   override val queryExecutors: LazyMutableSeq[QueryExecutor]     = LazyMutableSeq[QueryExecutor]
   override val authSrvProviders: LazyMutableSeq[AuthSrvProvider] = LazyMutableSeq[AuthSrvProvider]
   override lazy val configActor: ActorRef @@ ConfigTag = {
     singleInstance
-    TestApplicationNoDatabase.configActor
+    appWithoutDatabase.configActor
   }
-  override lazy val eventSrv: EventSrv                   = TestApplicationNoDatabase.eventSrv
+  override lazy val eventSrv: EventSrv                   = appWithoutDatabase.eventSrv
   override lazy val applicationConfig: ApplicationConfig = wire[ApplicationConfig]
   override lazy val authSrv: AuthSrv                     = AuthSrvFactory(this)
 

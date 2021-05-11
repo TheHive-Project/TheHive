@@ -166,6 +166,8 @@ class LogIntegrityCheckOps(val db: Database, val service: LogSrv, taskSrv: TaskS
       }
     }.getOrElse(Seq("globalFailure"))
       .groupBy(identity)
+      .view
       .mapValues(_.size.toLong)
+      .toMap
   }
 }
