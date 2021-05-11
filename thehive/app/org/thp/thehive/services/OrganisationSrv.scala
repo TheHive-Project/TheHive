@@ -64,7 +64,26 @@ class OrganisationSrv @Inject() (
     getId(authContext.organisation)
 
   def getId(organisationIdOrName: EntityIdOrName)(implicit graph: Graph): EntityId =
-    organisationIdOrName.fold(identity, oid => cache.getOrElseUpdate(s"organisation-$oid")(getByName(oid)._id.getOrFail("Organisation").get))
+    organisationIdOrName.fold(
+      identity,
+      name =>
+        cache.getOrElseUpdate(s"organisation-id-$name") {
+          val oid = getByName(name)._id.getOrFail("Organisation").get
+          cache.set(s"organisation-name-$oid", name)
+          oid
+        }
+    )
+
+  def getName(organisationIdOrName: EntityIdOrName)(implicit graph: Graph): String =
+    organisationIdOrName.fold(
+      oid =>
+        cache.getOrElseUpdate(s"organisation-name-$oid") {
+          val name = getByIds(oid).value(_.name).getOrFail("Organisation").get
+          cache.set(s"organisation-id-$name", oid)
+          name
+        },
+      identity
+    )
 
   def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
     userSrv.current.organisations.visibleOrganisationsFrom

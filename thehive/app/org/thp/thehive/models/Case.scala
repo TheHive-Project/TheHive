@@ -116,7 +116,8 @@ case class Case(
     assignee: Option[String] = None,
     number: Int = 0,
     organisationIds: Set[EntityId] = Set.empty,
-    caseTemplate: Option[String] = None
+    caseTemplate: Option[String] = None,
+    owningOrganisation: EntityId = EntityId.empty
 )
 
 case class RichCase(

@@ -88,7 +88,8 @@ class CaseSrv @Inject() (
           caseTemplate = caseTemplate.map(_.name),
           impactStatus = None,
           resolutionStatus = None,
-          tags = tagNames
+          tags = tagNames,
+          owningOrganisation = organisationSrv.currentId
         )
       )
       _ <- assignee.map(u => caseUserSrv.create(CaseUser(), createdCase, u)).flip
