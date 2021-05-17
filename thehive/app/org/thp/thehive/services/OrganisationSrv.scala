@@ -239,5 +239,5 @@ class OrganisationIntegrityCheckOps @Inject() (val db: Database, val service: Or
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] = Map.empty
+  override def globalCheck(): Map[String, Int] = Map.empty
 }

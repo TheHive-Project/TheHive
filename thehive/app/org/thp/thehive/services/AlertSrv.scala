@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -597,120 +597,48 @@ object AlertOps {
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Alert] {
+class AlertIntegrityCheckOps @Inject() (val db: Database, val service: AlertSrv, caseSrv: CaseSrv, organisationSrv: OrganisationSrv)
+    extends IntegrityCheckOps[Alert] {
 
   override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = {
     val (imported, notImported) = entities.partition(_.caseId.isDefined)
-    if (imported.nonEmpty && notImported.nonEmpty)
+    val remainingAlerts = if (imported.nonEmpty && notImported.nonEmpty) {
       // Remove all non imported alerts
       service.getByIds(notImported.map(_._id): _*).remove()
+      imported
+    } else entities
     // Keep the last created alert
-    lastCreatedEntity(entities).foreach(e => service.getByIds(e._2.map(_._id): _*).remove())
+    EntitySelector.lastCreatedEntity(remainingAlerts).foreach(e => service.getByIds(e._2.map(_._id): _*).remove())
     Success(())
   }
 
-  override def globalCheck(): Map[String, Long] = {
-    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+  override def globalCheck(): Map[String, Int] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        service
+          .startTraversal
+          .project(
+            _.by
+              .by(_.`case`._id.fold)
+              .by(_.organisation._id.fold)
+              .by(_.removeDuplicateOutEdges[AlertCase]())
+              .by(_.removeDuplicateOutEdges[AlertOrganisation]())
+          )
+          .toIterator
+          .map {
+            case (alert, caseIds, orgIds, extraCaseEdges, extraOrgEdges) =>
+              val caseStats = singleIdLink[Case]("caseId", caseSrv)(_.outEdge[AlertCase], _.set(EntityId.empty))
+//                alert => cases => {
+//                  service.get(alert).outE[AlertCase].filter(_.inV.hasId(cases.map(_._id): _*)).project(_.by.by(_.inV.v[Case])).toSeq
+//              }
+                .check(alert, alert.caseId, caseIds)
+              val orgStats = singleIdLink[Organisation]("organisationId", organisationSrv)(_.outEdge[AlertOrganisation], _.remove)
+                .check(alert, alert.organisationId, orgIds)
 
-    val multiImport = db.tryTransaction { implicit graph =>
-      // Remove extra link with case
-      val linkIds = service
-        .startTraversal
-        .flatMap(_.outE[AlertCase].range(1, 100)._id)
-        .toSeq
-      if (linkIds.nonEmpty)
-        graph.E[AlertCase](linkIds: _*).remove()
-      Success(linkIds.length.toLong)
-    }
-
-    val orgMetrics: Map[String, Long] = db
-      .tryTransaction { implicit graph =>
-        // Check links with organisation
-        Try {
-          service
-            .startTraversal
-            .project(
-              _.by
-                .by(_.organisation._id.fold)
-            )
-            .toIterator
-            .flatMap {
-              case (alert, Seq(organisationId)) if alert.organisationId == organisationId => None // It's OK
-
-              case (alert, Seq(organisationId)) =>
-                logger.warn(
-                  s"Invalid organisationId in alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}), " +
-                    s"got ${alert.organisationId}, should be $organisationId. Fixing it."
-                )
-                service.get(alert).update(_.organisationId, organisationId).iterate()
-                Some("invalidOrganisationId")
-
-              case (alert, organisationIds) if organisationIds.isEmpty =>
-                organisationSrv.getOrFail(alert.organisationId) match {
-                  case Success(organisation) =>
-                    logger.warn(
-                      s"Link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) and " +
-                        s"organisation ${alert.organisationId} has disappeared. Fixing it."
-                    )
-                    service
-                      .alertOrganisationSrv
-                      .create(AlertOrganisation(), alert, organisation)
-                      .fold(
-                        error => {
-                          logger.error(
-                            s"Fail to create link between alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) " +
-                              s"and organisation ${alert.organisationId}",
-                            error
-                          )
-                          Some("missingOrganisationAndFail")
-                        },
-                        _ => Some("missingOrganisation")
-                      )
-                  case _ =>
-                    logger.warn(
-                      s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is not linked to " +
-                        s"existing organisation. Fixing it."
-                    )
-                    service.get(alert).remove()
-                    Some("nonExistentOrganisation")
-                }
-
-              case (alert, organisationIds) if organisationIds.contains(alert.organisationId) =>
-                val (extraLinks, extraOrganisationIds) = organisationIds.partition(_ == alert.organisationId)
-                if (extraOrganisationIds.nonEmpty) {
-                  logger.warn(
-                    s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is not linked to " +
-                      s"extra organisation(s): ${extraOrganisationIds.mkString(",")}. Fixing it."
-                  )
-                  service.get(alert).outE[AlertOrganisation].filter(_.inV.hasId(extraOrganisationIds: _*)).remove()
-                }
-                if (extraLinks.length > 1) {
-                  logger.warn(
-                    s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) is linked more than once to " +
-                      s"organisation: ${alert.organisationId}. Fixing it."
-                  )
-                  service.get(alert).flatMap(_.outE[AlertOrganisation].range(1, 100)).remove()
-                }
-                Some("extraOrganisation")
-
-              case (alert, organisationIds) =>
-                logger.warn(
-                  s"Alert ${alert._id}(${alert.`type`}:${alert.source}:${alert.sourceRef}) has inconsistent organisation links: " +
-                    s"organisation is ${alert.organisationId} but links are ${organisationIds.mkString(",")}. Fixing it."
-                )
-                service.get(alert).flatMap(_.outE[AlertOrganisation].sort(_.by("_createdAt", Order.asc)).range(1, 100)).remove()
-                service.get(alert).organisation._id.getOrFail("Organisation").foreach { organisationId =>
-                  service.get(alert).update(_.organisationId, organisationId).iterate()
-                }
-                Some("incoherent")
-            }
-            .toSeq
-        }
+              caseStats <+> orgStats <+> extraCaseEdges <+> extraOrgEdges
+          }
+          .reduceOption(_ <+> _)
+          .getOrElse(Map.empty)
       }
-      .getOrElse(Seq("globalFailure"))
-      .groupBy(identity)
-      .mapValues(_.size.toLong)
-
-    orgMetrics + ("multiImport" -> multiImport.getOrElse(0L))
-  }
+    }.getOrElse(Map("Alert-globalFailure" -> 1))
 }

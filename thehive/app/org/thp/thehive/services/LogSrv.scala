@@ -112,7 +112,7 @@ object LogOps {
 class LogIntegrityCheckOps @Inject() (val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] {
   override def resolve(entities: Seq[Log with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
-  override def globalCheck(): Map[String, Long] = {
+  override def globalCheck(): Map[String, Int] = {
     implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
 
     db.tryTransaction { implicit graph =>
@@ -121,50 +121,17 @@ class LogIntegrityCheckOps @Inject() (val db: Database, val service: LogSrv, tas
           .startTraversal
           .project(_.by.by(_.task.fold))
           .toIterator
-          .flatMap {
+          .map {
             case (log, tasks) =>
-              val (extraLinks, extraTasks) = tasks.partition(_._id == log.taskId)
-              if (extraLinks.nonEmpty)
-                (if (extraLinks.length == 1) Nil
-                 else {
-                   service.get(log).inE[TaskLog].flatMap(_.range(1, 100)).remove()
-                   Seq("extraTaskLink")
-                 }) ++
-                  (if (extraTasks.isEmpty) Nil
-                   else {
-                     service.get(log).inE[TaskLog].filterNot(_.outV.hasId(log.taskId)).remove()
-                     Seq("extraTask")
-                   }) ++
-                  (if (log.organisationIds != extraLinks.head.organisationIds) {
-                     service.get(log).update(_.organisationIds, extraLinks.head.organisationIds).iterate()
-                     Seq("invalidOrganisationIds")
-                   } else Nil)
-              else if (extraTasks.nonEmpty)
-                if (extraTasks.size == 1) {
-                  service.get(log).update(_.taskId, extraTasks.head._id).update(_.organisationIds, extraTasks.head.organisationIds).iterate()
-                  Seq("invalidTaskId")
-                } else {
-                  service.get(log).remove()
-                  Seq("incoherent")
-                }
-              else {
-                taskSrv.getOrFail(log.taskId) match {
-                  case Success(task) =>
-                    service
-                      .taskLogSrv
-                      .create(TaskLog(), task, log)
-                    service.get(log).update(_.organisationIds, task.organisationIds).iterate()
-                    Seq("taskMissing")
-                  case _ => Seq("nonExistentTask")
-                }
-                service.get(log).remove()
-                Seq("incoherent")
-              }
+              val taskStats = singleIdLink[Task]("taskId", taskSrv)(_.inEdge[TaskLog], _.remove).check(log, log.taskId, tasks.map(_._id))
+              if (tasks.size == 1 && tasks.head.organisationIds != log.organisationIds) {
+                service.get(log).update(_.organisationIds, tasks.head.organisationIds).iterate()
+                taskStats + ("Log-invalidOrgs" -> 1)
+              } else taskStats
           }
-          .toSeq
+          .reduceOption(_ <+> _)
+          .getOrElse(Map.empty)
       }
-    }.getOrElse(Seq("globalFailure"))
-      .groupBy(identity)
-      .mapValues(_.size.toLong)
+    }.getOrElse(Map("globalFailure" -> 1))
   }
 }

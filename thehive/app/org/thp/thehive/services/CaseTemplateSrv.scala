@@ -280,7 +280,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
     val service: CaseTemplateSrv,
     organisationSrv: OrganisationSrv
 ) extends IntegrityCheckOps[CaseTemplate] {
-  override def findDuplicates: Seq[Seq[CaseTemplate with Entity]] =
+  override def findDuplicates(): Seq[Seq[CaseTemplate with Entity]] =
     db.roTransaction { implicit graph =>
       organisationSrv
         .startTraversal
@@ -306,7 +306,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] =
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         val orphanIds = service.startTraversal.filterNot(_.organisation)._id.toSeq
@@ -314,7 +314,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
           logger.warn(s"Found ${orphanIds.length} caseTemplate orphan(s) (${orphanIds.mkString(",")})")
           service.getByIds(orphanIds: _*).remove()
         }
-        Map("orphans" -> orphanIds.size.toLong)
+        Map("orphans" -> orphanIds.size)
       }
-    }.getOrElse(Map("globalFailure" -> 1L))
+    }.getOrElse(Map("globalFailure" -> 1))
 }
