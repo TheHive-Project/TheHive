@@ -214,7 +214,12 @@ class CaseSrv @Inject() (
         .getOrFail("Share")
         .flatMap {
           case share if share.owner =>
-            get(`case`).shares.toSeq.toTry(s => shareSrv.unshareCase(s._id)).map(_ => get(`case`).remove())
+            get(`case`)
+              .sideEffect(_.alert.update(_.caseId, EntityId.empty))
+              .shares
+              .toSeq
+              .toTry(s => shareSrv.unshareCase(s._id))
+              .map(_ => get(`case`).remove())
           case _ =>
             throw BadRequestError("Your organisation must be owner of the case")
           // shareSrv.unshareCase(share._id)
