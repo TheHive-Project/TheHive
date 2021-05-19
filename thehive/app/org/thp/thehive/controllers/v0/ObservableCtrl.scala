@@ -276,6 +276,8 @@ class ObservableCtrl @Inject() (
           .filteredSimilar
           .visible(organisationSrv)
           .richObservableWithCustomRenderer(organisationSrv, observableLinkRenderer)
+          .toIterator
+          .filterNot(_._2.keys.isEmpty)
           .toSeq
 
         Success(Results.Ok(observables.toJson))
