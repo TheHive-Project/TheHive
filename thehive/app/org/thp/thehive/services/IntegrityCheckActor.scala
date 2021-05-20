@@ -48,8 +48,8 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
   import context.dispatcher
 
   lazy val logger: Logger = Logger(getClass)
-  lazy val integrityCheckOps: Set[IntegrityCheckOps[_ <: Product]] = _integrityCheckOps
-    .asInstanceOf[Set[IntegrityCheckOps[_ <: Product]]]
+  lazy val integrityCheckOps: Seq[IntegrityCheckOps[_ <: Product]] = _integrityCheckOps
+    .asInstanceOf[Seq[IntegrityCheckOps[_ <: Product]]]
   lazy val checkExecutionContext: ExecutionContext = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
 
   val defaultInitialDelayConfig: ConfigItem[FiniteDuration, FiniteDuration] =

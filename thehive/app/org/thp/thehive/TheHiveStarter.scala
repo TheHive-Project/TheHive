@@ -19,7 +19,7 @@ object TheHiveStarter extends App {
     val application = {
       val scalligraphApplication = new ScalligraphApplicationImpl(config.rootDir, process.classLoader, mode)
       try {
-        scalligraphApplication.router
+        scalligraphApplication.init()
         scalligraphApplication.application
       } catch {
         case e: Throwable =>
