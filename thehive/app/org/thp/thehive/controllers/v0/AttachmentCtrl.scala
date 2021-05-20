@@ -7,11 +7,9 @@ import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
 import org.thp.thehive.controllers.HttpHeaderParameterEncoding
-import org.thp.thehive.services.AttachmentOps._
-import org.thp.thehive.services.AttachmentSrv
+import org.thp.thehive.services.{AttachmentSrv, TheHiveOpsNoDeps}
 import play.api.http.HttpEntity
 import play.api.mvc._
 
@@ -23,7 +21,7 @@ class AttachmentCtrl(
     appConfig: ApplicationConfig,
     attachmentSrv: AttachmentSrv,
     db: Database
-) {
+) extends TheHiveOpsNoDeps {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 
   val passwordConfig: ConfigItem[String, String] = appConfig.item[String]("datastore.attachment.password", "Password used to protect attachment ZIP")

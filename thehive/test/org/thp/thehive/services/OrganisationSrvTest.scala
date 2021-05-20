@@ -3,7 +3,6 @@ package org.thp.thehive.services
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
 

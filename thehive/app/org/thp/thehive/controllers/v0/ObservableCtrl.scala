@@ -7,16 +7,10 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
 import play.api.Configuration
 import play.api.libs.Files.TemporaryFileCreator
@@ -37,14 +31,16 @@ class ObservableCtrl(
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
-    organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservable,
     temporaryFileCreator: TemporaryFileCreator
 ) extends ObservableRenderer
-    with QueryCtrl {
+    with QueryCtrl
+    with TheHiveOps {
 
   type AnyAttachmentType = InputAttachment :+: FFile :+: String :+: CNil
 
@@ -142,7 +138,7 @@ class ObservableCtrl(
               alert <-
                 alertSrv
                   .get(EntityIdOrName(alertId))
-                  .can(organisationSrv, Permissions.manageAlert)
+                  .can(Permissions.manageAlert)
                   .orFail(AuthorizationError("Operation not permitted"))
               observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
             } yield (alert, observableType)
@@ -237,7 +233,7 @@ class ObservableCtrl(
       .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
           .get(EntityIdOrName(observableId))
-          .visible(organisationSrv)
+          .visible
           .richObservable
           .getOrFail("Observable")
           .map { observable =>
@@ -252,7 +248,7 @@ class ObservableCtrl(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
           .update(
-            _.get(EntityIdOrName(observableId)).canManage(organisationSrv),
+            _.get(EntityIdOrName(observableId)).canManage,
             propertyUpdaters
           )
           .flatMap {
@@ -269,9 +265,9 @@ class ObservableCtrl(
       .authRoTransaction(db) { implicit request => implicit graph =>
         val observables = observableSrv
           .get(EntityIdOrName(observableId))
-          .visible(organisationSrv)
+          .visible
           .filteredSimilar
-          .visible(organisationSrv)
+          .visible
           .richObservableWithCustomRenderer(organisationSrv, observableLinkRenderer)
           .toSeq
 
@@ -288,7 +284,7 @@ class ObservableCtrl(
         ids
           .toTry { id =>
             observableSrv
-              .update(_.get(EntityIdOrName(id)).canManage(organisationSrv), properties)
+              .update(_.get(EntityIdOrName(id)).canManage, properties)
           }
           .map(_ => Results.NoContent)
       }
@@ -300,7 +296,7 @@ class ObservableCtrl(
           observable <-
             observableSrv
               .get(EntityIdOrName(observableId))
-              .canManage(organisationSrv)
+              .canManage
               .getOrFail("Observable")
           _ <- observableSrv.delete(observable)
         } yield Results.NoContent
@@ -353,7 +349,8 @@ class ObservableCtrl(
 
 class PublicObservable(
     observableSrv: ObservableSrv,
-    organisationSrv: OrganisationSrv
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv
 ) extends PublicData
     with ObservableRenderer {
   override val entityName: String = "observable"
@@ -364,7 +361,7 @@ class PublicObservable(
     )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
-    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
+    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
@@ -374,7 +371,7 @@ class PublicObservable(
           observableSteps
             .richPage(from, to, withTotal = true) {
               case o if withStats =>
-                o.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv)(authContext))(authContext)
+                o.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(authContext))(authContext)
                   .domainMap(ros => (ros._1, ros._2, None: Option[RichCase]))
               case o =>
                 o.richObservable.domainMap(ro => (ro, JsObject.empty, None))
@@ -395,7 +392,7 @@ class PublicObservable(
     ),
     Query[Traversal.V[Observable], Traversal.V[Observable]](
       "similar",
-      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(organisationSrv)(authContext)
+      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
     ),
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)

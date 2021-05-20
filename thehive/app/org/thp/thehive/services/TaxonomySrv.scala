@@ -5,19 +5,15 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.Converter.Identity
-import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TagOps._
-import org.thp.thehive.services.TaxonomyOps._
 
 import java.util.{Map => JMap}
 import scala.util.{Failure, Success, Try}
 
-class TaxonomySrv(_organisationSrv: => OrganisationSrv, _tagSrv: => TagSrv) extends VertexSrv[Taxonomy] {
+class TaxonomySrv(_organisationSrv: => OrganisationSrv, _tagSrv: => TagSrv) extends VertexSrv[Taxonomy] with TheHiveOpsNoDeps {
   lazy val organisationSrv: OrganisationSrv = _organisationSrv
   lazy val tagSrv: TagSrv                   = _tagSrv
   val taxonomyTagSrv                        = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
@@ -96,7 +92,7 @@ class TaxonomySrv(_organisationSrv: => OrganisationSrv, _tagSrv: => TagSrv) exte
 
 }
 
-object TaxonomyOps {
+trait TaxonomyOps { _: TheHiveOpsNoDeps =>
   implicit class TaxonomyOpsDefs(traversal: Traversal.V[Taxonomy]) {
 
     def get(idOrName: EntityId): Traversal.V[Taxonomy] =

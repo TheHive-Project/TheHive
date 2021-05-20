@@ -5,8 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.client.{Authentication, ProxyWS, ProxyWSConfig}
 import org.thp.misp.client.{MispClient, MispPurpose}
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
-import org.thp.scalligraph.traversal.Traversal
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Traversal, TraversalOps}
 import org.thp.thehive.models.{HealthStatus, Organisation}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
@@ -120,7 +119,8 @@ class TheHiveMispClient(
       whitelistOrganisations,
       excludedTags,
       whitelistTags
-    ) {
+    )
+    with TraversalOps {
 
   def this(config: TheHiveMispClientConfig, mat: Materializer) =
     this(

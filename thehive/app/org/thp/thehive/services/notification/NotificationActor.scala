@@ -5,12 +5,8 @@ import akka.util.Timeout
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadConfigurationError, EntityId}
 import org.thp.thehive.models.{Audit, Organisation, User}
-import org.thp.thehive.services.AuditOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import org.thp.thehive.services.notification.triggers.{Trigger, TriggerProvider}
@@ -82,7 +78,8 @@ class NotificationActor(
     notificationSrv: NotificationSrv,
     cache: SyncCacheApi,
     db: Database
-) extends Actor {
+) extends Actor
+    with TheHiveOpsNoDeps {
   import context.dispatcher
   lazy val logger: Logger = Logger(getClass)
   val roles: Set[String]  = configuration.get[Seq[String]]("roles").toSet

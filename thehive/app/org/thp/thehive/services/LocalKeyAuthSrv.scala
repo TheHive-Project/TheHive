@@ -2,9 +2,7 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
-import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
@@ -19,7 +17,8 @@ class LocalKeyAuthSrv(
     authSrv: AuthSrv,
     requestOrganisation: RequestOrganisation,
     ec: ExecutionContext
-) extends KeyAuthSrv(authSrv, requestOrganisation, ec) {
+) extends KeyAuthSrv(authSrv, requestOrganisation, ec)
+    with TheHiveOpsNoDeps {
 
   final protected def generateKey(): String = {
     val bytes = Array.ofDim[Byte](24)

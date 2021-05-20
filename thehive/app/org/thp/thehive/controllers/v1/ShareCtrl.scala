@@ -4,17 +4,11 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -30,7 +24,8 @@ class ShareCtrl(
     observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
     db: Database
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with TheHiveOpsNoDeps {
   override val entityName: String                 = "share"
   override val publicProperties: PublicProperties = properties.share
   override val initialQuery: Query =

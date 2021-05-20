@@ -6,17 +6,8 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, Schema}
 import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityId, EntityName, RichOption, ScalligraphApplication, ScalligraphModule}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.CaseTemplateOps._
-import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
@@ -62,7 +53,7 @@ class DatabaseBuilder(
     taxonomySrv: TaxonomySrv,
     userSrv: UserSrv,
     integrityChecks: Seq[GenIntegrityCheckOps]
-) {
+) extends TheHiveOpsNoDeps {
 
   lazy val logger: Logger = Logger(getClass)
 

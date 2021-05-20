@@ -10,14 +10,10 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.scalligraph.{CreateError, EntityId, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{UserSrv => _, _}
 import play.api.Logger
 import play.api.libs.json._
@@ -40,7 +36,7 @@ class MispImportSrv(
     attributeConvertersConfig: ConfigItem[Seq[AttributeConverter], Seq[AttributeConverter]],
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
-) {
+) extends TheHiveOpsNoDeps {
 
   lazy val logger: Logger = Logger(getClass)
 

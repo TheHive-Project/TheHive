@@ -4,16 +4,11 @@ import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, NotFoundError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsNull, JsObject, Json}
@@ -30,12 +25,14 @@ class UserCtrl(
     caseSrv: CaseSrv,
     userSrv: UserSrv,
     authSrv: AuthSrv,
-    organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    implicit val db: Database
-) extends QueryableCtrl {
+    db: Database
+) extends QueryableCtrl
+    with TheHiveOps {
 
   override val entityName: String                 = "user"
   override val publicProperties: PublicProperties = properties.user
@@ -61,11 +58,10 @@ class UserCtrl(
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[User]]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
-    Query[Traversal.V[User], Traversal.V[Task]]("tasks", (userSteps, authContext) => userSteps.tasks.visible(organisationSrv)(authContext)),
+    Query[Traversal.V[User], Traversal.V[Task]]("tasks", (userSteps, authContext) => userSteps.tasks.visible(authContext)),
     Query[Traversal.V[User], Traversal.V[Case]](
       "cases",
-      (userSteps, authContext) =>
-        caseSrv.startTraversal(userSteps.graph).visible(organisationSrv)(authContext).assignedTo(userSteps.value(_.login).toSeq: _*)
+      (userSteps, authContext) => caseSrv.startTraversal(userSteps.graph).visible(authContext).assignedTo(userSteps.value(_.login).toSeq: _*)
     )
   )
   def current: Action[AnyContent] =

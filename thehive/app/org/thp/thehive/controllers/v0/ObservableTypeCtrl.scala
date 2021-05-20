@@ -4,8 +4,7 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal, TraversalOps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputObservableType
 import org.thp.thehive.models.{ObservableType, Permissions}
@@ -18,7 +17,8 @@ class ObservableTypeCtrl(
     observableTypeSrv: ObservableTypeSrv,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicObservableType
-) extends QueryCtrl {
+) extends QueryCtrl
+    with TraversalOps {
   def get(idOrName: String): Action[AnyContent] =
     entrypoint("get observable type").authRoTransaction(db) { _ => implicit graph =>
       observableTypeSrv
@@ -44,7 +44,7 @@ class ObservableTypeCtrl(
       }
 }
 
-class PublicObservableType(observableTypeSrv: ObservableTypeSrv) extends PublicData {
+class PublicObservableType(observableTypeSrv: ObservableTypeSrv) extends PublicData with TraversalOps {
   override val entityName: String = "ObservableType"
   override val initialQuery: Query =
     Query.init[Traversal.V[ObservableType]]("listObservableType", (graph, _) => observableTypeSrv.startTraversal(graph))

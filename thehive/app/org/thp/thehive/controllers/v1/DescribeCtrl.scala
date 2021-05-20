@@ -5,7 +5,6 @@ import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.controllers.ModelDescription
 import org.thp.thehive.services._
 import play.api.Logger
@@ -39,7 +38,8 @@ class TheHiveModelDescription(
     impactStatusSrv: ImpactStatusSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
     db: Database
-) extends ModelDescription {
+) extends ModelDescription
+    with TheHiveOpsNoDeps {
 
   val metadata = Seq(
     PropertyDescription("_createdBy", "user"),

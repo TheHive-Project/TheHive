@@ -6,18 +6,15 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.JsObject
 
 import java.util
 import scala.util.{Success, Try}
 
-class LogSrv(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, _taskSrv: => TaskSrv) extends VertexSrv[Log] {
+class LogSrv(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, _taskSrv: => TaskSrv) extends VertexSrv[Log] with TheHiveOpsNoDeps {
   lazy val taskSrv: TaskSrv = _taskSrv
   val taskLogSrv            = new EdgeSrv[TaskLog, Task, Log]
   val logAttachmentSrv      = new EdgeSrv[LogAttachment, Log, Attachment]
@@ -51,7 +48,7 @@ class LogSrv(attachmentSrv: AttachmentSrv, auditSrv: AuditSrv, _taskSrv: => Task
     }
 }
 
-object LogOps {
+trait LogOpsNoDeps { _: TheHiveOpsNoDeps =>
 
   implicit class LogOpsDefs(traversal: Traversal.V[Log]) {
     def task: Traversal.V[Task] = traversal.in("TaskLog").v[Task]
@@ -61,9 +58,6 @@ object LogOps {
 
     def organisations: Traversal.V[Organisation] =
       task.organisations
-
-    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Log] =
-      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
 
     def attachments: Traversal.V[Attachment] = traversal.out[LogAttachment].v[Attachment]
 
@@ -108,7 +102,15 @@ object LogOps {
   }
 }
 
-class LogIntegrityCheckOps(val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] {
+trait LogOps { _: TheHiveOpsNoDeps =>
+  protected val organisationSrv: OrganisationSrv
+  implicit class LogOpsNoDepsDefs(traversal: Traversal.V[Log]) {
+    def visible(implicit authContext: AuthContext): Traversal.V[Log] =
+      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
+  }
+}
+
+class LogIntegrityCheckOps(val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] with TheHiveOpsNoDeps {
   override def resolve(entities: Seq[Log with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
   override def globalCheck(): Map[String, Long] = {

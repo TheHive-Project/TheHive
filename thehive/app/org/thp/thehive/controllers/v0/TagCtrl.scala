@@ -6,13 +6,11 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, Renderer}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.Tag
-import org.thp.thehive.services.TagOps._
-import org.thp.thehive.services.{OrganisationSrv, TagSrv}
+import org.thp.thehive.services.{OrganisationSrv, TagSrv, TheHiveOpsNoDeps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 class TagCtrl(
@@ -36,7 +34,7 @@ class TagCtrl(
 
 case class TagHint(freeTag: Option[String], namespace: Option[String], predicate: Option[String], value: Option[String], limit: Option[Long])
 
-class PublicTag(tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData {
+class PublicTag(tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData with TheHiveOpsNoDeps {
   override val entityName: String = "tag"
   override val initialQuery: Query =
     Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))

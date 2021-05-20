@@ -8,11 +8,9 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.{Audit, RichAudit}
-import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -29,7 +27,8 @@ class AuditCtrl(
     implicit val ec: ExecutionContext,
     override val queryExecutor: QueryExecutor
 ) extends AuditRenderer
-    with QueryCtrl {
+    with QueryCtrl
+    with TheHiveOpsNoDeps {
   implicit val timeout: Timeout = Timeout(5.minutes)
 
   def flow(caseId: Option[String]): Action[AnyContent] =
@@ -62,16 +61,18 @@ class AuditCtrl(
       }
 }
 
-class PublicAudit(auditSrv: AuditSrv, organisationSrv: OrganisationSrv, db: Database) extends PublicData {
+class PublicAudit(auditSrv: AuditSrv, val organisationSrv: OrganisationSrv, val customFieldSrv: CustomFieldSrv, db: Database)
+    extends PublicData
+    with TheHiveOps {
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Audit]](
     "getAudit",
-    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
+    (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(authContext)
   )
 
   override val entityName: String = "audit"
 
   override val initialQuery: Query =
-    Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(organisationSrv)(authContext))
+    Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(authContext))
 
   override val pageQuery: ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Audit], IteratorOutput](

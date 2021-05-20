@@ -3,11 +3,8 @@ package org.thp.thehive.services.notification.triggers
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Audit, Organisation, User}
-import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.LogSrv
-import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.{LogSrv, TheHiveOpsNoDeps}
 import play.api.Configuration
 
 import scala.util.{Success, Try}
@@ -17,7 +14,7 @@ class LogInMyTaskProvider(logSrv: LogSrv) extends TriggerProvider {
   override def apply(config: Configuration): Try[Trigger] = Success(new LogInMyTask(logSrv))
 }
 
-class LogInMyTask(logSrv: LogSrv) extends Trigger {
+class LogInMyTask(logSrv: LogSrv) extends Trigger with TheHiveOpsNoDeps {
   override val name: String = "LogInMyTask"
 
   override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =

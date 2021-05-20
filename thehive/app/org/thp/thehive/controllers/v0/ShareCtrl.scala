@@ -4,16 +4,10 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -28,7 +22,7 @@ class ShareCtrl(
     observableSrv: ObservableSrv,
     profileSrv: ProfileSrv,
     implicit val db: Database
-) {
+) extends TheHiveOpsNoDeps {
 
   def shareCase(caseId: String): Action[AnyContent] =
     entrypoint("create case shares")

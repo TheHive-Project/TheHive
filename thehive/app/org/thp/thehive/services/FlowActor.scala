@@ -7,14 +7,9 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models.{Audit, AuditContext}
-import org.thp.thehive.services.AuditOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.TaskOps._
 import play.api.cache.SyncCacheApi
 
 import java.util.Date
@@ -35,13 +30,15 @@ class FlowActor(
     cache: SyncCacheApi,
     caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
-    organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     taskSrv: TaskSrv,
     db: Database,
     appConfig: ApplicationConfig,
     eventSrv: EventSrv,
     auditSrv: AuditSrv
-) extends Actor {
+) extends Actor
+    with TheHiveOps {
 
   lazy val maxAgeConfig: ConfigItem[FiniteDuration, FiniteDuration] =
     appConfig.item[FiniteDuration]("flow.maxAge", "Max age of audit logs shown in initial flow")
@@ -60,15 +57,15 @@ class FlowActor(
           .has(_.mainAction, true)
           .has(_._createdAt, P.gt(fromDate))
           .sort(_.by("_createdAt", Order.desc))
-          .visible(organisationSrv)
+          .visible
           .limit(10)
           ._id
       case Some(cid) =>
         graph
           .union(
-            caseSrv.filterTraversal(_).get(cid).visible(organisationSrv).in[AuditContext],
-            observableSrv.filterTraversal(_).visible(organisationSrv).relatedTo(caseSrv.caseId(cid)).in[AuditContext],
-            taskSrv.filterTraversal(_).visible(organisationSrv).relatedTo(caseSrv.caseId(cid)).in[AuditContext]
+            caseSrv.filterTraversal(_).get(cid).visible.in[AuditContext],
+            observableSrv.filterTraversal(_).visible.relatedTo(caseSrv.caseId(cid)).in[AuditContext],
+            taskSrv.filterTraversal(_).visible.relatedTo(caseSrv.caseId(cid)).in[AuditContext]
           )
           .v[Audit]
           .has(_.mainAction, true)

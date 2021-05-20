@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
-class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder {
+class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   "organisation controller" should {
     "create a new organisation and bulk link several" in testApp { app =>
       import app.thehiveModuleV0._

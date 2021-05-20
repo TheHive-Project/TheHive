@@ -9,10 +9,8 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.EventSrv
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Retry
 import org.thp.scalligraph.{EntityId, NotFoundError}
-import org.thp.thehive.services.AuditOps._
 import play.api.Logger
 import play.api.libs.json.Json
 
@@ -37,7 +35,8 @@ case object Commit            extends StreamMessage
   * to global stream actor.
   */
 class StreamActor(
-    organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     authContext: AuthContext,
     refresh: FiniteDuration,
     maxWait: FiniteDuration,
@@ -45,7 +44,8 @@ class StreamActor(
     keepAlive: FiniteDuration,
     auditSrv: AuditSrv,
     db: Database
-) extends Actor {
+) extends Actor
+    with TheHiveOps {
   import context.dispatcher
 
   lazy val logger: Logger = Logger(getClass)
@@ -71,7 +71,7 @@ class StreamActor(
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .getByIds(ids: _*)
-          .visible(organisationSrv)(authContext)
+          .visible(authContext)
           .toSeq
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
@@ -111,7 +111,7 @@ class StreamActor(
       db.roTransaction { implicit graph =>
         val visibleIds = auditSrv
           .getByIds(ids: _*)
-          .visible(organisationSrv)(authContext)
+          .visible(authContext)
           .toSeq
           .map(_._id)
         logger.debug(s"[$self] AuditStreamMessage $ids => $visibleIds")
@@ -134,6 +134,7 @@ class StreamSrv(
     appConfig: ApplicationConfig,
     eventSrv: EventSrv,
     organisationSrv: OrganisationSrv,
+    customFieldSrv: CustomFieldSrv,
     auditSrv: AuditSrv,
     db: Database,
     system: ActorSystem,
@@ -184,7 +185,7 @@ class StreamSrv(
     val streamId = generateStreamId()
     val streamActor =
       system.actorOf(
-        Props(classOf[StreamActor], organisationSrv, authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db),
+        Props(classOf[StreamActor], organisationSrv, customFieldSrv, authContext, refresh, maxWait, graceDuration, keepAlive, auditSrv, db),
         s"stream-$streamId"
       )
     logger.debug(s"Register stream actor ${streamActor.path}")

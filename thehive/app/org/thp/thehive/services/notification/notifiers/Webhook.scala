@@ -5,18 +5,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.client.{Authentication, NoAuthentication, ProxyWS, ProxyWSConfig}
 import org.thp.scalligraph.models.{Entity, UMapping}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
 import org.thp.scalligraph.{BadConfigurationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.AuditRenderer
 import org.thp.thehive.controllers.v0.Conversion.fromObjectType
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.AuditOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{AuditSrv, _}
 import play.api.libs.json.Json.WithDefaultValues
 import play.api.libs.json._
@@ -76,7 +69,8 @@ class Webhook(
     customFieldSrv: CustomFieldSrv,
     mat: Materializer,
     implicit val ec: ExecutionContext
-) extends Notifier {
+) extends Notifier
+    with TheHiveOpsNoDeps {
   override val name: String = "webhook"
 
   lazy val logger: Logger = Logger(getClass)

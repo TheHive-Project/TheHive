@@ -4,16 +4,13 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models.{Organisation, OrganisationPage, Page}
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.PageOps._
 import play.api.libs.json.Json
 
 import scala.util.Try
 
-class PageSrv(organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page] {
+class PageSrv(organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends VertexSrv[Page] with TheHiveOpsNoDeps {
 
   val organisationPageSrv = new EdgeSrv[OrganisationPage, Organisation, Page]
 
@@ -41,7 +38,7 @@ class PageSrv(organisationSrv: OrganisationSrv, auditSrv: AuditSrv) extends Vert
     }
 }
 
-object PageOps {
+trait PageOps { _: TheHiveOpsNoDeps =>
 
   implicit class PageOpsDefs(traversal: Traversal.V[Page]) {
 
@@ -54,5 +51,4 @@ object PageOps {
     def visible(implicit authContext: AuthContext): Traversal.V[Page] =
       traversal.filter(_.organisation.current)
   }
-
 }

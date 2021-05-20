@@ -6,14 +6,10 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.RoleOps._
-import org.thp.thehive.services.UserOps._
 import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
@@ -28,7 +24,8 @@ class OrganisationSrv(
     _userSrv: => UserSrv,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
     cache: SyncCacheApi
-) extends VertexSrv[Organisation] {
+) extends VertexSrv[Organisation]
+    with TheHiveOpsNoDeps {
   lazy val taxonomySrv: TaxonomySrv = _taxonomySrv
   lazy val roleSrv: RoleSrv         = _roleSrv
   lazy val profileSrv: ProfileSrv   = _profileSrv
@@ -137,7 +134,7 @@ class OrganisationSrv(
   }
 }
 
-object OrganisationOps {
+trait OrganisationOps { _: TheHiveOpsNoDeps =>
 
   implicit class OrganisationOpsDefs(traversal: Traversal.V[Organisation]) {
 

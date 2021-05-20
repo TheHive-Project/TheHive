@@ -5,7 +5,7 @@ import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.controllers.ModelDescription
 import org.thp.thehive.services.{CustomFieldSrv, EntityDescription, PropertyDescription}
 import play.api.Logger
@@ -33,7 +33,8 @@ class TheHiveModelDescription(
     publicUser: PublicUser,
     customFieldSrv: CustomFieldSrv,
     db: Database
-) extends ModelDescription {
+) extends ModelDescription
+    with TraversalOps {
 
   private val metadata = Seq(
     PropertyDescription("createdBy", "user"),

@@ -1,10 +1,10 @@
 package org.thp.thehive.connector.misp
 
-import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl}
 import org.thp.thehive.connector.misp.services.{TestMispClientProvider, TheHiveMispClient}
 import org.thp.thehive.services.{TheHiveTestModule, WithTheHiveModule}
-import org.thp.thehive.{DatabaseBuilderModule, JanusDatabaseProvider, LogFileConfig, TestApplication, TheHiveModule}
+import org.thp.thehive._
 import play.api.Mode
 
 import java.io.File

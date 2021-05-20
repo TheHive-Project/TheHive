@@ -3,7 +3,6 @@ package org.thp.thehive.services
 import io.github.nremond.SecureHash
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, EntityIdOrName}
 import org.thp.thehive.models.User
@@ -18,7 +17,7 @@ object LocalPasswordAuthSrv {
     SecureHash.createHash(password)
 }
 
-class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
+class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv with TheHiveOpsNoDeps {
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)
   lazy val logger: Logger                              = Logger(getClass)

@@ -5,15 +5,13 @@ import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityIdOrName}
 import org.thp.thehive.models._
-import org.thp.thehive.services.ObservableTypeOps._
 
 import scala.util.{Failure, Success, Try}
 
-class ObservableTypeSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ObservableType] {
+class ObservableTypeSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ObservableType] with TheHiveOpsNoDeps {
 
   val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
 
@@ -41,7 +39,7 @@ class ObservableTypeSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) e
     get(idOrName).in[ObservableObservableType].getCount
 }
 
-object ObservableTypeOps {
+trait ObservableTypeOps { _: TheHiveOpsNoDeps =>
 
   implicit class ObservableTypeObs(traversal: Traversal.V[ObservableType]) {
 

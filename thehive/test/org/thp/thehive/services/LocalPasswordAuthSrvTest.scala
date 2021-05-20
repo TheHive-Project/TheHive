@@ -1,16 +1,15 @@
 package org.thp.thehive.services
 
 import org.thp.scalligraph.EntityName
-
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 class LocalPasswordAuthSrvTest extends PlaySpecification with TestAppBuilder {
   "localPasswordAuth service" should {
     "be able to verify passwords" in testApp { app =>
-      import com.softwaremill.macwire._
-      import app.{configuration, database}
       import app.thehiveModule._
+      import app.{configuration, database}
+      import com.softwaremill.macwire._
 
       val localPasswordAuthProvider = wire[LocalPasswordAuthProvider]
 

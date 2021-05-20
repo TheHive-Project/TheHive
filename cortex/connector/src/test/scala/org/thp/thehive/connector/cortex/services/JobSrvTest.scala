@@ -4,13 +4,9 @@ import org.thp.cortex.dto.v0.OutputJob
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.TestAppBuilder
 import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
-import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services.notification.triggers.JobFinished
 import org.thp.thehive.services.{TestAppBuilder => _}
 import play.api.libs.json.Json
@@ -21,7 +17,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.io.Source
 
-class JobSrvTest extends PlaySpecification with TestAppBuilder {
+class JobSrvTest extends PlaySpecification with TestAppBuilder with CortexOps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all).authContext
 
   "job service" should {

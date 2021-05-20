@@ -3,19 +3,15 @@ package org.thp.thehive.controllers.v0
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.traversal.Converter.CList
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 import play.api.libs.json._
 
 import java.lang.{Long => JLong}
 import java.util.{Collection => JCollection, List => JList, Map => JMap}
 
-trait CaseRenderer {
+trait CaseRenderer extends TheHiveOpsNoDeps {
 
   def observableStats: Traversal.V[Share] => Traversal[JsObject, JLong, Converter[JsObject, JLong]] =
     _.observables
@@ -36,8 +32,7 @@ trait CaseRenderer {
   def alertStats: Traversal.V[Case] => Traversal[Seq[JsObject], JMap[String, JCollection[String]], Converter[Seq[JsObject], JMap[String, JCollection[
     String
   ]]]] =
-    _.in[AlertCase]
-      .v[Alert]
+    _.alert
       .group(_.byValue(_.`type`), _.byValue(_.source))
       .domainMap { alertAgg =>
         (for {

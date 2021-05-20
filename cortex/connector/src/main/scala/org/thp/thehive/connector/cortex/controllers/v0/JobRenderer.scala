@@ -1,17 +1,15 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.connector.cortex.models.Job
-import org.thp.thehive.connector.cortex.services.JobOps._
+import org.thp.thehive.connector.cortex.services.CortexOps
 import org.thp.thehive.models.{RichCase, RichObservable}
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 
 import java.util.{Map => JMap}
 
-trait JobRenderer {
+trait JobRenderer extends TheHiveOpsNoDeps with CortexOps {
   def jobParents(traversal: Traversal.V[Job])(implicit
       authContext: AuthContext
   ): Traversal[Option[(RichObservable, RichCase)], JMap[String, Any], Converter[Option[(RichObservable, RichCase)], JMap[String, Any]]] =

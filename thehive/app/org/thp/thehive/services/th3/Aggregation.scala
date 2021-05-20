@@ -6,7 +6,6 @@ import org.scalactic._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.query.{Aggregation, InputQuery, PublicProperties}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
 import play.api.Logger
@@ -99,7 +98,9 @@ object TH3Aggregation {
             filterParser.optional.on("_query")(field)
           ) { (aggName, fieldNames, intervalUnit, subAgg, filter) =>
             if (fieldNames.lengthCompare(1) > 0)
-              logger.warn(s"Only one field is supported for time aggregation (aggregation $aggName, ${fieldNames.tail.mkString(",")} are ignored)")
+              Aggregation
+                .logger
+                .warn(s"Only one field is supported for time aggregation (aggregation $aggName, ${fieldNames.tail.mkString(",")} are ignored)")
             TimeAggregation(aggName, fieldNames.head, intervalUnit._1, intervalUnit._2, subAgg, filter)
           }
       }

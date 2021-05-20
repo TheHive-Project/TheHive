@@ -3,9 +3,8 @@ package org.thp.thehive.models
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph._
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.Traversal.{Domain, E}
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Traversal, TraversalOps}
 import play.api.libs.json._
 
 import java.util.{Date, NoSuchElementException}
@@ -107,7 +106,7 @@ sealed abstract class CustomFieldType[T] {
                              """.stripMargin))
 }
 
-object CustomFieldString extends CustomFieldType[String] {
+object CustomFieldString extends CustomFieldType[String] with TraversalOps {
   override val name: String           = "string"
   override val writes: Writes[String] = Writes.StringWrites
 
@@ -128,7 +127,7 @@ object CustomFieldString extends CustomFieldType[String] {
   override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Traversal.Domain[String] = traversal.value(_.stringValue).castDomain
 }
 
-object CustomFieldBoolean extends CustomFieldType[Boolean] {
+object CustomFieldBoolean extends CustomFieldType[Boolean] with TraversalOps {
   override val name: String            = "boolean"
   override val writes: Writes[Boolean] = Writes.BooleanWrites
 
@@ -150,7 +149,7 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] {
   override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Boolean] = traversal.value(_.booleanValue).castDomain
 }
 
-object CustomFieldInteger extends CustomFieldType[Int] {
+object CustomFieldInteger extends CustomFieldType[Int] with TraversalOps {
   override val name: String        = "integer"
   override val writes: Writes[Int] = Writes.IntWrites
 
@@ -173,7 +172,7 @@ object CustomFieldInteger extends CustomFieldType[Int] {
   override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Int] = traversal.value(_.integerValue).castDomain
 }
 
-object CustomFieldFloat extends CustomFieldType[Double] {
+object CustomFieldFloat extends CustomFieldType[Double] with TraversalOps {
   override val name: String           = "float"
   override val writes: Writes[Double] = Writes.DoubleWrites
 
@@ -195,7 +194,7 @@ object CustomFieldFloat extends CustomFieldType[Double] {
   override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Double] = traversal.value(_.floatValue).castDomain
 }
 
-object CustomFieldDate extends CustomFieldType[Date] {
+object CustomFieldDate extends CustomFieldType[Date] with TraversalOps {
   override val name: String         = "date"
   override val writes: Writes[Date] = Writes[Date](d => JsNumber(d.getTime))
 

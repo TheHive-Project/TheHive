@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.scalligraph.controllers.FakeTemporaryFile
-
 import org.thp.thehive.dto.v1._
 import play.api.libs.Files
 import play.api.libs.json.{JsArray, Json}
@@ -65,8 +64,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     )
 
     "create a valid taxonomy" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/taxonomy")
@@ -91,8 +88,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return error if not admin" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/taxonomy")
@@ -105,8 +100,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return error if namespace is empty" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val emptyNamespace = inputTaxo.copy(namespace = "")
@@ -122,8 +115,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a taxonomy present" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
@@ -142,8 +133,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return error if taxonomy is not present in database" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("GET", "/api/v1/taxonomy/taxonomy404")
@@ -155,8 +144,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "import zip file correctly" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
@@ -171,8 +158,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "import zip file with folders correctly" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
@@ -187,8 +172,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return no error if zip file contains other files than taxonomies" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
@@ -203,8 +186,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "return error if zip file contains a bad formatted taxonomy" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/taxonomy/import-zip")
@@ -218,8 +199,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a taxonomies and their tags" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/taxonomy")
@@ -243,8 +222,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "activate a taxonomy" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy2")
@@ -264,8 +241,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "deactivate a taxonomy" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")
@@ -285,8 +260,6 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "delete a taxonomy" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request1 = FakeRequest("GET", "/api/v1/taxonomy/taxonomy1")

@@ -2,15 +2,16 @@ package org.thp.thehive.controllers
 
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.query.PublicProperty
-import org.thp.scalligraph.traversal.TraversalOps.logger
 import org.thp.scalligraph.utils.Hash
 import org.thp.thehive.services.{EntityDescription, PropertyDescription}
+import play.api.Logger
 import play.api.libs.json.JsValue
 
 import java.lang.{Boolean => JBoolean}
 import java.util.Date
 
 trait ModelDescription { self =>
+  val logger: Logger
   def entityDescriptions: Seq[EntityDescription]
 
   def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]]
@@ -33,8 +34,8 @@ trait ModelDescription { self =>
 
   def ++(other: ModelDescription): ModelDescription =
     new ModelDescription {
+      override val logger: Logger                             = self.logger
       override def entityDescriptions: Seq[EntityDescription] = self.entityDescriptions ++ other.entityDescriptions
-
       override def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] =
         self.customDescription(model, propertyName) orElse other.customDescription(model, propertyName)
     }
@@ -43,6 +44,7 @@ trait ModelDescription { self =>
 object ModelDescription {
   def empty: ModelDescription =
     new ModelDescription {
+      override val logger: Logger                                                                           = Logger(getClass)
       override def entityDescriptions: Seq[EntityDescription]                                               = Nil
       override def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] = None
     }

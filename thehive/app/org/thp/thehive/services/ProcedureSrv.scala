@@ -5,11 +5,9 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.ProcedureOps._
 import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
@@ -19,7 +17,8 @@ class ProcedureSrv(
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
     patternSrv: PatternSrv
-) extends VertexSrv[Procedure] {
+) extends VertexSrv[Procedure]
+    with TheHiveOpsNoDeps {
   val caseProcedureSrv    = new EdgeSrv[CaseProcedure, Case, Procedure]
   val procedurePatternSrv = new EdgeSrv[ProcedurePattern, Procedure, Pattern]
 
@@ -56,7 +55,7 @@ class ProcedureSrv(
 
 }
 
-object ProcedureOps {
+trait ProcedureOps { _: TheHiveOpsNoDeps =>
   implicit class ProcedureOpsDefs(traversal: Traversal.V[Procedure]) {
 
     def pattern: Traversal.V[Pattern] =

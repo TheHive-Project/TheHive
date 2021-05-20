@@ -5,32 +5,26 @@ import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseTemplateOps._
-import org.thp.thehive.services.CustomFieldOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.UserOps._
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, Json}
 
-import java.util.{Date, Map => JMap}
+import java.util.{Map => JMap}
 import scala.util.{Failure, Success, Try}
 
 class CaseTemplateSrv(
-    customFieldSrv: CustomFieldSrv,
-    organisationSrv: OrganisationSrv,
+    val customFieldSrv: CustomFieldSrv,
+    val organisationSrv: OrganisationSrv,
     tagSrv: TagSrv,
     taskSrv: TaskSrv,
     auditSrv: AuditSrv,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag
-) extends VertexSrv[CaseTemplate] {
+) extends VertexSrv[CaseTemplate]
+    with TheHiveOps {
 
   val caseTemplateTagSrv          = new EdgeSrv[CaseTemplateTag, CaseTemplate, Tag]
   val caseTemplateCustomFieldSrv  = new EdgeSrv[CaseTemplateCustomField, CaseTemplate, CustomField]
@@ -105,7 +99,7 @@ class CaseTemplateSrv(
     updateTags(caseTemplate, tags ++ caseTemplate.tags).map(_ => ())
 
   def getCustomField(caseTemplate: CaseTemplate with Entity, customFieldIdOrName: EntityIdOrName)(implicit graph: Graph): Option[RichCustomField] =
-    get(caseTemplate).customFields(customFieldIdOrName).richCustomField.headOption
+    get(caseTemplate).customFieldValue(customFieldIdOrName).richCustomField.headOption
 
   def updateCustomField(
       caseTemplate: CaseTemplate with Entity,
@@ -117,7 +111,7 @@ class CaseTemplateSrv(
       .richCustomField
       .toIterator
       .filterNot(rcf => customFieldNames.contains(rcf.name))
-      .foreach(rcf => get(caseTemplate).customFields(EntityName(rcf.name)).remove())
+      .foreach(rcf => get(caseTemplate).customFieldValue(EntityName(rcf.name)).remove())
     customFieldValues
       .toTry { case (cf, v, o) => setOrCreateCustomField(caseTemplate, EntityName(cf.name), Some(v), o) }
       .map(_ => ())
@@ -128,7 +122,7 @@ class CaseTemplateSrv(
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val cfv = get(caseTemplate).customFields(customFieldIdOrName)
+    val cfv = get(caseTemplate).customFieldValue(customFieldIdOrName)
     if (cfv.clone().exists)
       cfv.setValue(value)
     else
@@ -148,8 +142,9 @@ class CaseTemplateSrv(
     } yield RichCustomField(cf, ccfe)
 }
 
-object CaseTemplateOps {
-  implicit class CaseTemplateOpsDefs(traversal: Traversal.V[CaseTemplate]) {
+trait CaseTemplateOpsNoDeps { _: TheHiveOpsNoDeps =>
+  implicit class CaseTemplateOpsNoDepsDefs(val traversal: Traversal.V[CaseTemplate])
+      extends EntityWithCustomFieldOpsNoDepsDefs[CaseTemplate, CaseTemplateCustomField] {
 
     def get(idOrName: EntityIdOrName): Traversal.V[CaseTemplate] =
       idOrName.fold(traversal.getByIds(_), getByName)
@@ -200,81 +195,31 @@ object CaseTemplateOps {
 
     def tags: Traversal.V[Tag] = traversal.out[CaseTemplateTag].v[Tag]
 
-    def customFields(idOrName: EntityIdOrName): Traversal.E[CaseTemplateCustomField] =
-      idOrName
-        .fold(
-          id => customFields.filter(_.inV.getByIds(id)),
-          name => customFields.filter(_.inV.v[CustomField].has(_.name, name))
-        )
-
-    def customFields: Traversal.E[CaseTemplateCustomField] =
-      traversal.outE[CaseTemplateCustomField]
-
-    def customFieldJsonValue(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.Domain[JsValue] =
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map(t => CustomFieldType.map(t).getJsonValue(traversal.customFields(customField)))
-        .getOrElse(traversal.empty.castDomain)
-
-    def customFieldFilter(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName, predicate: P[JsValue]): Traversal.V[CaseTemplate] =
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map {
-          case CustomFieldType.boolean =>
-            traversal.filter(_.customFields.has(_.booleanValue, predicate.mapValue(_.as[Boolean])).inV.v[CustomField].get(customField))
-          case CustomFieldType.date =>
-            traversal.filter(_.customFields.has(_.dateValue, predicate.mapValue(_.as[Date])).inV.v[CustomField].get(customField))
-          case CustomFieldType.float =>
-            traversal.filter(_.customFields.has(_.floatValue, predicate.mapValue(_.as[Double])).inV.v[CustomField].get(customField))
-          case CustomFieldType.integer =>
-            traversal.filter(_.customFields.has(_.integerValue, predicate.mapValue(_.as[Int])).inV.v[CustomField].get(customField))
-          case CustomFieldType.string =>
-            traversal.filter(_.customFields.has(_.stringValue, predicate.mapValue(_.as[String])).inV.v[CustomField].get(customField))
-        }
-        .getOrElse(traversal.empty)
-
-    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map {
-          case CustomFieldType.boolean => traversal.filter(_.customFields.has(_.booleanValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.date    => traversal.filter(_.customFields.has(_.dateValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.float   => traversal.filter(_.customFields.has(_.floatValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.integer => traversal.filter(_.customFields.has(_.integerValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.string  => traversal.filter(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
-        }
-        .getOrElse(traversal.empty)
-
-    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map {
-          case CustomFieldType.boolean => traversal.filterNot(_.customFields.has(_.booleanValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.date    => traversal.filterNot(_.customFields.has(_.dateValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.float   => traversal.filterNot(_.customFields.has(_.floatValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.integer => traversal.filterNot(_.customFields.has(_.integerValue).inV.v[CustomField].get(customField))
-          case CustomFieldType.string  => traversal.filterNot(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
-        }
-        .getOrElse(traversal.empty)
+    def customFields: Traversal.E[CaseTemplateCustomField] = traversal.outE[CaseTemplateCustomField]
   }
 
-  implicit class CaseTemplateCustomFieldsOpsDefs(traversal: Traversal.E[CaseTemplateCustomField]) extends CustomFieldValueOpsDefs(traversal)
+  implicit class CaseTemplateCustomFieldsOpsDefs(traversal: Traversal.E[CaseTemplateCustomField])
+      extends CustomFieldValueOpsDefs[CaseTemplateCustomField](traversal)
+}
+
+trait CaseTemplateOps { caseTemplateOps: TheHiveOps =>
+  protected val customFieldSrv: CustomFieldSrv
+
+  implicit class CaseTemplateOpsDefs(val traversal: Traversal.V[CaseTemplate])
+      extends EntityWithCustomFieldOpsDefs[CaseTemplate, CaseTemplateCustomField] {
+    override protected val customFieldSrv: CustomFieldSrv = caseTemplateOps.customFieldSrv
+    override def selectCustomField(traversal: Traversal.V[CaseTemplate]): Traversal.E[CaseTemplateCustomField] =
+      traversal.outE[CaseTemplateCustomField]
+  }
 }
 
 class CaseTemplateIntegrityCheckOps(
     val db: Database,
     val service: CaseTemplateSrv,
     organisationSrv: OrganisationSrv
-) extends IntegrityCheckOps[CaseTemplate] {
-  override def findDuplicates: Seq[Seq[CaseTemplate with Entity]] =
+) extends IntegrityCheckOps[CaseTemplate]
+    with TheHiveOpsNoDeps {
+  override def findDuplicates(): Seq[Seq[CaseTemplate with Entity]] =
     db.roTransaction { implicit graph =>
       organisationSrv
         .startTraversal

@@ -4,9 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.auth.{ExpirationStatus, SessionAuthSrv}
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.{Database, Schema}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.services.AuditOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{Action, AnyContent, Results}

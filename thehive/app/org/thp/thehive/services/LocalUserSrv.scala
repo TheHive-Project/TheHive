@@ -2,11 +2,9 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, User => ScalligraphUser, UserSrv => ScalligraphUserSrv}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Instance
 import org.thp.scalligraph.{AuthenticationError, CreateError, EntityIdOrName, EntityName, NotFoundError}
 import org.thp.thehive.models.{Organisation, Permissions, Profile, User}
-import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.libs.json.JsObject
 import play.api.mvc.RequestHeader
@@ -19,7 +17,8 @@ class LocalUserSrv(
     organisationSrv: OrganisationSrv,
     profileSrv: ProfileSrv,
     configuration: Configuration
-) extends ScalligraphUserSrv {
+) extends ScalligraphUserSrv
+    with TheHiveOpsNoDeps {
 
   override def getAuthContext(request: RequestHeader, userId: String, organisationName: Option[EntityIdOrName]): Try[AuthContext] =
     db.roTransaction { implicit graph =>

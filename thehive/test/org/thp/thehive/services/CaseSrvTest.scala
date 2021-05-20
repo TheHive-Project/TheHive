@@ -5,23 +5,16 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FPathElem
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityName}
-
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.Json
 import play.api.test.PlaySpecification
 
 import java.util.Date
 import scala.util.Success
 
-class CaseSrvTest extends PlaySpecification with TestAppBuilder {
+class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert", permissions = Profile.analyst.permissions).authContext
 
@@ -488,8 +481,14 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
       import app._
       import app.thehiveModule._
 
-      database.roTransaction { implicit graph =>
-        caseSrv.get(EntityName("3")).visible(organisationSrv).getOrFail("Case") must beFailedTry
+      TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        import ops.CaseOpsDefs
+        database.roTransaction { implicit graph =>
+          caseSrv
+            .get(EntityName("3"))
+            .visible
+            .getOrFail("Case") must beFailedTry
+        }
       }
     }
 
@@ -506,9 +505,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder {
     }
 
     "show linked cases" in testApp { app =>
-      import app._
-      import app.thehiveModule._
-
       //      database.roTransaction { implicit graph =>
       //        caseSrv.get(EntityName("1")).linkedCases must beEmpty
       //        val observables = observableSrv.startTraversal.richObservable.toList

@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext}
 
-object Migrate extends App with MigrationOps {
+trait Migrate extends App with MigrationOps {
   Option(System.getProperty("logger.file")).getOrElse {
     System.setProperty("logger.file", "/etc/thehive/logback-migration.xml")
   }

@@ -8,16 +8,14 @@ import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.models._
-import org.thp.thehive.services.DataOps._
 
 import java.lang.{Long => JLong}
 import scala.collection.mutable
 import scala.util.{Success, Try}
 
-class DataSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[Data] {
+class DataSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[Data] with TheHiveOpsNoDeps {
   override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     super.createEntity(e).map { data =>
       integrityCheckActor ! EntityAdded("Data")
@@ -36,7 +34,7 @@ class DataSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends Ver
     startTraversal.getByData(name)
 }
 
-object DataOps {
+trait DataOps { _: TheHiveOpsNoDeps =>
 
   implicit class DataOpsDefs(traversal: Traversal.V[Data]) {
     def observables: Traversal.V[Observable] = traversal.in[ObservableData].v[Observable]

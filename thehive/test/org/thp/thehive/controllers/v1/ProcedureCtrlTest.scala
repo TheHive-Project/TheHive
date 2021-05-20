@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v1
 
 import io.scalaland.chimney.dsl.TransformerOps
-
 import org.thp.thehive.dto.v1.{InputProcedure, OutputProcedure}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -23,8 +22,6 @@ object TestProcedure {
 class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
   "procedure controller" should {
     "create a valid procedure" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val procedureDate = new Date()
@@ -54,8 +51,6 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update a procedure" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request1 = FakeRequest("POST", "/api/v1/procedure/testProcedure3")
@@ -97,8 +92,6 @@ class ProcedureCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "delete a procedure" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request1 = FakeRequest("POST", "/api/v1/procedure/testProcedure3")

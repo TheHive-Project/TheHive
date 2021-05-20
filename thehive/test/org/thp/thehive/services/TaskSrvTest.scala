@@ -2,11 +2,9 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
-import org.thp.thehive.services.TaskOps._
 import play.api.test.PlaySpecification
 
-class TaskSrvTest extends PlaySpecification with TestAppBuilder {
+class TaskSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   "task service" should {
 
     "set actionRequired for an organisation" in testApp { app =>

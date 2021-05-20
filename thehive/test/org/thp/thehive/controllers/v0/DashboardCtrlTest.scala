@@ -1,11 +1,11 @@
 package org.thp.thehive.controllers.v0
 
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.dto.v0.OutputDashboard
+import org.thp.thehive.services.TheHiveOpsNoDeps
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
-class DashboardCtrlTest extends PlaySpecification with TestAppBuilder {
+class DashboardCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   "dashboard controller" should {
 
     "create a dashboard" in testApp { app =>

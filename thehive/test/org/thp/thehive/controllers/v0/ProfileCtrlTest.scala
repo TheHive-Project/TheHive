@@ -1,13 +1,13 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.dto.v0.OutputProfile
 import org.thp.thehive.models.Profile
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
-class ProfileCtrlTest extends PlaySpecification with TestAppBuilder {
+class ProfileCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   "profile controller" should {
     "create a profile if allowed" in testApp { app =>
       import app.thehiveModuleV0._

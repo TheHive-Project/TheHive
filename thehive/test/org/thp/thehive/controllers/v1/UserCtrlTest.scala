@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.auth._
-
 import org.thp.thehive.dto.v1.{InputUser, OutputUser}
 import org.thp.thehive.models._
 import play.api.libs.json.Json
@@ -26,8 +25,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
   "user controller" should {
 
     "return current user information" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("GET", "/api/v1/user/current")
@@ -47,8 +44,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "create a new user" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/user")
@@ -80,8 +75,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "refuse to create an user if the permission doesn't contain ManageUser right" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/user")
@@ -103,8 +96,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a user in the same organisation" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("GET", s"/api/v1/user/certadmin@thehive.local").withHeaders("user" -> "certuser@thehive.local")
@@ -138,8 +129,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "get a user of a visible organisation" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("GET", s"/api/v1/user/socuser@thehive.local").withHeaders("user" -> "certuser@thehive.local")
@@ -158,8 +147,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     } //.pendingUntilFixed("Organisation visibility needs to be fixed")
 
     "refuse to get a user of an invisible organisation" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("GET", s"/api/v1/user/admin@thehive.local").withHeaders("user" -> "certuser@thehive.local")
@@ -168,8 +155,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update an user" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val request = FakeRequest("POST", "/api/v1/user/certuser@thehive.local")
@@ -181,8 +166,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "set password" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val requestSetPassword = FakeRequest("POST", s"/user/certuser@thehive.local/password/set")
@@ -199,8 +182,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
 
     "change password" in pending
     "get key" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val requestRenew = FakeRequest("POST", s"/user/user2@thehive.local/key/renew").withHeaders("user" -> "user2@thehive.local")
@@ -217,8 +198,6 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
     }.pendingUntilFixed("need an admin user in cert organisation")
 
     "remove key" in testApp { app =>
-      import app._
-      import app.thehiveModule._
       import app.thehiveModuleV1._
 
       val requestRenew = FakeRequest("POST", s"/user/certuser@thehive.local/key/renew").withHeaders("user" -> "user2@thehive.local")

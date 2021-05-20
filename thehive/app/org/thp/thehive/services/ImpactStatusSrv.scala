@@ -5,15 +5,13 @@ import com.softwaremill.tagging.@@
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName}
 import org.thp.thehive.models.ImpactStatus
-import org.thp.thehive.services.ImpactStatusOps._
 
 import scala.util.{Failure, Success, Try}
 
-class ImpactStatusSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ImpactStatus] {
+class ImpactStatusSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ImpactStatus] with TheHiveOpsNoDeps {
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ImpactStatus] =
     startTraversal.getByName(name)
@@ -32,7 +30,7 @@ class ImpactStatusSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) ext
   override def exists(e: ImpactStatus)(implicit graph: Graph): Boolean = startTraversal.getByName(e.value).exists
 }
 
-object ImpactStatusOps {
+trait ImpactStatusOps { _: TheHiveOpsNoDeps =>
   implicit class ImpactStatusOpsDefs(traversal: Traversal.V[ImpactStatus]) {
     def get(idOrName: EntityIdOrName): Traversal.V[ImpactStatus] =
       idOrName.fold(traversal.getByIds(_), getByName)

@@ -3,11 +3,8 @@ package org.thp.thehive.services.notification.triggers
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.{Audit, Organisation, User}
-import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.TaskSrv
-import org.thp.thehive.services.UserOps._
+import org.thp.thehive.services.{TaskSrv, TheHiveOpsNoDeps}
 import play.api.Configuration
 
 import scala.util.{Success, Try}
@@ -17,7 +14,7 @@ class TaskAssignedProvider(taskSrv: TaskSrv) extends TriggerProvider {
   override def apply(config: Configuration): Try[Trigger] = Success(new TaskAssigned(taskSrv))
 }
 
-class TaskAssigned(taskSrv: TaskSrv) extends Trigger {
+class TaskAssigned(taskSrv: TaskSrv) extends Trigger with TheHiveOpsNoDeps {
   override val name: String = "TaskAssigned"
 
   override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =

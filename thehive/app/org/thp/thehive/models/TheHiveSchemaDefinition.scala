@@ -11,8 +11,7 @@ import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, TraversalOps}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
@@ -22,7 +21,7 @@ import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Success, Try}
 
-object TheHiveSchemaDefinition extends Schema with UpdatableSchema {
+object TheHiveSchemaDefinition extends Schema with UpdatableSchema with TraversalOps {
 
   // Make sure TypeDefinitionCategory has been initialised before ModifierType to prevent ExceptionInInitializerError
   TypeDefinitionCategory.BACKING_INDEX

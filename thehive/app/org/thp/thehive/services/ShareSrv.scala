@@ -5,16 +5,10 @@ import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TaskOps._
 
 import java.util.{Map => JMap}
 import scala.util.{Failure, Try}
@@ -24,7 +18,8 @@ class ShareSrv(
     _caseSrv: => CaseSrv,
     _taskSrv: => TaskSrv,
     _observableSrv: => ObservableSrv
-) extends VertexSrv[Share] {
+) extends VertexSrv[Share]
+    with TheHiveOpsNoDeps {
   lazy val caseSrv: CaseSrv             = _caseSrv
   lazy val observableSrv: ObservableSrv = _observableSrv
   lazy val taskSrv: TaskSrv             = _taskSrv
@@ -325,7 +320,7 @@ class ShareSrv(
   }
 }
 
-object ShareOps {
+trait ShareOps { _: TheHiveOpsNoDeps =>
   implicit class ShareOpsDefs(traversal: Traversal.V[Share]) {
     def get(idOrName: EntityIdOrName): Traversal.V[Share] =
       idOrName.fold(traversal.getByIds(_), _ => traversal.empty)

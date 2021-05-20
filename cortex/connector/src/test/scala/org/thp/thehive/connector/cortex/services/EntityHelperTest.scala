@@ -3,13 +3,12 @@ package org.thp.thehive.connector.cortex.services
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.connector.cortex.TestAppBuilder
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.{TheHiveOps, TheHiveOpsNoDeps}
 import play.api.test.PlaySpecification
 
-class EntityHelperTest extends PlaySpecification with TestAppBuilder {
+class EntityHelperTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext =
     DummyUserSrv(userId = "certadmin@thehive.local", organisation = "cert", permissions = Permissions.all).authContext
   "entity helper" should {
@@ -68,12 +67,16 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder {
       import app.cortexConnector._
       import app.thehiveModule._
 
-      database.roTransaction { implicit graph =>
-        for {
-          alert <- alertSrv.get(EntityName("testType;testSource;ref2")).visible(organisationSrv).getOrFail("Alert")
-          t     <- entityHelper.get("Alert", alert._id, Permissions.manageAction)
-        } yield t
-      } must beSuccessfulTry
+      TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        import ops.AlertOpsDefs
+
+        database.roTransaction { implicit graph =>
+          for {
+            alert <- alertSrv.get(EntityName("testType;testSource;ref2")).visible.getOrFail("Alert")
+            t     <- entityHelper.get("Alert", alert._id, Permissions.manageAction)
+          } yield t
+        } must beSuccessfulTry
+      }
     }
   }
 }

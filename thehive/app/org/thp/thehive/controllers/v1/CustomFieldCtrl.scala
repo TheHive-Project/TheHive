@@ -4,17 +4,16 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, PublicPropertyListBuilder, Query}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomField
 import org.thp.thehive.models._
-import org.thp.thehive.services.CustomFieldSrv
+import org.thp.thehive.services.{CustomFieldSrv, TheHiveOpsNoDeps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
 
-class CustomFieldCtrl(entrypoint: Entrypoint, db: Database, customFieldSrv: CustomFieldSrv) extends QueryableCtrl {
+class CustomFieldCtrl(entrypoint: Entrypoint, db: Database, customFieldSrv: CustomFieldSrv) extends QueryableCtrl with TheHiveOpsNoDeps {
 
   override val entityName: String  = "CustomField"
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))

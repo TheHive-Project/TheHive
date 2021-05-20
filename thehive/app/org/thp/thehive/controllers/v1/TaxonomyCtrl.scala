@@ -6,13 +6,11 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTaxonomy
 import org.thp.thehive.models.{Permissions, RichTaxonomy, Tag, Taxonomy}
-import org.thp.thehive.services.TaxonomyOps._
 import org.thp.thehive.services.{TagSrv, TaxonomySrv}
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}

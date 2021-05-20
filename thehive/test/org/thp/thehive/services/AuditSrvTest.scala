@@ -4,15 +4,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.TraversalOps._
-
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
 
 import java.util.Date
 import scala.util.Success
 
-class AuditSrvTest extends PlaySpecification with TestAppBuilder {
+class AuditSrvTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").getSystemAuthContext
 
   "audit service" should {

@@ -3,13 +3,10 @@ package org.thp.thehive.controllers.v1
 import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, BadRequestError, EntityIdOrName, MultiFactorCodeRequired}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
-import org.thp.thehive.services.{TOTPAuthSrv, UserSrv}
+import org.thp.thehive.services.{TOTPAuthSrv, TheHiveOpsNoDeps, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -21,7 +18,7 @@ class AuthenticationCtrl(
     requestOrganisation: RequestOrganisation,
     userSrv: UserSrv,
     implicit val db: Database
-) {
+) extends TheHiveOpsNoDeps {
 
   def login: Action[AnyContent] =
     entrypoint("login")

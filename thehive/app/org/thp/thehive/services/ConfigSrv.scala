@@ -3,13 +3,9 @@ package org.thp.thehive.services
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models._
-import org.thp.thehive.services.ConfigOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
 import play.api.libs.json.{JsValue, Reads}
@@ -20,7 +16,8 @@ class ConfigSrv(
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     db: Database
-) extends VertexSrv[Config] {
+) extends VertexSrv[Config]
+    with TheHiveOpsNoDeps {
   val organisationConfigSrv = new EdgeSrv[OrganisationConfig, Organisation, Config]
   val userConfigSrv         = new EdgeSrv[UserConfig, User, Config]
 
@@ -70,7 +67,7 @@ class ConfigSrv(
   }
 }
 
-object ConfigOps {
+trait ConfigOps { _: TheHiveOpsNoDeps =>
 
   implicit class ConfigOpsDefs(traversal: Traversal.V[Config]) {
     def triggerMap(notificationSrv: NotificationSrv): Map[EntityId, Map[Trigger, (Boolean, Seq[EntityId])]] = {

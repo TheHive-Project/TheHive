@@ -3,15 +3,12 @@ package org.thp.thehive.services
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import play.api.test.PlaySpecification
 
 import scala.util.{Failure, Success}
 
-class UserSrvTest extends PlaySpecification with TestAppBuilder {
+class UserSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "admin@thehive.local").getSystemAuthContext
 
   "user service" should {

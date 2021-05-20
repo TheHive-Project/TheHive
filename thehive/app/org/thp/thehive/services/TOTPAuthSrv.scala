@@ -4,8 +4,7 @@ import org.apache.commons.codec.binary.Base32
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, TraversalOps}
 import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCodeRequired}
 import play.api.Configuration
 import play.api.mvc.RequestHeader
@@ -23,7 +22,8 @@ class TOTPAuthSrv(
     availableAuthProviders: Seq[AuthSrvProvider],
     userSrv: UserSrv,
     db: Database
-) extends MultiAuthSrv(configuration, appConfig, availableAuthProviders) {
+) extends MultiAuthSrv(configuration, appConfig, availableAuthProviders)
+    with TraversalOps {
   override val name: String = "totp"
 
   val enabledConfig: ConfigItem[Boolean, Boolean] = appConfig.item[Boolean]("auth.multifactor.enabled", "multifactor activation")

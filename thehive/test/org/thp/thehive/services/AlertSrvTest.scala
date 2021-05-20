@@ -2,21 +2,15 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityId, EntityIdOrName, EntityName}
-
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
 import play.api.libs.json.JsString
 import play.api.test.PlaySpecification
 
 import java.util.Date
 
-class AlertSrvTest extends PlaySpecification with TestAppBuilder {
+class AlertSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
 
   "alert service" should {
@@ -162,7 +156,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder {
       } must beSuccessfulTry
 
       database.roTransaction { implicit graph =>
-        alertSrv.get(EntityName("testType;testSource;ref1")).customFields(EntityIdOrName("string1")).nameJsonValue.headOption
+        alertSrv.get(EntityName("testType;testSource;ref1")).customFieldValue(EntityIdOrName("string1")).nameJsonValue.headOption
       } must beSome("string1" -> JsString("sad"))
     }
 

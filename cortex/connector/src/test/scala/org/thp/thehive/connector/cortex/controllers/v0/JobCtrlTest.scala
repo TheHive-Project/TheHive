@@ -1,11 +1,11 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.connector.cortex.TestAppBuilder
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
-class JobCtrlTest extends PlaySpecification with TestAppBuilder {
+class JobCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   override val databaseName: String = "thehiveCortex"
 //  override def appConfigure: AppBuilder =
 //    super

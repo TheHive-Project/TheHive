@@ -3,12 +3,10 @@ package org.thp.thehive.services.notification.triggers
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.test.PlaySpecification
 
-class TaskAssignedTest extends PlaySpecification with TestAppBuilder {
+class TaskAssignedTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certadmin@thehive.local").authContext
 
   "task assigned trigger" should {

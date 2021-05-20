@@ -6,12 +6,10 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName, EntityName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.ProfileOps._
 import play.api.libs.json.JsObject
 
 import scala.util.{Failure, Success, Try}
@@ -21,7 +19,8 @@ class ProfileSrv(
     organisationSrv: OrganisationSrv,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
     db: Database
-) extends VertexSrv[Profile] {
+) extends VertexSrv[Profile]
+    with TheHiveOpsNoDeps {
   lazy val orgAdmin: Profile with Entity = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
@@ -60,7 +59,7 @@ class ProfileSrv(
     else super.update(traversal, propertyUpdaters)
 }
 
-object ProfileOps {
+trait ProfileOps { _: TheHiveOpsNoDeps =>
 
   implicit class ProfileOpsDefs(traversal: Traversal.V[Profile]) {
 

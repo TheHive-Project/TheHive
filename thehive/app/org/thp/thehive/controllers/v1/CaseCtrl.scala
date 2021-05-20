@@ -5,20 +5,11 @@ import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.CaseTemplateOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsArray, JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
@@ -32,12 +23,14 @@ class CaseCtrl(
     observableSrv: ObservableSrv,
     userSrv: UserSrv,
     taskSrv: TaskSrv,
-    val organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     alertSrv: AlertSrv,
     db: Database,
     appConfig: ApplicationConfig
 ) extends QueryableCtrl
-    with CaseRenderer {
+    with CaseRenderer
+    with TheHiveOps {
 
   val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
   val limitedCountThreshold: Long                         = limitedCountThresholdConfig.get
@@ -45,10 +38,10 @@ class CaseCtrl(
   override val entityName: String                 = "case"
   override val publicProperties: PublicProperties = properties.`case`
   override val initialQuery: Query =
-    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => caseSrv.startTraversal(graph).visible(organisationSrv)(authContext))
+    Query.init[Traversal.V[Case]]("listCase", (graph, authContext) => caseSrv.startTraversal(graph).visible(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Case]](
     "getCase",
-    (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
+    (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
     "page",
@@ -70,21 +63,21 @@ class CaseCtrl(
       "observables",
       (caseSteps, authContext) =>
         // caseSteps.observables(authContext)
-        observableSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
+        observableSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(authContext)
     ),
     Query[Traversal.V[Case], Traversal.V[Task]](
       "tasks",
       (caseSteps, authContext) =>
         // caseSteps.tasks(authContext)
-        taskSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
+        taskSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(authContext)
     ),
     Query[Traversal.V[Case], Traversal.V[User]]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
     Query[Traversal.V[Case], Traversal.V[Organisation]]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
     Query[Traversal.V[Case], Traversal.V[Alert]](
       "alerts",
       (caseSteps, authContext) =>
-//      caseSteps.alert.visible(organisationSrv)(authContext)
-        alertSrv.startTraversal(caseSteps.graph).has(_.caseId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
+//      caseSteps.alert.visible(authContext)
+        alertSrv.startTraversal(caseSteps.graph).has(_.caseId, P.within(caseSteps._id.toSeq: _*)).visible(authContext)
     ),
     Query[Traversal.V[Case], Traversal.V[Share]]("shares", (caseSteps, authContext) => caseSteps.shares.visible(authContext)),
     Query[Traversal.V[Case], Traversal.V[Procedure]]("procedures", (caseSteps, _) => caseSteps.procedure)
@@ -119,7 +112,7 @@ class CaseCtrl(
       .authRoTransaction(db) { implicit request => implicit graph =>
         caseSrv
           .get(EntityIdOrName(caseIdOrNumber))
-          .visible(organisationSrv)
+          .visible
           .richCase
           .getOrFail("Case")
           .map(richCase => Results.Ok(richCase.toJson))
@@ -173,7 +166,7 @@ class CaseCtrl(
               .toTry(c =>
                 caseSrv
                   .get(EntityIdOrName(c))
-                  .visible(organisationSrv)
+                  .visible
                   .getOrFail("Case")
               )
           mergedCase <- caseSrv.merge(cases)

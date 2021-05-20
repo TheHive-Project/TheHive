@@ -4,14 +4,11 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputLog
 import org.thp.thehive.models.{Log, Permissions, RichLog}
-import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.{LogSrv, OrganisationSrv, TaskSrv}
+import org.thp.thehive.services.{CustomFieldSrv, LogSrv, OrganisationSrv, TaskSrv, TheHiveOps}
 import play.api.Logger
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -21,17 +18,19 @@ class LogCtrl(
     properties: Properties,
     logSrv: LogSrv,
     taskSrv: TaskSrv,
-    organisationSrv: OrganisationSrv
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv
 ) extends QueryableCtrl
-    with LogRenderer {
+    with LogRenderer
+    with TheHiveOps {
   lazy val logger: Logger                         = Logger(getClass)
   override val entityName: String                 = "log"
   override val publicProperties: PublicProperties = properties.log
   override val initialQuery: Query =
-    Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => logSrv.startTraversal(graph).visible(organisationSrv)(authContext))
+    Query.init[Traversal.V[Log]]("listLog", (graph, authContext) => logSrv.startTraversal(graph).visible(authContext))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Log]](
     "getLog",
-    (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
+    (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
     "page",

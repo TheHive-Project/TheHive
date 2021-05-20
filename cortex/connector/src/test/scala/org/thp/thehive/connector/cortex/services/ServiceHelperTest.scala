@@ -1,13 +1,13 @@
 package org.thp.thehive.connector.cortex.services
 
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.connector.cortex.TestAppBuilder
 import org.thp.thehive.models.Organisation
 import org.thp.thehive.services.{TestAppBuilder => _}
 import play.api.test.PlaySpecification
 
-class ServiceHelperTest extends PlaySpecification with TestAppBuilder {
+class ServiceHelperTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   override val databaseName: String = "thehiveCortex"
 //  override def appConfigure: AppBuilder =
 //    super

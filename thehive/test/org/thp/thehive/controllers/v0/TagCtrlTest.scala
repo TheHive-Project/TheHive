@@ -1,9 +1,9 @@
 package org.thp.thehive.controllers.v0
 
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import play.api.test.{FakeRequest, PlaySpecification}
 
-class TagCtrlTest extends PlaySpecification with TestAppBuilder {
+class TagCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   "tag controller" should {
     "get a tag" in testApp { app =>
       import app._

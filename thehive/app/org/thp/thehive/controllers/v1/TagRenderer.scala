@@ -1,11 +1,9 @@
 package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.Tag
 import org.thp.thehive.services.OrganisationSrv
-import org.thp.thehive.services.TagOps._
 import play.api.libs.json._
 
 import java.util.{Map => JMap}

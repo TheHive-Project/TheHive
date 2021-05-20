@@ -4,7 +4,7 @@ import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.test.{NoTemporaryFileCreator, PlaySpecification}
@@ -14,7 +14,7 @@ import java.nio.file.{Path, Files => JFiles}
 import java.util.UUID
 import scala.annotation.tailrec
 
-class AttachmentSrvTest extends PlaySpecification with TestAppBuilder {
+class AttachmentSrvTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").getSystemAuthContext
 
   @tailrec

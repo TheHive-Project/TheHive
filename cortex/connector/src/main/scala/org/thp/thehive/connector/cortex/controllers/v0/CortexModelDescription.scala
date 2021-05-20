@@ -2,10 +2,12 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import org.thp.thehive.controllers.ModelDescription
 import org.thp.thehive.services.{EntityDescription, PropertyDescription}
+import play.api.Logger
 
 class CortexModelDescription(publicAction: PublicAction, publicAnalyzerTemplate: PublicAnalyzerTemplate, publicJob: PublicJob)
     extends ModelDescription {
 
+  override val logger: Logger = Logger(getClass)
   val metadata = Seq(
     PropertyDescription("createdBy", "user"),
     PropertyDescription("createdAt", "date"),

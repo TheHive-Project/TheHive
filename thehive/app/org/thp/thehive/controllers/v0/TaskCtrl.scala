@@ -3,15 +3,11 @@ package org.thp.thehive.controllers.v0
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
@@ -21,10 +17,12 @@ class TaskCtrl(
     override val db: Database,
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
-    organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicTask
-) extends QueryCtrl {
+) extends QueryCtrl
+    with TheHiveOps {
 
   def create(caseId: String): Action[AnyContent] =
     entrypoint("create task")
@@ -42,7 +40,7 @@ class TaskCtrl(
       .authRoTransaction(db) { implicit request => implicit graph =>
         taskSrv
           .get(EntityIdOrName(taskId))
-          .visible(organisationSrv)
+          .visible
           .richTask
           .getOrFail("Task")
           .map { task =>
@@ -76,7 +74,7 @@ class TaskCtrl(
       (graph, authContext) =>
         caseSrv
           .get(EntityIdOrName(caseId))(graph)
-          .visible(organisationSrv)(authContext)
+          .visible(authContext)
           ._id
           .headOption
           .fold[Traversal.V[Task]](graph.empty)(c => taskSrv.startTraversal(graph).relatedTo(c))
@@ -90,7 +88,7 @@ class TaskCtrl(
   }
 }
 
-class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv) extends PublicData {
+class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv) extends PublicData with TheHiveOpsNoDeps {
   override val entityName: String = "task"
   override val initialQuery: Query =
     Query.init[Traversal.V[Task]](

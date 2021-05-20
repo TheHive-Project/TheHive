@@ -4,15 +4,11 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputDashboard
 import org.thp.thehive.models.{Dashboard, RichDashboard}
-import org.thp.thehive.services.DashboardOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
-import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, UserSrv}
+import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, TheHiveOpsNoDeps, UserSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -24,7 +20,8 @@ class DashboardCtrl(
     dashboardSrv: DashboardSrv,
     userSrv: UserSrv,
     organisationSrv: OrganisationSrv
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with TheHiveOpsNoDeps {
 
   override val entityName: String                 = "dashboard"
   override val publicProperties: PublicProperties = properties.dashboard

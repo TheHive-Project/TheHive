@@ -5,13 +5,9 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, NotFoundError}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.{AlertSrv, AttachmentSrv, CaseSrv, OrganisationSrv}
+import org.thp.thehive.services._
 import play.api.Logger
 
 import java.util.Date
@@ -26,7 +22,7 @@ class MispExportSrv(
     db: Database,
     clientsConfig: ConfigItem[Seq[TheHiveMispClientConfig], Seq[TheHiveMispClient]],
     attributeConvertersConfig: ConfigItem[Seq[AttributeConverter], Seq[AttributeConverter]]
-) {
+) extends TheHiveOpsNoDeps {
 
   lazy val logger: Logger = Logger(getClass)
 

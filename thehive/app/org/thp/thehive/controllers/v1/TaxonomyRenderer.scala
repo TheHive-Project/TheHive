@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.models.Taxonomy
-import org.thp.thehive.services.TaxonomyOps._
 import play.api.libs.json._
 
 trait TaxonomyRenderer extends BaseRenderer[Taxonomy] {

@@ -3,12 +3,10 @@ package org.thp.thehive.controllers.v0
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.ScalligraphApplication
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.dto.v0.{OutputAttachment, OutputCase, OutputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.DataOps._
-import org.thp.thehive.services.WithTheHiveModule
+import org.thp.thehive.services.{TheHiveOpsNoDeps, WithTheHiveModule}
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.Json
@@ -37,7 +35,7 @@ object TestObservable {
     outputObservable.into[TestObservable].transform
 }
 
-class ObservableCtrlTest extends PlaySpecification with TestAppBuilder {
+class ObservableCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   "observable controller" should {
 
     "be able to create an observable with string data" in testApp { app =>

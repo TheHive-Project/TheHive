@@ -9,12 +9,9 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{EdgeSrv, IntegrityCheckOps, VertexSrv}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TagOps._
 
 import java.util.{Map => JMap}
 import scala.util.matching.Regex
@@ -22,11 +19,13 @@ import scala.util.{Success, Try}
 
 class TagSrv(
     _organisationSrv: => OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     taxonomySrv: TaxonomySrv,
     appConfig: ApplicationConfig,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag
-) extends VertexSrv[Tag] {
-  lazy val organisationSrv: OrganisationSrv = _organisationSrv
+) extends VertexSrv[Tag]
+    with TheHiveOps {
+  override lazy val organisationSrv: OrganisationSrv = _organisationSrv
 
   val taxonomyTagSrv = new EdgeSrv[TaxonomyTag, Taxonomy, Tag]
   private val freeTagColourConfig: ConfigItem[String, String] =
@@ -53,7 +52,7 @@ class TagSrv(
   def getTag(tag: Tag)(implicit graph: Graph): Traversal.V[Tag] = startTraversal.getTag(tag)
 
   def getFreetag(idOrName: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Traversal.V[Tag] =
-    startTraversal.getFreetag(organisationSrv, idOrName)
+    startTraversal.getFreetag(idOrName)
 
   def getOrCreate(tagName: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
     fromString(tagName)
@@ -110,9 +109,9 @@ class TagSrv(
   }
 }
 
-object TagOps {
+trait TagOpsNoDeps { _: TheHiveOpsNoDeps =>
 
-  implicit class TagOpsDefs(traversal: Traversal.V[Tag]) {
+  implicit class TagOpsNoDepsDefs(traversal: Traversal.V[Tag]) {
 
     def getTag(tag: Tag): Traversal.V[Tag] = getByName(tag.namespace, tag.predicate, tag.value)
 
@@ -146,9 +145,6 @@ object TagOps {
         .has(_.namespace, freeTagNamespace)
     }
 
-    def getFreetag(organisationSrv: OrganisationSrv, idOrName: EntityIdOrName)(implicit authContext: AuthContext): Traversal.V[Tag] =
-      idOrName.fold(traversal.getByIds(_), traversal.has(_.predicate, _)).freetags(organisationSrv)
-
     def autoComplete(organisationSrv: OrganisationSrv, freeTag: String)(implicit authContext: AuthContext): Traversal.V[Tag] =
       freetags(organisationSrv)
         .has(_.predicate, TextP.containing(freeTag))
@@ -171,8 +167,15 @@ object TagOps {
       traversal.project(_.by.by(entityRenderer))
   }
 }
+trait TagOps { _: TheHiveOpsNoDeps =>
+  protected val organisationSrv: OrganisationSrv
+  implicit class TagOpsDefs(traversal: Traversal.V[Tag]) {
+    def getFreetag(idOrName: EntityIdOrName)(implicit authContext: AuthContext): Traversal.V[Tag] =
+      idOrName.fold(traversal.getByIds(_), traversal.has(_.predicate, _)).freetags(organisationSrv)
 
-class TagIntegrityCheckOps(val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
+  }
+}
+class TagIntegrityCheckOps(val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] with TheHiveOpsNoDeps {
 
   override def resolve(entities: Seq[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
     firstCreatedEntity(entities).foreach {

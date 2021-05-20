@@ -2,13 +2,10 @@ package org.thp.thehive.services
 
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.TraversalOps._
-
 import org.thp.thehive.models._
-import org.thp.thehive.services.DataOps._
 import play.api.test.PlaySpecification
 
-class DataSrvTest extends PlaySpecification with TestAppBuilder {
+class DataSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
 
   "data service" should {

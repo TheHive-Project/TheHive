@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.models.Entity
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.dto.v1.{InputAlert, OutputAlert}
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsString, Json}
@@ -43,7 +43,7 @@ object TestAlert {
     )
 }
 
-class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
+class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   "alert controller" should {
 
     "create a new alert" in testApp { app =>

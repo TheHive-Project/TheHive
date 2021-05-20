@@ -3,15 +3,11 @@ package org.thp.thehive.services
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.TraversalOps._
-
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseTemplateOps._
-import org.thp.thehive.services.TagOps._
 import play.api.libs.json.{JsNumber, JsString, JsTrue, JsValue}
 import play.api.test.PlaySpecification
 
-class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder {
+class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authcontext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
 
   "case template service" should {

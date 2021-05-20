@@ -1,10 +1,10 @@
 package org.thp.thehive.controllers.v1
 
 import com.typesafe.config.ConfigFactory
-import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl}
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl}
 import org.thp.thehive.services.{TheHiveTestModule, WithTheHiveModule}
-import org.thp.thehive.{DatabaseBuilderModule, JanusDatabaseProvider, LogFileConfig, TestApplication, TheHiveModule}
+import org.thp.thehive._
 import play.api.{Configuration, Mode}
 
 import java.io.File

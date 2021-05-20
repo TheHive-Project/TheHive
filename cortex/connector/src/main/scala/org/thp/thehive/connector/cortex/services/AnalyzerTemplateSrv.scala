@@ -4,12 +4,10 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
-import org.thp.thehive.connector.cortex.services.AnalyzerTemplateOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
@@ -22,7 +20,8 @@ import scala.util.{Failure, Try}
 class AnalyzerTemplateSrv(
     auditSrv: CortexAuditSrv,
     organisationSrv: OrganisationSrv
-) extends VertexSrv[AnalyzerTemplate] {
+) extends VertexSrv[AnalyzerTemplate]
+    with CortexOps {
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[AnalyzerTemplate] =
     startTraversal.getByAnalyzerId(name)
@@ -102,7 +101,7 @@ class AnalyzerTemplateSrv(
       }
 }
 
-object AnalyzerTemplateOps {
+trait AnalyzerTemplateOps { _: CortexOps =>
   implicit class AnalyzerTemplateOpsDefs(traversal: Traversal.V[AnalyzerTemplate]) {
 
     def get(idOrAnalyzerId: EntityIdOrName): Traversal.V[AnalyzerTemplate] =

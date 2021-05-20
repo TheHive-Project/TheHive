@@ -9,11 +9,9 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.{StorageSrv, VertexSrv}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.models.Attachment
-import org.thp.thehive.services.AttachmentOps._
 import play.api.Configuration
 
 import java.io.InputStream
@@ -21,7 +19,7 @@ import java.nio.file.Files
 import scala.concurrent.Future
 import scala.util.Try
 
-class AttachmentSrv(configuration: Configuration, storageSrv: StorageSrv, mat: Materializer) extends VertexSrv[Attachment] {
+class AttachmentSrv(configuration: Configuration, storageSrv: StorageSrv, mat: Materializer) extends VertexSrv[Attachment] with TheHiveOpsNoDeps {
   implicit val _mat: Materializer = mat
 
   val hashers: Hasher = Hasher(configuration.get[Seq[String]]("attachment.hash"): _*)
@@ -90,7 +88,7 @@ class AttachmentSrv(configuration: Configuration, storageSrv: StorageSrv, mat: M
 
 }
 
-object AttachmentOps {
+trait AttachmentOps { _: TheHiveOpsNoDeps =>
   implicit class AttachmentOpsDefs(traversal: Traversal.V[Attachment]) {
     def getByAttachmentId(attachmentId: String): Traversal.V[Attachment] = traversal.has(_.attachmentId, attachmentId)
 

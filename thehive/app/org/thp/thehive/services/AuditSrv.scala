@@ -9,17 +9,8 @@ import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Entity, _}
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.AuditOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.CaseTemplateOps._
-import org.thp.thehive.services.DashboardOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.notification.{AuditNotificationMessage, NotificationTag}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
@@ -33,7 +24,8 @@ class AuditSrv(
     _notificationActor: => ActorRef @@ NotificationTag,
     eventSrv: EventSrv,
     db: Database
-) extends VertexSrv[Audit] { auditSrv =>
+) extends VertexSrv[Audit]
+    with TheHiveOpsNoDeps { auditSrv =>
   lazy val userSrv: UserSrv                                = _userSrv
   lazy val notificationActor: ActorRef @@ NotificationTag  = _notificationActor
   val auditUserSrv                                         = new EdgeSrv[AuditUser, Audit, User]
@@ -311,7 +303,7 @@ class AuditSrv(
   }
 }
 
-object AuditOps {
+trait AuditOpsNoDeps { _: TheHiveOpsNoDeps =>
 
   implicit class VertexDefs(traversal: Traversal[Vertex, Vertex, IdentityConverter[Vertex]]) {
     def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase]).v[Share]
@@ -414,23 +406,28 @@ object AuditOps {
         )
         .domainMap(EntityId.apply)
 
-    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Audit] =
-      traversal.filter(
-        _.out[AuditContext].chooseBranch[String, Any](
-          _.on(_.label)
-            .option("Case", _.v[Case].visible(organisationSrv).widen[Any])
-            .option("Observable", _.v[Observable].visible(organisationSrv).widen[Any])
-            .option("Task", _.v[Task].visible(organisationSrv).widen[Any])
-            .option("Alert", _.v[Alert].visible(organisationSrv).widen[Any])
-            .option("Organisation", _.v[Organisation].current.widen[Any])
-            .option("CaseTemplate", _.v[CaseTemplate].visible.widen[Any])
-            .option("Dashboard", _.v[Dashboard].visible.widen[Any])
-        )
-      )
-
     def `object`: Traversal[Vertex, Vertex, IdentityConverter[Vertex]] = traversal.out[Audited]
 
     def context: Traversal[Vertex, Vertex, IdentityConverter[Vertex]] = traversal.out[AuditContext]
   }
 
+}
+
+trait AuditOps { _: TheHiveOps =>
+  implicit class AuditOpsNoDepsDefs(traversal: Traversal.V[Audit]) {
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Audit] =
+      traversal.filter(
+        _.out[AuditContext].chooseBranch[String, Any](
+          _.on(_.label)
+            .option("Case", _.v[Case].visible.widen[Any])
+            .option("Observable", _.v[Observable].visible.widen[Any])
+            .option("Task", _.v[Task].visible.widen[Any])
+            .option("Alert", _.v[Alert].visible.widen[Any])
+            .option("Organisation", _.v[Organisation].current.widen[Any])
+            .option("CaseTemplate", _.v[CaseTemplate].visible.widen[Any])
+            .option("Dashboard", _.v[Dashboard].visible.widen[Any])
+        )
+      )
+  }
 }

@@ -7,16 +7,10 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
 import play.api.libs.Files.TemporaryFileCreator
 import play.api.libs.json.{JsArray, JsValue, Json}
@@ -38,7 +32,8 @@ class ObservableCtrl(
     observableTypeSrv: ObservableTypeSrv,
     caseSrv: CaseSrv,
     alertSrv: AlertSrv,
-    organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     attachmentSrv: AttachmentSrv,
     temporaryFileCreator: TemporaryFileCreator,
     configuration: Configuration
@@ -57,14 +52,14 @@ class ObservableCtrl(
     )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
-    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
+    (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(authContext)
   )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
     "page",
     {
       case (OutputParam(from, to, extraData), observableSteps, authContext) =>
         observableSteps.richPage(from, to, extraData.contains("total")) {
-          _.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv, extraData - "total")(authContext))(authContext)
+          _.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(extraData - "total")(authContext))(authContext)
         }
     }
   )
@@ -95,7 +90,7 @@ class ObservableCtrl(
     ),
     Query[Traversal.V[Observable], Traversal.V[Observable]](
       "similar",
-      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(organisationSrv)(authContext)
+      (observableSteps, authContext) => observableSteps.filteredSimilar.visible(authContext)
     ),
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert),
@@ -196,7 +191,7 @@ class ObservableCtrl(
               alert <-
                 alertSrv
                   .get(EntityIdOrName(alertId))
-                  .can(organisationSrv, Permissions.manageAlert)
+                  .can(Permissions.manageAlert)
                   .orFail(AuthorizationError("Operation not permitted"))
               observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
             } yield (alert, observableType)
@@ -291,7 +286,7 @@ class ObservableCtrl(
       .authRoTransaction(db) { implicit request => implicit graph =>
         observableSrv
           .get(EntityIdOrName(observableId))
-          .visible(organisationSrv)
+          .visible
           .richObservable
           .getOrFail("Observable")
           .map { observable =>
@@ -305,7 +300,7 @@ class ObservableCtrl(
       .authTransaction(db) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("observable")
         observableSrv
-          .update(_.get(EntityIdOrName(observableId)).canManage(organisationSrv), propertyUpdaters)
+          .update(_.get(EntityIdOrName(observableId)).canManage, propertyUpdaters)
           .map(_ => Results.NoContent)
       }
 
@@ -319,7 +314,7 @@ class ObservableCtrl(
         ids
           .toTry { id =>
             observableSrv
-              .update(_.get(EntityIdOrName(id)).canManage(organisationSrv), properties)
+              .update(_.get(EntityIdOrName(id)).canManage, properties)
           }
           .map(_ => Results.NoContent)
       }
@@ -331,7 +326,7 @@ class ObservableCtrl(
           observable <-
             observableSrv
               .get(EntityIdOrName(observableId))
-              .canManage(organisationSrv)
+              .canManage
               .getOrFail("Observable")
           _ <- observableSrv.delete(observable)
         } yield Results.NoContent

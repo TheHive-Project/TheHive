@@ -4,16 +4,11 @@ import org.scalactic.Accumulation._
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, InputTask}
 import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate, Task}
-import org.thp.thehive.services.CaseTemplateOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.TaskOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.Logger
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -30,7 +25,8 @@ class CaseTemplateCtrl(
     override val publicData: PublicCaseTemplate,
     implicit override val db: Database,
     override val queryExecutor: QueryExecutor
-) extends QueryCtrl {
+) extends QueryCtrl
+    with TheHiveOpsNoDeps {
   def create: Action[AnyContent] =
     entrypoint("create case template")
       .extract("caseTemplate", FieldsParser[InputCaseTemplate])
@@ -89,9 +85,10 @@ class CaseTemplateCtrl(
 
 class PublicCaseTemplate(
     caseTemplateSrv: CaseTemplateSrv,
-    organisationSrv: OrganisationSrv,
-    customFieldSrv: CustomFieldSrv
-) extends PublicData {
+    val organisationSrv: OrganisationSrv,
+    val customFieldSrv: CustomFieldSrv
+) extends PublicData
+    with TheHiveOps {
   lazy val logger: Logger         = Logger(getClass)
   override val entityName: String = "caseTemplate"
   override val initialQuery: Query =
@@ -131,15 +128,15 @@ class PublicCaseTemplate(
     .property("summary", UMapping.string.optional)(_.field.updatable)
     .property("user", UMapping.string)(_.field.updatable)
     .property("customFields", UMapping.jsonNative)(_.subSelect {
-      case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFieldJsonValue(customFieldSrv, EntityIdOrName(name))
+      case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFieldJsonValue(EntityIdOrName(name))
       case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
     }
       .filter[JsValue] {
         case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
           predicate match {
-            case Right(predicate) => caseTemplateTraversal.customFieldFilter(customFieldSrv, EntityIdOrName(name), predicate)
-            case Left(true)       => caseTemplateTraversal.hasCustomField(customFieldSrv, EntityIdOrName(name))
-            case Left(false)      => caseTemplateTraversal.hasNotCustomField(customFieldSrv, EntityIdOrName(name))
+            case Right(predicate) => caseTemplateTraversal.customFieldFilter(EntityIdOrName(name), predicate)
+            case Left(true)       => caseTemplateTraversal.hasCustomField(EntityIdOrName(name))
+            case Left(false)      => caseTemplateTraversal.hasNotCustomField(EntityIdOrName(name))
           }
         case (_, caseTraversal, _, _) => caseTraversal.empty
       }

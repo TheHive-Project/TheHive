@@ -6,16 +6,14 @@ import org.thp.cortex.dto.v0.OutputWorker
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.Traversal
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.models.Organisation
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services._
 import play.api.Logger
 
 class ServiceHelper(
     db: Database,
     organisationSrv: OrganisationSrv
-) {
+) extends TheHiveOpsNoDeps {
 
   lazy val logger: Logger = Logger(getClass)
 

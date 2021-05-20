@@ -4,16 +4,15 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal, TraversalOps}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.dto.v0.InputAnalyzerTemplate
 import org.thp.thehive.connector.cortex.models.AnalyzerTemplate
-import org.thp.thehive.connector.cortex.services.AnalyzerTemplateOps._
-import org.thp.thehive.connector.cortex.services.AnalyzerTemplateSrv
+import org.thp.thehive.connector.cortex.services.{AnalyzerTemplateSrv, CortexOps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{OutputParam, PublicData, QueryCtrl}
 import org.thp.thehive.models.Permissions
+import org.thp.thehive.services.TheHiveOpsNoDeps
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -26,7 +25,9 @@ class AnalyzerTemplateCtrl(
     analyzerTemplateSrv: AnalyzerTemplateSrv,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicAnalyzerTemplate
-) extends QueryCtrl {
+) extends QueryCtrl
+    with CortexOps
+    with TheHiveOpsNoDeps {
 
   def get(id: String): Action[AnyContent] =
     entrypoint("get content")
@@ -89,7 +90,7 @@ class AnalyzerTemplateCtrl(
       }
 }
 
-class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv) extends PublicData {
+class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv) extends PublicData with TraversalOps {
   override val entityName: String = "analyzerTemplate"
   override val initialQuery: Query =
     Query.init[Traversal.V[AnalyzerTemplate]]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.startTraversal(graph))

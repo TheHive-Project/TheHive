@@ -3,14 +3,11 @@ package org.thp.thehive.controllers.v0
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, EntityName, NotFoundError}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputOrganisation
 import org.thp.thehive.models.{CaseTemplate, Organisation, Permissions, User}
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -23,7 +20,9 @@ class OrganisationCtrl(
     implicit override val db: Database,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicOrganisation
-) extends QueryCtrl {
+) extends QueryCtrl
+    with TheHiveOpsNoDeps {
+
   def create: Action[AnyContent] =
     entrypoint("create organisation")
       .extract("organisation", FieldsParser[InputOrganisation])
@@ -123,7 +122,7 @@ class OrganisationCtrl(
       }
 }
 
-class PublicOrganisation(organisationSrv: OrganisationSrv) extends PublicData {
+class PublicOrganisation(organisationSrv: OrganisationSrv) extends PublicData with TheHiveOpsNoDeps {
   override val entityName: String = "organisation"
 
   override val initialQuery: Query =

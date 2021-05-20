@@ -5,18 +5,15 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.{List => JList, Map => JMap}
 import scala.util.{Success, Try}
 
-class DashboardSrv(organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv) extends VertexSrv[Dashboard] {
+class DashboardSrv(organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv: AuditSrv) extends VertexSrv[Dashboard] with TheHiveOpsNoDeps {
   val organisationDashboardSrv = new EdgeSrv[OrganisationDashboard, Organisation, Dashboard]
   val dashboardUserSrv         = new EdgeSrv[DashboardUser, Dashboard, User]
 
@@ -77,7 +74,7 @@ class DashboardSrv(organisationSrv: OrganisationSrv, userSrv: UserSrv, auditSrv:
     }
 }
 
-object DashboardOps {
+trait DashboardOps { _: TheHiveOpsNoDeps =>
 
   implicit class DashboardOpsDefs(traversal: Traversal.V[Dashboard]) {
 

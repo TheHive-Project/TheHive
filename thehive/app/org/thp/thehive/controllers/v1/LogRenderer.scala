@@ -2,13 +2,9 @@ package org.thp.thehive.controllers.v1
 
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.Log
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.LogOps._
-import org.thp.thehive.services.TaskOps._
 import play.api.libs.json._
 
 import java.lang.{Long => JLong}

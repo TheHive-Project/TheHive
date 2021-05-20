@@ -2,15 +2,15 @@ package org.thp.thehive.services.notification.notifiers
 
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, DummyUserSrv, Schema}
-import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.thehive.services.{AuditSrv, CaseSrv, TestAppBuilder, UserSrv}
+import org.thp.scalligraph.models.{DummyUserSrv, Schema}
+import org.thp.scalligraph.traversal.TraversalOps
+import org.thp.thehive.services.TestAppBuilder
 import play.api.test.PlaySpecification
 
 import java.util.{HashMap => JHashMap}
 import scala.collection.JavaConverters._
 
-class NotificationTemplateTest extends PlaySpecification with TestAppBuilder {
+class NotificationTemplateTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
   def templateEngine(testSchema: Schema): Template =
     new Object with Template {

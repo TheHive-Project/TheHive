@@ -1,11 +1,8 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.Procedure
-import org.thp.thehive.services.PatternOps._
-import org.thp.thehive.services.ProcedureOps._
 import play.api.libs.json.{JsNull, JsValue}
 
 import java.util.{List => JList, Map => JMap}

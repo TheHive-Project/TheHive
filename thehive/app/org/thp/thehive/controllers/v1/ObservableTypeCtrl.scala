@@ -4,19 +4,19 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputObservableType
 import org.thp.thehive.models.{ObservableType, Permissions}
-import org.thp.thehive.services.ObservableTypeSrv
+import org.thp.thehive.services.{ObservableTypeSrv, TheHiveOpsNoDeps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 class ObservableTypeCtrl(
     val entrypoint: Entrypoint,
     db: Database,
     observableTypeSrv: ObservableTypeSrv
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with TheHiveOpsNoDeps {
   override val entityName: String = "ObservableType"
   override val initialQuery: Query =
     Query.init[Traversal.V[ObservableType]]("listObservableType", (graph, _) => observableTypeSrv.startTraversal(graph))

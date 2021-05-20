@@ -4,13 +4,10 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputOrganisation
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -20,7 +17,8 @@ class OrganisationCtrl(
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
     implicit val db: Database
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with TheHiveOpsNoDeps {
 
   override val entityName: String                 = "organisation"
   override val publicProperties: PublicProperties = properties.organisation

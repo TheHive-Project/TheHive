@@ -1,17 +1,15 @@
 package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.{Alert, RichCase, SimilarStats}
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.OrganisationSrv
+import org.thp.thehive.services.{OrganisationSrv, TheHiveOps}
 import play.api.libs.json._
 
 import java.util.{Date, List => JList, Map => JMap}
 
-trait AlertRenderer extends BaseRenderer[Alert] {
+trait AlertRenderer extends BaseRenderer[Alert] with TheHiveOps {
   implicit val similarCaseWrites: Writes[(RichCase, SimilarStats)] = Writes[(RichCase, SimilarStats)] {
     case (richCase, similarStats) =>
       Json.obj(
@@ -37,7 +35,7 @@ trait AlertRenderer extends BaseRenderer[Alert] {
       else if (x._2.ioc._2 > y._2.ioc._2) -1
       else if (x._2.ioc._2 < y._2.ioc._2) 1
       else 0
-    _.similarCases(organisationSrv, caseFilter = None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
+    _.similarCases(caseFilter = None).fold.domainMap(sc => JsArray(sc.sorted.map(Json.toJson(_))))
   }
 
   def importDate: Traversal.V[Alert] => Traversal[JsValue, JList[Date], Converter[JsValue, JList[Date]]] =

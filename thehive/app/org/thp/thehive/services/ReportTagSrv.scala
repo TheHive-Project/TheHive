@@ -4,15 +4,12 @@ import org.thp.scalligraph.RichSeq
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models.{Observable, ObservableReportTag, ReportTag}
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.ReportTagOps._
 
 import scala.util.Try
 
-class ReportTagSrv(observableSrv: ObservableSrv) extends VertexSrv[ReportTag] {
+class ReportTagSrv(observableSrv: ObservableSrv) extends VertexSrv[ReportTag] with TheHiveOpsNoDeps {
   val observableReportTagSrv = new EdgeSrv[ObservableReportTag, Observable, ReportTag]
 
   def updateTags(observable: Observable with Entity, origin: String, reportTags: Seq[ReportTag])(implicit
@@ -28,7 +25,7 @@ class ReportTagSrv(observableSrv: ObservableSrv) extends VertexSrv[ReportTag] {
   }
 }
 
-object ReportTagOps {
+trait ReportTagOps { _: TheHiveOpsNoDeps =>
   implicit class ReportTagOpsDefs(traversal: Traversal.V[ReportTag]) {
     def observable: Traversal.V[Observable] = traversal.in[ObservableReportTag].v[Observable]
 

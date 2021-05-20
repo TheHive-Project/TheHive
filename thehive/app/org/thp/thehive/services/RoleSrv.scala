@@ -3,14 +3,12 @@ package org.thp.thehive.services
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models._
-import org.thp.thehive.services.RoleOps._
 
 import scala.util.Try
 
-class RoleSrv extends VertexSrv[Role] {
+class RoleSrv extends VertexSrv[Role] with TheHiveOpsNoDeps {
 
   val roleOrganisationSrv = new EdgeSrv[RoleOrganisation, Role, Organisation]
   val userRoleSrv         = new EdgeSrv[UserRole, User, Role]
@@ -37,7 +35,7 @@ class RoleSrv extends VertexSrv[Role] {
   }
 }
 
-object RoleOps {
+trait RoleOps { _: TheHiveOpsNoDeps =>
   implicit class RoleOpsDefs(traversal: Traversal.V[Role]) {
     def organisation: Traversal.V[Organisation] = traversal.out[RoleOrganisation].v[Organisation]
 

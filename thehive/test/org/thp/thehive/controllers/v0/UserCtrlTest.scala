@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.scalligraph.{AuthenticationError, EntityName}
 import org.thp.thehive.dto.v0.OutputUser
 import play.api.libs.json.Json
@@ -14,7 +14,7 @@ object TestUser {
     TestUser(user.login, user.name, user.roles, user.organisation, user.hasKey, user.status)
 }
 
-class UserCtrlTest extends PlaySpecification with TestAppBuilder {
+class UserCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   "user controller" should {
     "search users" in testApp { app =>
       import app._

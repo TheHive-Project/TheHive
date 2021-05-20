@@ -1,11 +1,10 @@
 package org.thp.thehive.controllers.v0
 
 import io.scalaland.chimney.dsl._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.OutputTask
 import org.thp.thehive.models._
-import org.thp.thehive.services.TaskOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -31,7 +30,7 @@ object TestTask {
     outputTask.into[TestTask].transform
 }
 
-class TaskCtrlTest extends PlaySpecification with TestAppBuilder {
+class TaskCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   "task controller" should {
     "list available tasks and get one task" in testApp { app =>
       import app._

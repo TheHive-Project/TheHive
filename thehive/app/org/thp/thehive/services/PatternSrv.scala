@@ -4,13 +4,9 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.PatternOps._
-import org.thp.thehive.services.ProcedureOps._
 
 import java.util.{Map => JMap}
 import scala.util.{Success, Try}
@@ -18,8 +14,10 @@ import scala.util.{Success, Try}
 class PatternSrv(
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
-    organisationSrv: OrganisationSrv
-) extends VertexSrv[Pattern] {
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv
+) extends VertexSrv[Pattern]
+    with TheHiveOps {
   val patternPatternSrv = new EdgeSrv[PatternPattern, Pattern, Pattern]
 
   def cannotBeParent(child: Pattern with Entity, parent: Pattern with Entity)(implicit graph: Graph): Boolean =
@@ -34,7 +32,7 @@ class PatternSrv(
 
   def getCasePatterns(caseId: String)(implicit authContext: AuthContext, graph: Graph): Try[Seq[RichPattern]] =
     for {
-      caze <- caseSrv.get(EntityIdOrName(caseId)).visible(organisationSrv).getOrFail("Case")
+      caze <- caseSrv.get(EntityIdOrName(caseId)).visible.getOrFail("Case")
     } yield caseSrv.get(caze).procedure.pattern.richPattern.toSeq
 
   def update(
@@ -71,7 +69,7 @@ class PatternSrv(
 
 }
 
-object PatternOps {
+trait PatternOps { _: TheHiveOpsNoDeps =>
   implicit class PatternOpsDefs(traversal: Traversal.V[Pattern]) {
 
     def getByPatternId(patternId: String): Traversal.V[Pattern] = traversal.has(_.patternId, patternId)

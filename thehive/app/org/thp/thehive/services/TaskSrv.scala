@@ -7,14 +7,10 @@ import org.thp.scalligraph.models.{Entity, Model}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.Identity
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models.{TaskStatus, _}
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
-import org.thp.thehive.services.TaskOps._
 import play.api.libs.json.{JsNull, JsObject, Json}
 
 import java.lang.{Boolean => JBoolean}
@@ -28,7 +24,8 @@ class TaskSrv(
     userSrv: UserSrv,
     shareSrv: ShareSrv,
     logSrv: LogSrv
-) extends VertexSrv[Task] {
+) extends VertexSrv[Task]
+    with TheHiveOpsNoDeps {
 
   val caseTemplateTaskSrv = new EdgeSrv[CaseTemplateTask, CaseTemplate, Task]
   val taskUserSrv         = new EdgeSrv[TaskUser, Task, User]
@@ -138,14 +135,11 @@ class TaskSrv(
   }
 }
 
-object TaskOps {
+trait TaskOpsNoDeps { _: TheHiveOpsNoDeps =>
   implicit class TaskOpsDefs(traversal: Traversal.V[Task]) {
 
     def get(idOrName: EntityIdOrName): Traversal.V[Task] =
       idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
-
-    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Task] =
-      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
 
     def assignTo(login: String): Traversal.V[Task] = traversal.has(_.assignee, login)
 
@@ -231,5 +225,13 @@ object TaskOps {
 
     def share(organisation: EntityIdOrName): Traversal.V[Share] =
       traversal.in[ShareTask].filter(_.in[OrganisationShare].v[Organisation].get(organisation)).v[Share]
+  }
+}
+
+trait TaskOps { _: TheHiveOpsNoDeps =>
+  protected val organisationSrv: OrganisationSrv
+  implicit class TaskOpsNoDepsDefs(traversal: Traversal.V[Task]) {
+    def visible(implicit authContext: AuthContext): Traversal.V[Task] =
+      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
   }
 }

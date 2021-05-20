@@ -2,25 +2,18 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import com.softwaremill.tagging.@@
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
+import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.CaseTemplateOps._
-import org.thp.thehive.services.CustomFieldOps._
-import org.thp.thehive.services.ObservableOps._
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, Json}
 
 import java.lang.{Long => JLong}
 import java.util.{Date, Map => JMap}
@@ -36,7 +29,8 @@ class AlertSrv(
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag
-) extends VertexSrv[Alert] {
+) extends VertexSrv[Alert]
+    with TheHiveOpsNoDeps {
 
   val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
   val alertCustomFieldSrv  = new EdgeSrv[AlertCustomField, Alert, CustomField]
@@ -181,7 +175,7 @@ class AlertSrv(
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    val cfv = get(alert).customFields(EntityIdOrName(cf.name))
+    val cfv = get(alert).customFieldValue(EntityIdOrName(cf.name))
     if (cfv.clone().exists)
       cfv.setValue(cf.value)
     else
@@ -201,7 +195,7 @@ class AlertSrv(
       .richCustomField
       .toIterator
       .filterNot(rcf => customFieldNames.contains(rcf.name))
-      .foreach(rcf => get(alert).customFields(rcf.customField._id).remove())
+      .foreach(rcf => get(alert).customFieldValue(rcf.customField._id).remove())
     customFieldValues
       .toTry { case (cf, v) => setOrCreateCustomField(alert, InputCustomFieldValue(cf.name, Some(v), None)) }
       .map(_ => ())
@@ -364,9 +358,9 @@ class AlertSrv(
     }
 }
 
-object AlertOps {
+trait AlertOpsNoDeps { _: TheHiveOpsNoDeps =>
 
-  implicit class AlertOpsDefs(traversal: Traversal.V[Alert]) {
+  implicit class AlertOpsNoDepsDefs(val traversal: Traversal.V[Alert]) extends EntityWithCustomFieldOpsNoDepsDefs[Alert, AlertCustomField] {
     def get(idOrSource: EntityIdOrName): Traversal.V[Alert] =
       idOrSource.fold(
         traversal.getByIds(_),
@@ -395,14 +389,6 @@ object AlertOps {
 
     def `case`: Traversal.V[Case] = traversal.out[AlertCase].v[Case]
 
-    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Alert] =
-      traversal.has(_.organisationId, organisationSrv.currentId(traversal.graph, authContext))
-
-    def can(organisationSrv: OrganisationSrv, permission: Permission)(implicit authContext: AuthContext): Traversal.V[Alert] =
-      if (authContext.permissions.contains(permission))
-        traversal.visible(organisationSrv)
-      else traversal.empty
-
     def imported: Traversal[Boolean, Boolean, IdentityConverter[Boolean]] =
       traversal.choose(_.nonEmptyId(_.caseId), onTrue = true, onFalse = false)
 
@@ -423,122 +409,6 @@ object AlertOps {
           .sack[Long],
         _.constant(0L)
       )
-
-    def similarCases(organisationSrv: OrganisationSrv, caseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
-        authContext: AuthContext
-    ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] = {
-      val similarObservables = observables
-        .filteredSimilar
-        .visible(organisationSrv)
-      caseFilter
-        .fold(similarObservables)(caseFilter => similarObservables.filter(o => caseFilter(o.`case`)))
-        .group(_.by(_.`case`))
-        .unfold
-        .project(
-          _.by(
-            _.selectKeys
-              .project(
-                _.by(_.richCaseWithoutPerms)
-                  .by((_: Traversal.V[Case]).observables.hasNot(_.ignoreSimilarity, true).groupCount(_.byValue(_.ioc)))
-              )
-          )
-            .by(
-              _.selectValues
-                .project(
-                  _.by(_.unfold.groupCount(_.byValue(_.ioc)))
-                    .by(_.unfold.groupCount(_.by(_.typeName)))
-                )
-            )
-        )
-        .domainMap {
-          case ((richCase, obsStats), (iocStats, observableTypeStats)) =>
-            val obsStatsMap     = obsStats.mapValues(_.toInt)
-            val similarStatsMap = iocStats.mapValues(_.toInt)
-            richCase -> SimilarStats(
-              similarStatsMap.values.sum         -> obsStatsMap.values.sum,
-              similarStatsMap.getOrElse(true, 0) -> obsStatsMap.getOrElse(true, 0),
-              observableTypeStats
-            )
-        }
-    }
-
-    def customFields(idOrName: EntityIdOrName): Traversal.E[AlertCustomField] =
-      idOrName
-        .fold(
-          id => traversal.outE[AlertCustomField].filter(_.inV.getByIds(id)),
-          name => traversal.outE[AlertCustomField].filter(_.inV.v[CustomField].has(_.name, name))
-        )
-
-    def customFields: Traversal.E[AlertCustomField] = traversal.outE[AlertCustomField]
-
-    def customFieldJsonValue(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.Domain[JsValue] =
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map(t => CustomFieldType.map(t).getJsonValue(traversal.customFields(customField)))
-        .getOrElse(traversal.empty.castDomain)
-
-    def richCustomFields: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] =
-      traversal
-        .outE[AlertCustomField]
-        .project(_.by.by(_.inV.v[CustomField]))
-        .domainMap {
-          case (cfv, cf) => RichCustomField(cf, cfv)
-        }
-
-    def customFieldFilter(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName, predicate: P[JsValue]): Traversal.V[Alert] =
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map {
-          case CustomFieldType.boolean =>
-            traversal.filter(_.customFields.has(_.booleanValue, predicate.mapValue(_.as[Boolean])).inV.v[CustomField].get(customField))
-          case CustomFieldType.date =>
-            traversal.filter(_.customFields.has(_.dateValue, predicate.mapValue(_.as[Date])).inV.v[CustomField].get(customField))
-          case CustomFieldType.float =>
-            traversal.filter(_.customFields.has(_.floatValue, predicate.mapValue(_.as[Double])).inV.v[CustomField].get(customField))
-          case CustomFieldType.integer =>
-            traversal.filter(_.customFields.has(_.integerValue, predicate.mapValue(_.as[Int])).inV.v[CustomField].get(customField))
-          case CustomFieldType.string =>
-            traversal.filter(_.customFields.has(_.stringValue, predicate.mapValue(_.as[String])).inV.v[CustomField].get(customField))
-        }
-        .getOrElse(traversal.empty)
-
-    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Alert] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map {
-          case CustomFieldType.boolean => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.booleanValue).inV.v[CustomField]))
-          case CustomFieldType.date    => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.dateValue).inV.v[CustomField]))
-          case CustomFieldType.float   => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.floatValue).inV.v[CustomField]))
-          case CustomFieldType.integer => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.integerValue).inV.v[CustomField]))
-          case CustomFieldType.string  => traversal.filter(t => cfFilter(t.outE[AlertCustomField].has(_.stringValue).inV.v[CustomField]))
-        }
-        .getOrElse(traversal.empty)
-    }
-
-    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[Alert] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
-      customFieldSrv
-        .get(customField)(traversal.graph)
-        .value(_.`type`)
-        .headOption
-        .map {
-          case CustomFieldType.boolean => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.booleanValue).inV.v[CustomField]))
-          case CustomFieldType.date    => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.dateValue).inV.v[CustomField]))
-          case CustomFieldType.float   => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.floatValue).inV.v[CustomField]))
-          case CustomFieldType.integer => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.integerValue).inV.v[CustomField]))
-          case CustomFieldType.string  => traversal.filterNot(t => cfFilter(t.outE[AlertCustomField].has(_.stringValue).inV.v[CustomField]))
-        }
-        .getOrElse(traversal.empty)
-    }
 
     def observables: Traversal.V[Observable] = traversal.out[AlertObservable].v[Observable]
 
@@ -591,12 +461,74 @@ object AlertOps {
               observableCount
             )
         }
+
+    override def customFields: Traversal.E[AlertCustomField] = traversal.outE[AlertCustomField]
   }
 
   implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Alert] {
+trait AlertOps { alertOps: TheHiveOps =>
+  protected val organisationSrv: OrganisationSrv
+  protected val customFieldSrv: CustomFieldSrv
+
+  implicit class AlertOpsDefs(val traversal: Traversal.V[Alert]) extends EntityWithCustomFieldOpsDefs[Alert, AlertCustomField] {
+    override protected val customFieldSrv: CustomFieldSrv = alertOps.customFieldSrv
+    override def selectCustomField(traversal: Traversal.V[Alert]): Traversal.E[AlertCustomField] =
+      traversal.outE[AlertCustomField]
+
+    def visible(implicit authContext: AuthContext): Traversal.V[Alert] =
+      traversal.has(_.organisationId, organisationSrv.currentId(traversal.graph, authContext))
+
+    def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Alert] =
+      if (authContext.permissions.contains(permission))
+        traversal.visible
+      else traversal.empty
+
+    def similarCases(caseFilter: Option[Traversal.V[Case] => Traversal.V[Case]])(implicit
+        authContext: AuthContext
+    ): Traversal[(RichCase, SimilarStats), JMap[String, Any], Converter[(RichCase, SimilarStats), JMap[String, Any]]] = {
+      val similarObservables = traversal
+        .observables
+        .filteredSimilar
+        .visible
+      caseFilter
+        .fold(similarObservables)(caseFilter => similarObservables.filter(o => caseFilter(o.`case`)))
+        .group(_.by(_.`case`))
+        .unfold
+        .project(
+          _.by(
+            _.selectKeys
+              .project(
+                _.by(_.richCaseWithoutPerms)
+                  .by((_: Traversal.V[Case]).observables.hasNot(_.ignoreSimilarity, true).groupCount(_.byValue(_.ioc)))
+              )
+          )
+            .by(
+              _.selectValues
+                .project(
+                  _.by(_.unfold.groupCount(_.byValue(_.ioc)))
+                    .by(_.unfold.groupCount(_.by(_.typeName)))
+                )
+            )
+        )
+        .domainMap {
+          case ((richCase, obsStats), (iocStats, observableTypeStats)) =>
+            val obsStatsMap     = obsStats.mapValues(_.toInt)
+            val similarStatsMap = iocStats.mapValues(_.toInt)
+            richCase -> SimilarStats(
+              similarStatsMap.values.sum         -> obsStatsMap.values.sum,
+              similarStatsMap.getOrElse(true, 0) -> obsStatsMap.getOrElse(true, 0),
+              observableTypeStats
+            )
+        }
+    }
+  }
+
+}
+class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, organisationSrv: OrganisationSrv)
+    extends IntegrityCheckOps[Alert]
+    with TheHiveOpsNoDeps {
 
   override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = {
     val (imported, notImported) = entities.partition(_.caseId.isDefined)

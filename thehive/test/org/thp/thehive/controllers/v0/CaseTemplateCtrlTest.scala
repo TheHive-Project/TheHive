@@ -1,13 +1,12 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityName
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.dto.v0.OutputCaseTemplate
-import org.thp.thehive.services.CaseTemplateOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
-class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder {
+class CaseTemplateCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
 // TODO what to do with unused test ?
 
 //  val dummyUserSrv = DummyUserSrv(userId = "admin@thehive.local", permissions = Permissions.all)

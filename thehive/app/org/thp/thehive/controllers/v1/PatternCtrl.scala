@@ -4,13 +4,11 @@ import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
-import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputPattern
 import org.thp.thehive.models.{Pattern, Permissions, RichPattern}
-import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.PatternSrv
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{Action, AnyContent, Results}

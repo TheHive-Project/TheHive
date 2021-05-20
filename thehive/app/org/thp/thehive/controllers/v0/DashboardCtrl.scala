@@ -3,16 +3,12 @@ package org.thp.thehive.controllers.v0
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, InvalidFormatAttributeError}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputDashboard
 import org.thp.thehive.models.{Dashboard, RichDashboard}
-import org.thp.thehive.services.DashboardOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
-import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, UserSrv}
+import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, TheHiveOpsNoDeps, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -21,11 +17,11 @@ import scala.util.{Failure, Success}
 class DashboardCtrl(
     override val entrypoint: Entrypoint,
     dashboardSrv: DashboardSrv,
-    userSrv: UserSrv,
     implicit val db: Database,
     override val publicData: PublicDashboard,
     override val queryExecutor: QueryExecutor
-) extends QueryCtrl {
+) extends QueryCtrl
+    with TheHiveOpsNoDeps {
   def create: Action[AnyContent] =
     entrypoint("create dashboard")
       .extract("dashboard", FieldsParser[InputDashboard])
@@ -83,7 +79,8 @@ class PublicDashboard(
     dashboardSrv: DashboardSrv,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
-) extends PublicData {
+) extends PublicData
+    with TheHiveOpsNoDeps {
   val entityName: String = "dashboard"
 
   val initialQuery: Query =

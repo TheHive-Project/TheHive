@@ -5,14 +5,11 @@ import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, EntityIdOrName, EntityName, InvalidFormatAttributeError, RichOptionTry}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputUser
 import org.thp.thehive.models._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
@@ -29,7 +26,8 @@ class UserCtrl(
     override val db: Database,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicUser
-) extends QueryCtrl {
+) extends QueryCtrl
+    with TheHiveOpsNoDeps {
   def current: Action[AnyContent] =
     entrypoint("current user")
       .authRoTransaction(db) { implicit request => implicit graph =>
@@ -224,7 +222,7 @@ class UserCtrl(
       }
 }
 
-class PublicUser(userSrv: UserSrv, organisationSrv: OrganisationSrv) extends PublicData {
+class PublicUser(userSrv: UserSrv, organisationSrv: OrganisationSrv) extends PublicData with TheHiveOpsNoDeps {
   override val entityName: String = "user"
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)

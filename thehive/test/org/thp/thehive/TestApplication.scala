@@ -1,8 +1,8 @@
 package org.thp.thehive
 
+import _root_.controllers.Assets
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import _root_.controllers.Assets
 import org.thp.scalligraph.auth.AuthSrvProvider
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import org.thp.scalligraph.query.QueryExecutor

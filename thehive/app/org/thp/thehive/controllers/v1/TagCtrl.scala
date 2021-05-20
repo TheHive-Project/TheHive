@@ -7,13 +7,11 @@ import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.{Permissions, Tag}
-import org.thp.thehive.services.TagOps._
-import org.thp.thehive.services.{OrganisationSrv, TagSrv}
+import org.thp.thehive.services.{CustomFieldSrv, OrganisationSrv, TagSrv, TheHiveOps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 case class TagHint(freeTag: Option[String], namespace: Option[String], predicate: Option[String], value: Option[String], limit: Option[Long])
@@ -22,11 +20,13 @@ class TagCtrl(
     entrypoint: Entrypoint,
     db: Database,
     tagSrv: TagSrv,
-    val organisationSrv: OrganisationSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
     properties: Properties,
     appConfig: ApplicationConfig
 ) extends QueryableCtrl
-    with TagRenderer {
+    with TagRenderer
+    with TheHiveOps {
 
   val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")
   val limitedCountThreshold: Long                         = limitedCountThresholdConfig.get
@@ -84,7 +84,7 @@ class TagCtrl(
       .authPermittedTransaction(db, Permissions.manageTag) { implicit request => implicit graph =>
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("tag")
         tagSrv
-          .update(_.getFreetag(organisationSrv, EntityIdOrName(tagId)), propertyUpdaters)
+          .update(_.getFreetag(EntityIdOrName(tagId)), propertyUpdaters)
           .map(_ => Results.NoContent)
       }
 

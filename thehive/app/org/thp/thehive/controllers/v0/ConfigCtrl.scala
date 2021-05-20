@@ -4,11 +4,8 @@ import com.typesafe.config.{ConfigRenderOptions, Config => TypeSafeConfig}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, NotFoundError}
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Result, Results}
@@ -25,7 +22,7 @@ class ConfigCtrl(
     userSrv: UserSrv,
     entrypoint: Entrypoint,
     db: Database
-) {
+) extends TheHiveOpsNoDeps {
 
   lazy val logger: Logger = Logger(getClass)
 

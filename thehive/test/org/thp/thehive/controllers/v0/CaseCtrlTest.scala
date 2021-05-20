@@ -3,9 +3,8 @@ package org.thp.thehive.controllers.v0
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.dto.v0._
-import org.thp.thehive.services.CaseOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 import play.api.libs.json._
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -34,7 +33,7 @@ object TestCase {
     outputCase.into[TestCase].transform
 }
 
-class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
+class CaseCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
 
   "case controller" should {
 

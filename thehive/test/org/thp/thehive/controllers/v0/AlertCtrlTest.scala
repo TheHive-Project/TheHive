@@ -3,11 +3,9 @@ package org.thp.thehive.controllers.v0
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.RichObservable
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
@@ -36,7 +34,7 @@ object TestAlert {
     outputAlert.into[TestAlert].transform
 }
 
-class AlertCtrlTest extends PlaySpecification with TestAppBuilder {
+class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   "create an alert" in testApp { app =>
     import app.thehiveModuleV0._
 

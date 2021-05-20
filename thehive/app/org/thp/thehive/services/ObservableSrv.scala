@@ -8,15 +8,10 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.Identity
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.utils.Hash
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.models._
-import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.{Map => JMap}
@@ -30,7 +25,8 @@ class ObservableSrv(
     auditSrv: AuditSrv,
     shareSrv: ShareSrv,
     organisationSrv: OrganisationSrv
-) extends VertexSrv[Observable] {
+) extends VertexSrv[Observable]
+    with TheHiveOpsNoDeps {
   val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
   val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
   val observableAttachmentSrv  = new EdgeSrv[ObservableAttachment, Observable, Attachment]
@@ -172,9 +168,9 @@ class ObservableSrv(
     }
 }
 
-object ObservableOps {
+trait ObservableOpsNoDeps { _: TheHiveOpsNoDeps =>
 
-  implicit class ObservableOpsDefs(traversal: Traversal.V[Observable]) {
+  implicit class ObservableOpsNoDepsDefs(traversal: Traversal.V[Observable]) {
     def get(idOrName: EntityIdOrName): Traversal.V[Observable] =
       idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
 
@@ -208,20 +204,11 @@ object ObservableOps {
     def isIoc: Traversal.V[Observable] =
       traversal.has(_.ioc, true)
 
-    def visible(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Observable] =
-      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
-
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Observable] =
       if (authContext.permissions.contains(permission))
         traversal.filter(_.shares.filter(_.filter(_.profile.has(_.permissions, permission))).organisation.current)
       else
         traversal.empty
-
-    def canManage(organisationSrv: OrganisationSrv)(implicit authContext: AuthContext): Traversal.V[Observable] =
-      if (authContext.isPermitted(Permissions.manageAlert))
-        traversal.filter(_.or(_.alert.visible(organisationSrv), _.can(Permissions.manageObservable)))
-      else
-        can(Permissions.manageObservable)
 
     def userPermissions(implicit authContext: AuthContext): Traversal[Set[Permission], Vertex, Converter[Set[Permission], Vertex]] =
       traversal
@@ -252,48 +239,6 @@ object ObservableOps {
               None,
               reportTags
             )
-        }
-
-    def richObservableWithSeen(organisationSrv: OrganisationSrv)(implicit
-        authContext: AuthContext
-    ): Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
-      traversal
-        .project(
-          _.by
-            .by(_.attachments.fold)
-            .by(_.filteredSimilar.visible(organisationSrv).limit(1).count)
-            .by(_.reportTags.fold)
-        )
-        .domainMap {
-          case (observable, attachment, count, reportTags) =>
-            RichObservable(
-              observable,
-              attachment.headOption,
-              Some(count != 0),
-              reportTags
-            )
-        }
-
-    def richObservableWithCustomRenderer[D, G, C <: Converter[D, G]](
-        organisationSrv: OrganisationSrv,
-        entityRenderer: Traversal.V[Observable] => Traversal[D, G, C]
-    )(implicit authContext: AuthContext): Traversal[(RichObservable, D), JMap[String, Any], Converter[(RichObservable, D), JMap[String, Any]]] =
-      traversal
-        .project(
-          _.by
-            .by(_.attachments.fold)
-            .by(_.filteredSimilar.visible(organisationSrv).limit(1).count)
-            .by(_.reportTags.fold)
-            .by(entityRenderer)
-        )
-        .domainMap {
-          case (observable, attachment, count, reportTags, renderedEntity) =>
-            RichObservable(
-              observable,
-              attachment.headOption,
-              Some(count != 0),
-              reportTags
-            ) -> renderedEntity
         }
 
     def `case`: Traversal.V[Case] = traversal.in[ShareObservable].out[ShareCase].v[Case]
@@ -348,7 +293,64 @@ object ObservableOps {
   }
 }
 
-class ObservableIntegrityCheckOps(val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] {
+trait ObservableOps { _: TheHiveOps =>
+
+  protected val organisationSrv: OrganisationSrv
+  implicit class ObservableOpsDefs(traversal: Traversal.V[Observable]) {
+    def visible(implicit authContext: AuthContext): Traversal.V[Observable] =
+      traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
+
+    def canManage(implicit authContext: AuthContext): Traversal.V[Observable] =
+      if (authContext.isPermitted(Permissions.manageAlert))
+        traversal.filter(_.or(_.alert.visible, _.can(Permissions.manageObservable)))
+      else
+        traversal.can(Permissions.manageObservable)
+
+    def richObservableWithSeen(organisationSrv: OrganisationSrv)(implicit
+        authContext: AuthContext
+    ): Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.attachments.fold)
+            .by(_.filteredSimilar.visible.limit(1).count)
+            .by(_.reportTags.fold)
+        )
+        .domainMap {
+          case (observable, attachment, count, reportTags) =>
+            RichObservable(
+              observable,
+              attachment.headOption,
+              Some(count != 0),
+              reportTags
+            )
+        }
+
+    def richObservableWithCustomRenderer[D, G, C <: Converter[D, G]](
+        organisationSrv: OrganisationSrv,
+        entityRenderer: Traversal.V[Observable] => Traversal[D, G, C]
+    )(implicit authContext: AuthContext): Traversal[(RichObservable, D), JMap[String, Any], Converter[(RichObservable, D), JMap[String, Any]]] =
+      traversal
+        .project(
+          _.by
+            .by(_.attachments.fold)
+            .by(_.filteredSimilar.visible.limit(1).count)
+            .by(_.reportTags.fold)
+            .by(entityRenderer)
+        )
+        .domainMap {
+          case (observable, attachment, count, reportTags, renderedEntity) =>
+            RichObservable(
+              observable,
+              attachment.headOption,
+              Some(count != 0),
+              reportTags
+            ) -> renderedEntity
+        }
+  }
+}
+
+class ObservableIntegrityCheckOps(val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] with TheHiveOpsNoDeps {
   override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
   override def globalCheck(): Map[String, Long] =

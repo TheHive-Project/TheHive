@@ -1,15 +1,14 @@
 package org.thp.thehive.connector.cortex
 
 import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
 import com.typesafe.config.ConfigFactory
 import org.thp.cortex.client.{CortexClient, CortexClientConfig, TestCortexClientProvider}
-import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.ConfigItem
+import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl}
 import org.thp.thehive.connector.cortex.services.{CortexActor, CortexTag}
 import org.thp.thehive.services.{TheHiveTestModule, WithTheHiveModule}
-import org.thp.thehive.{DatabaseBuilderModule, JanusDatabaseProvider, LogFileConfig, TestApplication, TestConfigItem, TheHiveModule}
+import org.thp.thehive._
 import play.api.{Configuration, Mode}
 
 import java.io.File
@@ -63,7 +62,6 @@ class CortexTestConnector(app: ScalligraphApplication) extends CortexConnector(a
   import com.softwaremill.tagging._
 
   val thehiveModule: TheHiveModule = app.getModule[TheHiveModule]
-  import thehiveModule.applicationConfig
 
   lazy val cortexClient: CortexClient                                                     = wire[TestCortexClientProvider].get
   override lazy val clientsConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]] = TestConfigItem(Seq(cortexClient))

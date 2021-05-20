@@ -3,7 +3,6 @@ package org.thp.thehive.connector.cortex.services
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityIdOrName, InternalError}
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.controllers.v0.Conversion._
@@ -23,7 +22,7 @@ class ActionOperationSrv(
     logSrv: LogSrv,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv
-) {
+) extends CortexOps {
   private[ActionOperationSrv] lazy val logger: Logger = Logger(getClass)
 
   /**

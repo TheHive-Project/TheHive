@@ -9,8 +9,7 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.traversal.{Graph, TraversalOps}
 import org.thp.thehive.connector.cortex.models.CortexSchemaDefinition
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
@@ -102,7 +101,8 @@ class Output(
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
     db: Database
-) extends migration.Output {
+) extends migration.Output
+    with TraversalOps {
   lazy val logger: Logger = Logger(getClass)
   val defaultUserDomain: String = userSrv
     .defaultUserDomain

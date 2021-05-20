@@ -4,8 +4,7 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal, TraversalOps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.{CustomField, Permissions}
@@ -22,7 +21,8 @@ class CustomFieldCtrl(
     override val publicData: PublicCustomField,
     override val queryExecutor: QueryExecutor
 ) extends QueryCtrl
-    with AuditRenderer {
+    with AuditRenderer
+    with TraversalOps {
   def create: Action[AnyContent] =
     entrypoint("create custom field")
       .extract("customField", FieldsParser[InputCustomField])
@@ -84,7 +84,7 @@ class CustomFieldCtrl(
       }
 }
 
-class PublicCustomField(customFieldSrv: CustomFieldSrv) extends PublicData {
+class PublicCustomField(customFieldSrv: CustomFieldSrv) extends PublicData with TraversalOps {
   override val entityName: String  = "CustomField"
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](

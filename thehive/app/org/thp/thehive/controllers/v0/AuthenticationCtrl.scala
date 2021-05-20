@@ -3,11 +3,9 @@ package org.thp.thehive.controllers.v0
 import org.thp.scalligraph.auth.{AuthSrv, RequestOrganisation}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{AuthorizationError, EntityIdOrName, EntityName}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.services.UserOps._
-import org.thp.thehive.services.UserSrv
+import org.thp.thehive.services.{TheHiveOpsNoDeps, UserSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.ExecutionContext
@@ -20,7 +18,7 @@ class AuthenticationCtrl(
     userSrv: UserSrv,
     db: Database,
     implicit val ec: ExecutionContext
-) {
+) extends TheHiveOpsNoDeps {
 
   def logout: Action[AnyContent] =
     entrypoint("logout") { _ =>

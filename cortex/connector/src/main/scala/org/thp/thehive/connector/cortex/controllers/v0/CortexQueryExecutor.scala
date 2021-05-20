@@ -7,13 +7,12 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Traversal
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
 import org.thp.thehive.connector.cortex.models.Job
-import org.thp.thehive.connector.cortex.services.JobOps._
+import org.thp.thehive.connector.cortex.services.CortexOps
 import org.thp.thehive.controllers.v0._
 import org.thp.thehive.models.Observable
-import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 
 import scala.reflect.runtime.{universe => ru}
 
@@ -60,7 +59,7 @@ class CortexQueryExecutor(
   override val version: (Int, Int) = 0 -> 1
 }
 
-class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
+class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] with CortexOps with TheHiveOpsNoDeps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -77,7 +76,9 @@ class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.U
   *
   * @param parentFilter the query
   */
-class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk]) extends InputQuery[Traversal.Unk, Traversal.Unk] {
+class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk])
+    extends InputQuery[Traversal.Unk, Traversal.Unk]
+    with CortexOps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -95,7 +96,8 @@ class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Trave
 }
 
 class CortexChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal.Unk, Traversal.Unk])
-    extends InputQuery[Traversal.Unk, Traversal.Unk] {
+    extends InputQuery[Traversal.Unk, Traversal.Unk]
+    with CortexOps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,

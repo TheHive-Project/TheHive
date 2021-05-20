@@ -14,19 +14,14 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.services.config.ConfigItem
-import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{EntityId, EntityIdOrName, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.Conversion._
-import org.thp.thehive.connector.cortex.services.JobOps._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.CaseOps._
-import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableTypeSrv, ReportTagSrv}
+import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsString, Json}
 
 import java.nio.file.Files
@@ -46,7 +41,8 @@ class JobSrv(
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
-) extends VertexSrv[Job] {
+) extends VertexSrv[Job]
+    with CortexOps {
 
   lazy val cortexActor: ActorRef @@ CortexTag = _cortexActor
   val observableJobSrv                        = new EdgeSrv[ObservableJob, Observable, Job]
@@ -285,7 +281,7 @@ class JobSrv(
 
 }
 
-object JobOps {
+trait JobOps extends TheHiveOpsNoDeps { _: CortexOps =>
 
   implicit class JobOpsDefs(traversal: Traversal.V[Job]) {
 
