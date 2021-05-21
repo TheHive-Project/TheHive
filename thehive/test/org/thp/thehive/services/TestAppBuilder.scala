@@ -3,7 +3,6 @@ package org.thp.thehive.services
 import akka.actor.ActorRef
 import com.softwaremill.macwire.akkasupport.wireAnonymousActor
 import org.thp.scalligraph.models.Database
-import org.thp.scalligraph.services.config.ConfigTag
 import org.thp.scalligraph.{ScalligraphApplication, ScalligraphApplicationImpl, ScalligraphModule}
 import org.thp.thehive._
 import org.thp.thehive.services.notification.NotificationTag
@@ -43,7 +42,6 @@ class TheHiveTestModule(app: ScalligraphApplication) extends TheHiveModule(app) 
 
   lazy val dummyActor: ActorRef                                        = wireAnonymousActor[DummyActor]
   override lazy val notificationActor: ActorRef @@ NotificationTag     = dummyActor.taggedWith[NotificationTag]
-  override lazy val configActor: ActorRef @@ ConfigTag                 = dummyActor.taggedWith[ConfigTag]
   override lazy val flowActor: ActorRef @@ FlowTag                     = dummyActor.taggedWith[FlowTag]
   override lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag = dummyActor.taggedWith[IntegrityCheckTag]
 }

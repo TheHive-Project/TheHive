@@ -17,7 +17,7 @@ class TagSrvTest extends PlaySpecification with TestAppBuilder {
       "be parsed from namespace:predicate" in testApp { app =>
         import app.thehiveModule._
 
-        tagSrv.fromString("namespace:predicate") must beSome("namespace", "predicate", None)
+        tagSrv.fromString("namespace:predicate") must beSome(("namespace", "predicate", None))
       }
 
       "be parsed from namespace:predicate=" in testApp { app =>
@@ -29,13 +29,13 @@ class TagSrvTest extends PlaySpecification with TestAppBuilder {
       "be parsed from namespace: predicate" in testApp { app =>
         import app.thehiveModule._
 
-        tagSrv.fromString("namespace: predicate") must beSome("namespace", "predicate", None)
+        tagSrv.fromString("namespace: predicate") must beSome(("namespace", "predicate", None))
       }
 
       "be parsed from namespace:predicate=value" in testApp { app =>
         import app.thehiveModule._
 
-        tagSrv.fromString("namespace:predicate=value") must beSome("namespace", "predicate", Some("value"))
+        tagSrv.fromString("namespace:predicate=value") must beSome(("namespace", "predicate", Some("value")))
       }
     }
 

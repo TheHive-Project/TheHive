@@ -1,4 +1,4 @@
 [submodule "ScalliGraph"]
-	path = ScalliGraph
+	path = scalligraph
 	url = ../scalligraph.git
 	branch = develop

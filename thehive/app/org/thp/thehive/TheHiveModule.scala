@@ -5,9 +5,8 @@ import com.softwaremill.macwire.Module
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Schema
-import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigActor, ConfigTag}
-import org.thp.scalligraph.services.{EventSrv, GenIntegrityCheckOps}
-import org.thp.scalligraph.{ActorSingletonUtils, ErrorHandler, ScalligraphApplication, ScalligraphModule, SemiMutableSeq}
+import org.thp.scalligraph.services.GenIntegrityCheckOps
+import org.thp.scalligraph.{ActorSingletonUtils, ErrorHandler, InternalError, LazyMutableSeq, ScalligraphApplication, ScalligraphModule}
 import org.thp.thehive.controllers.ModelDescription
 import org.thp.thehive.models.TheHiveSchemaDefinition
 import org.thp.thehive.services.notification.notifiers._
@@ -27,16 +26,13 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
 
   lazy val logger: Logger                                 = Logger(getClass)
   lazy val notificationActor: ActorRef @@ NotificationTag = wireActor[NotificationActor]("notification").taggedWith[NotificationTag]
-  lazy val configActor: ActorRef @@ ConfigTag             = wireActorSingleton(actorSystem, wireProps[ConfigActor], "config-actor").taggedWith[ConfigTag]
   lazy val flowActor: ActorRef @@ FlowTag                 = wireActorSingleton(actorSystem, wireProps[FlowActor], "flow-actor").taggedWith[FlowTag]
   lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag =
     wireActorSingleton(actorSystem, wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
 
-  lazy val eventSrv: EventSrv                       = wire[EventSrv]
   lazy val auditSrv: AuditSrv                       = wire[AuditSrv]
   lazy val roleSrv: RoleSrv                         = wire[RoleSrv]
   lazy val organisationSrv: OrganisationSrv         = wire[OrganisationSrv]
-  lazy val applicationConfig: ApplicationConfig     = wire[ApplicationConfig]
   lazy val userSrv: TheHiveUserSrv                  = wire[TheHiveUserSrv]
   lazy val localUsrSrv: LocalUserSrv                = wire[LocalUserSrv]
   lazy val taxonomySrv: TaxonomySrv                 = wire[TaxonomySrv]
@@ -64,9 +60,9 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   lazy val patternSrv: PatternSrv                   = wire[PatternSrv]
   lazy val procedureSrv: ProcedureSrv               = wire[ProcedureSrv]
 
-  lazy val connectors: SemiMutableSeq[Connector] = SemiMutableSeq[Connector]
+  lazy val connectors: LazyMutableSeq[Connector] = LazyMutableSeq[Connector]
 
-  lazy val authSrv: AuthSrv = wire[TOTPAuthSrv]
+//  lazy val authSrv: AuthSrv = wire[TOTPAuthSrv]
 
   app.authSrvProviders += wire[ADAuthProvider]
   app.authSrvProviders += wire[LdapAuthProvider]
@@ -78,7 +74,7 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   app.authSrvProviders += wire[SessionAuthProvider]
   app.authSrvProviders += wire[OAuth2Provider]
 
-  lazy val triggerProviders: SemiMutableSeq[TriggerProvider] = SemiMutableSeq[TriggerProvider](
+  lazy val triggerProviders: LazyMutableSeq[TriggerProvider] = LazyMutableSeq[TriggerProvider](
     () => wire[AlertCreatedProvider],
     () => wire[AnyEventProvider],
     () => wire[CaseCreatedProvider],
@@ -89,14 +85,14 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
     () => wire[CaseShareProvider]
   )
 
-  lazy val schema: Schema = app.schemas.reduceOption[Schema](_ + _).getOrElse(???)
-  lazy val notifierProviders: SemiMutableSeq[NotifierProvider] = SemiMutableSeq(
+  lazy val schema: Schema = app.schemas.reduceOption[Schema](_ + _).getOrElse(throw InternalError("No schema defined"))
+  lazy val notifierProviders: LazyMutableSeq[NotifierProvider] = LazyMutableSeq(
     () => wire[AppendToFileProvider],
     () => wire[EmailerProvider],
     () => wire[MattermostProvider],
     () => wire[WebhookProvider]
   )
-  lazy val integrityChecks: SemiMutableSeq[GenIntegrityCheckOps] = SemiMutableSeq(
+  lazy val integrityChecks: LazyMutableSeq[GenIntegrityCheckOps] = LazyMutableSeq(
     () => wire[ProfileIntegrityCheckOps],
     () => wire[OrganisationIntegrityCheckOps],
     () => wire[TagIntegrityCheckOps],
@@ -126,5 +122,5 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
 
   app.schemas += TheHiveSchemaDefinition
 
-  val entityDescriptions: SemiMutableSeq[(Int, ModelDescription)] = SemiMutableSeq[(Int, ModelDescription)]
+  val entityDescriptions: LazyMutableSeq[(Int, ModelDescription)] = LazyMutableSeq[(Int, ModelDescription)]
 }

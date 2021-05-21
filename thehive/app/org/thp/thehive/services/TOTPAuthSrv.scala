@@ -5,7 +5,8 @@ import org.thp.scalligraph.auth._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.{Graph, TraversalOps}
-import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCodeRequired}
+import org.thp.scalligraph.{AuthenticationError, EntityIdOrName, MultiFactorCodeRequired, ScalligraphApplication}
+import org.thp.thehive.TheHiveModule
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
@@ -13,7 +14,6 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import javax.inject.Provider
 import scala.util.{Failure, Random, Success, Try}
 
 class TOTPAuthSrv(
@@ -96,11 +96,17 @@ class TOTPAuthSrv(
 }
 
 class TOTPAuthSrvProvider(
-    configuration: Configuration,
     appConfig: ApplicationConfig,
     authProviders: Seq[AuthSrvProvider],
     userSrv: UserSrv,
     db: Database
-) extends Provider[AuthSrv] {
-  override def get(): AuthSrv = new TOTPAuthSrv(configuration, appConfig, authProviders, userSrv, db)
+) extends AuthSrvProvider {
+  def this(app: ScalligraphApplication, thehiveModule: TheHiveModule) =
+    this(app.applicationConfig, app.authSrvProviders, thehiveModule.userSrv, app.database)
+
+  def this(app: ScalligraphApplication) = this(app, app.getModule[TheHiveModule])
+
+  override val name: String = "TOTP"
+
+  override def apply(configuration: Configuration): Try[AuthSrv] = Try(new TOTPAuthSrv(configuration, appConfig, authProviders, userSrv, db))
 }

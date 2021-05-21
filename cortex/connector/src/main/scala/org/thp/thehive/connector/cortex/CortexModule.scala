@@ -18,7 +18,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-class CortexConnector(app: ScalligraphApplication, theHiveModule: TheHiveModule)
+class CortexModule(app: ScalligraphApplication, theHiveModule: TheHiveModule)
     extends TheHiveConnector
     with ScalligraphModule
     with ActorSingletonUtils {
@@ -28,7 +28,6 @@ class CortexConnector(app: ScalligraphApplication, theHiveModule: TheHiveModule)
   import com.softwaremill.macwire._
   import com.softwaremill.macwire.akkasupport._
   import com.softwaremill.tagging._
-  import theHiveModule.applicationConfig
 
   override val name: String = "cortex"
 

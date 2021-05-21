@@ -17,17 +17,13 @@ import scala.concurrent.duration.FiniteDuration
 sealed trait SyncInterval
 sealed trait SyncInitialDelay
 
-class MispConnector(app: ScalligraphApplication, theHiveModule: TheHiveModule)
-    extends TheHiveConnector
-    with ActorSingletonUtils
-    with ScalligraphModule {
+class MispModule(app: ScalligraphApplication, theHiveModule: TheHiveModule) extends TheHiveConnector with ActorSingletonUtils with ScalligraphModule {
   def this(app: ScalligraphApplication) = this(app, app.getModule[TheHiveModule])
 
-  import app.{executionContext, materializer, _}
+  import app._
   import com.softwaremill.macwire._
   import com.softwaremill.macwire.akkasupport._
   import com.softwaremill.tagging._
-  import theHiveModule.applicationConfig
 
   override val name: String = "misp"
 

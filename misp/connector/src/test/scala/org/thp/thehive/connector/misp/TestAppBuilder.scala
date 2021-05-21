@@ -16,7 +16,7 @@ trait TestAppBuilder extends LogFileConfig {
 
   def buildTheHiveModule(app: ScalligraphApplication): TheHiveModule = new TheHiveTestModule(app)
 
-  def buildMispConnector(app: ScalligraphApplication): MispTestConnector = new MispTestConnector(app)
+  def buildMispConnector(app: ScalligraphApplication): MispTestModule = new MispTestModule(app)
 
   def buildDatabase(db: Database): Try[Unit] = new DatabaseBuilderModule(buildApp(db)).databaseBuilder.build(db)
 
@@ -24,7 +24,7 @@ trait TestAppBuilder extends LogFileConfig {
     new TestApplication(db, testApplicationNoDatabase) with WithTheHiveModule with WithMispConnector {
       override val thehiveModule: TheHiveModule = buildTheHiveModule(this)
       injectModule(thehiveModule)
-      override val mispConnector: MispTestConnector = buildMispConnector(this)
+      override val mispConnector: MispTestModule = buildMispConnector(this)
       injectModule(mispConnector)
     }
 
@@ -37,10 +37,10 @@ trait TestAppBuilder extends LogFileConfig {
 }
 
 trait WithMispConnector {
-  val mispConnector: MispTestConnector
+  val mispConnector: MispTestModule
 }
 
-class MispTestConnector(app: ScalligraphApplication) extends MispConnector(app) {
+class MispTestModule(app: ScalligraphApplication) extends MispModule(app) {
 
   import com.softwaremill.macwire._
 

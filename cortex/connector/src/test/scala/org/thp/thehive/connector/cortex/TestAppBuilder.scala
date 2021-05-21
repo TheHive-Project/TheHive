@@ -20,7 +20,7 @@ trait TestAppBuilder extends LogFileConfig {
 
   def buildTheHiveModule(app: ScalligraphApplication): TheHiveModule = new TheHiveTestModule(app)
 
-  def buildCortexConnector(app: ScalligraphApplication): CortexTestConnector = new CortexTestConnector(app)
+  def buildCortexConnector(app: ScalligraphApplication): CortexTestModule = new CortexTestModule(app)
 
   def buildDatabase(db: Database): Try[Unit] = new DatabaseBuilderModule(buildApp(db)).databaseBuilder.build(db)
 
@@ -40,7 +40,7 @@ trait TestAppBuilder extends LogFileConfig {
 
       override val thehiveModule: TheHiveModule = buildTheHiveModule(this)
       injectModule(thehiveModule)
-      override val cortexConnector: CortexTestConnector = buildCortexConnector(this)
+      override val cortexConnector: CortexTestModule = buildCortexConnector(this)
       injectModule(cortexConnector)
     }
 
@@ -53,10 +53,10 @@ trait TestAppBuilder extends LogFileConfig {
 }
 
 trait WithCortexModule {
-  val cortexConnector: CortexTestConnector
+  val cortexConnector: CortexTestModule
 }
 
-class CortexTestConnector(app: ScalligraphApplication) extends CortexConnector(app) {
+class CortexTestModule(app: ScalligraphApplication) extends CortexModule(app) {
   import com.softwaremill.macwire._
   import com.softwaremill.macwire.akkasupport._
   import com.softwaremill.tagging._

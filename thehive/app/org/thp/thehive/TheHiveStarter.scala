@@ -9,7 +9,8 @@ import java.io.File
 
 object TheHiveStarter extends App {
 
-  val mode: Mode = if (args.contains("--dev")) Mode.Dev else Mode.Prod
+  lazy val logger: Logger = Logger(getClass)
+  val mode: Mode          = if (args.contains("--dev")) Mode.Dev else Mode.Prod
   startService(mode)
 
   def startService(mode: Mode): Unit = {
@@ -20,9 +21,21 @@ object TheHiveStarter extends App {
       val scalligraphApplication = new ScalligraphApplicationImpl(config.rootDir, process.classLoader, mode)
       try {
         scalligraphApplication.init()
+
+        val playModules      = scalligraphApplication.configuration.getOptional[Seq[String]]("play.modules.enabled").getOrElse(Nil)
+        val loadMispModule   = playModules.contains("org.thp.thehive.connector.misp.MispModule")
+        val loadCortexModule = playModules.contains("org.thp.thehive.connector.cortex.CortexModule")
+        if (loadMispModule || loadCortexModule)
+          logger.warn("play.modules.enabled is deprecated in application.conf, use scalligraph.modules")
+        if (loadMispModule)
+          scalligraphApplication.loadModule("org.thp.thehive.connector.misp.MispModule")
+        if (loadCortexModule)
+          scalligraphApplication.loadModule("org.thp.thehive.connector.cortex.CortexModule")
+
         scalligraphApplication.application
       } catch {
         case e: Throwable =>
+          logger.error("TheHive startup failure", e)
           scalligraphApplication.coordinatedShutdown.run(ApplicationShutdownReason).map(_ => System.exit(1))(scalligraphApplication.executionContext)
           throw e
       }

@@ -19,9 +19,10 @@ object Shell extends App {
   try {
     val thehiveModule = new TheHiveModule(app)
     val shellModule   = new ShellModule(app, thehiveModule)
+    app.initializeLogger()
     app.database.tryTransaction { implicit graph =>
       TheHiveOps(thehiveModule.organisationSrv, thehiveModule.customFieldSrv) { ops =>
-        val a = ammonite
+        ammonite
           .Main(
             predefCode = """
                            |import ops._

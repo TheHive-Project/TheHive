@@ -1,13 +1,15 @@
 package org.thp.thehive
 
 import _root_.controllers.Assets
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.Materializer
-import org.thp.scalligraph.auth.AuthSrvProvider
+import com.softwaremill.tagging.@@
+import org.thp.scalligraph.auth.{AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
 import org.thp.scalligraph.query.QueryExecutor
-import org.thp.scalligraph.services.StorageSrv
-import org.thp.scalligraph.{BadRequestError, ScalligraphApplication, ScalligraphModule, SemiMutableSeq, SingleInstance}
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigTag}
+import org.thp.scalligraph.services.{EventSrv, StorageSrv}
+import org.thp.scalligraph.{BadRequestError, LazyMutableSeq, ScalligraphApplication, ScalligraphModule, SingleInstance}
 import play.api.cache.SyncCacheApi
 import play.api.http.{FileMimeTypes, HttpConfiguration}
 import play.api.libs.Files.{TemporaryFileCreator, TemporaryFileReaper}
@@ -29,7 +31,7 @@ class TestApplication(override val database: Database, testApplicationNoDatabase
     }
 
   override lazy val fileMimeTypes: FileMimeTypes                 = testApplicationNoDatabase.fileMimeTypes
-  override val routers: SemiMutableSeq[Router]                   = SemiMutableSeq[Router]
+  override val routers: LazyMutableSeq[Router]                   = LazyMutableSeq[Router]
   override lazy val tempFileCreator: TemporaryFileCreator        = testApplicationNoDatabase.tempFileCreator
   override lazy val tempFileReaper: TemporaryFileReaper          = testApplicationNoDatabase.tempFileReaper
   override lazy val singleInstance: SingleInstance               = testApplicationNoDatabase.singleInstance
@@ -45,9 +47,13 @@ class TestApplication(override val database: Database, testApplicationNoDatabase
   override lazy val httpConfiguration: HttpConfiguration         = testApplicationNoDatabase.httpConfiguration
   implicit override val executionContext: ExecutionContext       = testApplicationNoDatabase.executionContext
   override def assets: Assets                                    = testApplicationNoDatabase.assets
-  override val schemas: SemiMutableSeq[UpdatableSchema]          = SemiMutableSeq[UpdatableSchema]
-  override val queryExecutors: SemiMutableSeq[QueryExecutor]     = SemiMutableSeq[QueryExecutor]
-  override val authSrvProviders: SemiMutableSeq[AuthSrvProvider] = SemiMutableSeq[AuthSrvProvider]
+  override val schemas: LazyMutableSeq[UpdatableSchema]          = LazyMutableSeq[UpdatableSchema]
+  override val queryExecutors: LazyMutableSeq[QueryExecutor]     = LazyMutableSeq[QueryExecutor]
+  override val authSrvProviders: LazyMutableSeq[AuthSrvProvider] = LazyMutableSeq[AuthSrvProvider]
+  override def configActor: ActorRef @@ ConfigTag                = testApplicationNoDatabase.configActor
+  override def eventSrv: EventSrv                                = testApplicationNoDatabase.eventSrv
+  override def applicationConfig: ApplicationConfig              = testApplicationNoDatabase.applicationConfig
+  override def authSrv: AuthSrv                                  = testApplicationNoDatabase.authSrv
 
   LoggerConfigurator(context.environment.classLoader).foreach {
     _.configure(context.environment, context.initialConfiguration, Map.empty)
@@ -60,5 +66,4 @@ class TestApplication(override val database: Database, testApplicationNoDatabase
   }
   override def injectModule(module: ScalligraphModule): Unit = _loadedModules = _loadedModules :+ module
   override def loadedModules: Seq[ScalligraphModule]         = _loadedModules
-
 }

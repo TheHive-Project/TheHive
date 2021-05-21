@@ -34,11 +34,11 @@
 
 set -o pipefail
 
-declare -r sbt_release_version="1.4.6"
-declare -r sbt_unreleased_version="1.4.6"
+declare -r sbt_release_version="1.5.1"
+declare -r sbt_unreleased_version="1.5.1"
 
-declare -r latest_213="2.13.4"
-declare -r latest_212="2.12.12"
+declare -r latest_213="2.13.5"
+declare -r latest_212="2.12.13"
 declare -r latest_211="2.11.12"
 declare -r latest_210="2.10.7"
 declare -r latest_29="2.9.3"
@@ -48,7 +48,7 @@ declare -r buildProps="project/build.properties"
 
 declare -r sbt_launch_ivy_release_repo="https://repo.typesafe.com/typesafe/ivy-releases"
 declare -r sbt_launch_ivy_snapshot_repo="https://repo.scala-sbt.org/scalasbt/ivy-snapshots"
-declare -r sbt_launch_mvn_release_repo="https://repo.scala-sbt.org/scalasbt/maven-releases"
+declare -r sbt_launch_mvn_release_repo="https://repo1.maven.org/maven2"
 declare -r sbt_launch_mvn_snapshot_repo="https://repo.scala-sbt.org/scalasbt/maven-snapshots"
 
 declare -r default_jvm_opts_common="-Xms512m -Xss2m -XX:MaxInlineLevel=18"

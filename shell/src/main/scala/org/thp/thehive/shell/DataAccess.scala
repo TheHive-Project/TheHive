@@ -1,11 +1,8 @@
 package org.thp.thehive.shell
 
-import org.thp.scalligraph.traversal.Traversal.V
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-
-import javax.inject.{Inject, Singleton}
 
 trait DataAccess {
   def alert: Traversal.V[Alert]
@@ -29,7 +26,7 @@ trait DataAccess {
   def user: Traversal.V[User]
 }
 
-class DataAccessProvider (
+class DataAccessProvider(
     alertSrv: AlertSrv,
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
