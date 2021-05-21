@@ -4,15 +4,17 @@ import org.scalactic.Accumulation._
 import org.scalactic.{Bad, Good, One}
 import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers._
+import org.thp.thehive.dto.{Description, String128, String16, String64}
 import play.api.libs.json._
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputCustomField(
-    name: String,
-    displayName: Option[String],
-    description: String,
-    `type`: String,
+    name: String64,
+    displayName: Option[String64],
+    description: Description,
+    `type`: String16,
     mandatory: Option[Boolean],
     options: Seq[JsValue] = Nil
 )
@@ -40,7 +42,7 @@ object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]
 }
 
-case class InputCustomFieldValue(name: String, value: Option[Any], order: Option[Int])
+case class InputCustomFieldValue(name: String64, value: Option[Any], order: Option[Int])
 
 object InputCustomFieldValue {
 
@@ -57,7 +59,7 @@ object InputCustomFieldValue {
       fields
         .toSeq
         .validatedBy {
-          case (name, valueField) => valueParser(valueField).map(v => InputCustomFieldValue(name, v, None))
+          case (name, valueField) => valueParser(valueField).map(v => InputCustomFieldValue(String64("customField.name", name), v, None))
         }
         .map(_.toSeq)
     case (_, FSeq(list)) =>
@@ -68,7 +70,7 @@ object InputCustomFieldValue {
             for {
               name  <- FieldsParser.string(cf.get("name"))
               value <- valueParser(cf.get("value"))
-            } yield InputCustomFieldValue(name, value, order)
+            } yield InputCustomFieldValue(String64("customField.name", name), value, order)
           case other =>
             Bad(
               One(
@@ -81,12 +83,12 @@ object InputCustomFieldValue {
 
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {
-      case InputCustomFieldValue(name, Some(s: String), _)  => name -> JsString(s)
-      case InputCustomFieldValue(name, Some(l: Long), _)    => name -> JsNumber(l)
-      case InputCustomFieldValue(name, Some(d: Double), _)  => name -> JsNumber(d)
-      case InputCustomFieldValue(name, Some(b: Boolean), _) => name -> JsBoolean(b)
-      case InputCustomFieldValue(name, Some(d: Date), _)    => name -> JsNumber(d.getTime)
-      case InputCustomFieldValue(name, None, _)             => name -> JsNull
+      case InputCustomFieldValue(name, Some(s: String), _)  => name.value -> JsString(s)
+      case InputCustomFieldValue(name, Some(l: Long), _)    => name.value -> JsNumber(l)
+      case InputCustomFieldValue(name, Some(d: Double), _)  => name.value -> JsNumber(d)
+      case InputCustomFieldValue(name, Some(b: Boolean), _) => name.value -> JsBoolean(b)
+      case InputCustomFieldValue(name, Some(d: Date), _)    => name.value -> JsNumber(d.getTime)
+      case InputCustomFieldValue(name, None, _)             => name.value -> JsNull
       case InputCustomFieldValue(name, other, _)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
     }
     // TODO Change JsObject to JsArray ?

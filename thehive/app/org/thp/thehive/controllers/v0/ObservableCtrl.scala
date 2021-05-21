@@ -63,7 +63,7 @@ class ObservableCtrl(
                   .get(EntityIdOrName(caseId))
                   .can(Permissions.manageObservable)
                   .orFail(AuthorizationError("Operation not permitted"))
-              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
+              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType.value))
             } yield (case0, observableType)
           }
           .map {
@@ -74,7 +74,7 @@ class ObservableCtrl(
                     .flatMap(obs => obs.attachment.map(createAttachmentObservableInCase(case0, obs, _)))
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservableInCase(case0, obs, _)))
+                    .flatMap(obs => obs.data.map(d => createSimpleObservableInCase(case0, obs, d.value)))
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -110,14 +110,14 @@ class ObservableCtrl(
             caseSrv.createObservable(`case`, inputObservable.toObservable, file)
           case Right(attachment) =>
             for {
-              attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
+              attach <- attachmentSrv.duplicate(attachment.name.value, attachment.contentType.value, attachment.id.value)
               obs    <- caseSrv.createObservable(`case`, inputObservable.toObservable, attach)
             } yield obs
         }
       } match {
       case Success(o) => Right(o.toJson)
       case _ =>
-        val filename = fileOrAttachment.fold(_.filename, _.name)
+        val filename = fileOrAttachment.fold(_.filename, _.name.value)
         Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
     }
 
@@ -140,7 +140,7 @@ class ObservableCtrl(
                   .get(EntityIdOrName(alertId))
                   .can(Permissions.manageAlert)
                   .orFail(AuthorizationError("Operation not permitted"))
-              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType))
+              observableType <- observableTypeSrv.getOrFail(EntityName(inputObservable.dataType.value))
             } yield (alert, observableType)
           }
           .map {
@@ -150,12 +150,12 @@ class ObservableCtrl(
                   inputAttachObs
                     .flatMap { obs =>
                       (obs.attachment.map(_.fold(Coproduct[AnyAttachmentType](_), Coproduct[AnyAttachmentType](_))) ++
-                        obs.data.map(Coproduct[AnyAttachmentType](_)))
+                        obs.data.map(d => Coproduct[AnyAttachmentType](d.value)))
                         .map(createAttachmentObservableInAlert(alert, obs, _))
                     }
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservableInAlert(alert, obs, _)))
+                    .flatMap(obs => obs.data.map(d => createSimpleObservableInAlert(alert, obs, d.value)))
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -192,7 +192,7 @@ class ObservableCtrl(
           }
           implicit val fromAttachment: Case.Aux[InputAttachment, Try[RichObservable]] = at[InputAttachment] { attachment =>
             for {
-              attach <- attachmentSrv.duplicate(attachment.name, attachment.contentType, attachment.id)
+              attach <- attachmentSrv.duplicate(attachment.name.value, attachment.contentType.value, attachment.id.value)
               obs    <- alertSrv.createObservable(alert, inputObservable.toObservable, attach)
             } yield obs
           }
@@ -219,7 +219,7 @@ class ObservableCtrl(
       case _ =>
         object attachmentName extends Poly1 {
           implicit val fromFile: Case.Aux[FFile, String]                 = at[FFile](_.filename)
-          implicit val fromAttachment: Case.Aux[InputAttachment, String] = at[InputAttachment](_.name)
+          implicit val fromAttachment: Case.Aux[InputAttachment, String] = at[InputAttachment](_.name.value)
           implicit val fromString: Case.Aux[String, String] = at[String] { data =>
             if (data.contains(';')) data.takeWhile(_ != ';') else "no name"
           }

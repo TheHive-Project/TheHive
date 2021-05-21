@@ -1,10 +1,15 @@
 package org.thp.thehive.dto.v0
 
+import org.thp.thehive.dto.{String32, String64}
 import play.api.libs.json.{Json, OFormat, OWrites}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
-case class InputProfile(name: String, permissions: Set[String])
+case class InputProfile(
+    name: String64,
+    permissions: Set[String32]
+)
 
 object InputProfile {
   implicit val writes: OWrites[InputProfile] = Json.writes[InputProfile]

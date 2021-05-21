@@ -1,25 +1,27 @@
 package org.thp.thehive.dto.v1
 
+import org.thp.thehive.dto.{Description, String128, String32}
 import play.api.libs.json._
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputProcedure(
-    description: Option[String],
+    description: Option[Description],
     occurDate: Date,
-    tactic: String,
-    caseId: String,
-    patternId: String
+    tactic: String32,
+    caseId: String128,
+    patternId: String128
 )
 
 object InputProcedure {
   implicit val reads: Reads[InputProcedure] = Reads[InputProcedure] { json =>
     for {
-      description <- (json \ "description").validateOpt[String]
+      description <- (json \ "description").validateOpt[Description]
       occurDate   <- (json \ "occurDate").validate[Date]
-      tactic      <- (json \ "tactic").validate[String]
-      caseId      <- (json \ "caseId").validate[String]
-      patternId   <- (json \ "patternId").validate[String]
+      tactic      <- (json \ "tactic").validate[String32]
+      caseId      <- (json \ "caseId").validate[String128]
+      patternId   <- (json \ "patternId").validate[String128]
     } yield InputProcedure(
       description,
       occurDate,

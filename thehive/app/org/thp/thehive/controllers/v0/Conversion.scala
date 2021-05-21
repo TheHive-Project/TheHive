@@ -1,10 +1,14 @@
 package org.thp.thehive.controllers.v0
 
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.{refineT, refineV}
+import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.{AuthContext, Permission, PermissionDesc}
 import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
+import org.thp.thehive.dto.{Description, Pap, Severity, Tlp}
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
@@ -12,6 +16,8 @@ import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 import java.util.Date
 
 object Conversion {
+  implicit def refinedTransformer[T, P]: Transformer[Refined[T, P], T] = _.value
+
   implicit class RendererOps[F, O](f: F)(implicit renderer: Renderer.Aux[F, O]) {
     def toJson: JsValue = renderer.toOutput(f).toJson
     def toValue: O      = renderer.toOutput(f).toValue
@@ -97,14 +103,14 @@ object Conversion {
     def toAlert: Alert =
       inputAlert
         .into[Alert]
-        .withFieldComputed(_.severity, _.severity.getOrElse(2))
-        .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
-        .withFieldComputed(_.pap, _.pap.getOrElse(2))
+        .withFieldComputed(_.severity, _.severity.fold(2)(_.value))
+        .withFieldComputed(_.tlp, _.tlp.fold(2)(_.value))
+        .withFieldComputed(_.pap, _.pap.fold(2)(_.value))
         .withFieldComputed(_.date, _.date.getOrElse(new Date))
         .withFieldConst(_.read, false)
         .withFieldConst(_.lastSyncDate, new Date)
         .withFieldConst(_.follow, true)
-        .withFieldConst(_.tags, inputAlert.tags.toSeq)
+        .withFieldConst(_.tags, inputAlert.tags.toSeq.map(_.value))
         .withFieldConst(_.caseId, EntityId.empty)
         .transform
   }
@@ -167,29 +173,29 @@ object Conversion {
     def toCase(implicit authContext: AuthContext): Case =
       inputCase
         .into[Case]
-        .withFieldComputed(_.severity, _.severity.getOrElse(2))
+        .withFieldComputed(_.severity, _.severity.fold(2)(_.value))
         .withFieldComputed(_.startDate, _.startDate.getOrElse(new Date))
         .withFieldComputed(_.flag, _.flag.getOrElse(false))
-        .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
-        .withFieldComputed(_.pap, _.pap.getOrElse(2))
+        .withFieldComputed(_.tlp, _.tlp.fold(2)(_.value))
+        .withFieldComputed(_.pap, _.pap.fold(2)(_.value))
         .withFieldConst(_.status, CaseStatus.Open)
-        .withFieldComputed(_.assignee, c => Some(c.user.getOrElse(authContext.userId)))
-        .withFieldComputed(_.tags, _.tags.toSeq)
+        .withFieldComputed(_.assignee, c => Some(c.user.fold(authContext.userId)(_.value)))
+        .withFieldComputed(_.tags, _.tags.toSeq.map(_.value))
         .transform
 
     def withCaseTemplate(caseTemplate: RichCaseTemplate): InputCase =
       InputCase(
-        title = caseTemplate.titlePrefix.getOrElse("") + inputCase.title,
+        title = refineV.unsafeFrom(caseTemplate.titlePrefix.getOrElse("") + inputCase.title.value),
         description = inputCase.description,
-        severity = inputCase.severity orElse caseTemplate.severity,
+        severity = inputCase.severity orElse caseTemplate.severity.map(Severity.apply),
         startDate = inputCase.startDate,
         endDate = inputCase.endDate,
         tags = inputCase.tags,
         flag = inputCase.flag orElse Some(caseTemplate.flag),
-        tlp = inputCase.tlp orElse caseTemplate.tlp,
-        pap = inputCase.pap orElse caseTemplate.pap,
+        tlp = inputCase.tlp orElse caseTemplate.tlp.map(Tlp.apply),
+        pap = inputCase.pap orElse caseTemplate.pap.map(Pap.apply),
         status = inputCase.status,
-        summary = inputCase.summary orElse caseTemplate.summary,
+        summary = inputCase.summary orElse caseTemplate.summary.map(Description("summary", _)),
         user = inputCase.user,
         customFields = inputCase.customFields
       )
@@ -223,7 +229,7 @@ object Conversion {
     def toCaseTemplate: CaseTemplate =
       inputCaseTemplate
         .into[CaseTemplate]
-        .withFieldComputed(_.displayName, _.displayName.getOrElse(""))
+        .withFieldComputed(_.displayName, _.displayName.fold("")(_.value)) // FIXME empty string ?!
         .withFieldComputed(_.flag, _.flag.getOrElse(false))
         .transform
   }
@@ -269,10 +275,10 @@ object Conversion {
     def toCustomField: CustomField =
       inputCustomField
         .into[CustomField]
-        .withFieldComputed(_.`type`, icf => CustomFieldType.withName(icf.`type`))
+        .withFieldComputed(_.`type`, icf => CustomFieldType.withName(icf.`type`.value))
         .withFieldComputed(_.mandatory, _.mandatory.getOrElse(false))
-        .withFieldComputed(_.name, _.reference)
-        .withFieldComputed(_.displayName, _.name)
+        .withFieldComputed(_.name, _.reference.value)
+        .withFieldComputed(_.displayName, _.name.value)
         .transform
   }
 
@@ -309,7 +315,7 @@ object Conversion {
     def toDashboard: Dashboard =
       inputDashboard
         .into[Dashboard]
-        .withFieldComputed(_.definition, d => Json.parse(d.definition).as[JsObject])
+        .withFieldComputed(_.definition, d => Json.parse(d.definition.value).as[JsObject])
         .transform
   }
 
@@ -367,11 +373,11 @@ object Conversion {
     def toObservable: Observable =
       inputObservable
         .into[Observable]
-        .withFieldComputed(_.tlp, _.tlp.getOrElse(2))
+        .withFieldComputed(_.tlp, _.tlp.fold(2)(_.value))
         .withFieldComputed(_.ioc, _.ioc.getOrElse(false))
         .withFieldComputed(_.sighted, _.sighted.getOrElse(false))
         .withFieldConst(_.data, None)
-        .withFieldComputed(_.tags, _.tags.toSeq)
+        .withFieldComputed(_.tags, _.tags.toSeq.map(_.value))
         .transform
   }
 
@@ -536,7 +542,7 @@ object Conversion {
     def toProfile: Profile =
       inputProfile
         .into[Profile]
-        .withFieldComputed(_.permissions, _.permissions.map(Permission.apply))
+        .withFieldComputed(_.permissions, _.permissions.map(p => Permission(p.value)))
         .transform
   }
 
@@ -562,11 +568,11 @@ object Conversion {
     def toTask: Task =
       inputTask
         .into[Task]
-        .withFieldComputed(_.status, _.status.fold(TaskStatus.Waiting)(TaskStatus.withName))
+        .withFieldComputed(_.status, _.status.fold(TaskStatus.Waiting)(s => TaskStatus.withName(s.value)))
         .withFieldComputed(_.order, _.order.getOrElse(0))
         .withFieldComputed(_.flag, _.flag.getOrElse(false))
-        .withFieldComputed(_.group, _.group.getOrElse("default"))
-        .withFieldRenamed(_.owner, _.assignee)
+        .withFieldComputed(_.group, _.group.fold("default")(_.value))
+        .withFieldComputed(_.assignee, _.owner.map(_.value))
         .transform
   }
 
@@ -610,7 +616,7 @@ object Conversion {
     def toUser: User =
       inputUser
         .into[User]
-        .withFieldComputed(_.id, _.login)
+        .withFieldComputed(_.id, _.login.value)
         .withFieldConst(_.apikey, None)
         .withFieldConst(_.password, None)
         .withFieldConst(_.locked, false)
@@ -701,7 +707,7 @@ object Conversion {
     def toPage: Page =
       inputPage
         .into[Page]
-        .withFieldComputed(_.slug, _.title.replaceAll("[^\\p{Alnum}]+", "_"))
+        .withFieldComputed(_.slug, _.title.value.replaceAll("[^\\p{Alnum}]+", "_"))
         .withFieldComputed(_.order, _.order.getOrElse(0))
         .transform
   }

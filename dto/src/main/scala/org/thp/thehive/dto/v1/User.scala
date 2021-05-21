@@ -1,11 +1,20 @@
 package org.thp.thehive.dto.v1
 
 import org.thp.scalligraph.controllers.FFile
+import org.thp.thehive.dto.{String128, String64}
 import play.api.libs.json.{Json, OFormat, Writes}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
-case class InputUser(login: String, name: String, password: Option[String], profile: String, organisation: Option[String], avatar: Option[FFile])
+case class InputUser(
+    login: String128,
+    name: String128,
+    password: Option[String128],
+    profile: String64,
+    organisation: Option[String128],
+    avatar: Option[FFile]
+)
 
 object InputUser {
   implicit val writes: Writes[InputUser] = Json.writes[InputUser]

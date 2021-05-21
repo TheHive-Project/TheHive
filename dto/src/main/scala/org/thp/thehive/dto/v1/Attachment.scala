@@ -1,8 +1,10 @@
 package org.thp.thehive.dto.v1
 
+import org.thp.thehive.dto.String128
 import play.api.libs.json.{Json, OFormat, Writes}
+import be.venneborg.refined.play.RefinedJsonFormats._
 
-case class InputAttachment(name: String, contentType: String, id: String)
+case class InputAttachment(name: String128, contentType: String128, id: String128)
 
 object InputAttachment {
   implicit val writes: Writes[InputAttachment] = Json.writes[InputAttachment]

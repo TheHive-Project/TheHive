@@ -2,22 +2,24 @@ package org.thp.thehive.dto.v0
 
 import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json._
+import be.venneborg.refined.play.RefinedJsonFormats._
+import org.thp.thehive.dto.{Description, Pap, Severity, String128, String16, String512, Tlp}
 
 import java.util.Date
 
 case class InputAlert(
-    `type`: String,
-    source: String,
-    sourceRef: String,
-    externalLink: Option[String],
-    title: String,
-    description: String,
-    severity: Option[Int] = None,
+    `type`: String16,
+    source: String16,
+    sourceRef: String128,
+    externalLink: Option[String512],
+    title: String512,
+    description: Description,
+    severity: Option[Severity] = None,
     date: Option[Date] = None,
-    tags: Set[String] = Set.empty,
+    tags: Set[String128] = Set.empty,
     flag: Option[Boolean] = None,
-    tlp: Option[Int] = None,
-    pap: Option[Int] = None,
+    tlp: Option[Tlp] = None,
+    pap: Option[Pap] = None,
     @WithParser(InputCustomFieldValue.parser)
     customFields: Seq[InputCustomFieldValue] = Nil
 )

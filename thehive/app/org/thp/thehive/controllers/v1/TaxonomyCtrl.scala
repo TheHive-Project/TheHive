@@ -80,7 +80,7 @@ class TaxonomyCtrl(
               createFromInput(taxo)
             } match {
               case Failure(e) =>
-                Json.obj("namespace" -> taxo.namespace, "status" -> "Failure", "message" -> e.getMessage)
+                Json.obj("namespace" -> taxo.namespace.value, "status" -> "Failure", "message" -> e.getMessage)
               case Success(t) =>
                 Json.obj("namespace" -> t.namespace, "status" -> "Success", "numberOfTags" -> t.tags.size)
             }
@@ -104,27 +104,28 @@ class TaxonomyCtrl(
         .entry
         .map { e =>
           Tag(
-            inputTaxo.namespace,
-            value.predicate,
-            Some(e.value),
-            e.expanded,
-            e.colour.getOrElse(tagSrv.freeTagColour)
+            inputTaxo.namespace.value,
+            value.predicate.value,
+            Some(e.value.value),
+            e.expanded.map(_.value),
+            e.colour.fold(tagSrv.freeTagColour)(_.value)
           )
         }
     }
     // Create a tag for predicates with no tags associated
 
-    val allTags = tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace, p.value, None, None, p.colour.getOrElse(tagSrv.freeTagColour)))
+    val allTags =
+      tags ++ predicateWithNoTags.map(p => Tag(inputTaxo.namespace.value, p.value.value, None, None, p.colour.fold(tagSrv.freeTagColour)(_.value)))
 
-    if (inputTaxo.namespace.isEmpty)
+    if (inputTaxo.namespace.value.isEmpty)
       Failure(BadRequestError(s"A taxonomy with no namespace cannot be imported"))
-    else if (inputTaxo.namespace.startsWith("_freetags"))
+    else if (inputTaxo.namespace.value.startsWith("_freetags"))
       Failure(BadRequestError(s"Namespace _freetags is restricted for TheHive"))
-    else if (taxonomySrv.startTraversal.alreadyImported(inputTaxo.namespace))
+    else if (taxonomySrv.startTraversal.alreadyImported(inputTaxo.namespace.value))
       // Update the taxonomy, update exisiting tags & create others
       for {
-        _           <- allTags.toTry(t => taxonomySrv.updateOrCreateTag(inputTaxo.namespace, t))
-        taxonomy    <- taxonomySrv.get(EntityIdOrName(inputTaxo.namespace)).getOrFail("Taxonomy")
+        _           <- allTags.toTry(t => taxonomySrv.updateOrCreateTag(inputTaxo.namespace.value, t))
+        taxonomy    <- taxonomySrv.get(EntityIdOrName(inputTaxo.namespace.value)).getOrFail("Taxonomy")
         updatedTaxo <- taxonomySrv.update(taxonomy, inputTaxo.toTaxonomy)
       } yield updatedTaxo
     else

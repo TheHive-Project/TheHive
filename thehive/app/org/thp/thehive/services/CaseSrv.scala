@@ -13,6 +13,7 @@ import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
+import org.thp.thehive.dto.String64
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import play.api.cache.SyncCacheApi
@@ -90,9 +91,9 @@ class CaseSrv(
       caseTemplateCf =
         caseTemplate
           .fold[Seq[RichCustomField]](Seq())(_.customFields)
-          .map(cf => InputCustomFieldValue(cf.name, cf.value, cf.order))
+          .map(cf => InputCustomFieldValue(String64("customField.name", cf.name), cf.value, cf.order))
       cfs <- cleanCustomFields(caseTemplateCf, customFields).toTry {
-        case InputCustomFieldValue(name, value, order) => createCustomField(createdCase, EntityIdOrName(name), value, order)
+        case InputCustomFieldValue(name, value, order) => createCustomField(createdCase, EntityIdOrName(name.value), value, order)
       }
 
       richCase = RichCase(createdCase, cfs, authContext.permissions)

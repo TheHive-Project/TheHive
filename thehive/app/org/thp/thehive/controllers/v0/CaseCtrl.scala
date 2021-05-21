@@ -46,7 +46,7 @@ class CaseCtrl(
               .organisations(Permissions.manageCase)
               .get(request.organisation)
               .orFail(AuthorizationError("Operation not permitted"))
-          user         <- inputCase.user.fold(userSrv.current.getOrFail("User"))(userSrv.getByName(_).getOrFail("User"))
+          user         <- inputCase.user.fold(userSrv.current.getOrFail("User"))(u => userSrv.getByName(u.value).getOrFail("User"))
           caseTemplate <- caseTemplateName.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,

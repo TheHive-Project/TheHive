@@ -6,6 +6,7 @@ import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.{EntityIdOrName, InternalError}
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.controllers.v0.Conversion._
+import org.thp.thehive.dto.{Description, String128}
 import org.thp.thehive.dto.v0.InputTask
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -58,7 +59,10 @@ class ActionOperationSrv(
       case CreateTask(title, description) =>
         for {
           case0 <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action CreateTask without case")))(Success(_))
-          _     <- caseSrv.createTask(case0, InputTask(title = title, description = Some(description)).toTask)
+          _ <- caseSrv.createTask(
+            case0,
+            InputTask(title = String128("task.title", title), description = Some(Description("task.description", description))).toTask
+          )
         } yield updateOperation(operation)
 
       case AddCustomFields(name, _, value) =>

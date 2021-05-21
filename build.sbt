@@ -174,7 +174,9 @@ lazy val thehiveDto = (project in file("dto"))
     name := "thehive-dto",
     version := thehiveVersion,
     libraryDependencies ++= Seq(
-      aix
+      aix,
+      refined,
+      playRefined
     )
   )
 

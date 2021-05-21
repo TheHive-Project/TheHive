@@ -3,20 +3,22 @@ package org.thp.thehive.dto.v0
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
+import org.thp.thehive.dto.{Description, String128, String16, String512, Tlp}
 import play.api.libs.json.{JsObject, Json, OFormat, Writes}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputObservable(
-    dataType: String,
+    dataType: String16,
     @WithParser(InputObservable.dataParser)
-    data: Seq[String] = Nil,
-    message: Option[String] = None,
+    data: Seq[String512] = Nil,
+    message: Option[Description] = None,
     startDate: Option[Date] = None,
     @WithParser(InputObservable.fileOrAttachmentParser)
     attachment: Seq[Either[FFile, InputAttachment]] = Seq.empty,
-    tlp: Option[Int] = None,
-    tags: Set[String] = Set.empty,
+    tlp: Option[Tlp] = None,
+    tags: Set[String128] = Set.empty,
     ioc: Option[Boolean] = None,
     sighted: Option[Boolean] = None,
     ignoreSimilarity: Option[Boolean] = None

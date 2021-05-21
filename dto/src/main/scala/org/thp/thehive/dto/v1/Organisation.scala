@@ -1,10 +1,12 @@
 package org.thp.thehive.dto.v1
 
+import org.thp.thehive.dto.{Description, String64}
 import play.api.libs.json.{Format, Json, Writes}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
-case class InputOrganisation(name: String, description: String)
+case class InputOrganisation(name: String64, description: Description)
 
 object InputOrganisation {
   implicit val writes: Writes[InputOrganisation] = Json.writes[InputOrganisation]

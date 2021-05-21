@@ -1,20 +1,22 @@
 package org.thp.thehive.dto.v1
 
+import org.thp.thehive.dto.{Description, String128, String16, String32}
 import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputTask(
-    title: String,
-    group: Option[String] = None,
-    description: Option[String] = None,
-    status: Option[String] = None,
+    title: String128,
+    group: Option[String32] = None,
+    description: Option[Description] = None,
+    status: Option[String16] = None,
     flag: Option[Boolean] = None,
     startDate: Option[Date] = None,
     endDate: Option[Date] = None,
     order: Option[Int] = None,
     dueDate: Option[Date] = None,
-    assignee: Option[String] = None
+    assignee: Option[String128] = None
 )
 
 object InputTask {

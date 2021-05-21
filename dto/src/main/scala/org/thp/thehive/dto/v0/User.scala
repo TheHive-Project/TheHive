@@ -1,16 +1,18 @@
 package org.thp.thehive.dto.v0
 
 import org.thp.scalligraph.controllers.FFile
+import org.thp.thehive.dto.{String128, String64}
 import play.api.libs.json.{Json, OFormat, Writes}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputUser(
-    login: String,
-    name: String,
-    roles: Seq[String],
-    password: Option[String],
-    organisation: Option[String] = None,
+    login: String128,
+    name: String128,
+    roles: Seq[String64],
+    password: Option[String128],
+    organisation: Option[String64] = None,
     avatar: Option[FFile]
 )
 

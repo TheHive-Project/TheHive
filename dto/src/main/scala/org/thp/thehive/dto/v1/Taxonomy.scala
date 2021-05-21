@@ -1,9 +1,11 @@
 package org.thp.thehive.dto.v1
 
+import org.thp.thehive.dto.{Color, Description, String128}
 import play.api.libs.json.Json.WithDefaultValues
 import play.api.libs.json.{JsObject, Json, OFormat}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
 /*
 Format based on :
@@ -11,8 +13,8 @@ https://tools.ietf.org/id/draft-dulaunoy-misp-taxonomy-format-04.html
  */
 
 case class InputTaxonomy(
-    namespace: String,
-    description: String,
+    namespace: String128,
+    description: Description,
     version: Int,
     exclusive: Option[Boolean],
     predicates: Seq[InputPredicate],
@@ -20,23 +22,23 @@ case class InputTaxonomy(
 )
 
 case class InputPredicate(
-    value: String,
-    expanded: Option[String],
+    value: String128,
+    expanded: Option[String128],
     exclusive: Option[Boolean],
-    description: Option[String],
-    colour: Option[String]
+    description: Option[Description],
+    colour: Option[Color]
 )
 
 case class InputValue(
-    predicate: String,
+    predicate: String128,
     entry: Seq[InputEntry]
 )
 
 case class InputEntry(
-    value: String,
-    expanded: Option[String],
-    colour: Option[String],
-    description: Option[String],
+    value: String128,
+    expanded: Option[String128],
+    colour: Option[Color],
+    description: Option[Description],
     numerical_value: Option[Int]
 )
 

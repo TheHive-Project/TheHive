@@ -472,7 +472,7 @@ class Output(
         _ = inputCaseTemplate.customFields.foreach {
           case InputCustomFieldValue(name, value, order) =>
             (for {
-              cf  <- getCustomField(name)
+              cf  <- getCustomField(name.value)
               ccf <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), value)
               _   <- caseTemplateSrv.caseTemplateCustomFieldSrv.create(ccf, createdCaseTemplate, cf)
             } yield ()).logFailure(s"Unable to set custom field $name=${value.getOrElse("<not set>")}")

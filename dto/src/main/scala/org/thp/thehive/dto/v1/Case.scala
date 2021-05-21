@@ -4,22 +4,24 @@ import ai.x.play.json.Encoders.encoder
 import ai.x.play.json.Jsonx
 import org.thp.scalligraph.controllers.WithParser
 import play.api.libs.json._
+import be.venneborg.refined.play.RefinedJsonFormats._
+import org.thp.thehive.dto.{Description, Pap, Severity, String128, String16, String512, Tlp}
 
 import java.util.Date
 
 case class InputCase(
-    title: String,
-    description: String,
-    severity: Option[Int] = None,
+    title: String512,
+    description: Description,
+    severity: Option[Severity] = None,
     startDate: Option[Date] = None,
     endDate: Option[Date] = None,
-    tags: Set[String] = Set.empty,
+    tags: Set[String128] = Set.empty,
     flag: Option[Boolean] = None,
-    tlp: Option[Int] = None,
-    pap: Option[Int] = None,
-    status: Option[String] = None,
-    summary: Option[String] = None,
-    user: Option[String] = None,
+    tlp: Option[Tlp] = None,
+    pap: Option[Pap] = None,
+    status: Option[String16] = None,
+    summary: Option[Description] = None,
+    user: Option[String128] = None,
     @WithParser(InputCustomFieldValue.parser)
     customFieldValues: Seq[InputCustomFieldValue] = Nil
 )

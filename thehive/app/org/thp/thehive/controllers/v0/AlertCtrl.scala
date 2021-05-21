@@ -18,6 +18,7 @@ import org.thp.scalligraph.{
   RichSeq
 }
 import org.thp.thehive.controllers.v0.Conversion._
+import org.thp.thehive.dto.String64
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -66,7 +67,7 @@ class AlertCtrl(
               .organisations(Permissions.manageAlert)
               .get(request.organisation)
               .orFail(AuthorizationError("Operation not permitted"))
-          richAlert          <- alertSrv.create(inputAlert.toAlert, organisation, inputAlert.tags, customFields, caseTemplate)
+          richAlert          <- alertSrv.create(inputAlert.toAlert, organisation, inputAlert.tags.map(_.value), customFields, caseTemplate)
           createdObservables <- auditSrv.mergeAudits(observables.toTry(createObservable(richAlert.alert, _)).map(_.flatten))(_ => Success(()))
         } yield Results.Created((richAlert -> createdObservables).toJson)
       }
@@ -313,10 +314,10 @@ class AlertCtrl(
       authContext: AuthContext
   ): Try[Seq[RichObservable]] =
     observableTypeSrv
-      .getOrFail(EntityName(observable.dataType))
+      .getOrFail(EntityName(observable.dataType.value))
       .flatMap {
         case attachmentType if attachmentType.isAttachment =>
-          observable.data.map(_.split(';')).toTry {
+          observable.data.map(_.value.split(';')).toTry {
             case Array(filename, contentType, value) =>
               val data = Base64.getDecoder.decode(value)
               attachmentSrv
@@ -332,7 +333,7 @@ class AlertCtrl(
         case _ =>
           observable
             .data
-            .toTry(d => alertSrv.createObservable(alert, observable.toObservable, d))
+            .toTry(d => alertSrv.createObservable(alert, observable.toObservable, d.value))
       }
 }
 
@@ -481,7 +482,8 @@ class PublicAlert(
           case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
             for {
               c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
-              _ <- alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(name, Some(value), None))(graph, authContext)
+              _ <-
+                alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(String64("customField.name", name), Some(value), None))(graph, authContext)
             } yield Json.obj(s"customField.$name" -> value)
           case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
             for {

@@ -40,9 +40,9 @@ class ShareCtrl(
                   organisationSrv
                     .get(request.organisation)
                     .visibleOrganisationsFrom
-                    .get(EntityIdOrName(inputShare.organisationName))
+                    .get(EntityIdOrName(inputShare.organisationName.value))
                     .getOrFail("Organisation")
-                profile   <- profileSrv.getOrFail(EntityIdOrName(inputShare.profile))
+                profile   <- profileSrv.getOrFail(EntityIdOrName(inputShare.profile.value))
                 share     <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
                 richShare <- shareSrv.get(share).richShare.getOrFail("Share")
                 _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)

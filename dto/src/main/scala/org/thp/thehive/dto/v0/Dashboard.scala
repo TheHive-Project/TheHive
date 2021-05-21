@@ -1,10 +1,17 @@
 package org.thp.thehive.dto.v0
 
+import org.thp.thehive.dto.{Description, String16, String512}
 import play.api.libs.json.{Json, OFormat, OWrites}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
-case class InputDashboard(title: String, description: String, status: String, definition: String)
+case class InputDashboard(
+    title: String512,
+    description: Description,
+    status: String16,
+    definition: Description
+)
 
 object InputDashboard {
   implicit val writes: OWrites[InputDashboard] = Json.writes[InputDashboard]

@@ -1,14 +1,16 @@
 package org.thp.thehive.dto.v0
 
+import org.thp.thehive.dto.{Description, String128, String512}
 import play.api.libs.json._
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputPage(
-    title: String,
-    content: String,
+    title: String512,
+    content: Description,
     order: Option[Int],
-    category: String
+    category: String128
 )
 
 object InputPage {

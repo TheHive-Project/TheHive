@@ -95,7 +95,7 @@ class CaseCtrl(
         for {
           caseTemplate <- caseTemplateName.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail("Organisation")
-          user         <- inputCase.user.fold(userSrv.current.getOrFail("User"))(userSrv.getByName(_).getOrFail("User"))
+          user         <- inputCase.user.fold(userSrv.current.getOrFail("User"))(n => userSrv.getByName(n.value).getOrFail("User"))
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
             Some(user),
@@ -178,7 +178,7 @@ class CaseCtrl(
       .authRoTransaction(db) { implicit request => implicit graph =>
         val relatedCases = caseSrv
           .get(EntityIdOrName(caseIdOrNumber))
-          .visible(organisationSrv)
+          .visible
           .linkedCases
           .map {
             case (c, o) =>

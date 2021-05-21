@@ -89,18 +89,18 @@ class UserCtrl(
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
         db.tryTransaction { implicit graph =>
-          val organisationName = inputUser.organisation.map(EntityIdOrName(_)).getOrElse(request.organisation)
+          val organisationName = inputUser.organisation.map(u => EntityIdOrName(u.value)).getOrElse(request.organisation)
           for {
             _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationName).existsOrFail
             organisation <- organisationSrv.getOrFail(organisationName)
-            profile      <- profileSrv.getOrFail(EntityIdOrName(inputUser.profile))
+            profile      <- profileSrv.getOrFail(EntityIdOrName(inputUser.profile.value))
             user         <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
           } yield user -> userSrv.canSetPassword(user.user)
         }.flatMap {
           case (user, true) =>
             inputUser
               .password
-              .map(password => authSrv.setPassword(user.login, password))
+              .map(password => authSrv.setPassword(user.login, password.value))
               .flip
               .map(_ => Results.Created(user.toJson))
           case (user, _) => Success(Results.Created(user.toJson))

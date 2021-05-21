@@ -45,7 +45,7 @@ class ProcedureCtrl(
       .authPermittedTransaction(db, Permissions.manageProcedure) { implicit request => implicit graph =>
         val inputProcedure: InputProcedure = request.body("procedure")
         for {
-          richProcedure <- procedureSrv.create(inputProcedure.toProcedure, inputProcedure.caseId, inputProcedure.patternId)
+          richProcedure <- procedureSrv.create(inputProcedure.toProcedure, inputProcedure.caseId.value, inputProcedure.patternId.value)
         } yield Results.Created(richProcedure.toJson)
       }
 

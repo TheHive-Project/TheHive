@@ -51,14 +51,14 @@ class UserCtrl(
       .auth { implicit request =>
         val inputUser: InputUser = request.body("user")
         db.tryTransaction { implicit graph =>
-          val organisationIdOrName = inputUser.organisation.map(EntityIdOrName(_)).getOrElse(request.organisation)
+          val organisationIdOrName = inputUser.organisation.map(o => EntityIdOrName(o.value)).getOrElse(request.organisation)
           for {
             _            <- userSrv.current.organisations(Permissions.manageUser).get(organisationIdOrName).existsOrFail
             organisation <- organisationSrv.getOrFail(organisationIdOrName)
             profile <-
-              if (inputUser.roles.contains("admin")) profileSrv.getOrFail(EntityName(Profile.admin.name))
-              else if (inputUser.roles.contains("write")) profileSrv.getOrFail(EntityName(Profile.analyst.name))
-              else if (inputUser.roles.contains("read")) profileSrv.getOrFail(EntityName(Profile.readonly.name))
+              if (inputUser.roles.map(_.value).contains("admin")) profileSrv.getOrFail(EntityName(Profile.admin.name))
+              else if (inputUser.roles.map(_.value).contains("write")) profileSrv.getOrFail(EntityName(Profile.analyst.name))
+              else if (inputUser.roles.map(_.value).contains("read")) profileSrv.getOrFail(EntityName(Profile.readonly.name))
               else profileSrv.getOrFail(EntityName(Profile.readonly.name))
             user <- userSrv.addOrCreateUser(inputUser.toUser, inputUser.avatar, organisation, profile)
           } yield user -> userSrv.canSetPassword(user.user)
@@ -66,7 +66,7 @@ class UserCtrl(
           case (user, true) =>
             inputUser
               .password
-              .map(password => authSrv.setPassword(user.login, password))
+              .map(password => authSrv.setPassword(user.login, password.value))
               .flip
               .map(_ => Results.Created(user.toJson))
           case (user, _) => Success(Results.Created(user.toJson))

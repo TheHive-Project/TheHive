@@ -5,6 +5,7 @@ import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError, RichSeq}
+import org.thp.thehive.dto.String64
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -102,7 +103,10 @@ class Properties(
           case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
             for {
               a <- alertSrv.get(vertex)(graph).getOrFail("Alert")
-              _ <- alertSrv.setOrCreateCustomField(a, InputCustomFieldValue(idOrName, Some(value), None))(graph, authContext)
+              _ <- alertSrv.setOrCreateCustomField(a, InputCustomFieldValue(String64("customField.name", idOrName), Some(value), None))(
+                graph,
+                authContext
+              )
             } yield Json.obj(s"customField.$idOrName" -> value)
           case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
             for {

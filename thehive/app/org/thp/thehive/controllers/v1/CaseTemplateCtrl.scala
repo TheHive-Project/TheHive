@@ -50,7 +50,7 @@ class CaseTemplateCtrl(
 
         for {
           organisation     <- organisationSrv.current.getOrFail("Organisation")
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, customFields)
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, customFields.map(c => c._1.value -> c._2))
         } yield Results.Created(richCaseTemplate.toJson)
       }
 

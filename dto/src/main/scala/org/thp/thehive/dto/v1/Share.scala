@@ -1,12 +1,14 @@
 package org.thp.thehive.dto.v1
 
+import org.thp.thehive.dto.String64
 import org.thp.thehive.dto.v1.ObservablesFilter.ObservablesFilter
 import org.thp.thehive.dto.v1.TasksFilter.TasksFilter
 import play.api.libs.json.{Format, Json, Writes}
 
 import java.util.Date
+import be.venneborg.refined.play.RefinedJsonFormats._
 
-case class InputShare(organisationName: String, profile: String, tasks: TasksFilter, observables: ObservablesFilter)
+case class InputShare(organisationName: String64, profile: String64, tasks: TasksFilter, observables: ObservablesFilter)
 
 object TasksFilter extends Enumeration {
   type TasksFilter = Value

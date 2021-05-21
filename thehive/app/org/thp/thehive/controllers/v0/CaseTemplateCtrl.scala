@@ -36,7 +36,7 @@ class CaseTemplateCtrl(
         val tasks                                = inputCaseTemplate.tasks.map(_.toTask)
         for {
           organisation     <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail("CaseTemplate")
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, customFields)
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, customFields.map(c => c._1.value -> c._2))
         } yield Results.Created(richCaseTemplate.toJson)
       }
 
