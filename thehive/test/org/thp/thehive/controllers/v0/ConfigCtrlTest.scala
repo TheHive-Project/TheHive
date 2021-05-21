@@ -57,14 +57,18 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
       import app.thehiveModuleV0._
 
       tagSrv.freeTagColour
-      val request = FakeRequest("PUT", "/api/config/tags.freeTagColour")
+      val setRequest = FakeRequest("PUT", "/api/config/tags.freeTagColour")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.parse("""{"value": "#00FF00"}"""))
-      val result = configCtrl.set("tags.freeTagColour")(request)
+      val result = configCtrl.set("tags.freeTagColour")(setRequest)
 
       status(result) must equalTo(204).updateMessage(s => s"$s\n${contentAsString(result)}")
 
-      tagSrv.freeTagColour must beEqualTo("#00FF00")
+      val getRequest = FakeRequest("GET", "/config/tags.freeTagColour")
+        .withHeaders("user" -> "admin@thehive.local")
+      (contentAsJson(configCtrl.get("tags.freeTagColour")(getRequest)) \ "value").as[String] must beEqualTo("#00FF00")
+
+//      tagSrv.freeTagColour must beEqualTo("#00FF00")
 
     }
 // TODO leave unused tests ?

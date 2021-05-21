@@ -91,7 +91,7 @@ class TaxonomyCtrl(
 
   private def parseJsonFile(zipFile: ZipFile, h: FileHeader): Try[InputTaxonomy] =
     Try(Json.parse(zipFile.getInputStream(h)).as[InputTaxonomy]).recoverWith {
-      case _ => Failure(BadRequestError(s"File '${h.getFileName}' does not comply with the MISP taxonomy formatting"))
+      case e => Failure(BadRequestError(s"File '${h.getFileName}' does not comply with the MISP taxonomy formatting ($e)"))
     }
 
   private def createFromInput(inputTaxo: InputTaxonomy)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] = {

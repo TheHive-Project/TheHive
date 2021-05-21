@@ -6,6 +6,7 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
+import eu.timepit.refined.auto._
 
 case class TestProcedure(
     description: Option[String],

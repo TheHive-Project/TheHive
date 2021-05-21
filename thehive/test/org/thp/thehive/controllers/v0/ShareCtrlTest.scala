@@ -7,6 +7,8 @@ import org.thp.thehive.models.Profile
 import org.thp.thehive.services.TheHiveOps
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
+import eu.timepit.refined.auto._
+import org.thp.thehive.dto.String64
 
 class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
   "share a case" in testApp { app =>
@@ -18,7 +20,11 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
       import ops._
 
       val request = FakeRequest("POST", "/api/case/1/shares")
-        .withJsonBody(Json.obj("shares" -> List(Json.toJson(InputShare("soc", Profile.orgAdmin.name, TasksFilter.all, ObservablesFilter.all)))))
+        .withJsonBody(
+          Json.obj(
+            "shares" -> List(Json.toJson(InputShare("soc", String64("profileName", Profile.orgAdmin.name), TasksFilter.all, ObservablesFilter.all)))
+          )
+        )
         .withHeaders("user" -> "certuser@thehive.local")
       val result = shareCtrl.shareCase("1")(request)
 
@@ -34,7 +40,11 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
     import app.thehiveModuleV0._
 
     val request = FakeRequest("POST", "/api/case/2/shares")
-      .withJsonBody(Json.obj("shares" -> Seq(Json.toJson(InputShare("soc", Profile.orgAdmin.name, TasksFilter.all, ObservablesFilter.all)))))
+      .withJsonBody(
+        Json.obj(
+          "shares" -> Seq(Json.toJson(InputShare("soc", String64("profileName", Profile.orgAdmin.name), TasksFilter.all, ObservablesFilter.all)))
+        )
+      )
       .withHeaders("user" -> "certuser@thehive.local")
     val result = shareCtrl.shareCase("2")(request)
 

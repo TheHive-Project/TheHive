@@ -1,10 +1,12 @@
 package org.thp.thehive.controllers.v1
 
+import eu.timepit.refined.auto._
 import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.scalligraph.controllers.FakeTemporaryFile
+import org.thp.thehive.dto.String128
 import org.thp.thehive.dto.v1._
 import play.api.libs.Files
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.{JsArray, JsString, Json}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsMultipartFormData, MultipartFormData}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -102,15 +104,15 @@ class TaxonomyCtrlTest extends PlaySpecification with TestAppBuilder {
     "return error if namespace is empty" in testApp { app =>
       import app.thehiveModuleV1._
 
-      val emptyNamespace = inputTaxo.copy(namespace = "")
+//      val emptyNamespace = inputTaxo.copy(namespace = String128("namespace", ""))
 
       val request = FakeRequest("POST", "/api/v1/taxonomy")
-        .withJsonBody(Json.toJson(emptyNamespace))
+        .withJsonBody(Json.toJsObject(inputTaxo) + ("namespace" -> JsString("")))
         .withHeaders("user" -> "admin@thehive.local")
 
       val result = taxonomyCtrl.create(request)
       status(result)                              must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
-      (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
+      (contentAsJson(result) \ "type").as[String] must beEqualTo("AttributeCheckingError")
 
     }
 

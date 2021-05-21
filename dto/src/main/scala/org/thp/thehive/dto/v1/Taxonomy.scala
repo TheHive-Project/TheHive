@@ -23,7 +23,7 @@ case class InputTaxonomy(
 
 case class InputPredicate(
     value: String128,
-    expanded: Option[String128],
+    expanded: Option[Description],
     exclusive: Option[Boolean],
     description: Option[Description],
     colour: Option[Color]
@@ -36,7 +36,7 @@ case class InputValue(
 
 case class InputEntry(
     value: String128,
-    expanded: Option[String128],
+    expanded: Option[Description],
     colour: Option[Color],
     description: Option[Description],
     numerical_value: Option[Int]

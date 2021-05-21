@@ -8,6 +8,7 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
+import eu.timepit.refined.auto._
 
 case class TestAlert(
     `type`: String,

@@ -1,7 +1,5 @@
 package org.thp.thehive.controllers.v0
 
-import eu.timepit.refined.collection.MaxSize
-import eu.timepit.refined.refineMV
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.DummyUserSrv
@@ -12,6 +10,7 @@ import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
+import eu.timepit.refined.auto._
 
 case class TestAlert(
     `type`: String,
@@ -84,8 +83,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
         Json
           .toJson(
             InputAlert(
-              `type` = refineMV[MaxSize[16]]("test"),
-              source = "alert_creation_test",
+              `type` = "test",
+              source = "alert_test",
               sourceRef = "#1",
               externalLink = None,
               title = "alert title (create alert test)",
@@ -111,7 +110,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
     val resultAlertOutput = resultAlert.as[OutputAlert]
     val expected = TestAlert(
       `type` = "test",
-      source = "alert_creation_test",
+      source = "alert_test",
       sourceRef = "#1",
       title = "alert title (create alert test)",
       description = "alert description (create alert test)",

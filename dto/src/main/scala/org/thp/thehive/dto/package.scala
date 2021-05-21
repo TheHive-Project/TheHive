@@ -8,17 +8,18 @@ import org.thp.scalligraph.InvalidFormatAttributeError
 import org.thp.scalligraph.controllers.{FNumber, FString}
 
 package object dto {
-  type Severity    = Int Refined And[Positive, LessEqual[W.`4`.T]]
-  type Tlp         = Int Refined And[NonNegative, LessEqual[W.`3`.T]]
-  type Pap         = Int Refined And[NonNegative, LessEqual[W.`3`.T]]
-  type Color       = String Refined MatchesRegex[W.`"""^#[0-9a-fA-F]{6,6}|$"""`.T]
-  type StringX[N]  = String Refined AllOf[Not[Empty] :: MaxSize[N] :: Not[MatchesRegex[W.`"""[\n\r]"""`.T]] :: HNil]
-  type String16    = StringX[W.`16`.T]
-  type String32    = StringX[W.`32`.T]
-  type String64    = StringX[W.`64`.T]
-  type String128   = StringX[W.`128`.T]
-  type String512   = StringX[W.`512`.T]
-  type Description = String Refined MaxSize[W.`1048576`.T]
+  type Severity           = Int Refined And[Positive, LessEqual[W.`4`.T]]
+  type Tlp                = Int Refined And[NonNegative, LessEqual[W.`3`.T]]
+  type Pap                = Int Refined And[NonNegative, LessEqual[W.`3`.T]]
+  type Color              = String Refined MatchesRegex[W.`"""^#[0-9a-fA-F]{6,6}|$"""`.T]
+  type StringX[N]         = String Refined AllOf[Not[Empty] :: MaxSize[N] :: Not[MatchesRegex[W.`"""[\n\r]"""`.T]] :: HNil]
+  type String16           = StringX[W.`16`.T]
+  type String32           = StringX[W.`32`.T]
+  type String64           = StringX[W.`64`.T]
+  type String128          = StringX[W.`128`.T]
+  type String512          = StringX[W.`512`.T]
+  type MultiLineString512 = String Refined And[Not[Empty], MaxSize[512]]
+  type Description        = String Refined MaxSize[W.`1048576`.T]
 
   object Severity {
     def apply(value: Int): Severity =
@@ -50,6 +51,11 @@ package object dto {
   object String512 {
     def apply(name: String, value: String): String512 =
       RefType.applyRef[String512](value).fold(error => throw InvalidFormatAttributeError(name, error, Set.empty, FString(value)), identity)
+  }
+
+  object MultiLineString512 {
+    def apply(name: String, value: String): MultiLineString512 =
+      RefType.applyRef[MultiLineString512](value).fold(error => throw InvalidFormatAttributeError(name, error, Set.empty, FString(value)), identity)
   }
 
   object Description {

@@ -1,13 +1,12 @@
 package org.thp.thehive.controllers.v1
 
-import eu.timepit.refined.collection.MaxSize
-import eu.timepit.refined.{refineMV, W}
 import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
 import play.api.libs.json.{JsNull, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
+import eu.timepit.refined.auto._
 
 case class TestCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
 
@@ -53,7 +52,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(
           Json.toJson(
             InputCase(
-              title = refineMV[MaxSize[W.`100`.T]]("case title (create case test)"),
+              title = "case title (create case test)",
               description = "case description (create case test)",
               severity = Some(2),
               startDate = Some(now),
@@ -96,7 +95,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
         .withJsonBody(
           Json.toJsObject(
             InputCase(
-              title = refineMV[MaxSize[W.`100`.T]]("case title (create case test with template)"),
+              title = "case title (create case test with template)",
               description = "case description (create case test with template)",
               severity = None,
               startDate = Some(now),

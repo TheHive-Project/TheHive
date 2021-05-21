@@ -1,7 +1,6 @@
 package org.thp.thehive.controllers.v0
 
-import eu.timepit.refined.collection.MaxSize
-import eu.timepit.refined.{refineMV, W}
+import eu.timepit.refined.auto._
 import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.models.DummyUserSrv
@@ -55,7 +54,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOps
           Json
             .toJson(
               InputCase(
-                title = refineMV[MaxSize[W.`100`.T]]("case title (create case test)"),
+                title = "case title (create case test)",
                 description = "case description (create case test)",
                 severity = Some(1),
                 startDate = Some(now),

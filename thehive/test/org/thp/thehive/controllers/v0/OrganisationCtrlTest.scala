@@ -5,6 +5,7 @@ import org.thp.scalligraph.traversal.TraversalOps
 import org.thp.thehive.dto.v0.{InputOrganisation, OutputOrganisation}
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
+import eu.timepit.refined.auto._
 
 class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   "organisation controller" should {

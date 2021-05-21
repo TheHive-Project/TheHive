@@ -3,14 +3,14 @@ package org.thp.thehive.dto.v1
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
-import org.thp.thehive.dto.{Description, String128, String16, String512, Tlp}
+import org.thp.thehive.dto.{Description, String128, String32, String512, Tlp}
 import play.api.libs.json.{JsObject, Json, OFormat, Writes}
 
 import java.util.Date
 import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputObservable(
-    dataType: String16,
+    dataType: String32,
     @WithParser(InputObservable.dataParser)
     data: Seq[String512] = Nil,
     message: Option[Description] = None,

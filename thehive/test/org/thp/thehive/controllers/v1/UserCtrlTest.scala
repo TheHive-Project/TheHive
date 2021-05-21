@@ -7,6 +7,8 @@ import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import scala.util.{Success, Try}
+import eu.timepit.refined.auto._
+import org.thp.thehive.dto.String128
 
 case class TestUser(login: String, name: String, profile: String, permissions: Set[String], organisation: String)
 
@@ -55,7 +57,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
               email = None,
               password = Some("azerty"),
               profile = "read-only",
-              organisation = Some(Organisation.administration.name),
+              organisation = Some(String128("organisationName", Organisation.administration.name)),
               avatar = None
             )
           )
@@ -69,7 +71,7 @@ class UserCtrlTest extends PlaySpecification with TestAppBuilder {
         name = "create user test",
         profile = "read-only",
         permissions = Set.empty,
-        organisation = Organisation.administration.name
+        organisation = String128("organisationName", Organisation.administration.name)
       )
 
       TestUser(resultCase) must_=== expected

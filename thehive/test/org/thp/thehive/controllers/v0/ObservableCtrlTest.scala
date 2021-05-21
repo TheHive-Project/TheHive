@@ -331,7 +331,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder with TheH
             """))
     val result = observableCtrl.createInCase("1")(request)
 
-    status(result) shouldEqual 201
+    status(result) must equalTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
     contentAsJson(result).as[Seq[OutputObservable]]
   }
 

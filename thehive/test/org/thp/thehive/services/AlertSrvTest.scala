@@ -9,6 +9,7 @@ import play.api.libs.json.JsString
 import play.api.test.PlaySpecification
 
 import java.util.Date
+import eu.timepit.refined.auto._
 
 class AlertSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
