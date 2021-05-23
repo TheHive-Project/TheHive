@@ -219,6 +219,7 @@ class IntegrityCheckActor() extends Actor {
         }
       }
     case GlobalCheckResult(name, stats) =>
+      logger.info(s"End of $name global check: $stats")
       states.get(name).foreach { state =>
         context.become(receive(states + (name -> state.copy(globalStats = state.globalStats + stats))))
       }

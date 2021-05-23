@@ -712,9 +712,7 @@ class CaseIntegrityCheckOps @Inject() (
     Success(())
   }
 
-  override def globalCheck(): Map[String, Int] = {
-    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         service
@@ -724,23 +722,28 @@ class CaseIntegrityCheckOps @Inject() (
               .by(_.organisations._id.fold)
               .by(_.assignee.value(_.login).fold)
               .by(_.caseTemplate.value(_.name).fold)
+              .by(_.origin._id.fold)
           )
           .toIterator
           .map {
-            case (case0, organisationIds, assigneeIds, caseTemplateNames) =>
+            case (case0, organisationIds, assigneeIds, caseTemplateNames, owningOrganisationIds) =>
+              val fixOwningOrg: LinkRemover =
+                (caseId, orgId) => service.get(caseId).shares.filter(_.organisation.get(orgId._id)).update(_.owner, false).iterate()
+
               val assigneeStats = singleOptionLink[User, String]("assignee", userSrv.getByName(_).head, _.login)(_.outEdge[CaseUser])
                 .check(case0, case0.assignee, assigneeIds)
-              val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
-                .check(case0, case0.organisationIds.toSeq, organisationIds)
+              val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove) // FIXME => Seq => Set
+                .check(case0, case0.organisationIds, organisationIds)
               val templateStats =
                 singleOptionLink[CaseTemplate, String]("caseTemplate", caseTemplateSrv.getByName(_).head, _.name)(_.outEdge[CaseCaseTemplate])
                   .check(case0, case0.caseTemplate, caseTemplateNames)
+              val owningOrgStats = singleIdLink[Organisation]("owningOrganisation", organisationSrv)(_ => fixOwningOrg, _.remove)
+                .check(case0, case0.owningOrganisation, owningOrganisationIds)
 
-              assigneeStats <+> orgStats <+> templateStats
+              assigneeStats <+> orgStats <+> templateStats <+> owningOrgStats
           }
           .reduceOption(_ <+> _)
           .getOrElse(Map.empty)
       }
     }.getOrElse(Map("globalFailure" -> 1))
-  }
 }

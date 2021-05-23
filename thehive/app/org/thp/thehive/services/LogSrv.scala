@@ -112,9 +112,7 @@ object LogOps {
 class LogIntegrityCheckOps @Inject() (val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] {
   override def resolve(entities: Seq[Log with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
-  override def globalCheck(): Map[String, Int] = {
-    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         service
@@ -133,5 +131,4 @@ class LogIntegrityCheckOps @Inject() (val db: Database, val service: LogSrv, tas
           .getOrElse(Map.empty)
       }
     }.getOrElse(Map("globalFailure" -> 1))
-  }
 }

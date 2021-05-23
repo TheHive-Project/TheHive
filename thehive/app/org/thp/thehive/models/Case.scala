@@ -173,7 +173,9 @@ object RichCase {
       assignee: Option[String],
       customFields: Seq[RichCustomField],
       userPermissions: Set[Permission],
-      organisationIds: Set[EntityId]
+      organisationIds: Set[EntityId],
+      caseTemplate: Option[String] = None,
+      owningOrganisation: EntityId = EntityId.empty
   ): RichCase = {
     val `case`: Case with Entity =
       new Case(
@@ -192,7 +194,9 @@ object RichCase {
         tags = tags,
         assignee = assignee,
         impactStatus = impactStatus,
-        resolutionStatus = resolutionStatus
+        resolutionStatus = resolutionStatus,
+        caseTemplate = caseTemplate,
+        owningOrganisation = owningOrganisation
       ) with Entity {
         override val _id: EntityId              = __id
         override val _label: String             = "Case"

@@ -237,9 +237,7 @@ object CaseTemplateOps {
         }
         .getOrElse(traversal.empty)
 
-    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
@@ -252,11 +250,8 @@ object CaseTemplateOps {
           case CustomFieldType.string  => traversal.filter(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
 
-    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
@@ -269,7 +264,6 @@ object CaseTemplateOps {
           case CustomFieldType.string  => traversal.filterNot(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
   }
 
   implicit class CaseTemplateCustomFieldsOpsDefs(traversal: Traversal.E[CaseTemplateCustomField]) extends CustomFieldValueOpsDefs(traversal)

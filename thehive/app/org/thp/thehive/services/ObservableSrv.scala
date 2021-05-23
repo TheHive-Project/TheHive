@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.Identity
@@ -237,7 +237,10 @@ object ObservableOps {
         .domainMap(profile => profile.permissions & authContext.permissions)
 
     def organisations: Traversal.V[Organisation] =
-      traversal.coalesceIdent(_.in[ShareObservable].in[OrganisationShare], _.in[AlertObservable].out[AlertOrganisation]).v[Organisation]
+      traversal
+        .unionFlat(identity, _.in("ReportObservable").in("ObservableJob").v[Observable])
+        .unionFlat(_.shares.organisation, _.alert.organisation)
+//      traversal.coalesceIdent(_.in[ShareObservable].in[OrganisationShare], _.in[AlertObservable].out[AlertOrganisation]).v[Organisation]
 
     def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
@@ -355,18 +358,43 @@ object ObservableOps {
   }
 }
 
-class ObservableIntegrityCheckOps @Inject() (val db: Database, val service: ObservableSrv) extends IntegrityCheckOps[Observable] {
+class ObservableIntegrityCheckOps @Inject() (val db: Database, val service: ObservableSrv, organisationSrv: OrganisationSrv)
+    extends IntegrityCheckOps[Observable] {
   override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
   override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
-        val orphanIds = service.startTraversal.filterNot(_.or(_.shares, _.alert, _.in("ReportObservable")))._id.toSeq
-        if (orphanIds.nonEmpty) {
-          logger.warn(s"Found ${orphanIds.length} observables orphan(s) (${orphanIds.mkString(",")})")
-          service.getByIds(orphanIds: _*).remove()
-        }
-        Map("orphans" -> orphanIds.size)
+        service
+          .startTraversal
+          .project(
+            _.by
+              .by(_.organisations._id.fold)
+              .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
+          )
+          .toIterator
+          .map {
+            case (observable, organisationIds, relatedIds) =>
+              val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
+                .check(observable, observable.organisationIds, organisationIds)
+
+              val removeOrphan: OrphanStrategy[Observable, EntityId] = { (a, entity) =>
+                service.get(entity).remove()
+                Map("Observable-relatedId-removeOrphan" -> 1)
+              }
+              val relatedStats = new SingleLinkChecker[Product, EntityId, EntityId](
+                orphanStrategy = removeOrphan,
+                setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
+                entitySelector = _ => EntitySelector.firstCreatedEntity,
+                removeLink = (_, _) => (),
+                getLink = id => graph.VV(id).entity.head,
+                Some(_)
+              ).check(observable, observable.relatedId, relatedIds)
+
+              orgStats <+> relatedStats
+          }
+          .reduceOption(_ <+> _)
+          .getOrElse(Map.empty)
       }
     }.getOrElse(Map("globalFailure" -> 1))
 }
