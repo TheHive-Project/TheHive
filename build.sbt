@@ -136,7 +136,11 @@ lazy val thehiveRoot = (project in file("."))
     name := "root",
     packageName := "root",
     PlayKeys.playMonitoredFiles ~= (_.filter(f => f.compareTo(file("frontend").getAbsoluteFile) != 0)),
-    PlayKeys.devSettings += "play.server.provider" -> "org.thp.thehive.CustomAkkaHttpServerProvider"
+    run / fork := true,
+    run := {
+      (thehiveFrontend / gruntDev).value
+      (Compile / runMain).toTask(" org.thp.thehive.TheHiveStarter . --dev").value
+    }
   )
 
 lazy val thehive = (project in file("target/thehive"))
@@ -156,10 +160,6 @@ lazy val thehive = (project in file("target/thehive"))
     packageName := "thehive4",
     PlayKeys.playMonitoredFiles ~= (_.filter(f => f.compareTo(file("frontend/app").getAbsoluteFile) != 0)),
     PlayKeys.devSettings += "play.server.provider" -> "org.thp.thehive.CustomAkkaHttpServerProvider",
-    Compile / run := {
-      (thehiveFrontend / gruntDev).value
-      (Compile / run).evaluated
-    },
     Universal / mappings := Nil,
     Debian / linuxPackageMappings := Nil,
     Debian / debianPackageDependencies := Seq(

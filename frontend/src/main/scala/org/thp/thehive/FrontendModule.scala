@@ -2,7 +2,7 @@ package org.thp.thehive
 
 import controllers.ExternalAssets
 import org.thp.scalligraph.{ErrorHandler, ScalligraphApplication, ScalligraphModule}
-import play.api.Mode
+import play.api.{Logger, Mode}
 import play.api.http.HttpErrorHandler
 import play.api.mvc.Results
 import play.api.routing.SimpleRouter
@@ -12,6 +12,7 @@ class FrontendModule(app: ScalligraphApplication) extends ScalligraphModule {
   import app._
   import app.context.environment
 
+  lazy val logger: Logger            = Logger(getClass)
   lazy val extAssets: ExternalAssets = new ExternalAssets(environment)(executionContext, fileMimeTypes)
   val errorHandler: HttpErrorHandler = ErrorHandler
   routers += (environment.mode match {
@@ -23,6 +24,8 @@ class FrontendModule(app: ScalligraphApplication) extends ScalligraphModule {
       }
     case _ =>
       val frontendPath = app.configuration.getOptional[String]("frontend.path").getOrElse("frontend")
+      logger.info(s"Loading dev mode frontend in $frontendPath")
+
       SimpleRouter {
         case GET(p"/") =>
           app.defaultActionBuilder(Results.PermanentRedirect(configuration.get[String]("play.http.context").stripSuffix("/") + "/index.html"))
