@@ -28,9 +28,9 @@ object TheHiveStarter extends App {
         if (loadMispModule || loadCortexModule)
           logger.warn("play.modules.enabled is deprecated in application.conf, use scalligraph.modules")
         if (loadMispModule)
-          scalligraphApplication.loadModule("org.thp.thehive.connector.misp.MispModule")
+          scalligraphApplication.loadModule("org.thp.thehive.connector.misp.MispModule").foreach(_.init())
         if (loadCortexModule)
-          scalligraphApplication.loadModule("org.thp.thehive.connector.cortex.CortexModule")
+          scalligraphApplication.loadModule("org.thp.thehive.connector.cortex.CortexModule").foreach(_.init())
 
         scalligraphApplication.application
       } catch {

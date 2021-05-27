@@ -49,6 +49,7 @@ class TestApplication(override val database: Database) extends ScalligraphApplic
 
   override lazy val fileMimeTypes: FileMimeTypes                 = appWithoutDatabase.fileMimeTypes
   override val routers: LazyMutableSeq[Router]                   = LazyMutableSeq[Router]
+  override lazy val router: Router                               = routers().reduceOption(_ orElse _).getOrElse(Router.empty) // It doesn't include auth routes
   override lazy val tempFileCreator: TemporaryFileCreator        = appWithoutDatabase.tempFileCreator
   override lazy val tempFileReaper: TemporaryFileReaper          = appWithoutDatabase.tempFileReaper
   override lazy val singleInstance: SingleInstance               = appWithoutDatabase.singleInstance

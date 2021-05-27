@@ -335,14 +335,14 @@ class UserIntegrityCheckOps(
     super.duplicationCheck()
     db.tryTransaction { implicit graph =>
       val duplicateTaskAssignments =
-        duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement(_)).map(e => removeEdges(e._2)).size.toLong
+        duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement).map(e => removeEdges(e._2)).size.toLong
       val duplicateCaseAssignments =
-        duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement(_)).map(e => removeEdges(e._2)).size.toLong
+        duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement).map(e => removeEdges(e._2)).size.toLong
       val duplicateUsers = duplicateLinks[Vertex, Vertex](
         service.startTraversal,
         (_.out("UserRole"), _.in("UserRole")),
         (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
-      ).flatMap(firstCreatedElement(_)).map(e => removeVertices(e._2)).size.toLong
+      ).flatMap(firstCreatedElement).map(e => removeVertices(e._2)).size.toLong
       Success(
         Map(
           "duplicateTaskAssignments" -> duplicateTaskAssignments,

@@ -123,4 +123,11 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   app.schemas += TheHiveSchemaDefinition
 
   val entityDescriptions: LazyMutableSeq[(Int, ModelDescription)] = LazyMutableSeq[(Int, ModelDescription)]
+
+  override def init(): Unit = {
+    integrityCheckActor
+    notificationActor
+    app.router
+    ()
+  }
 }
