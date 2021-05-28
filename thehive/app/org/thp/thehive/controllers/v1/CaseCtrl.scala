@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
@@ -20,8 +20,10 @@ import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
+import play.api.libs.json.{JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.util.{Map => JMap}
 import javax.inject.{Inject, Singleton}
 
 @Singleton
@@ -88,7 +90,19 @@ class CaseCtrl @Inject() (
         alertSrv.startTraversal(caseSteps.graph).has(_.caseId, P.within(caseSteps._id.toSeq: _*)).visible(organisationSrv)(authContext)
     ),
     Query[Traversal.V[Case], Traversal.V[Share]]("shares", (caseSteps, authContext) => caseSteps.shares.visible(authContext)),
-    Query[Traversal.V[Case], Traversal.V[Procedure]]("procedures", (caseSteps, _) => caseSteps.procedure)
+    Query[Traversal.V[Case], Traversal.V[Procedure]]("procedures", (caseSteps, _) => caseSteps.procedure),
+    Query[Traversal.V[Case], Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
+      "linkedCases",
+      (caseSteps, authContext) =>
+        caseSteps
+          .linkedCases(authContext)
+          .domainMap {
+            case (c, o) =>
+              c.toJson.as[JsObject] +
+                ("linkedWith" -> o.toJson) +
+                ("linksCount" -> JsNumber(o.size))
+          }
+    )
   )
 
   def create: Action[AnyContent] =

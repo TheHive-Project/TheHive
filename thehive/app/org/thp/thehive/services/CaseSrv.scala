@@ -590,7 +590,9 @@ object CaseOps {
 //        .in[AuditContext]
 //        .v[Audit]
 
-    def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
+    def linkedCases(implicit
+        authContext: AuthContext
+    ): Traversal[(RichCase, Seq[RichObservable]), JMap[String, Any], Converter[(RichCase, Seq[RichObservable]), JMap[String, Any]]] = {
       val originCaseLabel = StepLabel.v[Case]
       val observableLabel = StepLabel.v[Observable] // TODO add similarity on attachment
       traversal
@@ -608,7 +610,6 @@ object CaseOps {
         .group(_.by, _.by(_.select(observableLabel).richObservable.fold))
         .unfold
         .project(_.by(_.selectKeys.richCase).by(_.selectValues))
-        .toSeq
     }
 
     def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
