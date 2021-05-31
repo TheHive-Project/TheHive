@@ -23,7 +23,7 @@ import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.{LogSrv, OrganisationSrv}
-import play.api.libs.json.{JsObject, Json, OWrites}
+import play.api.libs.json.{JsObject, JsString, Json, OWrites}
 
 import java.util.{Date, Map => JMap}
 import javax.inject.Inject
@@ -37,10 +37,10 @@ class ActionSrv @Inject() (
     serviceHelper: ServiceHelper,
     logSrv: LogSrv,
     connector: Connector,
-    implicit val schema: Schema,
-    implicit val db: Database,
+    db: Database,
     implicit val ec: ExecutionContext,
-    auditSrv: CortexAuditSrv
+    auditSrv: CortexAuditSrv,
+    organisationSrv: OrganisationSrv
 ) extends VertexSrv[Action] {
 
   val actionContextSrv = new EdgeSrv[ActionContext, Action, Product]
@@ -77,16 +77,22 @@ class ActionSrv @Inject() (
         case None => Future.failed(NotFoundError(s"Responder $workerId not found"))
       }
       (label, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
-      inputCortexAction = CortexAction(label, writes.writes(entity), s"thehive:${fromObjectType(entity._label)}", tlp, pap, parameters)
+      parametersWithRequesterInfo = db.roTransaction { implicit graph =>
+        parameters +
+          ("organisation" -> JsString(organisationSrv.current.value(_.name).head)) +
+          ("user"         -> JsString(authContext.userId))
+      }
+      inputCortexAction =
+        CortexAction(label, writes.writes(entity), s"thehive:${fromObjectType(entity._label)}", tlp, pap, parametersWithRequesterInfo)
       job <- client.execute(workerId, inputCortexAction)
       action = Action(
         job.workerId,
         job.workerName,
         job.workerDefinition,
         job.status.toJobStatus,
-        parameters: JsObject,
+        parametersWithRequesterInfo,
         new Date,
-        job.endDate: Option[Date],
+        job.endDate,
         job.report.flatMap(_.full),
         client.name,
         job.id,
