@@ -85,7 +85,7 @@ lazy val thehive = (project in file("."))
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated
     },
-    discoveredMainClasses in Compile := Seq("play.core.server.ProdServerStart", "org.thp.thehive.migration.Migrate"),
+    discoveredMainClasses in Compile := Seq("play.core.server.ProdServerStart", "org.thp.thehive.migration.Migrate", "org.thp.thehive.cloner.Cloner"),
     mainClass in (Compile, bashScriptDefines) := None,
     makeBashScripts ~= {
       _.map {
