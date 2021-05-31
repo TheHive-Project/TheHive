@@ -1,7 +1,7 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, AuthenticationSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, readonly) {
+        .controller('AlertEventCtrl', function ($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, AuthenticationSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, readonly) {
             var self = this;
             var eventId = event._id;
 
@@ -23,26 +23,26 @@
 
             self.hideEmptyCaseButton = UiSettingsSrv.hideEmptyCaseButton();
 
-            self.updateObservableCount = function(count) {
+            self.updateObservableCount = function (count) {
                 self.counts.observables = count;
             };
 
-            self.updateSimilarCasesCount = function(count) {
+            self.updateSimilarCasesCount = function (count) {
                 self.counts.similarCases = count;
             };
 
-            self.getCustomFieldName = function(fieldDef) {
+            self.getCustomFieldName = function (fieldDef) {
                 return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
             };
 
-            self.load = function() {
-                AlertingSrv.get(eventId).then(function(data) {
+            self.load = function () {
+                AlertingSrv.get(eventId).then(function (data) {
                     self.event = data;
                     self.loading = false;
-                }, function(response) {
-                  self.loading = false;
-                  NotificationSrv.error('AlertEventCtrl', response.data, response.status);
-                  $uibModalInstance.dismiss();
+                }, function (response) {
+                    self.loading = false;
+                    NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                    $uibModalInstance.dismiss();
                 });
             };
 
@@ -51,19 +51,19 @@
                 field[fieldName] = newValue;
 
                 return AlertingSrv.update(self.event._id, field)
-                  .then(function() {
-                      NotificationSrv.log('Alert updated successfully', 'success');
-                  })
-                  .catch(function (response) {
-                      NotificationSrv.error('AlertEventCtrl', response.data, response.status);
-                  });
+                    .then(function () {
+                        NotificationSrv.log('Alert updated successfully', 'success');
+                    })
+                    .catch(function (response) {
+                        NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                    });
             };
 
-            self.import = function() {
+            self.import = function () {
                 self.loading = true;
                 AlertingSrv.create(self.event._id, {
                     caseTemplate: self.event.caseTemplate
-                }).then(function(response) {
+                }).then(function (response) {
                     $uibModalInstance.dismiss();
 
                     $rootScope.$broadcast('alert:event-imported');
@@ -71,16 +71,16 @@
                     $state.go('app.case.details', {
                         caseId: response.data.id
                     });
-                }, function(response) {
+                }, function (response) {
                     self.loading = false;
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
             };
 
-            self.mergeIntoCase = function(caseId) {
+            self.mergeIntoCase = function (caseId) {
                 self.loading = true;
                 AlertingSrv.mergeInto(self.event._id, caseId)
-                    .then(function(response) {
+                    .then(function (response) {
                         $uibModalInstance.dismiss();
 
                         $rootScope.$broadcast('alert:event-imported');
@@ -88,41 +88,55 @@
                         $state.go('app.case.details', {
                             caseId: response.data.id
                         });
-                    }, function(response) {
+                    }, function (response) {
                         self.loading = false;
                         NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                     });
             };
 
-            self.merge = function() {
+            self.merge = function () {
                 var caseModal = $uibModal.open({
                     templateUrl: 'views/partials/case/case.merge.html',
                     controller: 'CaseMergeModalCtrl',
                     controllerAs: 'dialog',
                     size: 'lg',
                     resolve: {
-                        source: function() {
+                        source: function () {
                             return self.event;
                         },
-                        title: function() {
+                        title: function () {
                             return 'Merge Alert: ' + self.event.title;
                         },
-                        prompt: function() {
+                        prompt: function () {
                             return self.event.title;
+                        },
+                        filter: function () {
+                            var skipResolvedCases = UiSettingsSrv.disallowMergeAlertInResolvedSimilarCases() === true;
+
+                            if (skipResolvedCases) {
+                                return {
+                                    _ne: {
+                                        _field: 'status',
+                                        _value: 'Resolved'
+                                    }
+                                }
+                            }
+
+                            return null;
                         }
                     }
                 });
 
-                caseModal.result.then(function(selectedCase) {
+                caseModal.result.then(function (selectedCase) {
                     self.mergeIntoCase(selectedCase._id);
-                }).catch(function(err) {
-                    if(err && !_.isString(err)) {
+                }).catch(function (err) {
+                    if (err && !_.isString(err)) {
                         NotificationSrv.error('AlertEventCtrl', err.data, err.status);
                     }
                 });
             };
 
-            this.follow = function() {
+            this.follow = function () {
                 var fn = angular.noop;
 
                 if (self.event.follow === true) {
@@ -131,26 +145,26 @@
                     fn = AlertingSrv.follow;
                 }
 
-                fn(self.event._id).then(function() {
+                fn(self.event._id).then(function () {
                     $uibModalInstance.close();
-                }).catch(function(response) {
+                }).catch(function (response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
             };
 
-            this.delete = function() {
+            this.delete = function () {
                 ModalUtilsSrv.confirm('Remove Alert', 'Are you sure you want to delete this Alert?', {
                     okText: 'Yes, remove it',
                     flavor: 'danger'
-                }).then(function() {
+                }).then(function () {
                     AlertingSrv.forceRemove(self.event._id)
-                    .then(function() {
-                        $uibModalInstance.close();
-                        NotificationSrv.log('Alert has been permanently deleted', 'success');
-                    })
-                    .catch(function(response) {
-                        NotificationSrv.error('AlertEventCtrl', response.data, response.status);
-                    });
+                        .then(function () {
+                            $uibModalInstance.close();
+                            NotificationSrv.log('Alert has been permanently deleted', 'success');
+                        })
+                        .catch(function (response) {
+                            NotificationSrv.error('AlertEventCtrl', response.data, response.status);
+                        });
                 });
 
             };
@@ -158,32 +172,32 @@
             this.canMarkAsRead = AlertingSrv.canMarkAsRead;
             this.canMarkAsUnread = AlertingSrv.canMarkAsUnread;
 
-            this.markAsRead = function() {
+            this.markAsRead = function () {
                 var fn = angular.noop;
 
-                if(this.canMarkAsRead(this.event)) {
+                if (this.canMarkAsRead(this.event)) {
                     fn = AlertingSrv.markAsRead;
                 } else {
                     fn = AlertingSrv.markAsUnread;
                 }
 
-                fn(this.event._id).then(function( /*data*/ ) {
+                fn(this.event._id).then(function ( /*data*/) {
                     $uibModalInstance.close();
-                }, function(response) {
+                }, function (response) {
                     NotificationSrv.error('AlertEventCtrl', response.data, response.status);
                 });
             };
 
-            self.cancel = function() {
+            self.cancel = function () {
                 $uibModalInstance.dismiss();
             };
 
-            self.copyId = function(id) {
+            self.copyId = function (id) {
                 clipboard.copyText(id);
                 NotificationSrv.log('Alert ID has been copied to clipboard', 'success');
             };
 
-            this.$onInit = function() {
+            this.$onInit = function () {
                 self.load();
             };
         });
