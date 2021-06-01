@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function ($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, UtilsSrv, StreamSrv, StreamQuerySrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function ($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, AnalyzerSrv, StreamSrv, StreamQuerySrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if (currentUser === 520) {
@@ -182,6 +182,8 @@ angular.module('theHiveControllers').controller('RootCtrl',
                         });
                 })
                 .then(function () {
+                    AnalyzerSrv.clearCache()
+
                     $state.go('app.index', {}, { reload: true });
                 })
                 .catch(function (err) {
