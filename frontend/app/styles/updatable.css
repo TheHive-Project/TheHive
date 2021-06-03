@@ -10,7 +10,7 @@
     padding-right: 20px;
 }
 
-.updatable-input .updatable-input-value-wrapper:hover{
+.updatable-input .updatable-input-value-wrapper:hover {
     border-bottom: 1px solid #337ab7;
     cursor: pointer;
 }
@@ -35,7 +35,9 @@
 
 .updatable-input.updatable-input-text .updatable-input-markdown {
     cursor: auto;
+    min-height: 21px;
 }
+
 .updatable-input.updatable-input-text .updatable-input-markdown .updatable-input-icon {
     /* float:left;
     margin-left: 0; */
