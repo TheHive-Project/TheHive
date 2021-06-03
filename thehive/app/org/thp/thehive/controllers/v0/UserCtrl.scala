@@ -126,17 +126,17 @@ class UserCtrl @Inject() (
       .auth { implicit request =>
         for {
           user <- db.roTransaction { implicit graph =>
-            userSrv
-              .get(EntityIdOrName(userId))
-              .getOrFail("User")
-              .flatMap { u =>
-                userSrv
-                  .current
-                  .organisations(Permissions.manageUser)
-                  .users
-                  .getEntity(u)
-                  .getOrFail("User")
-              }
+            if (
+              userSrv
+                .get(EntityIdOrName(userId))
+                .organisations
+                .filterNot(_.users(Permissions.manageUser).current)
+                .exists && !userSrv.current.organisations(Permissions.manageUser).isAdmin
+            ) Failure(AuthorizationError("You are not authorized to set password of this user"))
+            else
+              userSrv
+                .get(EntityIdOrName(userId))
+                .getOrFail("User")
           }
           _ <- authSrv.setPassword(userId, request.body("password"))
           _ <- db.tryTransaction(implicit graph => auditSrv.user.update(user, Json.obj("password" -> "<hidden>")))

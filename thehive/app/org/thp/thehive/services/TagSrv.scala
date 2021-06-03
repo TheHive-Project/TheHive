@@ -7,7 +7,7 @@ import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.services.{EdgeSrv, IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{EdgeSrv, EntitySelector, IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
@@ -176,7 +176,7 @@ object TagOps {
 class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] {
 
   override def resolve(entities: Seq[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
-    firstCreatedEntity(entities).foreach {
+    EntitySelector.firstCreatedEntity(entities).foreach {
       case (head, tail) =>
         tail.foreach(copyEdge(_, head))
         val tailIds = tail.map(_._id)
@@ -186,7 +186,7 @@ class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) ext
     Success(())
   }
 
-  override def globalCheck(): Map[String, Long] =
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         val orphans = service
@@ -197,8 +197,8 @@ class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) ext
           .toSeq
         if (orphans.nonEmpty) {
           service.getByIds(orphans: _*).remove()
-          Map("orphan" -> orphans.size.toLong)
-        } else Map.empty[String, Long]
+          Map("orphan" -> orphans.size)
+        } else Map.empty[String, Int]
       }
-    }.getOrElse(Map("globalFailure" -> 1L))
+    }.getOrElse(Map("globalFailure" -> 1))
 }

@@ -11,6 +11,7 @@ import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{
   AuthorizationError,
   BadRequestError,
+  CreateError,
   EntityId,
   EntityIdOrName,
   EntityName,
@@ -322,23 +323,42 @@ class AlertCtrl @Inject() (
       .getOrFail(EntityName(observable.dataType))
       .flatMap {
         case attachmentType if attachmentType.isAttachment =>
-          observable.data.map(_.split(';')).toTry {
-            case Array(filename, contentType, value) =>
-              val data = Base64.getDecoder.decode(value)
-              attachmentSrv
-                .create(filename, contentType, data)
-                .flatMap(attachment => alertSrv.createObservable(alert, observable.toObservable, attachment))
-            case Array(filename, contentType) =>
-              attachmentSrv
-                .create(filename, contentType, Array.emptyByteArray)
-                .flatMap(attachment => alertSrv.createObservable(alert, observable.toObservable, attachment))
-            case data =>
-              Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
-          }
+          observable
+            .data
+            .map(_.split(';'))
+            .toTry {
+              case Array(filename, contentType, value) =>
+                val data = Base64.getDecoder.decode(value)
+                attachmentSrv
+                  .create(filename, contentType, data)
+                  .flatMap(attachment => alertSrv.createObservable(alert, observable.toObservable, attachment)) match {
+                  case Success(o)              => Success(Some(o))
+                  case Failure(_: CreateError) => Success(None)
+                  case Failure(otherError)     => Failure(otherError)
+                }
+              case Array(filename, contentType) =>
+                attachmentSrv
+                  .create(filename, contentType, Array.emptyByteArray)
+                  .flatMap(attachment => alertSrv.createObservable(alert, observable.toObservable, attachment)) match {
+                  case Success(o)              => Success(Some(o))
+                  case Failure(_: CreateError) => Success(None)
+                  case Failure(otherError)     => Failure(otherError)
+                }
+              case data =>
+                Failure(InvalidFormatAttributeError("artifacts.data", "filename;contentType;base64value", Set.empty, FString(data.mkString(";"))))
+            }
+            .map(_.flatten)
         case _ =>
           observable
             .data
-            .toTry(d => alertSrv.createObservable(alert, observable.toObservable, d))
+            .toTry { data =>
+              alertSrv.createObservable(alert, observable.toObservable, data) match {
+                case Success(o)              => Success(Some(o))
+                case Failure(_: CreateError) => Success(None)
+                case Failure(otherError)     => Failure(otherError)
+              }
+            }
+            .map(_.flatten)
       }
 }
 

@@ -237,9 +237,7 @@ object CaseTemplateOps {
         }
         .getOrElse(traversal.empty)
 
-    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
@@ -252,11 +250,8 @@ object CaseTemplateOps {
           case CustomFieldType.string  => traversal.filter(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
 
-    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] = {
-      val cfFilter = (t: Traversal.V[CustomField]) => customField.fold(id => t.hasId(id), name => t.has(_.name, name))
-
+    def hasNotCustomField(customFieldSrv: CustomFieldSrv, customField: EntityIdOrName): Traversal.V[CaseTemplate] =
       customFieldSrv
         .get(customField)(traversal.graph)
         .value(_.`type`)
@@ -269,7 +264,6 @@ object CaseTemplateOps {
           case CustomFieldType.string  => traversal.filterNot(_.customFields.has(_.stringValue).inV.v[CustomField].get(customField))
         }
         .getOrElse(traversal.empty)
-    }
   }
 
   implicit class CaseTemplateCustomFieldsOpsDefs(traversal: Traversal.E[CaseTemplateCustomField]) extends CustomFieldValueOpsDefs(traversal)
@@ -280,7 +274,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
     val service: CaseTemplateSrv,
     organisationSrv: OrganisationSrv
 ) extends IntegrityCheckOps[CaseTemplate] {
-  override def findDuplicates: Seq[Seq[CaseTemplate with Entity]] =
+  override def findDuplicates(): Seq[Seq[CaseTemplate with Entity]] =
     db.roTransaction { implicit graph =>
       organisationSrv
         .startTraversal
@@ -306,7 +300,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] =
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         val orphanIds = service.startTraversal.filterNot(_.organisation)._id.toSeq
@@ -314,7 +308,7 @@ class CaseTemplateIntegrityCheckOps @Inject() (
           logger.warn(s"Found ${orphanIds.length} caseTemplate orphan(s) (${orphanIds.mkString(",")})")
           service.getByIds(orphanIds: _*).remove()
         }
-        Map("orphans" -> orphanIds.size.toLong)
+        Map("orphans" -> orphanIds.size)
       }
-    }.getOrElse(Map("globalFailure" -> 1L))
+    }.getOrElse(Map("globalFailure" -> 1))
 }

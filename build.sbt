@@ -2,7 +2,7 @@ import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.1.4-1"
+val thehiveVersion         = "4.1.5-1"
 val scala212               = "2.12.13"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
@@ -85,7 +85,7 @@ lazy val thehive = (project in file("."))
       (thehiveFrontend / gruntDev).value
       (Compile / run).evaluated
     },
-    discoveredMainClasses in Compile := Seq("play.core.server.ProdServerStart", "org.thp.thehive.migration.Migrate"),
+    discoveredMainClasses in Compile := Seq("play.core.server.ProdServerStart", "org.thp.thehive.migration.Migrate", "org.thp.thehive.cloner.Cloner"),
     mainClass in (Compile, bashScriptDefines) := None,
     makeBashScripts ~= {
       _.map {
@@ -202,7 +202,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "npm",
         inputFiles = baseDirectory.value / "package.json",
         outputFiles = baseDirectory.value / "node_modules" ** AllPassFilter,
-        command = baseDirectory.value -> "npm install",
+        command = baseDirectory.value -> "npm ci",
         streams = streams.value
       ),
     bower := FileBuilder(

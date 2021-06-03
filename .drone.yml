@@ -28,7 +28,7 @@ steps:
   - name: run-tests
     image: thehiveproject/drone-scala-node
     commands:
-      - sbt -Duser.home=$PWD test:compile test
+      - sbt -Duser.home=$PWD test:compile
 
   # Save external libraries in cache
   - name: save-cache

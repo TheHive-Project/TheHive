@@ -170,10 +170,11 @@ case class AggSum(aggName: Option[String], fieldName: String, filter: Option[Inp
       .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     filter
       .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
+      .fold
       .coalesce(
         t =>
           property
-            .select(fieldPath, t, authContext)
+            .select(fieldPath, t.unfold, authContext)
             .sum
             .domainMap(sum => Output(Json.obj(name -> JsNumber(BigDecimal(sum.toString)))))
             .castDomain[Output[_]],
@@ -196,10 +197,11 @@ case class AggAvg(aggName: Option[String], fieldName: String, filter: Option[Inp
       .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     filter
       .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
+      .fold
       .coalesce(
         t =>
           property
-            .select(fieldPath, t, authContext)
+            .select(fieldPath, t.unfold, authContext)
             .mean
             .domainMap(avg => Output(Json.obj(name -> avg)))
             .asInstanceOf[Traversal.Domain[Output[_]]],
@@ -222,10 +224,11 @@ case class AggMin(aggName: Option[String], fieldName: String, filter: Option[Inp
       .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     filter
       .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
+      .fold
       .coalesce(
         t =>
           property
-            .select(fieldPath, t, authContext)
+            .select(fieldPath, t.unfold, authContext)
             .min
             .domainMap(min => Output(Json.obj(name -> property.toJson(min)))),
         Output(Json.obj(name -> JsNull))
@@ -247,10 +250,11 @@ case class AggMax(aggName: Option[String], fieldName: String, filter: Option[Inp
       .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
     filter
       .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
+      .fold
       .coalesce(
         t =>
           property
-            .select(fieldPath, t, authContext)
+            .select(fieldPath, t.unfold, authContext)
             .max
             .domainMap(max => Output(Json.obj(name -> property.toJson(max)))),
         Output(Json.obj(name -> JsNull))

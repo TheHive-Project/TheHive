@@ -86,14 +86,14 @@ class DataIntegrityCheckOps @Inject() (val db: Database, val service: DataSrv) e
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] =
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         val orphans = service.startTraversal.filterNot(_.inE[ObservableData])._id.toSeq
         if (orphans.nonEmpty) {
           service.getByIds(orphans: _*).remove()
-          Map("orphan" -> orphans.size.toLong)
-        } else Map.empty[String, Long]
+          Map("orphan" -> orphans.size)
+        } else Map.empty[String, Int]
       }
-    }.getOrElse(Map("globalFailure" -> 1L))
+    }.getOrElse(Map("globalFailure" -> 1))
 }

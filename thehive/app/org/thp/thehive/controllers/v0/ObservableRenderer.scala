@@ -35,6 +35,7 @@ trait ObservableRenderer {
   def observableLinkRenderer: V[Observable] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
     _.coalesceMulti(
       _.alert.richAlert.domainMap(a => Json.obj("alert" -> a.toJson)),
-      _.`case`.richCaseWithoutPerms.domainMap(c => Json.obj("case" -> c.toJson))
+      _.`case`.richCaseWithoutPerms.domainMap(c => Json.obj("case" -> c.toJson)),
+      _.constant2[JsObject, JMap[String, Any]](JsObject.empty)
     )
 }

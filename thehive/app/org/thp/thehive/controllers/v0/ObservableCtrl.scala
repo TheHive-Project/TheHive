@@ -102,7 +102,7 @@ class ObservableCtrl @Inject() (
         caseSrv.createObservable(`case`, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
-      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> data)))
     }
 
   private def createAttachmentObservableInCase(
@@ -123,9 +123,9 @@ class ObservableCtrl @Inject() (
         }
       } match {
       case Success(o) => Right(o.toJson)
-      case _ =>
+      case Failure(error) =>
         val filename = fileOrAttachment.fold(_.filename, _.name)
-        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+        Left(errorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
     }
 
   def createInAlert(alertId: String): Action[AnyContent] =
@@ -183,7 +183,7 @@ class ObservableCtrl @Inject() (
         alertSrv.createObservable(alert, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
-      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+      case Failure(error) => Left(errorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> data)))
     }
 
   private def createAttachmentObservableInAlert(
@@ -223,7 +223,7 @@ class ObservableCtrl @Inject() (
         attachment.fold(createAttachment)
       } match {
       case Success(o) => Right(o.toJson)
-      case _ =>
+      case Failure(error) =>
         object attachmentName extends Poly1 {
           implicit val fromFile: Case.Aux[FFile, String]                 = at[FFile](_.filename)
           implicit val fromAttachment: Case.Aux[InputAttachment, String] = at[InputAttachment](_.name)
@@ -232,7 +232,7 @@ class ObservableCtrl @Inject() (
           }
         }
         val filename = attachment.fold(attachmentName)
-        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+        Left(errorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
     }
 
   def get(observableId: String): Action[AnyContent] =
@@ -276,6 +276,8 @@ class ObservableCtrl @Inject() (
           .filteredSimilar
           .visible(organisationSrv)
           .richObservableWithCustomRenderer(organisationSrv, observableLinkRenderer)
+          .toIterator
+          .filterNot(_._2.keys.isEmpty)
           .toSeq
 
         Success(Results.Ok(observables.toJson))

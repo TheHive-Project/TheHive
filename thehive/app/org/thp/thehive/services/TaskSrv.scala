@@ -3,7 +3,7 @@ package org.thp.thehive.services
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
-import org.thp.scalligraph.models.{Entity, Model}
+import org.thp.scalligraph.models.{Database, Entity, Model, UMapping}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.Identity
@@ -12,6 +12,7 @@ import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
 import org.thp.thehive.models.{TaskStatus, _}
+import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
@@ -20,7 +21,7 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import java.lang.{Boolean => JBoolean}
 import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TaskSrv @Inject() (
@@ -235,4 +236,45 @@ object TaskOps {
     def share(organisation: EntityIdOrName): Traversal.V[Share] =
       traversal.in[ShareTask].filter(_.in[OrganisationShare].v[Organisation].get(organisation)).v[Share]
   }
+}
+
+class TaskIntegrityCheckOps @Inject() (val db: Database, val service: TaskSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Task] {
+  override def resolve(entities: Seq[Task with Entity])(implicit graph: Graph): Try[Unit] = Success(())
+
+  override def globalCheck(): Map[String, Int] =
+    db.tryTransaction { implicit graph =>
+      Try {
+        service
+          .startTraversal
+          .project(
+            _.by
+              .by(_.unionFlat(_.`case`._id, _.caseTemplate._id).fold)
+              .by(_.unionFlat(_.organisations._id, _.caseTemplate.organisation._id).fold)
+          )
+          .toIterator
+          .map {
+            case (task, relatedIds, organisationIds) =>
+              val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
+                .check(task, task.organisationIds, organisationIds)
+
+              val removeOrphan: OrphanStrategy[Task, EntityId] = { (a, entity) =>
+                service.get(entity).remove()
+                Map("Task-relatedId-removeOrphan" -> 1)
+              }
+
+              val relatedStats = new SingleLinkChecker[Product, EntityId, EntityId](
+                orphanStrategy = removeOrphan,
+                setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
+                entitySelector = _ => EntitySelector.firstCreatedEntity,
+                removeLink = (_, _) => (),
+                getLink = id => graph.VV(id).entity.head,
+                Some(_)
+              ).check(task, task.relatedId, relatedIds)
+
+              orgStats <+> relatedStats
+          }
+          .reduceOption(_ <+> _)
+          .getOrElse(Map.empty)
+      }
+    }.getOrElse(Map("globalFailure" -> 1))
 }
