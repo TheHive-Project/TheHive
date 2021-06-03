@@ -39,7 +39,7 @@ object Cloner extends App with IntegrityCheckApp {
   val argParser = {
     import builder._
     OParser.sequence(
-      programName("clone"),
+      programName("cloner"),
       version('v', "version"),
       help('h', "help"),
       head("TheHive cloner tool", getVersion),
