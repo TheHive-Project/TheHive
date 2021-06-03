@@ -57,6 +57,7 @@ class TestMispClientProvider(action: DefaultActionBuilder, implicit val fileMime
       baseUrl = baseUrl,
       auth = NoAuthentication,
       ws = ws,
+      maxAttributes = None,
       maxAge = None,
       excludedOrganisations = Nil,
       whitelistOrganisations = Nil,

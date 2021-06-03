@@ -5,7 +5,7 @@ import org.thp.scalligraph._
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCase, InputTask}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
@@ -14,6 +14,7 @@ import org.thp.thehive.services._
 import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, Results}
 
+import java.util.{Map => JMap}
 import scala.util.{Failure, Success}
 
 class CaseCtrl(
@@ -148,19 +149,21 @@ class CaseCtrl(
 
   def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("case link")
-      .authRoTransaction(db) { implicit request => implicit graph =>
-        val relatedCases = caseSrv
-          .get(EntityIdOrName(caseIdOrNumber))
-          .visible
-          .linkedCases
-          .map {
-            case (c, o) =>
-              c.toJson.as[JsObject] +
-                ("linkedWith" -> o.toJson) +
-                ("linksCount" -> JsNumber(o.size))
-          }
-
-        Success(Results.Ok(JsArray(relatedCases)))
+      .auth { implicit request =>
+        val src = db.source { implicit graph =>
+          caseSrv
+            .get(EntityIdOrName(caseIdOrNumber))
+            .visible
+            .linkedCases
+            .domainMap {
+              case (c, o) =>
+                c.toJson.as[JsObject] +
+                  ("linkedWith" -> o.toJson) +
+                  ("linksCount" -> JsNumber(o.size))
+            }
+            .toIterator
+        }
+        Success(Results.Ok.chunked(src.map(_.toString).intersperse("[", ",", "]"), Some("application/json")))
       }
 }
 
@@ -211,7 +214,19 @@ class PublicCase(
     ),
     Query[Traversal.V[Case], Traversal.V[User]]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
     Query[Traversal.V[Case], Traversal.V[Organisation]]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
-    Query[Traversal.V[Case], Traversal.V[Alert]]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(authContext))
+    Query[Traversal.V[Case], Traversal.V[Alert]]("alerts", (caseSteps, authContext) => caseSteps.alert.visible(authContext)),
+    Query[Traversal.V[Case], Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
+      "linkedCases",
+      (caseSteps, authContext) =>
+        caseSteps
+          .linkedCases(authContext)
+          .domainMap {
+            case (c, o) =>
+              c.toJson.as[JsObject] +
+                ("linkedWith" -> o.toJson) +
+                ("linksCount" -> JsNumber(o.size))
+          }
+    )
   )
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Case]
@@ -298,10 +313,30 @@ class PublicCase(
       .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
       .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .property("viewingOrganisation", UMapping.string)(
-        _.authSelect((cases, authContext) => cases.organisations.visible(authContext).value(_.name)).readonly
+        _.select(t => t.value(_.organisationIds).domainMap(organisationSrv.getName(_)(t.graph)))
+          .filter[String] {
+            case (_, caseTraversal, _, Right(orgNamePredicate)) =>
+              val organisationId = orgNamePredicate.mapValue(o => organisationSrv.getId(EntityIdOrName(o))(caseTraversal.graph))
+              caseTraversal.has(_.organisationIds, organisationId)
+            case (_, caseTraversal, _, Left(true)) =>
+              caseTraversal
+            case (_, caseTraversal, _, Left(false)) =>
+              caseTraversal.empty
+          }
+          .readonly
       )
       .property("owningOrganisation", UMapping.string)(
-        _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
+        _.select(t => t.value(_.owningOrganisation).domainMap(organisationSrv.getName(_)(t.graph)))
+          .filter[String] {
+            case (_, caseTraversal, _, Right(orgNamePredicate)) =>
+              val organisationId = orgNamePredicate.mapValue(o => organisationSrv.getId(EntityIdOrName(o))(caseTraversal.graph))
+              caseTraversal.has(_.owningOrganisation, organisationId)
+            case (_, caseTraversal, _, Left(true)) =>
+              caseTraversal
+            case (_, caseTraversal, _, Left(false)) =>
+              caseTraversal.empty
+          }
+          .readonly
       )
       .property("patternId", UMapping.string.sequence)(_.select(_.procedure.pattern.value(_.patternId)).readonly)
       .build

@@ -104,7 +104,10 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
     () => wire[CaseTemplateIntegrityCheckOps],
     () => wire[DataIntegrityCheckOps],
     () => wire[CaseIntegrityCheckOps],
-    () => wire[AlertIntegrityCheckOps]
+    () => wire[AlertIntegrityCheckOps],
+    () => wire[TaskIntegrityCheckOps],
+    () => wire[ObservableIntegrityCheckOps],
+    () => wire[LogIntegrityCheckOps]
   )
 
   lazy val entrypoint: Entrypoint     = wire[Entrypoint]

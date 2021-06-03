@@ -245,7 +245,7 @@ class CaseTemplateIntegrityCheckOps(
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] =
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         val orphanIds = service.startTraversal.filterNot(_.organisation)._id.toSeq
@@ -253,7 +253,7 @@ class CaseTemplateIntegrityCheckOps(
           logger.warn(s"Found ${orphanIds.length} caseTemplate orphan(s) (${orphanIds.mkString(",")})")
           service.getByIds(orphanIds: _*).remove()
         }
-        Map("orphans" -> orphanIds.size.toLong)
+        Map("orphans" -> orphanIds.size)
       }
-    }.getOrElse(Map("globalFailure" -> 1L))
+    }.getOrElse(Map("globalFailure" -> 1))
 }

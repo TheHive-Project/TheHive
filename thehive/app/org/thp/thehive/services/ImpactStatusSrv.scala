@@ -49,5 +49,5 @@ class ImpactStatusIntegrityCheckOps(val db: Database, val service: ImpactStatusS
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] = Map.empty
+  override def globalCheck(): Map[String, Int] = Map.empty
 }

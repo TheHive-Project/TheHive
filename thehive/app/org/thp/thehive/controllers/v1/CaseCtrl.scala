@@ -5,14 +5,16 @@ import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsArray, JsNumber, JsObject}
+import play.api.libs.json.{JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
+
+import java.util.{Map => JMap}
 import scala.util.Success
 
 class CaseCtrl(
@@ -80,7 +82,19 @@ class CaseCtrl(
         alertSrv.startTraversal(caseSteps.graph).has(_.caseId, P.within(caseSteps._id.toSeq: _*)).visible(authContext)
     ),
     Query[Traversal.V[Case], Traversal.V[Share]]("shares", (caseSteps, authContext) => caseSteps.shares.visible(authContext)),
-    Query[Traversal.V[Case], Traversal.V[Procedure]]("procedures", (caseSteps, _) => caseSteps.procedure)
+    Query[Traversal.V[Case], Traversal.V[Procedure]]("procedures", (caseSteps, _) => caseSteps.procedure),
+    Query[Traversal.V[Case], Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]]](
+      "linkedCases",
+      (caseSteps, authContext) =>
+        caseSteps
+          .linkedCases(authContext)
+          .domainMap {
+            case (c, o) =>
+              c.toJson.as[JsObject] +
+                ("linkedWith" -> o.toJson) +
+                ("linksCount" -> JsNumber(o.size))
+          }
+    )
   )
 
   def create: Action[AnyContent] =
@@ -175,18 +189,20 @@ class CaseCtrl(
 
   def linkedCases(caseIdOrNumber: String): Action[AnyContent] =
     entrypoint("case link")
-      .authRoTransaction(db) { implicit request => implicit graph =>
-        val relatedCases = caseSrv
-          .get(EntityIdOrName(caseIdOrNumber))
-          .visible
-          .linkedCases
-          .map {
-            case (c, o) =>
-              c.toJson.as[JsObject] +
-                ("linkedWith" -> o.toJson) +
-                ("linksCount" -> JsNumber(o.size))
-          }
-
-        Success(Results.Ok(JsArray(relatedCases)))
+      .auth { implicit request =>
+        val src = db.source { implicit graph =>
+          caseSrv
+            .get(EntityIdOrName(caseIdOrNumber))
+            .visible
+            .linkedCases
+            .domainMap {
+              case (c, o) =>
+                c.toJson.as[JsObject] +
+                  ("linkedWith" -> o.toJson) +
+                  ("linksCount" -> JsNumber(o.size))
+            }
+            .toIterator
+        }
+        Success(Results.Ok.chunked(src.map(_.toString).intersperse("[", ",", "]"), Some("application/json")))
       }
 }

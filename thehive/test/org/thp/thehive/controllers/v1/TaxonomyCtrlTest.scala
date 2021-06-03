@@ -3,7 +3,6 @@ package org.thp.thehive.controllers.v1
 import eu.timepit.refined.auto._
 import io.scalaland.chimney.dsl.TransformerOps
 import org.thp.scalligraph.controllers.FakeTemporaryFile
-import org.thp.thehive.dto.String128
 import org.thp.thehive.dto.v1._
 import play.api.libs.Files
 import play.api.libs.json.{JsArray, JsString, Json}

@@ -90,7 +90,7 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
 
   def duplicationCheck(name: String): Map[String, Long] = {
     val startDate = System.currentTimeMillis()
-    val result    = integrityCheckMap.get(name).fold(Map("checkNotFound" -> 1L))(_.duplicationCheck())
+    val result    = integrityCheckMap.get(name).fold(Map("checkNotFound" -> 1L))(_.duplicationCheck().view.mapValues(_.toLong).toMap)
     val endDate   = System.currentTimeMillis()
     result + ("startDate" -> startDate) + ("endDate" -> endDate) + ("duration" -> (endDate - startDate))
   }
@@ -124,11 +124,11 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
         .scheduleWithFixedDelay(initialDelay, interval) { () =>
           logger.debug(s"Global check of ${integrityCheck.name}")
           val startDate = System.currentTimeMillis()
-          val result    = integrityCheck.globalCheck()
+          val result    = integrityCheck.globalCheck().view.mapValues(_.toLong).toMap
           val duration  = System.currentTimeMillis() - startDate
           self ! GlobalCheckResult(integrityCheck.name, result + ("duration" -> duration))
         }
-    }.toSeq
+    }
   }
 
   override def postStop(): Unit = {
@@ -146,7 +146,7 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
         .scheduleWithFixedDelay(initialDelay, interval) { () =>
           logger.debug(s"Global check of ${integrityCheck.name}")
           val startDate = System.currentTimeMillis()
-          val result    = integrityCheckMap.get(integrityCheck.name).fold(Map("checkNotFound" -> 1L))(_.globalCheck())
+          val result    = integrityCheckMap.get(integrityCheck.name).fold(Map("checkNotFound" -> 1L))(_.globalCheck().view.mapValues(_.toLong).toMap)
           val duration  = System.currentTimeMillis() - startDate
           self ! GlobalCheckResult(integrityCheck.name, result + ("duration" -> duration))
         }
@@ -174,7 +174,7 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
           Future {
             logger.debug(s"Duplication check of $name")
             val startDate = System.currentTimeMillis()
-            val result    = integrityCheckMap.get(name).fold(Map("checkNotFound" -> 1L))(_.duplicationCheck())
+            val result    = integrityCheckMap.get(name).fold(Map("checkNotFound" -> 1L))(_.duplicationCheck().view.mapValues(_.toLong).toMap)
             val duration  = System.currentTimeMillis() - startDate
             self ! DuplicationCheckResult(name, result + ("duration" -> duration))
           }(checkExecutionContext)
@@ -198,7 +198,7 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
           Future {
             logger.debug(s"Global check of $name")
             val startDate = System.currentTimeMillis()
-            val result    = integrityCheckMap.get(name).fold(Map("checkNotFound" -> 1L))(_.globalCheck())
+            val result    = integrityCheckMap.get(name).fold(Map("checkNotFound" -> 1L))(_.globalCheck().view.mapValues(_.toLong).toMap)
             val duration  = System.currentTimeMillis() - startDate
             self ! GlobalCheckResult(name, result + ("duration" -> duration))
           }(checkExecutionContext)
@@ -206,6 +206,7 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
         }
       }
     case GlobalCheckResult(name, stats) =>
+      logger.info(s"End of $name global check: $stats")
       states.get(name).foreach { state =>
         context.become(receive(states + (name -> state.copy(globalStats = state.globalStats + stats))))
       }

@@ -15,7 +15,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.services.config.ConfigItem
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
-import org.thp.scalligraph.{EntityId, EntityIdOrName, NotFoundError}
+import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName, NotFoundError}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
 import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.Conversion._
@@ -27,7 +27,7 @@ import play.api.libs.json.{JsObject, JsString, Json}
 import java.nio.file.Files
 import java.util.{Date, Map => JMap}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 class JobSrv(
     _cortexActor: => ActorRef @@ CortexTag,
@@ -216,21 +216,28 @@ class JobSrv(
       .flatMap(_.artifacts)
     Future
       .traverse(artifacts) { artifact =>
-        db.tryTransaction(graph => observableTypeSrv.getOrFail(EntityIdOrName(artifact.dataType))(graph)) match {
-          case Success(attachmentType) if attachmentType.isAttachment => importCortexAttachment(job, artifact, cortexClient)
-          case _: Success[_] =>
-            Future
-              .fromTry {
-                db.tryTransaction { implicit graph =>
-                  for {
-                    origObs <- get(job).observable.getOrFail("Observable")
-                    obs     <- observableSrv.create(artifact.toObservable(job._id, origObs.organisationIds), artifact.data.get)
-                    _       <- addObservable(job, obs.observable)
-                  } yield ()
-                }
-              }
-          case Failure(e) => Future.failed(e)
-        }
+        db.tryTransaction(graph => observableTypeSrv.getOrFail(EntityIdOrName(artifact.dataType))(graph))
+          .fold(
+            Future.failed,
+            {
+              case attachmentType if attachmentType.isAttachment => importCortexAttachment(job, artifact, cortexClient)
+              case _ =>
+                Future
+                  .fromTry {
+                    db.tryTransaction { implicit graph =>
+                      for {
+                        origObs <- get(job).observable.getOrFail("Observable")
+                        obs     <- observableSrv.create(artifact.toObservable(job._id, origObs.organisationIds), artifact.data.get)
+                        _       <- addObservable(job, obs.observable)
+                      } yield ()
+                    }
+                  }
+            }
+          )
+          .recover {
+            case _: CreateError =>
+            case error          => logger.error("Fail to import observable from Job", error)
+          }
       }
       .map(_ => Done)
   }
@@ -255,7 +262,7 @@ class JobSrv(
       cortexClient: CortexClient
   )(implicit
       authContext: AuthContext
-  ): Future[Attachment with Entity] =
+  ): Future[Unit] =
     artifact
       .attachment
       .map { attachment =>
@@ -264,17 +271,17 @@ class JobSrv(
           src <- cortexClient.getAttachment(attachment.id)
           _   <- src.runWith(FileIO.toPath(file))
           fFile = FFile(attachment.name.getOrElse(attachment.id), file, attachment.contentType.getOrElse("application/octet-stream"))
-          savedAttachment <- Future.fromTry {
+          _ <- Future.fromTry {
             db.tryTransaction { implicit graph =>
               for {
                 origObs           <- get(job).observable.getOrFail("Observable")
                 createdAttachment <- attachmentSrv.create(fFile)
                 richObservable    <- observableSrv.create(artifact.toObservable(job._id, origObs.organisationIds), createdAttachment)
                 _                 <- reportObservableSrv.create(ReportObservable(), job, richObservable.observable)
-              } yield createdAttachment
+              } yield ()
             }
           }
-        } yield savedAttachment)
+        } yield ())
           .andThen { case _ => Files.delete(file) }
       }
       .getOrElse(Future.failed(new Exception(s"Attachment not present for artifact ${artifact.dataType}")))

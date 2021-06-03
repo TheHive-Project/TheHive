@@ -17,7 +17,7 @@ import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.{CustomFieldSrv, LogSrv, OrganisationSrv, TheHiveOps}
-import play.api.libs.json.{JsObject, Json, OWrites}
+import play.api.libs.json.{JsObject, JsString, Json, OWrites}
 
 import java.util.{Date, Map => JMap}
 import scala.concurrent.{ExecutionContext, Future}
@@ -76,16 +76,22 @@ class ActionSrv(
         case None => Future.failed(NotFoundError(s"Responder $workerId not found"))
       }
       (label, tlp, pap) <- Future.fromTry(db.roTransaction(implicit graph => entityHelper.entityInfo(entity)))
-      inputCortexAction = CortexAction(label, writes.writes(entity), s"thehive:${fromObjectType(entity._label)}", tlp, pap, parameters)
+      parametersWithRequesterInfo = db.roTransaction { implicit graph =>
+        parameters +
+          ("organisation" -> JsString(organisationSrv.current.value(_.name).head)) +
+          ("user"         -> JsString(authContext.userId))
+      }
+      inputCortexAction =
+        CortexAction(label, writes.writes(entity), s"thehive:${fromObjectType(entity._label)}", tlp, pap, parametersWithRequesterInfo)
       job <- client.execute(workerId, inputCortexAction)
       action = Action(
         job.workerId,
         job.workerName,
         job.workerDefinition,
         job.status.toJobStatus,
-        parameters: JsObject,
+        parametersWithRequesterInfo,
         new Date,
-        job.endDate: Option[Date],
+        job.endDate,
         job.report.flatMap(_.full),
         client.name,
         job.id,

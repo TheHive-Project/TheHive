@@ -276,5 +276,5 @@ class CustomFieldIntegrityCheckOps(val db: Database, val service: CustomFieldSrv
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] = Map.empty
+  override def globalCheck(): Map[String, Int] = Map.empty
 }

@@ -79,7 +79,8 @@ class CaseSrv(
           caseTemplate = caseTemplate.map(_.name),
           impactStatus = None,
           resolutionStatus = None,
-          tags = tagNames
+          tags = tagNames,
+          owningOrganisation = organisationSrv.currentId
         )
       )
       _ <- assignee.map(u => caseUserSrv.create(CaseUser(), createdCase, u)).flip
@@ -204,7 +205,12 @@ class CaseSrv(
         .getOrFail("Share")
         .flatMap {
           case share if share.owner =>
-            get(`case`).shares.toSeq.toTry(s => shareSrv.unshareCase(s._id)).map(_ => get(`case`).remove())
+            get(`case`)
+              .sideEffect(_.alert.update(_.caseId, EntityId.empty))
+              .shares
+              .toSeq
+              .toTry(s => shareSrv.unshareCase(s._id))
+              .map(_ => get(`case`).remove())
           case _ =>
             throw BadRequestError("Your organisation must be owner of the case")
           // shareSrv.unshareCase(share._id)
@@ -501,7 +507,9 @@ trait CaseOpsNoDeps { _: TheHiveOpsNoDeps =>
 //        .in[AuditContext]
 //        .v[Audit]
 
-    def linkedCases(implicit authContext: AuthContext): Seq[(RichCase, Seq[RichObservable])] = {
+    def linkedCases(implicit
+        authContext: AuthContext
+    ): Traversal[(RichCase, Seq[RichObservable]), JMap[String, Any], Converter[(RichCase, Seq[RichObservable]), JMap[String, Any]]] = {
       val originCaseLabel = StepLabel.v[Case]
       val observableLabel = StepLabel.v[Observable] // TODO add similarity on attachment
       traversal
@@ -519,7 +527,6 @@ trait CaseOpsNoDeps { _: TheHiveOpsNoDeps =>
         .group(_.by, _.by(_.select(observableLabel).richObservable.fold))
         .unfold
         .project(_.by(_.selectKeys.richCase).by(_.selectValues))
-        .toSeq
     }
 
     def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
@@ -617,90 +624,32 @@ trait CaseOps { caseOps: TheHiveOps =>
   }
 }
 
-class CaseIntegrityCheckOps(val db: Database, val service: CaseSrv, userSrv: UserSrv, caseTemplateSrv: CaseTemplateSrv)
-    extends IntegrityCheckOps[Case]
+class CaseIntegrityCheckOps(
+    val db: Database,
+    val service: CaseSrv,
+    userSrv: UserSrv,
+    caseTemplateSrv: CaseTemplateSrv,
+    organisationSrv: OrganisationSrv
+) extends IntegrityCheckOps[Case]
     with TheHiveOpsNoDeps {
-  def removeDuplicates(): Unit =
-    findDuplicates()
-      .foreach { entities =>
-        db.tryTransaction { implicit graph =>
-          resolve(entities)
-        }
-      }
 
   override def resolve(entities: Seq[Case with Entity])(implicit graph: Graph): Try[Unit] = {
     val nextNumber = service.nextCaseNumber
-    firstCreatedEntity(entities).foreach(
-      _._2
-        .flatMap(service.get(_).setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity).headOption)
-        .zipWithIndex
-        .foreach {
-          case (vertex, index) =>
-            UMapping.int.setProperty(vertex, "number", nextNumber + index)
-        }
-    )
+    EntitySelector
+      .firstCreatedEntity(entities)
+      .foreach(
+        _._2
+          .flatMap(service.get(_).setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity).headOption)
+          .zipWithIndex
+          .foreach {
+            case (vertex, index) =>
+              UMapping.int.setProperty(vertex, "number", nextNumber + index)
+          }
+      )
     Success(())
   }
 
-  private def organisationCheck(`case`: Case with Entity, organisationIds: Set[EntityId])(implicit graph: Graph): Seq[String] =
-    if (`case`.organisationIds == organisationIds) Nil
-    else {
-      service.get(`case`).update(_.organisationIds, organisationIds).iterate()
-      Seq("invalidOrganisationIds")
-    }
-
-  private def assigneeCheck(`case`: Case with Entity, assignees: Seq[String])(implicit graph: Graph, authContext: AuthContext): Seq[String] =
-    `case`.assignee match {
-      case None if assignees.isEmpty      => Nil
-      case Some(a) if assignees == Seq(a) => Nil
-      case None if assignees.size == 1 =>
-        service.get(`case`).update(_.assignee, assignees.headOption).iterate()
-        Seq("invalidAssigneeLink")
-      case Some(a) if assignees.isEmpty =>
-        userSrv.getByName(a).getOrFail("User") match {
-          case Success(user) =>
-            service.caseUserSrv.create(CaseUser(), `case`, user)
-            Seq("missingAssigneeLink")
-          case _ =>
-            service.get(`case`).update(_.assignee, None).iterate()
-            Seq("invalidAssignee")
-        }
-      case None if assignees.toSet.size == 1 =>
-        service.get(`case`).update(_.assignee, assignees.headOption).flatMap(_.outE[CaseUser].range(1, 100)).remove()
-        Seq("multiAssignment")
-      case _ =>
-        service.get(`case`).flatMap(_.outE[CaseUser].sort(_.by("_createdAt", Order.desc)).range(1, 100)).remove()
-        service.get(`case`).update(_.assignee, service.get(`case`).assignee.value(_.login).headOption).iterate()
-        Seq("incoherentAssignee")
-    }
-
-  def caseTemplateCheck(`case`: Case with Entity, caseTemplates: Seq[String])(implicit graph: Graph, authContext: AuthContext): Seq[String] =
-    `case`.caseTemplate match {
-      case None if caseTemplates.isEmpty        => Nil
-      case Some(ct) if caseTemplates == Seq(ct) => Nil
-      case None if caseTemplates.size == 1 =>
-        service.get(`case`).update(_.caseTemplate, caseTemplates.headOption).iterate()
-        Seq("invalidCaseTemplateLink")
-      case Some(ct) if caseTemplates.isEmpty =>
-        caseTemplateSrv.getByName(ct).getOrFail("User") match {
-          case Success(caseTemplate) =>
-            service.caseCaseTemplateSrv.create(CaseCaseTemplate(), `case`, caseTemplate)
-            Seq("missingCaseTemplateLink")
-          case _ =>
-            service.get(`case`).update(_.caseTemplate, None).iterate()
-            Seq("invalidCaseTemplate")
-        }
-      case None if caseTemplates.toSet.size == 1 =>
-        service.get(`case`).update(_.caseTemplate, caseTemplates.headOption).flatMap(_.outE[CaseCaseTemplate].range(1, 100)).remove()
-        Seq("multiCaseTemplate")
-      case _ =>
-        service.get(`case`).flatMap(_.outE[CaseCaseTemplate].sort(_.by("_createdAt", Order.asc)).range(1, 100)).remove()
-        service.get(`case`).update(_.caseTemplate, service.get(`case`).caseTemplate.value(_.name).headOption).iterate()
-        Seq("incoherentCaseTemplate")
-    }
-  override def globalCheck(): Map[String, Long] = {
-    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-
+  override def globalCheck(): Map[String, Int] =
     db.tryTransaction { implicit graph =>
       Try {
         service
@@ -710,21 +659,28 @@ class CaseIntegrityCheckOps(val db: Database, val service: CaseSrv, userSrv: Use
               .by(_.organisations._id.fold)
               .by(_.assignee.value(_.login).fold)
               .by(_.caseTemplate.value(_.name).fold)
+              .by(_.origin._id.fold)
           )
           .toIterator
-          .flatMap {
-            case (case0, organisationIds, assigneeIds, caseTemplateNames) if organisationIds.nonEmpty =>
-              organisationCheck(case0, organisationIds.toSet) ++ assigneeCheck(case0, assigneeIds) ++ caseTemplateCheck(case0, caseTemplateNames)
-            case (case0, _, _, _) =>
-              service.get(case0).remove()
-              Seq("orphan")
+          .map {
+            case (case0, organisationIds, assigneeIds, caseTemplateNames, owningOrganisationIds) =>
+              val fixOwningOrg: LinkRemover =
+                (caseId, orgId) => service.get(caseId).shares.filter(_.organisation.get(orgId._id)).update(_.owner, false).iterate()
+
+              val assigneeStats = singleOptionLink[User, String]("assignee", userSrv.getByName(_).head, _.login)(_.outEdge[CaseUser])
+                .check(case0, case0.assignee, assigneeIds)
+              val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove) // FIXME => Seq => Set
+                .check(case0, case0.organisationIds, organisationIds)
+              val templateStats =
+                singleOptionLink[CaseTemplate, String]("caseTemplate", caseTemplateSrv.getByName(_).head, _.name)(_.outEdge[CaseCaseTemplate])
+                  .check(case0, case0.caseTemplate, caseTemplateNames)
+              val owningOrgStats = singleIdLink[Organisation]("owningOrganisation", organisationSrv)(_ => fixOwningOrg, _.remove)
+                .check(case0, case0.owningOrganisation, owningOrganisationIds)
+
+              assigneeStats <+> orgStats <+> templateStats <+> owningOrgStats
           }
-          .toSeq
+          .reduceOption(_ <+> _)
+          .getOrElse(Map.empty)
       }
-    }.getOrElse(Seq("globalFailure"))
-      .groupBy(identity)
-      .view
-      .mapValues(_.size.toLong)
-      .toMap
-  }
+    }.getOrElse(Map("globalFailure" -> 1))
 }

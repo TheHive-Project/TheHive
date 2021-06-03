@@ -222,10 +222,30 @@ class Properties(
       .property("computed.handlingDurationInHours", UMapping.long)(_.select(_.handlingDuration.math("_ / 3600000").domainMap(_.toLong)).readonly)
       .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .property("viewingOrganisation", UMapping.string)(
-        _.authSelect((cases, authContext) => cases.organisations.visible(authContext).value(_.name)).readonly
+        _.select(t => t.value(_.organisationIds).domainMap(organisationSrv.getName(_)(t.graph)))
+          .filter[String] {
+            case (_, caseTraversal, _, Right(orgNamePredicate)) =>
+              val organisationId = orgNamePredicate.mapValue(o => organisationSrv.getId(EntityIdOrName(o))(caseTraversal.graph))
+              caseTraversal.has(_.organisationIds, organisationId)
+            case (_, caseTraversal, _, Left(true)) =>
+              caseTraversal
+            case (_, caseTraversal, _, Left(false)) =>
+              caseTraversal.empty
+          }
+          .readonly
       )
       .property("owningOrganisation", UMapping.string)(
-        _.authSelect((cases, authContext) => cases.origin.visible(authContext).value(_.name)).readonly
+        _.select(t => t.value(_.owningOrganisation).domainMap(organisationSrv.getName(_)(t.graph)))
+          .filter[String] {
+            case (_, caseTraversal, _, Right(orgNamePredicate)) =>
+              val organisationId = orgNamePredicate.mapValue(o => organisationSrv.getId(EntityIdOrName(o))(caseTraversal.graph))
+              caseTraversal.has(_.owningOrganisation, organisationId)
+            case (_, caseTraversal, _, Left(true)) =>
+              caseTraversal
+            case (_, caseTraversal, _, Left(false)) =>
+              caseTraversal.empty
+          }
+          .readonly
       )
       .property("patternId", UMapping.string.sequence)(_.select(_.procedure.pattern.value(_.patternId)).readonly)
       .build

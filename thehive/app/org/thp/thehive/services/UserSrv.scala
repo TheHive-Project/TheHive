@@ -331,18 +331,18 @@ class UserIntegrityCheckOps(
     ()
   }
 
-  override def duplicationCheck(): Map[String, Long] = {
+  override def duplicationCheck(): Map[String, Int] = {
     super.duplicationCheck()
     db.tryTransaction { implicit graph =>
       val duplicateTaskAssignments =
-        duplicateInEdges[TaskUser](service.startTraversal).flatMap(firstCreatedElement).map(e => removeEdges(e._2)).size.toLong
+        duplicateInEdges[TaskUser](service.startTraversal).flatMap(ElementSelector.firstCreatedElement).map(e => removeEdges(e._2)).size
       val duplicateCaseAssignments =
-        duplicateInEdges[CaseUser](service.startTraversal).flatMap(firstCreatedElement).map(e => removeEdges(e._2)).size.toLong
+        duplicateInEdges[CaseUser](service.startTraversal).flatMap(ElementSelector.firstCreatedElement).map(e => removeEdges(e._2)).size
       val duplicateUsers = duplicateLinks[Vertex, Vertex](
         service.startTraversal,
         (_.out("UserRole"), _.in("UserRole")),
         (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
-      ).flatMap(firstCreatedElement).map(e => removeVertices(e._2)).size.toLong
+      ).flatMap(ElementSelector.firstCreatedElement).map(e => removeVertices(e._2)).size
       Success(
         Map(
           "duplicateTaskAssignments" -> duplicateTaskAssignments,
@@ -350,11 +350,11 @@ class UserIntegrityCheckOps(
           "duplicateUsers"           -> duplicateUsers
         )
       )
-    }.getOrElse(Map("globalFailure" -> 1L))
+    }.getOrElse(Map("globalFailure" -> 1))
   }
 
   override def resolve(entities: Seq[User with Entity])(implicit graph: Graph): Try[Unit] = {
-    firstCreatedEntity(entities).foreach {
+    EntitySelector.firstCreatedEntity(entities).foreach {
       case (firstUser, otherUsers) =>
         otherUsers.foreach(copyEdge(_, firstUser))
         otherUsers.foreach(service.get(_).remove())
@@ -362,5 +362,5 @@ class UserIntegrityCheckOps(
     Success(())
   }
 
-  override def globalCheck(): Map[String, Long] = Map.empty
+  override def globalCheck(): Map[String, Int] = Map.empty
 }

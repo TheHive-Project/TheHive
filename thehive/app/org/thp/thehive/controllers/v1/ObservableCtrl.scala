@@ -148,7 +148,7 @@ class ObservableCtrl(
         caseSrv.createObservable(`case`, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
-      case Failure(error) => Left(ErrorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+      case Failure(error) => Left(ErrorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> data)))
     }
 
   private def createAttachmentObservableInCase(
@@ -169,9 +169,9 @@ class ObservableCtrl(
         }
       } match {
       case Success(o) => Right(o.toJson)
-      case _ =>
+      case Failure(error) =>
         val filename = fileOrAttachment.fold(_.filename, _.name.value)
-        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+        Left(ErrorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
     }
 
   def createInAlert(alertId: String): Action[AnyContent] =
@@ -229,7 +229,7 @@ class ObservableCtrl(
         alertSrv.createObservable(alert, inputObservable.toObservable, data)
       } match {
       case Success(o)     => Right(o.toJson)
-      case Failure(error) => Left(ErrorHandler.toErrorResult(error)._2 ++ Json.obj("object" -> Json.obj("data" -> data)))
+      case Failure(error) => Left(ErrorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> data)))
     }
 
   private def createAttachmentObservableInAlert(
@@ -269,7 +269,7 @@ class ObservableCtrl(
         attachment.fold(createAttachment)
       } match {
       case Success(o) => Right(o.toJson)
-      case _ =>
+      case Failure(error) =>
         object attachmentName extends Poly1 {
           implicit val fromFile: Case.Aux[FFile, String]                 = at[FFile](_.filename)
           implicit val fromAttachment: Case.Aux[InputAttachment, String] = at[InputAttachment](_.name.value)
@@ -278,7 +278,7 @@ class ObservableCtrl(
           }
         }
         val filename = attachment.fold(attachmentName)
-        Left(Json.obj("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
+        Left(ErrorHandler.toErrorResult(error)._2 + ("object" -> Json.obj("data" -> s"file:$filename", "attachment" -> Json.obj("name" -> filename))))
     }
 
   def get(observableId: String): Action[AnyContent] =

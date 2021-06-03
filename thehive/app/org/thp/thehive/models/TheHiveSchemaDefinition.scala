@@ -483,6 +483,20 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
       Success(())
     }
     .removeIndex("Data", IndexType.unique, "data")
+    //=====[release 4.1.4]=====
+    .addProperty[EntityId]("Case", "owningOrganisation")
+    .updateGraph("Add owning organisation in case", "Case") { traversal =>
+      traversal
+        .project(
+          _.by
+            .by(_.in("ShareCase").unsafeHas("owner", true).in("OrganisationShare")._id.option)
+        )
+        .foreach {
+          case (vertex, owningOrganisation) =>
+            owningOrganisation.foreach(id => vertex.property("owningOrganisation", id.value))
+        }
+      Success(())
+    }
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

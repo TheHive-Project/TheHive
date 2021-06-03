@@ -27,6 +27,7 @@ class MispClient(
     val baseUrl: String,
     auth: Authentication,
     ws: WSClient,
+    maxAttributes: Option[Int],
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String],
     whitelistOrganisations: Seq[String],
@@ -55,6 +56,7 @@ class MispClient(
                  |  url:              $baseUrl
                  |  proxy:            ${configuredProxy.getOrElse("<not set>")}
                  |  filters:
+                 |    max attributes: ${maxAttributes.getOrElse("<not set>")}
                  |    max age:        ${maxAge.fold("<not set>")(_.toCoarsest.toString)}
                  |    excluded orgs:  ${excludedOrganisations.mkString}
                  |    excluded tags:  ${excludedTags.mkString}
@@ -183,6 +185,7 @@ class MispClient(
         val maybeEvent = Try(Json.parse(data.toArray[Byte]).as[Event])
         maybeEvent.fold(error => { logger.warn(s"Event has invalid format: ${data.decodeString("UTF-8")}", error); Nil }, List(_))
       }
+      .filter(event => maxAttributes.fold(true)(max => event.attributes.length < max))
       .mapMaterializedValue(_ => NotUsed)
   }
 

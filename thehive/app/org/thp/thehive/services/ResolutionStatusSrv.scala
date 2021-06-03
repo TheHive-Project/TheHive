@@ -49,5 +49,5 @@ class ResolutionStatusIntegrityCheckOps(val db: Database, val service: Resolutio
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] = Map.empty
+  override def globalCheck(): Map[String, Int] = Map.empty
 }

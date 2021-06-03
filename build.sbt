@@ -344,7 +344,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "thehive-frontend:npm",
         inputFiles = baseDirectory.value / "package.json",
         outputFiles = baseDirectory.value / "node_modules" ** AllPassFilter,
-        command = baseDirectory.value -> "npm install",
+        command = baseDirectory.value -> "npm ci",
         streams = streams.value
       ),
     bower := FileBuilder(
@@ -541,6 +541,10 @@ lazy val thehiveMigration = (project in file("migration"))
 //      jts,
       ehcache,
       scopt,
+      macWireMacros,
+      macWireMacrosakka,
+      macWireUtil,
+      macWireProxy,
       specs % Test
     ),
     normalizedName := "migrate",

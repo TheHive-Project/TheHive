@@ -88,5 +88,5 @@ class ProfileIntegrityCheckOps(val db: Database, val service: ProfileSrv) extend
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] = Map.empty
+  override def globalCheck(): Map[String, Int] = Map.empty
 }

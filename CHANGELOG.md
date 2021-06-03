@@ -1,5 +1,39 @@
 # Change Log
 
+## [4.1.5](https://github.com/TheHive-Project/TheHive/milestone/74) (2021-06-03)
+
+**Implemented enhancements:**
+
+- [Enhancement] Improve API v1 [\#2010](https://github.com/TheHive-Project/TheHive/issues/2010)
+- [Enhancement] Improve integrity checks [\#2033](https://github.com/TheHive-Project/TheHive/issues/2033)
+- [Feature Request] Add the ability to copy data from a database to another [\#2042](https://github.com/TheHive-Project/TheHive/issues/2042)
+- [Feature Request] Add organisation name in responder data [\#2048](https://github.com/TheHive-Project/TheHive/issues/2048)
+- [Feature Request] Add alert updatable fields [\#2055](https://github.com/TheHive-Project/TheHive/issues/2055)
+
+**Closed issues:**
+
+- [Bug] API GET /api/alert fails when similarity is specified [\#1981](https://github.com/TheHive-Project/TheHive/issues/1981)
+
+**Fixed bugs:**
+
+- [Bug] Imported filter does not show alerts which are associated to removed cases [\#1940](https://github.com/TheHive-Project/TheHive/issues/1940)
+- [Bug]  Observable already exists [\#1963](https://github.com/TheHive-Project/TheHive/issues/1963)
+- [Bug] using quick-filter "shared with my org" takes arround 90 seconds [\#1979](https://github.com/TheHive-Project/TheHive/issues/1979)
+- [Bug] Analyzer reports dissapear in 4.1.4 (observable already exists error) [\#1982](https://github.com/TheHive-Project/TheHive/issues/1982)
+- [Bug] Merge Into Case search by title not working [\#1983](https://github.com/TheHive-Project/TheHive/issues/1983)
+- [Bug] Able to merge alert into closed case, even though it is not allowed [\#1985](https://github.com/TheHive-Project/TheHive/issues/1985)
+- Custom Dashboards issue - see #1877 as reference [Bug] [\#2001](https://github.com/TheHive-Project/TheHive/issues/2001)
+- [Question] A security issue? [\#2008](https://github.com/TheHive-Project/TheHive/issues/2008)
+- [Bug] Case description edit button misplaced after description update [\#2012](https://github.com/TheHive-Project/TheHive/issues/2012)
+- [Bug] Analyzer list is not refreshing properly when organization change [\#2025](https://github.com/TheHive-Project/TheHive/issues/2025)
+- [Bug] Alert list constantly resets [\#2030](https://github.com/TheHive-Project/TheHive/issues/2030)
+- [Bug] Can't Delete Case Custom Field (contains [ character) After Migration [\#2043](https://github.com/TheHive-Project/TheHive/issues/2043)
+- [Bug] Unable to find case by Case Number [\#2044](https://github.com/TheHive-Project/TheHive/issues/2044)
+- [Bug] add TTP error message on the hive - 4.1.4-1 [\#2045](https://github.com/TheHive-Project/TheHive/issues/2045)
+- [Bug] Merge Into Case search by title not a real search [\#2049](https://github.com/TheHive-Project/TheHive/issues/2049)
+- [Bug] max-attributes param not working for MISP [\#2050](https://github.com/TheHive-Project/TheHive/issues/2050)
+- [Bug] Invalid output when a file observable already exist [\#2054](https://github.com/TheHive-Project/TheHive/issues/2054)
+
 ## [4.1.4](https://github.com/TheHive-Project/TheHive/milestone/73) (2021-04-15)
 
 **Implemented enhancements:**

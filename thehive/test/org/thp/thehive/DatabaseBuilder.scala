@@ -172,9 +172,10 @@ class DatabaseBuilder(
             .project(
               _.by
                 .by(_.organisations._id.fold)
+                .by(_.shares.has(_.owner, true).organisation._id)
             )
             .foreach {
-              case (case0, organisationIds) =>
+              case (case0, organisationIds, owningOrganisation) =>
                 case0.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseSrv.caseTagSrv.create(CaseTag(), case0, _)).get)
                 case0.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(caseSrv.caseUserSrv.create(CaseUser(), case0, _)).get)
                 case0
@@ -204,7 +205,7 @@ class DatabaseBuilder(
                       .flatMap(caseSrv.caseCaseTemplateSrv.create(CaseCaseTemplate(), case0, _))
                       .get
                   )
-                caseSrv.get(case0).update(_.organisationIds, organisationIds.toSet).iterate()
+                caseSrv.get(case0).update(_.organisationIds, organisationIds.toSet).update(_.owningOrganisation, owningOrganisation).iterate()
             }
 
           alertSrv
@@ -218,7 +219,11 @@ class DatabaseBuilder(
 
           observableSrv
             .startTraversal
-            .project(_.by.by(_.coalesceIdent(_.`case`, _.alert)._id).by(_.organisations._id.fold))
+            .project(
+              _.by
+                .by(_.coalesceIdent(_.`case`, _.alert, _.in("ReportObservable"))._id)
+                .by(_.organisations._id.fold)
+            )
             .foreach {
               case (observable, relatedId, organisationIds) =>
                 observable

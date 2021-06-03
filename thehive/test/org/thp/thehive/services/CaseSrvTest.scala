@@ -69,7 +69,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             Permissions.accessTheHiveFS,
             Permissions.manageProcedure
           ),
-          richCase.`case`.organisationIds
+          richCase.`case`.organisationIds,
+          None,
+          richCase.`case`.owningOrganisation
         )
         richCase.tags must contain(exactly("t1", "t3"))
       }
@@ -115,7 +117,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             Permissions.accessTheHiveFS,
             Permissions.manageProcedure
           ),
-          richCase.`case`.organisationIds
+          richCase.`case`.organisationIds,
+          None,
+          richCase.`case`.owningOrganisation
         )
         richCase.tags must contain(exactly("t2", "t1"))
         richCase._createdBy must_=== "system@thehive.local"

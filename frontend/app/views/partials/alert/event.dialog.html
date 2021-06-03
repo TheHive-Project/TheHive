@@ -41,23 +41,44 @@
                         <span>{{dialog.event.source}}</span>
                     </span>
                 </div>
-                <div class="case-tags flexwrap mt-xxs">
+                <!-- <div class="case-tags flexwrap mt-xxs">
                     <strong><i class="fa fa-tags mr-xxxs"></i></strong>
                     <strong class="text-muted mr-xxxs"
                         ng-if="!dialog.event.tags || dialog.event.tags.length === 0">None</strong>
                     <tag-item ng-repeat="tag in dialog.event.tags track by $index" value="tag"></tag-item>
+                </div> -->
+
+                <div class="mt-xs">
+                    <h4 class="vpad10 text-primary">
+                        Basic Information
+                    </h4>
+                    <dl class="dl-horizontal">
+                        <dt class="pull-left">Tags</dt>
+                        <dd ng-if="dialog.canEdit">
+                            <updatable-tag-list on-update="dialog.updateField('tags', dialog.getTags(newValue))"
+                                value="dialog.event.tags" source="dialog.getAlertTags"></updatable-tag-list>
+                        </dd>
+                        <dd ng-if="!dialog.canEdit">
+                            <tag-list data="caze.tags"></tag-list>
+                        </dd>
+                    </dl>
                 </div>
 
-                <div class="mt-xs" ng-if="dialog.event.description">
+                <div class="mt-xs">
                     <h4 class="vpad10 text-primary">
                         Description
                     </h4>
-                    <div class="description-pane">
+                    <div class="description-pane" ng-if="!dialog.canEdit">
                         <div marked="dialog.event.description" class="markdown"></div>
+                    </div>
+
+                    <div class="description-pane" ng-if="dialog.canEdit">
+                        <updatable-text on-update="dialog.updateField('description', newValue)"
+                            value="dialog.event.description"></updatable-text>
                     </div>
                 </div>
 
-                <div class="mt-xs" ng-if="dialog.event.description">
+                <div class="mt-xs">
                     <h4 class="vpad10 text-primary">
                         Additional fields
 
