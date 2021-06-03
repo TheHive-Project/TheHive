@@ -21,6 +21,7 @@ case class TheHiveMispClientConfig(
     url: String,
     auth: Authentication,
     wsConfig: ProxyWSConfig = ProxyWSConfig(AhcWSClientConfig(), None),
+    maxAttributes: Option[Int],
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String] = Nil,
     whitelistOrganisations: Seq[String] = Nil,
@@ -37,12 +38,14 @@ case class TheHiveMispClientConfig(
 
 object TheHiveMispClientConfig {
   implicit val purposeFormat: Format[MispPurpose.Value] = Json.formatEnum(MispPurpose)
+
   val reads: Reads[TheHiveMispClientConfig] = {
     for {
       name                         <- (JsPath \ "name").read[String]
       url                          <- (JsPath \ "url").read[String]
       auth                         <- (JsPath \ "auth").read[Authentication]
       wsConfig                     <- (JsPath \ "wsConfig").readWithDefault[ProxyWSConfig](ProxyWSConfig(AhcWSClientConfig(), None))
+      maxAttributes                <- (JsPath \ "max-attributes").readNullable[Int]
       maxAge                       <- (JsPath \ "maxAge").readNullable[Duration]
       excludedOrganisations        <- (JsPath \ "exclusion" \ "organisations").readWithDefault[Seq[String]](Nil)
       whitelistOrganisations       <- (JsPath \ "whitelist" \ "organisations").readWithDefault[Seq[String]](Nil)
@@ -60,6 +63,7 @@ object TheHiveMispClientConfig {
       url,
       auth,
       wsConfig,
+      maxAttributes,
       maxAge,
       excludedOrganisations,
       whitelistOrganisations,
@@ -80,6 +84,7 @@ object TheHiveMispClientConfig {
       "url"                          -> cfg.url,
       "auth"                         -> cfg.auth,
       "wsConfig"                     -> cfg.wsConfig,
+      "maxAttributes"                -> cfg.maxAttributes,
       "maxAge"                       -> cfg.maxAge,
       "exclusion"                    -> Json.obj("organisations" -> cfg.excludedOrganisations, "tags" -> cfg.excludedTags),
       "whitelistTags"                -> Json.obj("whitelist" -> cfg.whitelistTags),
@@ -99,6 +104,7 @@ class TheHiveMispClient(
     baseUrl: String,
     auth: Authentication,
     ws: WSClient,
+    maxAttributes: Option[Int],
     maxAge: Option[Duration],
     excludedOrganisations: Seq[String],
     whitelistOrganisations: Seq[String],
@@ -116,6 +122,7 @@ class TheHiveMispClient(
       baseUrl,
       auth,
       ws,
+      maxAttributes,
       maxAge,
       excludedOrganisations,
       whitelistOrganisations,
@@ -129,6 +136,7 @@ class TheHiveMispClient(
       config.url,
       config.auth,
       new ProxyWS(config.wsConfig, mat),
+      config.maxAttributes,
       config.maxAge,
       config.excludedOrganisations,
       config.whitelistOrganisations,
