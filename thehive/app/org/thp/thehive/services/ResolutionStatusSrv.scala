@@ -52,5 +52,5 @@ class ResolutionStatusIntegrityCheckOps @Inject() (val db: Database, val service
       case _ => Success(())
     }
 
-  override def globalCheck(): Map[String, Long] = Map.empty
+  override def globalCheck(): Map[String, Int] = Map.empty
 }

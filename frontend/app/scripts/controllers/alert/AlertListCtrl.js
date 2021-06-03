@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function ($rootScope, $scope, $q, $state, $uibModal, TagSrv, StreamQuerySrv, CaseTemplateSrv, UtilsSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
+        .controller('AlertListCtrl', function ($rootScope, $scope, $q, $state, $uibModal, TagSrv, UiSettingsSrv, StreamQuerySrv, CaseTemplateSrv, UtilsSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
 
             self.urls = VersionSrv.mispUrls();
@@ -382,6 +382,20 @@
                         },
                         prompt: function () {
                             return 'the ' + self.selection.length + ' selected Alert(s)';
+                        },
+                        filter: function () {
+                            var skipResolvedCases = UiSettingsSrv.disallowMergeAlertInResolvedSimilarCases() === true;
+
+                            if (skipResolvedCases) {
+                                return {
+                                    _ne: {
+                                        _field: 'status',
+                                        _value: 'Resolved'
+                                    }
+                                }
+                            }
+
+                            return null;
                         }
                     }
                 });

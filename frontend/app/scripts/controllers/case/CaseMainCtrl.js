@@ -242,6 +242,14 @@
                         },
                         prompt: function () {
                             return '#' + $scope.caze.number + ': ' + $scope.caze.title;
+                        },
+                        filter: function () {
+                            return {
+                                _ne: {
+                                    _field: 'number',
+                                    _value: $scope.caze.number
+                                }
+                            }
                         }
                     }
                 });

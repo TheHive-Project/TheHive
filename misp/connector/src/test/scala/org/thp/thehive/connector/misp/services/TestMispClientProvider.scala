@@ -57,6 +57,7 @@ class TestMispClientProvider @Inject() (Action: DefaultActionBuilder, implicit v
       baseUrl = baseUrl,
       auth = NoAuthentication,
       ws = ws,
+      maxAttributes = None,
       maxAge = None,
       excludedOrganisations = Nil,
       whitelistOrganisations = Nil,

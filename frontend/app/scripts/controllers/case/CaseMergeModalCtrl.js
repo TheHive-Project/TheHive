@@ -1,10 +1,10 @@
-(function() {
+(function () {
     'use strict';
 
     angular.module('theHiveControllers')
         .controller('CaseMergeModalCtrl', CaseMergeModalCtrl);
 
-    function CaseMergeModalCtrl($state, $uibModalInstance, $q, QuerySrv, SearchSrv, CaseSrv, UserSrv, NotificationSrv, source, title, prompt) {
+    function CaseMergeModalCtrl($uibModalInstance, $q, QuerySrv, UserSrv, NotificationSrv, source, title, prompt, filter) {
         var me = this;
 
         this.source = source;
@@ -20,44 +20,55 @@
         };
         this.getUserInfo = UserSrv.getCache;
 
-        this.getCaseList = function(type, input) {
+        this.getCaseList = function (type, input) {
             var defer = $q.defer();
 
-            var filter = (type === 'title') ? {
+            var selectionFilter = (type === 'title') ? {
                 _like: {
-                    title: input
+                    _field: 'title',
+                    _value: input
                 }
             } : {
                 _field: 'number',
                 _value: Number.parseInt(input)
             };
 
+            var caseFilter;
+
+            if (filter) {
+                caseFilter = {
+                    _and: [selectionFilter, filter]
+                }
+            } else {
+                caseFilter = selectionFilter
+            }
+
             QuerySrv.call('v1',
-                [{_name: 'listCase'}],
+                [{ _name: 'listCase' }],
                 {
-                    filter:filter,
+                    filter: caseFilter,
                     name: 'get-case-for-merge'
                 }
-            ).then(function(data) {
+            ).then(function (data) {
                 defer.resolve(data);
-            });
+            }); // TODO add error handler
 
             return defer.promise;
         };
 
-        this.format = function(caze) {
+        this.format = function (caze) {
             if (caze) {
                 return '#' + caze.number + ' - ' + caze.title;
             }
             return null;
         };
 
-        this.clearSearch = function() {
+        this.clearSearch = function () {
             this.search.input = null;
             this.search.cases = [];
         };
 
-        this.onTypeChange = function(type) {
+        this.onTypeChange = function (type) {
             this.clearSearch();
 
             this.search.placeholder = 'Search by case ' + type;
@@ -69,15 +80,15 @@
             }
         };
 
-        this.onSelect = function(item /*, model, label*/ ) {
+        this.onSelect = function (item /*, model, label*/) {
             this.search.cases = [item];
         };
 
-        this.merge = function() {
+        this.merge = function () {
             $uibModalInstance.close(me.search.cases[0]);
         };
 
-        this.cancel = function() {
+        this.cancel = function () {
             $uibModalInstance.dismiss();
         };
     }

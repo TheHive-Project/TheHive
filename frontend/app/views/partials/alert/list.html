@@ -30,7 +30,7 @@
                         <div class="empty-message">No records</div>
                     </div>
 
-                    <div class="col-md-12" ng-show="!$vm.list.loading && $vm.list.values.length !== 0">
+                    <div class="col-md-12" ng-show="$vm.list.values.length !== 0">
                         <psearch control="$vm.list"></psearch>
 
                         <table class="table tbody-stripped case-list">

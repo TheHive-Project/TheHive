@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function ($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, UtilsSrv, StreamSrv, StreamQuerySrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function ($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, AnalyzerSrv, StreamSrv, StreamQuerySrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if (currentUser === 520) {
@@ -182,6 +182,8 @@ angular.module('theHiveControllers').controller('RootCtrl',
                         });
                 })
                 .then(function () {
+                    AnalyzerSrv.clearCache()
+
                     $state.go('app.index', {}, { reload: true });
                 })
                 .catch(function (err) {
@@ -261,20 +263,17 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 return;
             }
 
-            CaseSrv.query({
-                query: {
-                    caseId: caseId
-                },
-                range: '0-1'
-            }, function (response) {
-                if (response.length === 1) {
-                    $state.go('app.case.details', { caseId: response[0].id }, { reload: true });
-                } else {
-                    NotificationSrv.log('Unable to find the case with number ' + caseId, 'error');
-                }
-            }, function (err) {
-                NotificationSrv.error('Case search', err.data, err.status);
-            });
+            CaseSrv.getById(caseId.toString())
+                .then(function (response) {
+                    if (response !== undefined) {
+                        $state.go('app.case.details', { caseId: response._id });
+                    } else {
+                        NotificationSrv.log('Unable to find the case with number ' + caseId, 'error');
+                    }
+                })
+                .catch(function (err) {
+                    NotificationSrv.error('Case search', err.data, err.status);
+                })
         };
 
         // Used to show spinning refresh icon n times

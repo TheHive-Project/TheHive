@@ -8,14 +8,15 @@ import play.api.{Configuration, Environment}
 import scopt.OParser
 
 import java.io.File
+import java.nio.file.{Files, Paths}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext}
 
 object Migrate extends App with MigrationOps {
-  Option(System.getProperty("logger.file")).getOrElse {
-    System.setProperty("logger.file", "/etc/thehive/logback-migration.xml")
-  }
+  val defaultLoggerConfigFile = "/etc/thehive/logback-migration.xml"
+  if (System.getProperty("logger.file") == null && Files.exists(Paths.get(defaultLoggerConfigFile)))
+    System.setProperty("logger.file", defaultLoggerConfigFile)
 
   def getVersion: String = Option(getClass.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
@@ -30,6 +31,13 @@ object Migrate extends App with MigrationOps {
       version('v', "version"),
       help('h', "help"),
       head("TheHive migration tool", getVersion),
+      opt[File]('l', "logger-config")
+        .valueName("<file>")
+        .action { (f, c) =>
+          System.setProperty("logger.file", f.getAbsolutePath)
+          c
+        }
+        .text("logback configuration file"),
       opt[File]('c', "config")
         .valueName("<file>")
         .action((f, c) => ConfigFactory.parseFileAnySyntax(f).withFallback(c))

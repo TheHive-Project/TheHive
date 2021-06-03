@@ -12,9 +12,11 @@
 
     <span ng-show="updatable.updating">
         <div class="form-group">
-            <tags-input class="ti-input-sm ti-tag-selector" min-length="2" ng-model="value" placeholder="Add labels" replace-spaces-with-dashes="false"
-                template="views/directives/tag-input-item.html" tag-class="label-primary">
-                <auto-complete ng-if="source" min-length="3" debounce-delay="400" source="source($query)"></auto-complete>
+            <tags-input class="ti-input-sm ti-tag-selector" min-length="2" ng-model="value" placeholder="Add tags"
+                replace-spaces-with-dashes="false" template="views/directives/tag-input-item.html"
+                tag-class="label-primary">
+                <auto-complete ng-if="source" min-length="3" debounce-delay="400" source="source($query)">
+                </auto-complete>
             </tags-input>
         </div>
         <div class="btn-group btn-group-sm">
