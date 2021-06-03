@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertEventCtrl', function ($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, AuthenticationSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, readonly) {
+        .controller('AlertEventCtrl', function ($scope, $rootScope, $state, $uibModal, $uibModalInstance, ModalUtilsSrv, TagSrv, AuthenticationSrv, CustomFieldsSrv, CaseResolutionStatus, AlertingSrv, NotificationSrv, UiSettingsSrv, clipboard, event, templates, readonly) {
             var self = this;
             var eventId = event._id;
 
@@ -33,6 +33,20 @@
 
             self.getCustomFieldName = function (fieldDef) {
                 return 'customFields.' + fieldDef.reference + '.' + fieldDef.type;
+            };
+
+            self.getTags = function (selection) {
+                var tags = [];
+
+                angular.forEach(selection, function (tag) {
+                    tags.push(tag.text);
+                });
+
+                return tags;
+            };
+
+            self.getAlertTags = function (query) {
+                return TagSrv.autoComplete(query);
             };
 
             self.load = function () {
