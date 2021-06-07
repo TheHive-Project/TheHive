@@ -45,8 +45,8 @@ object ActionContext extends HasModel {
 
   override val model: Model.Edge[ActionContext] = new EdgeModel {
     override type E = ActionContext
-    override val label: String                                = "ActionContext"
-    override val indexes: Seq[(IndexType.Value, Seq[String])] = Nil
+    override val label: String                          = "ActionContext"
+    override val indexes: Seq[(IndexType, Seq[String])] = Nil
 
     override val fields: Map[String, Mapping[_, _, _]] = Map.empty
     override val converter: Converter[EEntity, Edge] = (element: Edge) =>

@@ -18,8 +18,19 @@ import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-object MispPurpose extends Enumeration {
-  val ImportOnly, ExportOnly, ImportAndExport = Value
+sealed abstract class MispPurpose extends Product with Serializable
+object MispPurpose {
+  final case object ImportOnly      extends MispPurpose
+  final case object ExportOnly      extends MispPurpose
+  final case object ImportAndExport extends MispPurpose
+
+  def withName(name: String): MispPurpose =
+    name match {
+      case "ImportOnly"      => ImportOnly
+      case "ExportOnly"      => ExportOnly
+      case "ImportAndExport" => ImportAndExport
+      case other             => throw InternalError(s"Invalid MispPurpose (found: $other, expected: ImportOnly, ExportOnly or ImportAndExport)")
+    }
 }
 
 class MispClient(

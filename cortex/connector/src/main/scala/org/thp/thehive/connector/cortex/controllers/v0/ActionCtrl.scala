@@ -1,6 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
-import org.thp.scalligraph.EntityIdOrName
+import org.thp.scalligraph.{EntityIdOrName, InternalError}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
@@ -44,6 +44,7 @@ class ActionCtrl(
         case o: Observable => observableToJson(observableSrv.get(o)).getOrFail("Observable")
         case l: Log        => logToJson(logSrv.get(l)).getOrFail("Log")
         case a: Alert      => alertToJson(alertSrv.get(a)).getOrFail("Alert")
+        case other         => throw InternalError(s"Invalid entity (${other.getClass})")
       }
     }.getOrElse(Json.obj("_type" -> entity._label, "_id" -> entity._id))
   }

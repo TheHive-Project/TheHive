@@ -2,7 +2,6 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import com.softwaremill.tagging.@@
-import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -169,7 +168,7 @@ class AlertSrv(
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
       cf   <- customFieldSrv.getOrFail(EntityIdOrName(inputCf.name.value))
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(AlertCustomField(), inputCf.value).map(_.order_=(inputCf.order))
+      ccf  <- cf.`type`.setValue(AlertCustomField(), inputCf.value).map(_.order_=(inputCf.order))
       ccfe <- alertCustomFieldSrv.create(ccf, alert, cf)
     } yield RichCustomField(cf, ccfe)
 

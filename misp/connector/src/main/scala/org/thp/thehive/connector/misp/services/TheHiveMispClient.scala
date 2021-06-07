@@ -13,6 +13,7 @@ import play.api.libs.ws.ahc.AhcWSClientConfig
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 case class TheHiveMispClientConfig(
     name: String,
@@ -25,7 +26,7 @@ case class TheHiveMispClientConfig(
     whitelistOrganisations: Seq[String] = Nil,
     excludedTags: Set[String] = Set.empty,
     whitelistTags: Set[String] = Set.empty,
-    purpose: MispPurpose.Value = MispPurpose.ImportAndExport,
+    purpose: MispPurpose = MispPurpose.ImportAndExport,
     caseTemplate: Option[String],
     observableTags: Seq[String] = Nil,
     exportCaseTags: Boolean = false,
@@ -35,7 +36,13 @@ case class TheHiveMispClientConfig(
 )
 
 object TheHiveMispClientConfig {
-  implicit val purposeFormat: Format[MispPurpose.Value] = Json.formatEnum(MispPurpose)
+  implicit val purposeFormat: Format[MispPurpose] = Format[MispPurpose](
+    Reads {
+      case JsString(name) => Try(MispPurpose.withName(name)).fold(t => JsError(t.getMessage), JsSuccess(_))
+      case other          => JsError(s"Invalid json for MispPurpose (found: $other, expected: JsString(ImportOnly/ExportOnly/ImportAndExport))")
+    },
+    Writes(s => JsString(s.toString))
+  )
 
   val reads: Reads[TheHiveMispClientConfig] = {
     for {
@@ -49,7 +56,7 @@ object TheHiveMispClientConfig {
       whitelistOrganisations       <- (JsPath \ "whitelist" \ "organisations").readWithDefault[Seq[String]](Nil)
       excludedTags                 <- (JsPath \ "exclusion" \ "tags").readWithDefault[Set[String]](Set.empty)
       whitelistTags                <- (JsPath \ "whitelist" \ "tags").readWithDefault[Set[String]](Set.empty)
-      purpose                      <- (JsPath \ "purpose").readWithDefault[MispPurpose.Value](MispPurpose.ImportAndExport)
+      purpose                      <- (JsPath \ "purpose").readWithDefault[MispPurpose](MispPurpose.ImportAndExport)
       caseTemplate                 <- (JsPath \ "caseTemplate").readNullable[String]
       observableTags               <- (JsPath \ "tags").readWithDefault[Seq[String]](Nil)
       exportCaseTags               <- (JsPath \ "exportCaseTags").readWithDefault[Boolean](false)
@@ -108,7 +115,7 @@ class TheHiveMispClient(
     whitelistOrganisations: Seq[String],
     excludedTags: Set[String],
     whitelistTags: Set[String],
-    purpose: MispPurpose.Value,
+    purpose: MispPurpose,
     val caseTemplate: Option[String],
     val observableTags: Seq[String],
     val exportCaseTags: Boolean,

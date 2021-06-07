@@ -139,6 +139,7 @@ class NotificationActor(
               case ActorIdentity(1, Some(notificationActor)) =>
                 logger.debug(s"Send notification to $notificationActor")
                 notificationActor ! NotificationExecution(user.map(_._id), audit._id, notificationConfig)
+              case other => logger.error(s"Unexpected message (found: ${other.getClass}, expected: ActorIdentity)")
             }
       }
 

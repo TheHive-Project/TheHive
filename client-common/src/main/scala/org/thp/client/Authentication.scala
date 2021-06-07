@@ -1,5 +1,6 @@
 package org.thp.client
 
+import org.thp.scalligraph.InternalError
 import play.api.http.HeaderNames
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
@@ -28,6 +29,8 @@ object Authentication {
     case PasswordAuthentication(username, password) => Json.obj("type" -> "basic", "username" -> username, "password" -> password)
     case KeyAuthentication(key, "")                 => Json.obj("type" -> "key", "key" -> key)
     case KeyAuthentication(key, "Bearer ")          => Json.obj("type" -> "bearer", "key" -> key)
+    case NoAuthentication                           => Json.obj("type" -> "none")
+    case other                                      => throw InternalError(s"Unknown authentication method: $other (${other.getClass})")
   }
   implicit val format: Format[Authentication] = Format(reads, writes)
 }

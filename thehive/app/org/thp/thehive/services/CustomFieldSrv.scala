@@ -89,7 +89,7 @@ trait CustomFieldOps { _: TraversalOps =>
 
     def setValue(value: Option[Any]): Try[Unit] = {
       val customFieldValueLabel = StepLabel.identity[Edge]
-      val typeLabel             = StepLabel[CustomFieldType.Value, String, Converter[CustomFieldType.Value, String]]
+      val typeLabel             = StepLabel[CustomFieldType[_], String, Converter[CustomFieldType[_], String]]
 
       traversal
         .setConverter[Edge, Converter.Identity[Edge]](Converter.identity)
@@ -101,15 +101,14 @@ trait CustomFieldOps { _: TraversalOps =>
         .select((customFieldValueLabel, typeLabel))
         .toSeq
         .toTry {
-          case (edge, typeName) =>
-            val tpe = CustomFieldType.map(typeName)
+          case (edge, tpe) =>
             tpe.setValue(new CustomFieldValueEdge(edge), value)
         }
         .map(_ => ())
     }
 
     private def edgeNameType
-        : Traversal[(Edge, String, CustomFieldType.Value), JMap[String, Any], Converter[(Edge, String, CustomFieldType.Value), JMap[String, Any]]] = {
+        : Traversal[(Edge, String, CustomFieldType[_]), JMap[String, Any], Converter[(Edge, String, CustomFieldType[_]), JMap[String, Any]]] = {
       val customFieldValueLabel = StepLabel.identity[Edge]
       val nameLabel             = StepLabel.v[CustomField]
       val typeLabel             = StepLabel.v[CustomField]
@@ -126,14 +125,14 @@ trait CustomFieldOps { _: TraversalOps =>
       edgeNameType
         .domainMap {
           case (edge, name, tpe) =>
-            name -> CustomFieldType.map(tpe).getJsonValue(new CustomFieldValueEdge(edge))
+            name -> tpe.getJsonValue(new CustomFieldValueEdge(edge))
         }
 
     def nameValue: Traversal[(String, Option[_]), JMap[String, Any], Converter[(String, Option[_]), JMap[String, Any]]] =
       edgeNameType
         .domainMap {
           case (edge, name, tpe) =>
-            name -> CustomFieldType.map(tpe).getValue(new CustomFieldValueEdge(edge))
+            name -> tpe.getValue(new CustomFieldValueEdge(edge))
         }
 
     def selectValue: Traversal[Any, JMap[String, Any], Converter[Any, JMap[String, Any]]] =
@@ -215,7 +214,7 @@ trait EntityWithCustomFieldOpsDefs[E <: Product, CV <: CustomFieldValue[_]] exte
       .get(customField)(traversal.graph)
       .value(_.`type`)
       .headOption
-      .map(t => CustomFieldType.map(t).getJsonValue(customFieldValue(customField)))
+      .map(_.getJsonValue(customFieldValue(customField)))
       .getOrElse(traversal.empty.castDomain)
 
   def customFieldFilter(customField: EntityIdOrName, predicate: P[JsValue]): Traversal.V[E] =
@@ -224,15 +223,15 @@ trait EntityWithCustomFieldOpsDefs[E <: Product, CV <: CustomFieldValue[_]] exte
       .value(_.`type`)
       .headOption
       .map {
-        case CustomFieldType.boolean =>
+        case CustomFieldBoolean =>
           traversal.filter(selectCFV(_).has(_.booleanValue, predicate.mapValue(_.as[Boolean])).inV.v[CustomField].get(customField))
-        case CustomFieldType.date =>
+        case CustomFieldDate =>
           traversal.filter(selectCFV(_).has(_.dateValue, predicate.mapValue(_.as[Date])).inV.v[CustomField].get(customField))
-        case CustomFieldType.float =>
+        case CustomFieldFloat =>
           traversal.filter(selectCFV(_).has(_.floatValue, predicate.mapValue(_.as[Double])).inV.v[CustomField].get(customField))
-        case CustomFieldType.integer =>
+        case CustomFieldInteger =>
           traversal.filter(selectCFV(_).has(_.integerValue, predicate.mapValue(_.as[Int])).inV.v[CustomField].get(customField))
-        case CustomFieldType.string =>
+        case CustomFieldString =>
           traversal.filter(selectCFV(_).has(_.stringValue, predicate.mapValue(_.as[String])).inV.v[CustomField].get(customField))
       }
       .getOrElse(traversal.empty)
@@ -243,11 +242,11 @@ trait EntityWithCustomFieldOpsDefs[E <: Product, CV <: CustomFieldValue[_]] exte
       .value(_.`type`)
       .headOption
       .map {
-        case CustomFieldType.boolean => traversal.filter(selectCFV(_).has(_.booleanValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.date    => traversal.filter(selectCFV(_).has(_.dateValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.float   => traversal.filter(selectCFV(_).has(_.floatValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.integer => traversal.filter(selectCFV(_).has(_.integerValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.string  => traversal.filter(selectCFV(_).has(_.stringValue).inV.v[CustomField].get(customField))
+        case CustomFieldBoolean => traversal.filter(selectCFV(_).has(_.booleanValue).inV.v[CustomField].get(customField))
+        case CustomFieldDate    => traversal.filter(selectCFV(_).has(_.dateValue).inV.v[CustomField].get(customField))
+        case CustomFieldFloat   => traversal.filter(selectCFV(_).has(_.floatValue).inV.v[CustomField].get(customField))
+        case CustomFieldInteger => traversal.filter(selectCFV(_).has(_.integerValue).inV.v[CustomField].get(customField))
+        case CustomFieldString  => traversal.filter(selectCFV(_).has(_.stringValue).inV.v[CustomField].get(customField))
       }
       .getOrElse(traversal.empty)
 
@@ -257,11 +256,11 @@ trait EntityWithCustomFieldOpsDefs[E <: Product, CV <: CustomFieldValue[_]] exte
       .value(_.`type`)
       .headOption
       .map {
-        case CustomFieldType.boolean => traversal.filterNot(selectCFV(_).has(_.booleanValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.date    => traversal.filterNot(selectCFV(_).has(_.dateValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.float   => traversal.filterNot(selectCFV(_).has(_.floatValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.integer => traversal.filterNot(selectCFV(_).has(_.integerValue).inV.v[CustomField].get(customField))
-        case CustomFieldType.string  => traversal.filterNot(selectCFV(_).has(_.stringValue).inV.v[CustomField].get(customField))
+        case CustomFieldBoolean => traversal.filterNot(selectCFV(_).has(_.booleanValue).inV.v[CustomField].get(customField))
+        case CustomFieldDate    => traversal.filterNot(selectCFV(_).has(_.dateValue).inV.v[CustomField].get(customField))
+        case CustomFieldFloat   => traversal.filterNot(selectCFV(_).has(_.floatValue).inV.v[CustomField].get(customField))
+        case CustomFieldInteger => traversal.filterNot(selectCFV(_).has(_.integerValue).inV.v[CustomField].get(customField))
+        case CustomFieldString  => traversal.filterNot(selectCFV(_).has(_.stringValue).inV.v[CustomField].get(customField))
       }
       .getOrElse(traversal.empty)
 }

@@ -21,7 +21,7 @@ class CustomFieldSrvTest extends PlaySpecification with TestAppBuilder {
             "cf 1",
             "displayed cf 1",
             "desc cf 1",
-            CustomFieldType.boolean,
+            CustomFieldBoolean,
             mandatory = false,
             Seq(JsBoolean(true))
           )

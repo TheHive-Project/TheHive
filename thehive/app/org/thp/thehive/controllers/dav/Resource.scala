@@ -20,6 +20,7 @@ trait Resource {
   protected def setNodeValue(prop: Node, value: Node): Option[Node] =
     prop match {
       case Elem(p, l, at, sc) => Some(Elem(p, l, at, sc, true, value))
+      case _                  => None
     }
 
   protected def setValue(prop: Node, value: String): Option[Node] =

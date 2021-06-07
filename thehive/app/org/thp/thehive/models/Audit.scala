@@ -89,8 +89,8 @@ object Audited {
 
   val model: Model.Edge[Audited] = new EdgeModel { thisModel =>
     override type E = Audited
-    override val label: String                                = "Audited"
-    override val indexes: Seq[(IndexType.Value, Seq[String])] = Nil
+    override val label: String                          = "Audited"
+    override val indexes: Seq[(IndexType, Seq[String])] = Nil
 
     override val fields: Map[String, Mapping[_, _, _]] = Map.empty
     override val converter: Converter[EEntity, Edge] = (element: Edge) =>
@@ -120,8 +120,8 @@ object AuditContext extends HasModel {
 
   override val model: Model.Edge[AuditContext] = new EdgeModel { thisModel =>
     override type E = AuditContext
-    override val label: String                                = "AuditContext"
-    override val indexes: Seq[(IndexType.Value, Seq[String])] = Nil
+    override val label: String                          = "AuditContext"
+    override val indexes: Seq[(IndexType, Seq[String])] = Nil
 
     override val fields: Map[String, Mapping[_, _, _]] = Map.empty
     override val converter: Converter[EEntity, Edge] = (element: Edge) =>

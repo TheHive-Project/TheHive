@@ -2,6 +2,7 @@ package org.thp.thehive.models
 
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.thp.scalligraph._
+import org.thp.scalligraph.controllers.{Output, Renderer}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.Traversal.{Domain, E}
 import org.thp.scalligraph.traversal.{Traversal, TraversalOps}
@@ -70,17 +71,22 @@ class CustomFieldValueEdge(edge: Edge) extends CustomFieldValue[CustomFieldValue
   override def _updatedAt: Option[Date]   = UMapping.date.optional.getProperty(edge, "_updatedAt")
 }
 
-object CustomFieldType extends Enumeration {
-  val string, integer, float, boolean, date = Value
-
-  val map: Map[Value, CustomFieldType[_]] = Map(
-    string  -> CustomFieldString,
-    integer -> CustomFieldInteger,
-    float   -> CustomFieldFloat,
-    boolean -> CustomFieldBoolean,
-    date    -> CustomFieldDate
-  )
-  def get(name: String): CustomFieldType[_] = map(this.withName(name))
+object CustomFieldType {
+  def withName(name: String): CustomFieldType[_] =
+    name match {
+      case "string"  => CustomFieldString
+      case "integer" => CustomFieldInteger
+      case "float"   => CustomFieldFloat
+      case "boolean" => CustomFieldBoolean
+      case "date"    => CustomFieldDate
+      case other     => throw InternalError(s"Invalid CustomFieldType (found: $other, expected: string, integer, float, boolean or date)")
+    }
+  implicit val renderer: Renderer[CustomFieldType[_]] = new Renderer[CustomFieldType[_]] {
+    override type O = String
+    override def toOutput(value: CustomFieldType[_]): Output[String] = Output(value.name)
+  }
+  implicit val mapping: SingleMapping[CustomFieldType[_], String] =
+    SingleMapping[CustomFieldType[_], String](toGraph = t => t.name, toDomain = withName)
 }
 
 sealed abstract class CustomFieldType[T] {
@@ -223,7 +229,7 @@ case class CustomField(
     name: String,
     displayName: String,
     description: String,
-    `type`: CustomFieldType.Value,
+    `type`: CustomFieldType[_],
     mandatory: Boolean,
     options: Seq[JsValue]
 )
@@ -235,6 +241,6 @@ case class RichCustomField(customField: CustomField with Entity, customFieldValu
   def value: Option[Any]         = `type`.getValue(customFieldValue)
   def jsValue: JsValue           = `type`.getJsonValue(customFieldValue)
   def order: Option[Int]         = customFieldValue.order
-  def `type`: CustomFieldType[_] = CustomFieldType.map(customField.`type`)
+  def `type`: CustomFieldType[_] = customField.`type`
   def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.writes.asInstanceOf[Writes[Any]].writes)
 }

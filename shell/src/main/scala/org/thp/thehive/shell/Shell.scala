@@ -36,7 +36,7 @@ object Shell extends App {
       }
       Success(())
     }
-  } finally app.coordinatedShutdown.run(ApplicationShutdownReason).map(_ => System.exit(1))(app.executionContext)
+  } finally app.coordinatedShutdown.run(ApplicationShutdownReason).foreach(_ => System.exit(1))(app.executionContext)
 }
 
 class ShellModule(app: ScalligraphApplication, thehiveModule: TheHiveModule) extends ScalligraphModule {

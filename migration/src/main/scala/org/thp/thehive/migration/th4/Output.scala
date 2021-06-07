@@ -473,7 +473,7 @@ class Output(
           case InputCustomFieldValue(name, value, order) =>
             (for {
               cf  <- getCustomField(name.value)
-              ccf <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), value)
+              ccf <- cf.`type`.setValue(CaseTemplateCustomField(order = order), value)
               _   <- caseTemplateSrv.caseTemplateCustomFieldSrv.create(ccf, createdCaseTemplate, cf)
             } yield ()).logFailure(s"Unable to set custom field $name=${value.getOrElse("<not set>")}")
         }
@@ -554,8 +554,7 @@ class Output(
           case (name, value) => // TODO Add order
             getCustomField(name)
               .flatMap { cf =>
-                CustomFieldType
-                  .map(cf.`type`)
+                cf.`type`
                   .setValue(CaseCustomField(), value)
                   .flatMap(ccf => caseSrv.caseCustomFieldSrv.create(ccf, createdCase, cf))
               }
@@ -738,8 +737,7 @@ class Output(
           case (name, value) => // TODO Add order
             getCustomField(name)
               .flatMap { cf =>
-                CustomFieldType
-                  .map(cf.`type`)
+                cf.`type`
                   .setValue(AlertCustomField(), value)
                   .flatMap(acf => alertSrv.alertCustomFieldSrv.create(acf, createdAlert, cf))
               }

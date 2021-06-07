@@ -215,7 +215,10 @@ class CaseSrv(
             throw BadRequestError("Your organisation must be owner of the case")
           // shareSrv.unshareCase(share._id)
         }
-        .map(_ => auditSrv.`case`.delete(`case`, organisation, Some(details)))
+        .map { _ =>
+          auditSrv.`case`.delete(`case`, organisation, Some(details))
+          ()
+        }
     }
   }
 
@@ -259,7 +262,7 @@ class CaseSrv(
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
       cf   <- customFieldSrv.getOrFail(customFieldIdOrName)
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseCustomField().order_=(order), customFieldValue)
+      ccf  <- cf.`type`.setValue(CaseCustomField().order_=(order), customFieldValue)
       ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
     } yield RichCustomField(cf, ccfe)
 

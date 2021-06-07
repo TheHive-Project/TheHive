@@ -1,15 +1,39 @@
 package org.thp.cortex.dto.v0
 
+import org.thp.scalligraph.InternalError
 import play.api.libs.json._
 
 import java.util.Date
+import scala.util.Try
 
-object JobStatus extends Enumeration {
-  val InProgress, Success, Failure, Waiting, Deleted = Value
+sealed trait JobStatus extends Product with Serializable
+object JobStatus {
+  def withName(name: String): JobStatus =
+    name match {
+      case "InProgress" => JobStatus.InProgress
+      case "Success"    => JobStatus.Success
+      case "Failure"    => JobStatus.Failure
+      case "Waiting"    => JobStatus.Waiting
+      case "Deleted"    => JobStatus.Deleted
+      case other        => throw InternalError(s"Invalid JobStatus (found: $other, expected: InProgress, Success, Failure, Waiting or Deleted)")
+    }
+  final case object InProgress extends JobStatus
+  final case object Success    extends JobStatus
+  final case object Failure    extends JobStatus
+  final case object Waiting    extends JobStatus
+  final case object Deleted    extends JobStatus
 }
 
-object JobType extends Enumeration {
-  val analyzer, responder = Value
+sealed abstract class JobType extends Product with Serializable
+object JobType {
+  def withName(name: String): JobType =
+    name match {
+      case "analyzer"  => analyzer
+      case "responder" => responder
+      case other       => throw InternalError(s"Invalid JobType (found: $other, expected: analyzer or responder)")
+    }
+  final case object analyzer  extends JobType
+  final case object responder extends JobType
 }
 
 case class InputJob(
@@ -32,13 +56,13 @@ case class OutputJob(
     date: Date,
     startDate: Option[Date],
     endDate: Option[Date],
-    status: JobStatus.Value,
+    status: JobStatus,
     data: Option[String],
     attachment: Option[JsObject],
     organization: String,
     dataType: String,
     report: Option[OutputReport],
-    `type`: JobType.Value
+    `type`: JobType
 )
 
 case class OutputAttachment(id: String, name: Option[String], contentType: Option[String])
@@ -105,9 +129,21 @@ object OutputReport {
 }
 
 object OutputJob {
-  implicit val jobStatusFormat: Format[JobStatus.Value] = Json.formatEnum(JobStatus)
-  implicit val jobTypeFormat: Format[JobType.Value]     = Json.formatEnum(JobType)
-  implicit val writes: Writes[OutputJob]                = Json.writes[OutputJob]
+  implicit val jobStatusFormat: Format[JobStatus] = Format[JobStatus](
+    Reads {
+      case JsString(name) => Try(JobStatus.withName(name)).fold(t => JsError(t.getMessage), JsSuccess(_))
+      case other          => JsError(s"Invalid json for JobStatus (found: $other, expected: JsString(InProgress/Success/Failure/Waiting/Deleted))")
+    },
+    Writes(s => JsString(s.toString))
+  )
+  implicit val jobTypeFormat: Format[JobType] = Format[JobType](
+    Reads {
+      case JsString(name) => Try(JobType.withName(name)).fold(t => JsError(t.getMessage), JsSuccess(_))
+      case other          => JsError(s"Invalid json for JobType (found: $other, expected: JsString(analyzer/responder))")
+    },
+    Writes(s => JsString(s.toString))
+  )
+  implicit val writes: Writes[OutputJob] = Json.writes[OutputJob]
   implicit val reads: Reads[OutputJob] = Reads[OutputJob](json =>
     for {
       id       <- (json \ "id").validate[String]
@@ -119,11 +155,11 @@ object OutputJob {
       date <- (json \ "date").validate[Date]
       startDate = (json \ "startDate").asOpt[Date]
       endDate   = (json \ "endDate").asOpt[Date]
-      status       <- (json \ "status").validate[JobStatus.Value]
+      status       <- (json \ "status").validate[JobStatus]
       organization <- (json \ "organization").validate[String]
       dataType     <- (json \ "dataType").validate[String]
       report = (json \ "report").asOpt[OutputReport]
-      jobType <- (json \ "type").validate[JobType.Value]
+      jobType <- (json \ "type").validate[JobType]
     } yield OutputJob(
       id,
       workerId,

@@ -343,7 +343,7 @@ class ObservableCtrlTest extends PlaySpecification with TestAppBuilder with TheH
 
 object WithFakeTemporaryFile {
 
-  def apply[A](body: Files.TemporaryFile => A): A = {
+  def apply[T](body: Files.TemporaryFile => T): T = {
     val tempFile = JFiles.createTempFile("thehive-", "-test")
     JFiles.write(tempFile, s"hello ${UUID.randomUUID()}".getBytes)
     val fakeTempFile = new Files.TemporaryFile {

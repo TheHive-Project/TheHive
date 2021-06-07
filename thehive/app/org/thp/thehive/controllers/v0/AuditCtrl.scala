@@ -57,6 +57,7 @@ class AuditCtrl(
                 .toBuffer
             }
             Results.Ok(JsArray(audits))
+          case other => Results.InternalServerError(s"Unexpected message receive (found: ${other.getClass}, expected: AuditIds)")
         }
       }
 }

@@ -137,7 +137,7 @@ class CaseTemplateSrv(
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
       cf   <- customFieldSrv.getOrFail(customFieldIdOrName)
-      ccf  <- CustomFieldType.map(cf.`type`).setValue(CaseTemplateCustomField(order = order), customFieldValue)
+      ccf  <- cf.`type`.setValue(CaseTemplateCustomField(order = order), customFieldValue)
       ccfe <- caseTemplateCustomFieldSrv.create(ccf, caseTemplate, cf)
     } yield RichCustomField(cf, ccfe)
 }

@@ -191,7 +191,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder with The
 
       l must not(beEmpty)
 
-      val cf = l.find(_.`type` == CustomFieldType.string)
+      val cf = l.find(_.`type` == CustomFieldString)
 
       cf must beSome
 
@@ -230,7 +230,7 @@ class CustomFieldCtrlTest extends PlaySpecification with TestAppBuilder with The
 
       l must not(beEmpty)
 
-      val cf = l.find(_.`type` == CustomFieldType.date)
+      val cf = l.find(_.`type` == CustomFieldDate)
 
       cf must beSome
 

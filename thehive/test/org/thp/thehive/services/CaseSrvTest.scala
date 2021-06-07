@@ -147,7 +147,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
         richCase.summary      must beNone
         richCase.impactStatus must beNone
         richCase.assignee     must beSome("socuser@thehive.local")
-        CustomField("boolean1", "boolean1", "boolean custom field", CustomFieldType.boolean, mandatory = false, options = Nil)
+        CustomField("boolean1", "boolean1", "boolean custom field", CustomFieldBoolean, mandatory = false, options = Nil)
         richCase.customFields.map(f => (f.name, f.typeName, f.value)) must contain(
           allOf[(String, String, Option[Any])](
             ("boolean1", "boolean", Some(true)),

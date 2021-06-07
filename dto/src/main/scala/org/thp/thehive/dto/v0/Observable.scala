@@ -3,7 +3,7 @@ package org.thp.thehive.dto.v0
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
-import org.thp.thehive.dto.{Description, MultiLineString512, String128, String32, String512, Tlp}
+import org.thp.thehive.dto.{Description, MultiLineString512, String128, String32, Tlp}
 import play.api.libs.json.{JsObject, Json, OFormat, Writes}
 
 import java.util.Date

@@ -8,7 +8,7 @@ import org.thp.thehive.models.{Observable, ReportTag, ReportTagLevel}
 
 object Conversion {
 
-  implicit class CortexJobStatusOps(jobStatus: CortexJobStatus.Value) {
+  implicit class CortexJobStatusOps(jobStatus: CortexJobStatus) {
 
     def toJobStatus: JobStatus.Value =
       jobStatus match {

@@ -3,7 +3,7 @@ package org.thp.thehive.connector.cortex.services
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.{BadRequestError, EntityIdOrName}
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, InternalError}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.Logger
@@ -92,5 +92,6 @@ class EntityHelper(
           ro <- observableSrv.get(o).visible.richObservable.getOrFail("Observable")
           c  <- observableSrv.get(o).`case`.getOrFail("Case")
         } yield (s"[${ro.dataType}] ${ro.data.getOrElse("<no data>")}", ro.tlp, c.pap) // TODO add attachment info
+      case other => Failure(InternalError(s"Unexpected entity (${other.getClass})"))
     }
 }

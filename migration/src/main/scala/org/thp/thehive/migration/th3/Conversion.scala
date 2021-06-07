@@ -312,7 +312,7 @@ trait Conversion {
       description <- (value \ "description").validate[String]
     } yield InputCustomField(
       MetaData(name, User.init.login, new Date, None, None),
-      CustomField(name, name, description, CustomFieldType.integer, mandatory = true, Nil)
+      CustomField(name, name, description, CustomFieldInteger, mandatory = true, Nil)
     )
   }
 
@@ -325,15 +325,8 @@ trait Conversion {
       name        <- (value \ "reference").validate[String]
       description <- (value \ "description").validate[String]
       tpe         <- (value \ "type").validate[String]
-      customFieldType = tpe match {
-        case "string"  => CustomFieldType.string
-        case "number"  => CustomFieldType.integer
-        case "integer" => CustomFieldType.integer
-        case "float"   => CustomFieldType.float
-        case "boolean" => CustomFieldType.boolean
-        case "date"    => CustomFieldType.date
-      }
-      options = (value \ "options").asOpt[Seq[JsValue]].getOrElse(Nil)
+      customFieldType = CustomFieldType.withName(tpe)
+      options         = (value \ "options").asOpt[Seq[JsValue]].getOrElse(Nil)
     } yield InputCustomField(
       MetaData(name, User.init.login, new Date, None, None),
       CustomField(name, displayName, description, customFieldType, mandatory = false, options)
