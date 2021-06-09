@@ -94,6 +94,31 @@ object InputCustomFieldValue {
     // TODO Change JsObject to JsArray ?
     JsObject(fields)
   }
+
+  private def valueReader(jsValue: JsValue): Option[Any] = jsValue match {
+    case n: JsNumber => Some(n)
+    case s: JsString => Some(s)
+    case b: JsBoolean => Some(b)
+    case _ => None
+  }
+
+  implicit val reads: Reads[Seq[InputCustomFieldValue]] = Reads[Seq[InputCustomFieldValue]] {
+    case JsObject(fields) =>
+      val out = fields.map {
+        case (key, value) => InputCustomFieldValue(String64("customField.name", key), valueReader(value), None)
+      }.toSeq
+      JsSuccess(out)
+    case list: JsArray =>
+      implicit val icfvReader: Reads[InputCustomFieldValue] = Reads[InputCustomFieldValue] { cf =>
+        for {
+          name <- (cf \ "name").validate[String]
+          v <- (cf \ "value").validate[JsValue]
+          value = valueReader(v)
+          order <- (cf \ "order").validateOpt[Int]
+        } yield InputCustomFieldValue(String64("customField.name", name), value, order)
+      }
+      list.validate[Seq[InputCustomFieldValue]]
+  }
 }
 
 case class OutputCustomFieldValue(_id: String, name: String, description: String, `type`: String, value: JsValue, order: Int)

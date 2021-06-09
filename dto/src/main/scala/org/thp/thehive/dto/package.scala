@@ -38,6 +38,16 @@ package object dto {
       RefType.applyRef[Pap](value).fold(error => throw InvalidFormatAttributeError("pap", error, Set.empty, FNumber(value.toDouble)), identity)
   }
 
+  object String16 {
+    def apply(name: String, value: String): String16 =
+      RefType.applyRef[String16](value).fold(error => throw InvalidFormatAttributeError(name, error, Set.empty, FString(value)), identity)
+  }
+
+  object String32 {
+    def apply(name: String, value: String): String32 =
+      RefType.applyRef[String32](value).fold(error => throw InvalidFormatAttributeError(name, error, Set.empty, FString(value)), identity)
+  }
+
   object String64 {
     def apply(name: String, value: String): String64 =
       RefType.applyRef[String64](value).fold(error => throw InvalidFormatAttributeError(name, error, Set.empty, FString(value)), identity)
