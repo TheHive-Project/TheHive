@@ -141,17 +141,13 @@ class AdminCtrl @Inject() (
       }
 
   private val rangeRegex = "(\\d+)-(\\d+)".r
-  private def getOperations(schemaName: String, select: String, filter: String): Seq[(Operation, Int)] = {
-    val ranges = select match {
-      case "all" => Seq(0 until Int.MaxValue)
-      case other =>
-        other.split(',').toSeq.map {
-          case rangeRegex(from, to) => from.toInt to to.toInt
-          case number               => number.toInt to number.toInt
-        }
-    }
+  private def getOperations(schemaName: String, select: Option[String], filter: Option[String]): Seq[(Operation, Int)] = {
+    val ranges = select.fold(Seq(0 until Int.MaxValue))(_.split(',').toSeq.map {
+      case rangeRegex(from, to) => from.toInt to to.toInt
+      case number               => number.toInt to number.toInt
+    })
 
-    val filters = filter.split(',')
+    val filters = filter.fold(Seq("all"))(_.split(','))
 
     schemas
       .filter(_.name == schemaName)
@@ -162,7 +158,7 @@ class AdminCtrl @Inject() (
           .operations
           .zipWithIndex
           .filter {
-            case (_, i) => ranges.exists(_.contains(i + 1))
+            case (_, i) => ranges.exists(_.contains(i))
           }
           .filter {
             case (_: AddVertexModel, _) =>
@@ -197,7 +193,7 @@ class AdminCtrl @Inject() (
       }
   }
 
-  def schemaRepair(schemaName: String, select: String, filter: String): Action[AnyContent] =
+  def schemaRepair(schemaName: String, select: Option[String], filter: Option[String]): Action[AnyContent] =
     entrypoint("Repair schema")
       .authPermitted(Permissions.managePlatform) { _ =>
         val result = getOperations(schemaName, select, filter)
@@ -213,7 +209,7 @@ class AdminCtrl @Inject() (
         Success(Results.Ok(Json.toJson(result)))
       }
 
-  def schemaInfo(schemaName: String, select: String, filter: String): Action[AnyContent] =
+  def schemaInfo(schemaName: String, select: Option[String], filter: Option[String]): Action[AnyContent] =
     entrypoint("Schema info")
       .authPermitted(Permissions.managePlatform) { _ =>
         val output = getOperations(schemaName, select, filter).map {

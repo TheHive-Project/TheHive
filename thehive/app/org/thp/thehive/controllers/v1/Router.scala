@@ -43,13 +43,13 @@ class Router @Inject() (
     case GET(p"/status") => statusCtrl.get
 //    GET  /health                              controllers.StatusCtrl.health
 
-    case GET(p"/admin/check/stats")                                => adminCtrl.checkStats
-    case GET(p"/admin/check/$name/trigger")                        => adminCtrl.triggerCheck(name)
-    case GET(p"/admin/index/status")                               => adminCtrl.indexStatus
-    case GET(p"/admin/index/$name/reindex")                        => adminCtrl.reindex(name)
-    case GET(p"/admin/log/set/$packageName/$level")                => adminCtrl.setLogLevel(packageName, level)
-    case POST(p"/admin/schema/repair/$schemaName/$select/$filter") => adminCtrl.schemaRepair(schemaName, select, filter)
-    case POST(p"/admin/schema/info/$schemaName/$select/$filter")   => adminCtrl.schemaInfo(schemaName, select, filter)
+    case GET(p"/admin/check/stats")                                                            => adminCtrl.checkStats
+    case GET(p"/admin/check/$name/trigger")                                                    => adminCtrl.triggerCheck(name)
+    case GET(p"/admin/index/status")                                                           => adminCtrl.indexStatus
+    case GET(p"/admin/index/$name/reindex")                                                    => adminCtrl.reindex(name)
+    case GET(p"/admin/log/set/$packageName/$level")                                            => adminCtrl.setLogLevel(packageName, level)
+    case POST(p"/admin/schema/repair/$schemaName" ? q_o"select=$select" ? q_o"filter=$filter") => adminCtrl.schemaRepair(schemaName, select, filter)
+    case POST(p"/admin/schema/info/$schemaName" ? q_o"select=$select" ? q_o"filter=$filter")   => adminCtrl.schemaInfo(schemaName, select, filter)
 
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
     case GET(p"/logout")                 => authenticationCtrl.logout
