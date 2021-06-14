@@ -316,7 +316,7 @@ class AuditSrv @Inject() (
 object AuditOps {
 
   implicit class VertexDefs(traversal: Traversal[Vertex, Vertex, IdentityConverter[Vertex]]) {
-    def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase]).v[Share]
+    def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase], _.identity).v[Share]
   }
 
   implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
