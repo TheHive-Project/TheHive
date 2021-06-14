@@ -259,7 +259,8 @@ lazy val thehiveCore = (project in file("thehive"))
       macWireMacros,
       macWireMacrosakka,
       macWireUtil,
-      macWireProxy
+      macWireProxy,
+      passay
     )
   )
 
