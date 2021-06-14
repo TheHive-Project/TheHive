@@ -11,7 +11,8 @@
         No tasks have been specified. <a href class="mr-xxxs" ng-click="$vm.addTask()">Add a task</a>
     </div>
     <div ng-if="$vm.template.tasks.length !== 0" ui-sortable="$vm.sortableOptions" ng-model="$vm.template.tasks">
-        <div class="task-item" ng-init="isCollapsed=true" ng-repeat="t in $vm.template.tasks | orderBy:'order' track by $index">
+        <div class="task-item" ng-init="isCollapsed=true"
+            ng-repeat="t in $vm.template.tasks | orderBy:'order' track by $index">
             <div class="panel-heading">
                 <span class="drag-handle text-primary clickable mr-xxs">
                     <i class="fa fa-bars"></i>
@@ -22,14 +23,16 @@
                     </a>
                 </span>
                 <span class="hpad5">[{{t.group || 'default'}}] {{t.title}}</span>
-                <span class="mr-xxs" ng-if="t.owner">(Assigned to <em><user-info value="t.owner" field="name"></user-info></em>)</span>
+                <span class="mr-xxs" ng-if="t.owner">(Assigned to <em>
+                        <user-info value="t.owner" field="name"></user-info>
+                    </em>)</span>
 
                 <span class="pull-right">
                     <a class="text-default" href ng-click="$vm.editTask(t)">
                         <i class="fa fa-pencil"></i>&nbsp;Edit</a>
                     <span class="hpad5"></span>
-                <a class="text-danger" href ng-click="$vm.removeTask(t)">
-                    <i class="fa fa-trash"></i>&nbsp;Delete</a>
+                    <a class="text-danger" href ng-click="$vm.removeTask(t)">
+                        <i class="fa fa-trash"></i>&nbsp;Delete</a>
                 </span>
             </div>
             <div class="panel-body" ng-hide="isCollapsed">

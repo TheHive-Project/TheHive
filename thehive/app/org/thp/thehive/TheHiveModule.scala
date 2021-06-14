@@ -1,6 +1,7 @@
 package org.thp.thehive
 
 import akka.actor.ActorRef
+import akka.actor.typed.{ActorRef => TypedActorRef}
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.thp.scalligraph.SingleInstance
@@ -106,6 +107,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     integrityCheckOpsBindings.addBinding.to[ObservableIntegrityCheckOps]
     integrityCheckOpsBindings.addBinding.to[LogIntegrityCheckOps]
     bind[ActorRef].annotatedWithName("integrity-check-actor").toProvider[IntegrityCheckActorProvider]
+    bind[TypedActorRef[CaseNumberActor.Request]].annotatedWithName("case-number-actor").toProvider[CaseNumberActorProvider]
 
     bind[ActorRef].annotatedWithName("flow-actor").toProvider[FlowActorProvider]
 

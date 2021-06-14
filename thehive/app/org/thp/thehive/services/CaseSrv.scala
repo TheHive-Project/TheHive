@@ -1,6 +1,9 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.{Scheduler, ActorRef => TypedActorRef}
+import akka.util.Timeout
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -30,6 +33,8 @@ import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 import java.lang.{Long => JLong}
 import java.util.{Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Provider, Singleton}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -48,7 +53,10 @@ class CaseSrv @Inject() (
     userSrv: UserSrv,
     alertSrvProvider: Provider[AlertSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
-    cache: SyncCacheApi
+    @Named("case-number-actor") caseNumberActor: TypedActorRef[CaseNumberActor.Request],
+    cache: SyncCacheApi,
+    implicit val ec: ExecutionContext,
+    implicit val scheduler: Scheduler
 ) extends VertexSrv[Case] {
   lazy val alertSrv: AlertSrv = alertSrvProvider.get
 
@@ -124,7 +132,15 @@ class CaseSrv @Inject() (
       .map { case (InputCustomFieldValue(name, value, _), i) => InputCustomFieldValue(name, value, Some(i)) }
   }
 
-  def nextCaseNumber(implicit graph: Graph): Int = startTraversal.getLast.headOption.fold(0)(_.number) + 1
+  def nextCaseNumberAsync: Future[Int] = {
+    implicit val timeout: Timeout = Timeout(1.minute)
+    caseNumberActor.ask[CaseNumberActor.Response](replyTo => CaseNumberActor.GetNextNumber(replyTo)).map {
+      case CaseNumberActor.NextNumber(caseNumber) => caseNumber
+    }
+  }
+
+  def nextCaseNumber: Int =
+    Await.result(nextCaseNumberAsync, 1.minute)
 
   override def exists(e: Case)(implicit graph: Graph): Boolean = startTraversal.getByNumber(e.number).exists
 

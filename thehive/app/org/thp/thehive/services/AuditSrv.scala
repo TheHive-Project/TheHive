@@ -19,6 +19,7 @@ import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.DashboardOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
+import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 import org.thp.thehive.services.notification.AuditNotificationMessage
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -315,7 +316,7 @@ class AuditSrv @Inject() (
 object AuditOps {
 
   implicit class VertexDefs(traversal: Traversal[Vertex, Vertex, IdentityConverter[Vertex]]) {
-    def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase]).v[Share]
+    def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase], _.identity).v[Share]
   }
 
   implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
@@ -401,6 +402,7 @@ object AuditOps {
             .option("Organisation", _.v[Organisation]._id)
             .option("CaseTemplate", _.v[CaseTemplate].organisation._id)
             .option("Dashboard", _.v[Dashboard].organisation._id)
+            .option("Share", _.v[Share].organisation._id)
         )
         .domainMap(EntityId.apply)
 
@@ -412,6 +414,7 @@ object AuditOps {
             .option("Case", _.v[Case]._id)
             .option("Observable", _.v[Observable].value(_.relatedId).widen[AnyRef])
             .option("Task", _.v[Task].value(_.relatedId).widen[AnyRef])
+            .option("Share", _.v[Share].`case`._id)
         )
         .domainMap(EntityId.apply)
 
@@ -426,6 +429,7 @@ object AuditOps {
             .option("Organisation", _.v[Organisation].current.widen[Any])
             .option("CaseTemplate", _.v[CaseTemplate].visible.widen[Any])
             .option("Dashboard", _.v[Dashboard].visible.widen[Any])
+            .option("Share", _.v[Share].organisation.current.widen[Any])
         )
       )
 

@@ -243,7 +243,7 @@ class AlertSrv @Inject() (
           caseTemplate <-
             alert
               .caseTemplate
-              .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).richCaseTemplate.getOrFail("CaseTemplate"))
+              .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate"))
               .flip
           customField = alert.customFields.map(f => InputCustomFieldValue(f.name, f.value, f.order))
           case0 = Case(

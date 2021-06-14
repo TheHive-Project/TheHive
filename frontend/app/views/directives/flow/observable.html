@@ -1,16 +1,23 @@
 <div class="flow-observable" ng-switch="base.operation">
     <div class="flow-item-title wrap">
         <i class="glyphicon glyphicon-pushpin"></i>
-        <span>{{base.object.dataType}}:
+        <span>{{base.object.dataType || base.details.dataType}}:
         </span>
         <span class="wrap" ng-bind="base.object.data | fang | ellipsis:100" ng-if="!base.object.attachment.name"></span>
         <span class="wrap" ng-bind="base.object.attachment.name" ng-if="base.object.attachment.name"></span>
+
+        <span class="wrap" ng-bind="(base.details.data || base.details.attachment.name) | fang | ellipsis:100"
+            ng-if="base.operation === 'Delete'"></span>
+
         <span ng-if="base.operation == 'Creation'">
             <tlp value="base.object.tlp"></tlp>
         </span>
+
         <div class="flow-item-bulk" ng-if="isBulkOperation()">
-            <em>{{summary.case_artifact.Creation}} other observables have also been {{base.operation === 'Creation' ? 'added' : 'updated'}}</em>
-            <a class="small" href ng-click="openState('app.case.observables', {caseId: base.object.case.id})">See all</a>
+            <em>{{summary.case_artifact.Creation}} other observables have also been {{base.operation === 'Creation' ?
+                'added' : 'updated'}}</em>
+            <a class="small" href ng-click="openState('app.case.observables', {caseId: base.object.case.id})">See
+                all</a>
         </div>
     </div>
 
@@ -37,6 +44,10 @@
                 <span ng-if="v.length === 0">
                     <em>None</em>
                 </span>
+            </div>
+
+            <div ng-switch-when="attachment">
+                {{k}}: <em>{{v.name}}</em>
             </div>
 
             <div ng-switch-default>

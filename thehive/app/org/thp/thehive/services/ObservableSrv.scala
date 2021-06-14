@@ -17,7 +17,7 @@ import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsString, Json}
 
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
@@ -136,28 +136,42 @@ class ObservableSrv @Inject() (
       _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 
-  override def delete(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
+  override def delete(observable: Observable with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+    def observableDetail(attachment: Option[Attachment with Entity]): JsObject =
+      JsObject(
+        "dataType" -> JsString(observable.dataType) ::
+          attachment.map { a =>
+            "attachment" -> Json.obj(
+              "name"        -> a.name,
+              "id"          -> a.attachmentId,
+              "size"        -> a.size,
+              "contentType" -> a.contentType,
+              "hashes"      -> a.hashes.map(_.toString)
+            )
+          }.toList ::: observable.data.map(d => "data" -> JsString(d)).toList
+      )
+
     get(observable).alert.headOption match {
       case None =>
         get(observable)
-          .share
+          .project(_.by(_.share).by(_.attachments.option))
           .toIterator
           .toTry {
-            case share if share.owner =>
+            case (share, attachment) if share.owner =>
               get(observable)
                 .shares
                 .toIterator
                 .toTry { share =>
                   auditSrv
                     .observable
-                    .delete(observable, share)
+                    .delete(observable, share, Some(observableDetail(attachment)))
                 }
                 .map(_ => get(observable).remove())
-            case share =>
+            case (share, attachment) =>
               for {
                 organisation <- organisationSrv.current.getOrFail("Organisation")
                 _            <- shareSrv.unshareObservable(observable, organisation)
-                _            <- auditSrv.observable.delete(observable, share)
+                _            <- auditSrv.observable.delete(observable, share, Some(observableDetail(attachment)))
               } yield ()
           }
           .map(_ => ())
@@ -165,6 +179,7 @@ class ObservableSrv @Inject() (
         get(observable).remove()
         auditSrv.observableInAlert.delete(observable, alert)
     }
+  }
 
   override def update(
       traversal: Traversal.V[Observable],

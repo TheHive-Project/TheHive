@@ -173,7 +173,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.removeProperty("colour").iterate()
       Success(())
     }
-    .removeProperty("Tag", "colour", usedOnlyByThisModel = true)
+    .removeProperty[Int]("Tag", "colour", usedOnlyByThisModel = true)
     .addProperty[String]("Tag", "colour")
     .updateGraph("Add property colour for Tags ", "Tag") { traversal =>
       traversal.raw.property("colour", "#000000").iterate()
@@ -393,7 +393,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       traversal.removeProperty("deleted")
       Success(())
     }
-    .removeProperty(model = "Log", propertyName = "deleted", usedOnlyByThisModel = true)
+    .removeProperty[Boolean](model = "Log", propertyName = "deleted", usedOnlyByThisModel = true)
     .updateGraph("Make shared dashboard writable", "Dashboard") { traversal =>
       traversal.outE("OrganisationDashboard").raw.property("writable", true).iterate()
       Success(())

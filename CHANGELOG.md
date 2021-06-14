@@ -1,5 +1,24 @@
 # Change Log
 
+## [4.1.6](https://github.com/TheHive-Project/TheHive/milestone/75) (2021-06-14)
+
+**Implemented enhancements:**
+
+- [Feature Request] Add API to repair database [\#2081](https://github.com/TheHive-Project/TheHive/issues/2081)
+
+**Fixed bugs:**
+
+- [Bug] Editing case template tasks incorrectly removes tasks  [\#1926](https://github.com/TheHive-Project/TheHive/issues/1926)
+- [Bug] When creating cases from alerts via API, the same case number gets assigned to multiple distinct cases [\#1970](https://github.com/TheHive-Project/TheHive/issues/1970)
+- [Bug] src:MISP-ORG missing on MISP alerts [\#2058](https://github.com/TheHive-Project/TheHive/issues/2058)
+- [Bug] Analyzer reports dissapear in 4.1.5 (observable already exists error) [\#2059](https://github.com/TheHive-Project/TheHive/issues/2059)
+- [Bug] CaseNumber Conflict [\#2061](https://github.com/TheHive-Project/TheHive/issues/2061)
+- [Bug] Alert tags glitch after previewing alert [\#2062](https://github.com/TheHive-Project/TheHive/issues/2062)
+- [Bug] Case Template content mixed across organisations [\#2068](https://github.com/TheHive-Project/TheHive/issues/2068)
+- [Bug] /api/v1/<user.ID>/key returns 401/403 if user hasn't key [\#2069](https://github.com/TheHive-Project/TheHive/issues/2069)
+- [Bug] When API call returns failure, actual response depends on  authentication methods [\#2070](https://github.com/TheHive-Project/TheHive/issues/2070)
+- [Bug] Deleting observables doesn't produce audit log [\#2076](https://github.com/TheHive-Project/TheHive/issues/2076)
+
 ## [4.1.5](https://github.com/TheHive-Project/TheHive/milestone/74) (2021-06-03)
 
 **Implemented enhancements:**
