@@ -306,7 +306,7 @@ class AuditSrv(
 trait AuditOpsNoDeps { _: TheHiveOpsNoDeps =>
 
   implicit class VertexDefs(traversal: Traversal[Vertex, Vertex, IdentityConverter[Vertex]]) {
-    def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase]).v[Share]
+    def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase], _.identity).v[Share]
   }
 
   implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
@@ -392,6 +392,7 @@ trait AuditOpsNoDeps { _: TheHiveOpsNoDeps =>
             .option("Organisation", _.v[Organisation]._id)
             .option("CaseTemplate", _.v[CaseTemplate].organisation._id)
             .option("Dashboard", _.v[Dashboard].organisation._id)
+            .option("Share", _.v[Share].organisation._id)
         )
         .domainMap(EntityId.apply)
 
@@ -403,6 +404,7 @@ trait AuditOpsNoDeps { _: TheHiveOpsNoDeps =>
             .option("Case", _.v[Case]._id)
             .option("Observable", _.v[Observable].value(_.relatedId).widen[AnyRef])
             .option("Task", _.v[Task].value(_.relatedId).widen[AnyRef])
+            .option("Share", _.v[Share].`case`._id)
         )
         .domainMap(EntityId.apply)
 
@@ -427,6 +429,7 @@ trait AuditOps { _: TheHiveOps =>
             .option("Organisation", _.v[Organisation].current.widen[Any])
             .option("CaseTemplate", _.v[CaseTemplate].visible.widen[Any])
             .option("Dashboard", _.v[Dashboard].visible.widen[Any])
+            .option("Share", _.v[Share].organisation.current.widen[Any])
         )
       )
   }

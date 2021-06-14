@@ -192,7 +192,9 @@
                     controllerAs: 'dialog',
                     size: 'max',
                     resolve: {
-                        event: event,
+                        event: function () {
+                            return angular.copy(event);
+                        },
                         templates: function () {
                             return CaseTemplateSrv.list();
                         },

@@ -7,7 +7,7 @@ import ch.qos.logback.classic.{Level, LoggerContext}
 import com.softwaremill.tagging.@@
 import org.slf4j.LoggerFactory
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models._
 import org.thp.scalligraph.services.GenIntegrityCheckOps
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
@@ -17,14 +17,15 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 class AdminCtrl(
     entrypoint: Entrypoint,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
     integrityCheckOps: Seq[GenIntegrityCheckOps],
     db: Database,
+    schemas: Seq[UpdatableSchema],
     implicit val ec: ExecutionContext
 ) {
 
@@ -71,7 +72,7 @@ class AdminCtrl(
     entrypoint("Get check stats")
       .asyncAuthPermitted(Permissions.managePlatform) { _ =>
         Future
-          .traverse(integrityCheckOps.toSeq) { c =>
+          .traverse(integrityCheckOps) { c =>
             (integrityCheckActor ? GetCheckStats(c.name))
               .mapTo[CheckState]
               .recover {
@@ -112,6 +113,7 @@ class AdminCtrl(
     "Job",
     "Attachment"
   )
+
   def indexStatus: Action[AnyContent] =
     entrypoint("Get index status")
       .authPermittedRoTransaction(db, Permissions.managePlatform) { _ => graph =>
@@ -135,5 +137,82 @@ class AdminCtrl(
       .authPermitted(Permissions.managePlatform) { _ =>
         Future(db.reindexData(label))
         Success(Results.NoContent)
+      }
+
+  private val rangeRegex = "(\\d+)-(\\d+)".r
+  private def getOperations(schemaName: String, select: Option[String], filter: Option[String]): Seq[(Operation, Int)] = {
+    val ranges = select.fold(Seq(0 until Int.MaxValue))(_.split(',').toSeq.map {
+      case rangeRegex(from, to) => from.toInt to to.toInt
+      case number               => number.toInt to number.toInt
+    })
+
+    val filters = filter.fold(Seq("all"))(_.split(',').toSeq)
+
+    schemas
+      .filter(_.name == schemaName)
+      .flatMap { schema =>
+        schema
+          .operations
+          .operations
+          .zipWithIndex
+          .filter {
+            case (_, i) => ranges.exists(_.contains(i))
+          }
+          .filter {
+            case (_: AddVertexModel, _) =>
+              filters.contains("AddVertexModel") || filters
+                .contains("schema") || (filters.contains("all") && !filters.contains("!schema") && !filters.contains("!AddVertexModel"))
+            case (_: AddEdgeModel, _) =>
+              filter.contains("AddEdgeModel") || filter
+                .contains("schema") || (filters.contains("all") && !filter.contains("!schema") && !filter.contains("!AddEdgeModel"))
+            case (_: AddProperty, _) =>
+              filter.contains("AddProperty") || filter
+                .contains("schema") || (filters.contains("all") && !filter.contains("!schema") && !filter.contains("!AddProperty"))
+            case (_: RemoveProperty, _) =>
+              filter.contains("RemoveProperty") || filter
+                .contains("schema") || (filters.contains("all") && !filter.contains("!schema") && !filter.contains("!RemoveProperty"))
+            case (_: UpdateGraph, _) =>
+              filter.contains("UpdateGraph") || filter
+                .contains("data") || (filters.contains("all") && !filter.contains("!data") && !filter.contains("!UpdateGraph"))
+            case (_: AddIndex, _) =>
+              filter.contains("AddIndex") || filter
+                .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!AddIndex"))
+            case (RebuildIndexes, _) =>
+              filter.contains("RebuildIndexes") || filter
+                .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!RebuildIndexes"))
+            case (NoOperation, _) => false
+            case (_: RemoveIndex, _) =>
+              filter.contains("RemoveIndex") || filter
+                .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!RemoveIndex"))
+            case (_: DBOperation[_], _) =>
+              filter.contains("DBOperation") || filter
+                .contains("data") || (filters.contains("all") && !filter.contains("!data") && !filter.contains("!DBOperation"))
+          }
+      }
+  }
+
+  def schemaRepair(schemaName: String, select: Option[String], filter: Option[String]): Action[AnyContent] =
+    entrypoint("Repair schema")
+      .authPermitted(Permissions.managePlatform) { _ =>
+        val result = getOperations(schemaName, select, filter)
+          .map {
+            case (operation, index) =>
+              logger.info(s"Repair schema: $index=${operation.info}")
+              operation.execute(db, logger.info(_)) match {
+                case _: Success[_]  => s"${operation.info}: Success"
+                case Failure(error) => s"${operation.info}: Failure $error"
+              }
+          }
+
+        Success(Results.Ok(Json.toJson(result)))
+      }
+
+  def schemaInfo(schemaName: String, select: Option[String], filter: Option[String]): Action[AnyContent] =
+    entrypoint("Schema info")
+      .authPermitted(Permissions.managePlatform) { _ =>
+        val output = getOperations(schemaName, select, filter).map {
+          case (o, i) => s"$i=${o.info}"
+        }
+        Success(Results.Ok(Json.toJson(output)))
       }
 }

@@ -104,7 +104,7 @@ class MispImportSrvTest extends PlaySpecification with TestAppBuilder with TheHi
                 pap = 2,
                 read = false,
                 follow = true,
-                tags = Seq("TH-test", "TH-test-2"),
+                tags = Seq("src:ORGNAME", "TH-test", "TH-test-2"),
                 organisationId = alert.organisationId,
                 caseId = EntityId.empty
               )

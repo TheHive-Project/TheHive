@@ -1,6 +1,10 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.adapter.ClassicSchedulerOps
+import akka.actor.typed.{Scheduler, ActorRef => TypedActorRef}
+import akka.util.Timeout
 import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -21,6 +25,8 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 
 import java.lang.{Long => JLong}
 import java.util.{List => JList, Map => JMap}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class CaseSrv(
@@ -38,7 +44,10 @@ class CaseSrv(
     userSrv: UserSrv,
     _alertSrv: => AlertSrv,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
-    cache: SyncCacheApi
+    caseNumberActor: => TypedActorRef[CaseNumberActor.Request],
+    cache: SyncCacheApi,
+    implicit val ec: ExecutionContext,
+    implicit val actorSystem: ActorSystem
 ) extends VertexSrv[Case]
     with TheHiveOps {
   lazy val alertSrv: AlertSrv = _alertSrv
@@ -115,7 +124,16 @@ class CaseSrv(
       .map { case (InputCustomFieldValue(name, value, _), i) => InputCustomFieldValue(name, value, Some(i)) }
   }
 
-  def nextCaseNumber(implicit graph: Graph): Int = startTraversal.getLast.headOption.fold(0)(_.number) + 1
+  def nextCaseNumberAsync: Future[Int] = {
+    implicit val timeout: Timeout     = Timeout(1.minute)
+    implicit val scheduler: Scheduler = actorSystem.scheduler.toTyped
+    caseNumberActor.ask[CaseNumberActor.Response](replyTo => CaseNumberActor.GetNextNumber(replyTo)).map {
+      case CaseNumberActor.NextNumber(caseNumber) => caseNumber
+    }
+  }
+
+  def nextCaseNumber: Int =
+    Await.result(nextCaseNumberAsync, 1.minute)
 
   override def exists(e: Case)(implicit graph: Graph): Boolean = startTraversal.getByNumber(e.number).exists
 

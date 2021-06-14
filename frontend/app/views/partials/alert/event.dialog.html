@@ -54,12 +54,12 @@
                     </h4>
                     <dl class="dl-horizontal">
                         <dt class="pull-left">Tags</dt>
-                        <dd ng-if="dialog.canEdit">
+                        <dd ng-if="dialog.canEdit && !dialog.readonly">
                             <updatable-tag-list on-update="dialog.updateField('tags', dialog.getTags(newValue))"
                                 value="dialog.event.tags" source="dialog.getAlertTags"></updatable-tag-list>
                         </dd>
-                        <dd ng-if="!dialog.canEdit">
-                            <tag-list data="caze.tags"></tag-list>
+                        <dd ng-if="!dialog.canEdit || dialog.readonly">
+                            <tag-list data="dialog.event.tags"></tag-list>
                         </dd>
                     </dl>
                 </div>
@@ -68,11 +68,11 @@
                     <h4 class="vpad10 text-primary">
                         Description
                     </h4>
-                    <div class="description-pane" ng-if="!dialog.canEdit">
+                    <div class="description-pane" ng-if="!dialog.canEdit || dialog.readonly">
                         <div marked="dialog.event.description" class="markdown"></div>
                     </div>
 
-                    <div class="description-pane" ng-if="dialog.canEdit">
+                    <div class="description-pane" ng-if="dialog.canEdit && !dialog.readonly">
                         <updatable-text on-update="dialog.updateField('description', newValue)"
                             value="dialog.event.description"></updatable-text>
                     </div>

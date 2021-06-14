@@ -1,6 +1,9 @@
 package org.thp.thehive
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Scheduler}
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+import akka.actor.typed.{ActorRef => TypedActorRef}
+import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import com.softwaremill.macwire.Module
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.controllers.Entrypoint
@@ -29,6 +32,10 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   lazy val flowActor: ActorRef @@ FlowTag                 = wireActorSingleton(actorSystem, wireProps[FlowActor], "flow-actor").taggedWith[FlowTag]
   lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag =
     wireActorSingleton(actorSystem, wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
+  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = ClusterSingleton(app.actorSystem.toTyped)
+    .init(SingletonActor(CaseNumberActor.behavior(app.database, caseSrv), "CaseNumberLeader"))
+
+  lazy val scheduler: Scheduler = app.actorSystem.scheduler
 
   lazy val auditSrv: AuditSrv                       = wire[AuditSrv]
   lazy val roleSrv: RoleSrv                         = wire[RoleSrv]

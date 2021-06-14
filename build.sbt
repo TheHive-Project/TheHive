@@ -9,7 +9,7 @@ import sbt.file
 import java.util.jar.Manifest
 
 val defaultSettings = Seq(
-  version := "4.1.4-1",
+  version := "4.1.6-1",
   organization := "org.thp",
   scalaVersion := "2.13.5",
   resolvers ++= Seq(
@@ -344,7 +344,7 @@ lazy val thehiveFrontend = (project in file("frontend"))
         label = "thehive-frontend:npm",
         inputFiles = baseDirectory.value / "package.json",
         outputFiles = baseDirectory.value / "node_modules" ** AllPassFilter,
-        command = baseDirectory.value -> "npm ci",
+        command = baseDirectory.value -> "npm install",
         streams = streams.value
       ),
     bower := FileBuilder(

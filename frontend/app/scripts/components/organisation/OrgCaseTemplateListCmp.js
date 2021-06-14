@@ -1,9 +1,9 @@
-(function() {
+(function () {
     'use strict';
 
     angular.module('theHiveComponents')
         .component('orgCaseTemplateList', {
-            controller: function($uibModal, $scope, $q, CaseTemplateSrv, PaginatedQuerySrv, FilteringSrv, UserSrv, NotificationSrv, ModalUtilsSrv) {
+            controller: function ($uibModal, $scope, $q, CaseTemplateSrv, PaginatedQuerySrv, FilteringSrv, UserSrv, NotificationSrv, ModalUtilsSrv) {
                 var self = this;
 
                 self.task = '';
@@ -13,7 +13,7 @@
                 self.getUserInfo = UserSrv.getCache;
 
 
-                this.$onInit = function() {
+                this.$onInit = function () {
                     self.filtering = new FilteringSrv('caseTemplate', 'caseTemplate.list', {
                         version: 'v1',
                         defaults: {
@@ -26,7 +26,7 @@
                     });
 
                     self.filtering.initContext(self.organisation.name)
-                        .then(function() {
+                        .then(function () {
                             self.load();
 
                             $scope.$watch('$vm.list.pageSize', function (newValue) {
@@ -35,7 +35,7 @@
                         });
                 };
 
-                this.load = function() {
+                this.load = function () {
 
                     self.list = new PaginatedQuerySrv({
                         name: 'organisation-case-templates',
@@ -46,15 +46,15 @@
                         pageSize: self.filtering.context.pageSize,
                         filter: this.filtering.buildQuery(),
                         operations: [{
-                                '_name': 'getOrganisation',
-                                'idOrName': self.organisation.name
-                            },
-                            {
-                                '_name': 'caseTemplates'
-                            }
+                            '_name': 'getOrganisation',
+                            'idOrName': self.organisation.name
+                        },
+                        {
+                            '_name': 'caseTemplates'
+                        }
                         ],
-                        onFailure: function(err) {
-                            if(err && err.status === 400) {
+                        onFailure: function (err) {
+                            if (err && err.status === 400) {
                                 self.filtering.resetContext();
                                 self.load();
                             }
@@ -90,28 +90,28 @@
                     this.search();
                 };
 
-                this.filterBy = function(field, value) {
+                this.filterBy = function (field, value) {
                     self.filtering.clearFilters()
-                        .then(function(){
+                        .then(function () {
                             self.addFilterValue(field, value);
                         });
                 };
 
-                this.sortBy = function(sort) {
+                this.sortBy = function (sort) {
                     self.list.sort = sort;
                     self.list.update();
                     self.filtering.setSort(sort);
                 };
 
-                this.sortByField = function(field) {
+                this.sortByField = function (field) {
                     var context = this.filtering.context;
                     var currentSort = Array.isArray(context.sort) ? context.sort[0] : context.sort;
                     var sort = null;
 
-                    if(currentSort.substr(1) !== field) {
+                    if (currentSort.substr(1) !== field) {
                         sort = ['+' + field];
                     } else {
-                        sort = [(currentSort === '+' + field) ? '-'+field : '+'+field];
+                        sort = [(currentSort === '+' + field) ? '-' + field : '+' + field];
                     }
 
                     self.list.sort = sort;
@@ -119,7 +119,7 @@
                     self.filtering.setSort(sort);
                 };
 
-                this.newTemplate = function() {
+                this.newTemplate = function () {
                     self.showTemplate({
                         name: '',
                         titlePrefix: '',
@@ -133,12 +133,12 @@
                     });
                 };
 
-                this.showTemplate = function(template) {
+                this.showTemplate = function (template) {
 
                     var promise = template._id ? CaseTemplateSrv.get(template._id) : $q.resolve(template);
 
                     promise
-                        .then(function(response) {
+                        .then(function (response) {
                             var modalInstance = $uibModal.open({
                                 animation: true,
                                 keyboard: false,
@@ -148,10 +148,16 @@
                                 controllerAs: '$vm',
                                 size: 'max',
                                 resolve: {
-                                    template: function() {
-                                        return response;
+                                    template: function () {
+                                        var tmpl = angular.copy(response);
+
+                                        if (tmpl.tasks && tmpl.tasks.length > 0) {
+                                            tmpl.tasks = _.sortBy(tmpl.tasks, 'order');
+                                        }
+
+                                        return tmpl;
                                     },
-                                    fields: function() {
+                                    fields: function () {
                                         return self.fields;
                                     }
                                 }
@@ -159,32 +165,32 @@
 
                             return modalInstance.result;
                         })
-                        .then(function() {
+                        .then(function () {
                             self.load();
                         })
-                        .catch(function(err) {
-                            if(err && !_.isString(err)) {
+                        .catch(function (err) {
+                            if (err && !_.isString(err)) {
                                 NotificationSrv.error('Case Template Admin', err.data, err.status);
                             }
                         })
                 }
 
-                self.createTemplate = function(template) {
+                self.createTemplate = function (template) {
                     return CaseTemplateSrv.create(template).then(
-                        function(/*response*/) {
+                        function (/*response*/) {
                             self.load();
 
                             $scope.$emit('templates:refresh');
 
                             NotificationSrv.log('The template [' + template.name + '] has been successfully created', 'success');
                         },
-                        function(response) {
+                        function (response) {
                             NotificationSrv.error('TemplateCtrl', response.data, response.status);
                         }
                     );
                 };
 
-                self.importTemplate = function() {
+                self.importTemplate = function () {
                     var modalInstance = $uibModal.open({
                         animation: true,
                         templateUrl: 'views/components/org/case-template/import.html',
@@ -194,10 +200,10 @@
                     });
 
                     modalInstance.result
-                        .then(function(template) {
+                        .then(function (template) {
                             return self.createTemplate(template);
                         })
-                        .catch(function(err) {
+                        .catch(function (err) {
                             if (err && err.status) {
                                 NotificationSrv.error('TemplateCtrl', err.data, err.status);
                             }
@@ -221,7 +227,7 @@
 
                 self.exportTemplate = function (template) {
                     CaseTemplateSrv.get(template._id)
-                        .then(function(response) {
+                        .then(function (response) {
                             var fileName = 'Case-Template__' + response.name.replace(/\s/gi, '_') + '.json';
 
                             // Create a blob of the data

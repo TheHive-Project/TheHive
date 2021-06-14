@@ -1,6 +1,7 @@
 package org.thp.thehive.cloner
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.{ActorRef => TypedActorRef}
 import akka.stream.Materializer
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
@@ -20,21 +21,22 @@ class IntegrityCheckApp(val configuration: Configuration, val db: Database)(impl
   import com.softwaremill.macwire.akkasupport._
   import com.softwaremill.tagging._
 
-  val ec: ExecutionContext                          = actorSystem.dispatcher
-  val mat: Materializer                             = Materializer.matFromSystem
-  lazy val cache: SyncCacheApi                      = ???
-  lazy val storageSrv: StorageSrv                   = ???
-  lazy val profileSrv: ProfileSrv                   = wire[ProfileSrv]
-  lazy val organisationSrv: OrganisationSrv         = wire[OrganisationSrv]
-  lazy val tagSrv: TagSrv                           = wire[TagSrv]
-  lazy val userSrv: UserSrv                         = wire[UserSrv]
-  lazy val impactStatusSrv: ImpactStatusSrv         = wire[ImpactStatusSrv]
-  lazy val resolutionStatusSrv: ResolutionStatusSrv = wire[ResolutionStatusSrv]
-  lazy val observableTypeSrv: ObservableTypeSrv     = wire[ObservableTypeSrv]
-  lazy val customFieldSrv: CustomFieldSrv           = wire[CustomFieldSrv]
-  lazy val caseTemplateSrv: CaseTemplateSrv         = wire[CaseTemplateSrv]
-  lazy val applicationConfig: ApplicationConfig     = wire[ApplicationConfig]
-  lazy val eventSrv: EventSrv                       = wire[EventSrv]
+  val ec: ExecutionContext                                         = actorSystem.dispatcher
+  val mat: Materializer                                            = Materializer.matFromSystem
+  lazy val cache: SyncCacheApi                                     = ???
+  lazy val storageSrv: StorageSrv                                  = ???
+  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = ???
+  lazy val profileSrv: ProfileSrv                                  = wire[ProfileSrv]
+  lazy val organisationSrv: OrganisationSrv                        = wire[OrganisationSrv]
+  lazy val tagSrv: TagSrv                                          = wire[TagSrv]
+  lazy val userSrv: UserSrv                                        = wire[UserSrv]
+  lazy val impactStatusSrv: ImpactStatusSrv                        = wire[ImpactStatusSrv]
+  lazy val resolutionStatusSrv: ResolutionStatusSrv                = wire[ResolutionStatusSrv]
+  lazy val observableTypeSrv: ObservableTypeSrv                    = wire[ObservableTypeSrv]
+  lazy val customFieldSrv: CustomFieldSrv                          = wire[CustomFieldSrv]
+  lazy val caseTemplateSrv: CaseTemplateSrv                        = wire[CaseTemplateSrv]
+  lazy val applicationConfig: ApplicationConfig                    = wire[ApplicationConfig]
+  lazy val eventSrv: EventSrv                                      = wire[EventSrv]
 
   lazy val dummyActor: ActorRef                               = wireAnonymousActor[DummyActor]
   lazy val auditSrv: AuditSrv                                 = wire[AuditSrv]

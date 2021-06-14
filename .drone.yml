@@ -30,20 +30,6 @@ steps:
     commands:
       - sbt -Duser.home=$PWD test:compile test
 
-  # Save external libraries in cache
-  - name: save-cache
-    image: drillster/drone-volume-cache
-    settings:
-      rebuild: true
-      backend: "filesystem"
-      mount:
-        - .sbt
-        - .ivy2
-        - .cache
-        - frontend/node_modules
-        - frontend/bower_components
-    volumes: [{name: cache, path: /cache}]
-
   # Build packages
   - name: build-packages
     image: thehiveproject/drone-scala-node
@@ -70,6 +56,20 @@ steps:
         mv target/universal/thehive*.zip target/
     when:
       event: [tag]
+
+  # Save external libraries in cache
+  - name: save-cache
+    image: drillster/drone-volume-cache
+    settings:
+      rebuild: true
+      backend: "filesystem"
+      mount:
+        - .sbt
+        - .ivy2
+        - .cache
+        - frontend/node_modules
+        - frontend/bower_components
+    volumes: [{name: cache, path: /cache}]
 
   # Send packages using scp
   - name: send packages
