@@ -227,11 +227,11 @@ class JobSrv @Inject() (
                 Future
                   .fromTry {
                     db.tryTransaction { implicit graph =>
-                      for {
-                        origObs <- get(job).observable.getOrFail("Observable")
-                        obs     <- observableSrv.create(artifact.toObservable(job._id, origObs.organisationIds), artifact.data.get)
-                        _       <- addObservable(job, obs.observable)
-                      } yield ()
+                      get(job).observable.getOrFail("Observable").map { origObs =>
+                        observableSrv
+                          .create(artifact.toObservable(job._id, origObs.organisationIds), artifact.data.get)
+                          .foreach(obs => addObservable(job, obs.observable))
+                      }
                     }
                   }
             }
@@ -336,7 +336,7 @@ object JobOps {
               _.reportObservables
                 .project(
                   _.by(_.richObservable)
-                    .by(_.similar.filter(_.`case`.observables.out[ObservableJob].where(P.eq[String](thisJob.name)))._id.fold)
+                    .by(_.similar.where(_.`case`.observables.out[ObservableJob].v[Job].isStep(P.eq[String](thisJob.name)))._id.fold)
                 )
                 .fold
             )

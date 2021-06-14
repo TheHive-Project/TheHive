@@ -1,7 +1,7 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
 import com.google.inject.name.Named
-import org.thp.scalligraph.EntityIdOrName
+import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query._
@@ -37,6 +37,9 @@ class AnalyzerTemplateCtrl @Inject() (
         analyzerTemplateSrv
           .getOrFail(EntityIdOrName(id))
           .map(report => Results.Ok(report.content))
+          .recover {
+            case _: NotFoundError => Results.NotFound(s"AnalyzerTemplate $id not found")
+          }
       }
 
   def importTemplates: Action[AnyContent] =
