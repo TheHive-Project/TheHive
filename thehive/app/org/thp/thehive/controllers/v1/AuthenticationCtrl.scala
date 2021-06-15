@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, BadRequestError, EntityIdOrName, MultiFactorCodeRequired}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{TOTPAuthSrv, TheHiveOpsNoDeps, UserSrv}
+import org.thp.thehive.services.{LocalPasswordAuthSrv, TOTPAuthSrv, TheHiveOpsNoDeps, UserSrv}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -53,6 +53,19 @@ class AuthenticationCtrl(
       case _                                               => Failure(AuthenticationError("Operation not supported"))
     }
 
+  def withLocalAuthSrv[A](body: LocalPasswordAuthSrv => Try[A]): Try[A] =
+    authSrv match {
+      case totpAuthSrv: TOTPAuthSrv => totpAuthSrv
+        .authProviders
+        .collectFirst {
+          case a: LocalPasswordAuthSrv => a
+        }
+        .map(localAuthSrv => body(localAuthSrv))
+        .getOrElse(Failure(AuthenticationError("Operation not supported")))
+      case localAuthSrv: LocalPasswordAuthSrv => body(localAuthSrv)
+      case _ => Failure(AuthenticationError("Operation not supported"))
+    }
+
   def totpSetSecret: Action[AnyContent] =
     entrypoint("Set TOTP secret")
       .extract("code", FieldsParser[Int].optional.on("code"))
@@ -93,6 +106,14 @@ class AuthenticationCtrl(
               else Failure(AuthorizationError("You cannot unset TOTP secret of this user"))
             }
             .map(_ => Results.NoContent)
+        }
+      }
+
+  def localAuthPasswordPolicy: Action[AnyContent] =
+    entrypoint("Local Auth password policy")
+      .apply { _ =>
+        withLocalAuthSrv { localAuthSrv =>
+          Success(Results.Ok(Json.toJson(localAuthSrv.passwordPolicyConfig)))
         }
       }
 }
