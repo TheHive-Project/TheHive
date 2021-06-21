@@ -45,12 +45,12 @@ Analysts can analyze tens or hundreds of observables in a few clicks by leveragi
 Security analysts with a knack for scripting can easily add their own analyzers to Cortex in order to automate actions that must be performed on observables or IOCs. They can also decide how analyzers behave according to the TLP. For example, a file added as observable can be submitted to VirusTotal if the associated TLP is WHITE or GREEN. If it's AMBER, its hash is computed and submitted to VT but not the file. If it's RED, no VT lookup is done.
 
 # Try it
-To try TheHive, you can use the [training VM](https://www.strangebee.com/tryit) or install it by reading the [Installation Guide](https://docs.thehive-project.org/thehive/).
+To try TheHive, you can use the [training VM](https://www.strangebee.com/tryit) or install it by reading the [Installation Guide](https://docs.thehive-project.org/thehive/installation-and-configuration/installation/step-by-step-guide/).
 
 # Details
 
 ## Documentation
-We have made several guides available in the [Documentation repository](https://github.com/TheHive-Project/TheHiveDocs/tree/master/TheHive4).
+We have made several guides available in the [Documentation repository](https://docs.thehive-project.org/thehive/).
 
 
 
