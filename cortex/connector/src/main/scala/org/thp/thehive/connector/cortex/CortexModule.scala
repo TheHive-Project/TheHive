@@ -18,12 +18,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-class CortexModule(app: ScalligraphApplication, theHiveModule: TheHiveModule)
-    extends TheHiveConnector
-    with ScalligraphModule
-    with ActorSingletonUtils {
+class CortexModule(app: ScalligraphApplication) extends TheHiveConnector with ScalligraphModule with ActorSingletonUtils {
 
-  def this(app: ScalligraphApplication) = this(app, app.getModule[TheHiveModule])
   import app._
   import com.softwaremill.macwire._
   import com.softwaremill.macwire.akkasupport._
@@ -97,6 +93,7 @@ class CortexModule(app: ScalligraphApplication, theHiveModule: TheHiveModule)
     theHiveModule.connectors += this
   }
 
+  lazy val theHiveModule: TheHiveModule       = app.getModule[TheHiveModule]
   lazy val cortexActor: ActorRef @@ CortexTag = wireActorSingleton(actorSystem, wireProps[CortexActor], "cortex-actor").taggedWith[CortexTag]
 
   lazy val jobCtrl: JobCtrl                               = wire[JobCtrl]
