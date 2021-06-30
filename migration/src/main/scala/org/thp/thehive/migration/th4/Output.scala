@@ -1,6 +1,7 @@
 package org.thp.thehive.migration.th4
 
 import akka.actor.ActorSystem
+import akka.actor.typed.{ActorRef => TypedActorRef}
 import akka.actor.typed.Scheduler
 import akka.stream.Materializer
 import com.google.inject.{Guice, Injector => GInjector}
@@ -63,6 +64,7 @@ object Output {
               bind[Environment].toInstance(Environment.simple())
               bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
               bind[Schema].toProvider[TheHiveCortexSchemaProvider]
+              bind[TypedActorRef[CaseNumberActor.Request]].annotatedWithName("case-number-actor").toProvider[CaseNumberActorProvider]
               configuration.get[String]("storage.provider") match {
                 case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
                 case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
