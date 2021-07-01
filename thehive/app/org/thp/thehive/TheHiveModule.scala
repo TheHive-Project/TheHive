@@ -107,7 +107,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     integrityCheckOpsBindings.addBinding.to[ObservableIntegrityCheckOps]
     integrityCheckOpsBindings.addBinding.to[LogIntegrityCheckOps]
     bind[ActorRef].annotatedWithName("integrity-check-actor").toProvider[IntegrityCheckActorProvider]
-    bind[TypedActorRef[CaseNumberActor.Request]].annotatedWithName("case-number-actor").toProvider[CaseNumberActorProvider]
+    bind[TypedActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
 
     bind[ActorRef].annotatedWithName("flow-actor").toProvider[FlowActorProvider]
 

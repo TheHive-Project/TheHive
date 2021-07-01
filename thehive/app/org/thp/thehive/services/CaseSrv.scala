@@ -1,8 +1,9 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.adapter.ClassicSchedulerOps
 import akka.actor.typed.{Scheduler, ActorRef => TypedActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -34,7 +35,7 @@ import java.lang.{Long => JLong}
 import java.util.{Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -53,10 +54,9 @@ class CaseSrv @Inject() (
     userSrv: UserSrv,
     alertSrvProvider: Provider[AlertSrv],
     @Named("integrity-check-actor") integrityCheckActor: ActorRef,
-    @Named("case-number-actor") caseNumberActor: TypedActorRef[CaseNumberActor.Request],
+    caseNumberActor: TypedActorRef[CaseNumberActor.Request],
     cache: SyncCacheApi,
-    implicit val ec: ExecutionContext,
-    implicit val scheduler: Scheduler
+    system: ActorSystem
 ) extends VertexSrv[Case] {
   lazy val alertSrv: AlertSrv = alertSrvProvider.get
 
@@ -133,7 +133,9 @@ class CaseSrv @Inject() (
   }
 
   def nextCaseNumberAsync: Future[Int] = {
-    implicit val timeout: Timeout = Timeout(1.minute)
+    implicit val timeout: Timeout             = Timeout(1.minute)
+    implicit val scheduler: Scheduler         = system.scheduler.toTyped
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
     caseNumberActor.ask[CaseNumberActor.Response](replyTo => CaseNumberActor.GetNextNumber(replyTo)).map {
       case CaseNumberActor.NextNumber(caseNumber) => caseNumber
     }

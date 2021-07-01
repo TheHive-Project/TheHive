@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorRefResolver, Behavior, ActorRef => TypedActorRef}
 import akka.actor.{ActorSystem, ExtendedActorSystem}
@@ -22,14 +22,24 @@ object CaseNumberActor {
   case class GetNextNumber(replyTo: TypedActorRef[Response]) extends Request
   case class NextNumber(number: Int)                         extends Response
 
-  val behavior: Behavior[Request] = Behaviors.setup[Request] { context =>
+  val behavior: Behavior[Request] = Behaviors.setup[Request](context => waitFirstRequest(context))
+
+  def getNextCaseNumber(context: ActorContext[Request]): Int = {
     val injector = GuiceAkkaExtension(context.system).injector
     val db       = injector.getInstance(classOf[Database])
     val caseSrv  = injector.getInstance(classOf[CaseSrv])
     db.roTransaction { implicit graph =>
-      caseNumberProvider(caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1)
+      caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1
     }
   }
+
+  def waitFirstRequest(context: ActorContext[Request]): Behaviors.Receive[Request] =
+    Behaviors.receiveMessage {
+      case GetNextNumber(replyTo) =>
+        val nextNumber = getNextCaseNumber(context)
+        replyTo ! NextNumber(nextNumber)
+        caseNumberProvider(nextNumber + 1)
+    }
 
   def caseNumberProvider(nextNumber: Int): Behavior[Request] =
     Behaviors.receiveMessage {
