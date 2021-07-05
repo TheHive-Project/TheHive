@@ -1,7 +1,7 @@
 package org.thp.thehive.cloner
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.SingleInstance
 import org.thp.scalligraph.janus.JanusDatabase
@@ -31,6 +31,9 @@ object Cloner extends App with IntegrityCheckApp {
     )
   }
 
+  def addConfig(config: Config, path: String, value: Any): Config =
+    config.withValue(path, ConfigValueFactory.fromAnyRef(value))
+
   val defaultLoggerConfigFile = "/etc/thehive/logback-cloner.xml"
   if (System.getProperty("logger.file") == null && Files.exists(Paths.get(defaultLoggerConfigFile)))
     System.setProperty("logger.file", defaultLoggerConfigFile)
@@ -54,7 +57,9 @@ object Cloner extends App with IntegrityCheckApp {
         .valueName("<file>")
         .required()
         .action((f, c) => ConfigFactory.parseFileAnySyntax(f).withFallback(c))
-        .text("configuration file")
+        .text("configuration file"),
+      opt[Unit]('f', "force")
+        .action((_, c) => addConfig(c, "force", true))
     )
   }
   val defaultConfig =
@@ -78,19 +83,28 @@ object Cloner extends App with IntegrityCheckApp {
 
       val thehiveSchema = new TheHiveSchemaDefinition
       val cortexSchema  = new CortexSchemaDefinition
-      if (sourceDatabase.version(thehiveSchema.name) != thehiveSchema.operations.operations.length + 1) {
-        println(
-          "The schema of TheHive is not valid " +
-            s"(found ${sourceDatabase.version(thehiveSchema.name)}, expected ${thehiveSchema.operations.operations.length + 1})"
-        )
-        sys.exit(1)
+
+      {
+        val expectedVersion = thehiveSchema.operations.operations.length + 1
+        val foundVersion    = sourceDatabase.version(thehiveSchema.name)
+        if (foundVersion != expectedVersion) {
+          println(s"The schema of TheHive is not valid (expected: $expectedVersion, found: $foundVersion)")
+          if (config.getBoolean("force"))
+            println("Continuing ...")
+          else
+            sys.exit(1)
+        }
       }
-      if (sourceDatabase.version(cortexSchema.name) != cortexSchema.operations.operations.length + 1) {
-        println(
-          "The schema of Cortex is not valid " +
-            s"(found ${sourceDatabase.version(cortexSchema.name)}, expected ${cortexSchema.operations.operations.length + 1})"
-        )
-        sys.exit(1)
+      {
+        val expectedVersion = cortexSchema.operations.operations.length + 1
+        val foundVersion    = sourceDatabase.version(cortexSchema.name)
+        if (foundVersion != expectedVersion) {
+          println(s"The schema of Cortex is not valid (expected: $expectedVersion, found: $foundVersion)")
+          if (config.getBoolean("force"))
+            println("Continuing ...")
+          else
+            sys.exit(1)
+        }
       }
 
       val destDatabase: Database = getDatabase(
@@ -111,8 +125,8 @@ object Cloner extends App with IntegrityCheckApp {
       // don't create initial values
       val models = destDatabase.extraModels ++ thehiveSchema.modelList ++ cortexSchema.modelList
       destDatabase.createSchema(models)
-      destDatabase.setVersion(thehiveSchema.name, thehiveSchema.operations.operations.length + 1)
-      destDatabase.setVersion(cortexSchema.name, cortexSchema.operations.operations.length + 1)
+      destDatabase.setVersion(thehiveSchema.name, sourceDatabase.version(thehiveSchema.name))
+      destDatabase.setVersion(cortexSchema.name, sourceDatabase.version(cortexSchema.name))
 
       val batchSize: Int = config.getInt("batchSize")
 
@@ -167,6 +181,7 @@ object Cloner extends App with IntegrityCheckApp {
 
       println("Add indices ...")
       destDatabase.addSchemaIndexes(models)
+      println("Run checks ...")
       runChecks(destDatabase, Configuration(config))
       destDatabase.close()
     } finally {

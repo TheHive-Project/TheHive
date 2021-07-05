@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorRefResolver, Behavior, ActorRef => TypedActorRef}
 import akka.actor.{ActorSystem, ExtendedActorSystem}
@@ -12,6 +12,7 @@ import org.thp.thehive.GuiceAkkaExtension
 import org.thp.thehive.services.CaseOps._
 
 import java.io.NotSerializableException
+import java.nio.ByteBuffer
 import javax.inject.{Inject, Provider, Singleton}
 
 object CaseNumberActor {
@@ -21,14 +22,24 @@ object CaseNumberActor {
   case class GetNextNumber(replyTo: TypedActorRef[Response]) extends Request
   case class NextNumber(number: Int)                         extends Response
 
-  val behavior: Behavior[Request] = Behaviors.setup[Request] { context =>
+  val behavior: Behavior[Request] = Behaviors.setup[Request](context => waitFirstRequest(context))
+
+  def getNextCaseNumber(context: ActorContext[Request]): Int = {
     val injector = GuiceAkkaExtension(context.system).injector
     val db       = injector.getInstance(classOf[Database])
     val caseSrv  = injector.getInstance(classOf[CaseSrv])
     db.roTransaction { implicit graph =>
-      caseNumberProvider(caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1)
+      caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1
     }
   }
+
+  def waitFirstRequest(context: ActorContext[Request]): Behaviors.Receive[Request] =
+    Behaviors.receiveMessage {
+      case GetNextNumber(replyTo) =>
+        val nextNumber = getNextCaseNumber(context)
+        replyTo ! NextNumber(nextNumber)
+        caseNumberProvider(nextNumber + 1)
+    }
 
   def caseNumberProvider(nextNumber: Int): Behavior[Request] =
     Behaviors.receiveMessage {
@@ -55,9 +66,8 @@ class CaseNumberSerializer(system: ExtendedActorSystem) extends Serializer {
   override def toBinary(o: AnyRef): Array[Byte] =
     o match {
       case GetNextNumber(replyTo) => 0.toByte +: actorRefResolver.toSerializationFormat(replyTo).getBytes
-      case NextNumber(number) =>
-        Array(1.toByte, ((number >> 24) % 0xff).toByte, ((number >> 16) % 0xff).toByte, ((number >> 8) % 0xff).toByte, (number % 0xff).toByte)
-      case _ => throw new NotSerializableException
+      case NextNumber(number)     => ByteBuffer.allocate(5).put(1.toByte).putInt(number).array()
+      case _                      => throw new NotSerializableException
     }
 
   override def includeManifest: Boolean = false
@@ -65,12 +75,6 @@ class CaseNumberSerializer(system: ExtendedActorSystem) extends Serializer {
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
     bytes(0) match {
       case 0 => GetNextNumber(actorRefResolver.resolveActorRef(new String(bytes.tail)))
-      case 1 =>
-        NextNumber(
-          (bytes(2) << 24) +
-            (bytes(3) << 16) +
-            (bytes(4) << 8) +
-            bytes(5)
-        )
+      case 1 => NextNumber(ByteBuffer.wrap(bytes).getInt(1))
     }
 }
