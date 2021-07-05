@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorRefResolver, Behavior, ActorRef => TypedActorRef}
 import akka.serialization.Serializer
@@ -10,7 +10,6 @@ import org.thp.scalligraph.traversal.TraversalOps
 
 import java.io.NotSerializableException
 import java.nio.ByteBuffer
-import javax.inject.{Inject, Provider, Singleton}
 
 object CaseNumberActor extends TraversalOps with TheHiveOpsNoDeps {
   sealed trait Message
@@ -20,10 +19,12 @@ object CaseNumberActor extends TraversalOps with TheHiveOpsNoDeps {
   case class NextNumber(number: Int)                         extends Response
 
   // FIXME database must not be used to build singleton actor
-  def behavior(db: Database, caseSrv: CaseSrv): Behavior[Request] =
-    db.roTransaction { implicit graph =>
+  def behavior(db: Database, caseSrv: CaseSrv): Behavior[Request] = {
+    val nextNumber = db.roTransaction { implicit graph =>
       caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1
     }
+    caseNumberProvider(nextNumber)
+  }
 
   def caseNumberProvider(nextNumber: Int): Behavior[Request] =
     Behaviors.receiveMessage {

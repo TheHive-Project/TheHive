@@ -9,7 +9,7 @@ import sbt.file
 import java.util.jar.Manifest
 
 val defaultSettings = Seq(
-  version := "4.2.0-SNAPSHOT-1",
+  version := "4.2.0-1-SNAPSHOT",
   organization := "org.thp",
   scalaVersion := "2.13.5",
   resolvers ++= Seq(

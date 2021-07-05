@@ -1,7 +1,8 @@
 package org.thp.thehive.cloner
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorRef => TypedActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.Materializer
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Database
@@ -25,7 +26,7 @@ class IntegrityCheckApp(val configuration: Configuration, val db: Database)(impl
   val mat: Materializer                                            = Materializer.matFromSystem
   lazy val cache: SyncCacheApi                                     = ???
   lazy val storageSrv: StorageSrv                                  = ???
-  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = ???
+  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = actorSystem.spawn(CaseNumberActor.behavior(db, caseSrv), "case-number-actor")
   lazy val profileSrv: ProfileSrv                                  = wire[ProfileSrv]
   lazy val organisationSrv: OrganisationSrv                        = wire[OrganisationSrv]
   lazy val tagSrv: TagSrv                                          = wire[TagSrv]
@@ -44,7 +45,6 @@ class IntegrityCheckApp(val configuration: Configuration, val db: Database)(impl
   lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag = dummyActor.taggedWith[IntegrityCheckTag]
   lazy val configActor: ActorRef @@ ConfigTag                 = dummyActor.taggedWith[ConfigTag]
   lazy val notificationActor: ActorRef @@ NotificationTag     = dummyActor.taggedWith[NotificationTag]
-  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = wireAnonymousTypedActor[CaseNumberActor.behavior, "case-number-actor")]
   lazy val taxonomySrv: TaxonomySrv                           = wire[TaxonomySrv]
   lazy val attachmentSrv: AttachmentSrv                       = wire[AttachmentSrv]
   lazy val logSrv: LogSrv                                     = wire[LogSrv]

@@ -8,7 +8,7 @@ import play.core.server.{AkkaHttpServer, ServerProvider}
 class CustomAkkaHttpServer(context: AkkaHttpServer.Context) extends AkkaHttpServer(context) {
   override protected def createParserSettings(): ParserSettings =
     super.createParserSettings().withCustomMethods(HttpMethod.custom("PROPFIND"))
-}
+  }
 
 /** A factory that instantiates a CustomAkkaHttpServer. */
 class CustomAkkaHttpServerProvider extends ServerProvider {

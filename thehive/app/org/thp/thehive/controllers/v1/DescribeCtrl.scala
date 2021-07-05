@@ -161,7 +161,7 @@ class DescribeCtrl(
 
   def entityDescriptions: Seq[EntityDescription] =
     cacheApi.getOrElseUpdate("describe.v1", cacheExpire)(versionedModelDescriptions.collect {
-      case (0, desc) => desc.entityDescriptions
+      case (1, desc) => desc.entityDescriptions
     }.flatten)
 
   def describe(modelName: String): Action[AnyContent] =

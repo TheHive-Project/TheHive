@@ -3,7 +3,6 @@ package org.thp.thehive.services
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
-import org.thp.thehive.TestAppBuilder
 import play.api.test.PlaySpecification
 
 class CaseNumberTest extends PlaySpecification with TestAppBuilder {
