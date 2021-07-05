@@ -3,6 +3,7 @@ logs
 bin
 conf/application.conf
 conf/migration.conf
+/conf/cloner.conf
 graphql.config.json
 graphql.schema.json
 .graphqlconfig

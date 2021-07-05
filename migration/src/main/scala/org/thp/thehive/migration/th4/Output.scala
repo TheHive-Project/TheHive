@@ -52,6 +52,7 @@ object Output {
               bindActor[DummyActor]("config-actor")
               bindActor[DummyActor]("cortex-actor")
               bindActor[DummyActor]("integrity-check-actor")
+              bindTypedActor(CaseNumberActor.behavior, "case-number-actor")
 
               val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
               schemaBindings.addBinding.to[TheHiveSchemaDefinition]

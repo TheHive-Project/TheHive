@@ -40,6 +40,7 @@ trait IntegrityCheckApp {
               bindActor[DummyActor]("config-actor")
               bindActor[DummyActor]("cortex-actor")
               bindActor[DummyActor]("integrity-check-actor")
+              bindTypedActor(CaseNumberActor.behavior, "case-number-actor")
 
               val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[GenIntegrityCheckOps](binder)
               integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheckOps]
