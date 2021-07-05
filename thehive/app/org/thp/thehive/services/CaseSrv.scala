@@ -4,6 +4,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter.ClassicSchedulerOps
 import akka.actor.typed.{Scheduler, ActorRef => TypedActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
@@ -26,7 +27,7 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import java.lang.{Long => JLong}
 import java.util.{List => JList, Map => JMap}
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
 
 class CaseSrv(

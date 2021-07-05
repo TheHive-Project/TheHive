@@ -44,6 +44,7 @@ class IntegrityCheckApp(val configuration: Configuration, val db: Database)(impl
   lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag = dummyActor.taggedWith[IntegrityCheckTag]
   lazy val configActor: ActorRef @@ ConfigTag                 = dummyActor.taggedWith[ConfigTag]
   lazy val notificationActor: ActorRef @@ NotificationTag     = dummyActor.taggedWith[NotificationTag]
+  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = wireAnonymousTypedActor[CaseNumberActor.behavior, "case-number-actor")]
   lazy val taxonomySrv: TaxonomySrv                           = wire[TaxonomySrv]
   lazy val attachmentSrv: AttachmentSrv                       = wire[AttachmentSrv]
   lazy val logSrv: LogSrv                                     = wire[LogSrv]

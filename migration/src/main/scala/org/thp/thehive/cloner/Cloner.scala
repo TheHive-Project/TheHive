@@ -1,7 +1,7 @@
 package org.thp.thehive.cloner
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.SingleInstance
 import org.thp.scalligraph.janus.JanusDatabase
@@ -32,6 +32,9 @@ object Cloner extends App with TraversalOps {
     )
   }
 
+  def addConfig(config: Config, path: String, value: Any): Config =
+    config.withValue(path, ConfigValueFactory.fromAnyRef(value))
+
   val defaultLoggerConfigFile = "/etc/thehive/logback-cloner.xml"
   if (System.getProperty("logger.file") == null && Files.exists(Paths.get(defaultLoggerConfigFile)))
     System.setProperty("logger.file", defaultLoggerConfigFile)
@@ -55,7 +58,9 @@ object Cloner extends App with TraversalOps {
         .valueName("<file>")
         .required()
         .action((f, c) => ConfigFactory.parseFileAnySyntax(f).withFallback(c))
-        .text("configuration file")
+        .text("configuration file"),
+      opt[Unit]('f', "force")
+        .action((_, c) => addConfig(c, "force", true))
     )
   }
   val defaultConfig =
@@ -77,19 +82,27 @@ object Cloner extends App with TraversalOps {
         )
       )
 
-      if (sourceDatabase.version(TheHiveSchemaDefinition.name) != TheHiveSchemaDefinition.operations.operations.length + 1) {
-        println(
-          "The schema of TheHive is not valid " +
-            s"(found ${sourceDatabase.version(TheHiveSchemaDefinition.name)}, expected ${TheHiveSchemaDefinition.operations.operations.length + 1})"
-        )
-        sys.exit(1)
+      {
+        val expectedVersion = TheHiveSchemaDefinition.operations.operations.length + 1
+        val foundVersion    = sourceDatabase.version(TheHiveSchemaDefinition.name)
+        if (foundVersion != expectedVersion) {
+          println(s"The schema of TheHive is not valid (expected: $expectedVersion, found: $foundVersion)")
+          if (config.getBoolean("force"))
+            println("Continuing ...")
+          else
+            sys.exit(1)
+        }
       }
-      if (sourceDatabase.version(CortexSchemaDefinition.name) != CortexSchemaDefinition.operations.operations.length + 1) {
-        println(
-          "The schema of Cortex is not valid " +
-            s"(found ${sourceDatabase.version(CortexSchemaDefinition.name)}, expected ${CortexSchemaDefinition.operations.operations.length + 1})"
-        )
-        sys.exit(1)
+      {
+        val expectedVersion = CortexSchemaDefinition.operations.operations.length + 1
+        val foundVersion    = sourceDatabase.version(CortexSchemaDefinition.name)
+        if (foundVersion != expectedVersion) {
+          println(s"The schema of Cortex is not valid (expected: $expectedVersion, found: $foundVersion)")
+          if (config.getBoolean("force"))
+            println("Continuing ...")
+          else
+            sys.exit(1)
+        }
       }
 
       val destDatabase: Database = getDatabase(
@@ -110,8 +123,8 @@ object Cloner extends App with TraversalOps {
       // don't create initial values
       val models = destDatabase.extraModels ++ TheHiveSchemaDefinition.modelList ++ CortexSchemaDefinition.modelList
       destDatabase.createSchema(models)
-      destDatabase.setVersion(TheHiveSchemaDefinition.name, TheHiveSchemaDefinition.operations.operations.length + 1)
-      destDatabase.setVersion(CortexSchemaDefinition.name, CortexSchemaDefinition.operations.operations.length + 1)
+      destDatabase.setVersion(TheHiveSchemaDefinition.name, sourceDatabase.version(TheHiveSchemaDefinition.name))
+      destDatabase.setVersion(CortexSchemaDefinition.name, sourceDatabase.version(CortexSchemaDefinition.name))
 
       val batchSize: Int = config.getInt("batchSize")
 
@@ -166,6 +179,7 @@ object Cloner extends App with TraversalOps {
 
       println("Add indices ...")
       destDatabase.addSchemaIndexes(models)
+      println("Run checks ...")
       new IntegrityCheckApp(Configuration(config), destDatabase).runChecks()
       destDatabase.close()
     } finally {
