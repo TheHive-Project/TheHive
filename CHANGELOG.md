@@ -10,6 +10,7 @@
 
 - [Bug] Issue with Migration 3.5.1 -> 4.1.6 [\#2089](https://github.com/TheHive-Project/TheHive/issues/2089)
 - [Bug] Fix serialization for case number messages [\#2107](https://github.com/TheHive-Project/TheHive/issues/2107)
+- [Bug] Case is removed if the assignee is removed [\#2109](https://github.com/TheHive-Project/TheHive/issues/2109)
 
 ## [4.1.6](https://github.com/TheHive-Project/TheHive/milestone/75) (2021-06-14)
 
