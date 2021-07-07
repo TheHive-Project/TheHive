@@ -24,7 +24,7 @@ case class User(login: String, name: String, apikey: Option[String], locked: Boo
 }
 
 object User {
-  val initPassword: String = "secret"
+  val initPassword: String = sys.env.getOrElse("THEHIVE_INIT_PASSWORD", "secret")
 
   val init: User = User(
     login = "admin@thehive.local",
