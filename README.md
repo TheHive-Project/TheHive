@@ -66,7 +66,7 @@ TheHive comes with a special multi-tenancy support. It allows the following stra
 ### RBAC
 TheHive comes with a set of permissions and several pre-configured user profiles: 
 
-- `admin`: full administrative permissions on the plateform ; can't manage any Cases or other data related to investigations;
+- `admin`: full administrative permissions on the platform ; can't manage any Cases or other data related to investigations;
 - `org-admin`: manage users and all organisation-level configuration, can create and edit Cases, Tasks, Observables and run Analyzers and Responders;
 - `analyst`: can create and edit _Cases_, _Tasks_, _Observables_ and run _Analyzers_ & _Responders_;
 - `read-only`: Can only read, Cases, Tasks and Observables details;
