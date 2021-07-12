@@ -32,6 +32,7 @@ import scala.util.{Failure, Success, Try}
 class MispImportSrv @Inject() (
     connector: Connector,
     alertSrv: AlertSrv,
+    caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
     organisationSrv: OrganisationSrv,
     observableTypeSrv: ObservableTypeSrv,
@@ -238,7 +239,7 @@ class MispImportSrv @Inject() (
       contentType: String,
       src: Source[ByteString, _],
       creation: Boolean
-  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
+  )(implicit graph: Graph, authContext: AuthContext): Try[Observable with Entity] = {
     val existingObservable =
       if (creation) None
       else
@@ -256,13 +257,13 @@ class MispImportSrv @Inject() (
         val file = Files.createTempFile("misp-attachment-", "")
         Await.result(src.runWith(FileIO.toPath(file)), 1.hour)
         val fFile = FFile(filename, file, contentType)
-        val res   = alertSrv.createObservable(alert, observable, fFile).map(_ => ())
+        val res   = alertSrv.createObservable(alert, observable, fFile).map(_.observable)
         Files.delete(file)
         res
       case Some(richObservable) =>
         logger.debug(s"Observable ${observable.dataType}:$filename:$contentType exists, update it")
         for {
-          _ <-
+          obs <-
             observableSrv
               .get(richObservable.observable)
               .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
@@ -271,11 +272,17 @@ class MispImportSrv @Inject() (
               .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
               .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
               .getOrFail("Observable")
-        } yield ()
+        } yield obs
     }
   }
 
-  def importAttributes(client: TheHiveMispClient, event: Event, alert: Alert with Entity, lastSynchro: Option[Date])(implicit
+  def importAttributes(
+      client: TheHiveMispClient,
+      event: Event,
+      alert: Alert with Entity,
+      `case`: Option[Case with Entity],
+      lastSynchro: Option[Date]
+  )(implicit
       graph: Graph,
       authContext: AuthContext
   ): Unit = {
@@ -301,10 +308,14 @@ class MispImportSrv @Inject() (
     QueueIterator(queue).foreach {
       case (observable, Left(data)) =>
         updateOrCreateSimpleObservable(alert, observable, data)
-          .recover {
-            case error =>
-              logger.error(s"Unable to create observable $observable", error)
-          }
+          .failed
+          .foreach(error => logger.error(s"Unable to create observable $observable on alert", error))
+        `case`.foreach { c =>
+          caseSrv
+            .createObservable(c, observable, data)
+            .failed
+            .foreach(error => logger.error(s"Unable to create observable $observable on case", error))
+        }
       case (observable, Right((filename, contentType, src))) =>
         updateOrCreateAttachmentObservable(
           alert,
@@ -313,11 +324,17 @@ class MispImportSrv @Inject() (
           contentType,
           src,
           lastSynchro.isEmpty
-        )
-          .recover {
-            case error =>
-              logger.error(s"Unable to create observable $observable: $filename", error)
-          }
+        ) match {
+          case Success(obs) =>
+            for {
+              c          <- `case`
+              attachment <- observableSrv.get(obs).attachments.headOption
+            } yield caseSrv
+              .createObservable(c, observable, attachment)
+              .failed
+              .foreach(error => logger.error(s"Unable to create observable $observable ($filename) on case", error))
+          case Failure(error) => logger.error(s"Unable to create observable $observable ($filename) on alert", error)
+        }
     }
 
     logger.info("Removing old observables")
@@ -347,7 +364,7 @@ class MispImportSrv @Inject() (
       mispOrganisation: String,
       event: Event,
       caseTemplate: Option[CaseTemplate with Entity]
-  )(implicit graph: Graph, authContext: AuthContext): Try[(Alert with Entity, JsObject)] = {
+  )(implicit graph: Graph, authContext: AuthContext): Try[(Alert with Entity, Option[Case with Entity], JsObject)] = {
     logger.debug(s"updateOrCreateAlert ${client.name}#${event.id} for organisation ${organisation.name}")
     eventToAlert(client, event, organisation._id).flatMap { alert =>
       alertSrv
@@ -360,7 +377,7 @@ class MispImportSrv @Inject() (
           logger.debug(s"Event ${client.name}#${event.id} has no related alert for organisation ${organisation.name}")
           alertSrv
             .create(alert, organisation, event.tags.map(_.name).toSet, Seq(), caseTemplate)
-            .map(ra => ra.alert -> ra.toJson.asInstanceOf[JsObject])
+            .map(ra => (ra.alert, None, ra.toJson.asInstanceOf[JsObject]))
         case Some(richAlert) =>
           logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
           val (updatedAlertTraversal, updatedFields) = (alertSrv.get(richAlert.alert), JsObject.empty)
@@ -385,9 +402,10 @@ class MispImportSrv @Inject() (
           for {
             (addedTags, removedTags) <- alertSrv.updateTags(richAlert.alert, tags.toSet)
             updatedAlert             <- updatedAlertTraversal.getOrFail("Alert")
+            case0 = alertSrv.get(richAlert.alert).`case`.headOption
             updatedFieldWithTags =
               if (addedTags.nonEmpty || removedTags.nonEmpty) updatedFields + ("tags" -> JsArray(tags.map(JsString))) else updatedFields
-          } yield (updatedAlert, updatedFieldWithTags)
+          } yield (updatedAlert, case0, updatedFieldWithTags)
       }
     }
   }
@@ -424,8 +442,8 @@ class MispImportSrv @Inject() (
                 auditSrv.mergeAudits {
                   updateOrCreateAlert(client, organisation, mispOrganisation, event, caseTemplate)
                     .map {
-                      case (alert, updatedFields) =>
-                        importAttributes(client, event, alert, if (alert._updatedBy.isEmpty) None else lastSynchro)
+                      case (alert, case0, updatedFields) =>
+                        importAttributes(client, event, alert, case0, if (alert._updatedBy.isEmpty) None else lastSynchro)
                         (alert, updatedFields)
                     }
                     .recoverWith {
