@@ -27,7 +27,7 @@ case class InputCase(
 )
 
 object InputCase {
-  implicit val writes: OWrites[InputCase] = Json.writes[InputCase]
+  implicit val format: OFormat[InputCase] = Json.format[InputCase]
 }
 
 case class OutputCase(

@@ -20,7 +20,7 @@ case class InputTask(
 )
 
 object InputTask {
-  implicit val writes: OWrites[InputTask] = Json.writes[InputTask]
+  implicit val writes: OFormat[InputTask] = Json.format[InputTask]
 }
 
 case class OutputTask(

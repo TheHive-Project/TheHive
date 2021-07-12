@@ -67,10 +67,14 @@ object InputPattern {
       references     = optReferences.getOrElse(Seq())
       mitreReference = references.find(ref => isSourceNameMitre(ref.source_name))
       capecReference = references.find(ref => isSourceNameCapec(ref.source_name))
+      externalId                   <- (json \ "external_id").validateOpt[String]
+      url                          <- (json \ "url").validateOpt[String]
       name                         <- (json \ "name").validateOpt[String]
       description                  <- (json \ "description").validateOpt[String]
       kill_chain_phases            <- (json \ "kill_chain_phases").validateOpt[Seq[InputKillChainPhase]]
       techniqueType                <- (json \ "type").validateOpt[String]
+      capecId                      <- (json \ "capec_id").validateOpt[String]
+      capecUrl                     <- (json \ "capec_url").validateOpt[String]
       revoked                      <- (json \ "revoked").validateOpt[Boolean]
       x_mitre_data_sources         <- (json \ "x_mitre_data_sources").validateOpt[Seq[String]]
       x_mitre_defense_bypassed     <- (json \ "x_mitre_defense_bypassed").validateOpt[Seq[String]]
@@ -82,24 +86,24 @@ object InputPattern {
       x_mitre_system_requirements  <- (json \ "x_mitre_system_requirements").validateOpt[Seq[String]]
       x_mitre_version              <- (json \ "x_mitre_version").validateOpt[String]
     } yield InputPattern(
-      mitreReference.flatMap(_.external_id).getOrElse(""),
-      name.getOrElse(""),
-      description,
-      kill_chain_phases.getOrElse(Seq()),
-      mitreReference.flatMap(_.url).getOrElse(""),
-      techniqueType.getOrElse(""),
-      capecReference.flatMap(_.external_id),
-      capecReference.flatMap(_.url),
-      revoked.getOrElse(false),
-      x_mitre_data_sources.getOrElse(Seq()),
-      x_mitre_defense_bypassed.getOrElse(Seq()),
-      x_mitre_detection,
-      x_mitre_is_subtechnique.getOrElse(false),
-      x_mitre_permissions_required.getOrElse(Seq()),
-      x_mitre_platforms.getOrElse(Seq()),
-      x_mitre_remote_support.getOrElse(false),
-      x_mitre_system_requirements.getOrElse(Seq()),
-      x_mitre_version
+      external_id = mitreReference.flatMap(_.external_id).orElse(externalId).getOrElse(""),
+      name = name.getOrElse(""),
+      description = description,
+      kill_chain_phases = kill_chain_phases.getOrElse(Seq()),
+      url = mitreReference.flatMap(_.url).orElse(url).getOrElse(""),
+      `type` = techniqueType.getOrElse(""),
+      capec_id = capecReference.flatMap(_.external_id).orElse(capecId),
+      capec_url = capecReference.flatMap(_.url).orElse(capecUrl),
+      revoked = revoked.getOrElse(false),
+      x_mitre_data_sources = x_mitre_data_sources.getOrElse(Seq()),
+      x_mitre_defense_bypassed = x_mitre_defense_bypassed.getOrElse(Seq()),
+      x_mitre_detection = x_mitre_detection,
+      x_mitre_is_subtechnique = x_mitre_is_subtechnique.getOrElse(false),
+      x_mitre_permissions_required = x_mitre_permissions_required.getOrElse(Seq()),
+      x_mitre_platforms = x_mitre_platforms.getOrElse(Seq()),
+      x_mitre_remote_support = x_mitre_remote_support.getOrElse(false),
+      x_mitre_system_requirements = x_mitre_system_requirements.getOrElse(Seq()),
+      x_mitre_version = x_mitre_version
     )
   }
 

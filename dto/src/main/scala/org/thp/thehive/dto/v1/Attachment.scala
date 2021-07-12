@@ -7,7 +7,7 @@ import be.venneborg.refined.play.RefinedJsonFormats._
 case class InputAttachment(name: String128, contentType: String128, id: String128)
 
 object InputAttachment {
-  implicit val writes: Writes[InputAttachment] = Json.writes[InputAttachment]
+  implicit val format: OFormat[InputAttachment] = Json.format[InputAttachment]
 }
 
 case class OutputAttachment(name: String, hashes: Seq[String], size: Long, contentType: String, id: String)
