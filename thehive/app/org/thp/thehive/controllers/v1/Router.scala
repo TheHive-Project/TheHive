@@ -49,12 +49,13 @@ class Router(
     case POST(p"/admin/schema/info/$schemaName" ? q_o"select=$select" ? q_o"filter=$filter")   => adminCtrl.schemaInfo(schemaName, select, filter)
 
 //    GET      /logout                              controllers.AuthenticationCtrl.logout()
-    case GET(p"/logout")                 => authenticationCtrl.logout
-    case POST(p"/logout")                => authenticationCtrl.logout
-    case POST(p"/login")                 => authenticationCtrl.login
-    case POST(p"/auth/totp/set")         => authenticationCtrl.totpSetSecret
-    case POST(p"/auth/totp/unset")       => authenticationCtrl.totpUnsetSecret(None)
-    case POST(p"/auth/totp/unset/$user") => authenticationCtrl.totpUnsetSecret(Some(user))
+    case GET(p"/logout")                    => authenticationCtrl.logout
+    case POST(p"/logout")                   => authenticationCtrl.logout
+    case POST(p"/login")                    => authenticationCtrl.login
+    case POST(p"/auth/totp/set")            => authenticationCtrl.totpSetSecret
+    case POST(p"/auth/totp/unset")          => authenticationCtrl.totpUnsetSecret(None)
+    case POST(p"/auth/totp/unset/$user")    => authenticationCtrl.totpUnsetSecret(Some(user))
+    case GET(p"/auth/local/passwordPolicy") => authenticationCtrl.localAuthPasswordPolicy
 
     case POST(p"/case")                     => caseCtrl.create
     case GET(p"/case/$caseId")              => caseCtrl.get(caseId)
