@@ -7,11 +7,11 @@ import org.thp.thehive.services.{OrganisationConfigContext, UserConfigContext}
 import play.api.http.HttpErrorHandler
 
 @Module
-class TheHiveModuleV0(app: ScalligraphApplication, theHiveModule: TheHiveModule) extends ScalligraphModule {
-  def this(app: ScalligraphApplication) = this(app, app.getModule[TheHiveModule])
+class TheHiveModuleV0(app: ScalligraphApplication) extends ScalligraphModule {
 
   import com.softwaremill.macwire._
 
+  lazy val theHiveModule: TheHiveModule           = app.getModule[TheHiveModule]
   lazy val authenticationCtrl: AuthenticationCtrl = wire[AuthenticationCtrl]
 
   lazy val alertCtrl: AlertCtrl                       = wire[AlertCtrl]

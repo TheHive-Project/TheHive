@@ -17,8 +17,7 @@ import scala.concurrent.duration.FiniteDuration
 sealed trait SyncInterval
 sealed trait SyncInitialDelay
 
-class MispModule(app: ScalligraphApplication, theHiveModule: TheHiveModule) extends TheHiveConnector with ActorSingletonUtils with ScalligraphModule {
-  def this(app: ScalligraphApplication) = this(app, app.getModule[TheHiveModule])
+class MispModule(app: ScalligraphApplication) extends TheHiveConnector with ActorSingletonUtils with ScalligraphModule {
 
   import app._
   import com.softwaremill.macwire._
@@ -87,6 +86,7 @@ class MispModule(app: ScalligraphApplication, theHiveModule: TheHiveModule) exte
     theHiveModule.connectors += this
   }
 
+  lazy val theHiveModule: TheHiveModule   = app.getModule[TheHiveModule]
   lazy val mispImportSrv: MispImportSrv   = wire[MispImportSrv]
   lazy val mispExportSrv: MispExportSrv   = wire[MispExportSrv]
   lazy val mispCtrl: MispCtrl             = wire[MispCtrl]
