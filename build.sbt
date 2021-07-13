@@ -39,6 +39,7 @@ scalacOptions in ThisBuild ++= Seq(
   "-Xprint-types"
 )
 fork in Test in ThisBuild := true
+javaOptions in Test in ThisBuild += s"-Dlogger.file=${file("test/resources/logback-test.xml").getAbsoluteFile}"
 javaOptions in ThisBuild ++= Seq(
   "-Xms512M",
   "-Xmx2048M",

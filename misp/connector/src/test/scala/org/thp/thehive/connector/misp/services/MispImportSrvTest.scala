@@ -102,18 +102,16 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
       val observables = app[Database]
         .roTransaction { implicit graph =>
-          app[OrganisationSrv]
-            .get(EntityName("admin"))
-            .alerts
+          app[AlertSrv]
+            .startTraversal
             .getBySourceId("misp", "ORGNAME", "1")
             .observables
             .richObservable
             .toList
         }
         .map(o => (o.dataType, o.data, o.tlp, o.message, o.tags.toSet))
-//        println(observables.mkString("\n"))
       observables must contain(
-        ("filename", Some("plop"), 0, Some(""), Set("TEST", "TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
+        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp.category=\"Artifacts dropped\"", "misp.type=\"filename\""))
       )
     }
   }

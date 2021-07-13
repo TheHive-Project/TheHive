@@ -67,10 +67,11 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
           "authType"             -> Seq("local", "key", "header"),
           "capabilities"         -> Seq("changePassword", "setPassword", "authByKey"),
           "ssoAutoLogin"         -> config.get[Boolean]("user.autoCreateOnSso"),
-          "pollingDuration"      -> 1000
+          "pollingDuration"      -> 1000,
+          "freeTagDefaultColour" -> "#000000"
         ),
         "schemaStatus" -> Json.arr(
-          Json.obj("name" -> "thehive", "currentVersion" -> 69, "expectedVersion" -> 69, "error" -> JsNull)
+          Json.obj("name" -> "thehive", "currentVersion" -> 89, "expectedVersion" -> 89, "error" -> JsNull)
         )
       )
 
