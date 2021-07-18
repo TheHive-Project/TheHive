@@ -162,7 +162,7 @@ trait UserOps { _: TheHiveOpsNoDeps =>
     def visible(implicit authContext: AuthContext): Traversal.V[User] =
       if (authContext.isPermitted(Permissions.manageOrganisation.permission)) traversal
       else
-        traversal.filter(_.or(_.organisations.visibleOrganisationsTo.get(authContext.organisation), _.systemUser))
+        traversal.filter(_.or(_.organisations.visibleOrganisations.get(authContext.organisation), _.systemUser))
 
     def isNotLocked: Traversal.V[User] = traversal.has(_.locked, false)
 

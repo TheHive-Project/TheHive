@@ -84,7 +84,10 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
         organisation = organisation,
         customFields = Nil,
         caseTemplate = None,
-        additionalTasks = Nil
+        additionalTasks = Nil,
+        sharingParameters = Map.empty,
+        taskRule = None,
+        observableRule = None
       )(graph, authContext)
     }.get
 

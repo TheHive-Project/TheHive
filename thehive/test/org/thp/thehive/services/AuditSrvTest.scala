@@ -43,7 +43,10 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder with TraversalO
             org,
             Seq.empty,
             None,
-            Nil
+            Nil,
+            Map.empty,
+            None,
+            None
           )
           .get
         caseSrv.updateTags(c.`case`, Set("lol")).get

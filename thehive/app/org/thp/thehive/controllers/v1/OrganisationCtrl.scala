@@ -9,7 +9,9 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputOrganisation
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.mvc.{Action, AnyContent, Results}
+import play.api.mvc.{Action, AnyContent, Handler, Results}
+
+import scala.util.Success
 
 class OrganisationCtrl(
     entrypoint: Entrypoint,
@@ -32,15 +34,16 @@ class OrganisationCtrl(
     )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
     "page",
-    (range, organisationSteps, _) => organisationSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richOrganisation)
+    (range, organisationSteps, authContext) =>
+      organisationSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richOrganisation(authContext))
   )
-  override val outputQuery: Query = Query.output[RichOrganisation, Traversal.V[Organisation]](_.richOrganisation)
+  override val outputQuery: Query = Query.outputWithContext[RichOrganisation, Traversal.V[Organisation]](_.richOrganisation(_))
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",
     (idOrName, graph, authContext) => organisationSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisationsFrom),
+    Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisations),
     Query[Traversal.V[Organisation], Traversal.V[User]]("users", (organisationSteps, _) => organisationSteps.users.dedup),
     Query[Traversal.V[Organisation], Traversal.V[CaseTemplate]]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates),
     Query[Traversal.V[Organisation], Traversal.V[Alert]]("alerts", (organisationSteps, _) => organisationSteps.alerts)
@@ -66,7 +69,7 @@ class OrganisationCtrl(
            userSrv
              .current
              .organisations
-             .visibleOrganisationsFrom
+             .visibleOrganisations
              .get(EntityIdOrName(organisationId)))
           .richOrganisation
           .getOrFail("Organisation")
@@ -83,4 +86,11 @@ class OrganisationCtrl(
           _            <- organisationSrv.update(organisationSrv.get(organisation), propertyUpdaters)
         } yield Results.NoContent
       }
+
+  def listSharingProfiles: Action[AnyContent] =
+    entrypoint("list sharing profiles")
+      .auth { _ =>
+        Success(Results.Ok(organisationSrv.sharingProfiles.toJson))
+      }
+
 }

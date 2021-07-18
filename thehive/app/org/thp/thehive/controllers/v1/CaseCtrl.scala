@@ -8,7 +8,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.{InputCase, InputTask}
+import org.thp.thehive.dto.v1.{InputCase, InputShare, InputTask}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsNumber, JsObject}
@@ -102,10 +102,17 @@ class CaseCtrl(
       .extract("case", FieldsParser[InputCase])
       .extract("caseTemplate", FieldsParser[String].optional.on("caseTemplate"))
       .extract("tasks", FieldsParser[InputTask].sequence.on("tasks"))
+      .extract("sharingParameters", FieldsParser[InputShare].sequence.on("sharingParameters"))
+      .extract("taskRule", FieldsParser[String].optional.on("taskRule"))
+      .extract("observableRule", FieldsParser[String].optional.on("observableRule"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val caseTemplateName: Option[String] = request.body("caseTemplate")
-        val inputCase: InputCase             = request.body("case")
-        val inputTasks: Seq[InputTask]       = request.body("tasks")
+        val caseTemplateName: Option[String]   = request.body("caseTemplate")
+        val inputCase: InputCase               = request.body("case")
+        val inputTasks: Seq[InputTask]         = request.body("tasks")
+        val sharingParameters: Seq[InputShare] = request.body("sharingParameters")
+        val taskRule: Option[String]           = request.body("taskRule")
+        val observableRule: Option[String]     = request.body("observableRule")
+
         for {
           caseTemplate <- caseTemplateName.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
           organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail("Organisation")
@@ -116,7 +123,10 @@ class CaseCtrl(
             organisation,
             inputCase.customFieldValues,
             caseTemplate,
-            inputTasks.map(_.toTask)
+            inputTasks.map(_.toTask),
+            sharingParameters.map(_.toSharingParameter).toMap,
+            taskRule,
+            observableRule
           )
         } yield Results.Created(richCase.toJson)
       }

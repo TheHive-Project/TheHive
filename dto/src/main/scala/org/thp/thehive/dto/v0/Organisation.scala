@@ -8,7 +8,9 @@ import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputOrganisation(
     name: String64,
-    description: Description
+    description: Description,
+    taskRule: Option[String64],
+    observableRule: Option[String64]
 )
 
 object InputOrganisation {
@@ -18,6 +20,8 @@ object InputOrganisation {
 case class OutputOrganisation(
     name: String,
     description: String,
+    taskRule: String,
+    observableRule: String,
     _id: String,
     id: String,
     createdAt: Date,

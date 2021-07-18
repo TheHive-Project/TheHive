@@ -22,7 +22,17 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
       val request = FakeRequest("POST", "/api/case/1/shares")
         .withJsonBody(
           Json.obj(
-            "shares" -> List(Json.toJson(InputShare("soc", String64("profileName", Profile.orgAdmin.name), TasksFilter.all, ObservablesFilter.all)))
+            "shares" -> List(
+              Json.toJson(
+                InputShare(
+                  organisation = "soc",
+                  share = Some(true),
+                  profile = Some(String64("profileName", Profile.orgAdmin.name)),
+                  taskRule = Some(String64("taskRule", "all")),
+                  observableRule = Some(String64("observableRule", "all"))
+                )
+              )
+            )
           )
         )
         .withHeaders("user" -> "certuser@thehive.local")
@@ -42,7 +52,17 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
     val request = FakeRequest("POST", "/api/case/2/shares")
       .withJsonBody(
         Json.obj(
-          "shares" -> Seq(Json.toJson(InputShare("soc", String64("profileName", Profile.orgAdmin.name), TasksFilter.all, ObservablesFilter.all)))
+          "shares" -> Seq(
+            Json.toJson(
+              InputShare(
+                organisation = "soc",
+                share = Some(true),
+                profile = Some(String64("profileName", Profile.orgAdmin.name)),
+                taskRule = Some(String64("taskRule", "all")),
+                observableRule = Some(String64("observableRule", "all"))
+              )
+            )
+          )
         )
       )
       .withHeaders("user" -> "certuser@thehive.local")

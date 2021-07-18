@@ -13,7 +13,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       import app.thehiveModuleV0._
 
       val request = FakeRequest("POST", "/api/v0/organisation")
-        .withJsonBody(Json.toJson(InputOrganisation("orga1", "no description")))
+        .withJsonBody(Json.toJson(InputOrganisation("orga1", "no description", None, None)))
         .withHeaders("user" -> "admin@thehive.local")
       val result = organisationCtrl.create(request)
       status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
@@ -36,7 +36,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       import app.thehiveModuleV0._
 
       val request = FakeRequest("POST", "/api/v0/organisation")
-        .withJsonBody(Json.toJson(InputOrganisation(name = "orga2", "no description")))
+        .withJsonBody(Json.toJson(InputOrganisation(name = "orga2", "no description", None, None)))
         .withHeaders("user" -> "certadmin@thehive.local")
       val result = organisationCtrl.create(request)
       status(result) must_=== 403

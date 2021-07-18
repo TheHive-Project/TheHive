@@ -6,7 +6,7 @@ import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.{InputAlert, InputCustomFieldValue}
+import org.thp.thehive.dto.v1.{InputAlert, InputCustomFieldValue, InputShare}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsValue, Json}
@@ -164,8 +164,15 @@ class AlertCtrl(
   def createCase(alertIdOrName: String): Action[AnyContent] =
     entrypoint("create case from alert")
       .extract("caseTemplate", FieldsParser.string.optional.on("caseTemplate"))
+      .extract("sharingParameters", FieldsParser[InputShare].sequence.on("sharingParameters"))
+      .extract("taskRule", FieldsParser[String].optional.on("taskRule"))
+      .extract("observableRule", FieldsParser[String].optional.on("observableRule"))
       .authPermittedTransaction(db, Permissions.manageAlert) { implicit request => implicit graph =>
-        val caseTemplate: Option[String] = request.body("caseTemplate")
+        val caseTemplate: Option[String]       = request.body("caseTemplate")
+        val sharingParameters: Seq[InputShare] = request.body("sharingParameters")
+        val taskRule: Option[String]           = request.body("taskRule")
+        val observableRule: Option[String]     = request.body("observableRule")
+
         for {
           organisation <- organisationSrv.current.getOrFail("Organisation")
           alert <-
@@ -177,7 +184,14 @@ class AlertCtrl(
           _ <- caseTemplate.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.existsOrFail).flip
           alertWithCaseTemplate = caseTemplate.fold(alert)(ct => alert.copy(caseTemplate = Some(ct)))
           assignee <- if (request.isPermitted(Permissions.manageCase)) userSrv.current.getOrFail("User").map(Some(_)) else Success(None)
-          richCase <- alertSrv.createCase(alertWithCaseTemplate, assignee, organisation)
+          richCase <- alertSrv.createCase(
+            alertWithCaseTemplate,
+            assignee,
+            organisation,
+            sharingParameters.map(_.toSharingParameter).toMap,
+            taskRule,
+            observableRule
+          )
         } yield Results.Created(richCase.toJson)
       }
 

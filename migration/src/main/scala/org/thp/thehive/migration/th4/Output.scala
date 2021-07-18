@@ -566,8 +566,13 @@ class Output(
             val owner = profileName == Profile.orgAdmin.name && !ownerSet
             val shared = for {
               organisation <- getOrganisation(organisationName)
-              profile      <- getProfile(profileName)
-              _            <- shareSrv.shareCase(owner, createdCase, organisation, profile)
+//              profile      <- getProfile(profileName) // TODO Replace inputCase.organisations: Map[String, String] => Map[String, SharingProfile]
+              _ <- shareSrv.shareCase(
+                owner,
+                createdCase,
+                organisation,
+                SharingProfile("", "", true, true, profileName, SharingRule.default, SharingRule.default)
+              )
             } yield ()
             shared.logFailure(s"Unable to share case #${createdCase.number} with organisation $organisationName, profile $profileName")
             ownerSet || owner
@@ -600,7 +605,7 @@ class Output(
         richTask <- taskSrv.create(inputTask.task.copy(relatedId = caseId, organisationIds = organisations.map(_._id)), assignee)
         _ = updateMetaData(richTask.task, inputTask.metaData)
         case0 <- getCase(caseId)
-        _     <- organisations.toTry(o => shareSrv.shareTask(richTask, case0, o._id))
+        _     <- organisations.toTry(o => shareSrv.addTaskToCase(richTask, case0, o._id))
       } yield IdMapping(inputTask.metaData.id, richTask._id)
     }
 
@@ -686,11 +691,11 @@ class Output(
     authTransaction(inputObservable.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
       for {
-        organisations  <- inputObservable.organisations.toTry(getOrganisation)
-        richObservable <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
-        case0          <- getCase(caseId)
-        _              <- organisations.toTry(o => shareSrv.shareObservable(RichObservable(richObservable, None, None, Nil), case0, o._id))
-      } yield IdMapping(inputObservable.metaData.id, richObservable._id)
+        organisations <- inputObservable.organisations.toTry(getOrganisation)
+        observable    <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
+        case0         <- getCase(caseId)
+        _             <- organisations.toTry(o => shareSrv.addObservableToCase(RichObservable(observable, None, None, Nil), case0, o._id))
+      } yield IdMapping(inputObservable.metaData.id, observable._id)
     }
 
   override def createJob(observableId: EntityId, inputJob: InputJob): Try[IdMapping] =

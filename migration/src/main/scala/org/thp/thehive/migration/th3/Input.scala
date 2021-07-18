@@ -11,6 +11,7 @@ import org.thp.thehive.migration
 import org.thp.thehive.migration.Filter
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
+import org.thp.thehive.services.SharingRule
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
@@ -60,7 +61,12 @@ class Input(configuration: Configuration, dbFind: DBFind, dbGet: DBGet, implicit
   override def listOrganisations(filter: Filter): Source[Try[InputOrganisation], NotUsed] =
     Source(
       List(
-        Success(InputOrganisation(MetaData(mainOrganisation, "system", new Date, None, None), Organisation(mainOrganisation, mainOrganisation)))
+        Success(
+          InputOrganisation(
+            MetaData(mainOrganisation, "system", new Date, None, None),
+            Organisation(mainOrganisation, mainOrganisation, SharingRule.default, SharingRule.default)
+          )
+        )
       )
     )
 

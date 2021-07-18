@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputShare, ObservablesFilter, TasksFilter}
+import org.thp.thehive.dto.v0.InputShare
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
@@ -38,15 +38,15 @@ class ShareCtrl(
               for {
                 organisation <-
                   organisationSrv
-                    .get(request.organisation)
-                    .visibleOrganisationsFrom
-                    .get(EntityIdOrName(inputShare.organisationName.value))
+                    .current
+                    .visibleOrganisations
+                    .get(EntityIdOrName(inputShare.organisation.value))
                     .getOrFail("Organisation")
-                profile   <- profileSrv.getOrFail(EntityIdOrName(inputShare.profile.value))
-                share     <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
+//                profile   <- profileSrv.getOrFail(EntityIdOrName(inputShare.profile.))
+                share     <- shareSrv.shareCase(owner = false, `case`, organisation, inputShare.toSharingProfile)
                 richShare <- shareSrv.get(share).richShare.getOrFail("Share")
-                _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
-                _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
+//                _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
+//                _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
               } yield richShare
             }
           }
@@ -146,7 +146,7 @@ class ShareCtrl(
           richShare <-
             shareSrv
               .get(EntityIdOrName(shareId))
-              .filter(_.organisation.visibleOrganisationsTo.visible)
+              .filter(_.organisation.visibleOrganisations.visible)
               .richShare
               .getOrFail("Share")
           profile <- profileSrv.getOrFail(EntityIdOrName(profile))
@@ -208,7 +208,7 @@ class ShareCtrl(
           task          <- taskSrv.getOrFail(EntityIdOrName(taskId))
           _             <- taskSrv.get(task).`case`.can(Permissions.manageShare).existsOrFail
           organisations <- organisationIds.map(EntityIdOrName(_)).toTry(organisationSrv.get(_).visible.getOrFail("Organisation"))
-          _             <- shareSrv.addTaskShares(task, organisations)
+          _             <- shareSrv.shareTask(task, organisations)
         } yield Results.NoContent
       }
 
@@ -221,7 +221,7 @@ class ShareCtrl(
           observable    <- observableSrv.getOrFail(EntityIdOrName(observableId))
           _             <- observableSrv.get(observable).`case`.can(Permissions.manageShare).existsOrFail
           organisations <- organisationIds.map(EntityIdOrName(_)).toTry(organisationSrv.get(_).visible.getOrFail("Organisation"))
-          _             <- shareSrv.addObservableShares(observable, organisations)
+          _             <- shareSrv.shareObservable(observable, organisations)
         } yield Results.NoContent
       }
 

@@ -55,7 +55,7 @@ trait TheHiveOpsNoDeps
     with LogOpsNoDeps
     with ObservableOpsNoDeps
     with ObservableTypeOps
-    with OrganisationOps
+    with OrganisationOpsNoDeps
     with PageOps
     with PatternOps
     with ProfileOps

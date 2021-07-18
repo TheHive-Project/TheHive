@@ -16,6 +16,7 @@ import scala.util.Failure
 class Properties(
     alertSrv: AlertSrv,
     caseSrv: CaseSrv,
+    shareSrv: ShareSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
     dashboardSrv: DashboardSrv,
@@ -248,6 +249,22 @@ class Properties(
           .readonly
       )
       .property("patternId", UMapping.string.sequence)(_.select(_.procedure.pattern.value(_.patternId)).readonly)
+      .property("taskRule", UMapping.string)(
+        _.authSelect(_.share(_).value(_.taskRule)).custom((_, value, vertex, graph, authContext) =>
+          for {
+            c <- caseSrv.getOrFail(vertex)(graph)
+            _ <- shareSrv.updateTaskRule(c, value)(graph, authContext)
+          } yield Json.obj("taskRule" -> value)
+        )
+      )
+      .property("observableRule", UMapping.string)(
+        _.authSelect(_.share(_).value(_.observableRule)).custom((_, value, vertex, graph, authContext) =>
+          for {
+            c <- caseSrv.getOrFail(vertex)(graph)
+            _ <- shareSrv.updateObservableRule(c, value)(graph, authContext)
+          } yield Json.obj("observableRule" -> value)
+        )
+      )
       .build
 
   lazy val caseTemplate: PublicProperties =
@@ -306,6 +323,8 @@ class Properties(
     PublicPropertyListBuilder[Organisation]
       .property("name", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string)(_.field.updatable)
+      .property("taskRule", UMapping.string)(_.field.updatable)
+      .property("observableRule", UMapping.string)(_.field.updatable)
       .build
 
   lazy val pattern: PublicProperties =

@@ -11,6 +11,7 @@ import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.{Description, Pap, Severity, Tlp}
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models._
+import org.thp.thehive.services.{SharingParameter, SharingProfile, SharingRule}
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 
 import java.util.Date
@@ -485,6 +486,8 @@ object Conversion {
     def toOrganisation: Organisation =
       inputOrganisation
         .into[Organisation]
+        .withFieldComputed(_.taskRule, _.taskRule.fold(SharingRule.default)(_.value))
+        .withFieldComputed(_.observableRule, _.observableRule.fold(SharingRule.default)(_.value))
         .transform
   }
 
@@ -493,6 +496,8 @@ object Conversion {
       OutputOrganisation(
         organisation.name,
         organisation.description,
+        organisation.taskRule,
+        organisation.observableRule,
         organisation._id.toString,
         organisation._id.toString,
         organisation._createdAt,
@@ -509,6 +514,8 @@ object Conversion {
       OutputOrganisation(
         organisation.name,
         organisation.description,
+        organisation.taskRule,
+        organisation.observableRule,
         organisation._id.toString,
         organisation._id.toString,
         organisation._createdAt,
@@ -516,7 +523,7 @@ object Conversion {
         organisation._updatedAt,
         organisation._updatedBy,
         "organisation",
-        organisation.links.map(_.name)
+        organisation.links.map(_._1.name).toSeq
       )
     )
 
@@ -555,6 +562,36 @@ object Conversion {
       .enableMethodAccessors
       .transform
   )
+
+  implicit class InputSharingParameterOps(inputSharingParameter: InputShare) {
+    def toSharingParameter: (String, SharingParameter) =
+      if (inputSharingParameter.share.getOrElse(true))
+        inputSharingParameter.organisation.value -> inputSharingParameter
+          .into[SharingParameter]
+          .withFieldConst(_.autoShare, true)
+          .withFieldComputed(_.permissionProfile, _.profile.fold(Profile.analyst.name)(_.value))
+          .withFieldComputed(_.taskRule, _.taskRule.fold(SharingRule.default)(_.value))
+          .withFieldComputed(_.observableRule, _.observableRule.fold(SharingRule.default)(_.value))
+          .transform
+      else
+        inputSharingParameter.organisation.value -> SharingParameter(
+          autoShare = false,
+          permissionProfile = Profile.readonly.name,
+          taskRule = SharingRule.default,
+          observableRule = SharingRule.default
+        )
+
+    def toSharingProfile: SharingProfile =
+      SharingProfile(
+        name = "fromParameter",
+        description = "Sharing profile from parameter",
+        autoShare = inputSharingParameter.share.getOrElse(true),
+        editable = true,
+        permissionProfile = inputSharingParameter.profile.fold(Profile.analyst.name)(_.value),
+        taskRule = inputSharingParameter.taskRule.fold(SharingRule.default)(_.value),
+        observableRule = inputSharingParameter.observableRule.fold(SharingRule.default)(_.value)
+      )
+  }
 
   implicit val tagOutput: Renderer.Aux[Tag with Entity, OutputTag] = Renderer.toJson[Tag with Entity, OutputTag](
     _.asInstanceOf[Tag]

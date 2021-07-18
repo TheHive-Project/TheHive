@@ -7,7 +7,7 @@ import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.{InputShare, ObservablesFilter, TasksFilter}
+import org.thp.thehive.dto.v1.{InputShare}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
@@ -51,26 +51,35 @@ class ShareCtrl(
       .extract("shares", FieldsParser[InputShare].sequence.on("shares"))
       .authTransaction(db) { implicit request => implicit graph =>
         val inputShares: Seq[InputShare] = request.body("shares")
+
         caseSrv
           .get(EntityIdOrName(caseId))
           .can(Permissions.manageShare)
+          .share
+          .project(_.by.by(_.`case`))
           .getOrFail("Case")
-          .flatMap { `case` =>
-            inputShares.toTry { inputShare =>
-              for {
-                organisation <-
-                  organisationSrv
-                    .get(request.organisation)
-                    .visibleOrganisationsFrom
-                    .get(EntityIdOrName(inputShare.organisationName.value))
-                    .getOrFail("Organisation")
-                profile   <- profileSrv.getOrFail(EntityIdOrName(inputShare.profile.value))
-                share     <- shareSrv.shareCase(owner = false, `case`, organisation, profile)
-                richShare <- shareSrv.get(share).richShare.getOrFail("Share")
-                _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
-                _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
-              } yield richShare
-            }
+          .flatMap {
+            case (currentShare, case0) =>
+              inputShares.toTry { inputShare =>
+                for {
+                  organisation <-
+                    organisationSrv
+                      .current
+                      .visibleOrganisations
+                      .get(EntityIdOrName(inputShare.organisation.value))
+                      .getOrFail("Organisation")
+                  share <- shareSrv.shareCase(
+                    owner = false,
+                    case0,
+                    organisation,
+                    inputShare.toSharingProfile(currentShare.taskRule, currentShare.observableRule)
+                  )
+                  richShare <- shareSrv.get(share).richShare.getOrFail("Share")
+//                  _ = inputShare.taskRule.getOrElse(share.taskRule)
+//                _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
+//                _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
+                } yield richShare
+              }
           }
           .map(shares => Results.Ok(shares.toJson))
       }
@@ -173,7 +182,7 @@ class ShareCtrl(
           richShare <-
             shareSrv
               .get(EntityIdOrName(shareId))
-              .filter(_.organisation.visibleOrganisationsTo.visible)
+              .filter(_.organisation.visibleOrganisations.visible)
               .richShare
               .getOrFail("Share")
           profile <- profileSrv.getOrFail(EntityIdOrName(profile))
@@ -237,7 +246,7 @@ class ShareCtrl(
           task          <- taskSrv.getOrFail(EntityIdOrName(taskId))
           _             <- taskSrv.get(task).`case`.can(Permissions.manageShare).existsOrFail
           organisations <- organisationIds.map(EntityIdOrName(_)).toTry(organisationSrv.get(_).visible.getOrFail("Organisation"))
-          _             <- shareSrv.addTaskShares(task, organisations)
+          _             <- shareSrv.shareTask(task, organisations)
         } yield Results.NoContent
       }
 
@@ -250,7 +259,7 @@ class ShareCtrl(
           observable    <- observableSrv.getOrFail(EntityIdOrName(observableId))
           _             <- observableSrv.get(observable).`case`.can(Permissions.manageShare).existsOrFail
           organisations <- organisationIds.map(EntityIdOrName(_)).toTry(organisationSrv.get(_).visible.getOrFail("Organisation"))
-          _             <- shareSrv.addObservableShares(observable, organisations)
+          _             <- shareSrv.shareObservable(observable, organisations)
         } yield Results.NoContent
       }
 }

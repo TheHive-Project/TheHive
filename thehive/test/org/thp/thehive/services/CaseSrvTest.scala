@@ -270,7 +270,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
           organisation,
           Seq.empty,
           None,
-          Nil
+          Nil,
+          Map.empty,
+          None,
+          None
         )
       }.get
 
@@ -351,7 +354,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
           organisation,
           Seq.empty,
           None,
-          Nil
+          Nil,
+          Map.empty,
+          None,
+          None
         )
       }.get
 
@@ -387,7 +393,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
               organisation,
               Seq.empty,
               None,
-              Nil
+              Nil,
+              Map.empty,
+              None,
+              None
             )
 
             _ = caseSrv.get(case0._id).impactStatus.exists must beFalse
@@ -424,7 +433,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             organisation,
             Seq.empty,
             None,
-            Nil
+            Nil,
+            Map.empty,
+            None,
+            None
           )
         }.get
 
@@ -463,7 +475,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             organisation,
             Seq.empty,
             None,
-            Nil
+            Nil,
+            Map.empty,
+            None,
+            None
           )
         }
         .get

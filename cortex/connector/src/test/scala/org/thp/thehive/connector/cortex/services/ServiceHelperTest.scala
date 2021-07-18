@@ -34,7 +34,7 @@ class ServiceHelperTest extends PlaySpecification with TestAppBuilder with Trave
           )
           .toList
       }
-      r2 must contain(Organisation.administration, Organisation("cert", "cert"))
+      r2 must contain(Organisation.administration, Organisation("cert", "cert", "manual", "manual"))
     }
 
     "return the correct filtered CortexClient list" in testApp { app =>

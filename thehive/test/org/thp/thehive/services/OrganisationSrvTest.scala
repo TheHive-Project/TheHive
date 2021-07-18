@@ -15,7 +15,7 @@ class OrganisationSrvTest extends PlaySpecification with TestAppBuilder {
       import app.thehiveModule._
 
       database.tryTransaction { implicit graph =>
-        organisationSrv.create(Organisation(name = "orga1", "no description"))
+        organisationSrv.create(Organisation(name = "orga1", "no description", "manual", "manual"))
       } must beSuccessfulTry
     }
 

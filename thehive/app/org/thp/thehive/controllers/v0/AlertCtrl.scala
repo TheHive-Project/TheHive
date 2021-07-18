@@ -20,7 +20,7 @@ import org.thp.scalligraph.{
 }
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.String64
-import org.thp.thehive.dto.v0.{InputAlert, InputObservable, OutputSimilarCase}
+import org.thp.thehive.dto.v0.{InputAlert, InputObservable, InputShare, OutputSimilarCase}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -257,8 +257,15 @@ class AlertCtrl(
   def createCase(alertId: String): Action[AnyContent] =
     entrypoint("create case from alert")
       .extract("caseTemplate", FieldsParser.string.optional.on("caseTemplate"))
+      .extract("sharingParameters", FieldsParser[InputShare].sequence.on("sharingParameters"))
+      .extract("taskRule", FieldsParser[String].optional.on("taskRule"))
+      .extract("observableRule", FieldsParser[String].optional.on("observableRule"))
       .authPermittedTransaction(db, Permissions.manageAlert) { implicit request => implicit graph =>
-        val caseTemplate: Option[String] = request.body("caseTemplate")
+        val caseTemplate: Option[String]       = request.body("caseTemplate")
+        val sharingParameters: Seq[InputShare] = request.body("sharingParameters")
+        val taskRule: Option[String]           = request.body("taskRule")
+        val observableRule: Option[String]     = request.body("observableRule")
+
         for {
           organisation <- organisationSrv.current.getOrFail("Organisation")
           alert <-
@@ -270,7 +277,14 @@ class AlertCtrl(
           _ <- caseTemplate.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.existsOrFail).flip
           alertWithCaseTemplate = caseTemplate.fold(alert)(ct => alert.copy(caseTemplate = Some(ct)))
           assignee <- if (request.isPermitted(Permissions.manageCase)) userSrv.current.getOrFail("User").map(Some(_)) else Success(None)
-          richCase <- alertSrv.createCase(alertWithCaseTemplate, assignee, organisation)
+          richCase <- alertSrv.createCase(
+            alertWithCaseTemplate,
+            assignee,
+            organisation,
+            sharingParameters.map(_.toSharingParameter).toMap,
+            taskRule,
+            observableRule
+          )
         } yield Results.Created(richCase.toJson)
       }
 

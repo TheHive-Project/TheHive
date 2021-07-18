@@ -226,7 +226,14 @@ class AlertSrv(
       _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
-  def createCase(alert: RichAlert, assignee: Option[User with Entity], organisation: Organisation with Entity)(implicit
+  def createCase(
+      alert: RichAlert,
+      assignee: Option[User with Entity],
+      organisation: Organisation with Entity,
+      sharingParameters: Map[String, SharingParameter],
+      taskRule: Option[String],
+      observableRule: Option[String]
+  )(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[RichCase] =
@@ -253,7 +260,7 @@ class AlertSrv(
             alert.tags
           )
 
-          createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil)
+          createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil, sharingParameters, taskRule, observableRule)
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
           _           <- get(alert.alert).update(_.caseId, createdCase._id).getOrFail("Alert")

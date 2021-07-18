@@ -171,8 +171,11 @@ class AdminCtrl(
             case (_: RemoveProperty, _) =>
               filter.contains("RemoveProperty") || filter
                 .contains("schema") || (filters.contains("all") && !filter.contains("!schema") && !filter.contains("!RemoveProperty"))
-            case (_: UpdateGraph, _) =>
-              filter.contains("UpdateGraph") || filter
+            case (_: UpdateGraphVertices, _) =>
+              filter.contains("UpdateGraph") || filter.contains("UpdateGraphVertices") || filter
+                .contains("data") || (filters.contains("all") && !filter.contains("!data") && !filter.contains("!UpdateGraph"))
+            case (_: UpdateGraphEdges, _) =>
+              filter.contains("UpdateGraph") || filter.contains("UpdateGraphEdges") || filter
                 .contains("data") || (filters.contains("all") && !filter.contains("!data") && !filter.contains("!UpdateGraph"))
             case (_: AddIndex, _) =>
               filter.contains("AddIndex") || filter

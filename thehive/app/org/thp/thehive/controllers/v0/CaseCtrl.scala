@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.v0.{InputCase, InputTask}
+import org.thp.thehive.dto.v0.{InputCase, InputShare, InputTask}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import org.thp.thehive.services._
@@ -35,11 +35,18 @@ class CaseCtrl(
       .extract("case", FieldsParser[InputCase])
       .extract("tasks", FieldsParser[InputTask].sequence.on("tasks"))
       .extract("caseTemplate", FieldsParser[String].optional.on("template"))
+      .extract("sharingParameters", FieldsParser[InputShare].sequence.on("sharingParameters"))
+      .extract("taskRule", FieldsParser[String].optional.on("taskRule"))
+      .extract("observableRule", FieldsParser[String].optional.on("observableRule"))
       .authTransaction(db) { implicit request => implicit graph =>
-        val caseTemplateName: Option[String] = request.body("caseTemplate")
-        val inputCase: InputCase             = request.body("case")
-        val inputTasks: Seq[InputTask]       = request.body("tasks")
-        val customFields                     = inputCase.customFields.map(c => InputCustomFieldValue(c.name, c.value, c.order))
+        val caseTemplateName: Option[String]   = request.body("caseTemplate")
+        val inputCase: InputCase               = request.body("case")
+        val inputTasks: Seq[InputTask]         = request.body("tasks")
+        val customFields                       = inputCase.customFields.map(c => InputCustomFieldValue(c.name, c.value, c.order))
+        val sharingParameters: Seq[InputShare] = request.body("sharingParameters")
+        val taskRule: Option[String]           = request.body("taskRule")
+        val observableRule: Option[String]     = request.body("observableRule")
+
         for {
           organisation <-
             userSrv
@@ -55,7 +62,10 @@ class CaseCtrl(
             organisation,
             customFields,
             caseTemplate,
-            inputTasks.map(_.toTask)
+            inputTasks.map(_.toTask),
+            sharingParameters.map(_.toSharingParameter).toMap,
+            taskRule,
+            observableRule
           )
         } yield Results.Created(richCase.toJson)
       }
@@ -170,6 +180,7 @@ class CaseCtrl(
 class PublicCase(
     caseSrv: CaseSrv,
     override val organisationSrv: OrganisationSrv,
+    shareSrv: ShareSrv,
     observableSrv: ObservableSrv,
     userSrv: UserSrv,
     override val customFieldSrv: CustomFieldSrv,
@@ -339,5 +350,21 @@ class PublicCase(
           .readonly
       )
       .property("patternId", UMapping.string.sequence)(_.select(_.procedure.pattern.value(_.patternId)).readonly)
+      .property("taskRule", UMapping.string)(
+        _.authSelect(_.share(_).value(_.taskRule)).custom((_, value, vertex, graph, authContext) =>
+          for {
+            c <- caseSrv.getOrFail(vertex)(graph)
+            _ <- shareSrv.updateTaskRule(c, value)(graph, authContext)
+          } yield Json.obj("taskRule" -> value)
+        )
+      )
+      .property("observableRule", UMapping.string)(
+        _.authSelect(_.share(_).value(_.observableRule)).custom((_, value, vertex, graph, authContext) =>
+          for {
+            c <- caseSrv.getOrFail(vertex)(graph)
+            _ <- shareSrv.updateObservableRule(c, value)(graph, authContext)
+          } yield Json.obj("observableRule" -> value)
+        )
+      )
       .build
 }

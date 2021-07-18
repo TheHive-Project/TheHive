@@ -2,16 +2,22 @@
   {
     "id": "cert",
     "name": "cert",
-    "description": "cert"
+    "description": "cert",
+    "taskRule": "manual",
+    "observableRule": "manual"
   },
   {
     "id": "soc",
     "name": "soc",
-    "description": "soc"
+    "description": "soc",
+    "taskRule": "manual",
+    "observableRule": "manual"
   },
   {
     "id": "pug",
     "name": "pug",
-    "description": "pug"
+    "description": "pug",
+    "taskRule": "manual",
+    "observableRule": "manual"
   }
 ]

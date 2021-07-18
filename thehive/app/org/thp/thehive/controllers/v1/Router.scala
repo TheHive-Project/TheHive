@@ -98,6 +98,7 @@ class Router(
     case POST(p"/organisation")                  => organisationCtrl.create
     case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
+    case GET(p"/api/v1/sharingProfile")          => organisationCtrl.listSharingProfiles
 
     case DELETE(p"/case/shares")                               => shareCtrl.removeShares()
     case POST(p"/case/$caseId/shares")                         => shareCtrl.shareCase(caseId)

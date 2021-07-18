@@ -1,6 +1,7 @@
 [
   {
     "from": "cert",
-    "to": "soc"
+    "to": "soc",
+    "linkType": "default"
   }
 ]

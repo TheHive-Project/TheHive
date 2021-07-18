@@ -28,11 +28,11 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
   lazy val logger: Logger = Logger(getClass)
   val operations: Operations = Operations("thehive")
     .addProperty[Option[Boolean]]("Observable", "seen")
-    .updateGraph("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
+    .updateGraphVertices("Add manageConfig permission to org-admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageConfig").iterate()
       Success(())
     }
-    .updateGraph("Remove duplicate custom fields", "CustomField") { traversal =>
+    .updateGraphVertices("Remove duplicate custom fields", "CustomField") { traversal =>
       traversal.toIterator.foldLeft(Set.empty[String]) { (names, vertex) =>
         val name = vertex.value[String]("name")
         if (names.contains(name)) {
@@ -70,13 +70,13 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     .noop // .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
     .rebuildIndexes
     //=====[release 4.0.0]=====
-    .updateGraph("Remove cases with a Deleted status", "Case") { traversal =>
+    .updateGraphVertices("Remove cases with a Deleted status", "Case") { traversal =>
       traversal.unsafeHas("status", "Deleted").remove()
       Success(())
     }
     .addProperty[Option[Boolean]]("Observable", "ignoreSimilarity")
     //=====[release 4.0.1]=====
-    .updateGraph("Add accessTheHiveFS permission to analyst and org-admin profiles", "Profile") { traversal =>
+    .updateGraphVertices("Add accessTheHiveFS permission to analyst and org-admin profiles", "Profile") { traversal =>
       traversal
         .unsafeHas("name", P.within("org-admin", "analyst"))
         .onRaw(_.property(Cardinality.set: Cardinality, "permissions", "accessTheHiveFS", Nil: _*)) // Nil is for disambiguate the overloaded methods
@@ -85,7 +85,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     }
     //=====[release 4.0.2]=====
     .addProperty[Boolean]("ShareTask", "actionRequired")
-    .updateGraph("Add actionRequire property", "Share") { traversal =>
+    .updateGraphVertices("Add actionRequire property", "Share") { traversal =>
       traversal.outE[ShareTask].raw.property("actionRequired", false).iterate()
       Success(())
     }
@@ -121,7 +121,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         Success(())
       }
     }
-    .updateGraph("Add each tag to its Organisation's FreeTags taxonomy", "Tag") { tags =>
+    .updateGraphVertices("Add each tag to its Organisation's FreeTags taxonomy", "Tag") { tags =>
       tags
         .unsafeHas("namespace", TextP.notStartingWith("_freetags_"))
         .project(
@@ -162,22 +162,22 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         }
       Success(())
     }
-    .updateGraph("Add manageTaxonomy to admin profile", "Profile") { traversal =>
+    .updateGraphVertices("Add manageTaxonomy to admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "admin").raw.property("permissions", "manageTaxonomy").iterate()
       Success(())
     }
-    .updateGraph("Remove colour property for Tags", "Tag") { traversal =>
+    .updateGraphVertices("Remove colour property for Tags", "Tag") { traversal =>
       traversal.removeProperty("colour").iterate()
       Success(())
     }
     .removeProperty[Int]("Tag", "colour", usedOnlyByThisModel = true)
     .addProperty[String]("Tag", "colour")
-    .updateGraph("Add property colour for Tags ", "Tag") { traversal =>
+    .updateGraphVertices("Add property colour for Tags ", "Tag") { traversal =>
       traversal.raw.property("colour", "#000000").iterate()
       Success(())
     }
     // Patterns
-    .updateGraph("Add managePattern permission to admin profile", "Profile") { traversal =>
+    .updateGraphVertices("Add managePattern permission to admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "admin").raw.property("permissions", "managePattern").iterate()
       Success(())
     }
@@ -195,7 +195,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     .addProperty[Seq[String]]("Alert", "tags")
     .addProperty[EntityId]("Alert", "organisationId")
     .addProperty[Option[EntityId]]("Alert", "caseId")
-    .updateGraph("Add tags, organisationId and caseId in alerts", "Alert") { traversal =>
+    .updateGraphVertices("Add tags, organisationId and caseId in alerts", "Alert") { traversal =>
       traversal
         .unsafeHasNot("organisationId")
         .project(
@@ -230,7 +230,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     .addProperty[Option[String]]("Case", "impactStatus")
     .addProperty[Option[String]]("Case", "resolutionStatus")
     .addProperty[Option[String]]("Case", "caseTemplate")
-    .updateGraph("Add tags, assignee, organisationIds, impactStatus, resolutionStatus and caseTemplate data in cases", "Case") { traversal =>
+    .updateGraphVertices("Add tags, assignee, organisationIds, impactStatus, resolutionStatus and caseTemplate data in cases", "Case") { traversal =>
       traversal
         .project(
           _.by
@@ -264,7 +264,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     }
     /* CaseTemplate index  */
     .addProperty[Seq[String]]("CaseTemplate", "tags")
-    .updateGraph("Add tags in caseTemplates", "CaseTemplate") { traversal =>
+    .updateGraphVertices("Add tags in caseTemplates", "CaseTemplate") { traversal =>
       traversal
         .project(
           _.by
@@ -289,7 +289,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     /* Log index */
     .addProperty[String]("Log", "taskId")
     .addProperty[Set[EntityId]]("Log", "organisationIds")
-    .updateGraph("Add taskId and organisationIds data in logs", "Log") { traversal =>
+    .updateGraphVertices("Add taskId and organisationIds data in logs", "Log") { traversal =>
       traversal
         .unsafeHasNot("organisationIds")
         .project(
@@ -310,7 +310,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     .addProperty[String]("Observable", "data")
     .addProperty[EntityId]("Observable", "relatedId")
     .addProperty[Set[EntityId]]("Observable", "organisationIds")
-    .updateGraph("Add dataType, tags, data, relatedId and organisationIds data in observables", "Observable") { traversal =>
+    .updateGraphVertices("Add dataType, tags, data, relatedId and organisationIds data in observables", "Observable") { traversal =>
       traversal
         .unsafeHasNot("organisationIds")
         .project(
@@ -355,7 +355,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     .addProperty[Option[String]]("Task", "assignee")
     .addProperty[Set[EntityId]]("Task", "organisationIds")
     .addProperty[EntityId]("Task", "relatedId")
-    .updateGraph("Add assignee, relatedId and organisationIds data in tasks", "Task") { traversal =>
+    .updateGraphVertices("Add assignee, relatedId and organisationIds data in tasks", "Task") { traversal =>
       traversal
         .unsafeHasNot("organisationIds")
         .project(
@@ -373,25 +373,25 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         }
       Success(())
     }
-    .updateGraph("Add managePlatform permission to admin profile", "Profile") { traversal =>
+    .updateGraphVertices("Add managePlatform permission to admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "admin").raw.property("permissions", "managePlatform").iterate()
       Success(())
     }
-    .updateGraph("Remove manageTag permission to admin profile", "Profile") { traversal =>
+    .updateGraphVertices("Remove manageTag permission to admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "admin").raw.properties[String]("permissions").forEachRemaining(p => if (p.value() == "manageTag") p.remove())
       Success(())
     }
-    .updateGraph("Add manageTag permission to org-admin profile", "Profile") { traversal =>
+    .updateGraphVertices("Add manageTag permission to org-admin profile", "Profile") { traversal =>
       traversal.unsafeHas("name", "org-admin").raw.property("permissions", "manageTag").iterate()
       Success(())
     }
-    .updateGraph("Remove deleted logs and deleted property from logs", "Log") { traversal =>
+    .updateGraphVertices("Remove deleted logs and deleted property from logs", "Log") { traversal =>
       traversal.clone().unsafeHas("deleted", "true").remove()
       traversal.removeProperty("deleted")
       Success(())
     }
     .removeProperty[Boolean](model = "Log", propertyName = "deleted", usedOnlyByThisModel = true)
-    .updateGraph("Make shared dashboard writable", "Dashboard") { traversal =>
+    .updateGraphVertices("Make shared dashboard writable", "Dashboard") { traversal =>
       traversal.outE("OrganisationDashboard").raw.property("writable", true).iterate()
       Success(())
     }
@@ -430,7 +430,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
 //      Success(())
 //    }
     .noop
-    .updateGraph("Set taskId in logs", "Log") { traversal =>
+    .updateGraphVertices("Set taskId in logs", "Log") { traversal =>
       traversal
         .project(_.by.by(_.in("TaskLog")._id.option))
         .foreach {
@@ -447,7 +447,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     .removeIndex("Case", IndexType.basic, "status")
     .removeIndex("Task", IndexType.basic, "status")
     .removeIndex("Alert", IndexType.basic, "type", "source", "sourceRef")
-    .updateGraph("Set caseId in imported alerts", "Alert") { traversal =>
+    .updateGraphVertices("Set caseId in imported alerts", "Alert") { traversal =>
       traversal
         .project(
           _.by
@@ -474,7 +474,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         case _               => Success(())
       }
     }
-    .updateGraph("Add manageProcedure permission to org-admin and analyst profiles", "Profile") { traversal =>
+    .updateGraphVertices("Add manageProcedure permission to org-admin and analyst profiles", "Profile") { traversal =>
       traversal
         .unsafeHas("name", P.within("org-admin", "analyst"))
         .raw
@@ -485,7 +485,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     .removeIndex("Data", IndexType.unique, "data")
     //=====[release 4.1.4]=====
     .addProperty[EntityId]("Case", "owningOrganisation")
-    .updateGraph("Add owning organisation in case", "Case") { traversal =>
+    .updateGraphVertices("Add owning organisation in case", "Case") { traversal =>
       traversal
         .project(
           _.by
@@ -495,6 +495,32 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
           case (vertex, owningOrganisation) =>
             owningOrganisation.foreach(id => vertex.property("owningOrganisation", id.value))
         }
+      Success(())
+    }
+    //=============================
+    .addProperty[String]("Share", "taskRule")
+    .updateGraphVertices("Add taskRule in share", "Share") { traversal =>
+      traversal.foreach(_.property("taskRule", "manual"))
+      Success(())
+    }
+    .addProperty[String]("Share", "observableRule")
+    .updateGraphVertices("Add observableRule in share", "Share") { traversal =>
+      traversal.foreach(_.property("observableRule", "manual"))
+      Success(())
+    }
+    .addProperty[String]("Organisation", "taskRule")
+    .updateGraphVertices("Add taskRule in share", "Organisation") { traversal =>
+      traversal.foreach(_.property("taskRule", "manual"))
+      Success(())
+    }
+    .addProperty[String]("Organisation", "observableRule")
+    .updateGraphVertices("Add observableRule in share", "Organisation") { traversal =>
+      traversal.foreach(_.property("observableRule", "manual"))
+      Success(())
+    }
+    .addProperty[String]("OrganisationOrganisation", "linkType")
+    .updateGraphEdges("Add linkType in organisation edges", "OrganisationOrganisation") { traversal =>
+      traversal.foreach(_.property("linkType", "default"))
       Success(())
     }
 

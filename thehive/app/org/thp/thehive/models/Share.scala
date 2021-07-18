@@ -2,11 +2,19 @@ package org.thp.thehive.models
 
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
+import org.thp.thehive.services.SharingProfile
 
 import java.util.Date
 
 @BuildVertexEntity
-case class Share(owner: Boolean)
+case class Share(owner: Boolean, taskRule: String, observableRule: String)
+/*
+rule = { none, all, existingOnly, upcomingOnly }
+ */
+object Share {
+  def fromProfile(owner: Boolean, shareConfig: SharingProfile): Share =
+    Share(owner, shareConfig.taskRule, shareConfig.observableRule)
+}
 
 @BuildEdgeEntity[Share, Case]
 case class ShareCase()

@@ -2,11 +2,14 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import com.softwaremill.tagging.@@
+import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -17,6 +20,7 @@ import java.util.{Map => JMap}
 import scala.util.{Failure, Success, Try}
 
 class OrganisationSrv(
+    appConfig: ApplicationConfig,
     _taxonomySrv: => TaxonomySrv,
     _roleSrv: => RoleSrv,
     _profileSrv: => ProfileSrv,
@@ -85,8 +89,14 @@ class OrganisationSrv(
       identity
     )
 
+  val sharingProfilesConfig: ConfigItem[Seq[SharingProfile], Seq[SharingProfile]] =
+    appConfig.item[Seq[SharingProfile]]("sharingProfiles", "Share profiles")
+  def sharingProfiles: Seq[SharingProfile] = sharingProfilesConfig.get
+  def getSharingProfile(name: String): SharingProfile =
+    sharingProfiles.find(_.name == name).getOrElse(SharingProfile.default)
+
   def visibleOrganisation(implicit graph: Graph, authContext: AuthContext): Traversal.V[Organisation] =
-    userSrv.current.organisations.visibleOrganisationsFrom
+    current.visibleOrganisations
 
   override def exists(e: Organisation)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
@@ -105,64 +115,78 @@ class OrganisationSrv(
             .flatMap(auditSrv.organisation.update(_, updatedFields))
       }
 
-  def linkExists(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Boolean =
-    fromOrg._id == toOrg._id || get(fromOrg).links.getEntity(toOrg).exists
-
-  def link(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
-    if (linkExists(fromOrg, toOrg)) Success(())
-    else organisationOrganisationSrv.create(OrganisationOrganisation(), fromOrg, toOrg).map(_ => ())
-
-  def doubleLink(org1: Organisation with Entity, org2: Organisation with Entity)(implicit authContext: AuthContext, graph: Graph): Try[Unit] =
-    if (org1.name == "admin" || org2.name == "admin") Failure(BadRequestError("Admin organisation cannot be link with other organisation"))
-    else
-      for {
-        _ <- link(org1, org2)
-        _ <- link(org2, org1)
-      } yield ()
-
-  def unlink(fromOrg: Organisation with Entity, toOrg: Organisation with Entity)(implicit graph: Graph): Try[Unit] =
-    Success(
-      get(fromOrg)
-        .outE[OrganisationOrganisation]
-        .filter(_.otherV().hasId(toOrg._id))
-        .remove()
-    )
-
-  def doubleUnlink(org1: Organisation with Entity, org2: Organisation with Entity)(implicit graph: Graph): Try[Unit] = {
-    unlink(org1, org2) // can't fail
-    unlink(org2, org1)
-  }
-
-  def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[EntityIdOrName])(implicit
+  def link(orgA: Organisation with Entity, orgB: Organisation with Entity, linkTypeAB: String, linkTypeBA: String)(implicit
       authContext: AuthContext,
       graph: Graph
   ): Try[Unit] = {
-    val toOrgIds = toOrganisations.map(_.fold(identity, getByName(_)._id.getOrFail("Organisation").get)).toSet
-    val (orgToAdd, orgToRemove) = get(fromOrg)
-      .links
-      ._id
-      .toIterator
-      .foldLeft((toOrgIds, Set.empty[EntityId])) {
-        case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
-        case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
-      }
-    for {
-      _ <- orgToAdd.toTry(getOrFail(_).flatMap(doubleLink(fromOrg, _)))
-      _ <- orgToRemove.toTry(getOrFail(_).flatMap(doubleUnlink(fromOrg, _)))
-    } yield ()
+    def doLink(from: Organisation with Entity, to: Organisation with Entity, linkType: String): Try[Unit] =
+      if (get(from).linkTo(to).update(_.linkType, linkType).exists) Success(())
+      else organisationOrganisationSrv.create(OrganisationOrganisation(linkType), from, to).map(_ => ())
+
+    if (orgA.name == "admin" || orgB.name == "admin") Failure(BadRequestError("Admin organisation cannot be linked with other organisation"))
+    else if (orgA.name == orgB.name) Failure(BadRequestError("An organisation cannot be linked with itself"))
+    else
+      for {
+        _ <- doLink(orgA, orgB, linkTypeAB)
+        _ <- doLink(orgB, orgA, linkTypeBA)
+      } yield ()
   }
+
+  def unlink(orgA: Organisation with Entity, orgB: Organisation with Entity)(implicit graph: Graph): Try[Unit] =
+    Try {
+      get(orgA).linkTo(orgB).remove()
+      get(orgB).linkTo(orgA).remove()
+    }
+
+//  def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[EntityIdOrName])(implicit
+//      authContext: AuthContext,
+//      graph: Graph
+//  ): Try[Unit] = {
+//    val toOrgIds = toOrganisations.map(_.fold(identity, getByName(_)._id.getOrFail("Organisation").get)).toSet
+//    val (orgToAdd, orgToRemove) = get(fromOrg)
+//      .links
+//      ._id
+//      .toIterator
+//      .foldLeft((toOrgIds, Set.empty[EntityId])) {
+//        case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
+//        case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
+//      }
+//    for {
+//      _ <- orgToAdd.toTry(getOrFail(_).flatMap(doubleLink(fromOrg, _)))
+//      _ <- orgToRemove.toTry(getOrFail(_).flatMap(doubleUnlink(fromOrg, _)))
+//    } yield ()
+//  }
 }
 
-trait OrganisationOps { _: TheHiveOpsNoDeps =>
+trait OrganisationOpsNoDeps { _: TheHiveOpsNoDeps =>
 
-  implicit class OrganisationOpsDefs(traversal: Traversal.V[Organisation]) {
+  implicit class OrganisationOpsNoDepsDefs(traversal: Traversal.V[Organisation]) {
 
     def get(idOrName: EntityIdOrName): Traversal.V[Organisation] =
       idOrName.fold(traversal.getByIds(_), traversal.getByName(_))
 
     def current(implicit authContext: AuthContext): Traversal.V[Organisation] = get(authContext.organisation)
 
+    def linkTo(otherOrg: Organisation with Entity): Traversal.E[OrganisationOrganisation] =
+      traversal.outE[OrganisationOrganisation].filter(_.inV.getByIds(otherOrg._id))
+
     def links: Traversal.V[Organisation] = traversal.out[OrganisationOrganisation].v[Organisation]
+
+    def ownerSharingProfile(
+        taskRule: Option[String],
+        observableRule: Option[String]
+    ): Traversal[SharingProfile, Vertex, Converter[SharingProfile, Vertex]] =
+      traversal.domainMap { org =>
+        SharingProfile(
+          "owner",
+          "Owner sharing profile",
+          autoShare = true,
+          editable = true,
+          Profile.orgAdmin.name,
+          taskRule.getOrElse(org.taskRule),
+          observableRule.getOrElse(org.observableRule)
+        )
+      }
 
     def cases: Traversal.V[Case] = traversal.out[OrganisationShare].out[ShareCase].v[Case]
 
@@ -194,18 +218,39 @@ trait OrganisationOps { _: TheHiveOpsNoDeps =>
       if (authContext.isPermitted(Permissions.manageOrganisation))
         traversal
       else
-        traversal.filter(_.visibleOrganisationsTo.current)
+        traversal.filter(_.visibleOrganisations.current)
 
-    def richOrganisation: Traversal[RichOrganisation, JMap[String, Any], Converter[RichOrganisation, JMap[String, Any]]] =
+    def richOrganisation(implicit
+        authContext: AuthContext
+    ): Traversal[RichOrganisation, JMap[String, Any], Converter[RichOrganisation, JMap[String, Any]]] = {
+      val fromOrgLabel   = StepLabel.v[Organisation]
+      val linkLabel      = StepLabel.e[OrganisationOrganisation]
+      val otherLinkLabel = StepLabel.e[OrganisationOrganisation]
+      val toOrgLabel     = StepLabel.v[Organisation]
       traversal
         .project(
           _.by
-            .by(_.out[OrganisationOrganisation].v[Organisation].fold)
+            .by(
+              _.as(fromOrgLabel)
+                .outE[OrganisationOrganisation]
+                .as(linkLabel)
+                .inV
+                .v[Organisation]
+                .visible
+                .as(toOrgLabel)
+                .outE[OrganisationOrganisation]
+                .as(otherLinkLabel)
+                .inV
+                .where(P.eq(fromOrgLabel.name))
+                .select((toOrgLabel, linkLabel, otherLinkLabel))
+                .fold
+            )
         )
         .domainMap {
           case (organisation, linkedOrganisations) =>
-            RichOrganisation(organisation, linkedOrganisations)
+            RichOrganisation(organisation, linkedOrganisations.map(ol => ol._1 -> (ol._2.linkType, ol._3.linkType)).toMap)
         }
+    }
 
     def notAdmin: Traversal.V[Organisation] = traversal.hasNot(_.name, Organisation.administration.name)
 
@@ -216,17 +261,41 @@ trait OrganisationOps { _: TheHiveOpsNoDeps =>
     def userProfile(login: String): Traversal.V[Profile] =
       roles.filter(_.user.has(_.login, login)).profile
 
-    def visibleOrganisationsTo: Traversal.V[Organisation] =
-      traversal.unionFlat(identity, _.in[OrganisationOrganisation]).dedup().v[Organisation]
-
-    def visibleOrganisationsFrom: Traversal.V[Organisation] =
-      traversal.unionFlat(identity, _.out[OrganisationOrganisation]).dedup().v[Organisation]
+    def visibleOrganisations: Traversal.V[Organisation] =
+      traversal.unionFlat(identity, _.both[OrganisationOrganisation]).dedup().v[Organisation]
 
     def config: Traversal.V[Config] = traversal.out[OrganisationConfig].v[Config]
 
     def getByName(name: String): Traversal.V[Organisation] = traversal.has(_.name, name)
   }
+}
 
+trait OrganisationOps {
+  _: TheHiveOps =>
+  protected val organisationSrv: OrganisationSrv
+  protected val customFieldSrv: CustomFieldSrv
+
+  implicit class OrganisationOpsDefs(val traversal: Traversal.V[Organisation]) {
+
+    def sharingProfiles(sharingParameters: Map[String, SharingParameter]): Map[EntityId, SharingProfile] = {
+      val parametersWithIds: Map[EntityId, SharingParameter] = sharingParameters.map {
+        case (org, share) => organisationSrv.getId(EntityIdOrName(org))(traversal.graph) -> share
+      }
+      val orgaSharingProfiles = traversal
+        .outE[OrganisationOrganisation]
+        .project(_.by(_.inV._id).byValue(_.linkType))
+        .toIterator
+        .map {
+          case (orgId, shareName) => orgId -> organisationSrv.getSharingProfile(shareName)
+        }
+        .toMap
+
+      (parametersWithIds.keySet ++ orgaSharingProfiles.keySet).map { orgId =>
+        val share = orgaSharingProfiles.getOrElse(orgId, SharingProfile.default)
+        orgId -> parametersWithIds.get(orgId).fold(share)(p => share.applyWith(p))
+      }.toMap
+    }
+  }
 }
 
 class OrganisationIntegrityCheckOps(val db: Database, val service: OrganisationSrv) extends IntegrityCheckOps[Organisation] {
