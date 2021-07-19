@@ -342,7 +342,7 @@ class DatabaseBuilder @Inject() (
       parser(fields - "id")
         .flatMap(e => Or.from(srv.createEntity(e)))
         .map(v => fields.getString("id").map(_ -> v._id))
-        .recover(e => warn(s"creation of $fields fails: $e"))
+        .recover(e => warn(s"creation of ${srv.model.label} with $fields fails: $e"))
         .get
     }.toMap
 

@@ -1,5 +1,8 @@
 package org.thp.thehive
 
+import akka.actor.ActorSystem
+import akka.actor.typed.{ActorRef => TypedActorRef}
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import org.apache.commons.io.FileUtils
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabaseProvider
@@ -29,6 +32,7 @@ trait TestAppBuilder {
       .bind[UserSrv, LocalUserSrv]
       .bind[StorageSrv, LocalFileSystemStorageSrv]
       .bind[Schema, TheHiveSchemaDefinition]
+      .bindToProvider[TypedActorRef[CaseNumberActor.Request], TestNumberActorProvider]
       .multiBind[UpdatableSchema](classOf[TheHiveSchemaDefinition])
       .bindNamed[QueryExecutor, TheHiveQueryExecutor]("v0")
       .multiBind[AuthSrvProvider](classOf[LocalPasswordAuthProvider], classOf[LocalKeyAuthProvider], classOf[HeaderAuthProvider])
@@ -115,6 +119,7 @@ trait TestAppBuilder {
     finally {
       Try(app[Database].close())
       FileUtils.deleteDirectory(storageDirectory)
+      FileUtils.deleteDirectory(indexDirectory)
     }
   }
 }
@@ -122,4 +127,9 @@ trait TestAppBuilder {
 @Singleton
 class BasicDatabaseProvider @Inject() (database: Database) extends Provider[Database] {
   override def get(): Database = database
+}
+
+class TestNumberActorProvider @Inject() (actorSystem: ActorSystem) extends Provider[TypedActorRef[CaseNumberActor.Request]] {
+  override def get: TypedActorRef[CaseNumberActor.Request] =
+    actorSystem.toTyped.systemActorOf(CaseNumberActor.caseNumberProvider(36), "case-number")
 }
