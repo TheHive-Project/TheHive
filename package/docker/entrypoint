@@ -43,7 +43,7 @@ function usage {
     --no-config-cortex                          | do not add Cortex configuration
     --cortex-proto <proto>                      | define protocol to connect to Cortex (default: http)
     --cortex-port <port>                        | define port to connect to Cortex (default: 9001)
-    --cortex-hostname <host>,<host>,...         | resolve this hostname to find Cortex instances
+    --cortex-hostnames <host>,<host>,...        | resolve this hostname to find Cortex instances
     --cortex-keys <key>,<key>,...               | define Cortex key
     migrate <param> <param> ...                 | run migration tool
     cloner <param> <param> ...                  | run cloner tool
