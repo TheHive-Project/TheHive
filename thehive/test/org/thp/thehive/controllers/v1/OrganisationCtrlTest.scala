@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.traversal.TraversalOps
-import org.thp.thehive.dto.v1.{InputOrganisation, OutputOrganisation}
+import org.thp.thehive.dto.v1.{InputOrganisation, OrganisationLink, OutputOrganisation, OutputSharingProfile}
 import org.thp.thehive.models.Organisation
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -65,7 +65,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       import app.thehiveModule._
       import app.thehiveModuleV1._
 
-      val request = FakeRequest("PATCH", s"/api/v1/organisation/cert")
+      val request = FakeRequest("PATCH", "/api/v1/organisation/cert")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.obj("name" -> "cert2"))
       val result = organisationCtrl.update("cert")(request)
@@ -78,11 +78,107 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
     "fail to update admin organisation" in testApp { app =>
       import app.thehiveModuleV1._
 
-      val request = FakeRequest("PATCH", s"/api/v1/organisation/admin")
+      val request = FakeRequest("PATCH", "/api/v1/organisation/admin")
         .withHeaders("user" -> "admin@thehive.local")
         .withJsonBody(Json.obj("description" -> "new description"))
       val result = organisationCtrl.update("admin")(request)
       status(result) must_=== 400
     }
+
+    "list sharing profiles" in testApp { app =>
+      import app.thehiveModuleV1._
+
+      val request = FakeRequest("GET", "/api/v1/sharingProfile")
+        .withHeaders("user" -> "admin@thehive.local")
+      val result = organisationCtrl.listSharingProfiles()(request)
+      status(result)                                                                  must beEqualTo(200)
+      contentAsJson(result).as[Seq[OutputSharingProfile]].exists(_.name == "default") must beTrue
+    }
+
+    "link organisations to soc organisation with default sharing profile" in testApp { app =>
+      import app.thehiveModuleV1._
+
+      { // unlink soc/cert
+        val request = FakeRequest("PUT", s"/api/organisation/soc/link/cert")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.unlink("soc", "cert")(request)
+        status(result) must beEqualTo(204)
+      }
+      { // check links
+        val request = FakeRequest("GET", "/api/organisation/soc/links")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.listLinks("soc")(request)
+        status(result) must beEqualTo(200)
+        val linkedOrganisations = contentAsJson(result).as[List[OutputOrganisation]]
+        linkedOrganisations must beEmpty
+      }
+      { // link with default sharing profile
+        val request = FakeRequest("PUT", "/api/organisation/soc/link/cert")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.link("soc", "cert")(request)
+        status(result) must beEqualTo(201)
+      }
+      { // check links
+        val request = FakeRequest("GET", "/api/organisation/soc/links")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.listLinks("soc")(request)
+        status(result) must beEqualTo(200)
+        val linkedOrganisations = contentAsJson(result).as[List[OutputOrganisation]]
+        linkedOrganisations.size must beEqualTo(1)
+      }
+      { // check sharing profiles
+        val request = FakeRequest("GET", "/api/organisation/soc")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.get("soc")(request)
+        status(result) must beEqualTo(200)
+        val organisation = contentAsJson(result).as[OutputOrganisation]
+        organisation.links.size must beEqualTo(1)
+        organisation.links.head must beEqualTo(OrganisationLink("cert", "default", "default"))
+      }
+    }
+
+    "link organisations to soc organisation with custom sharing profile" in testApp { app =>
+      import app.thehiveModuleV1._
+
+      { // unlink soc/cert
+        val request = FakeRequest("PUT", s"/api/organisation/soc/link/cert")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.unlink("soc", "cert")(request)
+        status(result) must beEqualTo(204)
+      }
+      { // check links
+        val request = FakeRequest("GET", "/api/organisation/soc/links")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.listLinks("soc")(request)
+        status(result) must beEqualTo(200)
+        val linkedOrganisations = contentAsJson(result).as[List[OutputOrganisation]]
+        linkedOrganisations must beEmpty
+      }
+      { // link with custom sharing profile
+        val request = FakeRequest("PUT", "/api/organisation/soc/link/cert")
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.obj("linkType" -> "type1", "otherLinkType" -> "type2"))
+        val result = organisationCtrl.link("soc", "cert")(request)
+        status(result) must beEqualTo(201)
+      }
+      { // check links
+        val request = FakeRequest("GET", "/api/organisation/soc/links")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.listLinks("soc")(request)
+        status(result) must beEqualTo(200)
+        val linkedOrganisations = contentAsJson(result).as[List[OutputOrganisation]]
+        linkedOrganisations.size must beEqualTo(1)
+      }
+      { // check sharing profiles
+        val request = FakeRequest("GET", "/api/organisation/soc")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.get("soc")(request)
+        status(result) must beEqualTo(200)
+        val organisation = contentAsJson(result).as[OutputOrganisation]
+        organisation.links.size must beEqualTo(1)
+        organisation.links.head must beEqualTo(OrganisationLink("cert", "type1", "type2"))
+      }
+    }
+
   }
 }

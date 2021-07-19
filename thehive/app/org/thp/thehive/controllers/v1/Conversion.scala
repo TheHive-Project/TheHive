@@ -13,7 +13,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.{SharingParameter, SharingProfile, SharingRule}
 import play.api.libs.json.{JsObject, JsValue, Json}
 
-import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.Date
 
 object Conversion {
@@ -157,25 +157,30 @@ object Conversion {
   }
 
   implicit class RichCaseOps(`case`: RichCase) {
-    def toInputCase: InputCase = InputCase(
-      title = String512("title", `case`.title),
-      description = Description("description", `case`.description),
-      severity = Some(Severity.apply(`case`.severity)),
-      startDate = Some(`case`.startDate),
-      endDate = `case`.endDate,
-      tags = `case`.tags.map(String128.apply("tag", _)).toSet,
-      flag = Some(`case`.flag),
-      tlp = Some(Tlp(`case`.tlp)),
-      pap = Some(Pap(`case`.pap)),
-      status = Some(String16("status", `case`.status.toString)),
-      summary = `case`.summary.map(Description("summary", _)),
-      user = `case`.assignee.map(String128("user", _)),
-      customFieldValues = `case`.customFields.map(cf => InputCustomFieldValue(
-        name= String64("customFieldValues.name", cf.name),
-        value= cf.value,
-        order = cf.order
-      ))
-    )
+    def toInputCase: InputCase =
+      InputCase(
+        title = String512("title", `case`.title),
+        description = Description("description", `case`.description),
+        severity = Some(Severity.apply(`case`.severity)),
+        startDate = Some(`case`.startDate),
+        endDate = `case`.endDate,
+        tags = `case`.tags.map(String128.apply("tag", _)).toSet,
+        flag = Some(`case`.flag),
+        tlp = Some(Tlp(`case`.tlp)),
+        pap = Some(Pap(`case`.pap)),
+        status = Some(String16("status", `case`.status.toString)),
+        summary = `case`.summary.map(Description("summary", _)),
+        user = `case`.assignee.map(String128("user", _)),
+        customFieldValues = `case`
+          .customFields
+          .map(cf =>
+            InputCustomFieldValue(
+              name = String64("customFieldValues.name", cf.name),
+              value = cf.value,
+              order = cf.order
+            )
+          )
+      )
   }
 
   implicit class InputCaseTemplateOps(inputCaseTemplate: InputCaseTemplate) {
@@ -255,7 +260,7 @@ object Conversion {
         .withFieldConst(_._type, "Organisation")
         .withFieldConst(_.name, organisation.name)
         .withFieldConst(_.description, organisation.description)
-        .withFieldComputed(_.links, _.links.map(ol => OrganisationLink(ol._1.name, ol._2._1, ol._2._1)).toSeq)
+        .withFieldComputed(_.links, _.links.map(ol => OrganisationLink(ol._1.name, ol._2._1, ol._2._2)).toSeq)
         .enableMethodAccessors
         .transform
     )
@@ -290,18 +295,19 @@ object Conversion {
   }
 
   implicit class TaksOps(task: Task) {
-    def toInputTask: InputTask = InputTask(
-      title=  String128("title", task.title),
-      group= Some(String32("group", task.group)),
-      description = task.description.map(Description("description", _)),
-      status = Some(String16("status", task.status.toString)),
-      flag = Some(task.flag),
-      startDate = task.startDate,
-      endDate = task.endDate,
-      order = Some(task.order),
-      dueDate = task.dueDate,
-      assignee = task.assignee.map(String128("assignee", _))
-    )
+    def toInputTask: InputTask =
+      InputTask(
+        title = String128("title", task.title),
+        group = Some(String32("group", task.group)),
+        description = task.description.map(Description("description", _)),
+        status = Some(String16("status", task.status.toString)),
+        flag = Some(task.flag),
+        startDate = task.startDate,
+        endDate = task.endDate,
+        order = Some(task.order),
+        dueDate = task.dueDate,
+        assignee = task.assignee.map(String128("assignee", _))
+      )
   }
 
   implicit val taskOutput: Renderer.Aux[RichTask, OutputTask] = Renderer.toJson[RichTask, OutputTask](
@@ -527,25 +533,32 @@ object Conversion {
   }
 
   implicit class RichObservableOps(observable: RichObservable) {
-    def toInputObservable(attachmentAsFFile: Boolean): InputObservable = InputObservable(
-      dataType = String32("dataType", observable.dataType),
-      data= observable.data.map(String512("data", _)).toSeq,
-      message = observable.message.map(Description("message", _)),
-      startDate = None,
-      attachment = observable.attachment.map{ attachment =>
-        if (attachmentAsFFile) Left(FFile(attachment.name, Path.of(attachment.name) , attachment.contentType))
-        else Right(InputAttachment(
-          name = String128("attachement.name", attachment.name),
-          contentType = String128("attachement.contentType", attachment.contentType),
-          id = String128("attachement.id", attachment.attachmentId)
-        ))
-      }.toSeq,
-      tlp = Some(Tlp(observable.tlp)),
-      tags = observable.tags.map(String128("tags", _)).toSet,
-      ioc = Some(observable.ioc),
-      sighted = Some(observable.sighted),
-      ignoreSimilarity = observable.ignoreSimilarity
-    )
+    def toInputObservable(attachmentAsFFile: Boolean): InputObservable =
+      InputObservable(
+        dataType = String32("dataType", observable.dataType),
+        data = observable.data.map(String512("data", _)).toSeq,
+        message = observable.message.map(Description("message", _)),
+        startDate = None,
+        attachment = observable
+          .attachment
+          .map { attachment =>
+            if (attachmentAsFFile) Left(FFile(attachment.name, Paths.get(attachment.name), attachment.contentType))
+            else
+              Right(
+                InputAttachment(
+                  name = String128("attachement.name", attachment.name),
+                  contentType = String128("attachement.contentType", attachment.contentType),
+                  id = String128("attachement.id", attachment.attachmentId)
+                )
+              )
+          }
+          .toSeq,
+        tlp = Some(Tlp(observable.tlp)),
+        tags = observable.tags.map(String128("tags", _)).toSet,
+        ioc = Some(observable.ioc),
+        sighted = Some(observable.sighted),
+        ignoreSimilarity = observable.ignoreSimilarity
+      )
   }
 
   implicit val observableOutput: Renderer.Aux[RichObservable, OutputObservable] = Renderer.toJson[RichObservable, OutputObservable](richObservable =>
@@ -682,23 +695,24 @@ object Conversion {
   }
 
   implicit class PatterOps(pattern: Pattern) {
-    def toInputPattern: InputPattern = pattern
-      .into[InputPattern]
-      .withFieldRenamed(_.patternId, _.external_id)
-      .withFieldComputed(_.kill_chain_phases, _.tactics.map(t => InputKillChainPhase("", t)).toSeq)
-      .withFieldRenamed(_.patternType, _.`type`)
-      .withFieldRenamed(_.capecId, _.capec_id)
-      .withFieldRenamed(_.capecUrl, _.capec_url)
-      .withFieldRenamed(_.dataSources, _.x_mitre_data_sources)
-      .withFieldRenamed(_.defenseBypassed, _.x_mitre_defense_bypassed)
-      .withFieldRenamed(_.detection, _.x_mitre_detection)
-      .withFieldRenamed(_.permissionsRequired, _.x_mitre_permissions_required)
-      .withFieldRenamed(_.platforms, _.x_mitre_platforms)
-      .withFieldRenamed(_.remoteSupport, _.x_mitre_remote_support)
-      .withFieldRenamed(_.systemRequirements, _.x_mitre_system_requirements)
-      .withFieldRenamed(_.revision, _.x_mitre_version)
-      .withFieldComputed(_.x_mitre_is_subtechnique, _.patternId.contains("."))
-      .transform
+    def toInputPattern: InputPattern =
+      pattern
+        .into[InputPattern]
+        .withFieldRenamed(_.patternId, _.external_id)
+        .withFieldComputed(_.kill_chain_phases, _.tactics.map(t => InputKillChainPhase("", t)).toSeq)
+        .withFieldRenamed(_.patternType, _.`type`)
+        .withFieldRenamed(_.capecId, _.capec_id)
+        .withFieldRenamed(_.capecUrl, _.capec_url)
+        .withFieldRenamed(_.dataSources, _.x_mitre_data_sources)
+        .withFieldRenamed(_.defenseBypassed, _.x_mitre_defense_bypassed)
+        .withFieldRenamed(_.detection, _.x_mitre_detection)
+        .withFieldRenamed(_.permissionsRequired, _.x_mitre_permissions_required)
+        .withFieldRenamed(_.platforms, _.x_mitre_platforms)
+        .withFieldRenamed(_.remoteSupport, _.x_mitre_remote_support)
+        .withFieldRenamed(_.systemRequirements, _.x_mitre_system_requirements)
+        .withFieldRenamed(_.revision, _.x_mitre_version)
+        .withFieldComputed(_.x_mitre_is_subtechnique, _.patternId.contains("."))
+        .transform
   }
 
   implicit val patternOutput: Renderer.Aux[RichPattern, OutputPattern] =
@@ -731,13 +745,14 @@ object Conversion {
   }
 
   implicit class RichProcedureOps(richProcedure: RichProcedure) {
-    def toInputProcedure: InputProcedure = InputProcedure(
-      description = richProcedure.procedure.description.map(Description("description", _)),
-      occurDate = richProcedure.occurDate,
-      tactic = String32("tactic", richProcedure.procedure.tactic),
-      caseId = String128("caseId", "caseId"), // don't export caseId
-      patternId = String128("patternId", richProcedure.pattern.patternId)
-    )
+    def toInputProcedure: InputProcedure =
+      InputProcedure(
+        description = richProcedure.procedure.description.map(Description("description", _)),
+        occurDate = richProcedure.occurDate,
+        tactic = String32("tactic", richProcedure.procedure.tactic),
+        caseId = String128("caseId", "caseId"), // don't export caseId
+        patternId = String128("patternId", richProcedure.pattern.patternId)
+      )
   }
 
   implicit val richProcedureRenderer: Renderer.Aux[RichProcedure, OutputProcedure] =

@@ -1,6 +1,6 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.EntityIdOrName
+import org.thp.scalligraph.{EntityIdOrName, EntityName, RichSeq}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
@@ -9,7 +9,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputOrganisation
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.mvc.{Action, AnyContent, Handler, Results}
+import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
 
@@ -85,6 +85,64 @@ class OrganisationCtrl(
           organisation <- organisationSrv.getOrFail(EntityIdOrName(organisationId))
           _            <- organisationSrv.update(organisationSrv.get(organisation), propertyUpdaters)
         } yield Results.NoContent
+      }
+
+  def link(orgAId: String, orgBId: String): Action[AnyContent] =
+    entrypoint("link organisations")
+      .extract("linkType", FieldsParser.string.optional.on("linkType"))
+      .extract("otherLinkType", FieldsParser.string.optional.on("otherLinkType"))
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
+        val linkTypeAB: Option[String] = request.body("linkType")
+        val linkTypeBA: Option[String] = request.body("otherLinkType")
+        for {
+          orgA <- organisationSrv.getOrFail(EntityIdOrName(orgAId))
+          orgB <- organisationSrv.getOrFail(EntityIdOrName(orgBId))
+          _    <- organisationSrv.link(orgA, orgB, linkTypeAB.getOrElse("default"), linkTypeBA.getOrElse("default"))
+        } yield Results.Created
+      }
+
+  def bulkLink(fromOrganisationId: String): Action[AnyContent] =
+    entrypoint("link multiple organisations")
+      .extract("organisations", FieldsParser.string.sequence.on("organisations"))
+      .extract("linkType", FieldsParser.string.optional.on("linkType"))
+      .extract("otherLinkType", FieldsParser.string.optional.on("otherLinkType"))
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
+        val organisations: Seq[String]    = request.body("organisations")
+        val linkType: Option[String]      = request.body("linkType")
+        val otherLinkType: Option[String] = request.body("otherLinkType")
+
+        for {
+          fromOrg <- organisationSrv.getOrFail(EntityIdOrName(fromOrganisationId))
+          toOrgs  <- organisations.toTry(o => organisationSrv.getOrFail(EntityIdOrName(o)))
+          _       <- toOrgs.toTry(o => organisationSrv.link(fromOrg, o, linkType.getOrElse("default"), otherLinkType.getOrElse("default")))
+        } yield Results.Created
+      }
+
+  def unlink(orgAId: String, orgBId: String): Action[AnyContent] =
+    entrypoint("unlink organisations")
+      .authPermittedTransaction(db, Permissions.manageOrganisation) { _ => implicit graph =>
+        for {
+          orgA <- organisationSrv.getOrFail(EntityIdOrName(orgAId))
+          orgB <- organisationSrv.getOrFail(EntityIdOrName(orgBId))
+          _    <- organisationSrv.unlink(orgA, orgB)
+        } yield Results.NoContent
+      }
+
+  def listLinks(organisationId: String): Action[AnyContent] =
+    entrypoint("list organisation links")
+      .authRoTransaction(db) { implicit request => implicit graph =>
+        val isInDefaultOrganisation = userSrv.current.organisations.get(EntityName(Organisation.administration.name)).exists
+        val organisation =
+          if (isInDefaultOrganisation)
+            organisationSrv.get(EntityIdOrName(organisationId))
+          else
+            userSrv
+              .current
+              .organisations
+              .get(EntityIdOrName(organisationId))
+        val organisations = organisation.links.toSeq
+
+        Success(Results.Ok(organisations.toJson))
       }
 
   def listSharingProfiles: Action[AnyContent] =

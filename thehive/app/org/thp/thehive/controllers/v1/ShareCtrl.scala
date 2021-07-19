@@ -7,7 +7,7 @@ import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.{Graph, IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.{InputShare}
+import org.thp.thehive.dto.v1.InputShare
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
@@ -75,9 +75,6 @@ class ShareCtrl(
                     inputShare.toSharingProfile(currentShare.taskRule, currentShare.observableRule)
                   )
                   richShare <- shareSrv.get(share).richShare.getOrFail("Share")
-//                  _ = inputShare.taskRule.getOrElse(share.taskRule)
-//                _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
-//                _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
                 } yield richShare
               }
           }

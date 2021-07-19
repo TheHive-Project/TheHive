@@ -32,7 +32,7 @@ case class OutputSharingProfile(
     observableRule: String
 )
 object OutputSharingProfile {
-  implicit val writes: Writes[OutputSharingProfile] = Json.writes[OutputSharingProfile]
+  implicit val format: Format[OutputSharingProfile] = Json.format[OutputSharingProfile]
 }
 
 case class OutputOrganisation(

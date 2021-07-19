@@ -95,10 +95,14 @@ class Router(
     case POST(p"/user/$userId/key/renew")                                 => userCtrl.renewKey(userId)
     case GET(p"/user/$userId/avatar$file*")                               => userCtrl.avatar(userId)
 
-    case POST(p"/organisation")                  => organisationCtrl.create
-    case GET(p"/organisation/$organisationId")   => organisationCtrl.get(organisationId)
-    case PATCH(p"/organisation/$organisationId") => organisationCtrl.update(organisationId)
-    case GET(p"/api/v1/sharingProfile")          => organisationCtrl.listSharingProfiles
+    case POST(p"/organisation")                                          => organisationCtrl.create
+    case GET(p"/organisation/$organisationId")                           => organisationCtrl.get(organisationId)
+    case PATCH(p"/organisation/$organisationId")                         => organisationCtrl.update(organisationId)
+    case GET(p"/api/v1/sharingProfile")                                  => organisationCtrl.listSharingProfiles
+    case PUT(p"/organisation/$organisationId1/link/$organisationId2")    => organisationCtrl.link(organisationId1, organisationId2)
+    case PUT(p"/organisation/$organisationId/links")                     => organisationCtrl.bulkLink(organisationId)
+    case GET(p"/organisation/$organisationId/links")                     => organisationCtrl.listLinks(organisationId)
+    case DELETE(p"/organisation/$organisationId1/link/$organisationId2") => organisationCtrl.unlink(organisationId1, organisationId2)
 
     case DELETE(p"/case/shares")                               => shareCtrl.removeShares()
     case POST(p"/case/$caseId/shares")                         => shareCtrl.shareCase(caseId)

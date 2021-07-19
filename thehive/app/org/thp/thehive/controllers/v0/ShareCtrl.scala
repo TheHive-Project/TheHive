@@ -42,11 +42,8 @@ class ShareCtrl(
                     .visibleOrganisations
                     .get(EntityIdOrName(inputShare.organisation.value))
                     .getOrFail("Organisation")
-//                profile   <- profileSrv.getOrFail(EntityIdOrName(inputShare.profile.))
                 share     <- shareSrv.shareCase(owner = false, `case`, organisation, inputShare.toSharingProfile)
                 richShare <- shareSrv.get(share).richShare.getOrFail("Share")
-//                _         <- if (inputShare.tasks == TasksFilter.all) shareSrv.shareCaseTasks(share) else Success(Nil)
-//                _         <- if (inputShare.observables == ObservablesFilter.all) shareSrv.shareCaseObservables(share) else Success(Nil)
               } yield richShare
             }
           }

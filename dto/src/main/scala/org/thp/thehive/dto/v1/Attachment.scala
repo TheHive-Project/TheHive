@@ -1,7 +1,7 @@
 package org.thp.thehive.dto.v1
 
 import org.thp.thehive.dto.String128
-import play.api.libs.json.{Json, OFormat, Writes}
+import play.api.libs.json.{Json, OFormat}
 import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputAttachment(name: String128, contentType: String128, id: String128)

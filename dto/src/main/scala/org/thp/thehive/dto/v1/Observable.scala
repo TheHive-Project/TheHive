@@ -3,13 +3,12 @@ package org.thp.thehive.dto.v1
 import org.scalactic.Accumulation._
 import org.scalactic.Good
 import org.thp.scalligraph.controllers._
-import org.thp.thehive.dto.{Description, String128, String32, String512, Tlp}
-import play.api.libs.json.{JsObject, Json, OFormat, Reads, Writes}
+import org.thp.thehive.dto._
+import play.api.libs.json._
 
+import java.nio.file.Paths
 import java.util.Date
 import be.venneborg.refined.play.RefinedJsonFormats._
-
-import java.nio.file.Path
 
 case class InputObservable(
     dataType: String32,
@@ -56,17 +55,16 @@ object InputObservable {
 
   private val readsFFile: Reads[FFile] = Reads[FFile] { json =>
     for {
-      filename <- (json \ "filename").validate[String]
+      filename    <- (json \ "filename").validate[String]
       contentType <- (json \ "contentType").validate[String]
-    } yield FFile(filename, Path.of("/dev/null"), contentType) // avoid reading untrusted paths from json
+    } yield FFile(filename, Paths.get("/dev/null"), contentType) // avoid reading untrusted paths from json
   }
 
   implicit val fileOrAttachmentReads: Reads[Either[FFile, InputAttachment]] = Reads.JsObjectReads.flatMap { jsObject =>
-    if (jsObject.value.contains("filepath")) {
+    if (jsObject.value.contains("filepath"))
       readsFFile.map(Left(_))
-    } else {
+    else
       Json.reads[InputAttachment].map(Right(_))
-    }
   }
 
   implicit val reads: Reads[InputObservable] = Json.reads[InputObservable]

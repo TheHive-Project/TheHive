@@ -138,24 +138,6 @@ class OrganisationSrv(
       get(orgB).linkTo(orgA).remove()
     }
 
-//  def updateLink(fromOrg: Organisation with Entity, toOrganisations: Seq[EntityIdOrName])(implicit
-//      authContext: AuthContext,
-//      graph: Graph
-//  ): Try[Unit] = {
-//    val toOrgIds = toOrganisations.map(_.fold(identity, getByName(_)._id.getOrFail("Organisation").get)).toSet
-//    val (orgToAdd, orgToRemove) = get(fromOrg)
-//      .links
-//      ._id
-//      .toIterator
-//      .foldLeft((toOrgIds, Set.empty[EntityId])) {
-//        case ((toAdd, toRemove), o) if toAdd.contains(o) => (toAdd - o, toRemove)
-//        case ((toAdd, toRemove), o)                      => (toAdd, toRemove + o)
-//      }
-//    for {
-//      _ <- orgToAdd.toTry(getOrFail(_).flatMap(doubleLink(fromOrg, _)))
-//      _ <- orgToRemove.toTry(getOrFail(_).flatMap(doubleUnlink(fromOrg, _)))
-//    } yield ()
-//  }
 }
 
 trait OrganisationOpsNoDeps { _: TheHiveOpsNoDeps =>
@@ -248,7 +230,7 @@ trait OrganisationOpsNoDeps { _: TheHiveOpsNoDeps =>
         )
         .domainMap {
           case (organisation, linkedOrganisations) =>
-            RichOrganisation(organisation, linkedOrganisations.map(ol => ol._1 -> (ol._2.linkType, ol._3.linkType)).toMap)
+            RichOrganisation(organisation, linkedOrganisations.map(ol => ol._1 -> (ol._2.linkType -> ol._3.linkType)).toMap)
         }
     }
 

@@ -105,7 +105,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
     "link and unlink organisations" in testApp { app =>
       import app.thehiveModuleV0._
 
-      val request = FakeRequest("PUT", s"/api/organisation/cert/link/admin")
+      val request = FakeRequest("PUT", s"/api/organisation/cert/link/soc")
         .withHeaders("user" -> "admin@thehive.local")
       val result = organisationCtrl.link("soc", "cert")(request)
       status(result) shouldEqual 201

@@ -1,7 +1,7 @@
 package org.thp.thehive.dto.v1
 
 import org.thp.thehive.dto.{Description, String128, String16, String32}
-import play.api.libs.json.{JsObject, Json, OFormat, OWrites}
+import play.api.libs.json.{JsObject, Json, OFormat}
 
 import java.util.Date
 import be.venneborg.refined.play.RefinedJsonFormats._

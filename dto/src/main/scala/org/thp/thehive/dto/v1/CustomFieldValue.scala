@@ -10,6 +10,8 @@ import play.api.libs.json._
 import java.util.Date
 import be.venneborg.refined.play.RefinedJsonFormats._
 
+import scala.collection.Factory
+
 case class InputCustomField(
     name: String64,
     displayName: Option[String64],
@@ -95,12 +97,13 @@ object InputCustomFieldValue {
     JsObject(fields)
   }
 
-  private def valueReader(jsValue: JsValue): Option[Any] = jsValue match {
-    case n: JsNumber => Some(n)
-    case s: JsString => Some(s)
-    case b: JsBoolean => Some(b)
-    case _ => None
-  }
+  private def valueReader(jsValue: JsValue): Option[Any] =
+    jsValue match {
+      case n: JsNumber  => Some(n)
+      case s: JsString  => Some(s)
+      case b: JsBoolean => Some(b)
+      case _            => None
+    }
 
   implicit val reads: Reads[Seq[InputCustomFieldValue]] = Reads[Seq[InputCustomFieldValue]] {
     case JsObject(fields) =>
@@ -112,12 +115,13 @@ object InputCustomFieldValue {
       implicit val icfvReader: Reads[InputCustomFieldValue] = Reads[InputCustomFieldValue] { cf =>
         for {
           name <- (cf \ "name").validate[String]
-          v <- (cf \ "value").validate[JsValue]
+          v    <- (cf \ "value").validate[JsValue]
           value = valueReader(v)
           order <- (cf \ "order").validateOpt[Int]
         } yield InputCustomFieldValue(String64("customField.name", name), value, order)
       }
-      list.validate[Seq[InputCustomFieldValue]]
+      Reads.traversableReads(implicitly[Factory[InputCustomFieldValue, Seq[InputCustomFieldValue]]], icfvReader).reads(list)
+    case _ => JsError(Seq(JsPath -> Seq(JsonValidationError("error.expected.jsarray"))))
   }
 }
 
