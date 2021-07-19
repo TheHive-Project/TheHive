@@ -15,7 +15,8 @@
     "read": false,
     "follow": true,
     "organisationId": "",
-    "tags": ["test", "alert"]
+    "tags": ["test", "alert"],
+    "caseId": ""
   },
   {
     "id": "alert2",
@@ -33,7 +34,8 @@
     "read": false,
     "follow": true,
     "organisationId": "",
-    "tags": ["test", "alert"]
+    "tags": ["test", "alert"],
+    "caseId": ""
   },
   {
     "id": "alert3",
@@ -51,7 +53,8 @@
     "read": false,
     "follow": true,
     "organisationId": "",
-    "tags": ["test", "alert"]
+    "tags": ["test", "alert"],
+    "caseId": ""
   },
   {
     "id": "alert4",
@@ -69,7 +72,8 @@
     "read": false,
     "follow": true,
     "organisationId": "",
-    "tags": ["test", "alert"]
+    "tags": ["test", "alert"],
+    "caseId": ""
   },
   {
     "id": "alert5",
@@ -87,7 +91,8 @@
     "read": false,
     "follow": true,
     "organisationId": "",
-    "tags": ["test", "alert"]
+    "tags": ["test", "alert"],
+    "caseId": ""
   },
   {
     "id": "alertMerge1",
@@ -104,6 +109,7 @@
     "pap": 2,
     "read": false,
     "follow": true,
-    "organisationId": ""
+    "organisationId": "",
+    "caseId": ""
   }
 ]

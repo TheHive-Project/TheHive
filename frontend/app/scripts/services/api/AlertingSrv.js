@@ -145,7 +145,7 @@
                         operations: [
                             { '_name': 'listAlert' }
                         ],
-                        extraData: ['importDate']
+                        extraData: ['importDate', 'caseNumber']
                     });
                 },
 

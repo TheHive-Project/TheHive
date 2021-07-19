@@ -17,7 +17,6 @@ import org.thp.thehive.services.CustomFieldOps._
 import org.thp.thehive.services.DashboardOps._
 import org.thp.thehive.services.LogOps._
 import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.PatternOps._
 import org.thp.thehive.services.ProcedureOps._
 import org.thp.thehive.services.ShareOps._

@@ -185,7 +185,7 @@
                 });
             };
 
-            self.import = function (event) {
+            self.import = function (event, readonly) {
                 var modalInstance = $uibModal.open({
                     templateUrl: 'views/partials/alert/event.dialog.html',
                     controller: 'AlertEventCtrl',
@@ -198,7 +198,7 @@
                         templates: function () {
                             return CaseTemplateSrv.list();
                         },
-                        readonly: false
+                        readonly: readonly
                     }
                 });
 

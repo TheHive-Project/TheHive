@@ -40,16 +40,33 @@
                                         <input type="checkbox" ng-model="$vm.menu.selectAll"
                                             ng-change="$vm.selectAll()">
                                     </th>
-                                    <th width="150px">
-                                        <a href class="text-default" ng-click="$vm.sortByField('sourceRef')">
-                                            Reference
-                                            <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') === -1 && $vm.filtering.context.sort.indexOf('-sourceRef') === -1"
+                                    <th width="80px">
+                                        <a href class="text-default" ng-click="$vm.sortByField('severity')">
+                                            Severity
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+severity') === -1 && $vm.filtering.context.sort.indexOf('-severity') === -1"
                                                 class="fa fa-sort"></i>
-                                            <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') !== -1"
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+severity') !== -1"
                                                 class="fa fa-caret-up"></i>
-                                            <i ng-show="$vm.filtering.context.sort.indexOf('-sourceRef') !== -1"
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-severity') !== -1"
                                                 class="fa fa-caret-down"></i>
                                         </a>
+                                    </th>
+                                    <th width="80px" class="text-center">
+                                        <a href class="text-default" ng-click="$vm.sortByField('read')">
+                                            Read
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+read') === -1 && $vm.filtering.context.sort.indexOf('-read') === -1"
+                                                class="fa fa-sort"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+read') !== -1"
+                                                class="fa fa-caret-up"></i>
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-read') !== -1"
+                                                class="fa fa-caret-down"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        Title
+                                    </th>
+                                    <th width="80px" class="text-center">
+                                        # Case
                                     </th>
                                     <th width="80px">
                                         <a href class="text-default" ng-click="$vm.sortByField('type')">
@@ -62,15 +79,7 @@
                                                 class="fa fa-caret-down"></i>
                                         </a>
                                     </th>
-                                    <th width="80px" class="text-center">
-                                        Imported
-                                    </th>
-                                    <th width="80px" class="text-center">
-                                        Read
-                                    </th>
-                                    <th>
-                                        Title
-                                    </th>
+
                                     <th width="150px">
                                         <a href class="text-default" ng-click="$vm.sortByField('source')">
                                             Source
@@ -82,17 +91,18 @@
                                                 class="fa fa-caret-down"></i>
                                         </a>
                                     </th>
-                                    <th width="80px">
-                                        <a href class="text-default" ng-click="$vm.sortByField('severity')">
-                                            Severity
-                                            <i ng-show="$vm.filtering.context.sort.indexOf('+severity') === -1 && $vm.filtering.context.sort.indexOf('-severity') === -1"
+                                    <th width="150px">
+                                        <a href class="text-default" ng-click="$vm.sortByField('sourceRef')">
+                                            Reference
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') === -1 && $vm.filtering.context.sort.indexOf('-sourceRef') === -1"
                                                 class="fa fa-sort"></i>
-                                            <i ng-show="$vm.filtering.context.sort.indexOf('+severity') !== -1"
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('+sourceRef') !== -1"
                                                 class="fa fa-caret-up"></i>
-                                            <i ng-show="$vm.filtering.context.sort.indexOf('-severity') !== -1"
+                                            <i ng-show="$vm.filtering.context.sort.indexOf('-sourceRef') !== -1"
                                                 class="fa fa-caret-down"></i>
                                         </a>
                                     </th>
+
                                     <th width="80px">
                                         Observables
                                     </th>
@@ -139,32 +149,16 @@
                                     <td if-permission="manageAlert">
                                         <input type="checkbox" ng-model="event.selected" ng-change="$vm.select(event)">
                                     </td>
-                                    <td class="wrap">
-                                        <strong>
-                                            <span>{{::event.sourceRef}}</span>
 
-                                            <span ng-if="event.externalLink" class="pl-xxs">
-                                                <a ng-href="{{event.externalLink}}" target="_blank"
-                                                    uib-tooltip="Open alert's external link">
-                                                    <i class="fa fa-external-link"></i>
-                                                </a>
-                                            </span>
-                                        </strong>
-
-                                    </td>
-                                    <td>
-                                        <span><a href
-                                                ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a></span>
+                                    <td class="text-center">
+                                        <div class="clickable"
+                                            ng-click="$vm.addFilterValue('severity', event.severity)">
+                                            <severity active="false" value="event.severity"></severity>
+                                        </div>
                                     </td>
                                     <td align="center">
                                         <span class="clickable label label-default"
-                                            ng-class="{'label-danger': !event.caseId}"
-                                            ng-click="$vm.addFilterValue('imported', !!event.caseId)">{{event.caseId
-                                            ?
-                                            'Imported' : 'New'}}</span>
-                                    </td>
-                                    <td align="center">
-                                        <span class="clickable label label-default"
+                                            ng-class="{'label-danger': !!!event.read}"
                                             ng-click="$vm.addFilterValue('read', !!event.read)">{{event.read ?
                                             'Read' :
                                             'Unread'}}</span>
@@ -180,14 +174,39 @@
                                             </span>
                                         </div>
                                     </td>
-                                    <td><a href
+                                    <td>
+                                        <div ng-if="!!!event.caseId" class="text-center">
+                                            <span class="clickable label label-default"
+                                                ng-click="$vm.addFilterValue('imported', !!event.caseId)">None</span>
+                                        </div>
+                                        <div ng-if="!!event.caseId" class="text-center">
+                                            <a href ui-sref="app.case.details({caseId: event.caseId})"
+                                                uib-tooltip="View case">#{{event.extraData.caseNumber}}</a>
+                                        </div>
+
+                                    </td>
+                                    <td>
+                                        <span>
+                                            <a href
+                                                ng-click="$vm.addFilterValue('type', event.type)">{{::event.type}}</a></span>
+                                    </td>
+
+                                    <td>
+                                        <a href
                                             ng-click="$vm.addFilterValue('source', event.source)">{{event.source}}</a>
                                     </td>
-                                    <td class="text-center">
-                                        <div class="clickable"
-                                            ng-click="$vm.addFilterValue('severity', event.severity)">
-                                            <severity active="false" value="event.severity"></severity>
-                                        </div>
+                                    <td class="wrap">
+                                        <strong>
+                                            <span>{{::event.sourceRef}}</span>
+
+                                            <span ng-if="event.externalLink" class="pl-xxs">
+                                                <a ng-href="{{event.externalLink}}" target="_blank"
+                                                    uib-tooltip="Open alert's external link">
+                                                    <i class="fa fa-external-link"></i>
+                                                </a>
+                                            </span>
+                                        </strong>
+
                                     </td>
                                     <td class="text-center">{{::event.observableCount || 0}}</td>
                                     <td rowspan="3">
@@ -238,15 +257,19 @@
                                         </div>
 
                                         <div class="pull-right">
-                                            <a class="btn btn-icon btn-clear" href ng-click="$vm.import(event)"
+                                            <a class="btn btn-icon btn-clear" href ng-click="$vm.import(event, false)"
                                                 uib-tooltip="Preview and Import" ng-if="!event.caseId">
                                                 <i class="text-info fa fa-file-text-o"></i>
                                             </a>
-                                            <a class="btn btn-icon btn-clear" href
+                                            <a class="btn btn-icon btn-clear" href ng-click="$vm.import(event, true)"
+                                                uib-tooltip="Preview" ng-if="!!event.caseId">
+                                                <i class="text-info fa fa-file-text-o"></i>
+                                            </a>
+                                            <!-- <a class="btn btn-icon btn-clear" href
                                                 ui-sref="app.case.details({caseId: event.caseId})"
                                                 uib-tooltip="View case" ng-if="event.caseId">
                                                 <i class="text-info fa fa-search"></i>
-                                            </a>
+                                            </a> -->
                                         </div>
                                     </td>
                                 </tr>

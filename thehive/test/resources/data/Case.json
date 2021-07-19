@@ -11,7 +11,8 @@
     "pap": 2,
     "status": "Open",
     "tags": ["t1", "t3"],
-    "assignee": "certuser@thehive.local"
+    "assignee": "certuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "case2",
@@ -26,7 +27,8 @@
     "status": "Open",
     "tags": ["t1","t2"],
     "impactStatus": "NoImpact",
-    "assignee": "certuser@thehive.local"
+    "assignee": "certuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "case3",
@@ -41,7 +43,8 @@
     "status": "Open",
     "caseTemplate": "spam",
     "tags": ["t1","t2"],
-    "assignee": "socuser@thehive.local"
+    "assignee": "socuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "caseActionRequired1",
@@ -53,7 +56,8 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "owningOrganisation": ""
   },
   {
     "id": "caseActionRequired2",
@@ -65,7 +69,8 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "owningOrganisation": ""
   },
   {
     "id": "caseMerge21",
@@ -79,7 +84,8 @@
     "pap": 3,
     "status": "Open",
     "tags": ["toMerge:pred1=\"value1\""],
-    "assignee": "certuser@thehive.local"
+    "assignee": "certuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "caseMerge22",
@@ -93,7 +99,8 @@
     "pap": 2,
     "status": "Open",
     "tags": ["toMerge:pred2=\"value2\""],
-    "assignee": "certuser@thehive.local"
+    "assignee": "certuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "caseMerge23",
@@ -106,7 +113,8 @@
     "tlp": 2,
     "pap": 2,
     "status": "Open",
-    "assignee": "certuser@thehive.local"
+    "assignee": "certuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "caseMerge24",
@@ -119,7 +127,8 @@
     "tlp": 2,
     "pap": 2,
     "status": "Open",
-    "assignee": "socuser@thehive.local"
+    "assignee": "socuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "caseMerge25",
@@ -132,7 +141,8 @@
     "tlp": 2,
     "pap": 2,
     "status": "Open",
-    "assignee": "certuser@thehive.local"
+    "assignee": "certuser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "caseMerge26",
@@ -145,7 +155,8 @@
     "tlp": 1,
     "pap": 2,
     "status": "Open",
-    "assignee": "puguser@thehive.local"
+    "assignee": "puguser@thehive.local",
+    "owningOrganisation": ""
   },
   {
     "id": "case4",
@@ -157,7 +168,8 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "owningOrganisation": ""
   },
   {
     "id": "case5",
@@ -169,6 +181,7 @@
     "flag": false,
     "tlp": 2,
     "pap": 2,
-    "status": "Open"
+    "status": "Open",
+    "owningOrganisation": ""
   }
 ]

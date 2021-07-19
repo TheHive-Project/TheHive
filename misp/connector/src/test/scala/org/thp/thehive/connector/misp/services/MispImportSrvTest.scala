@@ -6,12 +6,11 @@ import org.thp.misp.dto.{Event, Organisation, Tag, User}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{AppBuilder, EntityId, EntityName}
+import org.thp.scalligraph.{AppBuilder, EntityId}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 import play.api.test.PlaySpecification
 
@@ -102,18 +101,16 @@ class MispImportSrvTest(implicit ec: ExecutionContext) extends PlaySpecification
 
       val observables = app[Database]
         .roTransaction { implicit graph =>
-          app[OrganisationSrv]
-            .get(EntityName("admin"))
-            .alerts
+          app[AlertSrv]
+            .startTraversal
             .getBySourceId("misp", "ORGNAME", "1")
             .observables
             .richObservable
             .toList
         }
         .map(o => (o.dataType, o.data, o.tlp, o.message, o.tags.toSet))
-//        println(observables.mkString("\n"))
       observables must contain(
-        ("filename", Some("plop"), 0, Some(""), Set("TEST", "TH-test", "misp:category=\"Artifacts dropped\"", "misp:type=\"filename\""))
+        ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp.category=\"Artifacts dropped\"", "misp.type=\"filename\""))
       )
     }
   }

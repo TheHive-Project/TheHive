@@ -113,17 +113,17 @@ steps:
       event: [tag]
 
   # Publish docker image on Harbor
-  - name: harbor
-    image: plugins/docker
-    settings:
-      context: target/docker/stage
-      dockerfile: target/docker/stage/Dockerfile
-      registry: {from_secret: harbor_registry}
-      repo: {from_secret: harbor_repo}
-      username: {from_secret: harbor_username}
-      password: {from_secret: harbor_password}
-    when:
-      event: [tag]
+#  - name: harbor
+#    image: plugins/docker
+#    settings:
+#      context: target/docker/stage
+#      dockerfile: target/docker/stage/Dockerfile
+#      registry: {from_secret: harbor_registry}
+#      repo: {from_secret: harbor_repo}
+#      username: {from_secret: harbor_username}
+#      password: {from_secret: harbor_password}
+#    when:
+#      event: [tag]
 
   - name: send message
     image: thehiveproject/drone_keybase
