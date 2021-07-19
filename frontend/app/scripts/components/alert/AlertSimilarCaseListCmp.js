@@ -1,9 +1,9 @@
-(function() {
+(function () {
     'use strict';
 
     angular.module('theHiveComponents')
         .component('alertSimilarCaseList', {
-            controller: function($scope, AlertingSrv, FilteringSrv, PaginatedQuerySrv, CaseResolutionStatus, UiSettingsSrv) {
+            controller: function ($scope, AlertingSrv, FilteringSrv, PaginatedQuerySrv, CaseResolutionStatus, UiSettingsSrv) {
                 var self = this;
 
                 self.CaseResolutionStatus = CaseResolutionStatus;
@@ -35,7 +35,7 @@
                     defaultAlertSimilarCaseFilter: UiSettingsSrv.defaultAlertSimilarCaseFilter()
                 };
 
-                self.$onInit = function() {
+                self.$onInit = function () {
                     this.filtering = new FilteringSrv('case', 'alert.dialog.similar-cases', {
                         version: 'v1',
                         defaults: {
@@ -48,11 +48,11 @@
                     });
 
                     self.filtering.initContext('alert.dialog.similar-cases')
-                        .then(function() {
+                        .then(function () {
                             var defaultFilter = AlertingSrv.getSimilarityFilter(self.state.defaultAlertSimilarCaseFilter);
 
-                            if(_.isEmpty(self.filtering.context.filters) && defaultFilter && defaultFilter.length > 0) {
-                                _.each(defaultFilter, function(item) {
+                            if (_.isEmpty(self.filtering.context.filters) && defaultFilter && defaultFilter.length > 0) {
+                                _.each(defaultFilter, function (item) {
                                     self.filtering.addFilter(item);
                                 });
                             }
@@ -64,12 +64,12 @@
                             });
 
                             $scope.$watch('$cmp.list.total', function (total) {
-                                self.onListLoad({count: total});
+                                self.onListLoad({ count: total });
                             });
                         });
                 };
 
-                this.load = function() {
+                this.load = function () {
                     this.list = new PaginatedQuerySrv({
                         name: 'alert-similar-cases',
                         skipStream: true,
@@ -77,11 +77,11 @@
                         loadAll: true,
                         //pageSize: self.filtering.context.pageSize,
                         operations: [
-                            {'_name': 'getAlert', 'idOrName': this.alertId},
-                            {'_name': 'similarCases', 'caseFilter': this.filtering.buildQuery()}
+                            { '_name': 'getAlert', 'idOrName': this.alertId },
+                            { '_name': 'similarCases', 'caseFilter': this.filtering.buildQuery() }
                         ],
-                        onUpdate: function(data) {
-                            _.each(data, function(item) {
+                        onUpdate: function (data) {
+                            _.each(data, function (item) {
                                 item.fTitle = item.case.title;
                                 item.fMatches = _.keys(item.observableTypes);
                                 item.fObservables = Math.floor((item.similarObservableCount / item.observableCount) * 100);
@@ -90,21 +90,21 @@
                                 item.sCreatedAt = item.case._createdAt;
                             });
 
-                            self.matches = _.uniq(_.flatten(_.map(data, function(item){
+                            self.matches = _.uniq(_.flatten(_.map(data, function (item) {
                                 return _.keys(item.observableTypes);
                             }))).sort();
                         }
                     });
                 };
 
-                self.merge = function(caseId) {
+                self.merge = function (caseId) {
                     this.onMergeIntoCase({
                         caseId: caseId
                     });
                 };
 
                 // Frontend filter methods
-                this.clearLocalFilters = function() {
+                this.clearLocalFilters = function () {
                     self.similarityFilters = {
                         fTitle: undefined
                     };
@@ -119,14 +119,14 @@
                     };
                 };
 
-                this.greaterThan = function(prop){
-                    return function(item){
+                this.greaterThan = function (prop) {
+                    return function (item) {
                         return !self.rateFilters[prop] || item[prop] >= self.rateFilters[prop];
                     };
                 };
 
-                this.matchFilter = function() {
-                    return function(item){
+                this.matchFilter = function () {
+                    return function (item) {
                         return !self.matchFilters.fMatches || self.matchFilters.fMatches.length === 0 ||
                             _.intersection(self.matchFilters.fMatches, item.fMatches).length > 0;
                     };
@@ -159,20 +159,20 @@
                         .then(self.search);
                 };
 
-                this.filterBy = function(field, value) {
+                this.filterBy = function (field, value) {
                     self.filtering.clearFilters()
-                        .then(function(){
+                        .then(function () {
                             self.addFilterValue(field, value);
                         });
                 };
 
-                this.applyDefaultFilter = function() {
+                this.applyDefaultFilter = function () {
                     self.filtering.clearFilters()
-                        .then(function(){
+                        .then(function () {
                             var defaultFilter = AlertingSrv.getSimilarityFilter(self.state.defaultAlertSimilarCaseFilter);
 
-                            if(defaultFilter && defaultFilter.length > 0) {
-                                _.each(defaultFilter, function(item) {
+                            if (defaultFilter && defaultFilter.length > 0) {
+                                _.each(defaultFilter, function (item) {
                                     self.filtering.addFilter(item);
                                 });
 
@@ -181,17 +181,17 @@
                         });
                 };
 
-                this.filterSimilarities = function(data) {
+                this.filterSimilarities = function (data) {
                     return data;
                 };
 
-                this.sortByField = function(field) {
+                this.sortByField = function (field) {
                     var sort = null;
 
-                    if(this.sortField.substr(1) !== field) {
+                    if (this.sortField.substr(1) !== field) {
                         sort = '+' + field;
                     } else {
-                        sort = (this.sortField === '+' + field) ? '-'+field : '+'+field;
+                        sort = (this.sortField === '+' + field) ? '-' + field : '+' + field;
                     }
 
                     this.sortField = sort;
@@ -203,6 +203,7 @@
             templateUrl: 'views/components/alert/similar-case-list.component.html',
             bindings: {
                 alertId: '<',
+                readonly: '<',
                 onListLoad: '&',
                 onMergeIntoCase: '&'
             }
