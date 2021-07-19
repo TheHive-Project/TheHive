@@ -7,6 +7,9 @@ import org.thp.thehive.models.Organisation
 import play.api.libs.json.Json
 import play.api.test.{FakeRequest, PlaySpecification}
 import eu.timepit.refined.auto._
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.DummyUserSrv
+import org.thp.thehive.services.SharingRule
 
 class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with TraversalOps {
   "organisation controller" should {
@@ -180,5 +183,73 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       }
     }
 
+    "update a link" in testApp { app =>
+      import app.thehiveModuleV1._
+
+      { // link with custom sharing profile
+        val request = FakeRequest("PUT", "/api/organisation/soc/link/cert")
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.obj("linkType" -> "type1", "otherLinkType" -> "type2"))
+        val result = organisationCtrl.link("soc", "cert")(request)
+        status(result) must beEqualTo(201)
+      }
+      { // check links
+        val request = FakeRequest("GET", "/api/organisation/soc/links")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.listLinks("soc")(request)
+        status(result) must beEqualTo(200)
+        val linkedOrganisations = contentAsJson(result).as[List[OutputOrganisation]]
+        linkedOrganisations.size must beEqualTo(1)
+      }
+      { // check sharing profiles
+        val request = FakeRequest("GET", "/api/organisation/soc")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.get("soc")(request)
+        status(result) must beEqualTo(200)
+        val organisation = contentAsJson(result).as[OutputOrganisation]
+        organisation.links.size must beEqualTo(1)
+        organisation.links.head must beEqualTo(OrganisationLink("cert", "type1", "type2"))
+      }
+    }
+
+    "bulk link organisations" in testApp { app =>
+      import app.thehiveModuleV1._
+      import app.thehiveModule._
+
+      app
+        .database
+        .tryTransaction { implicit graph =>
+          implicit val authContext: AuthContext = DummyUserSrv().authContext
+          organisationSrv.create(Organisation("testOrga", "test organisation", SharingRule.default, SharingRule.default))
+        }
+        .get
+
+      { // bulk link with custom sharing profile
+        val request = FakeRequest("PUT", "/api/organisation/soc/links")
+          .withHeaders("user" -> "admin@thehive.local")
+          .withJsonBody(Json.obj("organisations" -> Seq("cert", "testOrga"), "linkType" -> "type1", "otherLinkType" -> "type2"))
+        val result = organisationCtrl.bulkLink("soc")(request)
+        status(result) must beEqualTo(201)
+      }
+
+      { // check links
+        val request = FakeRequest("GET", "/api/organisation/soc/links")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.listLinks("soc")(request)
+        status(result) must beEqualTo(200)
+        val linkedOrganisations = contentAsJson(result).as[List[OutputOrganisation]]
+        linkedOrganisations.size must beEqualTo(2)
+      }
+
+      { // check sharing profiles
+        val request = FakeRequest("GET", "/api/organisation/soc")
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.get("soc")(request)
+        status(result) must beEqualTo(200)
+        val organisation = contentAsJson(result).as[OutputOrganisation]
+        organisation.links.size must beEqualTo(2)
+        organisation.links      must contain(OrganisationLink("cert", "type1", "type2"), OrganisationLink("testOrga", "type1", "type2"))
+      }
+    }
   }
 }
