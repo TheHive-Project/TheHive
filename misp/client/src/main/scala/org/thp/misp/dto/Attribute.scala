@@ -5,8 +5,6 @@ import akka.util.ByteString
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, OWrites, Reads}
 
-import java.time.OffsetDateTime
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.util.{Base64, Date}
 
 case class Attribute(
@@ -28,11 +26,8 @@ case class Attribute(
 
 object Attribute {
 
-  val formatter: DateTimeFormatter = new DateTimeFormatterBuilder()
-    .append(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-    .appendPattern("XX")
-    .toFormatter
-  def parseDate(s: String): Date = new Date(OffsetDateTime.parse(s, formatter).toInstant.toEpochMilli)
+  def parseDate(s: String): Date =
+    javax.xml.bind.DatatypeConverter.parseDateTime(s).getTime
 
   implicit val reads: Reads[Attribute] =
     ((JsPath \ "id").read[String] and

@@ -4,7 +4,7 @@ import akka.stream.scaladsl.Sink
 import org.thp.misp.dto.{Event, Organisation, Tag, User}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.{EntityId, EntityName}
+import org.thp.scalligraph.{EntityId}
 import org.thp.thehive.connector.misp.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.{TheHiveOps, TheHiveOpsNoDeps}
@@ -115,16 +115,14 @@ class MispImportSrvTest extends PlaySpecification with TestAppBuilder with TheHi
 
       val observables = database
         .roTransaction { implicit graph =>
-          organisationSrv
-            .get(EntityName("cert"))
-            .alerts
+          alertSrv
+            .startTraversal
             .getBySourceId("misp", "ORGNAME", "1")
             .observables
             .richObservable
             .toList
         }
         .map(o => (o.dataType, o.data, o.tlp, o.message, o.tags.toSet))
-//        println(observables.mkString("\n"))
       observables must contain(
         ("filename", Some("plop"), 0, Some(""), Set("TH-test", "misp.category=\"Artifacts dropped\"", "misp.type=\"filename\""))
       )

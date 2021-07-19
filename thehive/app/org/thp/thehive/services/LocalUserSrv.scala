@@ -50,7 +50,9 @@ class LocalUserSrv(
       val defaultProfile        = configuration.getOptional[String]("user.defaults.profile")
       val defaultOrg            = configuration.getOptional[String]("user.defaults.organisation")
       def readData(json: JsObject, field: Option[String], default: Option[String]): Try[String] =
-        Try((json \ field.get).as[String]).orElse(Try(default.get))
+        Try((json \ field.get).as[String])
+          .orElse(Try((json \ field.get).as[Seq[String]].head))
+          .orElse(Try(default.get))
 
       db.tryTransaction { implicit graph =>
         implicit val defaultAuthContext: AuthContext = getSystemAuthContext

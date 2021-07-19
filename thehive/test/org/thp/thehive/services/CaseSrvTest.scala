@@ -35,7 +35,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       database.roTransaction { implicit graph =>
         val richCase = caseSrv.get(EntityName("1")).richCase.head
-        richCase must_== RichCase(
+        val expected = RichCase(
           richCase._id,
           authContext.userId,
           richCase._updatedBy,
@@ -66,6 +66,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             Permissions.manageAnalyse,
             Permissions.manageShare,
             Permissions.managePage,
+            Permissions.manageProcedure,
             Permissions.accessTheHiveFS,
             Permissions.manageProcedure
           ),
@@ -73,6 +74,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
           None,
           richCase.`case`.owningOrganisation
         )
+        richCase must_== expected
         richCase.tags must contain(exactly("t1", "t3"))
       }
     }
@@ -771,7 +773,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 //          .getOrFail("Observable") must beSuccessfulTry
 //      }
       pending
-    }
+    }.pendingUntilFixed
 
   }
 }

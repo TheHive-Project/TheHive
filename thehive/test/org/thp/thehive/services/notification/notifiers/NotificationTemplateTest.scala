@@ -87,6 +87,7 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder wit
           |Context {{context._id}}""".stripMargin
 
       val message = database.tryTransaction { implicit graph =>
+        println(s"querying ${graph} ${graph.db} ${graph.db}")
         for {
           case4 <- caseSrv.get(EntityName("1")).getOrFail("Case")
           _     <- caseSrv.addTags(case4, Set("emailer test"))
