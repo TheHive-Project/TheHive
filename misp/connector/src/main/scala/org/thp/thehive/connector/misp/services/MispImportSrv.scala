@@ -380,7 +380,7 @@ class MispImportSrv @Inject() (
             .map(ra => (ra.alert, None, ra.toJson.asInstanceOf[JsObject]))
         case Some(richAlert) =>
           logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
-          val (updatedAlertTraversal, updatedFields) = (alertSrv.get(richAlert.alert), JsObject.empty)
+          val (updatedAlertTraversal, updatedFields) = (alertSrv.get(richAlert.alert).update(_.read, false), Json.obj("read" -> false))
             .when(richAlert.title != alert.title)(_.update(_.title, alert.title), _ + ("title" -> JsString(alert.title)))
             .when(richAlert.lastSyncDate != alert.lastSyncDate)(
               _.update(_.lastSyncDate, alert.lastSyncDate),
