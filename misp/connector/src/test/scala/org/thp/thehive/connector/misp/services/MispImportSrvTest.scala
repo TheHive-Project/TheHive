@@ -6,12 +6,11 @@ import org.thp.misp.dto.{Event, Organisation, Tag, User}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, DummyUserSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.{AppBuilder, EntityId, EntityName}
+import org.thp.scalligraph.{AppBuilder, EntityId}
 import org.thp.thehive.TestAppBuilder
 import org.thp.thehive.models.{Alert, Permissions}
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.ObservableOps._
-import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.{AlertSrv, OrganisationSrv}
 import play.api.test.PlaySpecification
 

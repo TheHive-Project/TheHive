@@ -9,6 +9,7 @@ import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json._
 
+import java.lang.{Integer => JInt}
 import java.util.{Date, List => JList, Map => JMap}
 
 trait AlertRenderer extends BaseRenderer[Alert] {
@@ -43,6 +44,9 @@ trait AlertRenderer extends BaseRenderer[Alert] {
   def importDate: Traversal.V[Alert] => Traversal[JsValue, JList[Date], Converter[JsValue, JList[Date]]] =
     _.importDate.fold.domainMap(_.headOption.fold[JsValue](JsNull)(d => JsNumber(d.getTime)))
 
+  def caseNumber: Traversal.V[Alert] => Traversal[JsValue, JList[JInt], Converter[JsValue, JList[JInt]]] =
+    _.`case`.value(_.number).option.domainMap(_.fold[JsValue](JsNull)(JsNumber(_)))
+
   def alertStatsRenderer(organisationSrv: OrganisationSrv, extraData: Set[String])(implicit
       authContext: AuthContext
   ): Traversal.V[Alert] => JsTraversal = { implicit traversal =>
@@ -52,6 +56,7 @@ trait AlertRenderer extends BaseRenderer[Alert] {
       {
         case (f, "similarCases") => addData("similarCases", f)(similarCasesStats(organisationSrv))
         case (f, "importDate")   => addData("importDate", f)(importDate)
+        case (f, "caseNumber")   => addData("caseNumber", f)(caseNumber)
         case (f, _)              => f
       }
     )
