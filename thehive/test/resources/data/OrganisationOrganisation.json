@@ -3,5 +3,10 @@
     "from": "cert",
     "to": "soc",
     "linkType": "default"
+  },
+  {
+    "from": "soc",
+    "to": "cert",
+    "linkType": "default"
   }
 ]

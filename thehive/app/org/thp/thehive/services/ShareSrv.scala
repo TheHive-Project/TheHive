@@ -267,7 +267,7 @@ class ShareSrv(
       .getOrElse(caseSrv.get(`case`).organisations.has(T.id, P.neq(organisationSrv.currentId)).toSeq)
       .toTry { organisation =>
         tasks
-          .getOrElse(get(`case`, authContext.organisation).tasks)
+          .fold(get(`case`, authContext.organisation).tasks)(_.clone())
           .filterNot(_.share(organisation._id))
           .toIterator
           .toTry { task =>
@@ -296,7 +296,7 @@ class ShareSrv(
       .getOrElse(caseSrv.get(`case`).organisations.has(T.id, P.neq(organisationSrv.currentId)).toSeq)
       .toTry { organisation =>
         observables
-          .getOrElse(get(`case`, authContext.organisation).observables)
+          .fold(get(`case`, authContext.organisation).observables)(_.clone())
           .filterNot(_.share(organisation._id))
           .toIterator
           .toTry { observable =>

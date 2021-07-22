@@ -8,10 +8,10 @@ import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class InputShare(
     organisation: String64,
-    share: Option[Boolean],
-    profile: Option[String64],
-    taskRule: Option[String64],
-    observableRule: Option[String64]
+    share: Option[Boolean] = None,
+    profile: Option[String64] = None,
+    taskRule: Option[String64] = None,
+    observableRule: Option[String64] = None
 )
 
 object InputShare {

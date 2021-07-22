@@ -25,6 +25,21 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       resultOrganisation.name must_=== "orga1"
     }
 
+    "create a new organisation with sharing rule" in testApp { app =>
+      import app.thehiveModuleV1._
+
+      val request = FakeRequest("POST", "/api/v1/organisation")
+        .withJsonBody(Json.toJson(InputOrganisation(name = "orga2", "no description", Some("all"), Some("upcomingOnly"))))
+        .withHeaders("user" -> "admin@thehive.local")
+      val result = organisationCtrl.create(request)
+      status(result) must_=== 201
+      val resultOrganisation = contentAsJson(result).as[OutputOrganisation]
+      resultOrganisation.name must_=== "orga2"
+      resultOrganisation.description must_=== "no description"
+      resultOrganisation.taskRule must_=== "all"
+      resultOrganisation.observableRule must_=== "upcomingOnly"
+    }
+
     "refuse to create an user if the permission doesn't contain ManageOrganisation right" in testApp { app =>
       import app.thehiveModuleV1._
 
@@ -102,13 +117,13 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       import app.thehiveModuleV1._
 
       { // unlink soc/cert
-        val request = FakeRequest("PUT", s"/api/organisation/soc/link/cert")
+        val request = FakeRequest("PUT", s"/api/v1/organisation/soc/link/cert")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.unlink("soc", "cert")(request)
         status(result) must beEqualTo(204)
       }
       { // check links
-        val request = FakeRequest("GET", "/api/organisation/soc/links")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.listLinks("soc")(request)
         status(result) must beEqualTo(200)
@@ -116,13 +131,13 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
         linkedOrganisations must beEmpty
       }
       { // link with default sharing profile
-        val request = FakeRequest("PUT", "/api/organisation/soc/link/cert")
+        val request = FakeRequest("PUT", "/api/v1/organisation/soc/link/cert")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.link("soc", "cert")(request)
         status(result) must beEqualTo(201)
       }
       { // check links
-        val request = FakeRequest("GET", "/api/organisation/soc/links")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.listLinks("soc")(request)
         status(result) must beEqualTo(200)
@@ -130,7 +145,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
         linkedOrganisations.size must beEqualTo(1)
       }
       { // check sharing profiles
-        val request = FakeRequest("GET", "/api/organisation/soc")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.get("soc")(request)
         status(result) must beEqualTo(200)
@@ -144,13 +159,13 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       import app.thehiveModuleV1._
 
       { // unlink soc/cert
-        val request = FakeRequest("PUT", s"/api/organisation/soc/link/cert")
+        val request = FakeRequest("PUT", s"/api/v1/organisation/soc/link/cert")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.unlink("soc", "cert")(request)
         status(result) must beEqualTo(204)
       }
       { // check links
-        val request = FakeRequest("GET", "/api/organisation/soc/links")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.listLinks("soc")(request)
         status(result) must beEqualTo(200)
@@ -158,14 +173,14 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
         linkedOrganisations must beEmpty
       }
       { // link with custom sharing profile
-        val request = FakeRequest("PUT", "/api/organisation/soc/link/cert")
+        val request = FakeRequest("PUT", "/api/v1/organisation/soc/link/cert")
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.obj("linkType" -> "type1", "otherLinkType" -> "type2"))
         val result = organisationCtrl.link("soc", "cert")(request)
         status(result) must beEqualTo(201)
       }
       { // check links
-        val request = FakeRequest("GET", "/api/organisation/soc/links")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.listLinks("soc")(request)
         status(result) must beEqualTo(200)
@@ -173,7 +188,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
         linkedOrganisations.size must beEqualTo(1)
       }
       { // check sharing profiles
-        val request = FakeRequest("GET", "/api/organisation/soc")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.get("soc")(request)
         status(result) must beEqualTo(200)
@@ -187,14 +202,14 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       import app.thehiveModuleV1._
 
       { // link with custom sharing profile
-        val request = FakeRequest("PUT", "/api/organisation/soc/link/cert")
+        val request = FakeRequest("PUT", "/api/v1/organisation/soc/link/cert")
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.obj("linkType" -> "type1", "otherLinkType" -> "type2"))
         val result = organisationCtrl.link("soc", "cert")(request)
         status(result) must beEqualTo(201)
       }
       { // check links
-        val request = FakeRequest("GET", "/api/organisation/soc/links")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.listLinks("soc")(request)
         status(result) must beEqualTo(200)
@@ -202,7 +217,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
         linkedOrganisations.size must beEqualTo(1)
       }
       { // check sharing profiles
-        val request = FakeRequest("GET", "/api/organisation/soc")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.get("soc")(request)
         status(result) must beEqualTo(200)
@@ -225,7 +240,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
         .get
 
       { // bulk link with custom sharing profile
-        val request = FakeRequest("PUT", "/api/organisation/soc/links")
+        val request = FakeRequest("PUT", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
           .withJsonBody(Json.obj("organisations" -> Seq("cert", "testOrga"), "linkType" -> "type1", "otherLinkType" -> "type2"))
         val result = organisationCtrl.bulkLink("soc")(request)
@@ -233,7 +248,7 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       }
 
       { // check links
-        val request = FakeRequest("GET", "/api/organisation/soc/links")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.listLinks("soc")(request)
         status(result) must beEqualTo(200)
@@ -242,13 +257,34 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       }
 
       { // check sharing profiles
-        val request = FakeRequest("GET", "/api/organisation/soc")
+        val request = FakeRequest("GET", "/api/v1/organisation/soc")
           .withHeaders("user" -> "admin@thehive.local")
         val result = organisationCtrl.get("soc")(request)
         status(result) must beEqualTo(200)
         val organisation = contentAsJson(result).as[OutputOrganisation]
         organisation.links.size must beEqualTo(2)
         organisation.links      must contain(OrganisationLink("cert", "type1", "type2"), OrganisationLink("testOrga", "type1", "type2"))
+      }
+    }
+
+    "update sharing rule" in testApp { app =>
+      import app.thehiveModuleV1._
+      {
+        val request = FakeRequest("PATCH", "/api/v1/organisation/soc")
+          .withJsonBody(Json.obj("taskRule" -> "existingOnly", "observableRule" -> "all"))
+          .withHeaders("user" -> "admin@thehive.local")
+        val result = organisationCtrl.update("soc")(request)
+        status(result) must beEqualTo(204)
+      }
+      {
+        val request = FakeRequest("GET", s"/api/v1/organisation/soc").withHeaders("user" -> "socuser@thehive.local")
+        val result  = organisationCtrl.get("soc")(request)
+        status(result) must_=== 200
+        val organisation = contentAsJson(result).as[OutputOrganisation]
+
+        organisation.name           must beEqualTo("soc")
+        organisation.taskRule       must beEqualTo("existingOnly")
+        organisation.observableRule must beEqualTo("all")
       }
     }
   }

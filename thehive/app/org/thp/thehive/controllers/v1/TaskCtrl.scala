@@ -82,10 +82,11 @@ class TaskCtrl(
     Query[Traversal.V[Task], Traversal.V[Share]]("shares", (taskSteps, authContext) => taskSteps.shares.visible(authContext))
   )
 
+  // TODO this API is not coherent. It should be POST /api/v1/case/$caseId/task
   def create: Action[AnyContent] =
     entrypoint("create task")
       .extract("task", FieldsParser[InputTask])
-      .extract("caseId", FieldsParser[String])
+      .extract("caseId", FieldsParser[String].on("caseId"))
       .authTransaction(db) { implicit request => implicit graph =>
         val inputTask: InputTask = request.body("task")
         val caseId: String       = request.body("caseId")
