@@ -351,6 +351,7 @@ class ObservableCtrl(
 
 class PublicObservable(
     observableSrv: ObservableSrv,
+    observableTypeSrv: ObservableTypeSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv
 ) extends PublicData
@@ -417,7 +418,16 @@ class PublicObservable(
     )
     .property("message", UMapping.string)(_.field.updatable)
     .property("tlp", UMapping.int)(_.field.updatable)
-    .property("dataType", UMapping.string)(_.field.readonly)
+    .property("dataType", UMapping.string)(_.field.custom { (_, value, vertex, graph, _) =>
+      val observable = observableSrv.model.converter(vertex)
+      for {
+        currentDataType <- observableTypeSrv.getByName(observable.dataType)(graph).getOrFail("ObservableType")
+        newDataType     <- observableTypeSrv.getByName(value)(graph).getOrFail("ObservableType")
+        isSameType = currentDataType.isAttachment == newDataType.isAttachment
+        _ <- if (isSameType) Success(()) else Failure(BadRequestError("Can not update dataType: isAttachment does not match"))
+        _ <- Try(observableSrv.get(vertex)(graph).update(_.dataType, value).iterate())
+      } yield Json.obj("dataType" -> value)
+    })
     .property("data", UMapping.string.optional)(_.field.readonly)
     .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
     .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
