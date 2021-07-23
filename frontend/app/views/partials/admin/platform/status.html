@@ -55,16 +55,22 @@
                 <div class="empty-message" ng-if="$vm.loading.index">Loading index status...</div>
                 <div class="flex-table" ng-show="!$vm.loading.index" ng-repeat="index in $vm.indexStatus.index">
                     <div class="flex-header mt-xs">
-                        <div class="flex-col flex-2">Index: <strong>{{index.name | uppercase}}</strong></div>
-                        <div class="flex-col flex-1"># Entities</div>
-                        <div class="flex-col flex-w-100">
-                            <a href class="text-primary" ng-click="$vm.reindex(index.name)"><i
-                                    class="fa fa-cog mr-xxxs"></i> Reindex</a>
+                        <div class="flex-col flex-3">
+                            Index: <strong>{{index.name | uppercase}}</strong>
+
+                            <a href class="text-primary mh-s" ng-click="$vm.reindex(index.name)">
+                                <i class="fa fa-cog mr-xxxs"></i> Reindex the data
+                            </a>
+                            <a href class="text-danger" ng-click="$vm.rebuildIndex(index.name)">
+                                <i class="fa fa-trash mr-xxxs"></i> Drop and rebuild the index
+                            </a>
+
                         </div>
+                        <div class="flex-col flex-1"># Entities</div>
                     </div>
                     <div class="flex-table" ng-repeat="item in index.indices">
                         <div class="flex-row mt-xs">
-                            <div class="flex-col flex-2 vertical">
+                            <div class="flex-col flex-3 vertical">
                                 <h4 class="media-heading text-primary">
                                     {{item.name}}
                                 </h4>
@@ -75,8 +81,6 @@
                                     {{item.count}}
                                 </span>
                             </div>
-
-                            <div class="flex-col flex-w-100"></div>
                         </div>
                     </div>
                 </div>

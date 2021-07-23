@@ -46,7 +46,7 @@ class Router @Inject() (
     case GET(p"/admin/check/stats")                                                            => adminCtrl.checkStats
     case GET(p"/admin/check/$name/trigger")                                                    => adminCtrl.triggerCheck(name)
     case GET(p"/admin/index/status")                                                           => adminCtrl.indexStatus
-    case GET(p"/admin/index/$name/reindex")                                                    => adminCtrl.reindex(name)
+    case POST(p"/admin/index/$name/reindex")                                                   => adminCtrl.reindex(name)
     case POST(p"/admin/index/$name/rebuild")                                                   => adminCtrl.rebuild(name)
     case GET(p"/admin/log/set/$packageName/$level")                                            => adminCtrl.setLogLevel(packageName, level)
     case POST(p"/admin/schema/repair/$schemaName" ? q_o"select=$select" ? q_o"filter=$filter") => adminCtrl.schemaRepair(schemaName, select, filter)
