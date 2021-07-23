@@ -60,11 +60,12 @@ class EntityHelper @Inject() (
     */
   def parentCase(entity: Entity)(implicit graph: Graph): Option[Case with Entity] =
     entity._label match {
-      case "Task"  => taskSrv.get(entity).`case`.headOption
-      case "Case"  => caseSrv.get(entity).headOption
-      case "Log"   => logSrv.get(entity).`case`.headOption
-      case "Alert" => None
-      case _       => None
+      case "Task"       => taskSrv.get(entity).`case`.headOption
+      case "Case"       => caseSrv.get(entity).headOption
+      case "Observable" => observableSrv.get(entity).`case`.headOption
+      case "Log"        => logSrv.get(entity).`case`.headOption
+      case "Alert"      => None
+      case _            => None
     }
 
   /**

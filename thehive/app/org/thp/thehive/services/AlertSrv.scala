@@ -144,31 +144,6 @@ class AlertSrv @Inject() (
   ): Try[RichObservable] =
     attachmentSrv.create(file).flatMap(attachment => createObservable(alert, observable, attachment))
 
-  @deprecated("use createObservable", "0.2")
-  def addObservable(alert: Alert with Entity, richObservable: RichObservable)(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] = {
-    val maybeExistingObservable = richObservable.dataOrAttachment match {
-      case Left(data)        => get(alert).observables.filterOnData(data)
-      case Right(attachment) => get(alert).observables.filterOnAttachmentId(attachment.attachmentId)
-    }
-    maybeExistingObservable
-      .richObservable
-      .headOption
-      .fold {
-        for {
-          _ <- alertObservableSrv.create(AlertObservable(), alert, richObservable.observable)
-          _ <- auditSrv.observableInAlert.create(richObservable.observable, alert, richObservable.toJson)
-        } yield ()
-      } { existingObservable =>
-        val tags = (existingObservable.tags ++ richObservable.tags).toSet
-        if ((tags -- existingObservable.tags).nonEmpty)
-          observableSrv.updateTags(existingObservable.observable, tags)
-        Success(())
-      }
-  }
-
   def createCustomField(
       alert: Alert with Entity,
       inputCf: InputCustomFieldValue
