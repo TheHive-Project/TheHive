@@ -1,6 +1,7 @@
 package org.thp.thehive.cloner
 
 import akka.actor.ActorSystem
+import akka.actor.typed.ActorRef
 import akka.stream.Materializer
 import com.google.inject.{Guice, Injector => GInjector}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
@@ -40,7 +41,7 @@ trait IntegrityCheckApp {
               bindActor[DummyActor]("config-actor")
               bindActor[DummyActor]("cortex-actor")
               bindActor[DummyActor]("integrity-check-actor")
-              bindTypedActor(CaseNumberActor.behavior, "case-number-actor")
+              bind[ActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
 
               val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[GenIntegrityCheckOps](binder)
               integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheckOps]

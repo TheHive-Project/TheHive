@@ -131,5 +131,7 @@ class BasicDatabaseProvider @Inject() (database: Database) extends Provider[Data
 
 class TestNumberActorProvider @Inject() (actorSystem: ActorSystem) extends Provider[TypedActorRef[CaseNumberActor.Request]] {
   override def get: TypedActorRef[CaseNumberActor.Request] =
-    actorSystem.toTyped.systemActorOf(CaseNumberActor.caseNumberProvider(36), "case-number")
+    actorSystem
+      .toTyped
+      .systemActorOf(CaseNumberActor.caseNumberProvider(getNextNumber = () => 36, reloadTimer = () => (), nextNumber = 36), "case-number")
 }

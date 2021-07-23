@@ -3,7 +3,6 @@ package org.thp.thehive.connector.misp.services
 import akka.stream.Materializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
-import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.misp.dto.{Attribute, Event, Tag => MispTag}
 import org.thp.scalligraph.auth.{AuthContext, UserSrv}
 import org.thp.scalligraph.controllers.FFile
@@ -40,6 +39,7 @@ class MispImportSrv @Inject() (
     db: Database,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
+    attachmentSrv: AttachmentSrv,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
 ) {
@@ -240,40 +240,41 @@ class MispImportSrv @Inject() (
       src: Source[ByteString, _],
       creation: Boolean
   )(implicit graph: Graph, authContext: AuthContext): Try[Observable with Entity] = {
-    val existingObservable =
-      if (creation) None
-      else
-        alertSrv
-          .get(alert)
-          .observables
-          .filterOnType(observable.dataType)
-          .filterOnAttachmentName(filename)
-          .filterOnAttachmentName(contentType)
-          .richObservable
-          .headOption
-    existingObservable match {
-      case None =>
-        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType doesn't exist, create it")
-        val file = Files.createTempFile("misp-attachment-", "")
-        Await.result(src.runWith(FileIO.toPath(file)), 1.hour)
-        val fFile = FFile(filename, file, contentType)
-        val res   = alertSrv.createObservable(alert, observable, fFile).map(_.observable)
-        Files.delete(file)
-        res
-      case Some(richObservable) =>
-        logger.debug(s"Observable ${observable.dataType}:$filename:$contentType exists, update it")
-        for {
-          obs <-
-            observableSrv
-              .get(richObservable.observable)
-              .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
-              .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
-              .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
-              .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
-              .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
-              .getOrFail("Observable")
-        } yield obs
-    }
+    val file = Files.createTempFile("misp-attachment-", "")
+    try {
+      Await.result(src.runWith(FileIO.toPath(file)), 1.hour)
+      val hash = attachmentSrv.hashers.fromPath(file).head.toString
+      val existingObservable =
+        if (creation) None
+        else
+          alertSrv
+            .get(alert)
+            .observables
+            .filterOnType(observable.dataType)
+            .filterOnAttachmentName(filename)
+            .filterOnAttachmentContentType(contentType)
+            .filterOnAttachmentHash(hash)
+            .richObservable
+            .headOption
+      existingObservable match {
+        case None =>
+          logger.debug(s"Observable ${observable.dataType}:$filename:$contentType doesn't exist, create it")
+          alertSrv.createObservable(alert, observable, FFile(filename, file, contentType)).map(_.observable)
+        case Some(richObservable) =>
+          logger.debug(s"Observable ${observable.dataType}:$filename:$contentType exists, update it")
+          for {
+            obs <-
+              observableSrv
+                .get(richObservable.observable)
+                .when(richObservable.message != observable.message)(_.update(_.message, observable.message))
+                .when(richObservable.tlp != observable.tlp)(_.update(_.tlp, observable.tlp))
+                .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
+                .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
+                .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
+                .getOrFail("Observable")
+          } yield obs
+      }
+    } finally Files.delete(file)
   }
 
   def importAttributes(
@@ -286,8 +287,35 @@ class MispImportSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Unit = {
+    logger.info("Removing old observables")
+    val deletedAttributes = client
+      .searchAttributes(event.id, lastSynchro, deletedOnly = true)
+      .mapConcat(attributeToObservable)
+      .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])])
+
+    QueueIterator(deletedAttributes)
+      .flatMap {
+        case (observable, Left(data)) =>
+          observableSrv
+            .startTraversal
+            .has(_.relatedId, alert._id)
+            .filterOnType(observable.dataType)
+            .filterOnData(data)
+            .toIterator
+        case (observable, Right((filename, contentType, src))) =>
+          val hash = attachmentSrv.hashers.fromBinary(src).head.toString
+          observableSrv
+            .startTraversal
+            .has(_.relatedId, alert._id)
+            .filterOnType(observable.dataType)
+            .filterOnAttachmentContentType(contentType)
+            .filterOnAttachmentName(filename)
+            .filterOnAttachmentHash(hash)
+            .toIterator
+      }
+      .foreach(observableSrv.delete(_))
+
     logger.debug(s"importAttributes ${client.name}#${event.id}")
-    val startSyncDate = new Date
     val queue =
       client
         .searchAttributes(event.id, lastSynchro)
@@ -336,24 +364,6 @@ class MispImportSrv @Inject() (
           case Failure(error) => logger.error(s"Unable to create observable $observable ($filename) on alert", error)
         }
     }
-
-    logger.info("Removing old observables")
-    alertSrv
-      .get(alert)
-      .observables
-      .filter(
-        _.or(
-          _.has(_._updatedAt, P.lt(startSyncDate)),
-          _.and(_.hasNot(_._updatedAt), _.has(_._createdAt, P.lt(startSyncDate)))
-        )
-      )
-      .toIterator
-      .foreach { obs =>
-        logger.debug(s"Delete  $obs")
-        observableSrv.delete(obs).recover {
-          case error => logger.error(s"Fail to delete observable $obs", error)
-        }
-      }
   }
 
 //  def convertTag(mispTag: MispTag): Tag = tagSrv.parseString(mispTag.name + mispTag.colour.fold("")(c => f"#$c%06X"))
