@@ -103,12 +103,12 @@ class FlowActor(
             case (id, organisations, cases) =>
               organisations.foreach { organisation =>
                 val cacheKey = FlowId.toString(organisation, None)
-                val ids      = cache.get[List[String]](cacheKey).getOrElse(Nil)
-                cache.set(cacheKey, (id :: ids).take(10))
+                val ids      = cache.get[Seq[String]](cacheKey).getOrElse(Nil)
+                cache.set(cacheKey, (id +: ids).take(10))
                 cases.foreach { caseId =>
                   val cacheKey: String = FlowId.toString(organisation, Some(caseId))
-                  val ids              = cache.get[List[String]](cacheKey).getOrElse(Nil)
-                  cache.set(cacheKey, (id :: ids).take(10))
+                  val ids              = cache.get[Seq[String]](cacheKey).getOrElse(Nil)
+                  cache.set(cacheKey, (id +: ids).take(10))
                 }
               }
           }

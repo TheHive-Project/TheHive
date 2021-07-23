@@ -1,6 +1,6 @@
 {
   "name": "thehive",
-  "version": "4.1.8-1",
+  "version": "4.1.9-1",
   "license": "AGPL-3.0",
   "dependencies": {
     "jquery": "^3.4.1",

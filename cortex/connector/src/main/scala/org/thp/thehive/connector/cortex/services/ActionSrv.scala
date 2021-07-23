@@ -194,13 +194,13 @@ class ActionSrv(
     */
   def relatedCase(id: EntityId)(implicit graph: Graph): Option[Case with Entity] =
     for {
-      richAction  <- startTraversal.getByIds(id).richAction.getOrFail("Action").toOption
+      richAction  <- startTraversal.getByIds(id).richAction.headOption
       relatedCase <- entityHelper.parentCase(richAction.context)
     } yield relatedCase
 
   def relatedTask(id: EntityId)(implicit graph: Graph): Option[Task with Entity] =
     for {
-      richAction  <- startTraversal.getByIds(id).richAction.getOrFail("Action").toOption
+      richAction  <- startTraversal.getByIds(id).richAction.headOption
       relatedTask <- entityHelper.parentTask(richAction.context)
     } yield relatedTask
 
