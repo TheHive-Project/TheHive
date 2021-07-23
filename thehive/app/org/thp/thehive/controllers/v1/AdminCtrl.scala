@@ -140,6 +140,15 @@ class AdminCtrl @Inject() (
         Success(Results.NoContent)
       }
 
+  def rebuild(name: String): Action[AnyContent] =
+    entrypoint("Rebuild index")
+      .authPermitted(Permissions.managePlatform) { _ =>
+        db
+          .removeIndex(name, IndexType.fulltext, Nil)
+          .flatMap(_ => schemas.toTry(db.addSchemaIndexes))
+          .map(_ => Results.NoContent)
+      }
+
   private val rangeRegex = "(\\d+)-(\\d+)".r
   private def getOperations(schemaName: String, select: Option[String], filter: Option[String]): Seq[(Operation, Int)] = {
     val ranges = select.fold(Seq(0 until Int.MaxValue))(_.split(',').toSeq.map {
