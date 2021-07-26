@@ -8,12 +8,13 @@ import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputProcedure
 import org.thp.thehive.models.{Permissions, Procedure, RichProcedure}
-import org.thp.thehive.services.ProcedureSrv
+import org.thp.thehive.services.{CaseSrv, ProcedureSrv}
 import play.api.mvc.{Action, AnyContent, Results}
 
 class ProcedureCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
+    caseSrv: CaseSrv,
     procedureSrv: ProcedureSrv,
     db: Database
 ) extends QueryableCtrl
@@ -45,7 +46,8 @@ class ProcedureCtrl(
       .authPermittedTransaction(db, Permissions.manageProcedure) { implicit request => implicit graph =>
         val inputProcedure: InputProcedure = request.body("procedure")
         for {
-          richProcedure <- procedureSrv.create(inputProcedure.toProcedure, inputProcedure.caseId.value, inputProcedure.patternId.value)
+          caze          <- caseSrv.get(EntityIdOrName(inputProcedure.caseId.value)).can(Permissions.manageProcedure).getOrFail("Procedure")
+          richProcedure <- procedureSrv.create(inputProcedure.toProcedure, caze, inputProcedure.patternId.value)
         } yield Results.Created(richProcedure.toJson)
       }
 
@@ -66,7 +68,7 @@ class ProcedureCtrl(
         val propertyUpdaters: Seq[PropertyUpdater] = request.body("procedure")
         procedureSrv
           .update(
-            _.get(EntityIdOrName(procedureId)),
+            _.get(EntityIdOrName(procedureId)).can(Permissions.manageProcedure),
             propertyUpdaters
           )
           .map(_ => Results.NoContent)
@@ -76,7 +78,9 @@ class ProcedureCtrl(
     entrypoint("delete procedure")
       .authPermittedTransaction(db, Permissions.manageProcedure) { implicit request => implicit graph =>
         procedureSrv
-          .getOrFail(EntityIdOrName(procedureId))
+          .get(EntityIdOrName(procedureId))
+          .can(Permissions.manageProcedure)
+          .getOrFail("Procedure")
           .flatMap(procedureSrv.remove)
           .map(_ => Results.NoContent)
       }
