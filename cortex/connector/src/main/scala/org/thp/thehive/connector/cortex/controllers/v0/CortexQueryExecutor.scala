@@ -59,7 +59,7 @@ class CortexQueryExecutor(
   override val version: (Int, Int) = 0 -> 1
 }
 
-class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] with CortexOps with TheHiveOpsNoDeps {
+class CortexParentIdInputFilter(parentId: String) extends InputFilter with CortexOps with TheHiveOpsNoDeps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -67,7 +67,10 @@ class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.U
       authContext: AuthContext
   ): Traversal.Unk =
     if (traversalType =:= ru.typeOf[Traversal.V[Job]])
-      traversal.asInstanceOf[Traversal.V[Job]].filter(_.observable.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
+      if (isNegate)
+        traversal.asInstanceOf[Traversal.V[Job]].filterNot(_.observable.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
+      else
+        traversal.asInstanceOf[Traversal.V[Job]].filter(_.observable.get(EntityIdOrName(parentId))).asInstanceOf[Traversal.Unk]
     else throw BadRequestError(s"$traversalType hasn't parent")
 }
 
@@ -76,9 +79,7 @@ class CortexParentIdInputFilter(parentId: String) extends InputQuery[Traversal.U
   *
   * @param parentFilter the query
   */
-class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Traversal.Unk])
-    extends InputQuery[Traversal.Unk, Traversal.Unk]
-    with CortexOps {
+class CortexParentQueryInputFilter(parentFilter: InputFilter) extends InputFilter with CortexOps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -86,18 +87,24 @@ class CortexParentQueryInputFilter(parentFilter: InputQuery[Traversal.Unk, Trave
       authContext: AuthContext
   ): Traversal.Unk =
     if (traversalType =:= ru.typeOf[Traversal.V[Job]])
-      traversal
-        .asInstanceOf[Traversal.V[Job]]
-        .filter { t =>
-          parentFilter(publicProperties, ru.typeOf[Traversal.V[Observable]], t.observable.asInstanceOf[Traversal.Unk], authContext)
-        }
-        .asInstanceOf[Traversal.Unk]
+      if (isNegate)
+        traversal
+          .asInstanceOf[Traversal.V[Job]]
+          .filterNot { t =>
+            parentFilter(publicProperties, ru.typeOf[Traversal.V[Observable]], t.observable.asInstanceOf[Traversal.Unk], authContext)
+          }
+          .asInstanceOf[Traversal.Unk]
+      else
+        traversal
+          .asInstanceOf[Traversal.V[Job]]
+          .filter { t =>
+            parentFilter(publicProperties, ru.typeOf[Traversal.V[Observable]], t.observable.asInstanceOf[Traversal.Unk], authContext)
+          }
+          .asInstanceOf[Traversal.Unk]
     else throw BadRequestError(s"$traversalType hasn't parent")
 }
 
-class CortexChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal.Unk, Traversal.Unk])
-    extends InputQuery[Traversal.Unk, Traversal.Unk]
-    with CortexOps {
+class CortexChildQueryInputFilter(childType: String, childFilter: InputFilter) extends InputFilter with CortexOps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -105,11 +112,19 @@ class CortexChildQueryInputFilter(childType: String, childFilter: InputQuery[Tra
       authContext: AuthContext
   ): Traversal.Unk =
     if (traversalType =:= ru.typeOf[Traversal.V[Observable]] && childType == "case_artifact_job")
-      traversal
-        .asInstanceOf[Traversal.V[Observable]]
-        .filter { t =>
-          childFilter(publicProperties, ru.typeOf[Traversal.V[Job]], t.jobs.asInstanceOf[Traversal.Unk], authContext)
-        }
-        .asInstanceOf[Traversal.Unk]
+      if (isNegate)
+        traversal
+          .asInstanceOf[Traversal.V[Observable]]
+          .filterNot { t =>
+            childFilter(publicProperties, ru.typeOf[Traversal.V[Job]], t.jobs.asInstanceOf[Traversal.Unk], authContext)
+          }
+          .asInstanceOf[Traversal.Unk]
+      else
+        traversal
+          .asInstanceOf[Traversal.V[Observable]]
+          .filter { t =>
+            childFilter(publicProperties, ru.typeOf[Traversal.V[Job]], t.jobs.asInstanceOf[Traversal.Unk], authContext)
+          }
+          .asInstanceOf[Traversal.Unk]
     else throw BadRequestError(s"$traversalType hasn't child of type $childType")
 }

@@ -5,7 +5,7 @@ import org.scalactic.Accumulation._
 import org.scalactic._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.query.{Aggregation, InputQuery, PublicProperties}
+import org.thp.scalligraph.query.{Aggregation, InputFilter, PublicProperties}
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
 import play.api.Logger
@@ -62,7 +62,7 @@ object TH3Aggregation {
   }
 
   def aggregationFieldParser(
-      filterParser: FieldsParser[InputQuery[Traversal.Unk, Traversal.Unk]]
+      filterParser: FieldsParser[InputFilter]
   ): PartialFunction[String, FieldsParser[Aggregation]] = {
     case "field" =>
       FieldsParser("FieldAggregation") {
@@ -151,14 +151,13 @@ object TH3Aggregation {
       )
   }
 
-  def fieldsParser(filterParser: FieldsParser[InputQuery[Traversal.Unk, Traversal.Unk]]): FieldsParser[Aggregation] =
+  def fieldsParser(filterParser: FieldsParser[InputFilter]): FieldsParser[Aggregation] =
     FieldsParser("aggregation") {
       case (_, AggObj(name, field)) => aggregationFieldParser(filterParser)(name)(field)
     }
 }
 
-case class AggSum(aggName: Option[String], fieldName: String, filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]])
-    extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
+case class AggSum(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -184,8 +183,7 @@ case class AggSum(aggName: Option[String], fieldName: String, filter: Option[Inp
   }
 }
 
-case class AggAvg(aggName: Option[String], fieldName: String, filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]])
-    extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
+case class AggAvg(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
   override def getTraversal(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -211,8 +209,7 @@ case class AggAvg(aggName: Option[String], fieldName: String, filter: Option[Inp
   }
 }
 
-case class AggMin(aggName: Option[String], fieldName: String, filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]])
-    extends Aggregation(aggName.getOrElse(s"min_$fieldName")) {
+case class AggMin(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"min_$fieldName")) {
   override def getTraversal(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -237,8 +234,7 @@ case class AggMin(aggName: Option[String], fieldName: String, filter: Option[Inp
   }
 }
 
-case class AggMax(aggName: Option[String], fieldName: String, filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]])
-    extends Aggregation(aggName.getOrElse(s"max_$fieldName")) {
+case class AggMax(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"max_$fieldName")) {
   override def getTraversal(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -263,8 +259,7 @@ case class AggMax(aggName: Option[String], fieldName: String, filter: Option[Inp
   }
 }
 
-case class AggCount(aggName: Option[String], filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]])
-    extends Aggregation(aggName.getOrElse("count")) {
+case class AggCount(aggName: Option[String], filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse("count")) {
   override def getTraversal(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -286,7 +281,7 @@ case class FieldAggregation(
     orders: Seq[String],
     size: Option[Long],
     subAggs: Seq[Aggregation],
-    filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]]
+    filter: Option[InputFilter]
 ) extends Aggregation(aggName.getOrElse(s"field_$fieldName")) {
   lazy val logger: Logger = Logger(getClass)
 
@@ -367,7 +362,7 @@ case class TimeAggregation(
     interval: Long,
     unit: ChronoUnit,
     subAggs: Seq[Aggregation],
-    filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]]
+    filter: Option[InputFilter]
 ) extends Aggregation(aggName.getOrElse(fieldName)) {
   val calendar: Calendar = Calendar.getInstance()
 

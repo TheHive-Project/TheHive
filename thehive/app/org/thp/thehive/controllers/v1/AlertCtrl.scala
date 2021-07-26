@@ -49,7 +49,7 @@ class AlertCtrl(
   )
   override val outputQuery: Query      = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
   val caseProperties: PublicProperties = properties.`case` ++ properties.metaProperties
-  implicit val caseFilterParser: FieldsParser[Option[InputQuery[Traversal.Unk, Traversal.Unk]]] =
+  implicit val caseFilterParser: FieldsParser[Option[InputFilter]] =
     FilterQuery.default(caseProperties).paramParser(ru.typeOf[Traversal.V[Case]]).optional.on("caseFilter")
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Long](
@@ -80,7 +80,7 @@ class AlertCtrl(
     ),
     Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
     Query[Traversal.V[Alert], Traversal.V[Case]]("case", (alertSteps, _) => alertSteps.`case`),
-    Query.withParam[Option[InputQuery[Traversal.Unk, Traversal.Unk]], Traversal.V[Alert], Traversal[
+    Query.withParam[Option[InputFilter], Traversal.V[Alert], Traversal[
       JsValue,
       JMap[String, Any],
       Converter[JsValue, JMap[String, Any]]
