@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.DummyUserSrv
 import org.thp.scalligraph.{EntityIdOrName, EntityName}
 import org.thp.thehive.TestApplication
 import org.thp.thehive.dto.v1.{InputCase, InputShare, OutputCase, OutputCustomFieldValue}
-import org.thp.thehive.models.{Observable, Organisation, Profile, Share, Task}
+import org.thp.thehive.models.{Observable, Organisation, Share, Task}
 import org.thp.thehive.services.{TheHiveOps, WithTheHiveModule}
 import play.api.libs.json.{JsNull, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
@@ -199,7 +199,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "soc")).profile.value(_.name).head must beEqualTo("analyst")
         }
         Success(())
-      } must beASuccessfulTry()
+      } must beASuccessfulTry
     }
 
     "create case automatically shared with other organisation with sharing parameter" in testApp { app =>
@@ -286,7 +286,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
           caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "soc")).profile.value(_.name).head must beEqualTo("analyst")
         }
         Success(())
-      } must beASuccessfulTry()
+      } must beASuccessfulTry
     }
 
     "get a case" in testApp { app =>
@@ -418,8 +418,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
     }
 
     "update sharing rule" in testApp { app =>
-      import app.thehiveModuleV1._
       import app.thehiveModule._
+      import app.thehiveModuleV1._
 
       app.database.tryTransaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv().authContext

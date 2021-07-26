@@ -157,7 +157,7 @@ class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: Us
     .property("dueDate", UMapping.date.optional)(_.field.updatable)
     .property("group", UMapping.string)(_.field.updatable)
     .property("owner", UMapping.string.optional)(
-      _.select(_.assignee.value(_.login))
+      _.rename("assignee")
         .custom { (_, login: Option[String], vertex, graph, authContext) =>
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail("Task")

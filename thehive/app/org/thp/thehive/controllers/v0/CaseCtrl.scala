@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers.{Entrypoint, FPathElem, FPathEmpty, FieldsParser}
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -247,13 +247,13 @@ class PublicCase(
       .property("severity", UMapping.int)(_.field.updatable)
       .property("startDate", UMapping.date)(_.field.updatable)
       .property("endDate", UMapping.date.optional)(_.field.updatable)
-      .property("tags", UMapping.string.set)(
+      .property("tags", UMapping.string.sequence)(
         _.field
           .custom { (_, value, vertex, graph, authContext) =>
             caseSrv
               .get(vertex)(graph)
               .getOrFail("Case")
-              .flatMap(`case` => caseSrv.updateTags(`case`, value)(graph, authContext))
+              .flatMap(`case` => caseSrv.updateTags(`case`, value.toSet)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
@@ -295,7 +295,7 @@ class PublicCase(
           caseSteps.customFieldJsonValue(EntityIdOrName(idOrName))
         case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
       }
-        .filter[JsValue] {
+        .filter[JsValue](IndexType.none) {
           case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
             predicate match {
               case Right(predicate) => caseTraversal.customFieldFilter(EntityIdOrName(name), predicate)
@@ -325,7 +325,7 @@ class PublicCase(
       .property("computed.handlingDurationInDays", UMapping.long)(_.select(_.handlingDuration.math("_ / 86400000").domainMap(_.toLong)).readonly)
       .property("viewingOrganisation", UMapping.string)(
         _.select(t => t.value(_.organisationIds).domainMap(organisationSrv.getName(_)(t.graph)))
-          .filter[String] {
+          .filter[String](IndexType.standard) {
             case (_, caseTraversal, _, Right(orgNamePredicate)) =>
               val organisationId = orgNamePredicate.mapValue(o => organisationSrv.getId(EntityIdOrName(o))(caseTraversal.graph))
               caseTraversal.has(_.organisationIds, organisationId)
@@ -338,7 +338,7 @@ class PublicCase(
       )
       .property("owningOrganisation", UMapping.string)(
         _.select(t => t.value(_.owningOrganisation).domainMap(organisationSrv.getName(_)(t.graph)))
-          .filter[String] {
+          .filter[String](IndexType.standard) {
             case (_, caseTraversal, _, Right(orgNamePredicate)) =>
               val organisationId = orgNamePredicate.mapValue(o => organisationSrv.getId(EntityIdOrName(o))(caseTraversal.graph))
               caseTraversal.has(_.owningOrganisation, organisationId)

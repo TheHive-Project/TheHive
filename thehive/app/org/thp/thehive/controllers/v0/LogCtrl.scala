@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -96,9 +96,17 @@ class PublicLog(logSrv: LogSrv, override val organisationSrv: OrganisationSrv, o
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Log]
       .property("message", UMapping.string)(_.field.updatable)
-      .property("deleted", UMapping.boolean)(_.field.updatable)
       .property("startDate", UMapping.date)(_.rename("date").readonly)
-      .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
+      .property("status", UMapping.string)(
+        _.select(_.constant("Ok"))
+          .filter[String](IndexType.standard) {
+            case (_, logs, _, Right(statusPredicate)) if statusPredicate.test("Ok") => logs
+            case (_, logs, _, Right(_))                                             => logs.empty
+            case (_, logs, _, Left(true))                                           => logs
+            case (_, logs, _, Left(false))                                          => logs.empty
+          }
+          .readonly
+      )
       .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
       .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
       .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)

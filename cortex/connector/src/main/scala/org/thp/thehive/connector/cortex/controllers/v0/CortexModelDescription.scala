@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.cortex.controllers.v0
 
+import org.thp.scalligraph.models.IndexType
 import org.thp.thehive.controllers.ModelDescription
 import org.thp.thehive.services.{EntityDescription, PropertyDescription}
 import play.api.Logger
@@ -9,10 +10,10 @@ class CortexModelDescription(publicAction: PublicAction, publicAnalyzerTemplate:
 
   override val logger: Logger = Logger(getClass)
   val metadata = Seq(
-    PropertyDescription("createdBy", "user"),
-    PropertyDescription("createdAt", "date"),
-    PropertyDescription("updatedBy", "user"),
-    PropertyDescription("updatedAt", "date")
+    PropertyDescription("createdBy", "user", indexType = IndexType.standard),
+    PropertyDescription("createdAt", "date", indexType = IndexType.standard),
+    PropertyDescription("updatedBy", "user", indexType = IndexType.standard),
+    PropertyDescription("updatedAt", "date", indexType = IndexType.standard)
   )
 
   override def entityDescriptions: Seq[EntityDescription] =
@@ -21,21 +22,19 @@ class CortexModelDescription(publicAction: PublicAction, publicAnalyzerTemplate:
         "action",
         "/connector/cortex/action",
         "listAction",
-        publicAction.publicProperties.list.flatMap(propToDesc("action", _)) ++ metadata
+        publicAction.publicProperties.list.flatMap(propertyDescription("action", _)) ++ metadata
       ),
       EntityDescription(
         "case_artifact_job",
         "/connector/cortex/job",
         "listJob",
-        publicJob.publicProperties.list.flatMap(propToDesc("case_artifact_job", _)) ++ metadata
+        publicJob.publicProperties.list.flatMap(propertyDescription("case_artifact_job", _)) ++ metadata
       ),
       EntityDescription(
         "analyzer_template",
         "/connector/cortex/analyzer/template/",
         "listAnalyzerTemplate",
-        publicAnalyzerTemplate.publicProperties.list.flatMap(propToDesc("analyzer_template", _)) ++ metadata
+        publicAnalyzerTemplate.publicProperties.list.flatMap(propertyDescription("analyzer_template", _)) ++ metadata
       )
     )
-
-  override def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] = None
 }

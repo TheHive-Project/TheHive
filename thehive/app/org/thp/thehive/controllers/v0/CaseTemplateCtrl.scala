@@ -2,7 +2,7 @@ package org.thp.thehive.controllers.v0
 
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, EntityIdOrName, RichSeq}
@@ -112,13 +112,13 @@ class PublicCaseTemplate(
     .property("titlePrefix", UMapping.string.optional)(_.field.updatable)
     .property("description", UMapping.string.optional)(_.field.updatable)
     .property("severity", UMapping.int.optional)(_.field.updatable)
-    .property("tags", UMapping.string.set)(
+    .property("tags", UMapping.string.sequence)(
       _.field
         .custom { (_, value, vertex, graph, authContext) =>
           caseTemplateSrv
             .get(vertex)(graph)
             .getOrFail("CaseTemplate")
-            .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value)(graph, authContext))
+            .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value.toSet)(graph, authContext))
             .map(_ => Json.obj("tags" -> value))
         }
     )
@@ -126,12 +126,11 @@ class PublicCaseTemplate(
     .property("tlp", UMapping.int.optional)(_.field.updatable)
     .property("pap", UMapping.int.optional)(_.field.updatable)
     .property("summary", UMapping.string.optional)(_.field.updatable)
-    .property("user", UMapping.string)(_.field.updatable)
     .property("customFields", UMapping.jsonNative)(_.subSelect {
       case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFieldJsonValue(EntityIdOrName(name))
       case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
     }
-      .filter[JsValue] {
+      .filter[JsValue](IndexType.none) {
         case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
           predicate match {
             case Right(predicate) => caseTemplateTraversal.customFieldFilter(EntityIdOrName(name), predicate)
