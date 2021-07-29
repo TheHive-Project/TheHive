@@ -324,7 +324,7 @@ trait ObservableOps { _: TheHiveOps =>
       else
         traversal.can(Permissions.manageObservable)
 
-    def richObservableWithSeen(organisationSrv: OrganisationSrv)(implicit
+    def richObservableWithSeen(implicit
         authContext: AuthContext
     ): Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
       traversal

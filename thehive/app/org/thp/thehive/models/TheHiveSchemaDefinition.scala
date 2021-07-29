@@ -1,6 +1,6 @@
 package org.thp.thehive.models
 
-import org.apache.tinkerpop.gremlin.process.traversal.{Order, P, TextP}
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 import org.janusgraph.core.schema.ConsistencyModifier
 import org.janusgraph.graphdb.types.TypeDefinitionCategory
@@ -123,7 +123,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     }
     .updateGraphVertices("Add each tag to its Organisation's FreeTags taxonomy", "Tag") { tags =>
       tags
-        .unsafeHas("namespace", TextP.notStartingWith("_freetags_"))
+        .unsafeHas("namespace", TextPredicate.notStartsWith("_freetags_"))
         .project(
           _.by
             .by(
@@ -137,7 +137,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
                 .sort(_.by("_createdAt", Order.desc))
                 .limit(1)
                 .out("OrganisationTaxonomy")
-                .unsafeHas("namespace", TextP.startingWith("_freetags_"))
+                .unsafeHas("namespace", TextPredicate.startsWith("_freetags_"))
                 .option
             )
         )
