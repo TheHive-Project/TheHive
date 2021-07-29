@@ -31,6 +31,7 @@ class TheHiveModuleV1(app: ScalligraphApplication) extends ScalligraphModule {
   lazy val adminCtrl: AdminCtrl                             = wire[AdminCtrl]
   lazy val taxonomyCtrl: TaxonomyCtrl                       = wire[TaxonomyCtrl]
   lazy val monitoringCtrl: MonitoringCtrl                   = wire[MonitoringCtrl]
+  lazy val searchCtrl: SearchCtrl                           = wire[SearchCtrl]
   lazy val theHiveModelDescription: TheHiveModelDescription = wire[TheHiveModelDescription]
   theHiveModule.entityDescriptions += (1 -> theHiveModelDescription)
 
