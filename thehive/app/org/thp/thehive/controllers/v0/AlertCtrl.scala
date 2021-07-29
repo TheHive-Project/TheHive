@@ -116,7 +116,7 @@ class AlertCtrl(
             .map {
               case (richAlert, similarCases) =>
                 val alertWithObservables: (RichAlert, Seq[RichObservable]) =
-                  richAlert -> observableSrv.startTraversal.relatedTo(richAlert._id).richObservableWithSeen(organisationSrv).toSeq
+                  richAlert -> observableSrv.startTraversal.relatedTo(richAlert._id).richObservableWithSeen.toSeq
 
                 Results.Ok(alertWithObservables.toJson.as[JsObject] + ("similarCases" -> similarCases))
             }
@@ -374,8 +374,7 @@ class AlertCtrl(
 class PublicAlert(
     alertSrv: AlertSrv,
     val organisationSrv: OrganisationSrv,
-    val customFieldSrv: CustomFieldSrv,
-    db: Database
+    val customFieldSrv: CustomFieldSrv
 ) extends PublicData
     with TheHiveOps {
 

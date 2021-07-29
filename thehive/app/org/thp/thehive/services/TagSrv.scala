@@ -2,11 +2,10 @@ package org.thp.thehive.services
 
 import akka.actor.ActorRef
 import com.softwaremill.tagging.@@
-import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.models.{Database, Entity, TextPredicate}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.{EdgeSrv, EntitySelector, IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
@@ -147,15 +146,15 @@ trait TagOpsNoDeps { _: TheHiveOpsNoDeps =>
 
     def autoComplete(organisationSrv: OrganisationSrv, freeTag: String)(implicit authContext: AuthContext): Traversal.V[Tag] =
       freetags(organisationSrv)
-        .has(_.predicate, TextP.containing(freeTag))
+        .has(_.predicate, TextPredicate.contains(freeTag))
 
     def autoComplete(namespace: Option[String], predicate: Option[String], value: Option[String])(implicit
         authContext: AuthContext
     ): Traversal.V[Tag] =
       traversal
-        .merge(namespace)((t, ns) => t.has(_.namespace, TextP.containing(ns)))
-        .merge(predicate)((t, p) => t.has(_.predicate, TextP.containing(p)))
-        .merge(value)((t, v) => t.has(_.value, TextP.containing(v)))
+        .merge(namespace)((t, ns) => t.has(_.namespace, TextPredicate.contains(ns)))
+        .merge(predicate)((t, p) => t.has(_.predicate, TextPredicate.contains(p)))
+        .merge(value)((t, v) => t.has(_.value, TextPredicate.contains(v)))
         .visible
 
     def visible(implicit authContext: AuthContext): Traversal.V[Tag] =
@@ -193,7 +192,7 @@ class TagIntegrityCheckOps(val db: Database, val service: TagSrv) extends Integr
       Try {
         val orphans = service
           .startTraversal
-          .filter(_.taxonomy.has(_.namespace, TextP.startingWith("_freetags_")))
+          .filter(_.taxonomy.has(_.namespace, TextPredicate.startsWith("_freetags_")))
           .filterNot(_.or(_.inE[AlertTag], _.inE[ObservableTag], _.inE[CaseTag], _.inE[CaseTemplateTag]))
           ._id
           .toSeq
