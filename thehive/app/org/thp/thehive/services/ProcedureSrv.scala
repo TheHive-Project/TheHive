@@ -54,8 +54,16 @@ class ProcedureSrv(
 
 }
 
-trait ProcedureOps { _: TheHiveOpsNoDeps =>
-  implicit class ProcedureOpsDefs(traversal: Traversal.V[Procedure]) {
+trait ProcedureOps { _: TheHiveOps =>
+
+  implicit class ProcedureOpsDefs(val traversal: Traversal.V[Procedure]) {
+    def visible(implicit authContext: AuthContext): Traversal.V[Procedure] =
+      traversal.filter(_.`case`.visible)
+  }
+}
+
+trait ProcedureOpsNoDeps { _: TheHiveOpsNoDeps =>
+  implicit class ProcedureOpsNoDepsDefs(traversal: Traversal.V[Procedure]) {
 
     def pattern: Traversal.V[Pattern] =
       traversal.out[ProcedurePattern].v[Pattern]
