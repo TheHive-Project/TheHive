@@ -28,6 +28,7 @@ class Router(
     profileCtrl: ProfileCtrl,
     tagCtrl: TagCtrl,
     taskCtrl: TaskCtrl,
+    searchCtrl: SearchCtrl,
     shareCtrl: ShareCtrl,
     taxonomyCtrl: TaxonomyCtrl,
     // shareCtrl: ShareCtrl,
@@ -186,6 +187,7 @@ class Router(
     case POST(p"/observable/type")             => observableTypeCtrl.create
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
 
-    case GET(p"/monitor/disk") => monitoringCtrl.diskUsage
+    case GET(p"/search" ? q"query=$query") => searchCtrl.search(query)
+    case GET(p"/monitor/disk")             => monitoringCtrl.diskUsage
   }
 }
