@@ -59,7 +59,7 @@ trait TheHiveOpsNoDeps
     with PageOps
     with PatternOps
     with ProfileOps
-    with ProcedureOps
+    with ProcedureOpsNoDeps
     with ResolutionStatusOps
     with ReportTagOps
     with RoleOps
