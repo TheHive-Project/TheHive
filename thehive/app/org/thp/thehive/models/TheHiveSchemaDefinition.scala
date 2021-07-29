@@ -519,8 +519,8 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
       Success(())
     }
     .addProperty[String]("OrganisationOrganisation", "linkType")
-    .updateGraphEdges("Add linkType in organisation edges", "OrganisationOrganisation") { traversal =>
-      traversal.foreach(_.property("linkType", "default"))
+    .updateGraphVertices("Add linkType in organisation edges", "Organisation") { traversal =>
+      traversal.inE("OrganisationOrganisation").foreach(_.property("linkType", "default"))
       Success(())
     }
 
