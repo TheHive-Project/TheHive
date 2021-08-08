@@ -36,7 +36,7 @@ trait TestAppBuilder extends LogFileConfig {
             |]
             |""".stripMargin
         )
-      ).withFallback(TestApplication.appWithoutDatabase.configuration)
+      ).withFallback(TestApplication.configuration)
 
       override val thehiveModule: TheHiveModule = buildTheHiveModule(this)
       injectModule(thehiveModule)
@@ -47,15 +47,15 @@ trait TestAppBuilder extends LogFileConfig {
   def destroyApp(app: TestApplication with WithTheHiveModule with WithCortexModule): Unit = {
     destroyTheHiveModule(app.thehiveModule)
     destroyCortexModule(app.cortexModule)
+    app.terminate()
   }
 
   def testApp[A](body: TestApplication with WithTheHiveModule with WithCortexModule => A): A =
     JanusDatabaseProvider
-      .withDatabase(databaseName, buildDatabase, TestApplication.appWithoutDatabase.actorSystem) { db =>
+      .withDatabase(databaseName, buildDatabase, TestApplication.actorSystemForDB) { db =>
         val app = buildApp(db)
-        val res = body(app)
-        destroyApp(app)
-        res
+        try body(app)
+        finally destroyApp(app)
       }
       .get
 }

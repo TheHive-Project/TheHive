@@ -392,10 +392,10 @@ class CaseSrv(
           observableRule = None
         ) // FIXME Add customfields and case template
         // Share case with all organisations except the one who created the merged case
-        _ <-
-          sharingProfiles
-            .filterNot(_._1._id == currentOrgaId)
-            .toTry(sharingProfile => shareSrv.shareCase(owner = false, richCase.`case`, sharingProfile._1, sharingProfile._2))
+//        _ <-
+//          sharingProfiles
+//            .filterNot(_._1._id == currentOrgaId)
+//            .toTry(sharingProfile => shareSrv.shareCase(owner = false, richCase.`case`, sharingProfile._1, sharingProfile._2))
         _ <- cases.toTry { c =>
           for {
             _ <- shareMergedCaseTasks(sharingProfiles.map(_._1), c, richCase.`case`)

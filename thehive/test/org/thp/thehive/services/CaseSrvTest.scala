@@ -215,7 +215,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
       import app.thehiveModule._
 
       database.roTransaction { implicit graph =>
-        caseSrv.nextCaseNumber shouldEqual 37
+        caseSrv.nextCaseNumber shouldEqual 36
       }
     }
 
@@ -633,7 +633,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
           getCase(richCase.number).share(EntityName("cert")).tasks.getCount mustEqual 1
           getCase(richCase.number).share(EntityName("soc")).tasks.getCount mustEqual 2
           getCase(richCase.number).share(EntityName("cert")).observables.getCount mustEqual 2
-          getCase(richCase.number).share(EntityName("soc")).observables.getCount mustEqual 1
+          getCase(richCase.number).share(EntityName("soc")).observables.getCount mustEqual 2
 
           getCase(24).getOrFail("Case") must beAFailedTry
           getCase(25).getOrFail("Case") must beAFailedTry

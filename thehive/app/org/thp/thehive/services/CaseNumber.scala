@@ -18,7 +18,6 @@ object CaseNumberActor extends TraversalOps with TheHiveOpsNoDeps {
   case class GetNextNumber(replyTo: TypedActorRef[Response]) extends Request
   case class NextNumber(number: Int)                         extends Response
 
-  // FIXME database must not be used to build singleton actor
   def behavior(db: Database, caseSrv: CaseSrv): Behavior[Request] = {
     val nextNumber = db.roTransaction { implicit graph =>
       caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1

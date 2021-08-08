@@ -30,15 +30,26 @@ import play.api.{Application, ApplicationLoader, Configuration, LoggerConfigurat
 import java.io.File
 import scala.concurrent.ExecutionContext
 import scala.reflect.{classTag, ClassTag}
+import scala.util.Random
 
 object TestApplication {
-  lazy val appWithoutDatabase: ScalligraphApplication = new ScalligraphApplicationImpl(new File("."), getClass.getClassLoader, Mode.Test) {
+  private lazy val appWithoutDatabase: ScalligraphApplication = new ScalligraphApplicationImpl(new File("."), getClass.getClassLoader, Mode.Test) {
     override lazy val database: Database = throw new IllegalStateException("Database from root application should not be used")
   }
 
+  lazy val configuration: Configuration = appWithoutDatabase.configuration
+
+  lazy val actorSystemForDB = appWithoutDatabase.actorSystem
+
+  def withActorSystem[A](body: ActorSystem => A): A = {
+    val actorSystem = ActorSystem(s"test-${Random.nextInt()}", config = configuration.underlying)
+    try body(actorSystem)
+    finally actorSystem.terminate()
+  }
 }
+
 class TestApplication(override val database: Database) extends ScalligraphApplication {
-  import TestApplication._
+  lazy val appWithoutDatabase: ScalligraphApplication = TestApplication.appWithoutDatabase
   override def getQueryExecutor(version: Int): QueryExecutor =
     syncCacheApi.getOrElseUpdate(s"QueryExecutor.$version") {
       queryExecutors()
@@ -58,8 +69,8 @@ class TestApplication(override val database: Database) extends ScalligraphApplic
   override lazy val materializer: Materializer                   = appWithoutDatabase.materializer
   override lazy val storageSrv: StorageSrv                       = appWithoutDatabase.storageSrv
   override lazy val syncCacheApi: SyncCacheApi                   = appWithoutDatabase.syncCacheApi
-  override lazy val actorSystem: ActorSystem                     = appWithoutDatabase.actorSystem
   override lazy val application: Application                     = appWithoutDatabase.application
+  override lazy val actorSystem: ActorSystem                     = ActorSystem(s"test-${Random.nextInt()}", config = configuration.underlying)
   override lazy val configuration: Configuration                 = appWithoutDatabase.configuration
   override lazy val context: ApplicationLoader.Context           = appWithoutDatabase.context
   override lazy val httpConfiguration: HttpConfiguration         = appWithoutDatabase.httpConfiguration
@@ -90,4 +101,7 @@ class TestApplication(override val database: Database) extends ScalligraphApplic
   }
   override def injectModule(module: ScalligraphModule): Unit = _loadedModules = _loadedModules :+ module
   override def loadedModules: Seq[ScalligraphModule]         = _loadedModules
+
+  def terminate(): Unit =
+    actorSystem.terminate()
 }
