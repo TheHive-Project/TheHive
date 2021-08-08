@@ -105,13 +105,12 @@ class PublicAction(actionSrv: ActionSrv, override val organisationSrv: Organisat
   override val extraQueries: Seq[ParamQuery[_]] = Seq(actionsQuery)
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Action]
-      .property("responderId", UMapping.string)(_.field.readonly)
+      .property("responderId", UMapping.string)(_.rename("workerId").readonly)
       .property("objectType", UMapping.string)(_.select(_.context.domainMap(o => fromObjectType(o._label))).readonly)
       .property("status", UMapping.string)(_.field.readonly)
       .property("startDate", UMapping.date)(_.field.readonly)
       .property("objectId", db.idMapping)(_.select(_.out[ActionContext]._id).readonly)
-      .property("responderName", UMapping.string.optional)(_.field.readonly)
+      .property("responderName", UMapping.string.optional)(_.rename("workerName").readonly)
       .property("cortexId", UMapping.string.optional)(_.field.readonly)
-      .property("tlp", UMapping.int.optional)(_.field.readonly)
       .build
 }
