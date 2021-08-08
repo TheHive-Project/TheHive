@@ -253,7 +253,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       // Create a case with tags first
       val c = database.tryTransaction { implicit graph =>
-        val organisation = organisationSrv.getOrFail(EntityName("cert")).get
         caseSrv.create(
           Case(
             title = "case 5",
@@ -269,7 +268,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             tags = Seq("tag1", "tag2")
           ),
           assignee = None,
-          organisation,
           Seq.empty,
           None,
           Nil,
@@ -337,7 +335,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
       import app.thehiveModule._
 
       val c1 = database.tryTransaction { implicit graph =>
-        val organisation = organisationSrv.getOrFail(EntityName("cert")).get
         caseSrv.create(
           Case(
             title = "case 9",
@@ -353,7 +350,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             tags = Nil
           ),
           assignee = None,
-          organisation,
           Seq.empty,
           None,
           Nil,
@@ -376,7 +372,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
       database
         .tryTransaction { implicit graph =>
           for {
-            organisation <- organisationSrv.getOrFail(EntityName("cert"))
             case0 <- caseSrv.create(
               Case(
                 title = "case 6",
@@ -392,7 +387,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
                 tags = Seq("tag1", "tag2")
               ),
               assignee = None,
-              organisation,
               Seq.empty,
               None,
               Nil,
@@ -416,7 +410,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       database.roTransaction { implicit graph =>
         val c7 = database.tryTransaction { implicit graph =>
-          val organisation = organisationSrv.getOrFail(EntityName("cert")).get
           caseSrv.create(
             Case(
               title = "case 7",
@@ -432,7 +425,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
               tags = Seq("tag1", "tag2")
             ),
             assignee = None,
-            organisation,
             Seq.empty,
             None,
             Nil,
@@ -456,8 +448,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       val c8 = database
         .tryTransaction { implicit graph =>
-          val organisation = organisationSrv.getOrFail(EntityName("cert")).get
-          val certuser     = userSrv.getOrFail(EntityName("certuser@thehive.local")).get
+          val certuser = userSrv.getOrFail(EntityName("certuser@thehive.local")).get
           caseSrv.create(
             Case(
               title = "case 8",
@@ -474,7 +465,6 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
               assignee = Some("certuser@thehive.local")
             ),
             assignee = Some(certuser),
-            organisation,
             Seq.empty,
             None,
             Nil,

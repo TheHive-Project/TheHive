@@ -67,10 +67,9 @@ class CaseSrv(
       `case`
     }
 
-  def create( // TODO remove organisation parameter. Use current organisation (from authContext)
+  def create(
       `case`: Case,
       assignee: Option[User with Entity],
-      organisation: Organisation with Entity,
       customFields: Seq[InputCustomFieldValue],
       caseTemplate: Option[RichCaseTemplate],
       additionalTasks: Seq[Task],
@@ -81,23 +80,24 @@ class CaseSrv(
     val caseNumber = if (`case`.number == 0) nextCaseNumber else `case`.number
     val tagNames   = (`case`.tags ++ caseTemplate.fold[Seq[String]](Nil)(_.tags)).distinct
     for {
-      tags <- tagNames.toTry(tagSrv.getOrCreate)
+      currentOrganisation <- organisationSrv.current.getOrFail("Organisation")
+      tags                <- tagNames.toTry(tagSrv.getOrCreate)
       createdCase <- createEntity(
         `case`.copy(
           number = caseNumber,
           assignee = assignee.map(_.login),
-          organisationIds = Set(organisation._id),
+          organisationIds = Set(currentOrganisation._id),
           caseTemplate = caseTemplate.map(_.name),
           impactStatus = None,
           resolutionStatus = None,
           tags = tagNames,
-          owningOrganisation = organisationSrv.currentId
+          owningOrganisation = currentOrganisation._id
         )
       )
 
       ownerSharingProfile <- organisationSrv.current.ownerSharingProfile(taskRule, observableRule).getOrFail("Organisation")
       _                   <- assignee.map(u => caseUserSrv.create(CaseUser(), createdCase, u)).flip
-      _                   <- shareSrv.shareCase(owner = true, createdCase, organisation, ownerSharingProfile)
+      _                   <- shareSrv.shareCase(owner = true, createdCase, currentOrganisation, ownerSharingProfile)
       _                   <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
       _                   <- caseTemplate.fold(additionalTasks)(_.tasks.map(_.task) ++ additionalTasks).toTry(task => createTask(createdCase, task))
       _                   <- tags.toTry(caseTagSrv.create(CaseTag(), createdCase, _))
@@ -381,13 +381,12 @@ class CaseSrv(
         .sharingProfiles
         .toSeq
 
+      val currentOrgaId = organisationSrv.currentId
       for {
-        user        <- userSrv.current.getOrFail("User")
-        currentOrga <- organisationSrv.current.getOrFail("Organisation")
+        user <- userSrv.current.getOrFail("User")
         richCase <- create(
           mergedCase,
           Some(user),
-          currentOrga,
           customFields = Seq(),
           caseTemplate = None,
           additionalTasks = Seq(),
@@ -398,7 +397,7 @@ class CaseSrv(
         // Share case with all organisations except the one who created the merged case
         _ <-
           sharingProfiles
-            .filterNot(_._1._id == currentOrga._id)
+            .filterNot(_._1._id == currentOrgaId)
             .toTry(sharingProfile => shareSrv.shareCase(owner = false, richCase.`case`, sharingProfile._1, sharingProfile._2))
         _ <- cases.toTry { c =>
           for {

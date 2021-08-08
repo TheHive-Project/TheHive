@@ -215,9 +215,8 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOps
 
       database.tryTransaction { implicit graph =>
         for {
-          alert        <- alertSrv.get(EntityName("testType;testSource;ref1")).richAlert.getOrFail("Alert")
-          organisation <- organisationSrv.getOrFail(EntityName("cert"))
-          c            <- alertSrv.createCase(alert, None, organisation, Map.empty, None, None)
+          alert <- alertSrv.get(EntityName("testType;testSource;ref1")).richAlert.getOrFail("Alert")
+          c     <- alertSrv.createCase(alert, None, Map.empty, None, None)
           _ = c.title must beEqualTo("[SPAM] alert#1")
           _ <- caseSrv.startTraversal.has(_.title, "[SPAM] alert#1").getOrFail("Alert")
         } yield ()

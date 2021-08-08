@@ -105,7 +105,7 @@ class CaseCtrl(
       .extract("sharingParameters", FieldsParser[InputShare].sequence.on("sharingParameters"))
       .extract("taskRule", FieldsParser[String].optional.on("taskRule"))
       .extract("observableRule", FieldsParser[String].optional.on("observableRule"))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageCase) { implicit request => implicit graph =>
         val caseTemplateName: Option[String]   = request.body("caseTemplate")
         val inputCase: InputCase               = request.body("case")
         val inputTasks: Seq[InputTask]         = request.body("tasks")
@@ -115,12 +115,10 @@ class CaseCtrl(
 
         for {
           caseTemplate <- caseTemplateName.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
-          organisation <- userSrv.current.organisations(Permissions.manageCase).get(request.organisation).getOrFail("Organisation")
           user         <- inputCase.user.fold(userSrv.current.getOrFail("User"))(n => userSrv.getByName(n.value).getOrFail("User"))
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
             Some(user),
-            organisation,
             inputCase.customFieldValues,
             caseTemplate,
             inputTasks.map(_.toTask),

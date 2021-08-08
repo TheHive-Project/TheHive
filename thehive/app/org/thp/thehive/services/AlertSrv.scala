@@ -204,7 +204,6 @@ class AlertSrv(
   def createCase(
       alert: RichAlert,
       assignee: Option[User with Entity],
-      organisation: Organisation with Entity,
       sharingParameters: Map[String, SharingParameter],
       taskRule: Option[String],
       observableRule: Option[String]
@@ -235,7 +234,7 @@ class AlertSrv(
             alert.tags
           )
 
-          createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil, sharingParameters, taskRule, observableRule)
+          createdCase <- caseSrv.create(case0, assignee, customField, caseTemplate, Nil, sharingParameters, taskRule, observableRule)
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
           _           <- get(alert.alert).update(_.caseId, createdCase._id).getOrFail("Alert")
