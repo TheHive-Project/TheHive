@@ -33,6 +33,7 @@ class ObservableCtrl(
     caseSrv: CaseSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
     override val queryExecutor: QueryExecutor,
@@ -352,7 +353,8 @@ class ObservableCtrl(
 class PublicObservable(
     observableSrv: ObservableSrv,
     override val organisationSrv: OrganisationSrv,
-    override val customFieldSrv: CustomFieldSrv
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
 ) extends PublicData
     with ObservableRenderer {
   override val entityName: String = "observable"

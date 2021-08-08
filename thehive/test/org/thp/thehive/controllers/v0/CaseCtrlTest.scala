@@ -44,8 +44,8 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOps
       val now = new Date()
 
       val inputCustomFields = Seq(
-        InputCustomFieldValue("date1", Some(now.getTime), None),
-        InputCustomFieldValue("boolean1", Some(true), None)
+        InputCustomFieldValue("date1", JsNumber(now.getTime), None),
+        InputCustomFieldValue("boolean1", JsTrue, None)
 //          InputCustomFieldValue("string1", Some("string custom field"))
       )
 

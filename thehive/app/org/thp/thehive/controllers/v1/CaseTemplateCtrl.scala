@@ -46,11 +46,10 @@ class CaseTemplateCtrl(
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
         val tasks                                = inputCaseTemplate.tasks.map(_.toTask)
-        val customFields                         = inputCaseTemplate.customFieldValue.map(cf => cf.name -> cf.value)
 
         for {
           organisation     <- organisationSrv.current.getOrFail("Organisation")
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, customFields.map(c => c._1.value -> c._2))
+          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, inputCaseTemplate.customFieldValue)
         } yield Results.Created(richCaseTemplate.toJson)
       }
 

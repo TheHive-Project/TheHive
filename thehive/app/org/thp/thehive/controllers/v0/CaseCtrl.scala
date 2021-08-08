@@ -24,6 +24,7 @@ class CaseCtrl(
     userSrv: UserSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     override val publicData: PublicCase,
     override val queryExecutor: QueryExecutor,
     implicit override val db: Database
@@ -38,7 +39,7 @@ class CaseCtrl(
       .extract("sharingParameters", FieldsParser[InputShare].sequence.on("sharingParameters"))
       .extract("taskRule", FieldsParser[String].optional.on("taskRule"))
       .extract("observableRule", FieldsParser[String].optional.on("observableRule"))
-      .authTransaction(db) { implicit request => implicit graph =>
+      .authPermittedTransaction(db, Permissions.manageCase) { implicit request => implicit graph =>
         val caseTemplateName: Option[String]   = request.body("caseTemplate")
         val inputCase: InputCase               = request.body("case")
         val inputTasks: Seq[InputTask]         = request.body("tasks")
@@ -48,18 +49,11 @@ class CaseCtrl(
         val observableRule: Option[String]     = request.body("observableRule")
 
         for {
-          organisation <-
-            userSrv
-              .current
-              .organisations(Permissions.manageCase)
-              .get(request.organisation)
-              .orFail(AuthorizationError("Operation not permitted"))
           user         <- inputCase.user.fold(userSrv.current.getOrFail("User"))(u => userSrv.getByName(u.value).getOrFail("User"))
           caseTemplate <- caseTemplateName.map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate")).flip
           richCase <- caseSrv.create(
             caseTemplate.fold(inputCase)(inputCase.withCaseTemplate).toCase,
             Some(user),
-            organisation,
             customFields,
             caseTemplate,
             inputTasks.map(_.toTask),
@@ -184,6 +178,7 @@ class PublicCase(
     observableSrv: ObservableSrv,
     userSrv: UserSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     implicit val db: Database
 ) extends PublicData
     with CaseRenderer
@@ -293,29 +288,48 @@ class PublicCase(
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
           caseSteps.customFieldJsonValue(EntityIdOrName(idOrName))
-        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (_, caseSteps) => caseSteps.richCustomFields.fold.domainMap(cfs => JsObject(cfs.map(cf => cf.name -> cf.jsValue)))
       }
         .filter[JsValue](IndexType.none) {
           case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
             predicate match {
-              case Right(predicate) => caseTraversal.customFieldFilter(EntityIdOrName(name), predicate)
-              case Left(true)       => caseTraversal.hasCustomField(EntityIdOrName(name))
-              case Left(false)      => caseTraversal.hasNotCustomField(EntityIdOrName(name))
+              case Right(p) =>
+                val elementIds = customFieldSrv
+                  .getByName(name)(caseTraversal.graph)
+                  .value(_.`type`)
+                  .headOption
+                  .fold[Seq[EntityId]](Nil)(_.filter(customFieldValueSrv.startTraversal(caseTraversal.graph), p).value(_.elementId).toSeq)
+                caseTraversal.hasId(elementIds: _*)
+              case Left(true)  => caseTraversal.hasCustomField(EntityIdOrName(name))
+              case Left(false) => caseTraversal.hasNotCustomField(EntityIdOrName(name))
             }
           case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
-          case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
+          case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
+            EntityIdOrName(idOrName).fold(
+              valueId => // update the value
+                caseSrv
+                  .updateCustomField(EntityId(vertex.id()), valueId, jsonValue)(graph)
+                  .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
+              name => // update or add new custom field
+                for {
+                  c              <- caseSrv.getOrFail(vertex)(graph)
+                  cf             <- customFieldSrv.getByName(name)(graph).getOrFail("CustomField")
+                  (value, order) <- cf.`type`.parseValue(jsonValue)
+                  _              <- caseSrv.updateOrCreateCustomField(c, cf, value, order)(graph, authContext)
+                } yield Json.obj(s"customField.$name" -> jsonValue)
+            )
+          case (FPathElem(_, FPathEmpty), jsonValue: JsObject, vertex, graph, authContext) =>
             for {
-              c <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)(graph, authContext)
-            } yield Json.obj(s"customField.$name" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-            for {
-              c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
-              _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
-            } yield Json.obj("customFields" -> values)
+              c <- caseSrv.getOrFail(vertex)(graph)
+              cfv <- jsonValue.fields.toTry {
+                case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).flatMap(cf => cf.`type`.parseValue(v).map(cf -> _))
+              }
+              _ <- cfv.toTry {
+                case (cf, (value, order)) => caseSrv.updateOrCreateCustomField(c, cf, value, order)(graph, authContext)
+              }
+            } yield Json.obj("customFields" -> jsonValue)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
       .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)

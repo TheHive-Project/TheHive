@@ -7,7 +7,7 @@ import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models.Database
 import org.thp.thehive.connector.misp.services.{MispExportSrv, MispTag, Synchro}
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{AlertSrv, CaseSrv, CustomFieldSrv, OrganisationSrv, TheHiveOps}
+import org.thp.thehive.services.{AlertSrv, CaseSrv, CustomFieldSrv, CustomFieldValueSrv, OrganisationSrv, TheHiveOps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,6 +21,7 @@ class MispCtrl(
     db: Database,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     mispActor: ActorRef @@ MispTag,
     implicit val ec: ExecutionContext
 ) extends TheHiveOps {

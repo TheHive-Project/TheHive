@@ -1,4 +1,0 @@
-[
-  {"from": "alert4", "to": "integer1"},
-  {"from": "alert1", "to": "integer1", "integerValue": 42}
-]

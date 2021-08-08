@@ -19,6 +19,7 @@ class TaskCtrl(
     caseSrv: CaseSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicTask
 ) extends QueryCtrl

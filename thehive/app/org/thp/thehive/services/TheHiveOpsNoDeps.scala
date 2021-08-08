@@ -4,10 +4,11 @@ import org.thp.scalligraph.query.PredicateOps
 import org.thp.scalligraph.traversal.TraversalOps
 
 object TheHiveOps {
-  def apply[A](orgSrv: OrganisationSrv, cfSrv: CustomFieldSrv)(body: TheHiveOps => A): A =
+  def apply[A](orgSrv: OrganisationSrv, cfSrv: CustomFieldSrv, cfvSrv: CustomFieldValueSrv)(body: TheHiveOps => A): A =
     body(new TheHiveOps {
-      override protected val organisationSrv: OrganisationSrv = orgSrv
-      override protected val customFieldSrv: CustomFieldSrv   = cfSrv
+      override val organisationSrv: OrganisationSrv         = orgSrv
+      override val customFieldSrv: CustomFieldSrv           = cfSrv
+      override val customFieldValueSrv: CustomFieldValueSrv = cfvSrv
     })
 }
 trait TheHiveOps
@@ -37,7 +38,12 @@ trait TheHiveOps
     with TagOps
     with TaskOps
     with TaxonomyOps
-    with UserOps
+    with UserOps {
+
+  val organisationSrv: OrganisationSrv
+  val customFieldSrv: CustomFieldSrv
+  val customFieldValueSrv: CustomFieldValueSrv
+}
 
 trait TheHiveOpsNoDeps
     extends TraversalOps
@@ -49,6 +55,7 @@ trait TheHiveOpsNoDeps
     with CaseTemplateOpsNoDeps
     with ConfigOps
     with CustomFieldOps
+    with CustomFieldValueOps
     with DashboardOps
     with DataOps
     with ImpactStatusOps

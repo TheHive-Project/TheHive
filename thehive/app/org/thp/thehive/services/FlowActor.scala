@@ -32,6 +32,7 @@ class FlowActor(
     observableSrv: ObservableSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     taskSrv: TaskSrv,
     db: Database,
     appConfig: ApplicationConfig,

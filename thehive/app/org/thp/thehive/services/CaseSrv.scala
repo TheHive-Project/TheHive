@@ -15,16 +15,16 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal._
-import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, EntityName, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.String64
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import play.api.cache.SyncCacheApi
-import play.api.libs.json.{JsNull, JsObject, Json}
+import play.api.libs.json.{JsNull, JsObject, JsValue, Json}
 
 import java.lang.{Long => JLong}
-import java.util.{List => JList, Map => JMap}
+import java.util.{Date, List => JList, Map => JMap}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -32,6 +32,7 @@ import scala.util.{Failure, Success, Try}
 class CaseSrv(
     tagSrv: TagSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     override val organisationSrv: OrganisationSrv,
     shareSrv: ShareSrv,
     taskSrv: TaskSrv,
@@ -48,6 +49,7 @@ class CaseSrv(
     implicit val ec: ExecutionContext,
     implicit val actorSystem: ActorSystem
 ) extends VertexSrv[Case]
+    with ElementOps
     with TheHiveOps {
   lazy val alertSrv: AlertSrv = _alertSrv
 
@@ -55,7 +57,7 @@ class CaseSrv(
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
   val caseResolutionStatusSrv = new EdgeSrv[CaseResolutionStatus, Case, ResolutionStatus]
   val caseUserSrv             = new EdgeSrv[CaseUser, Case, User]
-  val caseCustomFieldSrv      = new EdgeSrv[CaseCustomField, Case, CustomField]
+  val caseCustomFieldValueSrv = new EdgeSrv[CaseCustomFieldValue, Case, CustomFieldValue]
   val caseCaseTemplateSrv     = new EdgeSrv[CaseCaseTemplate, Case, CaseTemplate]
   val caseProcedureSrv        = new EdgeSrv[CaseProcedure, Case, Procedure]
   val shareCaseSrv            = new EdgeSrv[ShareCase, Share, Case]
@@ -67,10 +69,9 @@ class CaseSrv(
       `case`
     }
 
-  def create( // TODO remove organisation parameter. Use current organisation (from authContext)
+  def create(
       `case`: Case,
       assignee: Option[User with Entity],
-      organisation: Organisation with Entity,
       customFields: Seq[InputCustomFieldValue],
       caseTemplate: Option[RichCaseTemplate],
       additionalTasks: Seq[Task],
@@ -81,23 +82,24 @@ class CaseSrv(
     val caseNumber = if (`case`.number == 0) nextCaseNumber else `case`.number
     val tagNames   = (`case`.tags ++ caseTemplate.fold[Seq[String]](Nil)(_.tags)).distinct
     for {
-      tags <- tagNames.toTry(tagSrv.getOrCreate)
+      currentOrganisation <- organisationSrv.current.getOrFail("Organisation")
+      tags                <- tagNames.toTry(tagSrv.getOrCreate)
       createdCase <- createEntity(
         `case`.copy(
           number = caseNumber,
           assignee = assignee.map(_.login),
-          organisationIds = Set(organisation._id),
+          organisationIds = Set(currentOrganisation._id),
           caseTemplate = caseTemplate.map(_.name),
           impactStatus = None,
           resolutionStatus = None,
           tags = tagNames,
-          owningOrganisation = organisationSrv.currentId
+          owningOrganisation = currentOrganisation._id
         )
       )
 
       ownerSharingProfile <- organisationSrv.current.ownerSharingProfile(taskRule, observableRule).getOrFail("Organisation")
       _                   <- assignee.map(u => caseUserSrv.create(CaseUser(), createdCase, u)).flip
-      _                   <- shareSrv.shareCase(owner = true, createdCase, organisation, ownerSharingProfile)
+      _                   <- shareSrv.shareCase(owner = true, createdCase, currentOrganisation, ownerSharingProfile)
       _                   <- caseTemplate.map(ct => caseCaseTemplateSrv.create(CaseCaseTemplate(), createdCase, ct.caseTemplate)).flip
       _                   <- caseTemplate.fold(additionalTasks)(_.tasks.map(_.task) ++ additionalTasks).toTry(task => createTask(createdCase, task))
       _                   <- tags.toTry(caseTagSrv.create(CaseTag(), createdCase, _))
@@ -105,10 +107,8 @@ class CaseSrv(
       caseTemplateCf =
         caseTemplate
           .fold[Seq[RichCustomField]](Seq())(_.customFields)
-          .map(cf => InputCustomFieldValue(String64("customField.name", cf.name), cf.value, cf.order))
-      cfs <- cleanCustomFields(caseTemplateCf, customFields).toTry {
-        case InputCustomFieldValue(name, value, order) => createCustomField(createdCase, EntityIdOrName(name.value), value, order)
-      }
+          .map(cf => InputCustomFieldValue(String64("customField.name", cf.name), cf.jsValue, cf.order))
+      cfs <- cleanCustomFields(caseTemplateCf, customFields).toTry(createCustomField(createdCase, _))
 
       _ = organisationSrv.current.sharingProfiles(sharingParameters).foreach {
         case (orgId, sharingProfile) =>
@@ -166,7 +166,7 @@ class CaseSrv(
           case task                                         => taskSrv.updateStatus(task, TaskStatus.Cancel)
         }
         .flatMap { _ =>
-          vertex.property("endDate", System.currentTimeMillis())
+          vertex.setProperty[Option[Date]]("endDate", Some(new Date()))
           Success(Json.obj("endDate" -> System.currentTimeMillis()))
         }
     }
@@ -258,56 +258,53 @@ class CaseSrv(
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Case] =
     Try(startTraversal.getByNumber(name.toInt)).getOrElse(startTraversal.empty)
 
-  def getCustomField(`case`: Case with Entity, customFieldIdOrName: EntityIdOrName)(implicit graph: Graph): Option[RichCustomField] =
-    get(`case`).customFieldValue(customFieldIdOrName).richCustomField.headOption
-
-  def updateCustomField(
+  def createCustomField(
       `case`: Case with Entity,
-      customFieldValues: Seq[(CustomField, Any, Option[Int])]
-  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val customFieldNames = customFieldValues.map(_._1.name)
-    get(`case`)
-      .richCustomFields
-      .toIterator
-      .filterNot(rcf => customFieldNames.contains(rcf.name))
-      .foreach(rcf => get(`case`).customFieldValue(EntityName(rcf.name)).remove())
-    customFieldValues
-      .toTry { case (cf, v, o) => setOrCreateCustomField(`case`, EntityName(cf.name), Some(v), o) }
-      .map(_ => ())
-  }
-
-  def setOrCreateCustomField(`case`: Case with Entity, customFieldIdOrName: EntityIdOrName, value: Option[Any], order: Option[Int])(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] = {
-    val cfv = get(`case`).customFieldValue(customFieldIdOrName)
-    if (cfv.clone().exists)
-      cfv.setValue(value)
-    else
-      createCustomField(`case`, customFieldIdOrName, value, order).map(_ => ())
-  }
+      customField: InputCustomFieldValue
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    customFieldSrv
+      .getOrFail(EntityIdOrName(customField.name.value))
+      .flatMap(cf => createCustomField(`case`, cf, customField.value, customField.order))
 
   def createCustomField(
       `case`: Case with Entity,
-      customFieldIdOrName: EntityIdOrName,
-      customFieldValue: Option[Any],
+      customField: RichCustomField
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    createCustomField(`case`, customField.customField, customField.jsValue, customField.order)
+
+  def createCustomField(
+      `case`: Case with Entity,
+      customField: CustomField with Entity,
+      customFieldValue: JsValue,
       order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(customFieldIdOrName)
-      ccf  <- cf.`type`.setValue(CaseCustomField().order_=(order), customFieldValue)
-      ccfe <- caseCustomFieldSrv.create(ccf, `case`, cf)
-    } yield RichCustomField(cf, ccfe)
+      cfv <- customFieldValueSrv.createCustomField(`case`, customField, customFieldValue, order)
+      _   <- caseCustomFieldValueSrv.create(CaseCustomFieldValue(), `case`, cfv)
+    } yield RichCustomField(customField, cfv)
 
-  def deleteCustomField(
-      cfIdOrName: EntityIdOrName
-  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    Try(
-      caseCustomFieldSrv
-        .get(cfIdOrName)
-        .filter(_.outV.v[Case])
-        .remove()
-    )
+  def updateOrCreateCustomField(
+      `case`: Case with Entity,
+      customField: CustomField with Entity,
+      value: JsValue,
+      order: Option[Int]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    get(`case`)
+      .customFieldValue
+      .has(_.name, customField.name)
+      .headOption
+      .fold(createCustomField(`case`, customField, value, order)) { cfv =>
+        customFieldValueSrv
+          .updateValue(cfv, customField.`type`, value, order)
+          .map(RichCustomField(customField, _))
+      }
+
+  def updateCustomField(caseId: EntityIdOrName, customFieldValue: EntityId, value: JsValue)(implicit graph: Graph): Try[CustomFieldValue] =
+    customFieldValueSrv
+      .getByIds(customFieldValue)
+      .filter(_.`case`.get(caseId))
+      .getOrFail("CustomField")
+      .flatMap(cfv => customFieldValueSrv.updateValue(cfv, value, None))
 
   def setImpactStatus(
       `case`: Case with Entity,
@@ -381,13 +378,12 @@ class CaseSrv(
         .sharingProfiles
         .toSeq
 
+      val currentOrgaId = organisationSrv.currentId
       for {
-        user        <- userSrv.current.getOrFail("User")
-        currentOrga <- organisationSrv.current.getOrFail("Organisation")
+        user <- userSrv.current.getOrFail("User")
         richCase <- create(
           mergedCase,
           Some(user),
-          currentOrga,
           customFields = Seq(),
           caseTemplate = None,
           additionalTasks = Seq(),
@@ -398,7 +394,7 @@ class CaseSrv(
         // Share case with all organisations except the one who created the merged case
         _ <-
           sharingProfiles
-            .filterNot(_._1._id == currentOrga._id)
+            .filterNot(_._1._id == currentOrgaId)
             .toTry(sharingProfile => shareSrv.shareCase(owner = false, richCase.`case`, sharingProfile._1, sharingProfile._2))
         _ <- cases.toTry { c =>
           for {
@@ -419,7 +415,7 @@ class CaseSrv(
               get(c)
                 .richCustomFields
                 .toSeq
-                .toTry(c => createCustomField(richCase.`case`, EntityIdOrName(c.customField.name), c.value, c.order))
+                .toTry(createCustomField(richCase.`case`, _))
           } yield Success(())
         }
         _ <- cases.toTry(super.delete(_))
@@ -476,9 +472,10 @@ class CaseSrv(
       .map(_ => ())
 }
 
-trait CaseOpsNoDeps { _: TheHiveOpsNoDeps =>
+trait CaseOpsNoDeps { ops: TheHiveOpsNoDeps =>
 
-  implicit class CaseOpsNoDepsDefs(val traversal: Traversal.V[Case]) extends EntityWithCustomFieldOpsNoDepsDefs[Case, CaseCustomField] {
+  implicit class CaseOpsNoDepsDefs(traversal: Traversal.V[Case])
+      extends EntityWithCustomFieldOpsNoDepsDefs[Case, CaseCustomFieldValue](traversal, ops) {
 
     def resolutionStatus: Traversal.V[ResolutionStatus] = traversal.out[CaseResolutionStatus].v[ResolutionStatus]
 
@@ -648,22 +645,13 @@ trait CaseOpsNoDeps { _: TheHiveOpsNoDeps =>
           .sack[Long],
         _.constant(0L)
       )
-
-    def customFields: Traversal.E[CaseCustomField] = traversal.outE[CaseCustomField]
   }
-
-  implicit class CaseCustomFieldOpsDef(traversal: Traversal.E[CaseCustomField]) extends CustomFieldValueOpsDefs[CaseCustomField](traversal)
 }
 
-trait CaseOps { caseOps: TheHiveOps =>
+trait CaseOps { ops: TheHiveOps =>
 
-  protected val organisationSrv: OrganisationSrv
-  protected val customFieldSrv: CustomFieldSrv
+  implicit class CaseOpsDefs(traversal: Traversal.V[Case]) extends EntityWithCustomFieldOpsDefs[Case, CaseCustomFieldValue](traversal, ops) {
 
-  implicit class CaseOpsDefs(val traversal: Traversal.V[Case]) extends EntityWithCustomFieldOpsDefs[Case, CaseCustomField] {
-    override protected val customFieldSrv: CustomFieldSrv = caseOps.customFieldSrv
-    override def selectCustomField(traversal: Traversal.V[Case]): Traversal.E[CaseCustomField] =
-      traversal.outE[CaseCustomField]
     def visible(implicit authContext: AuthContext): Traversal.V[Case] =
       traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
   }

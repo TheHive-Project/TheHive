@@ -2,6 +2,7 @@ package org.thp.thehive.models
 
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
+import org.apache.tinkerpop.gremlin.structure.{Edge, Vertex}
 import org.janusgraph.core.schema.ConsistencyModifier
 import org.janusgraph.graphdb.types.TypeDefinitionCategory
 import org.reflections.Reflections
@@ -11,7 +12,8 @@ import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.{Graph, TraversalOps}
+import org.thp.scalligraph.services.ElementOps
+import org.thp.scalligraph.traversal.{Graph, StepLabel, TraversalOps}
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
 
@@ -21,7 +23,7 @@ import scala.jdk.CollectionConverters._
 import scala.reflect.runtime.{universe => ru}
 import scala.util.{Success, Try}
 
-object TheHiveSchemaDefinition extends Schema with UpdatableSchema with TraversalOps {
+object TheHiveSchemaDefinition extends Schema with UpdatableSchema with TraversalOps with ElementOps {
 
   // Make sure TypeDefinitionCategory has been initialised before ModifierType to prevent ExceptionInInitializerError
   TypeDefinitionCategory.BACKING_INDEX
@@ -93,7 +95,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
     //=====[release 4.0.4]=====
     //=====[release 4.0.5]=====
     // Taxonomies
-    .addVertexModel[String]("Taxonomy")
+    .addVertexModel("Taxonomy")
     .addProperty[String]("Taxonomy", "namespace")
     .addProperty[String]("Taxonomy", "description")
     .addProperty[Int]("Taxonomy", "version")
@@ -109,12 +111,12 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
             .exists
           if (!hasFreetagsTaxonomy) {
             val taxoVertex = graph.addVertex("Taxonomy")
-            taxoVertex.property("_label", "Taxonomy")
-            taxoVertex.property("_createdBy", "system@thehive.local")
-            taxoVertex.property("_createdAt", new Date())
-            taxoVertex.property("namespace", s"_freetags_${o.id()}")
-            taxoVertex.property("description", "Custom taxonomy")
-            taxoVertex.property("version", 1)
+            taxoVertex.setProperty("_label", "Taxonomy")
+            taxoVertex.setProperty("_createdBy", "system@thehive.local")
+            taxoVertex.setProperty("_createdAt", new Date())
+            taxoVertex.setProperty("namespace", s"_freetags_${o.id()}")
+            taxoVertex.setProperty("description", "Custom taxonomy")
+            taxoVertex.setProperty("version", 1)
             o.addEdge("OrganisationTaxonomy", taxoVertex)
           }
         }
@@ -216,9 +218,9 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
                 (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
                 value.fold("")(v => f"""="$v"""")
 
-            tags.foreach(vertex.property(Cardinality.list, "tags", _))
-            vertex.property("organisationId", organisationId.value)
-            caseId.foreach(cid => vertex.property("caseId", cid.value))
+            vertex.setProperty("tags", tags)
+            vertex.setProperty("organisationId", organisationId)
+            vertex.setProperty("caseId", caseId)
           case _ =>
         }
       Success(())
@@ -253,12 +255,12 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
                 (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
                 value.fold("")(v => f"""="$v"""")
 
-            tags.foreach(vertex.property(Cardinality.list, "tags", _))
-            assignee.foreach(vertex.property("assignee", _))
-            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
-            impactStatus.foreach(vertex.property("impactStatus", _))
-            resolutionStatus.foreach(vertex.property("resolutionStatus", _))
-            caseTemplate.foreach(vertex.property("caseTemplate", _))
+            vertex.setProperty("tags", tags)
+            vertex.setProperty("assignee", assignee)
+            vertex.setProperty("organisationIds", organisationIds.toSet)
+            vertex.setProperty("impactStatus", impactStatus)
+            vertex.setProperty("resolutionStatus", resolutionStatus)
+            vertex.setProperty("caseTemplate", caseTemplate)
         }
       Success(())
     }
@@ -282,7 +284,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
                 (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
                 value.fold("")(v => f"""="$v"""")
 
-            tags.foreach(vertex.property(Cardinality.list, "tags", _))
+            vertex.setProperty("tags", tags)
         }
       Success(())
     }
@@ -299,8 +301,8 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         )
         .foreach {
           case (vertex, taskId, organisationIds) =>
-            taskId.foreach(tid => vertex.property("taskId", tid.value))
-            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
+            vertex.setProperty("taskId", taskId)
+            vertex.setProperty("organisationIds", organisationIds.toSet)
         }
       Success(())
     }
@@ -341,12 +343,12 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
                 (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
                 value.fold("")(v => f"""="$v"""")
 
-            dataType.foreach(vertex.property("dataType", _))
-            tags.foreach(vertex.property(Cardinality.list, "tags", _))
-            data.foreach(vertex.property("data", _))
-            attachmentId.foreach(vertex.property("attachmentId", _))
-            vertex.property("relatedId", relatedId.value)
-            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
+            vertex.setProperty("dataType", dataType)
+            vertex.setProperty("tags", tags)
+            vertex.setProperty("data", data)
+            vertex.setProperty("attachmentId", attachmentId)
+            vertex.setProperty("relatedId", relatedId)
+            vertex.setProperty("organisationIds", organisationIds.toSet)
           case _ =>
         }
       Success(())
@@ -366,9 +368,9 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         )
         .foreach {
           case (vertex, assignee, Some(relatedId), organisationIds) =>
-            assignee.foreach(vertex.property("assignee", _))
-            vertex.property("relatedId", relatedId.value)
-            organisationIds.foreach(id => vertex.property(Cardinality.set, "organisationIds", id.value))
+            vertex.setProperty("assignee", assignee)
+            vertex.setProperty("relatedId", relatedId)
+            vertex.setProperty("organisationIds", organisationIds.toSet)
           case _ =>
         }
       Success(())
@@ -435,7 +437,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         .project(_.by.by(_.in("TaskLog")._id.option))
         .foreach {
           case (vertex, Some(taskId)) =>
-            vertex.property("taskId", taskId.value)
+            vertex.setProperty("taskId", taskId)
           case _ =>
         }
       Success(())
@@ -455,7 +457,7 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         )
         .foreach {
           case (vertex, caseId) =>
-            vertex.property("caseId", caseId.fold("")(_.value))
+            vertex.setProperty("caseId", caseId.getOrElse(EntityId.empty))
         }
       Success(())
     }
@@ -493,11 +495,11 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
         )
         .foreach {
           case (vertex, owningOrganisation) =>
-            owningOrganisation.foreach(id => vertex.property("owningOrganisation", id.value))
+            vertex.setProperty("owningOrganisation", owningOrganisation)
         }
       Success(())
     }
-    //=============================
+    //=====[release 4.1.5]=====
     .addProperty[String]("Share", "taskRule")
     .updateGraphVertices("Add taskRule in share", "Share") { traversal =>
       traversal.foreach(_.property("taskRule", "manual"))
@@ -523,6 +525,148 @@ object TheHiveSchemaDefinition extends Schema with UpdatableSchema with Traversa
       traversal.inE("OrganisationOrganisation").foreach(_.property("linkType", "default"))
       Success(())
     }
+    .addVertexModel("CustomFieldValue")
+    .addIndexedProperty[EntityId]("CustomFieldValue", "elementId", IndexType.standard)
+    .addIndexedProperty[String]("CustomFieldValue", "name", IndexType.standard)
+    .addIndexedProperty[Option[Int]]("CustomFieldValue", "order", IndexType.standard)
+    .addIndexedProperty[Option[String]]("CustomFieldValue", "stringValue", IndexType.standard)
+    .addIndexedProperty[Option[Boolean]]("CustomFieldValue", "booleanValue", IndexType.standard)
+    .addIndexedProperty[Option[Int]]("CustomFieldValue", "integerValue", IndexType.standard)
+    .addIndexedProperty[Option[Double]]("CustomFieldValue", "floatValue", IndexType.standard)
+    .addIndexedProperty[Option[Date]]("CustomFieldValue", "dateValue", IndexType.standard)
+    .updateGraphVertices("Add vertex for each case custom fields", "CustomField") { traversal =>
+      val customFieldLabel      = StepLabel.identity[Vertex]
+      val customFieldLabelValue = StepLabel.identity[Edge]
+      val elementLabel          = StepLabel.identity[Vertex]
+      traversal
+        .as(customFieldLabel)
+        .inE("CaseCustomField")
+        .as(customFieldLabelValue)
+        .outV
+        .as(elementLabel)
+        .select((customFieldLabel, customFieldLabelValue, elementLabel))
+        .foreach {
+          case (cf, cfv, e) =>
+            val vertex = traversal
+              .graph
+              .addVertex("CustomFieldValue")
+              .setProperty("_label", "CustomFieldValue")
+              .setProperty("_createdAt", cfv.getProperty[Date]("_createdAt"))
+              .setProperty("_createdBy", cfv.getProperty[String]("_createdBy"))
+              .setProperty[EntityId]("elementId", EntityId(e.id()))
+              .setProperty("name", cf.getProperty[String]("name"))
+              .setProperty("order", cfv.getProperty[Option[Int]]("order"))
+              .setProperty("stringValue", cfv.getProperty[Option[String]]("stringValue"))
+              .setProperty("booleanValue", cfv.getProperty[Option[Boolean]]("booleanValue"))
+              .setProperty("integerValue", cfv.getProperty[Option[Int]]("integerValue"))
+              .setProperty("floatValue", cfv.getProperty[Option[Double]]("floatValue"))
+              .setProperty("dateValue", cfv.getProperty[Option[Date]]("dateValue"))
+            vertex.addEdge("CustomFieldValueCustomField", cf)
+            e.addEdge("CaseCustomFieldValue", vertex)
+        }
+      Success(())
+
+    }
+    .updateGraphVertices("Remove edge of case custom fields", "CustomField") { traversal =>
+      traversal.inE("CaseCustomField").remove()
+      Success(())
+    }
+    .updateGraphVertices("Add vertex for each alert custom fields", "CustomField") { traversal =>
+      val customFieldLabel      = StepLabel.identity[Vertex]
+      val customFieldLabelValue = StepLabel.identity[Edge]
+      val elementLabel          = StepLabel.identity[Vertex]
+      traversal
+        .as(customFieldLabel)
+        .inE("AlertCustomField")
+        .as(customFieldLabelValue)
+        .outV
+        .as(elementLabel)
+        .select((customFieldLabel, customFieldLabelValue, elementLabel))
+        .foreach {
+          case (cf, cfv, e) =>
+            val vertex = traversal
+              .graph
+              .addVertex("CustomFieldValue")
+              .setProperty("_label", "CustomFieldValue")
+              .setProperty("_createdAt", cfv.getProperty[Date]("_createdAt"))
+              .setProperty("_createdBy", cfv.getProperty[String]("_createdBy"))
+              .setProperty[EntityId]("elementId", EntityId(e.id()))
+              .setProperty("name", cf.getProperty[String]("name"))
+              .setProperty("order", cfv.getProperty[Option[Int]]("order"))
+              .setProperty("stringValue", cfv.getProperty[Option[String]]("stringValue"))
+              .setProperty("booleanValue", cfv.getProperty[Option[Boolean]]("booleanValue"))
+              .setProperty("integerValue", cfv.getProperty[Option[Int]]("integerValue"))
+              .setProperty("floatValue", cfv.getProperty[Option[Double]]("floatValue"))
+              .setProperty("dateValue", cfv.getProperty[Option[Date]]("dateValue"))
+            vertex.addEdge("CustomFieldValueCustomField", cf)
+            e.addEdge("AlertCustomFieldValue", vertex)
+        }
+      Success(())
+
+    }
+    .updateGraphVertices("Remove edge of alert custom fields", "CustomField") { traversal =>
+      traversal.inE("AlertCustomField").remove()
+      Success(())
+    }
+    .updateGraphVertices("Add vertex for each case template custom fields", "CustomField") { traversal =>
+      val customFieldLabel      = StepLabel.identity[Vertex]
+      val customFieldLabelValue = StepLabel.identity[Edge]
+      val elementLabel          = StepLabel.identity[Vertex]
+      traversal
+        .as(customFieldLabel)
+        .inE("CaseTemplateCustomField")
+        .as(customFieldLabelValue)
+        .outV
+        .as(elementLabel)
+        .select((customFieldLabel, customFieldLabelValue, elementLabel))
+        .foreach {
+          case (cf, cfv, e) =>
+            val vertex = traversal
+              .graph
+              .addVertex("CustomFieldValue")
+              .setProperty("_label", "CustomFieldValue")
+              .setProperty("_createdAt", cfv.getProperty[Date]("_createdAt"))
+              .setProperty("_createdBy", cfv.getProperty[String]("_createdBy"))
+              .setProperty[EntityId]("elementId", EntityId(e.id()))
+              .setProperty("name", cf.getProperty[String]("name"))
+              .setProperty("order", cfv.getProperty[Option[Int]]("order"))
+              .setProperty("stringValue", cfv.getProperty[Option[String]]("stringValue"))
+              .setProperty("booleanValue", cfv.getProperty[Option[Boolean]]("booleanValue"))
+              .setProperty("integerValue", cfv.getProperty[Option[Int]]("integerValue"))
+              .setProperty("floatValue", cfv.getProperty[Option[Double]]("floatValue"))
+              .setProperty("dateValue", cfv.getProperty[Option[Date]]("dateValue"))
+            vertex.addEdge("CustomFieldValueCustomField", cf)
+            e.addEdge("CaseTemplateCustomFieldValue", vertex)
+        }
+      Success(())
+
+    }
+    .updateGraphVertices("Remove edge of case template custom fields", "CustomField") { traversal =>
+      traversal.inE("CaseTemplateCustomField").remove()
+      Success(())
+    }
+    .removeProperty[Option[Int]]("AlertCustomFieldValue", "order", usedOnlyByThisModel = false)
+    .removeProperty[Option[String]]("AlertCustomFieldValue", "stringValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Boolean]]("AlertCustomFieldValue", "booleanValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Int]]("AlertCustomFieldValue", "integerValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Double]]("AlertCustomFieldValue", "floatValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Date]]("AlertCustomFieldValue", "dateValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Int]]("CaseCustomFieldValue", "order", usedOnlyByThisModel = false)
+    .removeProperty[Option[String]]("CaseCustomFieldValue", "stringValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Boolean]]("CaseCustomFieldValue", "booleanValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Int]]("CaseCustomFieldValue", "integerValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Double]]("CaseCustomFieldValue", "floatValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Date]]("CaseCustomFieldValue", "dateValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Int]]("CaseTemplateCustomFieldValue", "order", usedOnlyByThisModel = false)
+    .removeProperty[Option[String]]("CaseTemplateCustomFieldValue", "stringValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Boolean]]("CaseTemplateCustomFieldValue", "booleanValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Int]]("CaseTemplateCustomFieldValue", "integerValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Double]]("CaseTemplateCustomFieldValue", "floatValue", usedOnlyByThisModel = false)
+    .removeProperty[Option[Date]]("CaseTemplateCustomFieldValue", "dateValue", usedOnlyByThisModel = false)
+    .removeEdgeLabel("CaseCustomField")
+    .removeEdgeLabel("AlertCustomField")
+    .removeEdgeLabel("CaseTemplateCustomField")
+  //=====[release 4.2.0]=====
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()

@@ -1,75 +1,39 @@
 package org.thp.thehive.models
 
-import org.apache.tinkerpop.gremlin.structure.Edge
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph._
 import org.thp.scalligraph.controllers.{Output, Renderer}
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Traversal.{Domain, E}
+import org.thp.scalligraph.query.PredicateOps
+import org.thp.scalligraph.traversal.Traversal.Domain
 import org.thp.scalligraph.traversal.{Traversal, TraversalOps}
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-import java.util.{Date, NoSuchElementException}
+import java.util.Date
 import scala.util.{Failure, Success, Try}
 
-trait CustomFieldValue[C] extends Product {
-  def order: Option[Int]
-  def stringValue: Option[String]
-  def booleanValue: Option[Boolean]
-  def integerValue: Option[Int]
-  def floatValue: Option[Double]
-  def dateValue: Option[Date]
-  def order_=(value: Option[Int]): C
-  def stringValue_=(value: Option[String]): C
-  def booleanValue_=(value: Option[Boolean]): C
-  def integerValue_=(value: Option[Int]): C
-  def floatValue_=(value: Option[Double]): C
-  def dateValue_=(value: Option[Date]): C
-}
+@BuildEdgeEntity[CustomFieldValue, CustomField]
+case class CustomFieldValueCustomField()
 
-class CustomFieldValueEdge(edge: Edge) extends CustomFieldValue[CustomFieldValueEdge] with Entity {
-  override def order: Option[Int]            = UMapping.int.optional.getProperty(edge, "order")
-  override def stringValue: Option[String]   = UMapping.string.optional.getProperty(edge, "stringValue")
-  override def booleanValue: Option[Boolean] = UMapping.boolean.optional.getProperty(edge, "booleanValue")
-  override def integerValue: Option[Int]     = UMapping.int.optional.getProperty(edge, "integerValue")
-  override def floatValue: Option[Double]    = UMapping.double.optional.getProperty(edge, "floatValue")
-  override def dateValue: Option[Date]       = UMapping.date.optional.getProperty(edge, "dateValue")
-
-  override def order_=(value: Option[Int]): CustomFieldValueEdge = {
-    UMapping.int.optional.setProperty(edge, "order", value)
-    this
-  }
-
-  override def stringValue_=(value: Option[String]): CustomFieldValueEdge = {
-    UMapping.string.optional.setProperty(edge, "stringValue", value)
-    this
-  }
-  override def booleanValue_=(value: Option[Boolean]): CustomFieldValueEdge = {
-    UMapping.boolean.optional.setProperty(edge, "booleanValue", value)
-    this
-  }
-  override def integerValue_=(value: Option[Int]): CustomFieldValueEdge = {
-    UMapping.int.optional.setProperty(edge, "integerValue", value)
-    this
-  }
-  override def floatValue_=(value: Option[Double]): CustomFieldValueEdge = {
-    UMapping.double.optional.setProperty(edge, "floatValue", value)
-    this
-  }
-  override def dateValue_=(value: Option[Date]): CustomFieldValueEdge = {
-    UMapping.date.optional.setProperty(edge, "dateValue", value)
-    this
-  }
-  override def productElement(n: Int): Any  = throw new NoSuchElementException
-  override def productArity: Int            = 0
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[CustomFieldValueEdge]
-
-  override def _id: EntityId              = EntityId(edge.id())
-  override def _label: String             = edge.label()
-  override def _createdBy: String         = UMapping.string.getProperty(edge, "_createdBy")
-  override def _updatedBy: Option[String] = UMapping.string.optional.getProperty(edge, "_updatedBy")
-  override def _createdAt: Date           = UMapping.date.getProperty(edge, "_createdAt")
-  override def _updatedAt: Option[Date]   = UMapping.date.optional.getProperty(edge, "_updatedAt")
-}
+@BuildVertexEntity
+@DefineIndex(IndexType.standard, "elementId")
+@DefineIndex(IndexType.standard, "name")
+@DefineIndex(IndexType.standard, "stringValue")
+@DefineIndex(IndexType.standard, "booleanValue")
+@DefineIndex(IndexType.standard, "integerValue")
+@DefineIndex(IndexType.standard, "floatValue")
+@DefineIndex(IndexType.standard, "dateValue")
+case class CustomFieldValue(
+    elementId: EntityId,
+    name: String,
+    order: Option[Int] = None,
+    stringValue: Option[String] = None,
+    booleanValue: Option[Boolean] = None,
+    integerValue: Option[Int] = None,
+    floatValue: Option[Double] = None,
+    dateValue: Option[Date] = None
+)
 
 object CustomFieldType {
   def withName(name: String): CustomFieldType[_] =
@@ -89,138 +53,153 @@ object CustomFieldType {
     SingleMapping[CustomFieldType[_], String](toGraph = t => t.name, toDomain = withName)
 }
 
-sealed abstract class CustomFieldType[T] {
+sealed abstract class CustomFieldType[T] extends TraversalOps with PredicateOps {
   val name: String
-  val writes: Writes[T]
+  val format: Format[T]
 
-  def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C]
-
-  def getValue(ccf: CustomFieldValue[_]): Option[T]
-
-  def getJsonValue(ccf: CustomFieldValue[_]): JsValue = getValue(ccf).fold[JsValue](JsNull)(writes.writes)
-
-  def getValue[C <: CustomFieldValue[_]](traversal: Traversal.E[C]): Traversal.Domain[T]
-
-  def getJsonValue[C <: CustomFieldValue[_]](traversal: Traversal.E[C]): Traversal.Domain[JsValue] = getValue(traversal).domainMap(writes.writes)
-
-  override def toString: String = name
-
-  protected def setValueFailure(value: Any): Failure[Nothing] =
+  protected def fail(value: JsValue): Failure[Nothing] =
     Failure(BadRequestError(s"""Invalid value type for custom field.
                                |  Expected: $name
                                |  Found   : $value (${value.getClass})
                              """.stripMargin))
+
+  def readValue(value: JsValue): Try[Option[T]] =
+    value match {
+      case JsNull => Success(None)
+      case other  => other.asOpt(format).fold[Try[Option[T]]](fail(value))(v => Success(Some(v)))
+    }
+
+  lazy val parseReader: Reads[(JsValue, Option[Int])] =
+    Reads[(JsValue, Option[Int])](j => j.validate(format).map(_ => j -> None)).orElse {
+      ((__ \ "value").read(format).map(Option(_)).orElse((__ \ name).readNullable(format)) and
+        (__ \ "order").readNullable[Int]).apply((v, o) => (v.fold[JsValue](JsNull)(format.writes), o))
+    }
+
+  def parseValue(value: JsValue): Try[(JsValue, Option[Int])] =
+    parseReader
+      .reads(value)
+      .fold(
+        _ => fail(value),
+        Success(_)
+      )
+
+  def getValue(ccf: CustomFieldValue): Option[T]
+  def getJsonValue(ccf: CustomFieldValue): JsValue = getValue(ccf).fold[JsValue](JsNull)(format.writes)
+  def getValue(traversal: Traversal.V[CustomFieldValue]): Traversal.Domain[T]
+  def getJsonValue(traversal: Traversal.V[CustomFieldValue]): Traversal.Domain[JsValue] = getValue(traversal).domainMap(format.writes)
+  def filter(traversal: Traversal.V[CustomFieldValue], predicate: P[JsValue]): Traversal.V[CustomFieldValue]
+  def setValue(customFieldValue: CustomFieldValue, value: JsValue): Try[CustomFieldValue]
+  def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]]
+  override def toString: String = name
 }
 
 object CustomFieldString extends CustomFieldType[String] with TraversalOps {
   override val name: String           = "string"
-  override val writes: Writes[String] = Writes.StringWrites
+  override val format: Format[String] = implicitly[Format[String]]
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
-    value.getOrElse(JsNull) match {
-      case v: String     => Success(customFieldValue.stringValue = Some(v))
-      case JsString(v)   => Success(customFieldValue.stringValue = Some(v))
-      case JsNull | null => Success(customFieldValue.stringValue = None)
-      case obj: JsObject =>
-        val stringValue = (obj \ "string").asOpt[String]
-        val order       = (obj \ "order").asOpt[Int]
-        Success((customFieldValue.stringValue = stringValue).order = order)
-      case _ => setValueFailure(value)
+  override def getValue(ccf: CustomFieldValue): Option[String] = ccf.stringValue
+
+  override def getValue(traversal: Traversal.V[CustomFieldValue]): Traversal.Domain[String] = traversal.value(_.stringValue).castDomain
+
+  override def filter(traversal: Traversal.V[CustomFieldValue], predicate: P[JsValue]): Traversal.V[CustomFieldValue] =
+    Try(traversal.has(_.stringValue, predicate.mapValue(_.as(format)))).getOrElse(traversal.empty)
+
+  def setValue(customFieldValue: CustomFieldValue, value: JsValue): Try[CustomFieldValue] =
+    value match {
+      case JsString(v) => Success(customFieldValue.copy(stringValue = Some(v)))
+      case JsNull      => Success(customFieldValue.copy(stringValue = None))
+      case _           => fail(value)
     }
 
-  override def getValue(ccf: CustomFieldValue[_]): Option[String] = ccf.stringValue
-
-  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Traversal.Domain[String] = traversal.value(_.stringValue).castDomain
+  def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
+    readValue(value).map(v => traversal.update(_.stringValue, v))
 }
 
 object CustomFieldBoolean extends CustomFieldType[Boolean] with TraversalOps {
   override val name: String            = "boolean"
-  override val writes: Writes[Boolean] = Writes.BooleanWrites
+  override val format: Format[Boolean] = implicitly[Format[Boolean]]
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
-    value.getOrElse(JsNull) match {
-      case v: Boolean    => Success(customFieldValue.booleanValue = Some(v))
-      case JsBoolean(v)  => Success(customFieldValue.booleanValue = Some(v))
-      case JsNull | null => Success(customFieldValue.booleanValue = None)
-      case obj: JsObject =>
-        val booleanValue = (obj \ "boolean").asOpt[Boolean]
-        val order        = (obj \ "order").asOpt[Int]
-        Success((customFieldValue.booleanValue = booleanValue).order = order)
+  override def getValue(ccf: CustomFieldValue): Option[Boolean] = ccf.booleanValue
 
-      case _ => setValueFailure(value)
+  override def getValue(traversal: Traversal.V[CustomFieldValue]): Traversal.Domain[Boolean] = traversal.value(_.booleanValue).castDomain
+
+  override def filter(traversal: Traversal.V[CustomFieldValue], predicate: P[JsValue]): Traversal.V[CustomFieldValue] =
+    Try(traversal.has(_.booleanValue, predicate.mapValue(_.as(format)))).getOrElse(traversal.empty)
+
+  def setValue(customFieldValue: CustomFieldValue, value: JsValue): Try[CustomFieldValue] =
+    value match {
+      case JsBoolean(v) => Success(customFieldValue.copy(booleanValue = Some(v)))
+      case JsNull       => Success(customFieldValue.copy(booleanValue = None))
+      case _            => fail(value)
     }
 
-  override def getValue(ccf: CustomFieldValue[_]): Option[Boolean] = ccf.booleanValue
-
-  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Boolean] = traversal.value(_.booleanValue).castDomain
+  def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
+    readValue(value).map(v => traversal.update(_.booleanValue, v))
 }
 
 object CustomFieldInteger extends CustomFieldType[Int] with TraversalOps {
   override val name: String        = "integer"
-  override val writes: Writes[Int] = Writes.IntWrites
+  override val format: Format[Int] = implicitly[Format[Int]]
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
-    value.getOrElse(JsNull) match {
-      case v: Int        => Success(customFieldValue.integerValue = Some(v))
-      case v: Double     => Success(customFieldValue.integerValue = Some(v.toInt))
-      case JsNumber(n)   => Success(customFieldValue.integerValue = Some(n.toInt))
-      case JsNull | null => Success(customFieldValue.integerValue = None)
-      case obj: JsObject =>
-        val integerValue = (obj \ "integer").asOpt[Int]
-        val order        = (obj \ "order").asOpt[Int]
-        Success((customFieldValue.integerValue = integerValue).order = order)
+  override def getValue(ccf: CustomFieldValue): Option[Int] = ccf.integerValue
 
-      case _ => setValueFailure(value)
+  override def getValue(traversal: Traversal.V[CustomFieldValue]): Domain[Int] = traversal.value(_.integerValue).castDomain
+
+  override def filter(traversal: Traversal.V[CustomFieldValue], predicate: P[JsValue]): Traversal.V[CustomFieldValue] =
+    Try(traversal.has(_.integerValue, predicate.mapValue(_.as(format)))).getOrElse(traversal.empty)
+
+  def setValue(customFieldValue: CustomFieldValue, value: JsValue): Try[CustomFieldValue] =
+    value match {
+      case JsNumber(v) => Success(customFieldValue.copy(integerValue = Some(v.toInt)))
+      case JsNull      => Success(customFieldValue.copy(integerValue = None))
+      case _           => fail(value)
     }
 
-  override def getValue(ccf: CustomFieldValue[_]): Option[Int] = ccf.integerValue
-
-  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Int] = traversal.value(_.integerValue).castDomain
+  override def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
+    readValue(value).map(v => traversal.update(_.integerValue, v))
 }
 
 object CustomFieldFloat extends CustomFieldType[Double] with TraversalOps {
-  override val name: String           = "float"
-  override val writes: Writes[Double] = Writes.DoubleWrites
+  override val name: String                                    = "float"
+  override val format: Format[Double]                          = implicitly[Format[Double]]
+  override def getValue(ccf: CustomFieldValue): Option[Double] = ccf.floatValue
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
-    value.getOrElse(JsNull) match {
-      case n: Number     => Success(customFieldValue.floatValue = Some(n.doubleValue()))
-      case JsNumber(n)   => Success(customFieldValue.floatValue = Some(n.toDouble))
-      case JsNull | null => Success(customFieldValue.floatValue = None)
-      case obj: JsObject =>
-        val floatValue = (obj \ "float").asOpt[Double]
-        val order      = (obj \ "order").asOpt[Int]
-        Success((customFieldValue.floatValue = floatValue).order = order)
+  override def getValue(traversal: Traversal.V[CustomFieldValue]): Domain[Double] = traversal.value(_.floatValue).castDomain
 
-      case _ => setValueFailure(value)
+  override def filter(traversal: Traversal.V[CustomFieldValue], predicate: P[JsValue]): Traversal.V[CustomFieldValue] =
+    Try(traversal.has(_.floatValue, predicate.mapValue(_.as(format)))).getOrElse(traversal.empty)
+
+  def setValue(customFieldValue: CustomFieldValue, value: JsValue): Try[CustomFieldValue] =
+    value match {
+      case JsNumber(v) => Success(customFieldValue.copy(floatValue = Some(v.toDouble)))
+      case JsNull      => Success(customFieldValue.copy(floatValue = None))
+      case _           => fail(value)
     }
 
-  override def getValue(ccf: CustomFieldValue[_]): Option[Double] = ccf.floatValue
-
-  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Double] = traversal.value(_.floatValue).castDomain
+  override def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
+    readValue(value).map(v => traversal.update(_.floatValue, v))
 }
 
 object CustomFieldDate extends CustomFieldType[Date] with TraversalOps {
   override val name: String         = "date"
-  override val writes: Writes[Date] = Writes[Date](d => JsNumber(d.getTime))
+  override val format: Format[Date] = Format[Date](Reads.LongReads.map(new Date(_)), Writes.LongWrites.contramap(_.getTime))
 
-  override def setValue[C <: CustomFieldValue[C]](customFieldValue: C, value: Option[Any]): Try[C] =
-    value.getOrElse(JsNull) match {
-      case n: Number     => Success(customFieldValue.dateValue = Some(new Date(n.longValue())))
-      case JsNumber(n)   => Success(customFieldValue.dateValue = Some(new Date(n.toLong)))
-      case v: Date       => Success(customFieldValue.dateValue = Some(v))
-      case JsNull | null => Success(customFieldValue.dateValue = None)
-      case obj: JsObject =>
-        val dateValue = (obj \ "date").asOpt[Long].map(new Date(_))
-        val order     = (obj \ "order").asOpt[Int]
-        Success((customFieldValue.dateValue = dateValue).order = order)
+  override def getValue(ccf: CustomFieldValue): Option[Date] = ccf.dateValue
 
-      case _ => setValueFailure(value)
+  override def getValue(traversal: Traversal.V[CustomFieldValue]): Domain[Date] = traversal.value(_.dateValue).castDomain
+
+  override def filter(traversal: Traversal.V[CustomFieldValue], predicate: P[JsValue]): Traversal.V[CustomFieldValue] =
+    Try(traversal.has(_.dateValue, predicate.mapValue(_.as(format)))).getOrElse(traversal.empty)
+
+  def setValue(customFieldValue: CustomFieldValue, value: JsValue): Try[CustomFieldValue] =
+    value match {
+      case JsNumber(v) => Success(customFieldValue.copy(dateValue = Some(new Date(v.toLong))))
+      case JsNull      => Success(customFieldValue.copy(dateValue = None))
+      case _           => fail(value)
     }
 
-  override def getValue(ccf: CustomFieldValue[_]): Option[Date] = ccf.dateValue
-
-  override def getValue[C <: CustomFieldValue[_]](traversal: E[C]): Domain[Date] = traversal.value(_.dateValue).castDomain
+  override def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
+    readValue(value).map(v => traversal.update(_.dateValue, v))
 }
 
 @DefineIndex(IndexType.unique, "name")
@@ -234,7 +213,7 @@ case class CustomField(
     options: Seq[JsValue]
 )
 
-case class RichCustomField(customField: CustomField with Entity, customFieldValue: CustomFieldValue[_] with Entity) {
+case class RichCustomField(customField: CustomField with Entity, customFieldValue: CustomFieldValue with Entity) {
   def name: String               = customField.name
   def description: String        = customField.description
   def typeName: String           = customField.`type`.toString
@@ -242,5 +221,5 @@ case class RichCustomField(customField: CustomField with Entity, customFieldValu
   def jsValue: JsValue           = `type`.getJsonValue(customFieldValue)
   def order: Option[Int]         = customFieldValue.order
   def `type`: CustomFieldType[_] = customField.`type`
-  def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.writes.asInstanceOf[Writes[Any]].writes)
+  def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.format.asInstanceOf[Format[Any]].writes)
 }

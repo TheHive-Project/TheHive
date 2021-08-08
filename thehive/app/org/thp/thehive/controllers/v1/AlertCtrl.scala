@@ -26,6 +26,7 @@ class AlertCtrl(
     userSrv: UserSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     implicit val db: Database
 ) extends QueryableCtrl
     with AlertRenderer {
@@ -174,7 +175,6 @@ class AlertCtrl(
         val observableRule: Option[String]     = request.body("observableRule")
 
         for {
-          organisation <- organisationSrv.current.getOrFail("Organisation")
           alert <-
             alertSrv
               .get(EntityIdOrName(alertIdOrName))
@@ -187,7 +187,6 @@ class AlertCtrl(
           richCase <- alertSrv.createCase(
             alertWithCaseTemplate,
             assignee,
-            organisation,
             sharingParameters.map(_.toSharingParameter).toMap,
             taskRule,
             observableRule

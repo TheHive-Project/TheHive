@@ -14,7 +14,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.String64
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 import java.lang.{Long => JLong}
 import java.util.{Date, Map => JMap}
@@ -25,6 +25,7 @@ class AlertSrv(
     tagSrv: TagSrv,
     organisationSrv: OrganisationSrv,
     customFieldSrv: CustomFieldSrv,
+    customFieldValueSrv: CustomFieldValueSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv,
@@ -33,12 +34,12 @@ class AlertSrv(
 ) extends VertexSrv[Alert]
     with TheHiveOpsNoDeps {
 
-  val alertTagSrv          = new EdgeSrv[AlertTag, Alert, Tag]
-  val alertCustomFieldSrv  = new EdgeSrv[AlertCustomField, Alert, CustomField]
-  val alertOrganisationSrv = new EdgeSrv[AlertOrganisation, Alert, Organisation]
-  val alertCaseSrv         = new EdgeSrv[AlertCase, Alert, Case]
-  val alertCaseTemplateSrv = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
-  val alertObservableSrv   = new EdgeSrv[AlertObservable, Alert, Observable]
+  val alertTagSrv              = new EdgeSrv[AlertTag, Alert, Tag]
+  val alertCustomFieldValueSrv = new EdgeSrv[AlertCustomFieldValue, Alert, CustomFieldValue]
+  val alertOrganisationSrv     = new EdgeSrv[AlertOrganisation, Alert, Organisation]
+  val alertCaseSrv             = new EdgeSrv[AlertCase, Alert, Case]
+  val alertCaseTemplateSrv     = new EdgeSrv[AlertCaseTemplate, Alert, CaseTemplate]
+  val alertObservableSrv       = new EdgeSrv[AlertObservable, Alert, Observable]
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Alert] =
     name.split(';') match {
@@ -139,43 +140,38 @@ class AlertSrv(
 
   def createCustomField(
       alert: Alert with Entity,
-      inputCf: InputCustomFieldValue
+      customField: InputCustomFieldValue
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
+    customFieldSrv
+      .getOrFail(EntityIdOrName(customField.name.value))
+      .flatMap(cf => createCustomField(alert, cf, customField.value, customField.order))
+
+  def createCustomField(
+      alert: Alert with Entity,
+      customField: CustomField with Entity,
+      customFieldValue: JsValue,
+      order: Option[Int]
   )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     for {
-      cf   <- customFieldSrv.getOrFail(EntityIdOrName(inputCf.name.value))
-      ccf  <- cf.`type`.setValue(AlertCustomField(), inputCf.value).map(_.order_=(inputCf.order))
-      ccfe <- alertCustomFieldSrv.create(ccf, alert, cf)
-    } yield RichCustomField(cf, ccfe)
+      cfv <- customFieldValueSrv.createCustomField(alert, customField, customFieldValue, order)
+      _   <- alertCustomFieldValueSrv.create(AlertCustomFieldValue(), alert, cfv)
+    } yield RichCustomField(customField, cfv)
 
-  def setOrCreateCustomField(alert: Alert with Entity, cf: InputCustomFieldValue)(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Try[Unit] = {
-    val cfv = get(alert).customFieldValue(EntityIdOrName(cf.name.value))
-    if (cfv.clone().exists)
-      cfv.setValue(cf.value)
-    else
-      createCustomField(alert, cf).map(_ => ())
-  }
-
-//  def getCustomField(alert: Alert with Entity, customFieldName: String)(implicit graph: Graph): Option[RichCustomField] =
-//    get(alert).customFields(customFieldName).richCustomField.headOption
-
-  def updateCustomField(
+  def updateOrCreateCustomField(
       alert: Alert with Entity,
-      customFieldValues: Seq[(CustomField, Any)]
-  )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    val customFieldNames = customFieldValues.map(_._1.name)
+      customField: CustomField with Entity,
+      value: JsValue,
+      order: Option[Int]
+  )(implicit graph: Graph, authContext: AuthContext): Try[RichCustomField] =
     get(alert)
-      .customFields
-      .richCustomField
-      .toIterator
-      .filterNot(rcf => customFieldNames.contains(rcf.name))
-      .foreach(rcf => get(alert).customFieldValue(rcf.customField._id).remove())
-    customFieldValues
-      .toTry { case (cf, v) => setOrCreateCustomField(alert, InputCustomFieldValue(String64("customField.name", cf.name), Some(v), None)) }
-      .map(_ => ())
-  }
+      .customFieldValue
+      .has(_.name, customField.name)
+      .headOption
+      .fold(createCustomField(alert, customField, value, order)) { cfv =>
+        customFieldValueSrv
+          .updateValue(cfv, customField.`type`, value, order)
+          .map(RichCustomField(customField, _))
+      }
 
   def markAsUnread(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
@@ -204,7 +200,6 @@ class AlertSrv(
   def createCase(
       alert: RichAlert,
       assignee: Option[User with Entity],
-      organisation: Organisation with Entity,
       sharingParameters: Map[String, SharingParameter],
       taskRule: Option[String],
       observableRule: Option[String]
@@ -220,7 +215,7 @@ class AlertSrv(
               .caseTemplate
               .map(ct => caseTemplateSrv.get(EntityIdOrName(ct)).visible.richCaseTemplate.getOrFail("CaseTemplate"))
               .flip
-          customField = alert.customFields.map(f => InputCustomFieldValue(String64("customField.name", f.name), f.value, f.order))
+          customField = alert.customFields.map(f => InputCustomFieldValue(String64("customField.name", f.name), f.jsValue, f.order))
           case0 = Case(
             title = caseTemplate.flatMap(_.titlePrefix).getOrElse("") + alert.title,
             description = alert.description,
@@ -235,7 +230,7 @@ class AlertSrv(
             alert.tags
           )
 
-          createdCase <- caseSrv.create(case0, assignee, organisation, customField, caseTemplate, Nil, sharingParameters, taskRule, observableRule)
+          createdCase <- caseSrv.create(case0, assignee, customField, caseTemplate, Nil, sharingParameters, taskRule, observableRule)
           _           <- importObservables(alert.alert, createdCase.`case`)
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
           _           <- get(alert.alert).update(_.caseId, createdCase._id).getOrFail("Alert")
@@ -323,10 +318,7 @@ class AlertSrv(
     get(alert)
       .richCustomFields
       .toIterator
-      .toTry { richCustomField =>
-        caseSrv
-          .setOrCreateCustomField(`case`, richCustomField.customField._id, richCustomField.value, richCustomField.customFieldValue.order)
-      }
+      .toTry(caseSrv.createCustomField(`case`, _))
       .map(_ => ())
 
   def remove(alert: Alert with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
@@ -341,9 +333,10 @@ class AlertSrv(
     }
 }
 
-trait AlertOpsNoDeps { _: TheHiveOpsNoDeps =>
+trait AlertOpsNoDeps { ops: TheHiveOpsNoDeps =>
 
-  implicit class AlertOpsNoDepsDefs(val traversal: Traversal.V[Alert]) extends EntityWithCustomFieldOpsNoDepsDefs[Alert, AlertCustomField] {
+  implicit class AlertOpsNoDepsDefs(traversal: Traversal.V[Alert])
+      extends EntityWithCustomFieldOpsNoDepsDefs[Alert, AlertCustomFieldValue](traversal, ops) {
     def get(idOrSource: EntityIdOrName): Traversal.V[Alert] =
       idOrSource.fold(
         traversal.getByIds(_),
@@ -444,22 +437,14 @@ trait AlertOpsNoDeps { _: TheHiveOpsNoDeps =>
               observableCount
             )
         }
-
-    override def customFields: Traversal.E[AlertCustomField] = traversal.outE[AlertCustomField]
   }
-
-  implicit class AlertCustomFieldsOpsDefs(traversal: Traversal.E[AlertCustomField]) extends CustomFieldValueOpsDefs(traversal)
 }
 
-trait AlertOps { alertOps: TheHiveOps =>
+trait AlertOps { ops: TheHiveOps =>
   protected val organisationSrv: OrganisationSrv
   protected val customFieldSrv: CustomFieldSrv
 
-  implicit class AlertOpsDefs(val traversal: Traversal.V[Alert]) extends EntityWithCustomFieldOpsDefs[Alert, AlertCustomField] {
-    override protected val customFieldSrv: CustomFieldSrv = alertOps.customFieldSrv
-    override def selectCustomField(traversal: Traversal.V[Alert]): Traversal.E[AlertCustomField] =
-      traversal.outE[AlertCustomField]
-
+  implicit class AlertOpsDefs(traversal: Traversal.V[Alert]) extends EntityWithCustomFieldOpsDefs[Alert, AlertCustomFieldValue](traversal, ops) {
     def visible(implicit authContext: AuthContext): Traversal.V[Alert] =
       traversal.has(_.organisationId, organisationSrv.currentId(traversal.graph, authContext))
 

@@ -1,0 +1,10 @@
+[
+  {"id": "alert4-integer1", "elementId": "", "name": "integer1"},
+  {"id": "alert1-integer1", "elementId": "", "name": "integer1", "integerValue": 42},
+  {"id": "case3-string1", "elementId": "", "name": "string1", "stringValue": "string1 custom field"},
+  {"id": "case3-boolean1", "elementId": "", "name": "boolean1", "booleanValue": true},
+  {"id": "caseMerge22-string1", "elementId": "", "name": "string1", "stringValue": "merge string1"},
+  {"id": "caseMerge23-integer1", "elementId": "", "name": "integer1", "integerValue": 3},
+  {"id": "spam-string1", "elementId": "", "name": "string1", "stringValue": "string1 custom field", "order":  1},
+  {"id": "spam-boolean1", "elementId": "", "name": "boolean1", "order":  2}
+]
