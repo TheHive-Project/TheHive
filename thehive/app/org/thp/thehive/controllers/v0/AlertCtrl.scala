@@ -267,7 +267,6 @@ class AlertCtrl(
         val observableRule: Option[String]     = request.body("observableRule")
 
         for {
-          organisation <- organisationSrv.current.getOrFail("Organisation")
           alert <-
             alertSrv
               .get(EntityIdOrName(alertId))
@@ -280,7 +279,6 @@ class AlertCtrl(
           richCase <- alertSrv.createCase(
             alertWithCaseTemplate,
             assignee,
-            organisation,
             sharingParameters.map(_.toSharingParameter).toMap,
             taskRule,
             observableRule

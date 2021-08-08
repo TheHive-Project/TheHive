@@ -65,7 +65,6 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
 
     // Create an event first
     val `case` = database.tryTransaction { implicit graph =>
-      val organisation = organisationSrv.getOrFail(EntityIdOrName("admin")).get
       caseSrv.create(
         `case` = Case(
           title = "case audit",
@@ -81,7 +80,6 @@ class AuditCtrlTest extends PlaySpecification with TestAppBuilder {
           tags = Nil
         ),
         assignee = None,
-        organisation = organisation,
         customFields = Nil,
         caseTemplate = None,
         additionalTasks = Nil,

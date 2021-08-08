@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order
-import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.TraversalOps
@@ -19,9 +18,6 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder with TraversalO
       import app._
       import app.thehiveModule._
 
-      val org = database.roTransaction { implicit graph =>
-        organisationSrv.getOrFail(EntityName("cert")).get
-      }
       // Create 3 case events first
       val c1 = database.tryTransaction { implicit graph =>
         val c = caseSrv
@@ -40,7 +36,6 @@ class AuditSrvTest extends PlaySpecification with TestAppBuilder with TraversalO
               tags = Nil
             ),
             assignee = None,
-            org,
             Seq.empty,
             None,
             Nil,
