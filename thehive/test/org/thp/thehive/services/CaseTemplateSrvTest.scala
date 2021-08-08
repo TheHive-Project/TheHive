@@ -1,10 +1,12 @@
 package org.thp.thehive.services
 
+import eu.timepit.refined.auto._
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
+import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
-import play.api.libs.json.{JsNumber, JsString, JsTrue, JsValue}
+import play.api.libs.json._
 import play.api.test.PlaySpecification
 
 class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
@@ -44,7 +46,7 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder with The
               assignee = None
             )
           ),
-          customFields = Seq(("string1", Some("love")), ("boolean1", Some(false)))
+          customFields = Seq(InputCustomFieldValue("string1", JsString("love"), None), InputCustomFieldValue("boolean1", JsFalse, None))
         )
       } must beASuccessfulTry
 
@@ -139,16 +141,15 @@ class CaseTemplateSrvTest extends PlaySpecification with TestAppBuilder with The
           bool1        <- customFieldSrv.getOrFail(EntityName("boolean1"))
           integer1     <- customFieldSrv.getOrFail(EntityName("integer1"))
           caseTemplate <- caseTemplateSrv.getOrFail(EntityName("spam"))
-          _ <- caseTemplateSrv.updateCustomField(
-            caseTemplate,
-            Seq((string1, JsString("hate"), None), (bool1, JsTrue, None), (integer1, JsNumber(1), None))
-          )
+          _            <- caseTemplateSrv.updateOrCreateCustomField(caseTemplate, string1, JsString("hate"), None)
+          _            <- caseTemplateSrv.updateOrCreateCustomField(caseTemplate, bool1, JsTrue, None)
+          _            <- caseTemplateSrv.updateOrCreateCustomField(caseTemplate, integer1, JsNumber(1), None)
         } yield ()
       } must beSuccessfulTry
 
       val expected: Seq[(String, JsValue)] = Seq("string1" -> JsString("hate"), "boolean1" -> JsTrue, "integer1" -> JsNumber(1))
       database.roTransaction { implicit graph =>
-        caseTemplateSrv.get(EntityName("spam")).customFields.nameJsonValue.toSeq
+        caseTemplateSrv.get(EntityName("spam")).customFieldValue.richCustomField.toSeq.map(cf => cf.name -> cf.jsValue)
       } must contain(exactly(expected: _*))
     }
   }

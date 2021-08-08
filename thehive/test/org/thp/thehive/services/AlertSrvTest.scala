@@ -1,15 +1,15 @@
 package org.thp.thehive.services
 
+import eu.timepit.refined.auto._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.{EntityId, EntityIdOrName, EntityName}
+import org.thp.scalligraph.{EntityId, EntityName}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import play.api.libs.json.JsString
 import play.api.test.PlaySpecification
 
 import java.util.Date
-import eu.timepit.refined.auto._
 
 class AlertSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
   implicit val authContext: AuthContext = DummyUserSrv(userId = "certuser@thehive.local", organisation = "cert").authContext
@@ -42,7 +42,7 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOps
           ),
           organisation,
           Set("tag1", "tag2"),
-          Seq(InputCustomFieldValue("string1", Some("lol"), None)),
+          Seq(InputCustomFieldValue("string1", JsString("lol"), None)),
           Some(caseTemplateSrv.getOrFail(EntityName("spam")).get)
         )
       }
@@ -152,13 +152,17 @@ class AlertSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOps
         for {
           alert <- alertSrv.getOrFail(EntityName("testType;testSource;ref1"))
           cfv   <- customFieldSrv.getOrFail(EntityName("string1"))
-          _     <- alertSrv.updateCustomField(alert, Seq((cfv, JsString("sad"))))
+          _     <- alertSrv.updateOrCreateCustomField(alert, cfv, JsString("sad"), None)
         } yield ()
       } must beSuccessfulTry
 
       database.roTransaction { implicit graph =>
-        alertSrv.get(EntityName("testType;testSource;ref1")).customFieldValue(EntityIdOrName("string1")).nameJsonValue.headOption
-      } must beSome("string1" -> JsString("sad"))
+        alertSrv.get(EntityName("testType;testSource;ref1")).customFieldValue.has(_.name, "string1").richCustomField.headOption
+      } must beSome.like {
+        case cf: RichCustomField =>
+          cf.jsValue must beEqualTo(JsString("sad"))
+          cf.name    must beEqualTo("string1")
+      }
     }
 
     "mark as read an alert" in testApp { app =>

@@ -8,7 +8,7 @@ import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{BadRequestError, EntityName}
 import org.thp.thehive.models._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsBoolean, JsFalse, JsString, JsTrue, Json}
 import play.api.test.PlaySpecification
 
 import java.util.Date
@@ -165,7 +165,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       database.transaction { implicit graph =>
         caseSrv.getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
-          caseSrv.setOrCreateCustomField(`case`, EntityName("boolean1"), Some("plop"), None) must beFailedTry
+          customFieldSrv.getOrFail(EntityName("boolean1")).flatMap { cf =>
+            caseSrv.updateOrCreateCustomField(`case`, cf, JsString("plop"), None)
+          } must beFailedTry
         }
       }
     }
@@ -176,8 +178,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       database.transaction { implicit graph =>
         caseSrv.getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
-          caseSrv.setOrCreateCustomField(`case`, EntityName("boolean1"), Some(true), None) must beSuccessfulTry
-          caseSrv.getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)          must beSome.which(_ == true)
+          val cf = customFieldSrv.getOrFail(EntityName("boolean1")).get
+          caseSrv.createCustomField(`case`, cf, JsTrue, None)                                                    must beSuccessfulTry
+          caseSrv.get(`case`).customFieldValue.has(_.name, "boolean1").richCustomField.headOption.map(_.jsValue) must beSome(JsBoolean(true))
         }
       }
     }
@@ -188,8 +191,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
 
       database.transaction { implicit graph =>
         caseSrv.getOrFail(EntityName("3")) must beSuccessfulTry.which { `case`: Case with Entity =>
-          caseSrv.setOrCreateCustomField(`case`, EntityName("boolean1"), Some(false), None) must beSuccessfulTry
-          caseSrv.getCustomField(`case`, EntityName("boolean1")).flatMap(_.value)           must beSome.which(_ == false)
+          val cf = customFieldSrv.getOrFail(EntityName("boolean1")).get
+          caseSrv.updateOrCreateCustomField(`case`, cf, JsFalse, None)                                           must beSuccessfulTry
+          caseSrv.get(`case`).customFieldValue.has(_.name, "boolean1").richCustomField.headOption.map(_.jsValue) must beSome(JsBoolean(false))
         }
       }
     }
@@ -218,9 +222,10 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
     "close a case properly" in testApp { app =>
       import app._
       import app.thehiveModule._
+      import org.thp.scalligraph.services.ElementOps._
 
       val updates = Seq(PropertyUpdater(FPathElem("status"), CaseStatus.Resolved) { (vertex, _, _) =>
-        vertex.property("status", CaseStatus.Resolved)
+        vertex.setProperty("status", CaseStatus.Resolved)
         Success(Json.obj("status" -> CaseStatus.Resolved))
       })
 
@@ -289,8 +294,8 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
     }
 
     "add an observable if not existing" in testApp { app =>
-//      import app._
-//      import app.thehiveModule._
+      //      import app._
+      //      import app.thehiveModule._
 
       //      database.roTransaction { implicit graph =>
       //        val c1          = caseSrv.get(EntityName("1")).getOrFail("Case").get
@@ -492,7 +497,7 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
       import app._
       import app.thehiveModule._
 
-      TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+      TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
         import ops.CaseOpsDefs
         database.roTransaction { implicit graph =>
           caseSrv
@@ -545,9 +550,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
         case22.procedure.getCount must beEqualTo(2).updateMessage(s => s"$s: invalid number of procedure in case 22")
         case23.procedure.getCount must beEqualTo(0).updateMessage(s => s"$s: invalid number of procedure in case 23")
         // CustomFields
-        case21.customFields.getCount must beEqualTo(0).updateMessage(s => s"$s: invalid number of custom fields in case 21")
-        case22.customFields.getCount must beEqualTo(1).updateMessage(s => s"$s: invalid number of custom fields in case 22")
-        case23.customFields.getCount must beEqualTo(1).updateMessage(s => s"$s: invalid number of custom fields in case 23")
+        case21.customFieldValue.getCount must beEqualTo(0).updateMessage(s => s"$s: invalid number of custom fields in case 21")
+        case22.customFieldValue.getCount must beEqualTo(1).updateMessage(s => s"$s: invalid number of custom fields in case 22")
+        case23.customFieldValue.getCount must beEqualTo(1).updateMessage(s => s"$s: invalid number of custom fields in case 23")
         // Tasks
         case21.tasks.getCount must beEqualTo(2).updateMessage(s => s"$s: invalid number of tasks in case 21")
         case22.tasks.getCount must beEqualTo(0).updateMessage(s => s"$s: invalid number of tasks in case 22")
@@ -571,11 +576,11 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
         database.roTransaction { implicit graph =>
           def mergedCase = caseSrv.get(EntityName(richCase.number.toString)).clone()
 
-          mergedCase.procedure.getCount    must beEqualTo(3).updateMessage(s => s"$s: invalid number of procedure in merged case")
-          mergedCase.customFields.getCount must beEqualTo(2).updateMessage(s => s"$s: invalid number of customFields in merged case")
-          mergedCase.tasks.getCount        must beEqualTo(3).updateMessage(s => s"$s: invalid number of tasks in merged case")
-          mergedCase.observables.getCount  must beEqualTo(3).updateMessage(s => s"$s: invalid number of observables in merged case")
-          mergedCase.alert.getCount        must beEqualTo(1).updateMessage(s => s"$s: invalid number of alert in merged case")
+          mergedCase.procedure.getCount        must beEqualTo(3).updateMessage(s => s"$s: invalid number of procedure in merged case")
+          mergedCase.customFieldValue.getCount must beEqualTo(2).updateMessage(s => s"$s: invalid number of customFields in merged case")
+          mergedCase.tasks.getCount            must beEqualTo(3).updateMessage(s => s"$s: invalid number of tasks in merged case")
+          mergedCase.observables.getCount      must beEqualTo(3).updateMessage(s => s"$s: invalid number of observables in merged case")
+          mergedCase.alert.getCount            must beEqualTo(1).updateMessage(s => s"$s: invalid number of alert in merged case")
 
           caseSrv.get(EntityName("21")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 21 is not removed")
           caseSrv.get(EntityName("22")).getOrFail("Case") must beAFailedTry.updateMessage(s => s"$s: case 22 is not removed")

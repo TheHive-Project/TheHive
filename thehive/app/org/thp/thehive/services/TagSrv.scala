@@ -19,6 +19,7 @@ import scala.util.{Success, Try}
 class TagSrv(
     _organisationSrv: => OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     taxonomySrv: TaxonomySrv,
     appConfig: ApplicationConfig,
     integrityCheckActor: => ActorRef @@ IntegrityCheckTag

@@ -67,7 +67,7 @@ class EntityHelperTest extends PlaySpecification with TestAppBuilder with TheHiv
       import app.cortexModule._
       import app.thehiveModule._
 
-      TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+      TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
         import ops.AlertOpsDefs
 
         database.roTransaction { implicit graph =>

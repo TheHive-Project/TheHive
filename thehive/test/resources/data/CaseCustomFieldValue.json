@@ -1,0 +1,6 @@
+[
+  {"from": "case3", "to": "case3-string1"},
+  {"from": "case3", "to": "case3-boolean1"},
+  {"from": "caseMerge22", "to": "caseMerge22-string1"},
+  {"from": "caseMerge23", "to": "caseMerge23-integer1"}
+]

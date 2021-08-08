@@ -72,8 +72,13 @@ class ActionCtrl(
       }
 }
 
-class PublicAction(actionSrv: ActionSrv, override val organisationSrv: OrganisationSrv, override val customFieldSrv: CustomFieldSrv, db: Database)
-    extends PublicData
+class PublicAction(
+    actionSrv: ActionSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
+    db: Database
+) extends PublicData
     with CortexOps
     with ActionOps {
 

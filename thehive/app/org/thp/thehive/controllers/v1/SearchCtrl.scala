@@ -7,7 +7,7 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.{IdentityConverter, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CustomFieldSrv, OrganisationSrv, TheHiveOps}
+import org.thp.thehive.services.{CustomFieldSrv, CustomFieldValueSrv, OrganisationSrv, TheHiveOps}
 import play.api.libs.json.JsValue
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -18,7 +18,8 @@ class SearchCtrl(
     schema: Schema,
     db: Database,
     override val organisationSrv: OrganisationSrv,
-    override val customFieldSrv: CustomFieldSrv
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
 ) extends TheHiveOps {
 
   private def isStringField(fieldName: String): Boolean =

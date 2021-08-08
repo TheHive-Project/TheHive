@@ -8,7 +8,7 @@ import org.thp.scalligraph.{EntityIdOrName, _}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputTask
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CaseSrv, CustomFieldSrv, OrganisationSrv, TaskSrv, TheHiveOps}
+import org.thp.thehive.services.{CaseSrv, CustomFieldSrv, CustomFieldValueSrv, OrganisationSrv, TaskSrv, TheHiveOps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -20,7 +20,8 @@ class TaskCtrl(
     taskSrv: TaskSrv,
     caseSrv: CaseSrv,
     override val organisationSrv: OrganisationSrv,
-    override val customFieldSrv: CustomFieldSrv
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
 ) extends QueryableCtrl
     with TaskRenderer
     with TheHiveOps {

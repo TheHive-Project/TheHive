@@ -176,7 +176,7 @@ object Conversion {
           .map(cf =>
             InputCustomFieldValue(
               name = String64("customFieldValues.name", cf.name),
-              value = cf.value,
+              value = cf.jsValue,
               order = cf.order
             )
           )

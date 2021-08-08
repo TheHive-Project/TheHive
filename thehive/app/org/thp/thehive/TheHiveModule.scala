@@ -52,6 +52,7 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   lazy val taskSrv: TaskSrv                         = wire[TaskSrv]
   lazy val shareSrv: ShareSrv                       = wire[ShareSrv]
   lazy val customFieldSrv: CustomFieldSrv           = wire[CustomFieldSrv]
+  lazy val customFieldValueSrv: CustomFieldValueSrv = wire[CustomFieldValueSrv]
   lazy val caseSrv: CaseSrv                         = wire[CaseSrv]
   lazy val impactStatusSrv: ImpactStatusSrv         = wire[ImpactStatusSrv]
   lazy val resolutionStatusSrv: ResolutionStatusSrv = wire[ResolutionStatusSrv]

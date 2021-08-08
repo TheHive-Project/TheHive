@@ -1,0 +1,4 @@
+[
+  {"from": "spam", "to": "spam-string1"},
+  {"from": "spam", "to": "spam-boolean1"}
+]

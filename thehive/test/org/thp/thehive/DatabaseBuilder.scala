@@ -34,6 +34,7 @@ class DatabaseBuilder(
     caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
     customFieldSrv: CustomFieldSrv,
+    customFieldValueSrv: CustomFieldValueSrv,
     dashboardSrv: DashboardSrv,
     dataSrv: DataSrv,
     impactStatusSrv: ImpactStatusSrv,
@@ -78,6 +79,7 @@ class DatabaseBuilder(
               createVertex(attachmentSrv, FieldsParser[Attachment]) ++
               createVertex(caseTemplateSrv, FieldsParser[CaseTemplate]) ++
               createVertex(customFieldSrv, FieldsParser[CustomField]) ++
+              createVertex(customFieldValueSrv, FieldsParser[CustomFieldValue]) ++
               createVertex(dashboardSrv, FieldsParser[Dashboard]) ++
 //              createVertex(dataSrv, FieldsParser[Data]) ++
 //              createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
@@ -104,6 +106,14 @@ class DatabaseBuilder(
 
           createEdge(taxonomySrv.taxonomyTagSrv, taxonomySrv, tagSrv, FieldsParser[TaxonomyTag], idMap)
 
+          createEdge(
+            customFieldValueSrv.customFieldValueCustomFieldSrv,
+            customFieldValueSrv,
+            customFieldSrv,
+            FieldsParser[CustomFieldValueCustomField],
+            idMap
+          )
+
           createEdge(roleSrv.userRoleSrv, userSrv, roleSrv, FieldsParser[UserRole], idMap)
 
           createEdge(shareSrv.shareProfileSrv, shareSrv, profileSrv, FieldsParser[ShareProfile], idMap)
@@ -129,19 +139,25 @@ class DatabaseBuilder(
 //          createEdge(caseSrv.caseCaseTemplateSrv, caseSrv, caseTemplateSrv, FieldsParser[CaseCaseTemplate], idMap)
 //          createEdge(caseSrv.caseResolutionStatusSrv, caseSrv, resolutionStatusSrv, FieldsParser[CaseResolutionStatus], idMap)
 //          createEdge(caseSrv.caseImpactStatusSrv, caseSrv, impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
-          createEdge(caseSrv.caseCustomFieldSrv, caseSrv, customFieldSrv, FieldsParser[CaseCustomField], idMap)
+          createEdge(caseSrv.caseCustomFieldValueSrv, caseSrv, customFieldValueSrv, FieldsParser[CaseCustomFieldValue], idMap)
 //          createEdge(caseSrv.caseTagSrv, caseSrv, tagSrv, FieldsParser[CaseTag], idMap)
 
           createEdge(caseTemplateSrv.caseTemplateOrganisationSrv, caseTemplateSrv, organisationSrv, FieldsParser[CaseTemplateOrganisation], idMap)
 //          createEdge(caseTemplateSrv.caseTemplateTaskSrv, caseTemplateSrv, taskSrv, FieldsParser[CaseTemplateTask], idMap)
-          createEdge(caseTemplateSrv.caseTemplateCustomFieldSrv, caseTemplateSrv, customFieldSrv, FieldsParser[CaseTemplateCustomField], idMap)
+          createEdge(
+            caseTemplateSrv.caseTemplateCustomFieldValueSrv,
+            caseTemplateSrv,
+            customFieldValueSrv,
+            FieldsParser[CaseTemplateCustomFieldValue],
+            idMap
+          )
 //          createEdge(caseTemplateSrv.caseTemplateTagSrv, caseTemplateSrv, tagSrv, FieldsParser[CaseTemplateTag], idMap)
 
           createEdge(alertSrv.alertOrganisationSrv, alertSrv, organisationSrv, FieldsParser[AlertOrganisation], idMap)
           createEdge(alertSrv.alertObservableSrv, alertSrv, observableSrv, FieldsParser[AlertObservable], idMap)
           createEdge(alertSrv.alertCaseSrv, alertSrv, caseSrv, FieldsParser[AlertCase], idMap)
           createEdge(alertSrv.alertCaseTemplateSrv, alertSrv, caseTemplateSrv, FieldsParser[AlertCaseTemplate], idMap)
-          createEdge(alertSrv.alertCustomFieldSrv, alertSrv, customFieldSrv, FieldsParser[AlertCustomField], idMap)
+          createEdge(alertSrv.alertCustomFieldValueSrv, alertSrv, customFieldValueSrv, FieldsParser[AlertCustomFieldValue], idMap)
 //          createEdge(alertSrv.alertTagSrv, alertSrv, tagSrv, FieldsParser[AlertTag], idMap)
 
           createEdge(pageSrv.organisationPageSrv, organisationSrv, pageSrv, FieldsParser[OrganisationPage], idMap)
@@ -274,6 +290,24 @@ class DatabaseBuilder(
               case (task, relatedId, organisationIds) =>
                 task.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(taskSrv.taskUserSrv.create(TaskUser(), task, _)).get)
                 taskSrv.get(task).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
+            }
+
+          customFieldValueSrv
+            .startTraversal
+            .project(
+              _.by
+                .by(_.`case`._id.fold)
+                .by(_.alert._id.fold)
+                .by(_.caseTemplate._id.fold)
+            )
+            .domainMap {
+              case (cfv, Seq(caseId), Seq(), Seq())         => cfv -> caseId
+              case (cfv, Seq(), Seq(alertId), Seq())        => cfv -> alertId
+              case (cfv, Seq(), Seq(), Seq(caseTemplateId)) => cfv -> caseTemplateId
+              case (cfv, c, a, ct)                          => sys.error(s"Custom fields are not correctly linked ($cfv, case=$c, alert=$a, caseTemplate=$ct)")
+            }
+            .foreach {
+              case (cfv, elementId) => customFieldValueSrv.get(cfv).update(_.elementId, elementId).iterate()
             }
           Success(())
         }

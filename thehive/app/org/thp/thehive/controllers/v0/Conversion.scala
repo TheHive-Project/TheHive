@@ -10,6 +10,7 @@ import org.thp.scalligraph.controllers.Renderer
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.{Description, Pap, Severity, Tlp}
 import org.thp.thehive.dto.v0._
+import org.thp.thehive.dto.v1.{InputCustomFieldValue => InputCustomFieldValueV1}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{SharingParameter, SharingProfile, SharingRule}
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
@@ -280,6 +281,13 @@ object Conversion {
         .withFieldComputed(_.mandatory, _.mandatory.getOrElse(false))
         .withFieldComputed(_.name, _.reference.value)
         .withFieldComputed(_.displayName, _.name.value)
+        .transform
+  }
+
+  implicit class InputCustomFieldValueOps(inputCustomFieldValue: InputCustomFieldValue) {
+    def toV1: InputCustomFieldValueV1 =
+      inputCustomFieldValue
+        .into[InputCustomFieldValueV1]
         .transform
   }
 

@@ -5,22 +5,8 @@ import org.thp.scalligraph.models.{DefineIndex, Entity, IndexType}
 
 import java.util.Date
 
-@BuildEdgeEntity[Alert, CustomField]
-case class AlertCustomField(
-    order: Option[Int] = None,
-    stringValue: Option[String] = None,
-    booleanValue: Option[Boolean] = None,
-    integerValue: Option[Int] = None,
-    floatValue: Option[Double] = None,
-    dateValue: Option[Date] = None
-) extends CustomFieldValue[AlertCustomField] {
-  override def order_=(value: Option[Int]): AlertCustomField            = copy(order = value)
-  override def stringValue_=(value: Option[String]): AlertCustomField   = copy(stringValue = value)
-  override def booleanValue_=(value: Option[Boolean]): AlertCustomField = copy(booleanValue = value)
-  override def integerValue_=(value: Option[Int]): AlertCustomField     = copy(integerValue = value)
-  override def floatValue_=(value: Option[Double]): AlertCustomField    = copy(floatValue = value)
-  override def dateValue_=(value: Option[Date]): AlertCustomField       = copy(dateValue = value)
-}
+@BuildEdgeEntity[Alert, CustomFieldValue]
+case class AlertCustomFieldValue()
 
 @BuildEdgeEntity[Alert, Observable]
 case class AlertObservable()

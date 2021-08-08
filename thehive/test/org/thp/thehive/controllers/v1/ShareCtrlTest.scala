@@ -17,7 +17,7 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
     import app.thehiveModule._
     import app.thehiveModuleV1._
 
-    TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+    TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
       import ops._
 
       app
@@ -48,7 +48,7 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
     import app.thehiveModule._
     import app.thehiveModuleV1._
 
-    TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+    TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
       import ops._
 
       app

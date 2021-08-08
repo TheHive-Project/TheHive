@@ -1,0 +1,10 @@
+[
+  {"from": "alert4-integer1","to": "integer1"},
+  {"from": "alert1-integer1","to": "integer1"},
+  {"from": "case3-string1","to": "string1"},
+  {"from": "case3-boolean1","to": "boolean1"},
+  {"from": "caseMerge22-string1","to": "string1"},
+  {"from": "caseMerge23-integer1","to": "integer1"},
+  {"from": "spam-string1", "to": "string1"},
+  {"from": "spam-boolean1", "to": "boolean1"}
+]

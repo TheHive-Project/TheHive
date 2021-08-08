@@ -89,7 +89,7 @@ class ActionSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOp
       import app.cortexModule._
       import app.thehiveModule._
 
-      TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+      TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
         import ops.AlertOpsDefs
 
         implicit val entityWrites: OWrites[Entity] = actionCtrl.entityWrites

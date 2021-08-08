@@ -44,16 +44,16 @@ object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]
 }
 
-case class InputCustomFieldValue(name: String64, value: Option[Any], order: Option[Int])
+case class InputCustomFieldValue(name: String64, value: JsValue, order: Option[Int])
 
 object InputCustomFieldValue {
 
-  val valueParser: FieldsParser[Option[Any]] = FieldsParser("customFieldValue") {
-    case (_, FString(value))     => Good(Some(value))
-    case (_, FNumber(value))     => Good(Some(value))
-    case (_, FBoolean(value))    => Good(Some(value))
-    case (_, FAny(value :: _))   => Good(Some(value))
-    case (_, FUndefined | FNull) => Good(None)
+  val valueParser: FieldsParser[JsValue] = FieldsParser("customFieldValue") {
+    case (_, FString(value))     => Good(JsString(value))
+    case (_, FNumber(value))     => Good(JsNumber(value))
+    case (_, FBoolean(value))    => Good(JsBoolean(value))
+    case (_, FAny(value :: _))   => Good(JsString(value))
+    case (_, FUndefined | FNull) => Good(JsNull)
   }
 
   val parser: FieldsParser[Seq[InputCustomFieldValue]] = FieldsParser("customFieldValues") {
@@ -85,38 +85,23 @@ object InputCustomFieldValue {
 
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields = icfv.map {
-      case InputCustomFieldValue(name, Some(s: String), _)  => name.value -> JsString(s)
-      case InputCustomFieldValue(name, Some(l: Long), _)    => name.value -> JsNumber(l)
-      case InputCustomFieldValue(name, Some(d: Double), _)  => name.value -> JsNumber(d)
-      case InputCustomFieldValue(name, Some(b: Boolean), _) => name.value -> JsBoolean(b)
-      case InputCustomFieldValue(name, Some(d: Date), _)    => name.value -> JsNumber(d.getTime)
-      case InputCustomFieldValue(name, None, _)             => name.value -> JsNull
-      case InputCustomFieldValue(name, other, _)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
+      case InputCustomFieldValue(name, value, _) => name.value -> value
     }
     // TODO Change JsObject to JsArray ?
     JsObject(fields)
   }
 
-  private def valueReader(jsValue: JsValue): Option[Any] =
-    jsValue match {
-      case n: JsNumber  => Some(n)
-      case s: JsString  => Some(s)
-      case b: JsBoolean => Some(b)
-      case _            => None
-    }
-
   implicit val reads: Reads[Seq[InputCustomFieldValue]] = Reads[Seq[InputCustomFieldValue]] {
     case JsObject(fields) =>
       val out = fields.map {
-        case (key, value) => InputCustomFieldValue(String64("customField.name", key), valueReader(value), None)
+        case (key, value) => InputCustomFieldValue(String64("customField.name", key), value, None)
       }.toSeq
       JsSuccess(out)
     case list: JsArray =>
       implicit val icfvReader: Reads[InputCustomFieldValue] = Reads[InputCustomFieldValue] { cf =>
         for {
-          name <- (cf \ "name").validate[String]
-          v    <- (cf \ "value").validate[JsValue]
-          value = valueReader(v)
+          name  <- (cf \ "name").validate[String]
+          value <- (cf \ "value").validate[JsValue]
           order <- (cf \ "order").validateOpt[Int]
         } yield InputCustomFieldValue(String64("customField.name", name), value, order)
       }

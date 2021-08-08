@@ -2,9 +2,9 @@ package org.thp.thehive.controllers.v0
 
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{Actor, ActorRef, OneForOneStrategy, PoisonPill, Props}
+import org.thp.scalligraph.ScalligraphApplication
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
-import org.thp.scalligraph.{EntityIdOrName, ScalligraphApplication}
 import org.thp.thehive.TheHiveModule
 import org.thp.thehive.models.{Case, CaseStatus, Permissions}
 import org.thp.thehive.services.{FlowActor, FlowTag, TheHiveTestModule}
