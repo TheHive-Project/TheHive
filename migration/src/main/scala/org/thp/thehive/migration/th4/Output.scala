@@ -12,7 +12,6 @@ import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.{Graph, TraversalOps}
 import org.thp.thehive.connector.cortex.models.CortexSchemaDefinition
 import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
-import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
@@ -346,9 +345,6 @@ class Output(
 
   override def customFieldExists(inputCustomField: InputCustomField): Boolean = customFields.contains(inputCustomField.customField.name)
 
-  private def getCustomField(name: String): Try[CustomField with Entity] =
-    customFields.get(name).fold[Try[CustomField with Entity]](Failure(NotFoundError(s"Custom field $name not found")))(Success.apply)
-
   override def createCustomField(inputCustomField: InputCustomField): Try[IdMapping] =
     authTransaction(inputCustomField.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create custom field ${inputCustomField.customField.name}")
@@ -470,13 +466,10 @@ class Output(
               getTag(_, organisation._id.value).flatMap(t => caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
             )
         _ = updateMetaData(createdCaseTemplate, inputCaseTemplate.metaData)
-        _ = inputCaseTemplate.customFields.foreach {
-          case InputCustomFieldValue(name, value, order) =>
-            (for {
-              cf  <- getCustomField(name.value)
-              ccf <- cf.`type`.setValue(CaseTemplateCustomField(order = order), value)
-              _   <- caseTemplateSrv.caseTemplateCustomFieldSrv.create(ccf, createdCaseTemplate, cf)
-            } yield ()).logFailure(s"Unable to set custom field $name=${value.getOrElse("<not set>")}")
+        _ = inputCaseTemplate.customFields.foreach { cf =>
+          caseTemplateSrv
+            .createCustomField(createdCaseTemplate, cf)
+            .logFailure(s"Unable to set custom field ${cf.name}=${cf.value}")
         }
         _ = caseTemplates += (inputCaseTemplate.caseTemplate.name -> createdCaseTemplate)
       } yield IdMapping(inputCaseTemplate.metaData.id, createdCaseTemplate._id)
@@ -551,15 +544,10 @@ class Output(
             .flatMap(tag => caseSrv.caseTagSrv.create(CaseTag(), createdCase, tag))
             .logFailure(s"Unable to add tag $tagName to case #${createdCase.number}")
         }
-        inputCase.customFields.foreach {
-          case (name, value) => // TODO Add order
-            getCustomField(name)
-              .flatMap { cf =>
-                cf.`type`
-                  .setValue(CaseCustomField(), value)
-                  .flatMap(ccf => caseSrv.caseCustomFieldSrv.create(ccf, createdCase, cf))
-              }
-              .logFailure(s"Unable to set custom field $name=${value.getOrElse("<not set>")} to case #${createdCase.number}")
+        inputCase.customFields.foreach { cf =>
+          caseSrv
+            .createCustomField(createdCase, cf)
+            .logFailure(s"Unable to set custom field ${cf.name}=${cf.value} to case #${createdCase.number}")
         }
         inputCase.organisations.foldLeft(false) {
           case (ownerSet, (organisationName, profileName)) =>
@@ -571,7 +559,7 @@ class Output(
                 owner,
                 createdCase,
                 organisation,
-                SharingProfile("", "", true, true, profileName, SharingRule.default, SharingRule.default)
+                SharingProfile("", "", autoShare = true, editable = true, profileName, SharingRule.default, SharingRule.default)
               )
             } yield ()
             shared.logFailure(s"Unable to share case #${createdCase.number} with organisation $organisationName, profile $profileName")
@@ -739,16 +727,12 @@ class Output(
             .map(ct => alertSrv.alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct))
             .flip
         _ = tags.foreach(t => alertSrv.alertTagSrv.create(AlertTag(), createdAlert, t))
-        _ = inputAlert.customFields.foreach {
-          case (name, value) => // TODO Add order
-            getCustomField(name)
-              .flatMap { cf =>
-                cf.`type`
-                  .setValue(AlertCustomField(), value)
-                  .flatMap(acf => alertSrv.alertCustomFieldSrv.create(acf, createdAlert, cf))
-              }
-              .logFailure(s"Unable to set custom field $name=${value
-                .getOrElse("<not set>")} to alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
+        _ = inputAlert.customFields.foreach { cf =>
+          alertSrv
+            .createCustomField(createdAlert, cf)
+            .logFailure(
+              s"Unable to set custom field ${cf.name}=${cf.value} to alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}"
+            )
         }
       } yield IdMapping(inputAlert.metaData.id, createdAlert._id)
     }

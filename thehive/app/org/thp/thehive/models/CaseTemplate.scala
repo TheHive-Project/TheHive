@@ -8,22 +8,8 @@ import java.util.Date
 @BuildEdgeEntity[CaseTemplate, Organisation]
 case class CaseTemplateOrganisation()
 
-@BuildEdgeEntity[CaseTemplate, CustomField]
-case class CaseTemplateCustomField(
-    order: Option[Int] = None,
-    stringValue: Option[String] = None,
-    booleanValue: Option[Boolean] = None,
-    integerValue: Option[Int] = None,
-    floatValue: Option[Double] = None,
-    dateValue: Option[Date] = None
-) extends CustomFieldValue[CaseTemplateCustomField] {
-  override def order_=(value: Option[Int]): CaseTemplateCustomField            = copy(order = value)
-  override def stringValue_=(value: Option[String]): CaseTemplateCustomField   = copy(stringValue = value)
-  override def booleanValue_=(value: Option[Boolean]): CaseTemplateCustomField = copy(booleanValue = value)
-  override def integerValue_=(value: Option[Int]): CaseTemplateCustomField     = copy(integerValue = value)
-  override def floatValue_=(value: Option[Double]): CaseTemplateCustomField    = copy(floatValue = value)
-  override def dateValue_=(value: Option[Date]): CaseTemplateCustomField       = copy(dateValue = value)
-}
+@BuildEdgeEntity[CaseTemplate, CustomFieldValue]
+case class CaseTemplateCustomFieldValue()
 
 @BuildEdgeEntity[CaseTemplate, Tag]
 case class CaseTemplateTag()

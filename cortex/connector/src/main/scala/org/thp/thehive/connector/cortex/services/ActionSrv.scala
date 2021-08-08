@@ -16,7 +16,7 @@ import org.thp.thehive.connector.cortex.models._
 import org.thp.thehive.connector.cortex.services.Conversion._
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models._
-import org.thp.thehive.services.{CustomFieldSrv, LogSrv, OrganisationSrv, TheHiveOps}
+import org.thp.thehive.services.{CustomFieldSrv, CustomFieldValueSrv, LogSrv, OrganisationSrv, TheHiveOps}
 import play.api.libs.json.{JsObject, JsString, Json, OWrites}
 
 import java.util.{Date, Map => JMap}
@@ -32,6 +32,7 @@ class ActionSrv(
     clientsConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]],
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     implicit val schema: Schema,
     implicit val db: Database,
     implicit val ec: ExecutionContext,

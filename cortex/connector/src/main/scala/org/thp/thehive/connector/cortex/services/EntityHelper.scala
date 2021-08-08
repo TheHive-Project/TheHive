@@ -17,7 +17,8 @@ class EntityHelper(
     observableSrv: ObservableSrv,
     logSrv: LogSrv,
     override val organisationSrv: OrganisationSrv,
-    override val customFieldSrv: CustomFieldSrv
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
 ) extends TheHiveOps {
 
   lazy val logger: Logger = Logger(getClass)

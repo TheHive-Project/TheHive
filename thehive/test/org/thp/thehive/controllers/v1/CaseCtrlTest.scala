@@ -146,7 +146,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       // Create link between 2 orgs and set sharing profiles and sharing rules
       app.database.tryTransaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv().authContext
-        TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
           import ops._
           for {
             soc <- organisationSrv.getOrFail(EntityName("soc"))
@@ -186,7 +186,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       app.database.tryTransaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc").authContext
-        TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
           import ops._
 
           caseSrv.get(caseId).visible.exists must beTrue
@@ -210,7 +210,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       // and create a unlinked org
       app.database.tryTransaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv().authContext
-        TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
           import ops._
           for {
             soc <- organisationSrv.getOrFail(EntityName("soc"))
@@ -270,7 +270,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       app.database.tryTransaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc").authContext
-        TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
           import ops._
 
           caseSrv.get(caseId).organisations.value(_.name).toSeq must contain(exactly("cert", "soc", "unlinkedOrg"))
@@ -423,7 +423,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
 
       app.database.tryTransaction { implicit graph =>
         implicit val authContext: AuthContext = DummyUserSrv().authContext
-        TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
           import ops._
           for {
             share   <- caseSrv.getByName("2").share(EntityName("soc")).getOrFail("Organisation")
@@ -450,7 +450,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       }
 
       app.database.roTransaction { implicit graph =>
-        TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
           import ops._
           caseSrv.getByName("2").share(EntityName("cert")).head must beEqualTo(Share(owner = true, taskRule = "ruleA", observableRule = "ruleB"))
           caseSrv.getByName("2").share(EntityName("soc")).head  must beEqualTo(Share(owner = false, taskRule = "ruleC", observableRule = "ruleD"))
@@ -464,7 +464,7 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       import app.thehiveModule._
       import app.thehiveModuleV1._
 
-      TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+      TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
         import ops._
 
         app

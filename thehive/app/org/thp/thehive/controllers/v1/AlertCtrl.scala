@@ -26,6 +26,7 @@ class AlertCtrl(
     userSrv: UserSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     implicit val db: Database
 ) extends QueryableCtrl
     with AlertRenderer {

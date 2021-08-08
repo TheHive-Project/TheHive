@@ -15,7 +15,8 @@ class PatternSrv(
     auditSrv: AuditSrv,
     caseSrv: CaseSrv,
     override val organisationSrv: OrganisationSrv,
-    override val customFieldSrv: CustomFieldSrv
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
 ) extends VertexSrv[Pattern]
     with TheHiveOps {
   val patternPatternSrv = new EdgeSrv[PatternPattern, Pattern, Pattern]

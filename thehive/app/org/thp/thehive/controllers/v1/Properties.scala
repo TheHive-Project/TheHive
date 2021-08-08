@@ -1,15 +1,14 @@
 package org.thp.thehive.controllers.v1
 
 import org.apache.tinkerpop.gremlin.structure.T
-import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString}
+import org.thp.scalligraph.controllers.{FPathElem, FString}
 import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
-import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError, RichSeq}
-import org.thp.thehive.dto.String64
-import org.thp.thehive.dto.v1.InputCustomFieldValue
+import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError}
+import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 
 import scala.util.Failure
 
@@ -22,8 +21,9 @@ class Properties(
     dashboardSrv: DashboardSrv,
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
-    val customFieldSrv: CustomFieldSrv,
-    val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     db: Database
 ) extends TheHiveOps {
 
@@ -83,35 +83,43 @@ class Properties(
           .readonly
       )
       .property("customFields", UMapping.jsonNative)(_.subSelect {
-        case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
-          alerts
-            .customFieldJsonValue(EntityIdOrName(idOrName))
-        case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (FPathElem(_, FPathElem(idOrName, _)), alertSteps) =>
+          alertSteps.customFieldJsonValue(EntityIdOrName(idOrName))
+        case (_, alertSteps) => alertSteps.richCustomFields.fold.domainMap(_.toJson)
       }
-        .filter[JsValue](IndexType.none) {
-          case (FPathElem(_, FPathElem(name, _)), alerts, _, predicate) =>
+        .filter[JsValue](IndexType.standard) {
+          case (FPathElem(_, FPathElem(name, _)), alertTraversal, _, predicate) =>
             predicate match {
-              case Right(predicate) => alerts.customFieldFilter(EntityIdOrName(name), predicate)
-              case Left(true)       => alerts.hasCustomField(EntityIdOrName(name))
-              case Left(false)      => alerts.hasNotCustomField(EntityIdOrName(name))
+              case Right(p) =>
+                val elementIds = customFieldSrv
+                  .getByName(name)(alertTraversal.graph)
+                  .value(_.`type`)
+                  .headOption
+                  .fold[Seq[EntityId]](Nil)(_.filter(customFieldValueSrv.startTraversal(alertTraversal.graph), p).value(_.elementId).toSeq)
+                alertTraversal.hasId(elementIds: _*)
+              case Left(true)  => alertTraversal.hasCustomField(EntityIdOrName(name))
+              case Left(false) => alertTraversal.hasNotCustomField(EntityIdOrName(name))
             }
           case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
-          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
-            for {
-              a <- alertSrv.get(vertex)(graph).getOrFail("Alert")
-              _ <- alertSrv.setOrCreateCustomField(a, InputCustomFieldValue(String64("customField.name", idOrName), Some(value), None))(
-                graph,
-                authContext
-              )
-            } yield Json.obj(s"customField.$idOrName" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-            for {
-              c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
-              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
-              _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
-            } yield Json.obj("customFields" -> values)
+          case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
+            EntityIdOrName(idOrName).fold(
+              valueId => // update the value
+                customFieldValueSrv
+                  .getByIds(EntityId(valueId))(graph)
+                  .filter(_.alert.hasId(EntityId(vertex.id())))
+                  .getOrFail("CustomField")
+                  .flatMap(cfv => customFieldValueSrv.updateValue(cfv, jsonValue, None)(graph))
+                  .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
+              name => // add new custom field
+                for {
+                  a              <- alertSrv.getOrFail(vertex)(graph)
+                  cf             <- customFieldSrv.getByName(name)(graph).getOrFail("CustomField")
+                  (value, order) <- cf.`type`.parseValue(jsonValue)
+                  _              <- alertSrv.createCustomField(a, cf, value, order)(graph, authContext)
+                } yield Json.obj(s"customField.$name" -> jsonValue)
+            )
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
       .property("case", UMapping.entityId)(_.rename("caseId").readonly)
@@ -189,29 +197,41 @@ class Properties(
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
           caseSteps.customFieldJsonValue(EntityIdOrName(idOrName))
-        case (_, caseSteps) => caseSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (_, caseSteps) => caseSteps.richCustomFields.fold.domainMap(_.toJson)
       }
-        .filter[JsValue](IndexType.none) {
+        .filter[JsValue](IndexType.standard) {
           case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>
             predicate match {
-              case Right(predicate) => caseTraversal.customFieldFilter(EntityIdOrName(name), predicate)
-              case Left(true)       => caseTraversal.hasCustomField(EntityIdOrName(name))
-              case Left(false)      => caseTraversal.hasNotCustomField(EntityIdOrName(name))
+              case Right(p) =>
+                val elementIds = customFieldSrv
+                  .getByName(name)(caseTraversal.graph)
+                  .value(_.`type`)
+                  .headOption
+                  .fold[Seq[EntityId]](Nil)(_.filter(customFieldValueSrv.startTraversal(caseTraversal.graph), p).value(_.elementId).toSeq)
+                caseTraversal.hasId(elementIds: _*)
+              case Left(true)  => caseTraversal.hasCustomField(EntityIdOrName(name))
+              case Left(false) => caseTraversal.hasNotCustomField(EntityIdOrName(name))
             }
           case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
-          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
-            for {
-              c <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
-            } yield Json.obj(s"customField.$idOrName" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-            for {
-              c   <- caseSrv.get(vertex)(graph).getOrFail("Case")
-              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
-              _   <- caseSrv.updateCustomField(c, cfv)(graph, authContext)
-            } yield Json.obj("customFields" -> values)
+          case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
+            EntityIdOrName(idOrName).fold(
+              valueId => // update the value
+                customFieldValueSrv
+                  .getByIds(EntityId(valueId))(graph)
+                  .filter(_.`case`.hasId(EntityId(vertex.id())))
+                  .getOrFail("CustomField")
+                  .flatMap(cfv => customFieldValueSrv.updateValue(cfv, jsonValue, None)(graph))
+                  .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
+              name => // add new custom field
+                for {
+                  c              <- caseSrv.getOrFail(vertex)(graph)
+                  cf             <- customFieldSrv.getByName(name)(graph).getOrFail("CustomField")
+                  (value, order) <- cf.`type`.parseValue(jsonValue)
+                  _              <- caseSrv.createCustomField(c, cf, value, order)(graph, authContext)
+                } yield Json.obj(s"customField.$name" -> jsonValue)
+            )
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
       .property("computed.handlingDuration", UMapping.long)(_.select(_.handlingDuration).readonly)
@@ -288,29 +308,41 @@ class Properties(
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseTemplateSteps) =>
           caseTemplateSteps.customFieldJsonValue(EntityIdOrName(idOrName))
-        case (_, caseTemplateSteps) => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (_, caseTemplateSteps) => caseTemplateSteps.richCustomFields.fold.domainMap(_.toJson)
       }
-        .filter[JsValue](IndexType.none) {
+        .filter[JsValue](IndexType.standard) {
           case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
             predicate match {
-              case Right(predicate) => caseTemplateTraversal.customFieldFilter(EntityIdOrName(name), predicate)
-              case Left(true)       => caseTemplateTraversal.hasCustomField(EntityIdOrName(name))
-              case Left(false)      => caseTemplateTraversal.hasNotCustomField(EntityIdOrName(name))
+              case Right(p) =>
+                val elementIds = customFieldSrv
+                  .getByName(name)(caseTemplateTraversal.graph)
+                  .value(_.`type`)
+                  .headOption
+                  .fold[Seq[EntityId]](Nil)(_.filter(customFieldValueSrv.startTraversal(caseTemplateTraversal.graph), p).value(_.elementId).toSeq)
+                caseTemplateTraversal.hasId(elementIds: _*)
+              case Left(true)  => caseTemplateTraversal.hasCustomField(EntityIdOrName(name))
+              case Left(false) => caseTemplateTraversal.hasNotCustomField(EntityIdOrName(name))
             }
           case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
-          case (FPathElem(_, FPathElem(idOrName, _)), value, vertex, graph, authContext) =>
-            for {
-              c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-              _ <- caseTemplateSrv.setOrCreateCustomField(c, EntityIdOrName(idOrName), Some(value), None)(graph, authContext)
-            } yield Json.obj(s"customField.$idOrName" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-            for {
-              c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
-              _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
-            } yield Json.obj("customFields" -> values)
+          case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
+            EntityIdOrName(idOrName).fold(
+              valueId => // update the value
+                customFieldValueSrv
+                  .getByIds(EntityId(valueId))(graph)
+                  .filter(_.`case`.hasId(EntityId(vertex.id())))
+                  .getOrFail("CustomField")
+                  .flatMap(cfv => customFieldValueSrv.updateValue(cfv, jsonValue, None)(graph))
+                  .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
+              name => // add new custom field
+                for {
+                  ct             <- caseTemplateSrv.getOrFail(vertex)(graph)
+                  cf             <- customFieldSrv.getByName(name)(graph).getOrFail("CustomField")
+                  (value, order) <- cf.`type`.parseValue(jsonValue)
+                  _              <- caseTemplateSrv.createCustomField(ct, cf, value, order)(graph, authContext)
+                } yield Json.obj(s"customField.$name" -> jsonValue)
+            )
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
       .build
