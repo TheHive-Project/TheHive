@@ -13,6 +13,7 @@ class Router(
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
     // configCtrl: ConfigCtrl,
+    chartCtrl: ChartCtrl,
     customFieldCtrl: CustomFieldCtrl,
     // dashboardCtrl: DashboardCtrl,
     describeCtrl: DescribeCtrl,
@@ -186,6 +187,8 @@ class Router(
     case GET(p"/observable/type/$idOrName")    => observableTypeCtrl.get(idOrName)
     case POST(p"/observable/type")             => observableTypeCtrl.create
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
+
+    case POST(p"/chart/time") => chartCtrl.timeChart
 
     case GET(p"/search" ? q"query=$query") => searchCtrl.search(query)
     case GET(p"/monitor/disk")             => monitoringCtrl.diskUsage
