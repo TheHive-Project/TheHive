@@ -16,7 +16,7 @@ import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.notification.{NotificationActor, NotificationSrv, NotificationTag}
 import org.thp.thehive.services.{UserSrv => TheHiveUserSrv, _}
-import play.api.Logger
+import play.api.{Logger, Mode}
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
 
@@ -32,8 +32,14 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   lazy val flowActor: ActorRef @@ FlowTag                 = wireActorSingleton(actorSystem, wireProps[FlowActor], "flow-actor").taggedWith[FlowTag]
   lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag =
     wireActorSingleton(actorSystem, wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
-  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = ClusterSingleton(app.actorSystem.toTyped)
-    .init(SingletonActor(CaseNumberActor.behavior(app.database, caseSrv), "CaseNumberLeader"))
+  lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = {
+    val behavior = CaseNumberActor.behavior(app.database, caseSrv)
+    if (app.application.mode == Mode.Test)
+      actorSystem.toTyped.systemActorOf(behavior, "CaseNumberLeader")
+    else
+      ClusterSingleton(app.actorSystem.toTyped)
+        .init(SingletonActor(behavior, "CaseNumberLeader"))
+  }
 
   lazy val scheduler: Scheduler = app.actorSystem.scheduler
 

@@ -26,7 +26,7 @@ class ConfigCtrlTest extends PlaySpecification with TestAppBuilder {
             |]
             |""".stripMargin
         )
-      ).withFallback(TestApplication.appWithoutDatabase.configuration)
+      ).withFallback(TestApplication.configuration)
 
       override lazy val configActor: ActorRef @@ ConfigTag =
         wireAnonymousActor[ConfigActor].taggedWith[ConfigTag]
