@@ -19,6 +19,8 @@ class TheHiveModuleV0(app: ScalligraphApplication) extends ScalligraphModule {
   lazy val auditCtrl: AuditCtrl                       = wire[AuditCtrl]
   lazy val publicAudit: PublicAudit                   = wire[PublicAudit]
   lazy val caseCtrl: CaseCtrl                         = wire[CaseCtrl]
+  lazy val chartCtrl: ChartCtrl                       = wire[ChartCtrl]
+  lazy val searchCtrl: SearchCtrl                     = wire[SearchCtrl]
   lazy val publicCase: PublicCase                     = wire[PublicCase]
   lazy val caseTemplateCtrl: CaseTemplateCtrl         = wire[CaseTemplateCtrl]
   lazy val publicCaseTemplate: PublicCaseTemplate     = wire[PublicCaseTemplate]

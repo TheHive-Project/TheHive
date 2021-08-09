@@ -11,6 +11,7 @@ class Router(
     authenticationCtrl: AuthenticationCtrl,
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
+    chartCtrl: ChartCtrl,
     configCtrl: ConfigCtrl,
     customFieldCtrl: CustomFieldCtrl,
     dashboardCtrl: DashboardCtrl,
@@ -23,6 +24,7 @@ class Router(
     pageCtrl: PageCtrl,
     permissionCtrl: PermissionCtrl,
     profileCtrl: ProfileCtrl,
+    searchCtrl: SearchCtrl,
     shareCtrl: ShareCtrl,
     statsCtrl: StatsCtrl,
     statusCtrl: StatusCtrl,
@@ -228,5 +230,8 @@ class Router(
     case GET(p"/user/$userId/key")              => userCtrl.getKey(userId)
     case DELETE(p"/user/$userId/key")           => userCtrl.removeKey(userId)
     case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)
+
+    case POST(p"/chart/time") => chartCtrl.timeChart
+    case GET(p"/search")      => searchCtrl.search
   }
 }
