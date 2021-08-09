@@ -46,7 +46,7 @@ class ProcedureCtrl(
       .authPermittedTransaction(db, Permissions.manageProcedure) { implicit request => implicit graph =>
         val inputProcedure: InputProcedure = request.body("procedure")
         for {
-          caze          <- caseSrv.get(EntityIdOrName(inputProcedure.caseId.value)).can(Permissions.manageProcedure).getOrFail("Procedure")
+          caze          <- caseSrv.get(EntityIdOrName(inputProcedure.caseId.value)).can(Permissions.manageProcedure).getOrFail("Case")
           richProcedure <- procedureSrv.create(inputProcedure.toProcedure, caze, inputProcedure.patternId.value)
         } yield Results.Created(richProcedure.toJson)
       }
