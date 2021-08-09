@@ -136,7 +136,7 @@ class TaskSrv(
 }
 
 trait TaskOpsNoDeps { _: TheHiveOpsNoDeps =>
-  implicit class TaskOpsDefs(traversal: Traversal.V[Task]) {
+  implicit class TaskOpsNoDepsDefs(traversal: Traversal.V[Task]) {
 
     def get(idOrName: EntityIdOrName): Traversal.V[Task] =
       idOrName.fold(traversal.getByIds(_), _ => traversal.empty)
@@ -228,9 +228,8 @@ trait TaskOpsNoDeps { _: TheHiveOpsNoDeps =>
   }
 }
 
-trait TaskOps { _: TheHiveOpsNoDeps =>
-  protected val organisationSrv: OrganisationSrv
-  implicit class TaskOpsNoDepsDefs(traversal: Traversal.V[Task]) {
+trait TaskOps { _: TheHiveOps =>
+  implicit class TaskOpsDefs(traversal: Traversal.V[Task]) {
     def visible(implicit authContext: AuthContext): Traversal.V[Task] =
       traversal.has(_.organisationIds, organisationSrv.currentId(traversal.graph, authContext))
   }
@@ -257,7 +256,7 @@ class TaskIntegrityCheckOps(val db: Database, val service: TaskSrv, organisation
               val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
                 .check(task, task.organisationIds, organisationIds)
 
-              val removeOrphan: OrphanStrategy[Task, EntityId] = { (a, entity) =>
+              val removeOrphan: OrphanStrategy[Task, EntityId] = { (_, entity) =>
                 service.get(entity).remove()
                 Map("Task-relatedId-removeOrphan" -> 1)
               }

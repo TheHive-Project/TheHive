@@ -4,7 +4,7 @@ import io.scalaland.chimney.dsl._
 import org.apache.tinkerpop.gremlin.process.traversal.{Compare, Contains}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{
@@ -19,7 +19,6 @@ import org.thp.scalligraph.{
   RichSeq
 }
 import org.thp.thehive.controllers.v0.Conversion._
-import org.thp.thehive.dto.String64
 import org.thp.thehive.dto.v0.{InputAlert, InputObservable, InputShare, OutputSimilarCase}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -44,6 +43,7 @@ class AlertCtrl(
     caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     override val organisationSrv: OrganisationSrv,
     override val publicData: PublicAlert,
     implicit val db: Database,
@@ -116,7 +116,7 @@ class AlertCtrl(
             .map {
               case (richAlert, similarCases) =>
                 val alertWithObservables: (RichAlert, Seq[RichObservable]) =
-                  richAlert -> observableSrv.startTraversal.relatedTo(richAlert._id).richObservableWithSeen(organisationSrv).toSeq
+                  richAlert -> observableSrv.startTraversal.relatedTo(richAlert._id).richObservableWithSeen.toSeq
 
                 Results.Ok(alertWithObservables.toJson.as[JsObject] + ("similarCases" -> similarCases))
             }
@@ -267,7 +267,6 @@ class AlertCtrl(
         val observableRule: Option[String]     = request.body("observableRule")
 
         for {
-          organisation <- organisationSrv.current.getOrFail("Organisation")
           alert <-
             alertSrv
               .get(EntityIdOrName(alertId))
@@ -280,7 +279,6 @@ class AlertCtrl(
           richCase <- alertSrv.createCase(
             alertWithCaseTemplate,
             assignee,
-            organisation,
             sharingParameters.map(_.toSharingParameter).toMap,
             taskRule,
             observableRule
@@ -375,7 +373,7 @@ class PublicAlert(
     alertSrv: AlertSrv,
     val organisationSrv: OrganisationSrv,
     val customFieldSrv: CustomFieldSrv,
-    db: Database
+    val customFieldValueSrv: CustomFieldValueSrv
 ) extends PublicData
     with TheHiveOps {
 
@@ -448,17 +446,16 @@ class PublicAlert(
       .property("severity", UMapping.int)(_.field.updatable)
       .property("date", UMapping.date)(_.field.updatable)
       .property("lastSyncDate", UMapping.date.optional)(_.field.updatable)
-      .property("tags", UMapping.string.set)(
+      .property("tags", UMapping.string.sequence)(
         _.field
           .custom { (_, value, vertex, graph, authContext) =>
             alertSrv
               .get(vertex)(graph)
               .getOrFail("Alert")
-              .flatMap(alert => alertSrv.updateTags(alert, value)(graph, authContext))
+              .flatMap(alert => alertSrv.updateTags(alert, value.toSet)(graph, authContext))
               .map(_ => Json.obj("tags" -> value))
           }
       )
-      .property("flag", UMapping.boolean)(_.field.updatable)
       .property("tlp", UMapping.int)(_.field.updatable)
       .property("pap", UMapping.int)(_.field.updatable)
       .property("read", UMapping.boolean)(_.field.updatable)
@@ -480,7 +477,7 @@ class PublicAlert(
             Converter.identity[String]
           )
         }
-          .filter[String] {
+          .filter[String](IndexType.standard) {
             case (_, alerts, _, Right(predicate)) =>
               predicate.getBiPredicate.asInstanceOf[BiPredicate[_, _]] match {
                 case Compare.eq       => statusFilter(predicate.getValue)(alerts)
@@ -496,41 +493,60 @@ class PublicAlert(
           }
           .readonly
       )
-      .property("summary", UMapping.string.optional)(_.field.updatable)
-      .property("user", UMapping.string)(_.field.updatable)
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
           alerts.customFieldJsonValue(EntityIdOrName(idOrName))
-        case (_, alerts) => alerts.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+        case (_, alerts) => alerts.richCustomFields.fold.domainMap(cfs => JsObject(cfs.map(cf => cf.name -> cf.jsValue)))
       }
-        .filter[JsValue] {
+        .filter[JsValue](IndexType.standard) {
           case (FPathElem(_, FPathElem(name, _)), alerts, _, predicate) =>
             predicate match {
-              case Right(predicate) => alerts.customFieldFilter(EntityIdOrName(name), predicate)
-              case Left(true)       => alerts.hasCustomField(EntityIdOrName(name))
-              case Left(false)      => alerts.hasNotCustomField(EntityIdOrName(name))
+              case Right(p) =>
+                val elementIds = customFieldSrv
+                  .getByName(name)(alerts.graph)
+                  .value(_.`type`)
+                  .headOption
+                  .fold[Seq[EntityId]](Nil)(_.filter(customFieldValueSrv.startTraversal(alerts.graph), p).value(_.elementId).toSeq)
+                alerts.hasId(elementIds: _*)
+              case Left(true)  => alerts.hasCustomField(EntityIdOrName(name))
+              case Left(false) => alerts.hasNotCustomField(EntityIdOrName(name))
             }
           case (_, caseTraversal, _, _) => caseTraversal.empty
         }
         .custom {
-          case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
+          case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
+            EntityIdOrName(idOrName).fold(
+              valueId => // update the value
+                customFieldValueSrv
+                  .getByIds(EntityId(valueId))(graph)
+                  .filter(_.alert.getElement(vertex))
+                  .getOrFail("CustomField")
+                  .flatMap(cfv => customFieldValueSrv.updateValue(cfv, jsonValue, None)(graph))
+                  .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
+              name => // update or add new custom field
+                for {
+                  a              <- alertSrv.getOrFail(vertex)(graph)
+                  cf             <- customFieldSrv.getByName(name)(graph).getOrFail("CustomField")
+                  (value, order) <- cf.`type`.parseValue(jsonValue)
+                  _              <- alertSrv.updateOrCreateCustomField(a, cf, value, order)(graph, authContext)
+                } yield Json.obj(s"customField.$name" -> jsonValue)
+            )
+          case (FPathElem(_, FPathEmpty), jsonValue: JsObject, vertex, graph, authContext) =>
             for {
-              c <- alertSrv.getByIds(EntityId(vertex.id))(graph).getOrFail("Alert")
-              _ <-
-                alertSrv.setOrCreateCustomField(c, InputCustomFieldValue(String64("customField.name", name), Some(value), None))(graph, authContext)
-            } yield Json.obj(s"customField.$name" -> value)
-          case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-            for {
-              c   <- alertSrv.get(vertex)(graph).getOrFail("Alert")
-              cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(_ -> v) }
-              _   <- alertSrv.updateCustomField(c, cfv)(graph, authContext)
-            } yield Json.obj("customFields" -> values)
+              a <- alertSrv.getOrFail(vertex)(graph)
+              cfv <- jsonValue.fields.toTry {
+                case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).flatMap(cf => cf.`type`.parseValue(v).map(cf -> _))
+              }
+              _ <- cfv.toTry {
+                case (cf, (value, order)) => alertSrv.updateOrCreateCustomField(a, cf, value, order)(graph, authContext)
+              }
+            } yield Json.obj("customFields" -> jsonValue)
           case _ => Failure(BadRequestError("Invalid custom fields format"))
         })
-      .property("case", db.idMapping)(_.select(_.`case`._id).readonly)
+      .property("case", UMapping.string)(_.rename("caseId").readonly)
       .property("imported", UMapping.boolean)(
         _.select(_.imported)
-          .filter[Boolean]((_, alertTraversal, _, predicate) =>
+          .filter[Boolean](IndexType.standard)((_, alertTraversal, _, predicate) =>
             predicate.fold(
               b => if (b) alertTraversal else alertTraversal.empty,
               p =>

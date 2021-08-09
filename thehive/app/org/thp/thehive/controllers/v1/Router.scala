@@ -13,6 +13,7 @@ class Router(
     caseCtrl: CaseCtrl,
     caseTemplateCtrl: CaseTemplateCtrl,
     // configCtrl: ConfigCtrl,
+    chartCtrl: ChartCtrl,
     customFieldCtrl: CustomFieldCtrl,
     // dashboardCtrl: DashboardCtrl,
     describeCtrl: DescribeCtrl,
@@ -28,6 +29,7 @@ class Router(
     profileCtrl: ProfileCtrl,
     tagCtrl: TagCtrl,
     taskCtrl: TaskCtrl,
+    searchCtrl: SearchCtrl,
     shareCtrl: ShareCtrl,
     taxonomyCtrl: TaxonomyCtrl,
     // shareCtrl: ShareCtrl,
@@ -43,7 +45,8 @@ class Router(
     case GET(p"/admin/check/stats")                                                            => adminCtrl.checkStats
     case GET(p"/admin/check/$name/trigger")                                                    => adminCtrl.triggerCheck(name)
     case GET(p"/admin/index/status")                                                           => adminCtrl.indexStatus
-    case GET(p"/admin/index/$name/reindex")                                                    => adminCtrl.reindex(name)
+    case POST(p"/admin/index/$name/reindex")                                                   => adminCtrl.reindex(name)
+    case POST(p"/admin/index/$name/rebuild")                                                   => adminCtrl.rebuild(name)
     case GET(p"/admin/log/set/$packageName/$level")                                            => adminCtrl.setLogLevel(packageName, level)
     case POST(p"/admin/schema/repair/$schemaName" ? q_o"select=$select" ? q_o"filter=$filter") => adminCtrl.schemaRepair(schemaName, select, filter)
     case POST(p"/admin/schema/info/$schemaName" ? q_o"select=$select" ? q_o"filter=$filter")   => adminCtrl.schemaInfo(schemaName, select, filter)
@@ -185,6 +188,8 @@ class Router(
     case POST(p"/observable/type")             => observableTypeCtrl.create
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
 
+    case POST(p"/chart/time")  => chartCtrl.timeChart
+    case GET(p"/search")       => searchCtrl.search
     case GET(p"/monitor/disk") => monitoringCtrl.diskUsage
   }
 }

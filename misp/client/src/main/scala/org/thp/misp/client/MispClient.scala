@@ -200,18 +200,24 @@ class MispClient(
       .mapMaterializedValue(_ => NotUsed)
   }
 
-  def searchAttributes(eventId: String, publishDate: Option[Date])(implicit ec: ExecutionContext): Source[Attribute, NotUsed] = {
+  def searchAttributes(eventId: String, publishDate: Option[Date], deletedOnly: Boolean = false)(implicit
+      ec: ExecutionContext
+  ): Source[Attribute, NotUsed] = {
     logger.debug(s"Search MISP attributes for event #$eventId ${publishDate.fold("")("from " + _)}")
     Source
       .futureSource(
         postStream(
           "attributes/restSearch/json",
-          Json.obj("request" -> Json.obj("timestamp" -> publishDate.fold(0L)(_.getTime / 1000), "eventid" -> eventId))
+          Json.obj(
+            "request" ->
+              Json
+                .obj("timestamp" -> publishDate.fold(0L)(_.getTime / 1000), "eventid" -> eventId)
+                .when(deletedOnly)(_ + ("deleted" -> JsString("only")))
+          )
         )
       )
       // add ("deleted" → 1) to see also deleted attributes
       // add ("deleted" → "only") to see only deleted attributes
-      //      .via(JsonFraming.objectScanner(Int.MaxValue))
       .via(JsonReader.select("$.response.Attribute[*]"))
       .mapConcat { data =>
         val maybeAttribute = Try(Json.parse(data.toArray[Byte]).as[Attribute])
@@ -229,8 +235,6 @@ class MispClient(
       }
       .mapMaterializedValue(_ => NotUsed)
   }
-
-  //            .filter(_.date after refDate)
 
   private val fileNameExtractor = """attachment; filename="(.*)"""".r
 

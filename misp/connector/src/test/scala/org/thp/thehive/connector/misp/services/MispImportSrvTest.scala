@@ -81,7 +81,7 @@ class MispImportSrvTest extends PlaySpecification with TestAppBuilder with TheHi
       import app.mispModule._
       import app.thehiveModule._
 
-      TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+      TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
         import ops.AlertOpsDefs
 
         database.roTransaction { implicit graph =>

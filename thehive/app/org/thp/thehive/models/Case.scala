@@ -54,22 +54,8 @@ case class CaseTag()
 @BuildEdgeEntity[Case, Case]
 case class MergedFrom()
 
-@BuildEdgeEntity[Case, CustomField]
-case class CaseCustomField(
-    order: Option[Int] = None,
-    stringValue: Option[String] = None,
-    booleanValue: Option[Boolean] = None,
-    integerValue: Option[Int] = None,
-    floatValue: Option[Double] = None,
-    dateValue: Option[Date] = None
-) extends CustomFieldValue[CaseCustomField] {
-  override def order_=(value: Option[Int]): CaseCustomField            = copy(order = value)
-  override def stringValue_=(value: Option[String]): CaseCustomField   = copy(stringValue = value)
-  override def booleanValue_=(value: Option[Boolean]): CaseCustomField = copy(booleanValue = value)
-  override def integerValue_=(value: Option[Int]): CaseCustomField     = copy(integerValue = value)
-  override def floatValue_=(value: Option[Double]): CaseCustomField    = copy(floatValue = value)
-  override def dateValue_=(value: Option[Date]): CaseCustomField       = copy(dateValue = value)
-}
+@BuildEdgeEntity[Case, CustomFieldValue]
+case class CaseCustomFieldValue()
 
 @BuildEdgeEntity[Case, User]
 case class CaseUser()

@@ -21,18 +21,19 @@ trait TestAppBuilder extends LogFileConfig {
       injectModule(thehiveModule)
     }
 
-  def destroyApp(app: TestApplication with WithTheHiveModule): Unit =
+  def destroyApp(app: TestApplication with WithTheHiveModule): Unit = {
     destroyTheHiveModule(app.thehiveModule)
+    app.terminate()
+  }
 
   def buildDatabase(db: Database): Try[Unit] = new DatabaseBuilderModule(buildApp(db)).databaseBuilder.build(db)
 
   def testApp[A](body: TestApplication with WithTheHiveModule => A): A =
     JanusDatabaseProvider
-      .withDatabase(databaseName, buildDatabase, TestApplication.appWithoutDatabase.actorSystem) { db =>
+      .withDatabase(databaseName, buildDatabase, TestApplication.actorSystemForDB) { db =>
         val app = buildApp(db)
-        val res = body(app)
-        destroyApp(app)
-        res
+        try body(app)
+        finally destroyApp(app)
       }
       .get
 }

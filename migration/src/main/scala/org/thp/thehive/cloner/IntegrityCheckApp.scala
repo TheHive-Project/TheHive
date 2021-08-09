@@ -35,6 +35,7 @@ class IntegrityCheckApp(val configuration: Configuration, val db: Database)(impl
   lazy val resolutionStatusSrv: ResolutionStatusSrv                = wire[ResolutionStatusSrv]
   lazy val observableTypeSrv: ObservableTypeSrv                    = wire[ObservableTypeSrv]
   lazy val customFieldSrv: CustomFieldSrv                          = wire[CustomFieldSrv]
+  lazy val customFieldValueSrv: CustomFieldValueSrv                = wire[CustomFieldValueSrv]
   lazy val caseTemplateSrv: CaseTemplateSrv                        = wire[CaseTemplateSrv]
   lazy val applicationConfig: ApplicationConfig                    = wire[ApplicationConfig]
   lazy val eventSrv: EventSrv                                      = wire[EventSrv]

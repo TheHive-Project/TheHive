@@ -16,7 +16,7 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
     import app.thehiveModule._
     import app.thehiveModuleV0._
 
-    TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+    TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
       import ops._
 
       val request = FakeRequest("POST", "/api/case/1/shares")
@@ -76,7 +76,7 @@ class ShareCtrlTest extends PlaySpecification with TestAppBuilder {
     import app.thehiveModule._
     import app.thehiveModuleV0._
 
-    TheHiveOps(organisationSrv, customFieldSrv) { ops =>
+    TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
       import ops._
 
       val request = FakeRequest("DELETE", s"/api/case/2")

@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import akka.actor.{ActorIdentity, Identify, PoisonPill}
 import akka.util.Timeout
-import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
 import org.thp.scalligraph.services.EventSrv
@@ -43,7 +42,7 @@ class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
       import app.thehiveModule._
       import app.thehiveModuleV0._
 
-      implicit val authContext: AuthContext = DummyUserSrv(permissions = Permissions.all).authContext
+      implicit val authContext: AuthContext = DummyUserSrv(permissions = Permissions.all, organisation = "cert").authContext
 
       val createStreamRequest = FakeRequest("POST", "/api/stream")
         .withHeaders("user" -> "certuser@thehive.local")
@@ -54,7 +53,6 @@ class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
 
       // Add an event
       database.tryTransaction { implicit graph =>
-        val organisation = organisationSrv.getOrFail(EntityName("cert")).get
         caseSrv.create(
           Case(
             title = "case audit",
@@ -70,7 +68,6 @@ class StreamCtrlTest extends PlaySpecification with TestAppBuilder {
             tags = Nil
           ),
           assignee = None,
-          organisation = organisation,
           customFields = Nil,
           caseTemplate = None,
           additionalTasks = Nil,

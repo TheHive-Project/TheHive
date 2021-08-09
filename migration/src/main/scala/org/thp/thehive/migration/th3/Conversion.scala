@@ -69,12 +69,16 @@ trait Conversion {
       resolutionStatus = (json \ "resolutionStatus").asOpt[String]
       impactStatus     = (json \ "impactStatus").asOpt[String]
       metricsValue = metrics.value.map {
-        case (name, value) => name -> Some(value)
+        case (name, value) => InputCustomFieldValue(String64("metric.name", name), value, None)
       }
       customFields = (json \ "customFields").asOpt[JsObject].getOrElse(JsObject.empty)
       customFieldsValue = customFields.value.map {
         case (name, value) =>
-          name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
+          InputCustomFieldValue(
+            String64("customField.name", name),
+            (value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull,
+            None
+          )
       }
     } yield InputCase(
       Case(
@@ -97,7 +101,7 @@ trait Conversion {
         caseTemplate = None
       ), // organisation Ids are filled by output
       Map(mainOrganisation -> Profile.orgAdmin.name),
-      (metricsValue ++ customFieldsValue).toMap,
+      (metricsValue ++ customFieldsValue).toSeq,
       metaData
     )
   }
@@ -202,7 +206,11 @@ trait Conversion {
       customFields = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       customFieldsValue = customFields.value.map {
         case (name, value) =>
-          name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
+          InputCustomFieldValue(
+            String64("customField.name", name),
+            (value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull,
+            None
+          )
       }
       caseTemplate <- (json \ "caseTemplate").validateOpt[String]
     } yield InputAlert(
@@ -225,7 +233,7 @@ trait Conversion {
       ),
       caseId,
       mainOrganisation,
-      customFieldsValue.toMap,
+      customFieldsValue.toSeq,
       caseTemplate: Option[String]
     )
   }
@@ -357,14 +365,14 @@ trait Conversion {
       tags    = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
       metrics = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       metricsValue = metrics.value.map {
-        case (name, value) => InputCustomFieldValue(String64("metrics.name", name), Some(value), None)
+        case (name, value) => InputCustomFieldValue(String64("metrics.name", name), value, None)
       }
       customFields <- (json \ "customFields").validateOpt[JsObject]
       customFieldsValue = customFields.getOrElse(JsObject.empty).value.map {
         case (name, value) =>
           InputCustomFieldValue(
             String64("customFields.name", name),
-            Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull),
+            (value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull,
             (value \ "order").asOpt[Int]
           )
       }

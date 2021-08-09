@@ -1,8 +1,7 @@
 package org.thp.thehive.services
 
-import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.Entity
+import org.thp.scalligraph.models.{Entity, TextPredicate}
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
 import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
@@ -107,10 +106,10 @@ trait TaxonomyOps { _: TheHiveOpsNoDeps =>
         noFreetags.filter(_.organisations.get(authContext.organisation))
 
     def noFreetags: Traversal.V[Taxonomy] =
-      traversal.hasNot(_.namespace, TextP.startingWith("_freetags"))
+      traversal.hasNot(_.namespace, TextPredicate.startsWith("_freetags"))
 
     def freetags: Traversal.V[Taxonomy] =
-      traversal.has(_.namespace, TextP.startingWith("_freetags"))
+      traversal.has(_.namespace, TextPredicate.startsWith("_freetags"))
 
     def alreadyImported(namespace: String): Boolean =
       traversal.getByNamespace(namespace).exists

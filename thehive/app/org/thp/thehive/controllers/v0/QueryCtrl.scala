@@ -8,7 +8,6 @@ import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.Graph
-import org.thp.scalligraph.traversal.Traversal.Unk
 import org.thp.thehive.services.th3.TH3Aggregation
 import play.api.Logger
 import play.api.libs.json.JsObject
@@ -37,7 +36,7 @@ trait QueryCtrl {
   val filterQuery: FilterQuery = queryExecutor.filterQuery
   val queryType: ru.Type       = publicData.initialQuery.toType(ru.typeOf[Graph])
 
-  val inputFilterParser: FieldsParser[InputQuery[Unk, Unk]] = filterQuery
+  val inputFilterParser: FieldsParser[InputFilter] = filterQuery
     .paramParser(queryType)
 
   val aggregationParser: FieldsParser[Aggregation] =

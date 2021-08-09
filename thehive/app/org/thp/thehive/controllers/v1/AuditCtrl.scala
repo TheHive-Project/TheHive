@@ -7,7 +7,7 @@ import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models.{Audit, RichAudit}
-import org.thp.thehive.services.{AuditSrv, CustomFieldSrv, OrganisationSrv, TheHiveOps}
+import org.thp.thehive.services.{AuditSrv, CustomFieldSrv, CustomFieldValueSrv, OrganisationSrv, TheHiveOps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Success
@@ -19,6 +19,7 @@ class AuditCtrl(
     auditSrv: AuditSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     implicit val schema: Schema
 ) extends QueryableCtrl
     with TheHiveOps {

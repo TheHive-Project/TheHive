@@ -2,10 +2,10 @@ package org.thp.thehive.controllers.v0
 
 import org.scalactic.Accumulation._
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, EntityIdOrName, RichSeq}
+import org.thp.scalligraph.{AttributeCheckingError, BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputCaseTemplate, InputTask}
 import org.thp.thehive.models.{CaseTemplate, Permissions, RichCaseTemplate, Task}
@@ -32,11 +32,11 @@ class CaseTemplateCtrl(
       .extract("caseTemplate", FieldsParser[InputCaseTemplate])
       .authTransaction(db) { implicit request => implicit graph =>
         val inputCaseTemplate: InputCaseTemplate = request.body("caseTemplate")
-        val customFields                         = inputCaseTemplate.customFields.sortBy(_.order.getOrElse(0)).map(c => c.name -> c.value)
         val tasks                                = inputCaseTemplate.tasks.map(_.toTask)
         for {
-          organisation     <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail("CaseTemplate")
-          richCaseTemplate <- caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, customFields.map(c => c._1.value -> c._2))
+          organisation <- userSrv.current.organisations(Permissions.manageCaseTemplate).get(request.organisation).getOrFail("CaseTemplate")
+          richCaseTemplate <-
+            caseTemplateSrv.create(inputCaseTemplate.toCaseTemplate, organisation, tasks, inputCaseTemplate.customFields.map(_.toV1))
         } yield Results.Created(richCaseTemplate.toJson)
       }
 
@@ -85,8 +85,9 @@ class CaseTemplateCtrl(
 
 class PublicCaseTemplate(
     caseTemplateSrv: CaseTemplateSrv,
-    val organisationSrv: OrganisationSrv,
-    val customFieldSrv: CustomFieldSrv
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
 ) extends PublicData
     with TheHiveOps {
   lazy val logger: Logger         = Logger(getClass)
@@ -112,13 +113,13 @@ class PublicCaseTemplate(
     .property("titlePrefix", UMapping.string.optional)(_.field.updatable)
     .property("description", UMapping.string.optional)(_.field.updatable)
     .property("severity", UMapping.int.optional)(_.field.updatable)
-    .property("tags", UMapping.string.set)(
+    .property("tags", UMapping.string.sequence)(
       _.field
         .custom { (_, value, vertex, graph, authContext) =>
           caseTemplateSrv
             .get(vertex)(graph)
             .getOrFail("CaseTemplate")
-            .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value)(graph, authContext))
+            .flatMap(caseTemplate => caseTemplateSrv.updateTags(caseTemplate, value.toSet)(graph, authContext))
             .map(_ => Json.obj("tags" -> value))
         }
     )
@@ -126,32 +127,53 @@ class PublicCaseTemplate(
     .property("tlp", UMapping.int.optional)(_.field.updatable)
     .property("pap", UMapping.int.optional)(_.field.updatable)
     .property("summary", UMapping.string.optional)(_.field.updatable)
-    .property("user", UMapping.string)(_.field.updatable)
     .property("customFields", UMapping.jsonNative)(_.subSelect {
       case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFieldJsonValue(EntityIdOrName(name))
-      case (_, caseTemplateSteps)                                => caseTemplateSteps.customFields.nameJsonValue.fold.domainMap(JsObject(_))
+      case (_, caseTemplateSteps)                                => caseTemplateSteps.richCustomFields.fold.domainMap(cfs => JsObject(cfs.map(cf => cf.name -> cf.jsValue)))
     }
-      .filter[JsValue] {
+      .filter[JsValue](IndexType.standard) {
         case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
           predicate match {
-            case Right(predicate) => caseTemplateTraversal.customFieldFilter(EntityIdOrName(name), predicate)
-            case Left(true)       => caseTemplateTraversal.hasCustomField(EntityIdOrName(name))
-            case Left(false)      => caseTemplateTraversal.hasNotCustomField(EntityIdOrName(name))
+            case Right(p) =>
+              val elementIds = customFieldSrv
+                .getByName(name)(caseTemplateTraversal.graph)
+                .value(_.`type`)
+                .headOption
+                .fold[Seq[EntityId]](Nil)(_.filter(customFieldValueSrv.startTraversal(caseTemplateTraversal.graph), p).value(_.elementId).toSeq)
+              caseTemplateTraversal.hasId(elementIds: _*)
+            case Left(true)  => caseTemplateTraversal.hasCustomField(EntityIdOrName(name))
+            case Left(false) => caseTemplateTraversal.hasNotCustomField(EntityIdOrName(name))
           }
         case (_, caseTraversal, _, _) => caseTraversal.empty
       }
       .custom {
-        case (FPathElem(_, FPathElem(name, _)), value, vertex, graph, authContext) =>
+        case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
+          EntityIdOrName(idOrName).fold(
+            valueId => // update the value
+              customFieldValueSrv
+                .getByIds(EntityId(valueId))(graph)
+                .filter(_.alert.getElement(vertex))
+                .getOrFail("CustomField")
+                .flatMap(cfv => customFieldValueSrv.updateValue(cfv, jsonValue, None)(graph))
+                .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
+            name => // update or add new custom field
+              for {
+                ct             <- caseTemplateSrv.getOrFail(vertex)(graph)
+                cf             <- customFieldSrv.getByName(name)(graph).getOrFail("CustomField")
+                (value, order) <- cf.`type`.parseValue(jsonValue)
+                _              <- caseTemplateSrv.updateOrCreateCustomField(ct, cf, value, order)(graph, authContext)
+              } yield Json.obj(s"customField.$name" -> jsonValue)
+          )
+        case (FPathElem(_, FPathEmpty), jsonValue: JsObject, vertex, graph, authContext) =>
           for {
-            c <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-            _ <- caseTemplateSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)(graph, authContext)
-          } yield Json.obj(s"customField.$name" -> value)
-        case (FPathElem(_, FPathEmpty), values: JsObject, vertex, graph, authContext) =>
-          for {
-            c   <- caseTemplateSrv.get(vertex)(graph).getOrFail("CaseTemplate")
-            cfv <- values.fields.toTry { case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).map(cf => (cf, v, None)) }
-            _   <- caseTemplateSrv.updateCustomField(c, cfv)(graph, authContext)
-          } yield Json.obj("customFields" -> values)
+            ct <- caseTemplateSrv.getOrFail(vertex)(graph)
+            cfv <- jsonValue.fields.toTry {
+              case (n, v) => customFieldSrv.getOrFail(EntityIdOrName(n))(graph).flatMap(cf => cf.`type`.parseValue(v).map(cf -> _))
+            }
+            _ <- cfv.toTry {
+              case (cf, (value, order)) => caseTemplateSrv.updateOrCreateCustomField(ct, cf, value, order)(graph, authContext)
+            }
+          } yield Json.obj("customFields" -> jsonValue)
         case _ => Failure(BadRequestError("Invalid custom fields format"))
       })
     .property("tasks", UMapping.jsonNative.sequence)(

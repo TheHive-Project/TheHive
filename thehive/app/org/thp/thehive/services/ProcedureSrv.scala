@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import org.thp.scalligraph.EntityIdOrName
-import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
@@ -22,15 +22,14 @@ class ProcedureSrv(
   val caseProcedureSrv    = new EdgeSrv[CaseProcedure, Case, Procedure]
   val procedurePatternSrv = new EdgeSrv[ProcedurePattern, Procedure, Pattern]
 
-  def create(p: Procedure, caseId: String, patternId: String)(implicit graph: Graph, authContext: AuthContext): Try[RichProcedure] =
+  def create(p: Procedure, `case`: Case with Entity, patternId: String)(implicit graph: Graph, authContext: AuthContext): Try[RichProcedure] =
     for {
-      caze      <- caseSrv.getOrFail(EntityIdOrName(caseId))
       pattern   <- patternSrv.getOrFail(EntityIdOrName(patternId))
       procedure <- createEntity(p)
-      _         <- caseProcedureSrv.create(CaseProcedure(), caze, procedure)
+      _         <- caseProcedureSrv.create(CaseProcedure(), `case`, procedure)
       _         <- procedurePatternSrv.create(ProcedurePattern(), procedure, pattern)
       richProcedure = RichProcedure(procedure, pattern)
-      _ <- auditSrv.procedure.create(procedure, caze, richProcedure.toJson)
+      _ <- auditSrv.procedure.create(procedure, `case`, richProcedure.toJson)
     } yield richProcedure
 
   override def get(idOrName: EntityIdOrName)(implicit graph: Graph): Traversal.V[Procedure] =
@@ -55,8 +54,16 @@ class ProcedureSrv(
 
 }
 
-trait ProcedureOps { _: TheHiveOpsNoDeps =>
-  implicit class ProcedureOpsDefs(traversal: Traversal.V[Procedure]) {
+trait ProcedureOps { _: TheHiveOps =>
+
+  implicit class ProcedureOpsDefs(val traversal: Traversal.V[Procedure]) {
+    def visible(implicit authContext: AuthContext): Traversal.V[Procedure] =
+      traversal.filter(_.`case`.visible)
+  }
+}
+
+trait ProcedureOpsNoDeps { _: TheHiveOpsNoDeps =>
+  implicit class ProcedureOpsNoDepsDefs(traversal: Traversal.V[Procedure]) {
 
     def pattern: Traversal.V[Pattern] =
       traversal.out[ProcedurePattern].v[Pattern]
@@ -66,6 +73,12 @@ trait ProcedureOps { _: TheHiveOpsNoDeps =>
 
     def get(idOrName: EntityIdOrName): Traversal.V[Procedure] =
       idOrName.fold(traversal.getByIds(_), _ => traversal.limit(0))
+
+    def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Procedure] =
+      if (authContext.isPermitted(permission))
+        traversal.filter(_.`case`.can(permission))
+      else
+        traversal.empty
 
     def richProcedure: Traversal[RichProcedure, JMap[String, Any], Converter[RichProcedure, JMap[String, Any]]] =
       traversal

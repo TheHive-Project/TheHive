@@ -13,7 +13,7 @@ import be.venneborg.refined.play.RefinedJsonFormats._
 case class InputObservable(
     dataType: String32,
     @WithParser(InputObservable.dataParser)
-    data: Seq[String512] = Nil,
+    data: Seq[MultiLineString512] = Nil,
     message: Option[Description] = None,
     startDate: Option[Date] = None,
     @WithParser(InputObservable.fileOrAttachmentParser)
@@ -33,10 +33,10 @@ object InputObservable {
 
   implicit val writes: Writes[InputObservable] = Json.writes[InputObservable]
 
-  val dataParser: FieldsParser[Seq[String]] = FieldsParser[Seq[String]]("data") {
-    case (_, FString(s)) => Good(Seq(s))
-    case (_, FAny(s))    => Good(s)
-    case (_, FSeq(a))    => a.validatedBy(FieldsParser.string(_))
+  val dataParser: FieldsParser[Seq[MultiLineString512]] = FieldsParser[Seq[MultiLineString512]]("data") {
+    case (_, FString(s)) => Good(Seq(MultiLineString512("data", s)))
+    case (_, FAny(s))    => Good(s.map(MultiLineString512("data", _)))
+    case (_, FSeq(a))    => a.validatedBy(d => FieldsParser.string(d).map(MultiLineString512("data", _)))
     case (_, FUndefined) => Good(Nil)
   }
 

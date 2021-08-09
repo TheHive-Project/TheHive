@@ -65,8 +65,8 @@ class TheHiveQueryExecutor(
       shareCtrl,
       tagCtrl,
       taskCtrl,
-      userCtrl,
-      taxonomyCtrl
+      taxonomyCtrl,
+      userCtrl
     )
 
   val limitedCountThresholdConfig: ConfigItem[Long, Long] = appConfig.item[Long]("query.limitedCountThreshold", "Maximum number returned by a count")

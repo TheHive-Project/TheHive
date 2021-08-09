@@ -30,15 +30,15 @@ trait TestAppBuilder extends LogFileConfig {
   def destroyApp(app: TestApplication with WithTheHiveModule with WithMispModule): Unit = {
     destroyTheHiveModule(app.thehiveModule)
     destroyMispModule(app.mispModule)
+    app.terminate()
   }
 
   def testApp[A](body: TestApplication with WithTheHiveModule with WithMispModule => A): A =
     JanusDatabaseProvider
-      .withDatabase(databaseName, buildDatabase, TestApplication.appWithoutDatabase.actorSystem) { db =>
+      .withDatabase(databaseName, buildDatabase, TestApplication.actorSystemForDB) { db =>
         val app = buildApp(db)
-        val res = body(app)
-        destroyApp(app)
-        res
+        try body(app)
+        finally destroyApp(app)
       }
       .get
 }

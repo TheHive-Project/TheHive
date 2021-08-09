@@ -109,7 +109,6 @@ class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv) extends P
   override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[AnalyzerTemplate]
     .property("analyzerId", UMapping.string)(_.rename("workerId").readonly)
-    .property("reportType", UMapping.string)(_.field.readonly)
     .property("content", UMapping.string)(_.field.updatable)
     .build
 }

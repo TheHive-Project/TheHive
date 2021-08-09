@@ -2,7 +2,8 @@ package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.NotFoundError
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, IndexType}
+import org.thp.scalligraph.query.PublicProperty
 import org.thp.scalligraph.services.config.ApplicationConfig.durationFormat
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.thehive.controllers.ModelDescription
@@ -16,24 +17,7 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 class TheHiveModelDescription(
-    alertCtrl: AlertCtrl,
-    auditCtrl: AuditCtrl,
-    caseCtrl: CaseCtrl,
-    caseTemplateCtrl: CaseTemplateCtrl,
-    customFieldCtrl: CustomFieldCtrl,
-    dashboardCtrl: DashboardCtrl,
-    logCtrl: LogCtrl,
-    observableCtrl: ObservableCtrl,
-    observableTypeCtrl: ObservableTypeCtrl,
-    organisationCtrl: OrganisationCtrl,
-//    pageCtrl: PageCtrl,
-    patternCtrl: PatternCtrl,
-    procedureCtrl: ProcedureCtrl,
-    profileCtrl: ProfileCtrl,
-    tagCtrl: TagCtrl,
-    taskCtrl: TaskCtrl,
-    taxonomyCtrl: TaxonomyCtrl,
-    userCtrl: UserCtrl,
+    queryExecutor: TheHiveQueryExecutor,
     customFieldSrv: CustomFieldSrv,
     impactStatusSrv: ImpactStatusSrv,
     resolutionStatusSrv: ResolutionStatusSrv,
@@ -42,40 +26,23 @@ class TheHiveModelDescription(
     with TheHiveOpsNoDeps {
 
   val metadata = Seq(
-    PropertyDescription("_createdBy", "user"),
-    PropertyDescription("_createdAt", "date"),
-    PropertyDescription("_updatedBy", "user"),
-    PropertyDescription("_updatedAt", "date")
+    PropertyDescription("_createdBy", "user", indexType = IndexType.standard),
+    PropertyDescription("_createdAt", "date", indexType = IndexType.standard),
+    PropertyDescription("_updatedBy", "user", indexType = IndexType.standard),
+    PropertyDescription("_updatedAt", "date", indexType = IndexType.standard)
   )
 
   lazy val logger: Logger = Logger(getClass)
 
   override def entityDescriptions: Seq[EntityDescription] =
-    Seq(
-      EntityDescription("alert", "", "listAlert", alertCtrl.publicProperties.list.flatMap(propToDesc("alert", _))),
-      EntityDescription("audit", "", "listAudit", auditCtrl.publicProperties.list.flatMap(propToDesc("audit", _))),
-      EntityDescription("case", "", "listCase", caseCtrl.publicProperties.list.flatMap(propToDesc("case", _))),
-      EntityDescription("caseTemplate", "", "listCaseTemplate", caseTemplateCtrl.publicProperties.list.flatMap(propToDesc("caseTemplate", _))),
-      EntityDescription("customField", "", "listCustomField", customFieldCtrl.publicProperties.list.flatMap(propToDesc("customField", _))),
-      EntityDescription("dashboard", "", "listDashboard", dashboardCtrl.publicProperties.list.flatMap(propToDesc("dashboard", _))),
-      EntityDescription("log", "", "listLog", logCtrl.publicProperties.list.flatMap(propToDesc("case_task_log", _))),
-      EntityDescription("observable", "", "listObservable", observableCtrl.publicProperties.list.flatMap(propToDesc("observable", _))),
+    queryExecutor.controllers.map { ctrl =>
       EntityDescription(
-        "observableType",
-        "",
-        "listObservableType",
-        observableTypeCtrl.publicProperties.list.flatMap(propToDesc("observableType", _))
-      ),
-      EntityDescription("organisation", "", "listOrganisation", organisationCtrl.publicProperties.list.flatMap(propToDesc("organisation", _))),
-      // EntityDescription("page", "", "listPage", pageCtrl.publicProperties.list.flatMap(propToDesc("page", _)))
-      EntityDescription("pattern", "", "listPattern", patternCtrl.publicProperties.list.flatMap(propToDesc("pattern", _))),
-      EntityDescription("procedure", "", "listProcedure", procedureCtrl.publicProperties.list.flatMap(propToDesc("procedure", _))),
-      EntityDescription("profile", "", "listProfile", profileCtrl.publicProperties.list.flatMap(propToDesc("profile", _))),
-      EntityDescription("tag", "", "listTag", tagCtrl.publicProperties.list.flatMap(propToDesc("tag", _))),
-      EntityDescription("task", "", "listTask", taskCtrl.publicProperties.list.flatMap(propToDesc("task", _))),
-      EntityDescription("taxonomy", "", "listTaxonomy", taxonomyCtrl.publicProperties.list.flatMap(propToDesc("taxonomy", _))),
-      EntityDescription("user", "", "listUser", userCtrl.publicProperties.list.flatMap(propToDesc("user", _)))
-    )
+        label = ctrl.entityName,
+        path = "",
+        initialQuery = s"list${ctrl.entityName.capitalize}",
+        attributes = ctrl.publicProperties.list.flatMap(propertyDescription(ctrl.entityName, _)) ++ metadata
+      )
+    }
 
   def customFields: Seq[PropertyDescription] = {
     def jsonToString(v: JsValue): String =
@@ -90,61 +57,87 @@ class TheHiveModelDescription(
       customFieldSrv
         .startTraversal
         .toSeq
-        .map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString, cf.options, cf.options.map(jsonToString)))
+        .map(cf => PropertyDescription(s"customFields.${cf.name}", cf.`type`.toString, cf.options, cf.options.map(jsonToString), IndexType.none))
     }
   }
 
-  def impactStatus: PropertyDescription =
+  def impactStatus(prop: PublicProperty): PropertyDescription =
     db.roTransaction { implicit graph =>
-      PropertyDescription("impactStatus", "enumeration", impactStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
+      PropertyDescription("impactStatus", "enumeration", impactStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)), indexType = prop.indexType)
     }
 
-  def resolutionStatus: PropertyDescription =
+  def resolutionStatus(prop: PublicProperty): PropertyDescription =
     db.roTransaction { implicit graph =>
-      PropertyDescription("resolutionStatus", "enumeration", resolutionStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)))
+      PropertyDescription(
+        "resolutionStatus",
+        "enumeration",
+        resolutionStatusSrv.startTraversal.toSeq.map(s => JsString(s.value)),
+        indexType = prop.indexType
+      )
     }
 
-  override def customDescription(model: String, propertyName: String): Option[Seq[PropertyDescription]] =
-    (model, propertyName) match {
-      case (_, "assignee") => Some(Seq(PropertyDescription("assignee", "user")))
+  override def propertyDescription(model: String, prop: PublicProperty): Seq[PropertyDescription] =
+    (model, prop.propertyName) match {
+      case (_, "assignee") => Seq(PropertyDescription("assignee", "user", indexType = prop.indexType))
       case ("case", "status") =>
-        Some(
-          Seq(PropertyDescription("status", "enumeration", Seq(JsString("Open"), JsString("Resolved"), JsString("Deleted"), JsString("Duplicated"))))
+        Seq(
+          PropertyDescription(
+            "status",
+            "enumeration",
+            Seq(JsString("Open"), JsString("Resolved"), JsString("Deleted"), JsString("Duplicated")),
+            indexType = prop.indexType
+          )
         )
-      case ("case", "impactStatus")     => Some(Seq(impactStatus))
-      case ("case", "resolutionStatus") => Some(Seq(resolutionStatus))
+      case ("case", "impactStatus")     => Seq(impactStatus(prop))
+      case ("case", "resolutionStatus") => Seq(resolutionStatus(prop))
       case ("dashboard", "status") =>
-        Some(Seq(PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")))))
+        Seq(
+          PropertyDescription("status", "enumeration", Seq(JsString("Shared"), JsString("Private"), JsString("Deleted")), indexType = prop.indexType)
+        )
       case ("task", "status") =>
-        Some(
-          Seq(
-            PropertyDescription("status", "enumeration", Seq(JsString("Waiting"), JsString("InProgress"), JsString("Completed"), JsString("Cancel")))
+        Seq(
+          PropertyDescription(
+            "status",
+            "enumeration",
+            Seq(JsString("Waiting"), JsString("InProgress"), JsString("Completed"), JsString("Cancel")),
+            indexType = prop.indexType
           )
         )
       case (_, "tlp") =>
-        Some(
-          Seq(PropertyDescription("tlp", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
-        )
-      case (_, "pap") =>
-        Some(
-          Seq(PropertyDescription("pap", "number", Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)), Seq("white", "green", "amber", "red")))
-        )
-      case (_, "severity") =>
-        Some(
-          Seq(
-            PropertyDescription(
-              "severity",
-              "number",
-              Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)),
-              Seq("low", "medium", "high", "critical")
-            )
+        Seq(
+          PropertyDescription(
+            "tlp",
+            "number",
+            Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)),
+            Seq("white", "green", "amber", "red"),
+            indexType = prop.indexType
           )
         )
-      case (_, "_createdBy")   => Some(Seq(PropertyDescription("_createdBy", "user")))
-      case (_, "_updatedBy")   => Some(Seq(PropertyDescription("_updatedBy", "user")))
-      case (_, "customFields") => Some(customFields)
-      case (_, "patternId")    => Some(Seq(PropertyDescription("patternId", "string", Nil)))
-      case _                   => None
+      case (_, "pap") =>
+        Seq(
+          PropertyDescription(
+            "pap",
+            "number",
+            Seq(JsNumber(0), JsNumber(1), JsNumber(2), JsNumber(3)),
+            Seq("white", "green", "amber", "red"),
+            indexType = prop.indexType
+          )
+        )
+      case (_, "severity") =>
+        Seq(
+          PropertyDescription(
+            "severity",
+            "number",
+            Seq(JsNumber(1), JsNumber(2), JsNumber(3), JsNumber(4)),
+            Seq("low", "medium", "high", "critical"),
+            indexType = prop.indexType
+          )
+        )
+      case (_, "_createdBy")   => Seq(PropertyDescription("_createdBy", "user", indexType = prop.indexType))
+      case (_, "_updatedBy")   => Seq(PropertyDescription("_updatedBy", "user", indexType = prop.indexType))
+      case (_, "customFields") => customFields
+      case (_, "patternId")    => Seq(PropertyDescription("patternId", "string", Nil, indexType = prop.indexType))
+      case _                   => super.propertyDescription(model, prop)
     }
 }
 

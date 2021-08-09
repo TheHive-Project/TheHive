@@ -32,16 +32,16 @@ case class TaskLog()
 @DefineIndex(IndexType.standard, "organisationIds")
 case class Task(
     title: String,
-    group: String,
-    description: Option[String],
-    status: TaskStatus.Value,
-    flag: Boolean,
-    startDate: Option[Date],
-    endDate: Option[Date],
-    order: Int,
-    dueDate: Option[Date],
+    group: String = "default",
+    description: Option[String] = None,
+    status: TaskStatus.Value = TaskStatus.Waiting,
+    flag: Boolean = false,
+    startDate: Option[Date] = None,
+    endDate: Option[Date] = None,
+    order: Int = 0,
+    dueDate: Option[Date] = None,
     /* filled by the service */
-    assignee: Option[String],
+    assignee: Option[String] = None,
     relatedId: EntityId = EntityId.empty,
     organisationIds: Set[EntityId] = Set.empty
 )

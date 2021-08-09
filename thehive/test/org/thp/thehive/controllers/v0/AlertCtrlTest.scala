@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.DummyUserSrv
 import org.thp.thehive.dto.v0._
 import org.thp.thehive.models.RichObservable
 import org.thp.thehive.services.TheHiveOpsNoDeps
-import play.api.libs.json.{JsNull, JsObject, JsString, Json}
+import play.api.libs.json.{JsNull, JsNumber, JsObject, JsString, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
@@ -42,8 +42,8 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
     val now                = new Date()
     val outputCustomFields = Json.obj("string1" -> Json.obj("string" -> "string custom field"), "float1" -> Json.obj("float" -> 42.0))
     val inputCustomFields = Seq(
-      InputCustomFieldValue("float1", Some(42), None),
-      InputCustomFieldValue("string1", Some("string custom field"), None)
+      InputCustomFieldValue("float1", JsNumber(42), None),
+      InputCustomFieldValue("string1", JsString("string custom field"), None)
     )
     val inputObservables =
       Seq(

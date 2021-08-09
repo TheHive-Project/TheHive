@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v0
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.scalactic.Good
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FObject, Field, FieldsParser}
@@ -8,7 +9,7 @@ import org.thp.scalligraph.query._
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.utils.RichType
-import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName}
+import org.thp.scalligraph.{BadRequestError, EntityId}
 import org.thp.thehive.models._
 import org.thp.thehive.services.TheHiveOpsNoDeps
 
@@ -56,7 +57,7 @@ class TheHiveQueryExecutor(
 
   def metaProperties: PublicProperties =
     PublicPropertyListBuilder
-      .forType[Product](_ => true)
+      .metadata
       .property("createdBy", UMapping.string)(_.rename("_createdBy").readonly)
       .property("createdAt", UMapping.date)(_.rename("_createdAt").readonly)
       .property("updatedBy", UMapping.string.optional)(_.rename("_updatedBy").readonly)
@@ -82,7 +83,7 @@ class TheHiveQueryExecutor(
   override val customFilterQuery: FilterQuery = FilterQuery(publicProperties) { (tpe, globalParser) =>
     FieldsParser("parentChildFilter") {
       case (_, FObjOne("_parent", ParentIdFilter(parentType, parentId))) if parentTypes.isDefinedAt((tpe, parentType)) =>
-        Good(new ParentIdInputFilter(parentType, parentId))
+        Good(new ParentIdInputFilter(parentId))
       case (path, FObjOne("_parent", ParentQueryFilter(parentType, parentFilterField))) if parentTypes.isDefinedAt((tpe, parentType)) =>
         globalParser(parentTypes((tpe, parentType))).apply(path, parentFilterField).map(query => new ParentQueryInputFilter(parentType, query))
       case (path, FObjOne("_child", ChildQueryFilter(childType, childQueryField))) if childTypes.isDefinedAt((tpe, childType)) =>
@@ -110,7 +111,7 @@ object ParentIdFilter {
       .fold(Some(_), _ => None)
 }
 
-class ParentIdInputFilter(parentType: String, parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] with TheHiveOpsNoDeps {
+class ParentIdInputFilter(parentId: String) extends InputFilter with TheHiveOpsNoDeps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -121,35 +122,35 @@ class ParentIdInputFilter(parentType: String, parentId: String) extends InputQue
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])
       .headOption
       .collect {
-        case t if t <:< ru.typeOf[Task] && parentType == "caseTemplate" =>
+        case t if t <:< ru.typeOf[Task] && isNegate =>
           traversal
             .asInstanceOf[Traversal.V[Task]]
-            .filter(_.caseTemplate.get(EntityIdOrName(parentId)))
+            .has(_.relatedId, P.neq(EntityId(parentId)))
             .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Task] =>
           traversal
             .asInstanceOf[Traversal.V[Task]]
-            .filter(_.`case`.get(EntityIdOrName(parentId)))
+            .has(_.relatedId, EntityId(parentId))
             .asInstanceOf[Traversal.Unk]
-        case t if t <:< ru.typeOf[Observable] =>
+        case t if t <:< ru.typeOf[Observable] && isNegate =>
           traversal
             .asInstanceOf[Traversal.V[Observable]]
             .has(_.relatedId, EntityId(parentId))
             .asInstanceOf[Traversal.Unk]
-//          && parentType == "alert" =>
-//          traversal
-//            .asInstanceOf[Traversal.V[Observable]]
-//            .filter(_.alert.get(EntityIdOrName(parentId)))
-//            .asInstanceOf[Traversal.Unk]
-//        case t if t <:< ru.typeOf[Observable] =>
-//          traversal
-//            .asInstanceOf[Traversal.V[Observable]]
-//            .filter(_.`case`.get(EntityIdOrName(parentId)))
-//            .asInstanceOf[Traversal.Unk]
+        case t if t <:< ru.typeOf[Observable] =>
+          traversal
+            .asInstanceOf[Traversal.V[Observable]]
+            .has(_.relatedId, P.neq(EntityId(parentId)))
+            .asInstanceOf[Traversal.Unk]
+        case t if t <:< ru.typeOf[Log] && isNegate =>
+          traversal
+            .asInstanceOf[Traversal.V[Log]]
+            .has(_.taskId, P.neq(EntityId(parentId)))
+            .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Log] =>
           traversal
             .asInstanceOf[Traversal.V[Log]]
-            .filter(_.task.get(EntityIdOrName(parentId)))
+            .has(_.taskId, EntityId(parentId))
             .asInstanceOf[Traversal.Unk]
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't parent"))
@@ -166,9 +167,7 @@ object ParentQueryFilter {
       .fold(Some(_), _ => None)
 }
 
-class ParentQueryInputFilter(parentType: String, parentFilter: InputQuery[Traversal.Unk, Traversal.Unk])
-    extends InputQuery[Traversal.Unk, Traversal.Unk]
-    with TheHiveOpsNoDeps {
+class ParentQueryInputFilter(parentType: String, parentFilter: InputFilter) extends InputFilter with TheHiveOpsNoDeps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -176,14 +175,24 @@ class ParentQueryInputFilter(parentType: String, parentFilter: InputQuery[Traver
       authContext: AuthContext
   ): Traversal.Unk = {
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
-      traversal.filter(parent =>
-        parentFilter(
-          publicProperties,
-          ru.typeOf[Traversal.V[T]],
-          t(parent.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
-          authContext
+      if (isNegate)
+        traversal.filterNot(parent =>
+          parentFilter(
+            publicProperties,
+            ru.typeOf[Traversal.V[T]],
+            t(parent.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+            authContext
+          )
         )
-      )
+      else
+        traversal.filter(parent =>
+          parentFilter(
+            publicProperties,
+            ru.typeOf[Traversal.V[T]],
+            t(parent.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+            authContext
+          )
+        )
 
     RichType
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])
@@ -209,9 +218,7 @@ object ChildQueryFilter {
       .fold(Some(_), _ => None)
 }
 
-class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal.Unk, Traversal.Unk])
-    extends InputQuery[Traversal.Unk, Traversal.Unk]
-    with TheHiveOpsNoDeps {
+class ChildQueryInputFilter(childType: String, childFilter: InputFilter) extends InputFilter with TheHiveOpsNoDeps {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -219,14 +226,24 @@ class ChildQueryInputFilter(childType: String, childFilter: InputQuery[Traversal
       authContext: AuthContext
   ): Traversal.Unk = {
     def filter[F, T: ru.TypeTag](t: Traversal.V[F] => Traversal.V[T]): Traversal.Unk =
-      traversal.filter(child =>
-        childFilter(
-          publicProperties,
-          ru.typeOf[Traversal.V[T]],
-          t(child.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
-          authContext
+      if (isNegate)
+        traversal.filterNot(child =>
+          childFilter(
+            publicProperties,
+            ru.typeOf[Traversal.V[T]],
+            t(child.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+            authContext
+          )
         )
-      )
+      else
+        traversal.filter(child =>
+          childFilter(
+            publicProperties,
+            ru.typeOf[Traversal.V[T]],
+            t(child.asInstanceOf[Traversal.V[F]]).asInstanceOf[Traversal.Unk],
+            authContext
+          )
+        )
 
     RichType
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])

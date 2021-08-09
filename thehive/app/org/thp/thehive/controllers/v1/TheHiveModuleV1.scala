@@ -16,6 +16,7 @@ class TheHiveModuleV1(app: ScalligraphApplication) extends ScalligraphModule {
   lazy val auditCtrl: AuditCtrl                             = wire[AuditCtrl]
   lazy val caseCtrl: CaseCtrl                               = wire[CaseCtrl]
   lazy val caseTemplateCtrl: CaseTemplateCtrl               = wire[CaseTemplateCtrl]
+  lazy val chartCtrl: ChartCtrl                             = wire[ChartCtrl]
   lazy val customFieldCtrl: CustomFieldCtrl                 = wire[CustomFieldCtrl]
   lazy val observableTypeCtrl: ObservableTypeCtrl           = wire[ObservableTypeCtrl]
   lazy val dashboardCtrl: DashboardCtrl                     = wire[DashboardCtrl]
@@ -31,6 +32,7 @@ class TheHiveModuleV1(app: ScalligraphApplication) extends ScalligraphModule {
   lazy val adminCtrl: AdminCtrl                             = wire[AdminCtrl]
   lazy val taxonomyCtrl: TaxonomyCtrl                       = wire[TaxonomyCtrl]
   lazy val monitoringCtrl: MonitoringCtrl                   = wire[MonitoringCtrl]
+  lazy val searchCtrl: SearchCtrl                           = wire[SearchCtrl]
   lazy val theHiveModelDescription: TheHiveModelDescription = wire[TheHiveModelDescription]
   theHiveModule.entityDescriptions += (1 -> theHiveModelDescription)
 

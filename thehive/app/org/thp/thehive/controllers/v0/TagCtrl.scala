@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, Renderer}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
@@ -73,7 +73,7 @@ class PublicTag(tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends Public
     .property("description", UMapping.string.optional)(_.field.readonly)
     .property("text", UMapping.string)(
       _.select(_.displayName)
-        .filter[String] {
+        .filter[String](IndexType.standard) {
           case (_, tags, authContext, Right(predicate)) => tags.freetags(organisationSrv)(authContext).has(_.predicate, predicate)
           case (_, tags, _, Left(true))                 => tags
           case (_, tags, _, Left(false))                => tags.empty

@@ -19,6 +19,7 @@ class TaskCtrl(
     caseSrv: CaseSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     override val queryExecutor: QueryExecutor,
     override val publicData: PublicTask
 ) extends QueryCtrl
@@ -157,7 +158,7 @@ class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: Us
     .property("dueDate", UMapping.date.optional)(_.field.updatable)
     .property("group", UMapping.string)(_.field.updatable)
     .property("owner", UMapping.string.optional)(
-      _.select(_.assignee.value(_.login))
+      _.rename("assignee")
         .custom { (_, login: Option[String], vertex, graph, authContext) =>
           for {
             task <- taskSrv.get(vertex)(graph).getOrFail("Task")

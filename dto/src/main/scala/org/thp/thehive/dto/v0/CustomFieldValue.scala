@@ -2,12 +2,10 @@ package org.thp.thehive.dto.v0
 
 import org.scalactic.Accumulation._
 import org.scalactic._
-import org.thp.scalligraph.controllers.{FNull, _}
+import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.{AttributeError, InvalidFormatAttributeError}
 import org.thp.thehive.dto.{Description, String16, String64}
 import play.api.libs.json._
-
-import java.util.Date
 import be.venneborg.refined.play.RefinedJsonFormats._
 
 case class OutputCustomField(
@@ -24,47 +22,47 @@ object OutputCustomField {
   implicit val format: OFormat[OutputCustomField] = Json.format[OutputCustomField]
 }
 
-case class InputCustomFieldValue(name: String64, value: Option[Any], order: Option[Int])
+case class InputCustomFieldValue(name: String64, value: JsValue, order: Option[Int])
 
 object InputCustomFieldValue {
 
   def getStringCustomField(name: String64, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
     obj.get("string") match {
       case FUndefined     => None
-      case FNull          => Some(Good(InputCustomFieldValue(name, None, obj.getNumber("order").map(_.toInt))))
-      case FString(value) => Some(Good(InputCustomFieldValue(name, Some(value), obj.getNumber("order").map(_.toInt))))
+      case FNull          => Some(Good(InputCustomFieldValue(name, JsNull, obj.getNumber("order").map(_.toInt))))
+      case FString(value) => Some(Good(InputCustomFieldValue(name, JsString(value), obj.getNumber("order").map(_.toInt))))
       case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.string", "string", Set.empty, other))))
     }
 
   def getIntegerCustomField(name: String64, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
     obj.get("integer") match {
       case FUndefined     => None
-      case FNull          => Some(Good(InputCustomFieldValue(name, None, obj.getNumber("order").map(_.toInt))))
-      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value.toInt), obj.getNumber("order").map(_.toInt))))
+      case FNull          => Some(Good(InputCustomFieldValue(name, JsNull, obj.getNumber("order").map(_.toInt))))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, JsNumber(value), obj.getNumber("order").map(_.toInt))))
       case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.integer", "integer", Set.empty, other))))
     }
 
   def getFloatCustomField(name: String64, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
     obj.get("float") match {
       case FUndefined     => None
-      case FNull          => Some(Good(InputCustomFieldValue(name, None, obj.getNumber("order").map(_.toInt))))
-      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(value), obj.getNumber("order").map(_.toInt))))
+      case FNull          => Some(Good(InputCustomFieldValue(name, JsNull, obj.getNumber("order").map(_.toInt))))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, JsNumber(value), obj.getNumber("order").map(_.toInt))))
       case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.float", "float", Set.empty, other))))
     }
 
   def getDateCustomField(name: String64, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
     obj.get("date") match {
       case FUndefined     => None
-      case FNull          => Some(Good(InputCustomFieldValue(name, None, obj.getNumber("order").map(_.toInt))))
-      case FNumber(value) => Some(Good(InputCustomFieldValue(name, Some(new Date(value.toLong)), obj.getNumber("order").map(_.toInt))))
+      case FNull          => Some(Good(InputCustomFieldValue(name, JsNull, obj.getNumber("order").map(_.toInt))))
+      case FNumber(value) => Some(Good(InputCustomFieldValue(name, JsNumber(value), obj.getNumber("order").map(_.toInt))))
       case other          => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.date", "date", Set.empty, other))))
     }
 
   def getBooleanCustomField(name: String64, obj: FObject): Option[Or[InputCustomFieldValue, Every[AttributeError]]] =
     obj.get("boolean") match {
       case FUndefined      => None
-      case FNull           => Some(Good(InputCustomFieldValue(name, None, obj.getNumber("order").map(_.toInt))))
-      case FBoolean(value) => Some(Good(InputCustomFieldValue(name, Some(value), obj.getNumber("order").map(_.toInt))))
+      case FNull           => Some(Good(InputCustomFieldValue(name, JsNull, obj.getNumber("order").map(_.toInt))))
+      case FBoolean(value) => Some(Good(InputCustomFieldValue(name, JsBoolean(value), obj.getNumber("order").map(_.toInt))))
       case other           => Some(Bad(One(InvalidFormatAttributeError(s"customField.$name.boolean", "boolean", Set.empty, other))))
     }
 
@@ -73,18 +71,18 @@ object InputCustomFieldValue {
       fields
         .toSeq
         .validatedBy {
-          case (name, FString(value))   => Good(InputCustomFieldValue(String64("customFieldValue.name", name), Some(value), None))
-          case (name, FNumber(value))   => Good(InputCustomFieldValue(String64("customFieldValue.name", name), Some(value), None))
-          case (name, FBoolean(value))  => Good(InputCustomFieldValue(String64("customFieldValue.name", name), Some(value), None))
-          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(String64("customFieldValue.name", name), Some(value), None))
-          case (name, FNull)            => Good(InputCustomFieldValue(String64("customFieldValue.name", name), None, None))
+          case (name, FString(value))   => Good(InputCustomFieldValue(String64("customFieldValue.name", name), JsString(value), None))
+          case (name, FNumber(value))   => Good(InputCustomFieldValue(String64("customFieldValue.name", name), JsNumber(value), None))
+          case (name, FBoolean(value))  => Good(InputCustomFieldValue(String64("customFieldValue.name", name), JsBoolean(value), None))
+          case (name, FAny(value :: _)) => Good(InputCustomFieldValue(String64("customFieldValue.name", name), JsString(value), None))
+          case (name, FNull)            => Good(InputCustomFieldValue(String64("customFieldValue.name", name), JsNull, None))
           case (name, obj: FObject) =>
             getStringCustomField(String64("customFieldValue.name", name), obj) orElse
               getIntegerCustomField(String64("customFieldValue.name", name), obj) orElse
               getFloatCustomField(String64("customFieldValue.name", name), obj) orElse
               getDateCustomField(String64("customFieldValue.name", name), obj) orElse
               getBooleanCustomField(String64("customFieldValue.name", name), obj) getOrElse
-              Good(InputCustomFieldValue(String64("customFieldValue.name", name), None, None))
+              Good(InputCustomFieldValue(String64("customFieldValue.name", name), JsNull, None))
           case (name, other) =>
             Bad(
               One(
@@ -98,15 +96,7 @@ object InputCustomFieldValue {
 
   implicit val writes: Writes[Seq[InputCustomFieldValue]] = Writes[Seq[InputCustomFieldValue]] { icfv =>
     val fields: Seq[(String, JsValue)] = icfv.map {
-      case InputCustomFieldValue(name, Some(s: String), _)  => name.value -> JsString(s)
-      case InputCustomFieldValue(name, Some(l: Long), _)    => name.value -> JsNumber(l)
-      case InputCustomFieldValue(name, Some(d: Double), _)  => name.value -> JsNumber(d)
-      case InputCustomFieldValue(name, Some(i: Integer), _) => name.value -> JsNumber(i.toLong)
-      case InputCustomFieldValue(name, Some(f: Float), _)   => name.value -> JsNumber(f.toDouble)
-      case InputCustomFieldValue(name, Some(b: Boolean), _) => name.value -> JsBoolean(b)
-      case InputCustomFieldValue(name, Some(d: Date), _)    => name.value -> JsNumber(d.getTime)
-      case InputCustomFieldValue(name, None, _)             => name.value -> JsNull
-      case InputCustomFieldValue(name, other, _)            => sys.error(s"The custom field $name has invalid value: $other (${other.getClass})")
+      case InputCustomFieldValue(name, value, _) => name.value -> value
     }
     JsObject(fields)
   }

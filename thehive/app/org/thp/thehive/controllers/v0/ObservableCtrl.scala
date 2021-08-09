@@ -5,7 +5,7 @@ import net.lingala.zip4j.model.FileHeader
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -33,6 +33,7 @@ class ObservableCtrl(
     caseSrv: CaseSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
     override val queryExecutor: QueryExecutor,
@@ -353,7 +354,8 @@ class PublicObservable(
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     override val organisationSrv: OrganisationSrv,
-    override val customFieldSrv: CustomFieldSrv
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
 ) extends PublicData
     with ObservableRenderer {
   override val entityName: String = "observable"
@@ -401,18 +403,27 @@ class PublicObservable(
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Observable]
-    .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
-    .property("startDate", UMapping.date)(_.select(_._createdAt).readonly)
+    .property("status", UMapping.string)(
+      _.select(_.constant("Ok"))
+        .filter[String](IndexType.standard) {
+          case (_, observables, _, Right(statusPredicate)) if statusPredicate.test("Ok") => observables
+          case (_, observables, _, Right(_))                                             => observables.empty
+          case (_, observables, _, Left(true))                                           => observables
+          case (_, observables, _, Left(false))                                          => observables.empty
+        }
+        .readonly
+    )
+    .property("startDate", UMapping.date)(_.rename("_createdAt").readonly)
     .property("ioc", UMapping.boolean)(_.field.updatable)
     .property("sighted", UMapping.boolean)(_.field.updatable)
     .property("ignoreSimilarity", UMapping.boolean)(_.field.updatable)
-    .property("tags", UMapping.string.set)(
+    .property("tags", UMapping.string.sequence)(
       _.field
         .custom { (_, value, vertex, graph, authContext) =>
           observableSrv
             .get(vertex)(graph)
             .getOrFail("Observable")
-            .flatMap(observable => observableSrv.updateTags(observable, value)(graph, authContext))
+            .flatMap(observable => observableSrv.updateTags(observable, value.toSet)(graph, authContext))
             .map(_ => Json.obj("tags" -> value))
         }
     )
@@ -433,7 +444,7 @@ class PublicObservable(
     .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
     .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)
     .property("attachment.contentType", UMapping.string.optional)(_.select(_.attachments.value(_.contentType)).readonly)
-    .property("attachment.id", UMapping.string.optional)(_.field.readonly)
+    .property("attachment.id", UMapping.string.optional)(_.rename("attachmentId").readonly)
     .property("relatedId", UMapping.entityId)(_.field.readonly)
     .build
 }

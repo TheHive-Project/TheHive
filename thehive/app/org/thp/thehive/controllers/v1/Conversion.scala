@@ -7,7 +7,7 @@ import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FFile, Renderer}
 import org.thp.scalligraph.models.Entity
-import org.thp.thehive.dto.{Description, Pap, Severity, String128, String16, String32, String512, String64, Tlp}
+import org.thp.thehive.dto.{Description, MultiLineString512, Pap, Severity, String128, String16, String32, String512, String64, Tlp}
 import org.thp.thehive.dto.v1.{InputTaxonomy, OutputTaxonomy, _}
 import org.thp.thehive.models._
 import org.thp.thehive.services.{SharingParameter, SharingProfile, SharingRule}
@@ -176,7 +176,7 @@ object Conversion {
           .map(cf =>
             InputCustomFieldValue(
               name = String64("customFieldValues.name", cf.name),
-              value = cf.value,
+              value = cf.jsValue,
               order = cf.order
             )
           )
@@ -536,7 +536,7 @@ object Conversion {
     def toInputObservable(attachmentAsFFile: Boolean): InputObservable =
       InputObservable(
         dataType = String32("dataType", observable.dataType),
-        data = observable.data.map(String512("data", _)).toSeq,
+        data = observable.data.map(MultiLineString512("data", _)).toSeq,
         message = observable.message.map(Description("message", _)),
         startDate = None,
         attachment = observable

@@ -77,7 +77,7 @@ class PublicPage(pageSrv: PageSrv, organisationSrv: OrganisationSrv) extends Pub
   override val outputQuery: Query = Query.output[Page with Entity]
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Page]
     .property("title", UMapping.string)(_.field.updatable)
-    .property("content", UMapping.string.set)(_.field.updatable)
+    .property("content", UMapping.string)(_.field.updatable)
     .build
 
 }

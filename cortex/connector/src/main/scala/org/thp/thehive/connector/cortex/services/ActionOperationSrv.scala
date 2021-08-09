@@ -22,7 +22,8 @@ class ActionOperationSrv(
     alertSrv: AlertSrv,
     logSrv: LogSrv,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv
+    userSrv: UserSrv,
+    customFieldSrv: CustomFieldSrv
 ) extends CortexOps {
   private[ActionOperationSrv] lazy val logger: Logger = Logger(getClass)
 
@@ -67,8 +68,9 @@ class ActionOperationSrv(
 
       case AddCustomFields(name, _, value) =>
         for {
-          c <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddCustomFields without case")))(Success(_))
-          _ <- caseSrv.setOrCreateCustomField(c, EntityIdOrName(name), Some(value), None)
+          c  <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddCustomFields without case")))(Success(_))
+          cf <- customFieldSrv.getOrFail(EntityIdOrName(name))
+          _  <- caseSrv.updateOrCreateCustomField(c, cf, value, None)
         } yield updateOperation(operation)
 
       case CloseTask() =>

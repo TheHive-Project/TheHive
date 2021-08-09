@@ -1,5 +1,17 @@
 # Change Log
 
+## [4.1.9](https://github.com/TheHive-Project/TheHive/milestone/78) (2021-07-23)
+
+**Implemented enhancements:**
+
+- [Enhancement] Add button for index rebuilding [\#2144](https://github.com/TheHive-Project/TheHive/issues/2144)
+
+**Fixed bugs:**
+
+- [Bug] MISP sync delete existing observables when updating existing Alert [\#2134](https://github.com/TheHive-Project/TheHive/issues/2134)
+- [Bug] Livestream emptied of audit logs after TheHive reboot [\#2135](https://github.com/TheHive-Project/TheHive/issues/2135)
+- [Bug] AddTagToCase operation does not work [\#2136](https://github.com/TheHive-Project/TheHive/issues/2136)
+
 ## [4.1.8](https://github.com/TheHive-Project/TheHive/milestone/77) (2021-07-19)
 
 **Implemented enhancements:**

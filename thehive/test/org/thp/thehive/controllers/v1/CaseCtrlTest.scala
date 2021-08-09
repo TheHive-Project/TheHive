@@ -1,12 +1,19 @@
 package org.thp.thehive.controllers.v1
 
+import eu.timepit.refined.auto._
 import io.scalaland.chimney.dsl.TransformerOps
-import org.thp.thehive.dto.v1.{InputCase, OutputCase, OutputCustomFieldValue}
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.DummyUserSrv
+import org.thp.scalligraph.{EntityIdOrName, EntityName}
+import org.thp.thehive.TestApplication
+import org.thp.thehive.dto.v1.{InputCase, InputShare, OutputCase, OutputCustomFieldValue}
+import org.thp.thehive.models.{Observable, Organisation, Share, Task}
+import org.thp.thehive.services.{TheHiveOps, WithTheHiveModule}
 import play.api.libs.json.{JsNull, JsString, JsValue, Json}
 import play.api.test.{FakeRequest, PlaySpecification}
 
 import java.util.Date
-import eu.timepit.refined.auto._
+import scala.util.Success
 
 case class TestCustomFieldValue(name: String, description: String, `type`: String, value: JsValue, order: Int)
 
@@ -130,6 +137,156 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       )
 
       TestCase(resultCase) must_=== expected
+    }
+
+    "create case automatically shared with other organisation" in testApp { app =>
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
+      // Create link between 2 orgs and set sharing profiles and sharing rules
+      app.database.tryTransaction { implicit graph =>
+        implicit val authContext: AuthContext = DummyUserSrv().authContext
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
+          import ops._
+          for {
+            soc <- organisationSrv.getOrFail(EntityName("soc"))
+            cert <-
+              organisationSrv
+                .get(EntityName("cert"))
+                .update(_.taskRule, "existingOnly")
+                .update(_.observableRule, "upcomingOnly")
+                .getOrFail("Organisation")
+            _ <- organisationSrv.link(soc, cert, "supervised", "supervised")
+          } yield ()
+        }
+      }
+
+      // Create a case
+      val now = new Date()
+      val request = FakeRequest("POST", "/api/v1/case")
+        .withJsonBody(
+          Json.toJson(
+            InputCase(
+              title = "case title (shared)",
+              description = "case description (shared)",
+              severity = Some(2),
+              startDate = Some(now),
+              tags = Set("tag1", "tag2"),
+              flag = Some(false),
+              tlp = Some(1),
+              pap = Some(3),
+              user = Some("certro@thehive.local")
+            )
+          )
+        )
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result = caseCtrl.create(request)
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val caseId = EntityIdOrName(contentAsJson(result).as[OutputCase]._id)
+
+      app.database.tryTransaction { implicit graph =>
+        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc").authContext
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
+          import ops._
+
+          caseSrv.get(caseId).visible.exists must beTrue
+          caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "soc")).head must beEqualTo(
+            Share(owner = false, taskRule = "all", observableRule = "all")
+          )
+          caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "cert")).head must beEqualTo(
+            Share(owner = true, taskRule = "existingOnly", observableRule = "upcomingOnly")
+          )
+          caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "soc")).profile.value(_.name).head must beEqualTo("analyst")
+        }
+        Success(())
+      } must beASuccessfulTry
+    }
+
+    "create case automatically shared with other organisation with sharing parameter" in testApp { app =>
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
+      // Create link between 2 orgs and set sharing profiles and sharing rules
+      // and create a unlinked org
+      app.database.tryTransaction { implicit graph =>
+        implicit val authContext: AuthContext = DummyUserSrv().authContext
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
+          import ops._
+          for {
+            soc <- organisationSrv.getOrFail(EntityName("soc"))
+            cert <-
+              organisationSrv
+                .get(EntityName("cert"))
+                .update(_.taskRule, "existingOnly")
+                .update(_.observableRule, "upcomingOnly")
+                .getOrFail("Organisation")
+            _ <- organisationSrv.link(soc, cert, "supervised", "supervised")
+            _ <- organisationSrv.create(Organisation("unlinkedOrg", "Unlinked organisation", "manual", "manual"))
+          } yield ()
+        }
+      }
+
+      // Create a case
+      val now = new Date()
+      val request = FakeRequest("POST", "/api/v1/case")
+        .withJsonBody(
+          Json.toJsObject(
+            InputCase(
+              title = "case title (shared with parameter)",
+              description = "case description (shared with parameter)",
+              severity = Some(2),
+              startDate = Some(now),
+              tags = Set("tag1", "tag2"),
+              flag = Some(false),
+              tlp = Some(1),
+              pap = Some(3),
+              user = Some("certro@thehive.local")
+            )
+          ) ++ Json.obj(
+            "sharingParameters" -> Seq(
+              InputShare(
+                organisation = "unlinkedOrg",
+                share = Some(true),
+                profile = Some("analyst"),
+                taskRule = Some("existingOnly"),
+                observableRule = Some("upcomingOnly")
+              ),
+              InputShare(
+                organisation = "soc",
+                share = Some(false),
+                profile = Some("read-only"),
+                taskRule = Some("manual"),
+                observableRule = Some("manual")
+              )
+            ),
+            "taskRule"       -> "manual",
+            "observableRule" -> "manual"
+          )
+        )
+        .withHeaders("user" -> "certuser@thehive.local")
+      val result = caseCtrl.create(request)
+      status(result) must beEqualTo(201).updateMessage(s => s"$s\n${contentAsString(result)}")
+      val caseId = EntityIdOrName(contentAsJson(result).as[OutputCase]._id)
+
+      app.database.tryTransaction { implicit graph =>
+        implicit val authContext: AuthContext = DummyUserSrv(organisation = "soc").authContext
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
+          import ops._
+
+          caseSrv.get(caseId).organisations.value(_.name).toSeq must contain(exactly("cert", "soc", "unlinkedOrg"))
+          caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "soc")).head must beEqualTo(
+            Share(owner = false, taskRule = "all", observableRule = "all") // parameter is ignored because sharing profile is not editable
+          )
+          caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "cert")).head must beEqualTo(
+            Share(owner = true, taskRule = "manual", observableRule = "manual")
+          )
+          caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "unlinkedOrg")).head must beEqualTo(
+            Share(owner = false, taskRule = "existingOnly", observableRule = "upcomingOnly")
+          )
+          caseSrv.get(caseId).shares.filter(_.organisation.has(_.name, "soc")).profile.value(_.name).head must beEqualTo("analyst")
+        }
+        Success(())
+      } must beASuccessfulTry
     }
 
     "get a case" in testApp { app =>
@@ -259,5 +416,155 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder {
       status(result)                              must beEqualTo(400).updateMessage(s => s"$s\n${contentAsString(result)}")
       (contentAsJson(result) \ "type").as[String] must beEqualTo("BadRequest")
     }
+
+    "update sharing rule" in testApp { app =>
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
+      app.database.tryTransaction { implicit graph =>
+        implicit val authContext: AuthContext = DummyUserSrv().authContext
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
+          import ops._
+          for {
+            share   <- caseSrv.getByName("2").share(EntityName("soc")).getOrFail("Organisation")
+            analyst <- profileSrv.getByName("analyst").getOrFail("Profile")
+            _       <- shareSrv.updateProfile(share, analyst)
+          } yield ()
+        }
+      }
+
+      {
+        val request = FakeRequest("PATCH", "/api/v1/case/2")
+          .withHeaders("user" -> "certuser@thehive.local")
+          .withJsonBody(Json.obj("taskRule" -> "ruleA", "observableRule" -> "ruleB"))
+        val result = caseCtrl.update("2")(request)
+        status(result) must beEqualTo(204)
+      }
+
+      {
+        val request = FakeRequest("PATCH", "/api/v1/case/2")
+          .withHeaders("user" -> "socuser@thehive.local")
+          .withJsonBody(Json.obj("taskRule" -> "ruleC", "observableRule" -> "ruleD"))
+        val result = caseCtrl.update("2")(request)
+        status(result) must beEqualTo(204)
+      }
+
+      app.database.roTransaction { implicit graph =>
+        TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
+          import ops._
+          caseSrv.getByName("2").share(EntityName("cert")).head must beEqualTo(Share(owner = true, taskRule = "ruleA", observableRule = "ruleB"))
+          caseSrv.getByName("2").share(EntityName("soc")).head  must beEqualTo(Share(owner = false, taskRule = "ruleC", observableRule = "ruleD"))
+        }
+      }
+    }
+
+    def testSharingRule(taskRule: String, observableRule: String)(implicit
+        app: TestApplication with WithTheHiveModule with WithTheHiveModuleV1
+    ): (Seq[String], Seq[String], Seq[String], Seq[String]) = {
+      import app.thehiveModule._
+      import app.thehiveModuleV1._
+
+      TheHiveOps(organisationSrv, customFieldSrv, customFieldValueSrv) { ops =>
+        import ops._
+
+        app
+          .database
+          .tryTransaction { implicit graph =>
+            implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert").authContext
+            for {
+              case2 <- caseSrv.getByName("2").getOrFail("Case")
+              _     <- caseSrv.createTask(case2, Task(title = "beforeUpdate"))
+              _ <- caseSrv.createObservable(
+                case2,
+                Observable(
+                  message = Some("TEST"),
+                  tlp = 2,
+                  ioc = false,
+                  sighted = false,
+                  ignoreSimilarity = Some(false),
+                  dataType = "other",
+                  tags = Nil
+                ),
+                "beforeUpdate"
+              )
+              shareId <- caseSrv.getByName("2").share._id.getOrFail("Share")
+            } yield shareId.toString
+          }
+          .get
+
+        val request = FakeRequest("PATCH", "/api/v1/case/2")
+          .withHeaders("user" -> "certuser@thehive.local")
+          .withJsonBody(Json.obj("taskRule" -> taskRule, "observableRule" -> observableRule))
+        val result = caseCtrl.update("2")(request)
+        status(result) must beEqualTo(204)
+
+        app
+          .database
+          .tryTransaction { implicit graph =>
+            implicit val authContext: AuthContext = DummyUserSrv(organisation = "cert").authContext
+            for {
+              case2 <- caseSrv.getByName("2").getOrFail("Case")
+              _     <- caseSrv.createTask(case2, Task(title = "afterUpdate"))
+              _ <- caseSrv.createObservable(
+                case2,
+                Observable(
+                  message = Some("TEST"),
+                  tlp = 2,
+                  ioc = false,
+                  sighted = false,
+                  ignoreSimilarity = Some(false),
+                  dataType = "other",
+                  tags = Nil
+                ),
+                "afterUpdate"
+              )
+              shareId <- caseSrv.getByName("2").share._id.getOrFail("Share")
+            } yield shareId.toString
+          }
+          .get
+
+        app.database.roTransaction { implicit graph =>
+          val certObservables = caseSrv.getByName("2").observables(EntityName("cert")).value(_.data).toSeq
+          val certTasks       = caseSrv.getByName("2").tasks(EntityName("cert")).value(_.title).toSeq
+          val socObservables  = caseSrv.getByName("2").observables(EntityName("soc")).value(_.data).toSeq
+          val socTasks        = caseSrv.getByName("2").tasks(EntityName("soc")).value(_.title).toSeq
+
+          (certObservables, certTasks, socObservables, socTasks)
+        }
+      }
+    }
+
+    "apply sharing rules (all) when it is updated" in testApp { implicit app =>
+      val (certObservables, certTasks, socObservables, socTasks) = testSharingRule("all", "all")
+      certObservables must contain(exactly("beforeUpdate", "afterUpdate"))
+      certTasks       must contain(exactly("beforeUpdate", "afterUpdate", "case 2 task 2"))
+      socObservables  must contain(exactly("beforeUpdate", "afterUpdate"))
+      socTasks        must contain(exactly("beforeUpdate", "afterUpdate", "case 2 task 2", "case 2 task 1"))
+    }
+
+    "apply sharing rules (manual) when it is updated" in testApp { implicit app =>
+      val (certObservables, certTasks, socObservables, socTasks) = testSharingRule("manual", "manual")
+      certObservables must contain(exactly("beforeUpdate", "afterUpdate"))
+      certTasks       must contain(exactly("beforeUpdate", "afterUpdate", "case 2 task 2"))
+      socObservables  must beEmpty
+      socTasks        must contain(exactly("case 2 task 1"))
+    }
+
+    "apply sharing rules (existingOnly) when it is updated" in testApp { implicit app =>
+      val (certObservables, certTasks, socObservables, socTasks) = testSharingRule("existingOnly", "existingOnly")
+      certObservables must contain(exactly("beforeUpdate", "afterUpdate"))
+      certTasks       must contain(exactly("beforeUpdate", "afterUpdate", "case 2 task 2"))
+      socObservables  must contain(exactly("beforeUpdate"))
+      socTasks        must contain(exactly("beforeUpdate", "case 2 task 2", "case 2 task 1"))
+    }
+
+    "apply sharing rules (upcomingOnly) when it is updated" in testApp { implicit app =>
+      val (certObservables, certTasks, socObservables, socTasks) = testSharingRule("upcomingOnly", "upcomingOnly")
+      certObservables must contain(exactly("beforeUpdate", "afterUpdate"))
+      certTasks       must contain(exactly("beforeUpdate", "afterUpdate", "case 2 task 2"))
+      socObservables  must contain(exactly("afterUpdate"))
+      socTasks        must contain(exactly("afterUpdate", "case 2 task 1"))
+    }
   }
+
 }
