@@ -70,8 +70,9 @@ class EntityHelper(
     */
   def parentTask(entity: Entity)(implicit graph: Graph): Option[Task with Entity] =
     entity._label match {
-      case "Log" => logSrv.get(entity).task.headOption
-      case _     => None
+      case "Log"  => logSrv.get(entity).task.headOption
+      case "Task" => taskSrv.get(entity).headOption
+      case _      => None
     }
 
   /**
