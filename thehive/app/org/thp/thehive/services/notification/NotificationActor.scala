@@ -187,7 +187,7 @@ class NotificationActor(
                           organisationSrv
                             .get(organisation)
                             .users
-                            .filter(_.config.hasNot(_.name, "notification"))
+                            .not(_.config.has(_.name, "notification"))
                             .toIterator
                             .foreach { user =>
                               executeNotification(Some(user), userConfig, audit, context, obj, organisation)

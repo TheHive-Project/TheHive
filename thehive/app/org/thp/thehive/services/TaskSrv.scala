@@ -149,7 +149,7 @@ trait TaskOpsNoDeps { _: TheHiveOpsNoDeps =>
     def inOrganisation(organisationId: EntityId): Traversal.V[Task] =
       traversal.has(_.organisationIds, organisationId)
 
-    def active: Traversal.V[Task] = traversal.hasNot(_.status, TaskStatus.Cancel)
+    def active: Traversal.V[Task] = traversal.has(_.status, P.neq(TaskStatus.Cancel))
 
     def can(permission: Permission)(implicit authContext: AuthContext): Traversal.V[Task] =
       if (authContext.permissions.contains(permission))

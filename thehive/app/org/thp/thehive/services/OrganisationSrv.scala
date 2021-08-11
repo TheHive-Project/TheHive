@@ -234,7 +234,7 @@ trait OrganisationOpsNoDeps { _: TheHiveOpsNoDeps =>
         }
     }
 
-    def notAdmin: Traversal.V[Organisation] = traversal.hasNot(_.name, Organisation.administration.name)
+    def notAdmin: Traversal.V[Organisation] = traversal.has(_.name, P.neq(Organisation.administration.name))
 
     def isAdmin: Boolean = traversal.has(_.name, Organisation.administration.name).exists
 

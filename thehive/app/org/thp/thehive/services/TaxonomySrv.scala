@@ -106,7 +106,7 @@ trait TaxonomyOps { _: TheHiveOpsNoDeps =>
         noFreetags.filter(_.organisations.get(authContext.organisation))
 
     def noFreetags: Traversal.V[Taxonomy] =
-      traversal.hasNot(_.namespace, TextPredicate.startsWith("_freetags"))
+      traversal.not(_.has(_.namespace, TextPredicate.startsWith("_freetags"))) //  TODO use NotStartsWith when available
 
     def freetags: Traversal.V[Taxonomy] =
       traversal.has(_.namespace, TextPredicate.startsWith("_freetags"))

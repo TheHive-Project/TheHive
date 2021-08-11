@@ -34,7 +34,7 @@ class CustomFieldValueSrv extends VertexSrv[CustomFieldValue] with TheHiveOpsNoD
 
   def updateValue(
       customFieldValue: CustomFieldValue with Entity,
-      customFieldType: CustomFieldType[_],
+      customFieldType: CustomFieldType,
       value: JsValue,
       order: Option[Int]
   )(implicit graph: Graph): Try[CustomFieldValue with Entity] =
@@ -56,7 +56,7 @@ trait CustomFieldValueOps {
 
     def customField: Traversal.V[CustomField] = traversal.out[CustomFieldValueCustomField].v[CustomField]
 
-    def `type`: Traversal[CustomFieldType[_], String, Converter[CustomFieldType[_], String]] = customField.value(_.`type`)
+    def `type`: Traversal[CustomFieldType, String, Converter[CustomFieldType, String]] = customField.value(_.`type`)
 
     def richCustomField: Traversal[RichCustomField, JMap[String, Any], Converter[RichCustomField, JMap[String, Any]]] =
       traversal.project(_.by.by(_.customField)).domainMap {

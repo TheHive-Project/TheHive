@@ -212,8 +212,7 @@ class UserCtrl(
                   if (updatedProperties.fields.nonEmpty)
                     userSrv
                       .get(user)
-                      .update(_._updatedBy, Some(request.userId))
-                      .update(_._updatedAt, Some(new Date))
+                      .markAsUpdatedBy(request.userId)
                       .iterate()
                   updatedProperties
                 }

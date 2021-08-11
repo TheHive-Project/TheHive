@@ -372,7 +372,7 @@ trait AlertOpsNoDeps { ops: TheHiveOpsNoDeps =>
       traversal.nonEmptyId(_.caseId).exists
 
     def importDate: Traversal[Date, Date, Converter[Date, Date]] =
-      traversal.outE[AlertCase].value(_._createdAt)
+      traversal.outE[AlertCase]._createdAt
 
     def handlingDuration: Traversal[Long, Long, IdentityConverter[Long]] =
       traversal.coalesceIdent(
@@ -469,7 +469,7 @@ trait AlertOps { ops: TheHiveOps =>
             _.selectKeys
               .project(
                 _.by(_.richCaseWithoutPerms)
-                  .by((_: Traversal.V[Case]).observables.hasNot(_.ignoreSimilarity, true).groupCount(_.byValue(_.ioc)))
+                  .by((_: Traversal.V[Case]).observables.not(_.has(_.ignoreSimilarity, true)).groupCount(_.byValue(_.ioc)))
               )
           )
             .by(

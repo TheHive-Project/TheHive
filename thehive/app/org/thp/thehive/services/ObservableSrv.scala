@@ -273,9 +273,9 @@ trait ObservableOpsNoDeps { _: TheHiveOpsNoDeps =>
 
     def filteredSimilar: Traversal.V[Observable] =
       traversal
-        .hasNot(_.ignoreSimilarity, true)
+        .not(_.has(_.ignoreSimilarity, true))
         .similar
-        .hasNot(_.ignoreSimilarity, true)
+        .not(_.has(_.ignoreSimilarity, true))
 
     def similar: Traversal.V[Observable] = {
       val originLabel = StepLabel.v[Observable]

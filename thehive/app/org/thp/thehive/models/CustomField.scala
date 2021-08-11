@@ -36,7 +36,7 @@ case class CustomFieldValue(
 )
 
 object CustomFieldType {
-  def withName(name: String): CustomFieldType[_] =
+  def withName(name: String): CustomFieldType =
     name match {
       case "string"  => CustomFieldString
       case "integer" => CustomFieldInteger
@@ -45,15 +45,16 @@ object CustomFieldType {
       case "date"    => CustomFieldDate
       case other     => throw InternalError(s"Invalid CustomFieldType (found: $other, expected: string, integer, float, boolean or date)")
     }
-  implicit val renderer: Renderer[CustomFieldType[_]] = new Renderer[CustomFieldType[_]] {
+  implicit val renderer: Renderer[CustomFieldType] = new Renderer[CustomFieldType] {
     override type O = String
-    override def toOutput(value: CustomFieldType[_]): Output[String] = Output(value.name)
+    override def toOutput(value: CustomFieldType): Output[String] = Output(value.name)
   }
-  implicit val mapping: SingleMapping[CustomFieldType[_], String] =
-    SingleMapping[CustomFieldType[_], String](toGraph = t => t.name, toDomain = withName)
+  implicit val mapping: SingleMapping[CustomFieldType, String] =
+    SingleMapping[CustomFieldType, String](toGraph = t => t.name, toDomain = withName)
 }
 
-sealed abstract class CustomFieldType[T] extends TraversalOps with PredicateOps {
+sealed abstract class CustomFieldType extends TraversalOps with PredicateOps {
+  type T
   val name: String
   val format: Format[T]
 
@@ -93,7 +94,8 @@ sealed abstract class CustomFieldType[T] extends TraversalOps with PredicateOps 
   override def toString: String = name
 }
 
-object CustomFieldString extends CustomFieldType[String] with TraversalOps {
+object CustomFieldString extends CustomFieldType with TraversalOps {
+  override type T = String
   override val name: String           = "string"
   override val format: Format[String] = implicitly[Format[String]]
 
@@ -115,7 +117,8 @@ object CustomFieldString extends CustomFieldType[String] with TraversalOps {
     readValue(value).map(v => traversal.update(_.stringValue, v))
 }
 
-object CustomFieldBoolean extends CustomFieldType[Boolean] with TraversalOps {
+object CustomFieldBoolean extends CustomFieldType with TraversalOps {
+  override type T = Boolean
   override val name: String            = "boolean"
   override val format: Format[Boolean] = implicitly[Format[Boolean]]
 
@@ -137,7 +140,8 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] with TraversalOps {
     readValue(value).map(v => traversal.update(_.booleanValue, v))
 }
 
-object CustomFieldInteger extends CustomFieldType[Int] with TraversalOps {
+object CustomFieldInteger extends CustomFieldType with TraversalOps {
+  override type T = Int
   override val name: String        = "integer"
   override val format: Format[Int] = implicitly[Format[Int]]
 
@@ -159,7 +163,8 @@ object CustomFieldInteger extends CustomFieldType[Int] with TraversalOps {
     readValue(value).map(v => traversal.update(_.integerValue, v))
 }
 
-object CustomFieldFloat extends CustomFieldType[Double] with TraversalOps {
+object CustomFieldFloat extends CustomFieldType with TraversalOps {
+  override type T = Double
   override val name: String                                    = "float"
   override val format: Format[Double]                          = implicitly[Format[Double]]
   override def getValue(ccf: CustomFieldValue): Option[Double] = ccf.floatValue
@@ -180,7 +185,8 @@ object CustomFieldFloat extends CustomFieldType[Double] with TraversalOps {
     readValue(value).map(v => traversal.update(_.floatValue, v))
 }
 
-object CustomFieldDate extends CustomFieldType[Date] with TraversalOps {
+object CustomFieldDate extends CustomFieldType with TraversalOps {
+  override type T = Date
   override val name: String         = "date"
   override val format: Format[Date] = Format[Date](Reads.LongReads.map(new Date(_)), Writes.LongWrites.contramap(_.getTime))
 
@@ -208,18 +214,18 @@ case class CustomField(
     name: String,
     displayName: String,
     description: String,
-    `type`: CustomFieldType[_],
+    `type`: CustomFieldType,
     mandatory: Boolean,
     options: Seq[JsValue]
 )
 
 case class RichCustomField(customField: CustomField with Entity, customFieldValue: CustomFieldValue with Entity) {
-  def name: String               = customField.name
-  def description: String        = customField.description
-  def typeName: String           = customField.`type`.toString
-  def value: Option[Any]         = `type`.getValue(customFieldValue)
-  def jsValue: JsValue           = `type`.getJsonValue(customFieldValue)
-  def order: Option[Int]         = customFieldValue.order
-  def `type`: CustomFieldType[_] = customField.`type`
-  def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.format.asInstanceOf[Format[Any]].writes)
+  def name: String            = customField.name
+  def description: String     = customField.description
+  def typeName: String        = customField.`type`.toString
+  def value: Option[Any]      = `type`.getValue(customFieldValue)
+  def jsValue: JsValue        = `type`.getJsonValue(customFieldValue)
+  def order: Option[Int]      = customFieldValue.order
+  def `type`: CustomFieldType = customField.`type`
+  def toJson: JsValue         = value.fold[JsValue](JsNull)(`type`.format.asInstanceOf[Format[Any]].writes)
 }

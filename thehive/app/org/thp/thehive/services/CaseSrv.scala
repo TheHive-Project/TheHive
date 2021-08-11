@@ -557,11 +557,11 @@ trait CaseOpsNoDeps { ops: TheHiveOpsNoDeps =>
       traversal
         .as(originCaseLabel)
         .observables
-        .hasNot(_.ignoreSimilarity, true)
+        .not(_.has(_.ignoreSimilarity, true))
         .as(observableLabel)
         .data
         .observables
-        .hasNot(_.ignoreSimilarity, true)
+        .not(_.has(_.ignoreSimilarity, true))
         .shares
         .filter(_.organisation.current)
         .`case`
