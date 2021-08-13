@@ -47,7 +47,8 @@ object CustomFieldType {
     }
   implicit val renderer: Renderer[CustomFieldType[_]] = new Renderer[CustomFieldType[_]] {
     override type O = String
-    override def toOutput(value: CustomFieldType[_]): Output[String] = Output(value.name)
+    override def toOutput(value: CustomFieldType[_]): Output = Output(value.name)
+    override def toValue(value: CustomFieldType[_]): String  = value.name
   }
   implicit val mapping: SingleMapping[CustomFieldType[_], String] =
     SingleMapping[CustomFieldType[_], String](toGraph = t => t.name, toDomain = withName)

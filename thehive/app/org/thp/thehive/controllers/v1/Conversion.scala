@@ -20,8 +20,8 @@ object Conversion {
   implicit def refinedTransformer[T, P]: Transformer[Refined[T, P], T] = _.value
 
   implicit class RendererOps[V, O](v: V)(implicit renderer: Renderer.Aux[V, O]) {
-    def toJson: JsValue = renderer.toOutput(v).toJson
-    def toOutput: O     = renderer.toOutput(v).toValue
+    def toJson: JsValue = renderer.toOutput(v).content
+    def toOutput: O     = renderer.toValue(v)
   }
 
   implicit val alertOutput: Renderer.Aux[RichAlert, OutputAlert] = Renderer.toJson[RichAlert, OutputAlert](

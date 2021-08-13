@@ -124,7 +124,7 @@ trait QueryCtrl {
         queries
           .toTry(query => queryExecutor.execute(query, graph, request.authContext))
           .map { outputs =>
-            val results = outputs.map(_.toJson).foldLeft(JsObject.empty) {
+            val results = outputs.map(_.content).foldLeft(JsObject.empty) {
               case (acc, o: JsObject) => acc deepMerge o
               case (acc, r) =>
                 logger.warn(s"Invalid stats result: $r")

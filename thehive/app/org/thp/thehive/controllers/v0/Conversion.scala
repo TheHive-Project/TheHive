@@ -7,6 +7,7 @@ import io.scalaland.chimney.dsl._
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.{AuthContext, Permission, PermissionDesc}
 import org.thp.scalligraph.controllers.Renderer
+import org.thp.scalligraph.controllers.Renderer.Aux
 import org.thp.scalligraph.models.Entity
 import org.thp.thehive.dto.{Description, Pap, Severity, Tlp}
 import org.thp.thehive.dto.v0._
@@ -21,8 +22,8 @@ object Conversion {
   implicit def refinedTransformer[T, P]: Transformer[Refined[T, P], T] = _.value
 
   implicit class RendererOps[F, O](f: F)(implicit renderer: Renderer.Aux[F, O]) {
-    def toJson: JsValue = renderer.toOutput(f).toJson
-    def toValue: O      = renderer.toOutput(f).toValue
+    def toJson: JsValue = renderer.toJson(f)
+    def toValue: O      = renderer.toValue(f)
   }
 
   val adminPermissions: Set[Permission] = Set(Permissions.manageUser, Permissions.manageOrganisation)
