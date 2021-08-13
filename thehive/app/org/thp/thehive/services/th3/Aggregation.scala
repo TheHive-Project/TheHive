@@ -1,19 +1,15 @@
 package org.thp.thehive.services.th3
 
-import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.scalactic.Accumulation._
 import org.scalactic._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.query.{Aggregation, InputFilter, PublicProperties}
-import org.thp.scalligraph.traversal._
-import org.thp.scalligraph.{BadRequestError, InvalidFormatAttributeError}
-import play.api.Logger
+import org.thp.scalligraph.traversal.Traversal.Unk
+import org.thp.scalligraph.{InvalidFormatAttributeError, query => scalligraph}
 import play.api.libs.json._
 
-import java.lang.{Long => JLong}
 import java.time.temporal.ChronoUnit
-import java.util.{Calendar, Date, List => JList}
 import scala.reflect.runtime.{universe => ru}
 import scala.util.Try
 import scala.util.matching.Regex
@@ -74,13 +70,13 @@ object TH3Aggregation {
             FieldsParser.long.optional.on("_size")(field),
             fieldsParser(filterParser).sequence.on("_select")(field),
             filterParser.optional.on("_query")(field)
-          )((aggName, fieldName, order, size, subAgg, filter) => FieldAggregation(aggName, fieldName, order, size, subAgg, filter))
+          )((aggName, fieldName, order, size, subAgg, filter) => new scalligraph.FieldAggregation(aggName, fieldName, order, size, subAgg, filter))
       }
     case "count" =>
       FieldsParser("CountAggregation") {
         case (_, field) =>
           withGood(FieldsParser.string.optional.on("_name")(field), filterParser.optional.on("_query")(field))((aggName, filter) =>
-            AggCount(aggName, filter)
+            new AggCount(aggName, filter)
           )
       }
     case "time" =>
@@ -101,7 +97,7 @@ object TH3Aggregation {
               Aggregation
                 .logger
                 .warn(s"Only one field is supported for time aggregation (aggregation $aggName, ${fieldNames.tail.mkString(",")} are ignored)")
-            TimeAggregation(aggName, fieldNames.head, intervalUnit._1, intervalUnit._2, subAgg, filter)
+            new scalligraph.TimeAggregation(aggName, fieldNames.head, intervalUnit._1, intervalUnit._2, subAgg, filter)
           }
       }
     case "avg" =>
@@ -111,7 +107,7 @@ object TH3Aggregation {
             FieldsParser.string.optional.on("_name")(field),
             FieldsParser.string.on("_field")(field),
             filterParser.optional.on("_query")(field)
-          )((aggName, fieldName, filter) => AggAvg(aggName, fieldName, filter))
+          )((aggName, fieldName, filter) => new AggAvg(aggName, fieldName, filter))
       }
     case "min" =>
       FieldsParser("MinAggregation") {
@@ -120,7 +116,7 @@ object TH3Aggregation {
             FieldsParser.string.optional.on("_name")(field),
             FieldsParser.string.on("_field")(field),
             filterParser.optional.on("_query")(field)
-          )((aggName, fieldName, filter) => AggMin(aggName, fieldName, filter))
+          )((aggName, fieldName, filter) => new AggMin(aggName, fieldName, filter))
       }
     case "max" =>
       FieldsParser("MaxAggregation") {
@@ -129,7 +125,7 @@ object TH3Aggregation {
             FieldsParser.string.optional.on("_name")(field),
             FieldsParser.string.on("_field")(field),
             filterParser.optional.on("_query")(field)
-          )((aggName, fieldName, filter) => AggMax(aggName, fieldName, filter))
+          )((aggName, fieldName, filter) => new AggMax(aggName, fieldName, filter))
       }
     case "sum" =>
       FieldsParser("SumAggregation") {
@@ -138,7 +134,7 @@ object TH3Aggregation {
             FieldsParser.string.optional.on("_name")(field),
             FieldsParser.string.on("_field")(field),
             filterParser.optional.on("_query")(field)
-          )((aggName, fieldName, filter) => AggSum(aggName, fieldName, filter))
+          )((aggName, fieldName, filter) => new AggSum(aggName, fieldName, filter))
       }
     case other =>
       new FieldsParser[Aggregation](
@@ -157,300 +153,34 @@ object TH3Aggregation {
     }
 }
 
-case class AggSum(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
-  override def getTraversal(
-      publicProperties: PublicProperties,
-      traversalType: ru.Type,
-      traversal: Traversal.Unk,
-      authContext: AuthContext
-  ): Traversal.Domain[Output[_]] = {
-    val fieldPath = FPath(fieldName)
-    val property = publicProperties
-      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
-      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
-    filter
-      .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
-      .fold
-      .coalesce(
-        t =>
-          property
-            .select(fieldPath, t.unfold, authContext)
-            .sum
-            .domainMap(sum => Output(Json.obj(name -> JsNumber(BigDecimal(sum.toString)))))
-            .castDomain[Output[_]],
-        Output(Json.obj(name -> JsNull))
-      )
-  }
+class AggSum(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends scalligraph.AggSum(aggName, fieldName, filter) {}
+
+class AggAvg(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends scalligraph.AggAvg(aggName, fieldName, filter) {}
+
+class AggMin(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends scalligraph.AggMin(aggName, fieldName, filter) {
+  override def apply(publicProperties: PublicProperties, traversalType: ru.Type, traversal: Unk, authContext: AuthContext): Output =
+    Output(
+      getTraversal(publicProperties, traversalType, traversal, authContext)
+        .headOption
+        .fold[JsValue](JsNull)(v => Json.obj(name -> v))
+    )
+
 }
 
-case class AggAvg(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"sum_$fieldName")) {
-  override def getTraversal(
-      publicProperties: PublicProperties,
-      traversalType: ru.Type,
-      traversal: Traversal.Unk,
-      authContext: AuthContext
-  ): Traversal.Domain[Output[_]] = {
-    val fieldPath = if (fieldName.startsWith("computed")) FPathElem(fieldName) else FPath(fieldName)
-    val property = publicProperties
-      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
-      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
-    filter
-      .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
-      .fold
-      .coalesce(
-        t =>
-          property
-            .select(fieldPath, t.unfold, authContext)
-            .mean
-            .domainMap(avg => Output(Json.obj(name -> avg)))
-            .asInstanceOf[Traversal.Domain[Output[_]]],
-        Output(Json.obj(name -> JsNull))
-      )
-  }
+class AggMax(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends scalligraph.AggMax(aggName, fieldName, filter) {
+  override def apply(publicProperties: PublicProperties, traversalType: ru.Type, traversal: Unk, authContext: AuthContext): Output =
+    Output(
+      getTraversal(publicProperties, traversalType, traversal, authContext)
+        .headOption
+        .fold[JsValue](JsNull)(v => Json.obj(name -> v))
+    )
 }
 
-case class AggMin(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"min_$fieldName")) {
-  override def getTraversal(
-      publicProperties: PublicProperties,
-      traversalType: ru.Type,
-      traversal: Traversal.Unk,
-      authContext: AuthContext
-  ): Traversal.Domain[Output[_]] = {
-    val fieldPath = FPath(fieldName)
-    val property = publicProperties
-      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
-      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
-    filter
-      .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
-      .fold
-      .coalesce(
-        t =>
-          property
-            .select(fieldPath, t.unfold, authContext)
-            .min
-            .domainMap(min => Output(Json.obj(name -> property.toJson(min)))),
-        Output(Json.obj(name -> JsNull))
-      )
-  }
-}
-
-case class AggMax(aggName: Option[String], fieldName: String, filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse(s"max_$fieldName")) {
-  override def getTraversal(
-      publicProperties: PublicProperties,
-      traversalType: ru.Type,
-      traversal: Traversal.Unk,
-      authContext: AuthContext
-  ): Traversal.Domain[Output[_]] = {
-    val fieldPath = FPath(fieldName)
-    val property = publicProperties
-      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
-      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
-    filter
-      .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
-      .fold
-      .coalesce(
-        t =>
-          property
-            .select(fieldPath, t.unfold, authContext)
-            .max
-            .domainMap(max => Output(Json.obj(name -> property.toJson(max)))),
-        Output(Json.obj(name -> JsNull))
-      )
-  }
-}
-
-case class AggCount(aggName: Option[String], filter: Option[InputFilter]) extends Aggregation(aggName.getOrElse("count")) {
-  override def getTraversal(
-      publicProperties: PublicProperties,
-      traversalType: ru.Type,
-      traversal: Traversal.Unk,
-      authContext: AuthContext
-  ): Traversal.Domain[Output[_]] =
-    filter
-      .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
-      .count
-      .domainMap(count => Output(Json.obj(name -> count)))
-      .castDomain[Output[_]]
-}
-
-//case class AggTop[T](fieldName: String) extends AggFunction[T](s"top_$fieldName")
-
-case class FieldAggregation(
-    aggName: Option[String],
-    fieldName: String,
-    orders: Seq[String],
-    size: Option[Long],
-    subAggs: Seq[Aggregation],
-    filter: Option[InputFilter]
-) extends Aggregation(aggName.getOrElse(s"field_$fieldName")) {
-  lazy val logger: Logger = Logger(getClass)
-
-  override def getTraversal(
-      publicProperties: PublicProperties,
-      traversalType: ru.Type,
-      traversal: Traversal.Unk,
-      authContext: AuthContext
-  ): Traversal.Domain[Output[_]] = {
-    val label     = StepLabel[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
-    val fieldPath = FPath(fieldName)
-    val property = publicProperties
-      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
-      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
-    val groupedVertices = property
-      .select(
-        fieldPath,
-        filter
-          .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
-          .as(label),
-        authContext
-      )
-      .group(_.by, _.by(_.select(label).fold))
-      .unfold
-    val sortedAndGroupedVertex = orders
-      .map {
-        case order if order.headOption.contains('-') => order.tail -> Order.desc
-        case order if order.headOption.contains('+') => order.tail -> Order.asc
-        case order                                   => order      -> Order.asc
-      }
-      .foldLeft(groupedVertices) {
-        case (acc, (field, order)) if field == fieldName                    => acc.sort(_.by(_.selectKeys, order))
-        case (acc, (field, order)) if field == "count" || field == "_count" => acc.sort(_.by(_.selectValues.localCount, order))
-        case (acc, (field, _)) =>
-          logger.warn(s"In field aggregation you can only sort by the field ($fieldName) or by count, not by $field")
-          acc
-      }
-    val sizedSortedAndGroupedVertex = size.fold(sortedAndGroupedVertex)(sortedAndGroupedVertex.limit)
-    val subAggProjection = subAggs.map {
-      agg => (s: GenericBySelector[Seq[Traversal.UnkD], JList[Traversal.UnkG], Converter.CList[Traversal.UnkD, Traversal.UnkG, Converter[
-        Traversal.UnkD,
-        Traversal.UnkG
-      ]]]) =>
-        s.by(t => agg.getTraversal(publicProperties, traversalType, t.unfold, authContext).castDomain[Output[_]])
-    }
-
-    sizedSortedAndGroupedVertex
-      .project(
-        _.by(_.selectKeys)
-          .by(
-            _.selectValues
-              .flatProject(subAggProjection: _*)
-              .domainMap { aggResult =>
-                Output(
-                  aggResult
-                    .asInstanceOf[Seq[Output[JsObject]]]
-                    .map(_.toValue)
-                    .reduceOption(_ deepMerge _)
-                    .getOrElse(JsObject.empty)
-                )
-              }
-          )
-      )
-      .fold
-      .domainMap(kvs =>
-        Output(JsObject(kvs.map {
-          case (JsString(k), v) => k          -> v.toJson
-          case (k, v)           => k.toString -> v.toJson
-        }))
-      )
-      .castDomain[Output[_]]
-  }
-}
-
-case class TimeAggregation(
-    aggName: Option[String],
-    fieldName: String,
-    interval: Long,
-    unit: ChronoUnit,
-    subAggs: Seq[Aggregation],
-    filter: Option[InputFilter]
-) extends Aggregation(aggName.getOrElse(fieldName)) {
-  val calendar: Calendar = Calendar.getInstance()
-
-  def dateToKey(date: Date): Long =
-    unit match {
-      case ChronoUnit.WEEKS =>
-        calendar.setTime(date)
-        val year = calendar.get(Calendar.YEAR)
-        val week = (calendar.get(Calendar.WEEK_OF_YEAR) / interval) * interval
-        calendar.setTimeInMillis(0)
-        calendar.set(Calendar.YEAR, year)
-        calendar.set(Calendar.WEEK_OF_YEAR, week.toInt)
-        calendar.getTimeInMillis
-
-      case ChronoUnit.MONTHS =>
-        calendar.setTime(date)
-        val year  = calendar.get(Calendar.YEAR)
-        val month = (calendar.get(Calendar.MONTH) / interval) * interval
-        calendar.setTimeInMillis(0)
-        calendar.set(Calendar.YEAR, year)
-        calendar.set(Calendar.MONTH, month.toInt)
-        calendar.getTimeInMillis
-
-      case ChronoUnit.YEARS =>
-        calendar.setTime(date)
-        val year = (calendar.get(Calendar.YEAR) / interval) * interval
-        calendar.setTimeInMillis(0)
-        calendar.set(Calendar.YEAR, year.toInt)
-        calendar.getTimeInMillis
-
-      case other =>
-        val duration = other.getDuration.toMillis * interval
-        (date.getTime / duration) * duration
-    }
-
-  def keyToDate(key: Long): Date = new Date(key)
-
-  override def getTraversal(
-      publicProperties: PublicProperties,
-      traversalType: ru.Type,
-      traversal: Traversal.Unk,
-      authContext: AuthContext
-  ): Traversal.Domain[Output[_]] = {
-    val fieldPath = FPath(fieldName)
-    val property = publicProperties
-      .get[Traversal.UnkD, Traversal.UnkDU](fieldPath, traversalType)
-      .getOrElse(throw BadRequestError(s"Property $fieldName for type $traversalType not found"))
-    val label = StepLabel[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
-    val groupedVertex = property
-      .select(
-        fieldPath,
-        filter
-          .fold(traversal)(_(publicProperties, traversalType, traversal, authContext))
-          .as(label),
-        authContext
-      )
-      .cast[Date, Date]
-      .graphMap[Long, JLong, Converter[Long, JLong]](dateToKey, Converter.long)
-      .group(_.by, _.by(_.select(label).fold))
-      .unfold
-    val subAggProjection = subAggs.map {
-      agg => (s: GenericBySelector[
-        Seq[Traversal.UnkD],
-        JList[Traversal.UnkG],
-        Converter.CList[Traversal.UnkD, Traversal.UnkG, Converter[Traversal.UnkD, Traversal.UnkG]]
-      ]) =>
-        s.by(t => agg.getTraversal(publicProperties, traversalType, t.unfold, authContext).castDomain[Output[_]])
-    }
-
-    groupedVertex
-      .project(
-        _.by(_.selectKeys)
-          .by(
-            _.selectValues
-              .flatProject(subAggProjection: _*)
-              .domainMap { aggResult =>
-                Output(
-                  aggResult
-                    .asInstanceOf[Seq[Output[JsObject]]]
-                    .map(_.toValue)
-                    .reduceOption(_ deepMerge _)
-                    .getOrElse(JsObject.empty)
-                )
-              }
-          )
-      )
-      .fold
-      .domainMap(kvs => Output(JsObject(kvs.map(kv => kv._1.toString -> Json.obj(name -> kv._2.toJson)))))
-      .castDomain[Output[_]]
-  }
+class AggCount(aggName: Option[String], filter: Option[InputFilter]) extends scalligraph.AggCount(aggName, filter) {
+  override def apply(publicProperties: PublicProperties, traversalType: ru.Type, traversal: Unk, authContext: AuthContext): Output =
+    Output(
+      getTraversal(publicProperties, traversalType, traversal, authContext)
+        .headOption
+        .fold[JsValue](JsNull)(v => Json.obj(name -> v))
+    )
 }
