@@ -71,7 +71,7 @@ class AlertSrv(
   ): Try[RichAlert] = {
     val alertAlreadyExist = startTraversal.getBySourceId(alert.`type`, alert.source, alert.sourceRef).inOrganisation(organisation._id).exists
     if (alertAlreadyExist)
-      Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exist in organisation ${organisation.name}"))
+      Failure(CreateError(s"Alert ${alert.`type`}:${alert.source}:${alert.sourceRef} already exists in organisation ${organisation.name}"))
     else
       for {
         createdAlert <- createEntity(alert.copy(organisationId = organisation._id))

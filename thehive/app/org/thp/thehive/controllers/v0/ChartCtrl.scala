@@ -1,24 +1,23 @@
 package org.thp.thehive.controllers.v0
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.scalactic.{One, Or}
+import org.scalactic.Accumulation.withGood
+import org.scalactic._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, IndexType}
 import org.thp.scalligraph.query.{Aggregation, PublicProperty, Query}
-import org.thp.scalligraph.traversal.{Converter, GenericBySelector, Graph, Traversal}
-import org.thp.scalligraph.{AttributeCheckingError, InvalidFormatAttributeError, NotFoundError}
+import org.thp.scalligraph.traversal.{Graph, Traversal}
+import org.thp.scalligraph.{AttributeError, UnsupportedAttributeError}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-import play.api.libs.json.{JsArray, JsObject, JsString}
+import play.api.libs.json.{JsNumber, JsObject, JsValue}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import java.time.temporal.ChronoUnit
-import java.util.{Date, List => JList}
+import java.util.Date
 import scala.reflect.runtime.{universe => ru}
-import scala.util.{Failure, Success, Try}
+import scala.util.Success
 
 class ChartCtrl(
     entrypoint: Entrypoint,
@@ -50,94 +49,105 @@ class ChartCtrl(
   )
 
   lazy val graphType: ru.Type = ru.typeOf[Graph]
-  val chronoUnitParser: FieldsParser[ChronoUnit] = FieldsParser[ChronoUnit]("chronoUnit") {
-    case (_, f @ FString(value)) =>
-      Or.from(
-        Try(ChronoUnit.valueOf(value)).toOption,
-        One(InvalidFormatAttributeError("_unit", "chronoUnit", ChronoUnit.values.toSet.map((_: ChronoUnit).toString), f))
+
+  case class Series(
+      name: String,
+      tpe: ru.Type,
+      property: PublicProperty,
+      initQuery: Query,
+      agg: Aggregation,
+      min: Option[Long],
+      max: Option[Long]
+  ) {
+    def withRange(implicit graph: Graph, authContext: AuthContext): Option[Series] =
+      for {
+        minDate <- property.select(FPath.empty, initQuery((), graphType, graph, authContext).asInstanceOf[Traversal.Unk], authContext).min.headOption
+        maxDate <- property.select(FPath.empty, initQuery((), graphType, graph, authContext).asInstanceOf[Traversal.Unk], authContext).max.headOption
+      } yield copy(min = Some(minDate.asInstanceOf[Date].getTime), max = Some(maxDate.asInstanceOf[Date].getTime))
+
+    def data(fromDate: Long, toDate: Long)(implicit graph: Graph, authContext: AuthContext): Option[JsValue] =
+      if (min.exists(toDate < _) || max.exists(fromDate > _) || fromDate > toDate) None
+      else
+        agg
+          .getTraversal(
+            queryExecutor.publicProperties,
+            tpe,
+            property
+              .filter(
+                FPath.empty,
+                initQuery((), graphType, graph, authContext).asInstanceOf[Traversal.Unk],
+                authContext,
+                P.between(new Date(fromDate), new Date(toDate))
+              ),
+            authContext
+          )
+          .headOption
+  }
+
+  object Series {
+    def parse(name: String, model: String, dateField: String, agg: Field): Series Or Every[AttributeError] =
+      for {
+        tpe <- types.get(model).fold[ru.Type Or Every[AttributeError]](Bad(One(UnsupportedAttributeError("model"))))(Good(_))
+        agg <-
+          Aggregation
+            .fieldsParser(queryExecutor.filterQuery.paramParser(tpe))(agg)
+        initQuery <-
+          queryExecutor
+            .queries
+            .find(q => q.name == s"list$model" && q.checkFrom(graphType))
+            .fold[Query Or Every[AttributeError]](Bad(One(UnsupportedAttributeError("model"))))(q => Good(q.asInstanceOf[Query]))
+        property <-
+          queryExecutor
+            .publicProperties
+            .get(dateField, tpe)
+            .filter(p => p.mapping.domainTypeClass == classOf[Date] && p.indexType != IndexType.none)
+            .fold[PublicProperty Or Every[AttributeError]](Bad(One(UnsupportedAttributeError("dateField"))))(
+              Good(_)
+            ) // remove basic and unique index type ?
+      } yield Series(
+        name,
+        tpe,
+        property,
+        initQuery,
+        agg,
+        None,
+        None
       )
+
+    def fieldsParser: FieldsParser[Series] =
+      FieldsParser("Series") {
+        case (_, field) =>
+          withGood(
+            FieldsParser[String].on("name")(field),
+            FieldsParser[String].on("model")(field),
+            FieldsParser[String].on("dateField")(field)
+          )((name, model, dataField) => parse(name, model, dataField, field.get("agg"))).flatMap(identity[Series Or Every[AttributeError]])
+      }
   }
 
   def timeChart: Action[AnyContent] =
     entrypoint("time chart")
-      .extract("model", FieldsParser[String].on("model"))
-      .extract("dateField", FieldsParser[String].on("dateField"))
-      .extract("interval", FieldsParser[Long].on("interval"))
-      .extract("unit", chronoUnitParser.on("unit"))
-      .extract("subAggs", FieldsParser[Field].on("subAggs"))
-      .authTransaction(db) { implicit request => implicit graph =>
-        val model: String     = request.body("model")
-        val dateField: String = request.body("dateField")
-        val count: Long       = request.body("interval")
-        val unit: ChronoUnit  = request.body("unit")
-        val interval          = unit.getDuration.toMillis * count
-        for {
-          tpe <- types.get(model).fold[Try[ru.Type]](Failure(NotFoundError(s"Model $model not found")))(Success(_))
-          subAggs <-
-            Aggregation
-              .fieldsParser(queryExecutor.filterQuery.paramParser(tpe))
-              .sequence
-              .on("subAggs")(request.body("subAggs"))
-              .badMap(AttributeCheckingError.apply(_))
-              .toTry
-          initQuery <-
-            queryExecutor
-              .queries
-              .find(q => q.name == s"list$model" && q.checkFrom(graphType))
-              .fold[Try[Query]](Failure(NotFoundError(s"Initial query for iterating $model is not found")))(q => Success(q.asInstanceOf[Query]))
-          property <-
-            queryExecutor
-              .publicProperties
-              .get(dateField, tpe)
-              .filter(p => p.mapping.domainTypeClass == classOf[Date] && p.indexType != IndexType.none)
-              .fold[Try[PublicProperty]](Failure(NotFoundError(s"Property $dateField not found (or it is not date, or it is not indexed)")))(
-                Success(_)
-              ) // remove basic and unique index type ?
-        } yield getSeries(tpe, property, initQuery, interval, subAggs).fold(Results.Ok(JsArray.empty)) { src =>
-          Results.Ok.chunked(src.map(_.toString).intersperse("[", ",", "]"), Some("application/json"))
-        }
-      }
+      .extract("interval", Aggregation.mergedIntervalParser.on("interval"))
+      .extract("from", FieldsParser[Date].on("from"))
+      .extract("to", FieldsParser[Date].on("to"))
+      .extract("aggs", Series.fieldsParser.sequence.on("aggs"))
+      .authTransaction(db) { implicit request => graph =>
+        val (count: Long, unit: ChronoUnit) = request.body("interval")
+        val interval                        = unit.getDuration.toMillis * count
+        val series: Seq[Series]             = request.body("aggs")
+        val from: Date                      = request.body("from")
+        val to: Date                        = request.body("to")
 
-  private def getSeries(tpe: ru.Type, property: PublicProperty, initQuery: Query, interval: Long, subAggs: Seq[Aggregation])(implicit
-      graph: Graph,
-      authContext: AuthContext
-  ): Option[Source[JsObject, NotUsed]] =
-    for {
-      minDate <- property.select(FPath.empty, initQuery((), graphType, graph, authContext).asInstanceOf[Traversal.Unk], authContext).min.headOption
-      maxDate <- property.select(FPath.empty, initQuery((), graphType, graph, authContext).asInstanceOf[Traversal.Unk], authContext).max.headOption
-    } yield db.source { graph =>
-      val min = (minDate.asInstanceOf[Date].getTime / interval) * interval
-      val max = Math.ceil(maxDate.asInstanceOf[Date].getTime.toDouble / interval).toLong * interval
-      (min until max).by(interval).iterator.flatMap { d =>
-        val subAggProjection = subAggs.map {
-          agg => (s: GenericBySelector[Seq[Traversal.UnkD], JList[Traversal.UnkG], Converter.CList[Traversal.UnkD, Traversal.UnkG, Converter[
-            Traversal.UnkD,
-            Traversal.UnkG
-          ]]]) =>
-            s.by(t => agg.getTraversal(queryExecutor.publicProperties, tpe, t.unfold, authContext).castDomain[Output[_]])
-        }
-
-        property
-          .filter(
-            FPath.empty,
-            initQuery((), graphType, graph, authContext).asInstanceOf[Traversal.Unk],
-            authContext,
-            P.between(new Date(d), new Date(d + interval))
-          )
-          .fold
-          .flatProject(subAggProjection: _*)
-          .domainMap { aggResult =>
-            val outputs = aggResult.asInstanceOf[Seq[Output[_]]]
-            val json = outputs.map(_.toJson).foldLeft(JsObject.empty) {
-              case (acc, jsObject: JsObject) => acc ++ jsObject
-              case (acc, r) =>
-                Aggregation.logger.warn(s"Invalid stats result: $r")
-                acc
+        val rangedSeries = series.flatMap(_.withRange(graph, request))
+        val src = db.source { implicit graph =>
+          (from.getTime until to.getTime).by(interval).iterator.map { date =>
+            val seriesData = rangedSeries.flatMap { s =>
+              s.data(date, date + interval)
+                .map(s.name -> _)
             }
-            Output(outputs.map(_.toValue), json)
+            JsObject(seriesData :+ ("_key" -> JsNumber(date)))
           }
-          .headOption
-          .map(_.toJson.as[JsObject] + ("_key" -> JsString(d.toString)))
+        }
+        Success(Results.Ok.chunked(src.map(_.toString).intersperse("[", ",", "]"), Some("application/json")))
       }
-    }
 }

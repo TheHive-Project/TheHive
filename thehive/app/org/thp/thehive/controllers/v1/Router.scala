@@ -189,7 +189,7 @@ class Router(
     case DELETE(p"/observable/type/$idOrName") => observableTypeCtrl.delete(idOrName)
 
     case POST(p"/chart/time")  => chartCtrl.timeChart
-    case GET(p"/search")       => searchCtrl.search
+    case POST(p"/search")      => searchCtrl.search
     case GET(p"/monitor/disk") => monitoringCtrl.diskUsage
   }
 }

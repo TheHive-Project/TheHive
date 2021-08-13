@@ -232,6 +232,6 @@ class Router(
     case POST(p"/user/$userId/key/renew")       => userCtrl.renewKey(userId)
 
     case POST(p"/chart/time") => chartCtrl.timeChart
-    case GET(p"/search")      => searchCtrl.search
+    case POST(p"/search")     => searchCtrl.search
   }
 }
