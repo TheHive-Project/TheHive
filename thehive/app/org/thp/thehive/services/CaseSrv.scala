@@ -378,7 +378,6 @@ class CaseSrv(
         .sharingProfiles
         .toSeq
 
-      val currentOrgaId = organisationSrv.currentId
       for {
         user <- userSrv.current.getOrFail("User")
         richCase <- create(
