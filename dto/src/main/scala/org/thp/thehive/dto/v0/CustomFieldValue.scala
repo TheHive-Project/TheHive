@@ -115,8 +115,55 @@ object InputCustomField {
   implicit val reads: Reads[InputCustomField] = Json.reads[InputCustomField]
 }
 
-case class OutputCustomFieldValue(name: String, description: String, tpe: String, value: Option[String])
+case class OutputCustomFieldValue(_id: String, name: String, description: String, tpe: String, value: JsValue, order: Option[Int])
 
 object OutputCustomFieldValue {
-  implicit val format: OFormat[OutputCustomFieldValue] = Json.format[OutputCustomFieldValue]
+  implicit val writes: OWrites[OutputCustomFieldValue] = OWrites[OutputCustomFieldValue] { cfv =>
+    Json.obj(cfv.name -> Json.obj(cfv.tpe -> cfv.value, "order" -> cfv.order, "_id" -> cfv._id))
+  }
+  implicit val reads: Reads[OutputCustomFieldValue] =
+    Reads[OutputCustomFieldValue] { j =>
+      for {
+        obj             <- j.validate[JsObject]
+        (name, content) <- obj.fields.headOption.fold[JsResult[(String, JsValue)]](JsError("CustomField object is empty"))(JsSuccess(_))
+        contentObj      <- content.validate[JsObject]
+        (tpe, value) <-
+          contentObj
+            .fields
+            .find(v => v._1 == "string" || v._1 == "date" || v._1 == "boolean" || v._1 == "integer" || v._1 == "float")
+            .fold[JsResult[(String, JsValue)]](JsError("No custom field type in object"))(JsSuccess(_))
+        _id         <- (contentObj \ "_id").validate[String]
+        description <- (contentObj \ "description").validateOpt[String]
+        order       <- (contentObj \ "order").validateOpt[Int]
+      } yield OutputCustomFieldValue(_id, name, description.getOrElse(""), tpe, value, order)
+    }
+}
+
+case class OutputCustomFieldValues(customFieldValues: Seq[OutputCustomFieldValue])
+
+object OutputCustomFieldValues {
+  implicit val writes: OWrites[OutputCustomFieldValues] =
+    OWrites[OutputCustomFieldValues](_.customFieldValues.map(Json.toJsObject(_)).reduceOption(_ ++ _).getOrElse(JsObject.empty))
+  implicit val reads: Reads[OutputCustomFieldValues] =
+    Reads[OutputCustomFieldValues](
+      _.validate[JsObject].flatMap(
+        _.fields
+          .foldLeft[JsResult[Seq[OutputCustomFieldValue]]](JsSuccess(Nil)) {
+            case (JsSuccess(cfs, _), (name, content: JsObject)) =>
+              for {
+                contentObj <- content.validate[JsObject]
+                (tpe, value) <-
+                  contentObj
+                    .fields
+                    .find(v => v._1 == "string" || v._1 == "date" || v._1 == "boolean" || v._1 == "integer" || v._1 == "float")
+                    .fold[JsResult[(String, JsValue)]](JsError("No custom field type in object"))(JsSuccess(_))
+                _id         <- (contentObj \ "_id").validate[String]
+                description <- (contentObj \ "description").validateOpt[String]
+                order       <- (contentObj \ "order").validateOpt[Int]
+              } yield cfs :+ OutputCustomFieldValue(_id, name, description.getOrElse(""), tpe, value, order)
+            case (error, _) => error
+          }
+          .map(OutputCustomFieldValues(_))
+      )
+    )
 }

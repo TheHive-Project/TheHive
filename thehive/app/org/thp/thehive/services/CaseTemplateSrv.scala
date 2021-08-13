@@ -8,7 +8,7 @@ import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
-import org.thp.scalligraph.{CreateError, EntityIdOrName, EntityName, RichSeq}
+import org.thp.scalligraph.{CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -139,6 +139,12 @@ class CaseTemplateSrv(
           .map(RichCustomField(customField, _))
       }
 
+  def updateCustomField(caseTemplateId: EntityIdOrName, customFieldValue: EntityId, value: JsValue)(implicit graph: Graph): Try[CustomFieldValue] =
+    customFieldValueSrv
+      .getByIds(customFieldValue)
+      .filter(_.caseTemplate.get(caseTemplateId))
+      .getOrFail("CustomField")
+      .flatMap(cfv => customFieldValueSrv.updateValue(cfv, value, None))
 }
 
 trait CaseTemplateOpsNoDeps { ops: TheHiveOpsNoDeps =>

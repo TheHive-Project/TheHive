@@ -64,24 +64,22 @@ sealed abstract class CustomFieldType[T] extends TraversalOps with PredicateOps 
                                |  Found   : $value (${value.getClass})
                              """.stripMargin))
 
-  def readValue(value: JsValue): Try[Option[T]] =
-    value match {
-      case JsNull => Success(None)
-      case other  => other.asOpt(format).fold[Try[Option[T]]](fail(value))(v => Success(Some(v)))
-    }
-
-  lazy val parseReader: Reads[(JsValue, Option[Int])] =
-    Reads[(JsValue, Option[Int])](j => j.validate(format).map(_ => j -> None)).orElse {
-      ((__ \ "value").read(format).map(Option(_)).orElse((__ \ name).readNullable(format)) and
-        (__ \ "order").readNullable[Int]).apply((v, o) => (v.fold[JsValue](JsNull)(format.writes), o))
+  val valueOrderReads: Reads[(Option[T], Option[Int])] =
+    Reads[(Option[T], Option[Int])] {
+      case JsNull => JsSuccess((None, None))
+      case j: JsObject =>
+        ((j \ "value").validate(format).map(Option(_)).orElse((j \ name).validateOpt(format)) and
+          (j \ "order").validateOpt[Int])
+          .apply((v, o) => (v, o))
+      case j => j.validate(format).map(v => Some(v) -> None)
     }
 
   def parseValue(value: JsValue): Try[(JsValue, Option[Int])] =
-    parseReader
+    valueOrderReads
       .reads(value)
       .fold(
         _ => fail(value),
-        Success(_)
+        v => Success(v._1.fold[JsValue](JsNull)(format.writes) -> v._2)
       )
 
   def getValue(ccf: CustomFieldValue): Option[T]
@@ -113,7 +111,14 @@ object CustomFieldString extends CustomFieldType[String] with TraversalOps {
     }
 
   def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
-    readValue(value).map(v => traversal.update(_.stringValue, v))
+    valueOrderReads
+      .reads(value)
+      .fold(
+        _ => fail(value),
+        {
+          case (value, order) => Success(order.fold(traversal)(o => traversal.update(_.order, Some(o))).update(_.stringValue, value))
+        }
+      )
 }
 
 object CustomFieldBoolean extends CustomFieldType[Boolean] with TraversalOps {
@@ -135,7 +140,14 @@ object CustomFieldBoolean extends CustomFieldType[Boolean] with TraversalOps {
     }
 
   def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
-    readValue(value).map(v => traversal.update(_.booleanValue, v))
+    valueOrderReads
+      .reads(value)
+      .fold(
+        _ => fail(value),
+        {
+          case (value, order) => Success(order.fold(traversal)(o => traversal.update(_.order, Some(o))).update(_.booleanValue, value))
+        }
+      )
 }
 
 object CustomFieldInteger extends CustomFieldType[Int] with TraversalOps {
@@ -157,7 +169,14 @@ object CustomFieldInteger extends CustomFieldType[Int] with TraversalOps {
     }
 
   override def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
-    readValue(value).map(v => traversal.update(_.integerValue, v))
+    valueOrderReads
+      .reads(value)
+      .fold(
+        _ => fail(value),
+        {
+          case (value, order) => Success(order.fold(traversal)(o => traversal.update(_.order, Some(o))).update(_.integerValue, value))
+        }
+      )
 }
 
 object CustomFieldFloat extends CustomFieldType[Double] with TraversalOps {
@@ -178,7 +197,14 @@ object CustomFieldFloat extends CustomFieldType[Double] with TraversalOps {
     }
 
   override def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
-    readValue(value).map(v => traversal.update(_.floatValue, v))
+    valueOrderReads
+      .reads(value)
+      .fold(
+        _ => fail(value),
+        {
+          case (value, order) => Success(order.fold(traversal)(o => traversal.update(_.order, Some(o))).update(_.floatValue, value))
+        }
+      )
 }
 
 object CustomFieldDate extends CustomFieldType[Date] with TraversalOps {
@@ -200,7 +226,14 @@ object CustomFieldDate extends CustomFieldType[Date] with TraversalOps {
     }
 
   override def updateValue(traversal: Traversal.V[CustomFieldValue], value: JsValue): Try[Traversal.V[CustomFieldValue]] =
-    readValue(value).map(v => traversal.update(_.dateValue, v))
+    valueOrderReads
+      .reads(value)
+      .fold(
+        _ => fail(value),
+        {
+          case (value, order) => Success(order.fold(traversal)(o => traversal.update(_.order, Some(o))).update(_.dateValue, value))
+        }
+      )
 }
 
 @DefineIndex(IndexType.unique, "name")
@@ -215,6 +248,11 @@ case class CustomField(
 )
 
 case class RichCustomField(customField: CustomField with Entity, customFieldValue: CustomFieldValue with Entity) {
+  def _id: EntityId              = customFieldValue._id
+  def _createdBy: String         = customFieldValue._createdBy
+  def _updatedBy: Option[String] = customFieldValue._updatedBy
+  def _createdAt: Date           = customFieldValue._createdAt
+  def _updatedAt: Option[Date]   = customFieldValue._updatedAt
   def name: String               = customField.name
   def description: String        = customField.description
   def typeName: String           = customField.`type`.toString
@@ -222,5 +260,5 @@ case class RichCustomField(customField: CustomField with Entity, customFieldValu
   def jsValue: JsValue           = `type`.getJsonValue(customFieldValue)
   def order: Option[Int]         = customFieldValue.order
   def `type`: CustomFieldType[_] = customField.`type`
-  def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.format.asInstanceOf[Format[Any]].writes)
+  //def toJson: JsValue            = value.fold[JsValue](JsNull)(`type`.format.asInstanceOf[Format[Any]].writes)
 }

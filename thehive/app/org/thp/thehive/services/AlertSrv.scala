@@ -173,6 +173,13 @@ class AlertSrv(
           .map(RichCustomField(customField, _))
       }
 
+  def updateCustomField(alertId: EntityIdOrName, customFieldValue: EntityId, value: JsValue)(implicit graph: Graph): Try[CustomFieldValue] =
+    customFieldValueSrv
+      .getByIds(customFieldValue)
+      .filter(_.alert.get(alertId))
+      .getOrFail("CustomField")
+      .flatMap(cfv => customFieldValueSrv.updateValue(cfv, value, None))
+
   def markAsUnread(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
       alert <- get(alertId).update[Boolean](_.read, false).getOrFail("Alert")

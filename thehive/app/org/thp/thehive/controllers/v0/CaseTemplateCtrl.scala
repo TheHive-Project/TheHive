@@ -128,8 +128,10 @@ class PublicCaseTemplate(
     .property("pap", UMapping.int.optional)(_.field.updatable)
     .property("summary", UMapping.string.optional)(_.field.updatable)
     .property("customFields", UMapping.jsonNative)(_.subSelect {
-      case (FPathElem(_, FPathElem(name, _)), caseTemplateSteps) => caseTemplateSteps.customFieldJsonValue(EntityIdOrName(name))
-      case (_, caseTemplateSteps)                                => caseTemplateSteps.richCustomFields.fold.domainMap(cfs => JsObject(cfs.map(cf => cf.name -> cf.jsValue)))
+      case (FPathElem(_, FPathElem(isOrName, _)), caseTemplateSteps) =>
+        caseTemplateSteps.customFieldJsonValue(EntityIdOrName(isOrName))
+      case (_, caseTemplateSteps) =>
+        caseTemplateSteps.richCustomFields.fold.domainMap(_.toJson)
     }
       .filter[JsValue](IndexType.standard) {
         case (FPathElem(_, FPathElem(name, _)), caseTemplateTraversal, _, predicate) =>
@@ -150,11 +152,8 @@ class PublicCaseTemplate(
         case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
           EntityIdOrName(idOrName).fold(
             valueId => // update the value
-              customFieldValueSrv
-                .getByIds(EntityId(valueId))(graph)
-                .filter(_.alert.getElement(vertex))
-                .getOrFail("CustomField")
-                .flatMap(cfv => customFieldValueSrv.updateValue(cfv, jsonValue, None)(graph))
+              caseTemplateSrv
+                .updateCustomField(EntityId(vertex.id()), valueId, jsonValue)(graph)
                 .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
             name => // update or add new custom field
               for {

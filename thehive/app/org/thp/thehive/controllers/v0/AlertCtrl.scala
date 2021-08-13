@@ -496,7 +496,7 @@ class PublicAlert(
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), alerts) =>
           alerts.customFieldJsonValue(EntityIdOrName(idOrName))
-        case (_, alerts) => alerts.richCustomFields.fold.domainMap(cfs => JsObject(cfs.map(cf => cf.name -> cf.jsValue)))
+        case (_, alerts) => alerts.richCustomFields.fold.domainMap(_.toJson)
       }
         .filter[JsValue](IndexType.standard) {
           case (FPathElem(_, FPathElem(name, _)), alerts, _, predicate) =>
@@ -517,11 +517,8 @@ class PublicAlert(
           case (FPathElem(_, FPathElem(idOrName, _)), jsonValue, vertex, graph, authContext) =>
             EntityIdOrName(idOrName).fold(
               valueId => // update the value
-                customFieldValueSrv
-                  .getByIds(EntityId(valueId))(graph)
-                  .filter(_.alert.getElement(vertex))
-                  .getOrFail("CustomField")
-                  .flatMap(cfv => customFieldValueSrv.updateValue(cfv, jsonValue, None)(graph))
+                alertSrv
+                  .updateCustomField(EntityId(vertex.id()), valueId, jsonValue)(graph)
                   .map(cfv => Json.obj(s"customField.${cfv.name}" -> jsonValue)),
               name => // update or add new custom field
                 for {

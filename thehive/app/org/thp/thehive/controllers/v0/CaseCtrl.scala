@@ -288,7 +288,7 @@ class PublicCase(
       .property("customFields", UMapping.jsonNative)(_.subSelect {
         case (FPathElem(_, FPathElem(idOrName, _)), caseSteps) =>
           caseSteps.customFieldJsonValue(EntityIdOrName(idOrName))
-        case (_, caseSteps) => caseSteps.richCustomFields.fold.domainMap(cfs => JsObject(cfs.map(cf => cf.name -> cf.jsValue)))
+        case (_, caseSteps) => caseSteps.richCustomFields.fold.domainMap(_.toJson)
       }
         .filter[JsValue](IndexType.none) {
           case (FPathElem(_, FPathElem(name, _)), caseTraversal, _, predicate) =>

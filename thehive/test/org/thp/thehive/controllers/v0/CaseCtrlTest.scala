@@ -25,7 +25,6 @@ case class TestCase(
     status: String,
     summary: Option[String] = None,
     owner: Option[String],
-    customFields: JsObject = JsObject.empty,
     stats: JsValue
 )
 
@@ -87,7 +86,6 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOps
         tags = Set("spam", "src:mail", "tag1", "tag2"),
         summary = None,
         owner = Some("certuser@thehive.local"),
-        customFields = resultCaseOutput.customFields,
         stats = Json.obj()
       )
       (resultCaseOutput.customFields \ "boolean1" \ "boolean").as[Boolean] must beTrue
@@ -184,7 +182,6 @@ class CaseCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOps
         tags = Set("t2", "t1"),
         summary = None,
         owner = Some("certuser@thehive.local"),
-        customFields = JsObject.empty,
         stats = Json.obj()
       )
 

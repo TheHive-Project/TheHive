@@ -25,7 +25,6 @@ case class TestAlert(
     pap: Int,
     status: String,
     follow: Boolean,
-    customFields: JsObject = JsObject.empty,
     caseTemplate: Option[String] = None
 )
 
@@ -39,8 +38,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
   "create an alert" in testApp { app =>
     import app.thehiveModuleV0._
 
-    val now                = new Date()
-    val outputCustomFields = Json.obj("string1" -> Json.obj("string" -> "string custom field"), "float1" -> Json.obj("float" -> 42.0))
+    val now = new Date()
     val inputCustomFields = Seq(
       InputCustomFieldValue("float1", JsNumber(42), None),
       InputCustomFieldValue("string1", JsString("string custom field"), None)
@@ -121,12 +119,13 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
       pap = 3,
       status = "New",
       follow = true,
-      customFields = outputCustomFields,
       caseTemplate = Some("spam")
     )
 
     TestAlert(resultAlertOutput) shouldEqual expected
     resultAlertOutput.artifacts.map(TestObservable.apply) should containTheSameElementsAs(outputObservables)
+    (resultAlertOutput.customFields \ "string1" \ "string").as[String] must beEqualTo("string custom field")
+    (resultAlertOutput.customFields \ "float1" \ "float").as[Double]   must beEqualTo(42.0)
   }
 
   "get an alert" in testApp { app =>
@@ -151,7 +150,6 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
       pap = 2,
       status = "New",
       follow = true,
-      customFields = Json.obj("integer1" -> Json.obj("integer" -> 42)),
       caseTemplate = Some("spam")
     )
 
@@ -170,6 +168,7 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
         Some("observable from alert")
       )
     )
+    (resultAlertOutput.customFields \ "integer1" \ "integer").as[Long] must beEqualTo(42)
   }
 
   "update an alert" in testApp { app =>
@@ -285,10 +284,6 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
       ),
       summary = None,
       owner = Some("certuser@thehive.local"),
-      customFields = Json.obj(
-        "boolean1" -> Json.obj("boolean" -> JsNull, "order" -> 1),
-        "string1"  -> Json.obj("string" -> "string1 custom field", "order" -> 0)
-      ),
       stats = Json.obj()
     )
 
@@ -304,6 +299,10 @@ class AlertCtrlTest extends PlaySpecification with TestAppBuilder with TheHiveOp
         }
       )
     )
+    (resultCaseOutput.customFields \ "boolean1" \ "boolean").get      must beEqualTo(JsNull)
+    (resultCaseOutput.customFields \ "boolean1" \ "order").as[Int]    must beEqualTo(1)
+    (resultCaseOutput.customFields \ "string1" \ "string").as[String] must beEqualTo("string1 custom field")
+    (resultCaseOutput.customFields \ "string1" \ "order").as[Int]     must beEqualTo(0)
   }
 
   "merge an alert with a case" in testApp { app =>

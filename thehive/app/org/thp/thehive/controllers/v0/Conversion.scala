@@ -48,7 +48,7 @@ object Conversion {
   implicit val alertOutput: Renderer.Aux[RichAlert, OutputAlert] = Renderer.toJson[RichAlert, OutputAlert](richAlert =>
     richAlert
       .into[OutputAlert]
-      .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
+      .withFieldComputed(_.customFields, _.customFields.toJson.as[JsObject])
       .withFieldRenamed(_._createdAt, _.createdAt)
       .withFieldRenamed(_._createdBy, _.createdBy)
       .withFieldComputed(_._id, _._id.toString)
@@ -77,7 +77,7 @@ object Conversion {
       richAlertWithObservables
         ._1
         .into[OutputAlert]
-        .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
+        .withFieldComputed(_.customFields, _.customFields.toJson.as[JsObject])
         .withFieldComputed(_._id, _._id.toString)
         .withFieldComputed(_.id, _._id.toString)
         .withFieldRenamed(_._createdAt, _.createdAt)
@@ -150,10 +150,7 @@ object Conversion {
 
   implicit val caseOutput: Renderer.Aux[RichCase, OutputCase] = Renderer.toJson[RichCase, OutputCase](
     _.into[OutputCase]
-      .withFieldComputed(
-        _.customFields,
-        rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson, "order" -> cf.order)))
-      )
+      .withFieldComputed(_.customFields, _.customFields.toJson.as[JsObject])
       .withFieldComputed(_.status, _.status.toString)
       .withFieldConst(_._type, "case")
       .withFieldComputed(_.id, _._id.toString)
@@ -209,7 +206,7 @@ object Conversion {
       richCaseWithStats
         ._1
         .into[OutputCase]
-        .withFieldComputed(_.customFields, rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson))))
+        .withFieldComputed(_.customFields, _.customFields.toJson.as[JsObject])
         .withFieldComputed(_.status, _.status.toString)
         .withFieldConst(_._type, "case")
         .withFieldComputed(_.id, _._id.toString)
@@ -239,10 +236,7 @@ object Conversion {
 
   implicit val caseTemplateOutput: Renderer.Aux[RichCaseTemplate, OutputCaseTemplate] = Renderer.toJson[RichCaseTemplate, OutputCaseTemplate](
     _.into[OutputCaseTemplate]
-      .withFieldComputed(
-        _.customFields,
-        rc => JsObject(rc.customFields.map(cf => cf.name -> Json.obj(cf.typeName -> cf.toJson, "order" -> cf.order)))
-      )
+      .withFieldComputed(_.customFields, _.customFields.toJson.as[JsObject])
       .withFieldComputed(_._id, _._id.toString)
       .withFieldComputed(_.id, _._id.toString)
       .withFieldRenamed(_._updatedAt, _.updatedAt)
@@ -261,17 +255,15 @@ object Conversion {
   implicit val richCustomFieldOutput: Renderer.Aux[RichCustomField, OutputCustomFieldValue] =
     Renderer.toJson[RichCustomField, OutputCustomFieldValue](
       _.into[OutputCustomFieldValue]
-        .withFieldComputed(
-          _.value,
-          _.value.map {
-            case d: Date => d.getTime.toString
-            case other   => other.toString
-          }
-        )
+        .withFieldComputed(_.value, _.jsValue)
         .withFieldComputed(_.tpe, _.typeName)
+        .withFieldComputed(_._id, _._id.toString)
         .enableMethodAccessors
         .transform
     )
+
+  implicit val richCustomFieldsOutput: Aux[Seq[RichCustomField], OutputCustomFieldValues] =
+    Renderer.toJson[Seq[RichCustomField], OutputCustomFieldValues](cfs => OutputCustomFieldValues(cfs.map(_.toValue)))
 
   implicit class InputCustomFieldOps(inputCustomField: InputCustomField) {
 
