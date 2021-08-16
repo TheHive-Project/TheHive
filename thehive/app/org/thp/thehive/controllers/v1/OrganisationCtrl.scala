@@ -55,8 +55,8 @@ class OrganisationCtrl(
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
         val inputOrganisation: InputOrganisation = request.body("organisation")
         for {
-          user         <- userSrv.current.getOrFail("User")
-          organisation <- organisationSrv.create(inputOrganisation.toOrganisation, user)
+          _            <- userSrv.current.organisations(Permissions.manageOrganisation).get(EntityName(Organisation.administration.name)).existsOrFail
+          organisation <- organisationSrv.create(inputOrganisation.toOrganisation)
         } yield Results.Created(organisation.toJson)
       }
 
