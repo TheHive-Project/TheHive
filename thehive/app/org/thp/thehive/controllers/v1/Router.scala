@@ -101,7 +101,7 @@ class Router(
     case POST(p"/organisation")                                          => organisationCtrl.create
     case GET(p"/organisation/$organisationId")                           => organisationCtrl.get(organisationId)
     case PATCH(p"/organisation/$organisationId")                         => organisationCtrl.update(organisationId)
-    case GET(p"/api/v1/sharingProfile")                                  => organisationCtrl.listSharingProfiles
+    case GET(p"/sharingProfile")                                         => organisationCtrl.listSharingProfiles
     case PUT(p"/organisation/$organisationId1/link/$organisationId2")    => organisationCtrl.link(organisationId1, organisationId2)
     case PUT(p"/organisation/$organisationId/links")                     => organisationCtrl.bulkLink(organisationId)
     case GET(p"/organisation/$organisationId/links")                     => organisationCtrl.listLinks(organisationId)

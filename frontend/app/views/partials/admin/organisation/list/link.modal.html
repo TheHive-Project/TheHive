@@ -9,11 +9,12 @@
 
         <div ng-show="$modal.organisations.length > 0">
             <p>
-                Please select the organisation(s) you want to make visible to users of organisation <strong>{{$modal.organisation.name}}</strong>
+                Please select the organisation(s) you want to make visible to users of organisation
+                <strong>{{$modal.organisation.name}}</strong>
             </p>
 
 
-            <table class="table table-hover">
+            <table class="table table-striped">
                 <thead>
                     <th width="40" class="text-center">
                         <input type="checkbox" ng-change="$modal.toggleLinkAll()" ng-model="$modal.allSelected">
@@ -21,20 +22,49 @@
                     <th>
                         Organisation
                     </th>
-                    <th width="220">
-                        Added at
+                    <th>
+                        Link Types
                     </th>
                 </thead>
                 <tbody>
-                    <tr ng-repeat="org in $modal.organisations" ng-click="$modal.toggleLink(org)">
-                        <td width="40" class="text-center">
+                    <tr ng-repeat="org in $modal.organisations">
+                        <td width="40" class="text-center clickable" ng-click="$modal.toggleLink(org)">
                             <input type="checkbox" ng-model="org.linked">
                         </td>
                         <td>
                             {{org.name}}
                         </td>
                         <td>
-                            {{org.createdAt | shortDate}}
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    <div class="mb-xs text-center">
+                                        {{$modal.organisation.name}} <i
+                                            class="fa fa-arrow-right text-success mh-xxs"></i>
+                                        {{org.name}}
+                                    </div>
+                                    <div>
+                                        <select class="form-control" ng-model="org.linkDetails.linkType"
+                                            ng-options="item for item in $modal.sharingProfilesNames"
+                                            ng-change="$modal.updateHash()" ng-disabled="!org.linked">
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-xs-6">
+                                    <div class="mb-xs text-center">
+                                        {{$modal.organisation.name}} <i
+                                            class="fa fa-arrow-left text-success mh-xxs"></i>
+                                        {{org.name}}
+                                    </div>
+                                    <div>
+                                        <select class="form-control" ng-model="org.linkDetails.otherLinkType"
+                                            ng-options="item for item in $modal.sharingProfilesNames"
+                                            ng-change="$modal.updateHash()" ng-disabled="!org.linked">
+                                        </select>
+                                    </div>
+                                </div>
+
+                            </div>
+
                         </td>
                     </tr>
                 </tbody>
@@ -43,6 +73,7 @@
     </div>
     <div class="modal-footer">
         <button class="btn btn-default pull-left" type="button" ng-click="$modal.cancel()">Cancel</button>
-        <button class="btn btn-primary pull-right" type="submit" ng-disabled="$modal.initialHash === $modal.hash">Save</button>
+        <button class="btn btn-primary pull-right" type="submit"
+            ng-disabled="$modal.initialHash === $modal.hash">Save</button>
     </div>
 </form>
