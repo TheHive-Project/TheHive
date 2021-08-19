@@ -4,6 +4,21 @@
         .service('SharingProfileSrv', function ($http, $q) {
             var self = this;
 
+            this.SHARING_RULES = {
+                keys: [
+                    'manual',
+                    'existingOnly',
+                    'upcomingOnly',
+                    'all'
+                ],
+                values: {
+                    manual: 'Items are not shared automatically but manually (default).',
+                    existingOnly: 'Share all items when applied. New item won\'t be shared automatically.',
+                    upcomingOnly: 'Only new items are shared.',
+                    all: 'All items are shared, including new ones.'
+                }
+            }
+
             this.cache = null;
 
             this.list = function () {

@@ -37,6 +37,9 @@
                                                 class="fa fa-caret-down"></i>
                                         </a>
                                     </th>
+                                    <th>
+                                        Default Sharing Rules
+                                    </th>
                                     <th style="width: 300px">
                                         <a href class="text-default" ng-click="$vm.sortByField('_createdBy')">
                                             Created By
@@ -93,6 +96,18 @@
                                         <div class="mt-xs" ng-if="org.links.length === 0">
                                             <span class="text-muted mr-xxs">Linked organisations:</span>
                                             <span class="text-warning"><em>None</em></span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div>
+                                            <span class="text-muted mr-xxs">Tasks:</span>
+                                            <span class="label label-default mr-xxs">{{org.taskRule}}</span>
+                                        </div>
+
+                                        <div>
+                                            <span class="text-muted mr-xxs">Observables:</span>
+                                            <span class="label label-default mr-xxs">{{org.observableRule}}</span>
                                         </div>
                                     </td>
 

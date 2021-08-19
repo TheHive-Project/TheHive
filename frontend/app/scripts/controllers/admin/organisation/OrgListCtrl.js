@@ -131,7 +131,7 @@
             };
 
             self.update = function (orgName, org) {
-                OrganisationSrv.update(orgName, _.pick(org, 'name', 'description'))
+                OrganisationSrv.update(orgName, _.pick(org, 'name', 'description', 'taskRule', 'observableRule'))
                     .then(function (/*response*/) {
                         self.load();
                         NotificationSrv.log('Organisation updated successfully', 'success');
