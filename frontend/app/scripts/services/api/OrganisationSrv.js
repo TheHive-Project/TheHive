@@ -3,7 +3,7 @@
     angular.module('theHiveServices')
         .service('OrganisationSrv', function ($q, $http, QuerySrv) {
             var self = this;
-            var baseUrl = './api/organisation';
+            var baseUrl = './api/v1/organisation';
 
             self.defaultOrg = 'admin';
 
@@ -12,7 +12,7 @@
             };
 
             self.list = function () {
-                return $http.get(baseUrl);
+                return $http.get('./api/organisation');
             };
 
             self.links = function (orgId) {

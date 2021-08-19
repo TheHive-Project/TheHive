@@ -2,7 +2,7 @@
  * Controller for main page
  */
 angular.module('theHiveControllers').controller('RootCtrl',
-    function ($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, AnalyzerSrv, StreamSrv, StreamQuerySrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
+    function ($scope, $rootScope, $timeout, $uibModal, $location, $state, AuthenticationSrv, OrganisationSrv, SharingProfileSrv, AnalyzerSrv, StreamSrv, StreamQuerySrv, CaseSrv, CaseTemplateSrv, CustomFieldsSrv, NotificationSrv, AppLayoutSrv, VersionSrv, currentUser, appConfig) {
         'use strict';
 
         if (currentUser === 520) {
@@ -206,7 +206,13 @@ angular.module('theHiveControllers').controller('RootCtrl',
                 controller: 'CaseCreationCtrl',
                 size: 'lg',
                 resolve: {
-                    template: template
+                    template: template,
+                    organisation: function () {
+                        return OrganisationSrv.get($scope.currentUser.organisation);
+                    },
+                    sharingProfiles: function () {
+                        return SharingProfileSrv.all();
+                    }
                 }
             });
 

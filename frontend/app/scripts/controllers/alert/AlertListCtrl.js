@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers')
-        .controller('AlertListCtrl', function ($rootScope, $scope, $q, $state, $uibModal, TagSrv, UiSettingsSrv, StreamQuerySrv, CaseTemplateSrv, UtilsSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
+        .controller('AlertListCtrl', function ($rootScope, $scope, $q, $state, $uibModal, TagSrv, OrganisationSrv, UiSettingsSrv, StreamQuerySrv, SharingProfileSrv, CaseTemplateSrv, UtilsSrv, ModalUtilsSrv, AlertingSrv, NotificationSrv, FilteringSrv, CortexSrv, Severity, VersionSrv) {
             var self = this;
 
             self.urls = VersionSrv.mispUrls();
@@ -336,7 +336,13 @@
                             controller: 'CaseCreationCtrl',
                             size: 'lg',
                             resolve: {
-                                template: template
+                                template: template,
+                                organisation: function () {
+                                    return OrganisationSrv.get($scope.currentUser.organisation);
+                                },
+                                sharingProfiles: function () {
+                                    return SharingProfileSrv.all();
+                                }
                             }
                         });
 

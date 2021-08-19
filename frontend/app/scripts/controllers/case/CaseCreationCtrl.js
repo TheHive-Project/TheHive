@@ -4,9 +4,10 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseCreationCtrl',
-        function ($rootScope, $scope, $uibModalInstance, CaseSrv, TaxonomyCacheSrv, NotificationSrv, TagSrv, template) {
+        function ($rootScope, $scope, $uibModalInstance, CaseSrv, TaxonomyCacheSrv, NotificationSrv, TagSrv, SharingProfileSrv, template, organisation, sharingProfiles) {
 
             $rootScope.title = 'New case';
+            $scope.sharingRules = SharingProfileSrv.SHARING_RULES;
             $scope.activeTlp = 'active';
             $scope.activePap = 'active';
             $scope.active = true;
@@ -15,8 +16,18 @@
                 titleSuffix: '',
                 task: ''
             };
+            $scope.organisation = organisation;
             $scope.template = template;
             $scope.fromTemplate = angular.isDefined(template) && !_.isEqual($scope.template, {});
+            $scope.sharingLinks = _.map(organisation.links, function (link) {
+                return _.extend({
+                    organisation: link.toOrganisation,
+                    linkType: link.linkType,
+                }, SharingProfileSrv.getCache(link.linkType), {
+                    share: SharingProfileSrv.getCache(link.linkType).autoShare
+                });
+            });
+            $scope.sharingRules = SharingProfileSrv.SHARING_RULES;
 
             $scope.tags = [];
 
@@ -30,7 +41,7 @@
                     tlp: template.tlp,
                     pap: template.pap,
                     severity: template.severity
-                }, {tlp: 2, pap: 2});
+                }, { tlp: 2, pap: 2 });
 
                 // Set tags from template
                 $scope.tags = template.tags;
@@ -79,6 +90,25 @@
                     });
                 }
 
+                // Append sharing customization customization
+
+                /*
+                organisation: String64,
+                share: Option[Boolean],
+                profile: Option[String64],
+                taskRule: Option[String64],
+                observableRule: Option[String64]
+                */
+                $scope.newCase.sharingParameters = _.map(_.filter($scope.sharingLinks, function (item) { return item.editable }), function (item) {
+                    return {
+                        organisation: item.organisation,
+                        share: item.share,
+                        profile: item.permissionProfile,
+                        taskRule: item.taskRule,
+                        observableRule: item.observableRule
+                    }
+                });
+
                 $scope.pendingAsync = true;
                 CaseSrv.save({}, $scope.newCase, function (data) {
                     $uibModalInstance.close(data);
@@ -88,9 +118,9 @@
                 });
             };
 
-            $scope.fromTagLibrary = function() {
+            $scope.fromTagLibrary = function () {
                 TaxonomyCacheSrv.openTagLibrary()
-                    .then(function(tags){
+                    .then(function (tags) {
                         $scope.tags = $scope.tags.concat(tags);
                     })
             };
@@ -111,11 +141,11 @@
                 $uibModalInstance.dismiss();
             };
 
-            $scope.getTags = function(query) {
+            $scope.getTags = function (query) {
                 return TagSrv.autoComplete(query);
             };
 
-            $scope.keys = function(o) {
+            $scope.keys = function (o) {
                 return _.keys(o).length;
             };
         }

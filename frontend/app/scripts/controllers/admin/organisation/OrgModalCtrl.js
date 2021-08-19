@@ -11,9 +11,12 @@
 
             self.initForm = function (org) {
                 self.formData = _.defaults(
-                    _.pick(org || {}, '_id', 'name', 'description', 'taskRule', 'observableRule'), {
-                    name: null
-                }
+                    _.pick(org || {}, '_id', 'name', 'description', 'taskRule', 'observableRule'),
+                    {
+                        name: null,
+                        taskRule: 'manual',
+                        observableRule: 'manual'
+                    }
                 );
 
                 self.nameIsEditable = !!!self.formData._id || self.formData.name !== OrganisationSrv.defaultOrg;
