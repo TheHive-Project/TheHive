@@ -157,7 +157,23 @@
 
         <div ng-if="organisation.links.length > 0">
             <h4 class="vpad10 text-primary">Sharing Rules</h4>
-            <table class="table table-striped">
+
+            <div ng-if="autoSharingLinks.length > 0">
+                Once created, this case and its tasks will be automatically shared with {{autoSharingLinks.length}}
+                organisations(s): <span class="label label-default mr-xxxs" ng-repeat="link in sharingLinks"
+                    ng-if="link.autoShare">{{link.organisation}}</span>
+            </div>
+            <div ng-if="autoSharingLinks.length === 0">
+                Once created, this case and its tasks will not be shared automatically
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" ng-model="customiseSharingRules"> Customise the sharing rules
+                </label>
+            </div>
+
+
+            <table class="table table-striped" ng-if="customiseSharingRules">
                 <thead>
                     <th width="30" class="text-centered"></th>
                     <th>Organisation</th>

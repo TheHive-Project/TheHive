@@ -12,6 +12,7 @@
             $scope.activePap = 'active';
             $scope.active = true;
             $scope.pendingAsync = false;
+            $scope.customiseSharingRules = false;
             $scope.temp = {
                 titleSuffix: '',
                 task: ''
@@ -19,6 +20,7 @@
             $scope.organisation = organisation;
             $scope.template = template;
             $scope.fromTemplate = angular.isDefined(template) && !_.isEqual($scope.template, {});
+
             $scope.sharingLinks = _.map(organisation.links, function (link) {
                 return _.extend({
                     organisation: link.toOrganisation,
@@ -26,6 +28,9 @@
                 }, SharingProfileSrv.getCache(link.linkType), {
                     share: SharingProfileSrv.getCache(link.linkType).autoShare
                 });
+            });
+            $scope.autoSharingLinks = _.filter($scope.sharingLinks, function (link) {
+                return link.autoShare;
             });
             $scope.sharingRules = SharingProfileSrv.SHARING_RULES;
 
@@ -99,15 +104,17 @@
                 taskRule: Option[String64],
                 observableRule: Option[String64]
                 */
-                $scope.newCase.sharingParameters = _.map(_.filter($scope.sharingLinks, function (item) { return item.editable }), function (item) {
-                    return {
-                        organisation: item.organisation,
-                        share: item.share,
-                        profile: item.permissionProfile,
-                        taskRule: item.taskRule,
-                        observableRule: item.observableRule
-                    }
-                });
+                if ($scope.customiseSharingRules) {
+                    $scope.newCase.sharingParameters = _.map(_.filter($scope.sharingLinks, function (item) { return item.editable }), function (item) {
+                        return {
+                            organisation: item.organisation,
+                            share: item.share,
+                            profile: item.permissionProfile,
+                            taskRule: item.taskRule,
+                            observableRule: item.observableRule
+                        }
+                    });
+                }
 
                 $scope.pendingAsync = true;
                 CaseSrv.save({}, $scope.newCase, function (data) {
