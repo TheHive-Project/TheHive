@@ -46,12 +46,6 @@ class OrganisationSrv(
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Organisation] = startTraversal.getByName(name)
 
-  def create(organisation: Organisation, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] =
-    for {
-      createdOrganisation <- create(organisation)
-      _                   <- roleSrv.create(user, createdOrganisation, profileSrv.orgAdmin)
-    } yield createdOrganisation
-
   def create(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
     val activeTaxos = getByName("admin").taxonomies.toSeq
     for {
