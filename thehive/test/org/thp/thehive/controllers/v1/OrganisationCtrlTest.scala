@@ -242,7 +242,14 @@ class OrganisationCtrlTest extends PlaySpecification with TestAppBuilder with Tr
       { // bulk link with custom sharing profile
         val request = FakeRequest("PUT", "/api/v1/organisation/soc/links")
           .withHeaders("user" -> "admin@thehive.local")
-          .withJsonBody(Json.obj("organisations" -> Seq("cert", "testOrga"), "linkType" -> "type1", "otherLinkType" -> "type2"))
+          .withJsonBody(
+            Json.obj(
+              "links" -> Seq(
+                Json.obj("toOrganisation" -> "cert", "linkType"     -> "type1", "otherLinkType" -> "type2"),
+                Json.obj("toOrganisation" -> "testOrga", "linkType" -> "type1", "otherLinkType" -> "type2")
+              )
+            )
+          )
         val result = organisationCtrl.bulkLink("soc")(request)
         status(result) must beEqualTo(201)
       }
