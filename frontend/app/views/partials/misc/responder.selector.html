@@ -9,7 +9,8 @@
     <div class="row mb-xxs">
         <div class="col-sm-12">
             <div class="has-feedback">
-                <input type="text" ng-model="$dialog.state.filter" class="form-control" placeholder="Filter responders" autofocus>
+                <input type="text" ng-model="$dialog.state.filter" class="form-control" placeholder="Filter responders"
+                    autofocus>
                 <span class="glyphicon glyphicon-search form-control-feedback"></span>
             </div>
         </div>
@@ -18,10 +19,9 @@
     <div class="template-selector">
         <table class="table table-hover table-striped">
             <tbody>
-                <tr ng-repeat="responder in $dialog.filteredResponders = ($dialog.responders | filter:$dialog.state.filter)"
-                class="clickable"
-                ng-class="{'active': $dialog.state.selected === responder.id}"
-                ng-click="$dialog.next(responder)">
+                <tr ng-repeat="responder in $dialog.filteredResponders = ($dialog.responders | filter:$dialog.state.filter | orderBy:'name')"
+                    class="clickable" ng-class="{'active': $dialog.state.selected === responder.id}"
+                    ng-click="$dialog.next(responder)">
                     <td>
                         <strong>{{responder.name}}</strong><br>
                         <p class="list-group-item-text text-muted">{{responder.description}}</p>
