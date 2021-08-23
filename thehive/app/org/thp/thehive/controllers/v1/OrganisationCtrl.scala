@@ -7,7 +7,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
-import org.thp.thehive.dto.v1.InputOrganisation
+import org.thp.thehive.dto.v1.{InputOrganisation, OrganisationLink}
 import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.mvc.{Action, AnyContent, Results}
@@ -113,19 +113,21 @@ class OrganisationCtrl(
 
   def bulkLink(fromOrganisationId: String): Action[AnyContent] =
     entrypoint("link multiple organisations")
-      .extract("organisations", FieldsParser.string.sequence.on("organisations"))
-      .extract("linkType", FieldsParser.string.optional.on("linkType"))
-      .extract("otherLinkType", FieldsParser.string.optional.on("otherLinkType"))
+      .extract("links", FieldsParser[OrganisationLink].sequence.on("links"))
       .authPermittedTransaction(db, Permissions.manageOrganisation) { implicit request => implicit graph =>
-        val organisations: Seq[String]    = request.body("organisations")
-        val linkType: Option[String]      = request.body("linkType")
-        val otherLinkType: Option[String] = request.body("otherLinkType")
+        val links: Seq[OrganisationLink] = request.body("links")
 
-        for {
-          fromOrg <- organisationSrv.getOrFail(EntityIdOrName(fromOrganisationId))
-          toOrgs  <- organisations.toTry(o => organisationSrv.getOrFail(EntityIdOrName(o)))
-          _       <- toOrgs.toTry(o => organisationSrv.link(fromOrg, o, linkType.getOrElse("default"), otherLinkType.getOrElse("default")))
-        } yield Results.Created
+        organisationSrv
+          .getOrFail(EntityIdOrName(fromOrganisationId))
+          .flatMap { fromOrg =>
+            links.toTry {
+              case OrganisationLink(organisation, linkType, otherLinkType) =>
+                organisationSrv.getOrFail(EntityIdOrName(organisation)).flatMap { o =>
+                  organisationSrv.link(fromOrg, o, linkType, otherLinkType)
+                }
+            }
+          }
+          .map(_ => Results.Created)
       }
 
   def unlink(orgAId: String, orgBId: String): Action[AnyContent] =
