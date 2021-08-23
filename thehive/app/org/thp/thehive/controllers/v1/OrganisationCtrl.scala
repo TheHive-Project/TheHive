@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.{EntityIdOrName, EntityName, RichSeq}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -18,6 +19,7 @@ class OrganisationCtrl(
     properties: Properties,
     organisationSrv: OrganisationSrv,
     userSrv: UserSrv,
+    alertSrv: AlertSrv,
     implicit val db: Database
 ) extends QueryableCtrl
     with TheHiveOpsNoDeps {
@@ -43,10 +45,18 @@ class OrganisationCtrl(
     (idOrName, graph, authContext) => organisationSrv.get(idOrName)(graph).visible(authContext)
   )
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
-    Query[Traversal.V[Organisation], Traversal.V[Organisation]]("visible", (organisationSteps, _) => organisationSteps.visibleOrganisations),
+    Query[Traversal.V[Organisation], Traversal.V[Organisation]](
+      "visible",
+      (organisationSteps, authContext) => organisationSteps.visibleOrganisations.visible(authContext)
+    ),
     Query[Traversal.V[Organisation], Traversal.V[User]]("users", (organisationSteps, _) => organisationSteps.users.dedup),
     Query[Traversal.V[Organisation], Traversal.V[CaseTemplate]]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates),
-    Query[Traversal.V[Organisation], Traversal.V[Alert]]("alerts", (organisationSteps, _) => organisationSteps.alerts)
+    Query[Traversal.V[Organisation], Traversal.V[Alert]](
+      "alerts",
+      (organisationSteps, _) =>
+//      organisationSteps.alerts
+        alertSrv.startTraversal(organisationSteps.graph).has(_.organisationId, P.within(organisationSteps._id.toSeq: _*))
+    )
   )
 
   def create: Action[AnyContent] =

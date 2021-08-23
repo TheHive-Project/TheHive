@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthSrv
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
@@ -25,6 +26,7 @@ class UserCtrl(
     caseSrv: CaseSrv,
     userSrv: UserSrv,
     authSrv: AuthSrv,
+    taskSrv: TaskSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
@@ -59,7 +61,12 @@ class UserCtrl(
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Traversal.V[User]]("currentUser", (graph, authContext) => userSrv.current(graph, authContext)),
-    Query[Traversal.V[User], Traversal.V[Task]]("tasks", (userSteps, authContext) => userSteps.tasks.visible(authContext)),
+    Query[Traversal.V[User], Traversal.V[Task]](
+      "tasks",
+      (userSteps, authContext) =>
+//      userSteps.tasks.visible(authContext)
+        taskSrv.startTraversal(userSteps.graph).visible(authContext).has(_.assignee, P.within(userSteps.value(_.login).toSeq: _*))
+    ),
     Query[Traversal.V[User], Traversal.V[Case]](
       "cases",
       (userSteps, authContext) => caseSrv.startTraversal(userSteps.graph).visible(authContext).assignedTo(userSteps.value(_.login).toSeq: _*)

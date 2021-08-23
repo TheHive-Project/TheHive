@@ -10,7 +10,7 @@ import play.api.test.PlaySpecification
 
 class QueryTest extends PlaySpecification with Mockito {
 
-  val publicTask = new PublicTask(mock[TaskSrv], mock[OrganisationSrv], mock[UserSrv])
+  val publicTask = new PublicTask(mock[TaskSrv], mock[UserSrv], mock[OrganisationSrv], mock[CustomFieldSrv], mock[CustomFieldValueSrv])
 
   val queryExecutor: QueryExecutor = new QueryExecutor {
     override val limitedCountThreshold: Long = 1000

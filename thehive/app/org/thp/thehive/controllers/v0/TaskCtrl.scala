@@ -89,12 +89,19 @@ class TaskCtrl(
   }
 }
 
-class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv) extends PublicData with TheHiveOpsNoDeps {
+class PublicTask(
+    taskSrv: TaskSrv,
+    userSrv: UserSrv,
+    override val organisationSrv: OrganisationSrv,
+    override val customFieldSrv: CustomFieldSrv,
+    override val customFieldValueSrv: CustomFieldValueSrv
+) extends PublicData
+    with TheHiveOps {
   override val entityName: String = "task"
   override val initialQuery: Query =
     Query.init[Traversal.V[Task]](
       "listTask",
-      (graph, authContext) => taskSrv.startTraversal(graph).inOrganisation(organisationSrv.currentId(graph, authContext))
+      (graph, authContext) => taskSrv.startTraversal(graph).visible(authContext)
     )
   //organisationSrv.get(authContext.organisation)(graph).shares.tasks)
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
@@ -112,7 +119,7 @@ class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: Us
   )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
     "getTask",
-    (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).inOrganisation(organisationSrv.currentId(graph, authContext))
+    (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)
   )
   override val outputQuery: Query =
     Query.outputWithContext[RichTask, Traversal.V[Task]]((taskSteps, _) => taskSteps.richTask)
@@ -121,13 +128,11 @@ class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: Us
     Query[Traversal.V[Task], Traversal.V[User]]("assignableUsers", (taskSteps, authContext) => taskSteps.assignableUsers(authContext)),
     Query.init[Traversal.V[Task]](
       "waitingTasks",
-      (graph, authContext) =>
-        taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).inOrganisation(organisationSrv.currentId(graph, authContext))
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(authContext)
     ),
     Query.init[Traversal.V[Task]]( // DEPRECATED
       "waitingTask",
-      (graph, authContext) =>
-        taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).inOrganisation(organisationSrv.currentId(graph, authContext))
+      (graph, authContext) => taskSrv.startTraversal(graph).has(_.status, TaskStatus.Waiting).visible(authContext)
     ),
     Query.init[Traversal.V[Task]](
       "myTasks",
@@ -135,7 +140,7 @@ class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: Us
         taskSrv
           .startTraversal(graph)
           .assignTo(authContext.userId)
-          .inOrganisation(organisationSrv.currentId(graph, authContext))
+          .visible(authContext)
     ),
     Query[Traversal.V[Task], Traversal.V[Log]]("logs", (taskSteps, _) => taskSteps.logs),
     Query[Traversal.V[Task], Traversal.V[Case]]("case", (taskSteps, _) => taskSteps.`case`),
@@ -171,5 +176,4 @@ class PublicTask(taskSrv: TaskSrv, organisationSrv: OrganisationSrv, userSrv: Us
         }
     )
     .build
-
 }

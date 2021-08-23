@@ -1,5 +1,6 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
@@ -24,6 +25,7 @@ class AlertCtrl(
     alertSrv: AlertSrv,
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
+    observableSrv: ObservableSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
@@ -79,7 +81,12 @@ class AlertCtrl(
             s"v.caseId:${graph.escapeQueryParameter(inCase.caseId.value)}"
         )
     ),
-    Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
+    Query[Traversal.V[Alert], Traversal.V[Observable]](
+      "observables",
+      (alertSteps, _) =>
+        // alertSteps.observables
+        observableSrv.startTraversal(alertSteps.graph).has(_.relatedId, P.within(alertSteps._id.toSeq: _*))
+    ),
     Query[Traversal.V[Alert], Traversal.V[Case]]("case", (alertSteps, _) => alertSteps.`case`),
     Query.withParam[Option[InputFilter], Traversal.V[Alert], Traversal[
       JsValue,

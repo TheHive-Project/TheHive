@@ -31,7 +31,7 @@ class TaskCtrl(
   override val initialQuery: Query =
     Query.init[Traversal.V[Task]](
       "listTask",
-      (graph, authContext) => taskSrv.startTraversal(graph).inOrganisation(organisationSrv.currentId(graph, authContext))
+      (graph, authContext) => taskSrv.startTraversal(graph).visible(authContext)
 //        organisationSrv.get(authContext.organisation)(graph).shares.tasks)
     )
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](

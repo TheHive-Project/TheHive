@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import io.scalaland.chimney.dsl._
-import org.apache.tinkerpop.gremlin.process.traversal.{Compare, Contains}
+import org.apache.tinkerpop.gremlin.process.traversal.{Compare, Contains, P}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
@@ -371,6 +371,7 @@ class AlertCtrl(
 
 class PublicAlert(
     alertSrv: AlertSrv,
+    observableSrv: ObservableSrv,
     val organisationSrv: OrganisationSrv,
     val customFieldSrv: CustomFieldSrv,
     val customFieldValueSrv: CustomFieldValueSrv
@@ -402,7 +403,12 @@ class PublicAlert(
   override val outputQuery: Query = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query[Traversal.V[Alert], Traversal.V[Case]]("cases", (alertSteps, _) => alertSteps.`case`),
-    Query[Traversal.V[Alert], Traversal.V[Observable]]("observables", (alertSteps, _) => alertSteps.observables),
+    Query[Traversal.V[Alert], Traversal.V[Observable]](
+      "observables",
+      (alertSteps, _) =>
+        // alertSteps.observables
+        observableSrv.startTraversal(alertSteps.graph).has(_.relatedId, P.within(alertSteps._id.toSeq: _*))
+    ),
     Query[
       Traversal.V[Alert],
       Traversal[(RichAlert, Seq[RichObservable]), JMap[String, Any], Converter[(RichAlert, Seq[RichObservable]), JMap[String, Any]]]

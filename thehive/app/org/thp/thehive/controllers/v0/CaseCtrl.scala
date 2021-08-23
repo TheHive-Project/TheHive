@@ -176,10 +176,11 @@ class PublicCase(
     override val organisationSrv: OrganisationSrv,
     shareSrv: ShareSrv,
     observableSrv: ObservableSrv,
+    taskSrv: TaskSrv,
     userSrv: UserSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
-    implicit val db: Database
+    val db: Database
 ) extends PublicData
     with CaseRenderer
     with TheHiveOps {
@@ -215,8 +216,9 @@ class PublicCase(
     ),
     Query[Traversal.V[Case], Traversal.V[Task]](
       "tasks",
-      (caseSteps, authContext) => caseSteps.tasks(authContext)
-//        taskSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(authContext)
+      (caseSteps, authContext) =>
+        //      caseSteps.tasks(authContext)
+        taskSrv.startTraversal(caseSteps.graph).has(_.relatedId, P.within(caseSteps._id.toSeq: _*)).visible(authContext)
     ),
     Query[Traversal.V[Case], Traversal.V[User]]("assignableUsers", (caseSteps, authContext) => caseSteps.assignableUsers(authContext)),
     Query[Traversal.V[Case], Traversal.V[Organisation]]("organisations", (caseSteps, authContext) => caseSteps.organisations.visible(authContext)),
