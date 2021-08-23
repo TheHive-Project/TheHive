@@ -12,10 +12,10 @@
             $scope.activePap = 'active';
             $scope.active = true;
             $scope.pendingAsync = false;
-            $scope.customiseSharingRules = false;
             $scope.temp = {
                 titleSuffix: '',
-                task: ''
+                task: '',
+                customiseSharingRules: false
             };
             $scope.organisation = organisation;
             $scope.template = template;
@@ -104,7 +104,7 @@
                 taskRule: Option[String64],
                 observableRule: Option[String64]
                 */
-                if ($scope.customiseSharingRules) {
+                if ($scope.temp.customiseSharingRules) {
                     $scope.newCase.sharingParameters = _.map(_.filter($scope.sharingLinks, function (item) { return item.editable }), function (item) {
                         return {
                             organisation: item.organisation,
