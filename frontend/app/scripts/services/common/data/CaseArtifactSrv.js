@@ -1,11 +1,11 @@
-(function() {
+(function () {
     'use strict';
     angular.module('theHiveServices')
-        .service('CaseArtifactSrv', function($http, FileResource) {
+        .service('CaseArtifactSrv', function ($http, FileResource) {
             var api = null;
 
-            this.api = function() {
-                if(api === null) {
+            this.api = function () {
+                if (api === null) {
                     return FileResource('./api/case/:caseId/artifact/:artifactId', {}, {
                         update: {
                             method: 'PATCH'
@@ -20,33 +20,33 @@
                 return api;
             };
 
-            this.similar = function(observableId, options) {
-                return $http.get('./api/case/artifact/'+observableId+'/similar', {
-                        params: options
-                    })
-                    .then(function(response) {                        
-                        return _.filter(response.data, function(item) {
+            this.similar = function (observableId, options) {
+                return $http.get('./api/case/artifact/' + observableId + '/similar', {
+                    params: options
+                })
+                    .then(function (response) {
+                        return _.filter(response.data, function (item) {
                             return item.stats && item.stats.case;
                         });
                     });
             };
 
-            this.bulkUpdate = function(ids, update) {
-                return $http.patch('./api/case/artifact/_bulk', _.extend({ids: ids}, update));
+            this.bulkUpdate = function (ids, update) {
+                return $http.patch('./api/case/artifact/_bulk', _.extend({ ids: ids }, update));
             };
 
-            this.getShares = function(caseId, observableId) {
-                return $http.get('./api/case/' + caseId + '/observable/' + observableId + '/shares');
+            this.getShares = function (caseId, observableId) {
+                return $http.get('./api/v1/case/' + caseId + '/observable/' + observableId + '/shares');
             };
 
-            this.addShares = function(observableId, organisations) {
+            this.addShares = function (observableId, organisations) {
                 return $http.post('./api/case/artifact/' + observableId + '/shares', {
                     organisations: organisations
                 });
             };
 
-            this.removeShare = function(id, share) {
-                return $http.delete('./api/observable/'+id+'/shares', {
+            this.removeShare = function (id, share) {
+                return $http.delete('./api/observable/' + id + '/shares', {
                     data: {
                         organisations: [share.organisationName]
                     },

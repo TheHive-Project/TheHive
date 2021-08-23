@@ -12,16 +12,19 @@
                 <th width="250">Profile</th>
                 <th width="160">Shared At</th>
                 <th width="150" class="text-right" if-permission="manageTask" allowed="{{$ctrl.permissions}}"></th>
-                <th width="80" class="text-right" if-permission="manageShare" allowed="{{$ctrl.permissions}}">Actions</th>
+                <th width="80" class="text-right" if-permission="manageShare" allowed="{{$ctrl.permissions}}">Actions
+                </th>
             </thead>
             <tbody>
                 <tr ng-repeat="share in $ctrl.shares | orderBy:'organisationName'"
                     ng-class="{true:'tr-warning'}[share.owner]">
                     <td class="text-center">
-                        <i class="fa fa-star" ng-if="share.owner" uib-tooltip="Owner of the share" tooltip-placement="right-middle"></i>
+                        <i class="fa fa-star" ng-if="share.owner" uib-tooltip="Owner of the share"
+                            tooltip-placement="right-middle"></i>
                     </td>
                     <td ng-class="{'text-danger': !!share.actionRequired}">
-                        <span ng-if="!!share.actionRequired" class="noline mr-xxxs" uib-tooltip="Action Required" tooltip-placement="right-middle">
+                        <span ng-if="!!share.actionRequired" class="noline mr-xxxs" uib-tooltip="Action Required"
+                            tooltip-placement="right-middle">
                             <i class="fa fa-exclamation-triangle"></i>
                         </span>
                         {{share.organisationName}}
@@ -30,20 +33,24 @@
                         <span>{{share.profileName}}</span>
                     </td>
                     <td ng-if="!$ctrl.readOnly">
-                        <span if-not-permission="manageShare" allowed="{{$ctrl.permissions}}">{{share.profileName}}</span>
+                        <span if-not-permission="manageShare"
+                            allowed="{{$ctrl.permissions}}">{{share.profileName}}</span>
                         <span if-permission="manageShare" allowed="{{$ctrl.permissions}}">
                             <span ng-if="share.owner === true">{{share.profileName}}</span>
                             <span ng-if="share.owner !== true">
-                                <updatable-select options="$ctrl.profiles" value="share.profileName" on-update="$ctrl.updateProfile(share._id, newValue)"></updatable-select>
+                                <updatable-select options="$ctrl.profiles" value="share.profileName"
+                                    on-update="$ctrl.updateProfile(share._id, newValue)"></updatable-select>
                             </span>
                         </span>
                     </td>
-                    <td>{{share.createdAt | shortDate}}</td>
+                    <td>{{share._createdAt | shortDate}}</td>
                     <td class="text-right" if-permission="manageTask" allowed="{{$ctrl.permissions}}">
-                        <span ng-if="!!!share.actionRequired" class="clickable text-primary" ng-click="$ctrl.requireAction(share.organisationName)">
+                        <span ng-if="!!!share.actionRequired" class="clickable text-primary"
+                            ng-click="$ctrl.requireAction(share.organisationName)">
                             <i class="fa fa-exclamation-triangle"></i> Require Action
                         </span>
-                        <span ng-if="!!share.actionRequired" class="clickable text-danger" ng-click="$ctrl.cancelRequireAction(share.organisationName)">
+                        <span ng-if="!!share.actionRequired" class="clickable text-danger"
+                            ng-click="$ctrl.cancelRequireAction(share.organisationName)">
                             <i class="fa fa-exclamation-triangle"></i> Cancel Request
                         </span>
                     </td>
