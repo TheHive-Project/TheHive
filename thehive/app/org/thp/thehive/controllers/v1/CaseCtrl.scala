@@ -6,7 +6,7 @@ import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PropertyUpdater, PublicProperties, Query}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
-import org.thp.scalligraph.{EntityId, EntityIdOrName, RichOptionTry, RichSeq}
+import org.thp.scalligraph.{EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputCase, InputShare, InputTask}
 import org.thp.thehive.models._
@@ -168,7 +168,7 @@ class CaseCtrl(
     entrypoint("delete a custom field")
       .authPermittedTransaction(db, Permissions.manageCase) { implicit request => implicit graph =>
         customFieldValueSrv
-          .getByIds(EntityId(cfId))
+          .get(EntityIdOrName(cfId))
           .filter(_.`case`.can(Permissions.manageCase))
           .getOrFail("CustomFieldValue")
           .flatMap(cfv => customFieldValueSrv.delete(cfv._id))
