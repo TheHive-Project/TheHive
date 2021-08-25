@@ -192,9 +192,10 @@ class ShareCtrl(
       .authRoTransaction(db) { implicit request => implicit graph =>
         val shares = caseSrv
           .get(EntityIdOrName(caseId))
+          .can(Permissions.manageShare)
           .shares
           .visible
-          .filterNot(_.get(request.organisation))
+          .filterNot(_.organisation.current)
           .richShare
           .toSeq
 
@@ -204,13 +205,11 @@ class ShareCtrl(
   def listShareTasks(caseId: String, taskId: String): Action[AnyContent] =
     entrypoint("list task shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val shares = caseSrv
-          .get(EntityIdOrName(caseId))
-          .can(Permissions.manageShare)
+        val shares = taskSrv
+          .get(EntityIdOrName(taskId))
           .shares
-          .visible
-          .filterNot(_.get(request.organisation))
-          .byTask(EntityIdOrName(taskId))
+          .filter(_.`case`.get(EntityIdOrName(caseId)).can(Permissions.manageShare))
+          .filterNot(_.organisation.current)
           .richShare
           .toSeq
 
@@ -220,13 +219,11 @@ class ShareCtrl(
   def listShareObservables(caseId: String, observableId: String): Action[AnyContent] =
     entrypoint("list observable shares")
       .authRoTransaction(db) { implicit request => implicit graph =>
-        val shares = caseSrv
-          .get(EntityIdOrName(caseId))
-          .can(Permissions.manageShare)
+        val shares = observableSrv
+          .get(EntityIdOrName(observableId))
           .shares
-          .visible
-          .filterNot(_.get(request.organisation))
-          .byObservable(EntityIdOrName(observableId))
+          .filter(_.`case`.get(EntityIdOrName(caseId)).can(Permissions.manageShare))
+          .filterNot(_.organisation.current)
           .richShare
           .toSeq
 
