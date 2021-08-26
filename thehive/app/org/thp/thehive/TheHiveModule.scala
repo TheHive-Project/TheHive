@@ -33,7 +33,7 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag =
     wireActorSingleton(actorSystem, wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
   lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = {
-    val behavior = CaseNumberActor.behavior(app.database, caseSrv)
+    val behavior = CaseNumberActor.behavior(app.database, app.applicationConfig, caseSrv)
     if (app.application.mode == Mode.Test)
       actorSystem.toTyped.systemActorOf(behavior, "CaseNumberLeader")
     else

@@ -6,10 +6,13 @@ import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorRefResolver, Behavior, ActorRef => TypedActorRef}
 import akka.serialization.Serializer
 import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.services.config.ApplicationConfig
+import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.traversal.TraversalOps
 
 import java.io.NotSerializableException
 import java.nio.ByteBuffer
+import scala.concurrent.duration.FiniteDuration
 
 object CaseNumberActor extends TraversalOps with TheHiveOpsNoDeps {
   sealed trait Message
@@ -17,19 +20,29 @@ object CaseNumberActor extends TraversalOps with TheHiveOpsNoDeps {
   sealed trait Response                                      extends Message
   case class GetNextNumber(replyTo: TypedActorRef[Response]) extends Request
   case class NextNumber(number: Int)                         extends Response
+  case object ReloadFromDatabase                             extends Request
 
-  def behavior(db: Database, caseSrv: CaseSrv): Behavior[Request] = {
-    val nextNumber = db.roTransaction { implicit graph =>
-      caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1
+  def behavior(db: Database, appConfig: ApplicationConfig, caseSrv: CaseSrv): Behavior[Request] = {
+    val caseNumberReloadIntervalConfig =
+      appConfig.item[FiniteDuration]("caseNumber.reload.interval", "Reload last case number from database interval")
+    Behaviors.withTimers { timers =>
+      val reloadTimer: () => Unit = () => timers.startSingleTimer(ReloadFromDatabase, caseNumberReloadIntervalConfig.get)
+      val getNextNumber: () => Int = () =>
+        db.roTransaction { implicit graph =>
+          caseSrv.startTraversal.getLast.headOption.fold(0)(_.number) + 1
+        }
+      caseNumberProvider(getNextNumber, reloadTimer, getNextNumber())
     }
-    caseNumberProvider(nextNumber)
   }
 
-  def caseNumberProvider(nextNumber: Int): Behavior[Request] =
+  def caseNumberProvider(getNextNumber: () => Int, reloadTimer: () => Unit, nextNumber: Int): Behavior[Request] =
     Behaviors.receiveMessage {
       case GetNextNumber(replyTo) =>
         replyTo ! NextNumber(nextNumber)
-        caseNumberProvider(nextNumber + 1)
+        caseNumberProvider(getNextNumber, reloadTimer, nextNumber + 1)
+      case ReloadFromDatabase =>
+        reloadTimer()
+        caseNumberProvider(getNextNumber, reloadTimer, Math.max(getNextNumber(), nextNumber))
     }
 }
 
@@ -44,6 +57,7 @@ class CaseNumberSerializer(system: ExtendedActorSystem) extends Serializer {
     o match {
       case GetNextNumber(replyTo) => 0.toByte +: actorRefResolver.toSerializationFormat(replyTo).getBytes
       case NextNumber(number)     => ByteBuffer.allocate(5).put(1.toByte).putInt(number).array()
+      case ReloadFromDatabase     => Array(2)
       case _                      => throw new NotSerializableException
     }
 
@@ -53,5 +67,7 @@ class CaseNumberSerializer(system: ExtendedActorSystem) extends Serializer {
     bytes(0) match {
       case 0 => GetNextNumber(actorRefResolver.resolveActorRef(new String(bytes.tail)))
       case 1 => NextNumber(ByteBuffer.wrap(bytes).getInt(1))
+      case 2 => ReloadFromDatabase
+      case _ => throw new NotSerializableException
     }
 }

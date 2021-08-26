@@ -666,16 +666,14 @@ class CaseIntegrityCheckOps(
     with TheHiveOpsNoDeps {
 
   override def resolve(entities: Seq[Case with Entity])(implicit graph: Graph): Try[Unit] = {
-    val nextNumber = service.nextCaseNumber
     EntitySelector
       .firstCreatedEntity(entities)
       .foreach(
         _._2
           .flatMap(service.get(_).setConverter[Vertex, Converter.Identity[Vertex]](Converter.identity).headOption)
-          .zipWithIndex
-          .foreach {
-            case (vertex, index) =>
-              UMapping.int.setProperty(vertex, "number", nextNumber + index)
+          .foreach { vertex =>
+            val nextNumber = service.nextCaseNumber
+            UMapping.int.setProperty(vertex, "number", nextNumber)
           }
       )
     Success(())
