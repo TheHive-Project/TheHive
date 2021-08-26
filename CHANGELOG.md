@@ -1,5 +1,11 @@
 # Change Log
 
+## [4.1.10](https://github.com/TheHive-Project/TheHive/milestone/79) (2021-08-26)
+
+**Fixed bugs:**
+
+- [Bug] Reload last case number from database periodically [\#2182](https://github.com/TheHive-Project/TheHive/issues/2182)
+
 ## [4.1.9](https://github.com/TheHive-Project/TheHive/milestone/78) (2021-07-23)
 
 **Implemented enhancements:**
