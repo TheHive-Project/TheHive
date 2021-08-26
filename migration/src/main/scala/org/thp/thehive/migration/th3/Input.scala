@@ -2,6 +2,7 @@ package org.thp.thehive.migration.th3
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.sksamuel.elastic4s.ElasticDsl._
@@ -12,6 +13,7 @@ import org.thp.thehive.migration.Filter
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services.SharingRule
+import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 
@@ -20,20 +22,16 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.{classTag, ClassTag}
 import scala.util.{Failure, Success, Try}
 
-object Input {
+class InputModule(configuration: Configuration, actorSystem: ActorSystem) {
+  import com.softwaremill.macwire._
 
-  def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Input = ???
-//    Guice
-//      .createInjector(new ScalaModule {
-//        override def configure(): Unit = {
-//          bind[Configuration].toInstance(configuration)
-//          bind[ActorSystem].toInstance(actorSystem)
-//          bind[Materializer].toInstance(Materializer(actorSystem))
-//          bind[ExecutionContext].toInstance(actorSystem.dispatcher)
-//          bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-//        }
-//      })
-//      .getInstance(classOf[Input])
+  lazy val applicationLifecycle: ApplicationLifecycle = new DefaultApplicationLifecycle
+  val dbConfiguration: DBConfiguration                = wire[DBConfiguration]
+  val ec: ExecutionContext                            = actorSystem.dispatcher
+  val mat: Materializer                               = Materializer(actorSystem)
+  lazy val dbFind: DBFind                             = new DBFind(configuration, dbConfiguration, ec, mat)
+  lazy val dbGet: DBGet                               = wire[DBGet]
+  lazy val input: Input                               = wire[Input]
 }
 
 class Input(configuration: Configuration, dbFind: DBFind, dbGet: DBGet, implicit val ec: ExecutionContext) extends migration.Input with Conversion {

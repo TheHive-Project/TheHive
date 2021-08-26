@@ -10,7 +10,7 @@ import org.thp.thehive.services.notification.NotificationTag
 import org.thp.thehive.services.{AuditSrv, UserSrv}
 
 class CortexAuditSrv(
-    userSrv: UserSrv,
+    userSrv: => UserSrv,
     notificationActor: ActorRef @@ NotificationTag,
     eventSrv: EventSrv,
     db: Database

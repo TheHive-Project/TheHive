@@ -33,8 +33,7 @@ class ActionSrv(
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
-    implicit val schema: Schema,
-    implicit val db: Database,
+    val db: Database,
     implicit val ec: ExecutionContext,
     auditSrv: CortexAuditSrv
 ) extends VertexSrv[Action]

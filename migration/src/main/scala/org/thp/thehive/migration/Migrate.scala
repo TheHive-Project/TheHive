@@ -3,6 +3,8 @@ package org.thp.thehive.migration
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
+import org.thp.thehive.migration.th3.InputModule
+import org.thp.thehive.migration.th4.OutputModule
 import play.api.libs.logback.LogbackLoggerConfigurator
 import play.api.{Configuration, Environment}
 import scopt.OParser
@@ -13,7 +15,7 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext}
 
-trait Migrate extends App with MigrationOps {
+object Migrate extends App with MigrationOps {
   val defaultLoggerConfigFile = "/etc/thehive/logback-migration.xml"
   if (System.getProperty("logger.file") == null && Files.exists(Paths.get(defaultLoggerConfigFile)))
     System.setProperty("logger.file", defaultLoggerConfigFile)
@@ -60,7 +62,7 @@ trait Migrate extends App with MigrationOps {
         .valueName("http://ip1:port,ip2:port")
         .text("TheHive3 ElasticSearch URI")
         .action((u, c) => addConfig(c, "input.search.uri", u)),
-      opt[String]('i', "es-index")
+      opt[String]('x', "es-index")
         .valueName("<index>")
         .text("TheHive3 ElasticSearch index name")
         .action((i, c) => addConfig(c, "input.search.index", i)),
@@ -194,8 +196,8 @@ trait Migrate extends App with MigrationOps {
 
       val returnStatus =
         try {
-          val input  = th3.Input(Configuration(config.getConfig("input").withFallback(config)))
-          val output = th4.Output(Configuration(config.getConfig("output").withFallback(config)))
+          val input  = new InputModule(Configuration(config.getConfig("input").withFallback(config)), actorSystem).input
+          val output = new OutputModule(Configuration(config.getConfig("output").withFallback(config)), actorSystem).output
           val filter = Filter.fromConfig(config.getConfig("input.filter"))
 
           val process = migrate(input, output, filter)

@@ -68,7 +68,7 @@ object Cloner extends App with TraversalOps {
       .parseResources("play/reference-overrides.conf")
       .withFallback(ConfigFactory.defaultReference())
       .resolve()
-  OParser.parse(argParser, args, defaultConfig).foreach { config =>
+  OParser.parse(argParser, args, defaultConfig).map(_.resolve()).foreach { config =>
     implicit val actorSystem: ActorSystem = ActorSystem("TheHiveCloner", config)
 
     try {

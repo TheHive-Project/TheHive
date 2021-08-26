@@ -12,20 +12,38 @@ import org.thp.thehive.migration.th4.DummyActor
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.NotificationTag
 import play.api.Configuration
-import play.api.cache.SyncCacheApi
+import play.api.cache.caffeine.CaffeineCacheComponents
+import play.api.cache.{DefaultSyncCacheApi, SyncCacheApi}
 
 import scala.concurrent.ExecutionContext
 import scala.util.Success
 
-class IntegrityCheckApp(val configuration: Configuration, val db: Database)(implicit val actorSystem: ActorSystem) extends MapMerger {
+class IntegrityCheckApp(val configuration: Configuration, val db: Database)(implicit
+    val actorSystem: ActorSystem
+) extends MapMerger
+    with CaffeineCacheComponents {
   import com.softwaremill.macwire._
   import com.softwaremill.macwire.akkasupport._
   import com.softwaremill.tagging._
 
-  val ec: ExecutionContext                                         = actorSystem.dispatcher
-  val mat: Materializer                                            = Materializer.matFromSystem
-  lazy val cache: SyncCacheApi                                     = ???
-  lazy val storageSrv: StorageSrv                                  = ???
+  val executionContext: ExecutionContext = actorSystem.dispatcher
+  val mat: Materializer                  = Materializer.matFromSystem
+  lazy val cache: SyncCacheApi = defaultCacheApi.sync match {
+    case sync: SyncCacheApi => sync
+    case _                  => new DefaultSyncCacheApi(defaultCacheApi)
+  }
+  lazy val storageSrv: StorageSrv = configuration.get[String]("storage.provider") match {
+    case "localfs" => new LocalFileSystemStorageSrv(configuration)
+    case "hdfs"    => new HadoopStorageSrv(configuration)
+    case "s3" =>
+      new S3StorageSrv(
+        configuration,
+        actorSystem,
+        executionContext,
+        mat
+      )
+    case other => sys.error(s"Storage provider $other is not supported")
+  }
   lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = actorSystem.spawn(CaseNumberActor.behavior(db, caseSrv), "case-number-actor")
   lazy val profileSrv: ProfileSrv                                  = wire[ProfileSrv]
   lazy val organisationSrv: OrganisationSrv                        = wire[OrganisationSrv]

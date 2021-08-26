@@ -1,8 +1,14 @@
 package org.thp.thehive.migration.th4
 
-import akka.actor.ActorSystem
-import com.google.inject.{Injector => GInjector}
-//import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
+import akka.actor.{typed, ActorRef, ActorSystem}
+import akka.stream.Materializer
+import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem, ConfigTag}
+import org.thp.scalligraph.services.{EventSrv, GenIntegrityCheckOps, HadoopStorageSrv, LocalFileSystemStorageSrv, S3StorageSrv, StorageSrv}
+import org.thp.thehive.services.notification.NotificationTag
+import play.api.cache.caffeine.CaffeineCacheComponents
+import play.api.cache.{DefaultSyncCacheApi, SyncCacheApi}
+
+import scala.concurrent.ExecutionContext
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.janusgraph.core.schema.{SchemaStatus => JanusSchemaStatus}
 import org.thp.scalligraph._
@@ -11,77 +17,117 @@ import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.traversal.{Graph, TraversalOps}
 import org.thp.thehive.connector.cortex.models.CortexSchemaDefinition
-import org.thp.thehive.connector.cortex.services.{ActionSrv, JobSrv}
+import org.thp.thehive.connector.cortex.services.{ActionOperationSrv, ActionSrv, CortexAuditSrv, CortexTag, EntityHelper, JobSrv, ServiceHelper}
 import org.thp.thehive.migration
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import org.thp.thehive.services._
-//import play.api.inject.guice.GuiceInjector
-//import play.api.libs.concurrent.{AkkaGuiceSupport, AkkaSchedulerProvider}
 import play.api.{Configuration, Logger}
 
-import javax.inject.Provider
 import scala.util.{Failure, Success, Try}
+import akka.actor.typed.scaladsl.adapter._
+import org.thp.cortex.client.{CortexClient, CortexClientConfig}
 
-object Output {
+class OutputModule(val configuration: Configuration, val actorSystem: ActorSystem) extends CaffeineCacheComponents {
+  import com.softwaremill.macwire._
+  import com.softwaremill.macwire.akkasupport._
+  import com.softwaremill.tagging._
 
-  private def buildApp(configuration: Configuration)(implicit actorSystem: ActorSystem): GInjector = ???
-//    Guice
-//      .createInjector(
-//        (play.api.inject.guice.GuiceableModule.guiceable(new EhCacheModule).guiced(Environment.simple(), configuration, Set.empty) :+
-//          new ScalaModule with AkkaGuiceSupport {
-//            override def configure(): Unit = {
-//              bind[Configuration].toInstance(configuration)
-//              bind[ActorSystem].toInstance(actorSystem)
-//              bind[Scheduler].toProvider[AkkaSchedulerProvider]
-//              bind[Materializer].toInstance(Materializer(actorSystem))
-//              bind[ExecutionContext].toInstance(actorSystem.dispatcher)
-//              bind[Injector].to[GuiceInjector]
-//              bind[UserDB].to[LocalUserSrv]
-//              bindActor[DummyActor]("notification-actor")
-//              bindActor[DummyActor]("config-actor")
-//              bindActor[DummyActor]("cortex-actor")
-//              bindActor[DummyActor]("integrity-check-actor")
-//              bindTypedActor(CaseNumberActor.behavior, "case-number-actor")
-  //
-//              val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
-////              schemaBindings.addBinding.to[TheHiveSchemaDefinition]
-////              schemaBindings.addBinding.to[CortexSchemaDefinition]
-//              bind[SingleInstance].toInstance(new SingleInstance(true))
-//
-//              bind[AuditSrv].to[NoAuditSrv]
-//              bind[Database].toProvider[JanusDatabaseProvider]
-//              bind[Environment].toInstance(Environment.simple())
-//              bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
-////              bind[Schema].toProvider[TheHiveCortexSchemaProvider]
-//              configuration.get[String]("storage.provider") match {
-//                case "localfs"  => bind(classOf[StorageSrv]).to(classOf[LocalFileSystemStorageSrv])
-//                case "database" => bind(classOf[StorageSrv]).to(classOf[DatabaseStorageSrv])
-//                case "hdfs"     => bind(classOf[StorageSrv]).to(classOf[HadoopStorageSrv])
-//                case "s3"       => bind(classOf[StorageSrv]).to(classOf[S3StorageSrv])
-//              }
-//              bind[ClusterSetup].asEagerSingleton()
-//              ()
-//            }
-//          }).asJava
-//      )
+  val executionContext: ExecutionContext = actorSystem.dispatcher
+  val mat: Materializer                  = Materializer(actorSystem)
 
-  def apply(configuration: Configuration)(implicit actorSystem: ActorSystem): Output = {
+  lazy val dummyActor: ActorRef = wireAnonymousActor[DummyActor]
+
+  lazy val actionSrv: ActionSrv                                     = wire[ActionSrv]
+  lazy val actionOperationSrv: ActionOperationSrv                   = wire[ActionOperationSrv]
+  lazy val alertSrv: AlertSrv                                       = wire[AlertSrv]
+  lazy val applicationConfig: ApplicationConfig                     = wire[ApplicationConfig]
+  lazy val attachmentSrv: AttachmentSrv                             = wire[AttachmentSrv]
+  lazy val caseSrv: CaseSrv                                         = wire[CaseSrv]
+  lazy val caseNumberActor: typed.ActorRef[CaseNumberActor.Request] = dummyActor.toTyped
+  lazy val caseTemplateSrv: CaseTemplateSrv                         = wire[CaseTemplateSrv]
+  lazy val configActor: ActorRef @@ ConfigTag                       = dummyActor.taggedWith[ConfigTag]
+  lazy val cortexActor: ActorRef @@ CortexTag                       = dummyActor.taggedWith[CortexTag]
+  lazy val cortexAuditSrv: CortexAuditSrv                           = wire[NoAuditSrv]
+  lazy val cortexConfig: ConfigItem[Seq[CortexClientConfig], Seq[CortexClient]] =
+    applicationConfig.mapItem[Seq[CortexClientConfig], Seq[CortexClient]](
+      "cortex.servers",
+      "",
+      _.map(new CortexClient(_, mat, executionContext))
+    )
+  lazy val customFieldSrv: CustomFieldSrv           = wire[CustomFieldSrv]
+  lazy val customFieldValueSrv: CustomFieldValueSrv = wire[CustomFieldValueSrv]
+  lazy val database: Database = {
     if (configuration.getOptional[Boolean]("dropDatabase").contains(true)) {
       Logger(getClass).info("Drop database")
-      new JanusDatabase(configuration, actorSystem, fullTextIndexAvailable = false).drop()
+      new JanusDatabaseProvider(configuration, actorSystem, Set.empty).get.drop()
     }
-    buildApp(configuration).getInstance(classOf[Output])
+    new JanusDatabaseProvider(configuration, actorSystem, Set(TheHiveSchemaDefinition, CortexSchemaDefinition)).get
   }
+  lazy val dataSrv: DataSrv                                   = wire[DataSrv]
+  lazy val entityHelper: EntityHelper                         = wire[EntityHelper]
+  lazy val eventSrv: EventSrv                                 = wire[EventSrv]
+  lazy val impactStatusSrv: ImpactStatusSrv                   = wire[ImpactStatusSrv]
+  lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag = dummyActor.taggedWith[IntegrityCheckTag]
+  lazy val jobSrv: JobSrv                                     = wire[JobSrv]
+  lazy val logSrv: LogSrv                                     = wire[LogSrv]
+  lazy val notificationActor: ActorRef @@ NotificationTag     = dummyActor.taggedWith[NotificationTag]
+  lazy val observableSrv: ObservableSrv                       = wire[ObservableSrv]
+  lazy val observableTypeSrv: ObservableTypeSrv               = wire[ObservableTypeSrv]
+  lazy val organisationSrv: OrganisationSrv                   = wire[OrganisationSrv]
+  lazy val profileSrv: ProfileSrv                             = wire[ProfileSrv]
+  lazy val reportTagSrv: ReportTagSrv                         = wire[ReportTagSrv]
+  lazy val resolutionStatusSrv: ResolutionStatusSrv           = wire[ResolutionStatusSrv]
+  lazy val roleSrv: RoleSrv                                   = wire[RoleSrv]
+  lazy val serviceHelper: ServiceHelper                       = wire[ServiceHelper]
+  lazy val storageSrv: StorageSrv =
+    configuration.get[String]("storage.provider") match {
+      case "localfs" => new LocalFileSystemStorageSrv(configuration)
+      case "hdfs"    => new HadoopStorageSrv(configuration)
+      case "s3" =>
+        new S3StorageSrv(
+          configuration,
+          actorSystem,
+          executionContext,
+          mat
+        )
+      case other => sys.error(s"Storage provider $other is not supported")
+    }
+  lazy val taskSrv: TaskSrv         = wire[TaskSrv]
+  lazy val tagSrv: TagSrv           = wire[TagSrv]
+  lazy val taxonomySrv: TaxonomySrv = wire[TaxonomySrv]
+  lazy val shareSrv: ShareSrv       = wire[ShareSrv]
+  lazy val userSrv: UserSrv         = wire[UserSrv]
+  lazy val output: Output           = wire[Output]
+  lazy val syncCacheApi: SyncCacheApi = defaultCacheApi.sync match {
+    case sync: SyncCacheApi => sync
+    case _                  => new DefaultSyncCacheApi(defaultCacheApi)
+  }
+
+  lazy val integrityChecks: Seq[GenIntegrityCheckOps] = Seq(
+    wire[ProfileIntegrityCheckOps],
+    wire[OrganisationIntegrityCheckOps],
+    wire[TagIntegrityCheckOps],
+    wire[UserIntegrityCheckOps],
+    wire[ImpactStatusIntegrityCheckOps],
+    wire[ResolutionStatusIntegrityCheckOps],
+    wire[ObservableTypeIntegrityCheckOps],
+    wire[CustomFieldIntegrityCheckOps],
+    wire[CaseTemplateIntegrityCheckOps],
+    wire[DataIntegrityCheckOps],
+    wire[CaseIntegrityCheckOps],
+    wire[AlertIntegrityCheckOps],
+    wire[TaskIntegrityCheckOps],
+    wire[ObservableIntegrityCheckOps],
+    wire[LogIntegrityCheckOps]
+  )
 }
 
 class Output(
     configuration: Configuration,
-//    theHiveSchema: TheHiveSchemaDefinition,
-//    cortexSchema: CortexSchemaDefinition,
     caseSrv: CaseSrv,
-    observableSrvProvider: Provider[ObservableSrv],
+    observableSrv: ObservableSrv,
     dataSrv: DataSrv,
     userSrv: UserSrv,
     tagSrv: TagSrv,
@@ -100,7 +146,8 @@ class Output(
     resolutionStatusSrv: ResolutionStatusSrv,
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
-    db: Database
+    db: Database,
+    integrityChecks: Seq[GenIntegrityCheckOps]
 ) extends migration.Output
     with TraversalOps {
   lazy val logger: Logger = Logger(getClass)
@@ -114,7 +161,6 @@ class Output(
     case jdb: JanusDatabase => jdb.listIndexesWithStatus(JanusSchemaStatus.ENABLED).fold(_ => false, _.exists(_.startsWith("Data")))
     case _                  => false
   }
-  lazy val observableSrv: ObservableSrv                                     = observableSrvProvider.get
   private var profiles: Map[String, Profile with Entity]                    = Map.empty
   private var organisations: Map[String, Organisation with Entity]          = Map.empty
   private var users: Map[String, User with Entity]                          = Map.empty
@@ -240,7 +286,14 @@ class Output(
                      | ${tags.size} tags""".stripMargin)
   }
 
-  def startMigration(): Try[Unit] = Success(retrieveExistingData())
+  def startMigration(): Try[Unit] = {
+    db.tryTransaction { implicit graph =>
+      integrityChecks.foreach(_.initialCheck()(graph, LocalUserSrv.getSystemAuthContext))
+      Success(())
+    }
+    retrieveExistingData()
+    Success(())
+  }
 
   def endMigration(): Try[Unit] = {
     db.addSchemaIndexes(TheHiveSchemaDefinition)
