@@ -1,7 +1,7 @@
 package org.thp.thehive.migration.th4
 
 import akka.actor.ActorSystem
-import akka.actor.typed.Scheduler
+import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.Materializer
 import com.google.inject.{Guice, Injector => GInjector}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
@@ -52,7 +52,7 @@ object Output {
               bindActor[DummyActor]("config-actor")
               bindActor[DummyActor]("cortex-actor")
               bindActor[DummyActor]("integrity-check-actor")
-              bindTypedActor(CaseNumberActor.behavior, "case-number-actor")
+              bind[ActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
 
               val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
               schemaBindings.addBinding.to[TheHiveSchemaDefinition]
