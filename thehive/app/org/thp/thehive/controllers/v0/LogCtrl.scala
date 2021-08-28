@@ -8,7 +8,7 @@ import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputLog
 import org.thp.thehive.models.{Log, Permissions, RichLog}
-import org.thp.thehive.services.{CustomFieldSrv, CustomFieldValueSrv, LogSrv, OrganisationSrv, TaskSrv, TheHiveOps, TheHiveOpsNoDeps}
+import org.thp.thehive.services.{CustomFieldSrv, CustomFieldValueSrv, LogSrv, OrganisationSrv, SearchSrv, TaskSrv, TheHiveOps, TheHiveOpsNoDeps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 class LogCtrl(
@@ -68,6 +68,7 @@ class LogCtrl(
 
 class PublicLog(
     logSrv: LogSrv,
+    searchSrv: SearchSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv
@@ -99,6 +100,15 @@ class PublicLog(
   override val outputQuery: Query = Query.output[RichLog, Traversal.V[Log]](_.richLog)
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Log]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Log", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("message", UMapping.string)(_.field.updatable)
       .property("startDate", UMapping.date)(_.rename("date").readonly)
       .property("status", UMapping.string)(

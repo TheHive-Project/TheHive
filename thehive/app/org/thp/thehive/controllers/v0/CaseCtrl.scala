@@ -178,6 +178,7 @@ class PublicCase(
     observableSrv: ObservableSrv,
     taskSrv: TaskSrv,
     userSrv: UserSrv,
+    searchSrv: SearchSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
     val db: Database
@@ -238,6 +239,15 @@ class PublicCase(
   )
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Case]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Case", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("caseId", UMapping.int)(_.rename("number").readonly)
       .property("title", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string)(_.field.updatable)

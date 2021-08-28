@@ -1,14 +1,14 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.controllers.{Entrypoint, FString, FieldsParser}
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, InvalidFormatAttributeError}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputDashboard
 import org.thp.thehive.models.{Dashboard, RichDashboard}
-import org.thp.thehive.services.{DashboardSrv, OrganisationSrv, TheHiveOpsNoDeps, UserSrv}
+import org.thp.thehive.services._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -78,7 +78,8 @@ class DashboardCtrl(
 class PublicDashboard(
     dashboardSrv: DashboardSrv,
     organisationSrv: OrganisationSrv,
-    userSrv: UserSrv
+    userSrv: UserSrv,
+    searchSrv: SearchSrv
 ) extends PublicData
     with TheHiveOpsNoDeps {
   val entityName: String = "dashboard"
@@ -106,6 +107,15 @@ class PublicDashboard(
   )
   override val outputQuery: Query = Query.outputWithContext[RichDashboard, Traversal.V[Dashboard]](_.richDashboard(_))
   val publicProperties: PublicProperties = PublicPropertyListBuilder[Dashboard]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("Dashboard", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("title", UMapping.string)(_.field.updatable)
     .property("description", UMapping.string)(_.field.updatable)
     .property("definition", UMapping.string)(_.field.updatable)

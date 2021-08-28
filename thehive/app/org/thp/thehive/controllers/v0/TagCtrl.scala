@@ -10,7 +10,7 @@ import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.models.Tag
-import org.thp.thehive.services.{OrganisationSrv, TagSrv, TheHiveOpsNoDeps}
+import org.thp.thehive.services.{OrganisationSrv, SearchSrv, TagSrv, TheHiveOpsNoDeps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 class TagCtrl(
@@ -34,7 +34,7 @@ class TagCtrl(
 
 case class TagHint(freeTag: Option[String], namespace: Option[String], predicate: Option[String], value: Option[String], limit: Option[Long])
 
-class PublicTag(tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends PublicData with TheHiveOpsNoDeps {
+class PublicTag(tagSrv: TagSrv, organisationSrv: OrganisationSrv, searchSrv: SearchSrv) extends PublicData with TheHiveOpsNoDeps {
   override val entityName: String = "tag"
   override val initialQuery: Query =
     Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))
@@ -67,6 +67,15 @@ class PublicTag(tagSrv: TagSrv, organisationSrv: OrganisationSrv) extends Public
     Query.output[String, Traversal[String, Vertex, Converter[String, Vertex]]]
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Tag]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("Tag", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("namespace", UMapping.string)(_.field.readonly)
     .property("predicate", UMapping.string)(_.field.readonly)
     .property("value", UMapping.string.optional)(_.field.readonly)

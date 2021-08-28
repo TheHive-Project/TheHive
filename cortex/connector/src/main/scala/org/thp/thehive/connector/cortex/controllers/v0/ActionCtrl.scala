@@ -3,7 +3,7 @@ package org.thp.thehive.connector.cortex.controllers.v0
 import org.thp.scalligraph.{EntityIdOrName, InternalError}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
@@ -74,6 +74,7 @@ class ActionCtrl(
 
 class PublicAction(
     actionSrv: ActionSrv,
+    searchSrv: SearchSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
@@ -110,6 +111,15 @@ class PublicAction(
   override val extraQueries: Seq[ParamQuery[_]] = Seq(actionsQuery)
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Action]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Action", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("responderId", UMapping.string)(_.rename("workerId").readonly)
       .property("objectType", UMapping.string)(_.select(_.context.domainMap(o => fromObjectType(o._label))).readonly)
       .property("status", UMapping.string)(_.field.readonly)

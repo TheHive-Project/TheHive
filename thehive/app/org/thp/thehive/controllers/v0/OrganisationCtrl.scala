@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, EntityName, RichSeq}
@@ -129,7 +129,7 @@ class OrganisationCtrl(
       }
 }
 
-class PublicOrganisation(organisationSrv: OrganisationSrv) extends PublicData with TheHiveOpsNoDeps {
+class PublicOrganisation(organisationSrv: OrganisationSrv, searchSrv: SearchSrv) extends PublicData with TheHiveOpsNoDeps {
   override val entityName: String = "organisation"
 
   override val initialQuery: Query =
@@ -149,6 +149,15 @@ class PublicOrganisation(organisationSrv: OrganisationSrv) extends PublicData wi
     Query[Traversal.V[Organisation], Traversal.V[CaseTemplate]]("caseTemplates", (organisationSteps, _) => organisationSteps.caseTemplates)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Organisation]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("Organisation", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("name", UMapping.string)(_.field.updatable)
     .property("description", UMapping.string)(_.field.updatable)
     .property("taskRule", UMapping.string)(_.field.updatable)

@@ -300,7 +300,7 @@ lazy val thehiveShell = (project in file("shell"))
     javaOptions := Seq("-XX:+UseG1GC", "-Xmx4G"),
     run / baseDirectory := (ThisBuild / baseDirectory).value,
     run / connectInput := true,
-    run / fork := true,
+    run / fork := false,
     libraryDependencies ++= Seq(
       ammonite,
       macWireMacros,

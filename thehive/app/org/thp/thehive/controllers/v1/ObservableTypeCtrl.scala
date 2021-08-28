@@ -2,19 +2,20 @@ package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputObservableType
 import org.thp.thehive.models.{ObservableType, Permissions}
-import org.thp.thehive.services.{ObservableTypeSrv, TheHiveOpsNoDeps}
+import org.thp.thehive.services.{ObservableTypeSrv, SearchSrv, TheHiveOpsNoDeps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 class ObservableTypeCtrl(
     val entrypoint: Entrypoint,
     db: Database,
-    observableTypeSrv: ObservableTypeSrv
+    observableTypeSrv: ObservableTypeSrv,
+    searchSrv: SearchSrv
 ) extends QueryableCtrl
     with TheHiveOpsNoDeps {
   override val entityName: String = "ObservableType"
@@ -31,6 +32,15 @@ class ObservableTypeCtrl(
     (idOrName, graph, _) => observableTypeSrv.get(idOrName)(graph)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[ObservableType]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("ObservableType", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("name", UMapping.string)(_.field.readonly)
     .property("isAttachment", UMapping.boolean)(_.field.readonly)
     .build

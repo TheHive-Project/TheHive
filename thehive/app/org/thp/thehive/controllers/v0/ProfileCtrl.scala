@@ -1,14 +1,14 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{AuthorizationError, EntityIdOrName}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputProfile
 import org.thp.thehive.models.{Permissions, Profile}
-import org.thp.thehive.services.{ProfileSrv, TheHiveOpsNoDeps}
+import org.thp.thehive.services.{ProfileSrv, SearchSrv, TheHiveOpsNoDeps}
 import play.api.mvc.{Action, AnyContent, Results}
 
 import scala.util.Failure
@@ -66,7 +66,7 @@ class ProfileCtrl(
       }
 }
 
-class PublicProfile(profileSrv: ProfileSrv) extends PublicData with TheHiveOpsNoDeps {
+class PublicProfile(profileSrv: ProfileSrv, searchSrv: SearchSrv) extends PublicData with TheHiveOpsNoDeps {
   val entityName: String = "profile"
 
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Profile]](
@@ -82,6 +82,15 @@ class PublicProfile(profileSrv: ProfileSrv) extends PublicData with TheHiveOpsNo
   )
   override val outputQuery: Query = Query.output[Profile with Entity]
   val publicProperties: PublicProperties = PublicPropertyListBuilder[Profile]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("Profile", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("name", UMapping.string)(_.field.updatable)
     .property("permissions", UMapping.string.set)(_.field.updatable)
     .build

@@ -372,6 +372,7 @@ class AlertCtrl(
 class PublicAlert(
     alertSrv: AlertSrv,
     observableSrv: ObservableSrv,
+    searchSrv: SearchSrv,
     val organisationSrv: OrganisationSrv,
     val customFieldSrv: CustomFieldSrv,
     val customFieldValueSrv: CustomFieldValueSrv
@@ -444,6 +445,15 @@ class PublicAlert(
 
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Alert]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Alert", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("type", UMapping.string)(_.field.updatable)
       .property("source", UMapping.string)(_.field.updatable)
       .property("sourceRef", UMapping.string)(_.field.updatable)

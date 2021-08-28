@@ -6,7 +6,7 @@ import akka.util.Timeout
 import com.softwaremill.tagging.@@
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.Entrypoint
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -64,6 +64,7 @@ class AuditCtrl(
 
 class PublicAudit(
     auditSrv: AuditSrv,
+    searchSrv: SearchSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
@@ -89,6 +90,15 @@ class PublicAudit(
 
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Audit]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Audit", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("operation", UMapping.string)(_.rename("action").readonly)
       .property("details", UMapping.string)(_.field.readonly)
       .property("objectType", UMapping.string.optional)(_.field.readonly)

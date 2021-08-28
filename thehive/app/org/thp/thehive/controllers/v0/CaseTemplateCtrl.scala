@@ -85,6 +85,7 @@ class CaseTemplateCtrl(
 
 class PublicCaseTemplate(
     caseTemplateSrv: CaseTemplateSrv,
+    searchSrv: SearchSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv
@@ -108,6 +109,15 @@ class PublicCaseTemplate(
     Query[Traversal.V[CaseTemplate], Traversal.V[Task]]("tasks", (caseTemplateSteps, _) => caseTemplateSteps.tasks)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[CaseTemplate]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("CaseTemplate", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("name", UMapping.string)(_.field.updatable)
     .property("displayName", UMapping.string)(_.field.updatable)
     .property("titlePrefix", UMapping.string.optional)(_.field.updatable)

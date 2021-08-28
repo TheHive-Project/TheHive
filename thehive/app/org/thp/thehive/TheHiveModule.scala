@@ -73,6 +73,7 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   lazy val streamSrv: StreamSrv                     = wire[StreamSrv]
   lazy val patternSrv: PatternSrv                   = wire[PatternSrv]
   lazy val procedureSrv: ProcedureSrv               = wire[ProcedureSrv]
+  lazy val searchSrv: SearchSrv                     = wire[SearchSrv]
 
   lazy val connectors: LazyMutableSeq[Connector] = LazyMutableSeq[Connector]
 

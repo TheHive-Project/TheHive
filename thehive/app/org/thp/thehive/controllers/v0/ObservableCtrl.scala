@@ -353,6 +353,7 @@ class ObservableCtrl(
 class PublicObservable(
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
+    searchSrv: SearchSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv
@@ -403,6 +404,15 @@ class PublicObservable(
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Observable]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("Observable", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("status", UMapping.string)(
       _.select(_.constant("Ok"))
         .filter[String](IndexType.standard) {

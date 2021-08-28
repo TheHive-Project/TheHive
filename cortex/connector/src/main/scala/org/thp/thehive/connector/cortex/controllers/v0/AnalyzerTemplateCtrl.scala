@@ -2,7 +2,7 @@ package org.thp.thehive.connector.cortex.controllers.v0
 
 import org.thp.scalligraph.{EntityIdOrName, NotFoundError}
 import org.thp.scalligraph.controllers.{Entrypoint, FFile, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal, TraversalOps}
 import org.thp.thehive.connector.cortex.controllers.v0.Conversion._
@@ -12,7 +12,7 @@ import org.thp.thehive.connector.cortex.services.{AnalyzerTemplateSrv, CortexOps
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.controllers.v0.{OutputParam, PublicData, QueryCtrl}
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.TheHiveOpsNoDeps
+import org.thp.thehive.services.{SearchSrv, TheHiveOpsNoDeps}
 import play.api.libs.json.{JsFalse, JsObject, JsTrue}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -93,7 +93,7 @@ class AnalyzerTemplateCtrl(
       }
 }
 
-class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv) extends PublicData with TraversalOps {
+class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv, searchSrv: SearchSrv) extends PublicData with TraversalOps {
   override val entityName: String = "analyzerTemplate"
   override val initialQuery: Query =
     Query.init[Traversal.V[AnalyzerTemplate]]("listAnalyzerTemplate", (graph, _) => analyzerTemplateSrv.startTraversal(graph))
@@ -108,6 +108,15 @@ class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv) extends P
     )
   override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[AnalyzerTemplate]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("AnalyzerTemplate", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("analyzerId", UMapping.string)(_.rename("workerId").readonly)
     .property("content", UMapping.string)(_.field.updatable)
     .build

@@ -2,13 +2,13 @@ package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
-import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal, TraversalOps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.InputCustomField
 import org.thp.thehive.models.{CustomField, Permissions}
-import org.thp.thehive.services.CustomFieldSrv
+import org.thp.thehive.services.{CustomFieldSrv, SearchSrv}
 import play.api.libs.json.{JsNumber, JsObject}
 import play.api.mvc.{Action, AnyContent, Results}
 
@@ -84,7 +84,7 @@ class CustomFieldCtrl(
       }
 }
 
-class PublicCustomField(customFieldSrv: CustomFieldSrv) extends PublicData with TraversalOps {
+class PublicCustomField(customFieldSrv: CustomFieldSrv, searchSrv: SearchSrv) extends PublicData with TraversalOps {
   override val entityName: String  = "CustomField"
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
   override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
@@ -101,6 +101,15 @@ class PublicCustomField(customFieldSrv: CustomFieldSrv) extends PublicData with 
   )
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[CustomField]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("CustomField", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("name", UMapping.string)(_.rename("displayName").updatable)
       .property("description", UMapping.string)(_.field.updatable)
       .property("reference", UMapping.string)(_.rename("name").readonly)

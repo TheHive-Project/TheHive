@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.controllers.{FPathElem, FString}
 import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
+import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -22,6 +23,7 @@ class Properties(
     caseTemplateSrv: CaseTemplateSrv,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
+    searchSrv: SearchSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldValueSrv: CustomFieldValueSrv,
@@ -48,6 +50,15 @@ class Properties(
 
   lazy val alert: PublicProperties =
     PublicPropertyListBuilder[Alert]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Alert", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("type", UMapping.string)(_.field.updatable)
       .property("source", UMapping.string)(_.field.updatable)
       .property("sourceRef", UMapping.string)(_.field.updatable)
@@ -134,6 +145,15 @@ class Properties(
 
   lazy val audit: PublicProperties =
     PublicPropertyListBuilder[Audit]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Audit", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("operation", UMapping.string)(_.rename("action").readonly)
       .property("details", UMapping.string)(_.field.readonly)
       .property("objectType", UMapping.string.optional)(_.field.readonly)
@@ -146,6 +166,15 @@ class Properties(
 
   lazy val `case`: PublicProperties =
     PublicPropertyListBuilder[Case]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Case", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("title", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string)(_.field.updatable)
       .property("severity", UMapping.int)(_.field.updatable)
@@ -287,6 +316,15 @@ class Properties(
 
   lazy val caseTemplate: PublicProperties =
     PublicPropertyListBuilder[CaseTemplate]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("CaseTemplate", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("name", UMapping.string)(_.field.updatable)
       .property("displayName", UMapping.string)(_.field.updatable)
       .property("titlePrefix", UMapping.string.optional)(_.field.updatable)
@@ -350,6 +388,15 @@ class Properties(
 
   lazy val organisation: PublicProperties =
     PublicPropertyListBuilder[Organisation]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Organisation", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("name", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string)(_.field.updatable)
       .property("taskRule", UMapping.string)(_.field.updatable)
@@ -358,6 +405,15 @@ class Properties(
 
   lazy val pattern: PublicProperties =
     PublicPropertyListBuilder[Pattern]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Pattern", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("patternId", UMapping.string)(_.field.readonly)
       .property("name", UMapping.string)(_.field.readonly)
       .property("description", UMapping.string.optional)(_.field.updatable)
@@ -380,6 +436,15 @@ class Properties(
 
   lazy val procedure: PublicProperties =
     PublicPropertyListBuilder[Procedure]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Procedure", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("description", UMapping.string)(_.field.updatable)
       .property("occurDate", UMapping.date)(_.field.updatable)
       .property("tactic", UMapping.string)(_.field.updatable)
@@ -388,12 +453,30 @@ class Properties(
 
   lazy val profile: PublicProperties =
     PublicPropertyListBuilder[Profile]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Profile", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("name", UMapping.string)(_.field.updatable)
       .property("permissions", UMapping.string.set)(_.field.updatable)
       .build
 
   lazy val share: PublicProperties =
     PublicPropertyListBuilder[Share]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Share", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("caseId", UMapping.entityId)(_.select(_.`case`._id).readonly)
       .property("caseNumber", UMapping.int)(_.select(_.`case`.value(_.number)).readonly)
       .property("organisationId", UMapping.entityId)(_.select(_.organisation._id).readonly)
@@ -405,6 +488,15 @@ class Properties(
 
   lazy val task: PublicProperties =
     PublicPropertyListBuilder[Task]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Task", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("title", UMapping.string)(_.field.updatable)
       .property("description", UMapping.string.optional)(_.field.updatable)
       .property("status", UMapping.string)(_.field.updatable)
@@ -436,6 +528,15 @@ class Properties(
 
   lazy val log: PublicProperties =
     PublicPropertyListBuilder[Log]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Log", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("message", UMapping.string)(_.field.updatable)
       .property("date", UMapping.date)(_.field.readonly)
       .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
@@ -447,6 +548,15 @@ class Properties(
 
   lazy val user: PublicProperties =
     PublicPropertyListBuilder[User]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("User", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("login", UMapping.string)(_.field.readonly)
       .property("name", UMapping.string)(_.field.readonly)
       .property("locked", UMapping.boolean)(_.field.readonly)
@@ -455,6 +565,15 @@ class Properties(
 
   lazy val observable: PublicProperties =
     PublicPropertyListBuilder[Observable]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Observable", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("startDate", UMapping.date)(_.rename("_createdAt").readonly)
       .property("ioc", UMapping.boolean)(_.field.updatable)
       .property("sighted", UMapping.boolean)(_.field.updatable)
@@ -489,6 +608,15 @@ class Properties(
 
   lazy val taxonomy: PublicProperties =
     PublicPropertyListBuilder[Taxonomy]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Taxonomy", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("namespace", UMapping.string)(_.field.readonly)
       .property("description", UMapping.string)(_.field.readonly)
       .property("version", UMapping.int)(_.field.readonly)
@@ -497,6 +625,15 @@ class Properties(
 
   lazy val tag: PublicProperties =
     PublicPropertyListBuilder[Tag]
+      .property("keyword", UMapping.string)(
+        _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+          .filter[String](IndexType.fulltext) {
+            case (_, t, _, Right(p))   => searchSrv("Tag", p.getValue)(t)
+            case (_, t, _, Left(true)) => t
+            case (_, t, _, _)          => t.empty
+          }
+          .readonly
+      )
       .property("namespace", UMapping.string)(_.field.readonly)
       .property("predicate", UMapping.string)(_.field.updatable)
       .property("value", UMapping.string.optional)(_.field.readonly)
@@ -514,6 +651,15 @@ class Properties(
       .build
 
   lazy val dashboard: PublicProperties = PublicPropertyListBuilder[Dashboard]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("Dashboard", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("title", UMapping.string)(_.field.updatable)
     .property("description", UMapping.string)(_.field.updatable)
     .property("definition", UMapping.string)(_.field.updatable)

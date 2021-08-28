@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.scalligraph.{EntityIdOrName, RichOptionTry}
@@ -92,6 +92,7 @@ class TaskCtrl(
 class PublicTask(
     taskSrv: TaskSrv,
     userSrv: UserSrv,
+    searchSrv: SearchSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv
@@ -111,9 +112,7 @@ class PublicTask(
         taskSteps.richPage(from, to, withTotal = true)(_.richTask.domainMap(_ -> (None: Option[RichCase])))
       case (OutputParam(from, to, _, _), taskSteps, authContext) =>
         taskSteps.richPage(from, to, withTotal = true)(
-          _.richTaskWithCustomRenderer(
-            _.`case`.richCase(authContext).domainMap(c => Some(c): Option[RichCase])
-          )
+          _.richTaskWithCustomRenderer(_.`case`.richCase(authContext).option)
         )
     }
   )
@@ -148,6 +147,15 @@ class PublicTask(
     Query[Traversal.V[Task], Traversal.V[Organisation]]("organisations", (taskSteps, authContext) => taskSteps.organisations.visible(authContext))
   )
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Task]
+    .property("keyword", UMapping.string)(
+      _.select(_.empty.asInstanceOf[Traversal[String, _, _]])
+        .filter[String](IndexType.fulltext) {
+          case (_, t, _, Right(p))   => searchSrv("Task", p.getValue)(t)
+          case (_, t, _, Left(true)) => t
+          case (_, t, _, _)          => t.empty
+        }
+        .readonly
+    )
     .property("title", UMapping.string)(_.field.updatable)
     .property("description", UMapping.string.optional)(_.field.updatable)
     .property("status", UMapping.enum[TaskStatus.type])(_.field.custom { (_, value, vertex, graph, authContext) =>
