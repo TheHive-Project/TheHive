@@ -190,7 +190,6 @@ class Router(
 
     case POST(p"/chart/time")  => chartCtrl.timeChart
     case POST(p"/search")      => searchCtrl.search
-    case POST(p"/search/case") => searchCtrl.searchCase
     case GET(p"/monitor/disk") => monitoringCtrl.diskUsage
   }
 }
