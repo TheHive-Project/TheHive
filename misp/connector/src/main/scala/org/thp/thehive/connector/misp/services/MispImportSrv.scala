@@ -288,7 +288,7 @@ class MispImportSrv(
     val deletedAttributes = client
       .searchAttributes(event.id, lastSynchro, deletedOnly = true)
       .mapConcat(attributeToObservable)
-      .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])])
+      .runWith(Sink.queue[(Observable, Either[String, (String, String, Source[ByteString, _])])]())
 
     QueueIterator(deletedAttributes)
       .flatMap {

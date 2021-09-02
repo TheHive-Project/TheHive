@@ -211,12 +211,9 @@ class CaseSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
     }
 
     "get correct next case number" in testApp { app =>
-      import app._
       import app.thehiveModule._
 
-      database.roTransaction { implicit graph =>
-        caseSrv.nextCaseNumber shouldEqual 36
-      }
+      caseSrv.nextCaseNumber shouldEqual 36
     }
 
     "close a case properly" in testApp { app =>

@@ -180,6 +180,12 @@ class AdminCtrl(
             case (_: RemoveProperty, _) =>
               filter.contains("RemoveProperty") || filter
                 .contains("schema") || (filters.contains("all") && !filter.contains("!schema") && !filter.contains("!RemoveProperty"))
+            case (_: RemoveVertexLabel, _) =>
+              filter.contains("RemoveVertexLabel") || filter
+                .contains("schema") || (filters.contains("all") && !filter.contains("!schema") && !filter.contains("!RemoveVertexLabel"))
+            case (_: RemoveEdgeLabel, _) =>
+              filter.contains("RemoveEdgeLabel") || filter
+                .contains("schema") || (filters.contains("all") && !filter.contains("!schema") && !filter.contains("!RemoveEdgeLabel"))
             case (_: UpdateGraphVertices, _) =>
               filter.contains("UpdateGraph") || filter.contains("UpdateGraphVertices") || filter
                 .contains("data") || (filters.contains("all") && !filter.contains("!data") && !filter.contains("!UpdateGraph"))
@@ -189,6 +195,9 @@ class AdminCtrl(
             case (_: AddIndex, _) =>
               filter.contains("AddIndex") || filter
                 .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!AddIndex"))
+            case (_: AddIndexedProperty, _) =>
+              filter.contains("AddIndexedProperty") || filter
+                .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!AddIndexedProperty"))
             case (RebuildIndexes, _) =>
               filter.contains("RebuildIndexes") || filter
                 .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!RebuildIndexes"))

@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.{actorRef2Scala, Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
+import akka.actor.{Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.serialization.Serializer
 import akka.util.Timeout

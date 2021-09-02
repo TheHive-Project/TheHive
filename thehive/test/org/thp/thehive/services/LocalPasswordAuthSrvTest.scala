@@ -31,36 +31,36 @@ class LocalPasswordAuthSrvTest extends PlaySpecification with TestAppBuilder {
       import com.softwaremill.macwire._
 
       val localPasswordAuthProvider = wire[LocalPasswordAuthProvider]
-      implicit val authCtx = LocalUserSrv.getSystemAuthContext
+      implicit val authCtx          = LocalUserSrv.getSystemAuthContext
 
       {
-        val policyConfig = Configuration("passwordPolicy.enabled" -> true, "passwordPolicy.minLength" -> 12)
+        val policyConfig         = Configuration("passwordPolicy.enabled" -> true, "passwordPolicy.minLength" -> 12)
         val localPasswordAuthSrv = localPasswordAuthProvider.apply(policyConfig withFallback configuration).get.asInstanceOf[LocalPasswordAuthSrv]
 
         val result = localPasswordAuthSrv.setPassword("foo", "foo")
-        result must beFailedTry.withThrowable[BadRequestError]
+        result                       must beFailedTry.withThrowable[BadRequestError]
         result.failed.get.getMessage must contain("Password must be 12 or more characters in length")
       }
 
       {
-        val policyConfig = Configuration("passwordPolicy.enabled" -> true, "passwordPolicy.minUpperCase" -> 1)
+        val policyConfig         = Configuration("passwordPolicy.enabled" -> true, "passwordPolicy.minUpperCase" -> 1)
         val localPasswordAuthSrv = localPasswordAuthProvider.apply(policyConfig withFallback configuration).get.asInstanceOf[LocalPasswordAuthSrv]
 
         val result = localPasswordAuthSrv.setPassword("foo", "foo")
-        result must beFailedTry.withThrowable[BadRequestError]
+        result                       must beFailedTry.withThrowable[BadRequestError]
         result.failed.get.getMessage must contain("Password must contain 1 or more uppercase characters")
       }
 
       {
         val policyConfig = Configuration(
-          "passwordPolicy.enabled" -> true,
-          "passwordPolicy.minSpecial" -> 1,
+          "passwordPolicy.enabled"               -> true,
+          "passwordPolicy.minSpecial"            -> 1,
           "passwordPolicy.cannotContainUsername" -> true
         )
         val localPasswordAuthSrv = localPasswordAuthProvider.apply(policyConfig withFallback configuration).get.asInstanceOf[LocalPasswordAuthSrv]
 
         val result = localPasswordAuthSrv.setPassword("foo", "foo123")
-        result must beFailedTry.withThrowable[BadRequestError]
+        result                       must beFailedTry.withThrowable[BadRequestError]
         result.failed.get.getMessage must contain("Password must contain 1 or more special characters")
         result.failed.get.getMessage must contain("Password contains the user id 'foo'")
       }
