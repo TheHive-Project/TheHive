@@ -58,7 +58,7 @@ class DashboardCtrl(
           .flatMap {
             case richDashboard if dashboard.status.value == "Shared" =>
               dashboardSrv
-                .share(richDashboard.dashboard, request.organisation, writable = false)
+                .share(richDashboard.dashboard, request.organisation, writable = true)
                 .flatMap(_ => dashboardSrv.get(richDashboard.dashboard).richDashboard.getOrFail("Dashboard"))
             case richDashboard => Success(richDashboard)
           }
