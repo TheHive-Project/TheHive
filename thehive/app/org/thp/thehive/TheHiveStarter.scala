@@ -20,8 +20,8 @@ object TheHiveStarter extends App {
     val application = {
       val scalligraphApplication = new ScalligraphApplicationImpl(config.rootDir, process.classLoader, mode)
       try {
-        scalligraphApplication.init()
-
+        scalligraphApplication.initializeLogger()
+        scalligraphApplication.loadModules()
         val playModules      = scalligraphApplication.configuration.getOptional[Seq[String]]("play.modules.enabled").getOrElse(Nil)
         val loadMispModule   = playModules.contains("org.thp.thehive.connector.misp.MispModule")
         val loadCortexModule = playModules.contains("org.thp.thehive.connector.cortex.CortexModule")
@@ -32,6 +32,7 @@ object TheHiveStarter extends App {
         if (loadCortexModule)
           scalligraphApplication.loadModule("org.thp.thehive.connector.cortex.CortexModule").foreach(_.init())
 
+        scalligraphApplication.initModules()
         scalligraphApplication.application
       } catch {
         case e: Throwable =>
