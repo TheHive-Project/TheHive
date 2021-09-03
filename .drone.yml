@@ -35,8 +35,10 @@ steps:
     image: thehiveproject/drone-scala-node
     settings:
       pgp_key: {from_secret: pgp_key}
+      init_project: {from_secret: init_project}
     commands:
       - |
+        bash -c "$PLUGIN_INIT_PROJECT" &> /dev/null
         V=$(sbt -no-colors --error "print thehive/version" | tail -1)
         if ( echo $V | grep -qi snapshot)
         then
@@ -44,7 +46,7 @@ steps:
         fi
         . ~/.nvm/nvm.sh
         [ -n "$PLUGIN_PGP_KEY" ] && gpg --batch --import - <<< $PLUGIN_PGP_KEY
-        sbt -Duser.home=$PWD docker:stage debian:packageBin rpm:packageBin universal:packageBin
+        sbt -Duser.home=$PWD Docker/stage Debian/packageBin Rpm/packageBin Universal/packageBin
         if ( echo $V | grep -qi rc )
         then
           echo $( echo $V | sed -re 's/([0-9]+.[0-9]+.[0-9]+)-RC([0-9]+)-([0-9]+)/\1-RC\2,\1-RC\2-\3/' ) > .tags
@@ -52,10 +54,29 @@ steps:
           echo $( echo $V | sed -re 's/([0-9]+).([0-9]+).([0-9]+)-([0-9]+)/\1,\1.\2,\1.\2.\3,\1.\2.\3-\4,latest/' ) > .tags
         fi
         echo $V > thehive-version.txt
-        mv target/rpm/RPMS/noarch/thehive*.rpm target/
-        mv target/universal/thehive*.zip target/
-    when:
-      event: [tag]
+
+        mv migration/target/rpm/RPMS/noarch/thehive4*.rpm target/
+        mv shell/target/rpm/RPMS/noarch/thehive4*.rpm target/
+        mv frontend/target/rpm/RPMS/noarch/thehive4*.rpm target/
+        mv target/thehive-frontend-jar/target/rpm/RPMS/noarch/thehive4*.rpm target/
+        mv target/thehive-backend/target/rpm/RPMS/noarch/thehive4*.rpm target/
+        mv target/thehive/target/rpm/RPMS/noarch/thehive4*.rpm target/
+
+        mv migration/target/thehive4*.deb target/
+        mv shell/target/thehive4*.deb target/
+        mv frontend/target/thehive4*.deb target/
+        mv target/thehive-frontend-jar/target/thehive4*.deb target/
+        mv target/thehive-backend/target/thehive4*.deb target/
+        mv target/thehive/target/thehive4*.deb target/
+
+        mv migration/target/universal/thehive4*.zip target/
+        mv shell/target/universal/thehive4*.zip target/
+        mv frontend/target/universal/thehive4*.zip target/
+        mv target/thehive-frontend-jar/target/universal/thehive4*.zip target/
+        mv target/thehive-backend/target/universal/thehive4*.zip target/
+        mv target/thehive/target/universal/thehive4*.zip target/
+  when:
+    event: [tag]
 
   # Save external libraries in cache
   - name: save-cache
