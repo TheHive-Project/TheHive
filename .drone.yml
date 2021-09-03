@@ -75,8 +75,8 @@ steps:
         mv target/thehive-frontend-jar/target/universal/thehive4*.zip target/
         mv target/thehive-backend/target/universal/thehive4*.zip target/
         mv target/thehive/target/universal/thehive4*.zip target/
-  when:
-    event: [tag]
+    when:
+      event: [tag]
 
   # Save external libraries in cache
   - name: save-cache
