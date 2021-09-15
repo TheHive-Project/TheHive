@@ -1,0 +1,6 @@
+projectKey=scalabig
+serverUrl=http://172.20.52.59
+serverVersion=8.9.2.46101
+dashboardUrl=http://172.20.52.59/dashboard?id=scalabig
+ceTaskId=AXvpjkWhylHxxu2cVuef
+ceTaskUrl=http://172.20.52.59/api/ce/task?id=AXvpjkWhylHxxu2cVuef

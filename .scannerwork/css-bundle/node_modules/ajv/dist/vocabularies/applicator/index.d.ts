@@ -1,0 +1,13 @@
+import type { ErrorNoParams, Vocabulary } from "../../types";
+import { AdditionalItemsError } from "./additionalItems";
+import { ContainsError } from "./contains";
+import { DependenciesError } from "./dependencies";
+import { PropertyNamesError } from "./propertyNames";
+import { AdditionalPropertiesError } from "./additionalProperties";
+import { NotKeywordError } from "./not";
+import { AnyOfError } from "./anyOf";
+import { OneOfError } from "./oneOf";
+import { IfKeywordError } from "./if";
+declare const applicator: Vocabulary;
+export default applicator;
+export declare type ApplicatorKeywordError = ErrorNoParams<"false schema"> | AdditionalItemsError | ContainsError | AdditionalPropertiesError | DependenciesError | IfKeywordError | AnyOfError | OneOfError | NotKeywordError | PropertyNamesError;
