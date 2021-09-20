@@ -10,9 +10,10 @@ import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import play.api.libs.functional.syntax._
+import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
-
 import java.util.{Base64, Date}
+import scala.collection.mutable
 
 case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
@@ -101,6 +102,40 @@ trait Conversion {
     )
   }
 
+  def getTaxonomies(input: Map[String, JsValue]): List[ReportTag] = {
+    val taxonomies = mutable.MutableList[ReportTag]()
+    input.foreach{ case (origin: String, value: JsValue) =>
+      (jsValueToJsLookup(value) \ "taxonomies").asOpt[List[Map[String, JsValue]]].getOrElse(List.empty).foreach(taxonomy => {
+        taxonomies += ReportTag(
+          origin,
+          taxonomy.get("level") match {
+            case Some(x) => x.asOpt[String].getOrElse("") match {
+              case "malicious" => ReportTagLevel.malicious
+              case "suspicious" => ReportTagLevel.suspicious
+              case "safe" => ReportTagLevel.safe
+              case "info" => ReportTagLevel.info
+            }
+            case None    => throw new Exception
+          },
+          taxonomy.get("namespace") match {
+            case Some(x) => x.asOpt[String].getOrElse("")
+            case None    => throw new Exception
+          },
+          taxonomy.get("predicate") match {
+            case Some(x) => x.asOpt[String].getOrElse("")
+            case None    => throw new Exception
+          },
+          taxonomy.get("value") match {
+            case Some(x) => x
+            case None    => throw new Exception
+          }
+        )
+      })
+    }
+
+    return taxonomies.toList
+  }
+
   implicit val observableReads: Reads[InputObservable] = Reads[InputObservable] { json =>
     for {
       metaData <- json.validate[MetaData]
@@ -109,7 +144,9 @@ trait Conversion {
       ioc      <- (json \ "ioc").validate[Boolean]
       sighted  <- (json \ "sighted").validate[Boolean]
       dataType <- (json \ "dataType").validate[String]
+
       tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      taxonomiesList = getTaxonomies(Json.parse((json \ "reports").asOpt[String].getOrElse("{}")).as[Map[String, JsValue]])
       dataOrAttachment <-
         (json \ "data")
           .validate[String]
@@ -131,7 +168,8 @@ trait Conversion {
         tags = tags.toSeq
       ),
       Set(mainOrganisation),
-      dataOrAttachment
+      dataOrAttachment,
+      taxonomiesList
     )
   }
 
@@ -258,7 +296,8 @@ trait Conversion {
           tags = tags.toSeq
         ),
         Set(mainOrganisation),
-        dataOrAttachment
+        dataOrAttachment,
+        List()
       )
 
     }
@@ -429,8 +468,8 @@ trait Conversion {
     for {
       metaData         <- json.validate[MetaData]
       workerId         <- (json \ "analyzerId").validate[String]
-      workerName       <- (json \ "analyzerId").validate[String]
-      workerDefinition <- (json \ "analyzerId").validate[String]
+      workerName       <- (json \ "analyzerName").validate[String]
+      workerDefinition <- (json \ "analyzerDefinition").validate[String]
       status           <- (json \ "status").validate[JobStatus.Value]
       startDate        <- (json \ "createdAt").validate[Date]
       endDate          <- (json \ "endDate").validate[Date]
@@ -484,7 +523,8 @@ trait Conversion {
           tags = tags.toSeq
         ),
         Set(mainOrganisation),
-        dataOrAttachment
+        dataOrAttachment,
+        List()
       )
     }
 
