@@ -7,5 +7,5 @@ case class InputObservable(
     observable: Observable,
     organisations: Set[String],
     dataOrAttachment: Either[String, InputAttachment],
-    reportTags: List[ReportTag]
+    reportTags: Seq[ReportTag]
 )

@@ -195,7 +195,7 @@ class JobSrv @Inject() (
         val tags = cortexJob.report.fold[Seq[ReportTag]](Nil)(_.summary.map(_.toAnalyzerTag(job.workerName)))
         for {
           observable <- get(job).observable.getOrFail("Observable")
-          _          <- reportTagSrv.updateTags(observable, job.workerName, tags)
+          _          <- reportTagSrv.updateTags(observable, tags)
         } yield ()
       }
     else Success(())

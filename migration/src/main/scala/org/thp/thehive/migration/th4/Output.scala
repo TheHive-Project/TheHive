@@ -698,7 +698,7 @@ class Output @Inject() (
       for {
         organisations  <- inputObservable.organisations.toTry(getOrganisation)
         richObservable <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
-        _              <- reportTagSrv.updateTags(richObservable, "not_existing_origin", inputObservable.reportTags)
+        _              <- reportTagSrv.updateTags(richObservable, inputObservable.reportTags)
         case0          <- getCase(caseId)
         _              <- organisations.toTry(o => shareSrv.shareObservable(RichObservable(richObservable, None, None, Nil), case0, o._id))
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)

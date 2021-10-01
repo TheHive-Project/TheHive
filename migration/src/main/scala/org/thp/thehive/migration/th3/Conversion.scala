@@ -12,8 +12,9 @@ import org.thp.thehive.models._
 import play.api.libs.functional.syntax._
 import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
+
 import java.util.{Base64, Date}
-import scala.collection.mutable
+import scala.util.Try
 
 case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
@@ -102,38 +103,22 @@ trait Conversion {
     )
   }
 
-  def getTaxonomies(input: Map[String, JsValue]): List[ReportTag] = {
-    val taxonomies = mutable.MutableList[ReportTag]()
-    input.foreach{ case (origin: String, value: JsValue) =>
-      (jsValueToJsLookup(value) \ "taxonomies").asOpt[List[Map[String, JsValue]]].getOrElse(List.empty).foreach(taxonomy => {
-        taxonomies += ReportTag(
-          origin,
-          taxonomy.get("level") match {
-            case Some(x) => x.asOpt[String].getOrElse("") match {
-              case "malicious" => ReportTagLevel.malicious
-              case "suspicious" => ReportTagLevel.suspicious
-              case "safe" => ReportTagLevel.safe
-              case "info" => ReportTagLevel.info
-            }
-            case None    => throw new Exception
-          },
-          taxonomy.get("namespace") match {
-            case Some(x) => x.asOpt[String].getOrElse("")
-            case None    => throw new Exception
-          },
-          taxonomy.get("predicate") match {
-            case Some(x) => x.asOpt[String].getOrElse("")
-            case None    => throw new Exception
-          },
-          taxonomy.get("value") match {
-            case Some(x) => x
-            case None    => throw new Exception
+  implicit val taxonomiesReads: Reads[Seq[ReportTag]] = Reads.JsObjectReads.map { input =>
+    input.fields.flatMap {
+      case (origin, value) =>
+        (value \ "taxonomies")
+          .asOpt[Seq[JsValue]]
+          .getOrElse(Nil)
+          .flatMap { taxonomy =>
+            for {
+              namespace <- (taxonomy \ "namespace").asOpt[String]
+              predicate <- (taxonomy \ "predicate").asOpt[String]
+              value = (taxonomy \ "value").getOrElse(JsNull)
+              levelName <- (taxonomy \ "level").asOpt[String]
+              level     <- Try(ReportTagLevel.withName(levelName)).toOption
+            } yield ReportTag(origin, level, namespace, predicate, value)
           }
-        )
-      })
     }
-
-    return taxonomies.toList
   }
 
   implicit val observableReads: Reads[InputObservable] = Reads[InputObservable] { json =>
@@ -144,9 +129,8 @@ trait Conversion {
       ioc      <- (json \ "ioc").validate[Boolean]
       sighted  <- (json \ "sighted").validate[Boolean]
       dataType <- (json \ "dataType").validate[String]
-
       tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
-      taxonomiesList = getTaxonomies(Json.parse((json \ "reports").asOpt[String].getOrElse("{}")).as[Map[String, JsValue]])
+      taxonomiesList <- Json.parse((json \ "reports").asOpt[String].getOrElse("{}")).validate[Seq[ReportTag]]
       dataOrAttachment <-
         (json \ "data")
           .validate[String]
@@ -297,7 +281,7 @@ trait Conversion {
         ),
         Set(mainOrganisation),
         dataOrAttachment,
-        List()
+        Nil
       )
 
     }
@@ -524,7 +508,7 @@ trait Conversion {
         ),
         Set(mainOrganisation),
         dataOrAttachment,
-        List()
+        Nil
       )
     }
 
