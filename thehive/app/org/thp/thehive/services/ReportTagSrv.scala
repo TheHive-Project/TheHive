@@ -17,11 +17,13 @@ import scala.util.Try
 class ReportTagSrv @Inject() (observableSrv: ObservableSrv) extends VertexSrv[ReportTag] {
   val observableReportTagSrv = new EdgeSrv[ObservableReportTag, Observable, ReportTag]
 
-  def updateTags(observable: Observable with Entity, origin: String, reportTags: Seq[ReportTag])(implicit
+  def updateTags(observable: Observable with Entity, reportTags: Seq[ReportTag])(implicit
       graph: Graph,
       authContext: AuthContext
   ): Try[Unit] = {
-    observableSrv.get(observable).reportTags.fromOrigin(origin).remove()
+    reportTags.map(_.origin).distinct.foreach { origin =>
+      observableSrv.get(observable).reportTags.fromOrigin(origin).remove()
+    }
     reportTags
       .toTry { tag =>
         createEntity(tag).flatMap(t => observableReportTagSrv.create(ObservableReportTag(), observable, t))

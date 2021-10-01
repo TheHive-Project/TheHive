@@ -10,9 +10,11 @@ import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
 import play.api.libs.functional.syntax._
+import play.api.libs.json.JsValue.jsValueToJsLookup
 import play.api.libs.json._
 
 import java.util.{Base64, Date}
+import scala.util.Try
 
 case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
@@ -101,6 +103,24 @@ trait Conversion {
     )
   }
 
+  implicit val taxonomiesReads: Reads[Seq[ReportTag]] = Reads.JsObjectReads.map { input =>
+    input.fields.flatMap {
+      case (origin, value) =>
+        (value \ "taxonomies")
+          .asOpt[Seq[JsValue]]
+          .getOrElse(Nil)
+          .flatMap { taxonomy =>
+            for {
+              namespace <- (taxonomy \ "namespace").asOpt[String]
+              predicate <- (taxonomy \ "predicate").asOpt[String]
+              value = (taxonomy \ "value").getOrElse(JsNull)
+              levelName <- (taxonomy \ "level").asOpt[String]
+              level     <- Try(ReportTagLevel.withName(levelName)).toOption
+            } yield ReportTag(origin, level, namespace, predicate, value)
+          }
+    }
+  }
+
   implicit val observableReads: Reads[InputObservable] = Reads[InputObservable] { json =>
     for {
       metaData <- json.validate[MetaData]
@@ -110,6 +130,7 @@ trait Conversion {
       sighted  <- (json \ "sighted").validate[Boolean]
       dataType <- (json \ "dataType").validate[String]
       tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
+      taxonomiesList <- Json.parse((json \ "reports").asOpt[String].getOrElse("{}")).validate[Seq[ReportTag]]
       dataOrAttachment <-
         (json \ "data")
           .validate[String]
@@ -131,7 +152,8 @@ trait Conversion {
         tags = tags.toSeq
       ),
       Set(mainOrganisation),
-      dataOrAttachment
+      dataOrAttachment,
+      taxonomiesList
     )
   }
 
@@ -258,7 +280,8 @@ trait Conversion {
           tags = tags.toSeq
         ),
         Set(mainOrganisation),
-        dataOrAttachment
+        dataOrAttachment,
+        Nil
       )
 
     }
@@ -429,8 +452,8 @@ trait Conversion {
     for {
       metaData         <- json.validate[MetaData]
       workerId         <- (json \ "analyzerId").validate[String]
-      workerName       <- (json \ "analyzerId").validate[String]
-      workerDefinition <- (json \ "analyzerId").validate[String]
+      workerName       <- (json \ "analyzerName").validate[String]
+      workerDefinition <- (json \ "analyzerDefinition").validate[String]
       status           <- (json \ "status").validate[JobStatus.Value]
       startDate        <- (json \ "createdAt").validate[Date]
       endDate          <- (json \ "endDate").validate[Date]
@@ -484,7 +507,8 @@ trait Conversion {
           tags = tags.toSeq
         ),
         Set(mainOrganisation),
-        dataOrAttachment
+        dataOrAttachment,
+        Nil
       )
     }
 
