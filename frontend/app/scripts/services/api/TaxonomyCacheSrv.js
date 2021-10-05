@@ -116,7 +116,7 @@
                         if (err && !_.isString(err)) {
                             NotificationSrv.error('Tag selection', err.data, err.status);
                         }
-                        defer.rejeect(err);
+                        defer.reject(err);
                     });
 
                 return defer.promise;
