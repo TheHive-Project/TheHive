@@ -1,0 +1,84 @@
+<div ng-if="$vm.organisation.links.length > 0">
+    <!-- <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="control-label">Task sharing rule
+                    <i class="fa fa-asterisk text-danger"></i>
+                </label>
+                <div>
+                    <select class="form-control" ng-model="$vm.newCase.taskRule"
+                        ng-options="item for item in $vm.sharingRules.keys">
+                    </select>
+                    <p class="help-block">
+                        {{$vm.sharingRules.values[$vm.newCase.taskRule]}}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="control-label">Observable sharing rule
+                    <i class="fa fa-asterisk text-danger"></i>
+                </label>
+                <div>
+                    <select class="form-control" ng-model="$vm.newCase.observableRule"
+                        ng-options="item for item in $vm.sharingRules.keys">
+                    </select>
+                    <p class="help-block">
+                        {{$vm.sharingRules.values[$vm.newCase.observableRule]}}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+    <div ng-if="$vm.autoSharingLinks.length > 0">
+        <!-- <hr> -->
+        <div>
+            Once created, this case will be automatically shared with <strong>{{$vm.autoSharingLinks.length}}
+                organisations(s)</strong>:
+            <span class="label label-default mr-xxxs" ng-repeat="link in $vm.sharingLinks"
+                ng-if="link.autoShare">{{link.organisation}}</span>
+        </div>
+    </div>
+    <div ng-if="$vm.autoSharingLinks.length === 0">
+        Once created, this case and its tasks will not be shared automatically
+    </div>
+    <table class="table table-striped mt-xs">
+        <thead>
+            <th>Organisation</th>
+            <th width="50%">Profile</th>
+        </thead>
+        <tbody>
+            <tr ng-repeat="link in $vm.sharingLinks | orderBy:'editable':false">
+                <td>
+                    {{link.organisation}}
+                </td>
+                <td>
+                    <div ng-if="link.autoShare">
+                        <span>{{link.permissionProfile}}</span>
+                    </div>
+
+                    <div ng-if="!link.autoShare">
+                        <span uib-dropdown>
+                            <a href uib-dropdown-toggle>
+                                {{link.share ? link.permissionProfile : 'Do not share the Case'}} <i
+                                    class="fa fa-chevron-down"></i>
+                            </a>
+                            <ul class="dropdown-menu" uib-dropdown-menu>
+                                <li>
+                                    <a href ng-click="link.share = false">Do not share the Case</a>
+                                </li>
+                                <div class="divider"></div>
+                                <li ng-repeat="userProfile in $vm.userProfiles">
+                                    <a href ng-click="$vm.shareAsProfile(link, userProfile)">{{userProfile}}</a>
+                                </li>
+                            </ul>
+                        </span>
+                    </div>
+
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

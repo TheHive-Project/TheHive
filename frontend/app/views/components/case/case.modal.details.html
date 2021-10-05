@@ -1,0 +1,110 @@
+<div class="row">
+    <div class="col-xs-8">
+        <div class="form-group">
+            <label class="control-label">Title<i class="fa fa-asterisk text-danger"></i></label>
+            <input class="form-control input-sm" name="title" ng-if="!$vm.fromTemplate" ng-model="$vm.newCase.title"
+                placeholder="Title" required type="text" />
+
+            <div class="input-group" ng-if="$vm.fromTemplate && $vm.template.titlePrefix.length > 0">
+                <span class="input-group-addon">{{$vm.template.titlePrefix}}</span>
+                <input class="form-control input-sm" name="title" ng-model="$vm.newCase.title" placeholder="Title"
+                    required type="text" />
+            </div>
+            <p class="help-block">
+                The case title is required.
+            </p>
+        </div>
+    </div>
+    <div class="col-xs-4">
+        <div class="form-group">
+            <label class="control-label">Start Date<i class="fa fa-asterisk text-danger"></i></label>
+            <date-time-picker date="$vm.newCase.startDate" name="startDate"></date-time-picker>
+            <p class="help-block" ng-show="caseCreateForm.startDate.$invalid && !caseCreateForm.startDate.$pristine">
+                The case start date is required.
+            </p>
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">Severity
+                <i class="fa fa10asterisk text-danger"></i>
+            </label>
+            <div>
+                <a class="clearfix" href ng-click="activeSev = true" ng-init="activeSev = true">
+                    <severity active="activeSev" style="float:left; font-size:16px" value="$vm.newCase.severity">
+                    </severity>
+                </a>
+                <p class="help-block small vpad5">This will be the default case severity</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">TLP
+                <i class="fa fa10asterisk text-danger"></i>
+            </label>
+            <div>
+                <a class="clearfix" href ng-click="activeTlp='active'" ng-init="activeTlp='active'">
+                    <tlp format="activeTlp" on-update="updateTlp(newValue)" style="float:left; font-size:16px"
+                        value="$vm.newCase.tlp"></tlp>
+                </a>
+            </div>
+            <div>
+                <p class="help-block small vpad5">This will be the default case TLP</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="form-group">
+            <label class="control-label">PAP
+                <i class="fa fa10asterisk text-danger"></i>
+            </label>
+            <div>
+                <a class="clearfix" href ng-click="activePap='active'" ng-init="activePap='active'">
+                    <tlp format="activePap" on-update="updatePap(newValue)" style="float:left; font-size:16px"
+                        value="$vm.newCase.pap" namespace="PAP"></tlp>
+                </a>
+            </div>
+            <div>
+                <p class="help-block small vpad5">This will be the default case PAP</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="form-group">
+    <label class="control-label">Tags</label>
+
+    <div class="input-group">
+        <tags-input class="ti-tag-selector" min-length="2" name="tags" ng-model="$vm.tags" placeholder="Tags"
+            replace-spaces-with-dashes="false" template="views/directives/tag-input-item.html">
+            <auto-complete min-length="3" debounce-delay="400" source="$vm.getTags($query)"></auto-complete>
+        </tags-input>
+
+        <span class="input-group-btn vtop">
+            <button type="button" class="btn btn-block btn-primary" ng-click="$vm.fromTagLibrary()"
+                uib-tooltip="Add tag from library" tooltip-placement="left">
+                <span class="fa fa-plus"></span>
+            </button>
+        </span>
+    </div>
+    <p class="help-block small">These will be the default case tags</p>
+</div>
+</div>
+<div class="form-group"
+    ng-class="{ 'has-error' : templateEditForm.description.$invalid && !templateEditForm.description.$pristine }">
+    <label class="control-label">Description
+        <i class="fa fa-asterisk text-danger"></i>
+    </label>
+    <textarea class="form-control" name="description" ng-model="$vm.newCase.description" placeholder="Case description"
+        required rows="3"></textarea>
+    <p class="help-block small">This will be the default case description</p>
+    <p class="help-block" ng-show="templateEditForm.description.$invalid && !templateEditForm.description.$pristine">The
+        case description is required.</p>
+</div>

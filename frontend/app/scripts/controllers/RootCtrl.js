@@ -202,16 +202,40 @@ angular.module('theHiveControllers').controller('RootCtrl',
 
         $scope.createNewCase = function (template) {
             var modal = $uibModal.open({
-                templateUrl: 'views/partials/case/case.creation.html',
-                controller: 'CaseCreationCtrl',
-                size: 'lg',
+                templateUrl: 'views/partials/case/case.creation.modal.html',
+                controller: 'CaseCreateModalCtrl',
+                controllerAs: '$vm',
+                size: 'max',
                 resolve: {
-                    template: template,
+                    template: function () {
+                        if (!template) {
+                            return {};
+                        }
+                        var tmpl = angular.copy(template);
+
+                        if (tmpl.tasks && tmpl.tasks.length > 0) {
+                            tmpl.tasks = _.sortBy(tmpl.tasks, 'order');
+                        }
+
+                        return tmpl;
+                    },
+                    fields: function (CustomFieldsSrv) {
+                        return CustomFieldsSrv.all();
+                    },
                     organisation: function () {
                         return OrganisationSrv.get($scope.currentUser.organisation);
                     },
                     sharingProfiles: function () {
                         return SharingProfileSrv.all();
+                    },
+                    userProfiles: function (ProfileSrv) {
+                        return ProfileSrv.list()
+                            .then(function (response) {
+
+                                return _.map(_.filter(response.data, function (item) {
+                                    return !item.isAdmin;
+                                }), 'name');
+                            });
                     }
                 }
             });
@@ -227,6 +251,33 @@ angular.module('theHiveControllers').controller('RootCtrl',
                         NotificationSrv.error('CaseCreationCtrl', err.data, err.status);
                     }
                 });
+
+            // var modal = $uibModal.open({
+            //     templateUrl: 'views/partials/case/case.creation.html',
+            //     controller: 'CaseCreationCtrl',
+            //     size: 'lg',
+            //     resolve: {
+            //         template: template,
+            //         organisation: function () {
+            //             return OrganisationSrv.get($scope.currentUser.organisation);
+            //         },
+            //         sharingProfiles: function () {
+            //             return SharingProfileSrv.all();
+            //         }
+            //     }
+            // });
+
+            // modal.result
+            //     .then(function (data) {
+            //         $state.go('app.case.details', {
+            //             caseId: data.id
+            //         });
+            //     })
+            //     .catch(function (err) {
+            //         if (err && !_.isString(err)) {
+            //             NotificationSrv.error('CaseCreationCtrl', err.data, err.status);
+            //         }
+            //     });
         };
 
         $scope.openTemplateSelector = function () {

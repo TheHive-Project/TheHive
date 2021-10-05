@@ -176,8 +176,8 @@
                 <thead>
                     <th width="30" class="text-centered"></th>
                     <th>Organisation</th>
-                    <th width="150">Tasks</th>
-                    <th width="150">Observables</th>
+                    <!-- <th width="150">Tasks</th>
+                    <th width="150">Observables</th> -->
                     <th width="150">Profile</th>
                     <th width="250">Action</th>
                 </thead>
@@ -189,40 +189,6 @@
                         </td>
                         <td>
                             {{link.organisation}}
-                        </td>
-                        <td>
-                            <div ng-if="!link.editable">
-                                {{link.taskRule}}
-                            </div>
-                            <div ng-if="link.editable">
-                                <span uib-dropdown>
-                                    <a href uib-dropdown-toggle>
-                                        {{link.taskRule}} <i class="fa fa-chevron-down"></i>
-                                    </a>
-                                    <ul class="dropdown-menu" uib-dropdown-menu>
-                                        <li ng-repeat="item in sharingRules.keys">
-                                            <a href ng-click="link.taskRule = item">{{item}}</a>
-                                        </li>
-                                    </ul>
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <div ng-if="!link.editable">
-                                {{link.observableRule}}
-                            </div>
-                            <div ng-if="link.editable">
-                                <span uib-dropdown>
-                                    <a href uib-dropdown-toggle>
-                                        {{link.observableRule}} <i class="fa fa-chevron-down"></i>
-                                    </a>
-                                    <ul class="dropdown-menu" uib-dropdown-menu>
-                                        <li ng-repeat="item in sharingRules.keys">
-                                            <a href ng-click="link.observableRule = item">{{item}}</a>
-                                        </li>
-                                    </ul>
-                                </span>
-                            </div>
                         </td>
                         <td>
                             {{link.permissionProfile}}
@@ -255,7 +221,7 @@
                 </tbody>
             </table>
 
-            <!-- <div class="row">
+            <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
                         <label class="control-label">Task sharing rule
@@ -286,7 +252,7 @@
                         </div>
                     </div>
                 </div>
-            </div> -->
+            </div>
         </div>
 
     </div>
