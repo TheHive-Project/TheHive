@@ -1,17 +1,17 @@
-(function() {
+(function () {
     'use strict';
-    angular.module('theHiveServices').service('QueryBuilderSrv', function(UtilsSrv) {
+    angular.module('theHiveServices').service('QueryBuilderSrv', function (UtilsSrv) {
         var self = this;
 
-        this._buildQueryFromDefaultFilter = function(fieldDef, filter) {
+        this._buildQueryFromDefaultFilter = function (fieldDef, filter) {
             return {
                 _field: filter.field,
                 _value: filter.value
             };
         };
 
-        this._buildQueryFromBooleanFilter = function(fieldDef, filter) {
-            if(filter.value === null) {
+        this._buildQueryFromBooleanFilter = function (fieldDef, filter) {
+            if (filter.value === null) {
                 return undefined;
             }
 
@@ -21,13 +21,13 @@
             };
         };
 
-        this._buildQueryFromNumberFilter = function(fieldDef, filter) {
+        this._buildQueryFromNumberFilter = function (fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
             }
             var operator = filter.value.operator || 'eq';
 
-            if(operator === 'empty') {
+            if (operator === 'empty') {
                 return {
                     _not: {
                         _contains: filter.field
@@ -38,29 +38,29 @@
             var criterion = {};
             criterion[filter.field] = filter.value.value;
 
-            switch(operator) {
+            switch (operator) {
                 case '<':
-                    return {'_lt': criterion};
+                    return { '_lt': criterion };
                 case '<=':
-                    return {'_lte': criterion};
+                    return { '_lte': criterion };
                 case '>':
-                    return {'_gt': criterion};
+                    return { '_gt': criterion };
                 case '>=':
-                    return {'_gte': criterion};
+                    return { '_gte': criterion };
                 case '!=':
-                    return {'_not': criterion};
+                    return { '_not': criterion };
                 default:
-                    return {'_field': filter.field, '_value': filter.value.value};
+                    return { '_field': filter.field, '_value': filter.value.value };
             }
         };
 
-        this._buildQueryFromFreeTextFilter = function(fieldDef, filter) {
+        this._buildQueryFromFreeTextFilter = function (fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
             }
             var operator = filter.value.operator || 'any';
 
-            if(operator === 'empty') {
+            if (operator === 'empty') {
                 return {
                     _not: {
                         _contains: filter.field
@@ -69,16 +69,19 @@
             } else {
                 var values = _.pluck(filter.value.list, 'text');
 
-                if(values.length > 0) {
-                    var criterions = _.map(values, function(val) {
-                        return {_like: {
-                            _field: filter.field,
-                            _value: val
-                        }};
+                if (values.length > 0) {
+                    var criterions = _.map(values, function (val) {
+                        // This filters is used for freetext searches
+                        return {
+                            _match: {
+                                _field: filter.field,
+                                _value: val
+                            }
+                        };
                     });
 
                     var criteria = {};
-                    switch(operator) {
+                    switch (operator) {
                         case 'all':
                             criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
                             break;
@@ -100,13 +103,13 @@
             return null;
         };
 
-        this._buildQueryFromTagsFilter = function(fieldDef, filter) {
+        this._buildQueryFromTagsFilter = function (fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
             }
             var operator = filter.value.operator || 'any';
 
-            if(operator === 'empty') {
+            if (operator === 'empty') {
                 return {
                     _not: {
                         _contains: filter.field
@@ -115,8 +118,10 @@
             } else {
                 var values = _.pluck(filter.value.list, 'text');
 
-                if(values.length > 0) {
-                    var criterions = _.map(values, function(val) {
+                if (values.length > 0) {
+                    var criterions = _.map(values, function (val) {
+                        // TODO nadouani: Check this criterion and challenge the _match operator
+                        // Add support for options to switch between strict search, like and match
                         return {
                             _like: {
                                 _field: filter.field,
@@ -126,7 +131,7 @@
                     });
 
                     var criteria = {};
-                    switch(operator) {
+                    switch (operator) {
                         case 'all':
                             criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
                             break;
@@ -149,13 +154,13 @@
             return null;
         };
 
-        this._buildQueryFromListFilter = function(fieldDef, filter) {
+        this._buildQueryFromListFilter = function (fieldDef, filter) {
             if (!filter || !filter.value) {
                 return null;
             }
             var operator = filter.value.operator || 'any';
 
-            if(operator === 'empty') {
+            if (operator === 'empty') {
                 return {
                     _not: {
                         _contains: filter.field
@@ -165,13 +170,14 @@
 
             var values = _.pluck(filter.value.list, 'text');
 
-            if(values.length > 0) {
-                var criterions = _.map(values, function(val) {
-                    return {_field: filter.field, _value: val};
+            if (values.length > 0) {
+                var criterions = _.map(values, function (val) {
+                    // This filter is used for list filters with fixed values
+                    return { _field: filter.field, _value: val };
                 });
 
                 var criteria = {};
-                switch(operator) {
+                switch (operator) {
                     case 'all':
                         criteria = criterions.length === 1 ? criterions[0] : { _and: criterions };
                         break;
@@ -191,13 +197,13 @@
             return null;
         };
 
-        this._buildQueryFromDateFilter = function(fieldDef, filter) {
+        this._buildQueryFromDateFilter = function (fieldDef, filter) {
             var value = filter.value,
                 operator = filter.value.operator || 'custom',
                 start,
                 end;
 
-            if(operator === 'empty') {
+            if (operator === 'empty') {
                 return {
                     _not: {
                         _contains: filter.field
@@ -205,14 +211,14 @@
                 };
             }
 
-            if(operator === 'custom') {
-                if(value.from && value.from !== null) {
+            if (operator === 'custom') {
+                if (value.from && value.from !== null) {
                     start = _.isString(value.from) ? (new Date(value.from)).getTime() : value.from.getTime();
                 } else {
                     start = null;
                 }
 
-                if(value.to && value.to !== null) {
+                if (value.to && value.to !== null) {
                     end = _.isString(value.to) ? (new Date(value.to)).setHours(23, 59, 59, 999) : value.to.setHours(23, 59, 59, 999);
                 } else {
                     end = null;
@@ -247,34 +253,32 @@
             return null;
         };
 
-        this._buildQueryFromFilter = function(fieldDef, filter) {
+        this._buildQueryFromFilter = function (fieldDef, filter) {
             if (filter.type === 'date') {
                 return this._buildQueryFromDateFilter(fieldDef, filter);
-            } else if(filter.type === 'boolean') {
+            } else if (filter.type === 'boolean') {
                 return this._buildQueryFromBooleanFilter(fieldDef, filter);
-            } else if(filter.field === 'tags') {
+            } else if (filter.field === 'tags') {
                 return this._buildQueryFromTagsFilter(fieldDef, filter);
-            } else if(filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration') {
+            } else if (filter.type === 'user' || filter.field === 'tags' || filter.type === 'enumeration') {
                 return this._buildQueryFromListFilter(fieldDef, filter);
-            } else if(filter.type === 'string' && fieldDef.values.length === 0) {
+            } else if (filter.type === 'string' && fieldDef.values.length === 0) {
                 // TODO implemtent like operator
                 return this._buildQueryFromFreeTextFilter(fieldDef, filter);
-            } else if(filter.value.list || fieldDef.values.length > 0) {
+            } else if (filter.value.list || fieldDef.values.length > 0) {
                 return this._buildQueryFromListFilter(fieldDef, filter);
-            } else if(filter.type === 'number' || filter.type === 'integer' || filter.type === 'float') {
+            } else if (filter.type === 'number' || filter.type === 'integer' || filter.type === 'float') {
                 return this._buildQueryFromNumberFilter(fieldDef, filter);
             }
 
-
-
             return {
-                _string: filter.field + ':"' + filter.value +'"'
+                _string: filter.field + ':"' + filter.value + '"'
             };
         };
 
-        this.buildFiltersQuery = function(fields, filters) {
+        this.buildFiltersQuery = function (fields, filters) {
             var criterias =
-                _.map(filters, function(filter) {
+                _.map(filters, function (filter) {
                     return self._buildQueryFromFilter(fields[filter.field], filter);
                 }) || [];
 
