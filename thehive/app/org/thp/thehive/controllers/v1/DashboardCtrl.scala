@@ -63,7 +63,7 @@ class DashboardCtrl @Inject() (
           .flatMap {
             case richDashboard if dashboard.status == "Shared" =>
               dashboardSrv
-                .share(richDashboard.dashboard, request.organisation, writable = false)
+                .share(richDashboard.dashboard, request.organisation, writable = true)
                 .flatMap(_ => dashboardSrv.get(richDashboard.dashboard).richDashboard.getOrFail("Dashboard"))
             case richDashboard => Success(richDashboard)
           }
