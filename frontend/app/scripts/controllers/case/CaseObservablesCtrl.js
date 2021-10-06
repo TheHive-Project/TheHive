@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     angular.module('theHiveControllers').controller('CaseObservablesCtrl',
-        function ($scope, $q, $state, $stateParams, $filter, $uibModal, SecuritySrv, ModalUtilsSrv, FilteringSrv, StreamSrv, CaseTabsSrv, PaginatedQuerySrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, VersionSrv) {
+        function ($scope, $q, $state, $stateParams, $filter, $uibModal, SecuritySrv, ModalUtilsSrv, FilteringSrv, StreamSrv, CaseTabsSrv, PaginatedQuerySrv, ObservableTypeSrv, CaseArtifactSrv, NotificationSrv, AnalyzerSrv, CortexSrv, VersionSrv) {
 
             CaseTabsSrv.activateTab($state.current.data.tab);
 
@@ -241,6 +241,12 @@
                     resolve: {
                         selection: function () {
                             return $scope.selection.artifacts;
+                        },
+                        dataTypes: function () {
+                            return ObservableTypeSrv.list()
+                                .then(function (response) {
+                                    return response.data;
+                                });
                         }
                     }
                 });
