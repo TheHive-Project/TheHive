@@ -129,6 +129,7 @@ class Output(
     caseSrv: CaseSrv,
     observableSrv: ObservableSrv,
     dataSrv: DataSrv,
+    reportTagSrv: ReportTagSrv,
     userSrv: UserSrv,
     tagSrv: TagSrv,
     caseTemplateSrv: CaseTemplateSrv,
@@ -734,6 +735,7 @@ class Output(
       for {
         organisations <- inputObservable.organisations.toTry(getOrganisation)
         observable    <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
+        _             <- reportTagSrv.updateTags(richObservable, inputObservable.reportTags)
         case0         <- getCase(caseId)
         _             <- organisations.toTry(o => shareSrv.addObservableToCase(RichObservable(observable, None, None, Nil), case0, o._id))
       } yield IdMapping(inputObservable.metaData.id, observable._id)
@@ -767,6 +769,7 @@ class Output(
     authTransaction(inputAlert.metaData.createdBy) { implicit graph => implicit authContext =>
       logger.debug(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
       val `case` = inputAlert.caseId.flatMap(c => getCase(EntityId.read(c)).toOption)
+
       for {
         organisation <- getOrganisation(inputAlert.organisation)
         createdAlert <- alertSrv.createEntity(inputAlert.alert.copy(organisationId = organisation._id, caseId = `case`.fold(EntityId.empty)(_._id)))

@@ -5,67 +5,94 @@
 
     <div class="modal-body">
         <p class="mb-xs">
-            Select the changes you want to apply to the selected observables. (<a href ng-click="$dialog.toggleAll()">{{$dialog.state.all ? 'Uncheck All' : 'Check all'}}</a>)
+            Select the changes you want to apply to the selected observables. (<a href
+                ng-click="$dialog.toggleAll()">{{$dialog.state.all ? 'Uncheck All' : 'Check all'}}</a>)
         </p>
 
+        <div class="form-group" ng-if="$dialog.canUpdateDataType">
+            <label class="col-md-3 control-label">Data Type <input class="ml-xxs" type="checkbox"
+                    ng-model="$dialog.state.enableDataType"></label>
+            <div class="col-md-9">
+                <select class="form-control" ng-options="v for v in $dialog.dataTypes"
+                    ng-model="$dialog.params.dataType" ng-change="$dialog.toggleDataType(newValue)">
+                    <option value=""></option>
+                </select>
+            </div>
+        </div>
+
         <div class="form-group">
-            <label class="col-md-3 control-label">TLP <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableTlp"></label>
+            <label class="col-md-3 control-label">TLP <input class="ml-xxs" type="checkbox"
+                    ng-model="$dialog.state.enableTlp"></label>
             <div class="col-md-9">
                 <p class="form-control-static">
                     <a href ng-click="$dialog.activeTlp = 'active'">
-                        <tlp value="$dialog.params.tlp" format="$dialog.activeTlp" on-update="$dialog.toggleTlp(newValue)" class="form-control-static"></tlp>
+                        <tlp value="$dialog.params.tlp" format="$dialog.activeTlp"
+                            on-update="$dialog.toggleTlp(newValue)" class="form-control-static"></tlp>
                     </a>
                 </p>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="col-md-3 control-label">Is IOC <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableIoc"></label>
+            <label class="col-md-3 control-label">Is IOC <input class="ml-xxs" type="checkbox"
+                    ng-model="$dialog.state.enableIoc"></label>
             <div class="col-md-9">
                 <p class="form-control-static">
                     <a href ng-click="$dialog.toogleIoc()">
-                        <i class="text-primary fa" ng-class="{ 'fa-star' : $dialog.params.ioc, 'fa-star-o' : !$dialog.params.ioc }"></i>
+                        <i class="text-primary fa"
+                            ng-class="{ 'fa-star' : $dialog.params.ioc, 'fa-star-o' : !$dialog.params.ioc }"></i>
                     </a>
                 </p>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="col-md-3 control-label">Has been sighted <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableSighted"></label>
+            <label class="col-md-3 control-label">Has been sighted <input class="ml-xxs" type="checkbox"
+                    ng-model="$dialog.state.enableSighted"></label>
             <div class="col-md-9">
                 <p class="form-control-static">
                     <a href ng-click="$dialog.toogleSighted()">
-                        <i class="text-primary fa" ng-class="{ 'fa-toggle-on' : $dialog.params.sighted, 'fa-toggle-off' : !$dialog.params.sighted }"></i>
+                        <i class="text-primary fa"
+                            ng-class="{ 'fa-toggle-on' : $dialog.params.sighted, 'fa-toggle-off' : !$dialog.params.sighted }"></i>
                     </a>
                 </p>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="col-md-3 control-label">Ignored for similarity <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableIgnoreSimilarity"></label>
+            <label class="col-md-3 control-label">Ignored for similarity <input class="ml-xxs" type="checkbox"
+                    ng-model="$dialog.state.enableIgnoreSimilarity"></label>
             <div class="col-md-9">
                 <p class="form-control-static">
                     <a href ng-click="$dialog.toogleIgnoreSimilarity()">
-                        <i class="text-primary fa" ng-class="{ 'fa-chain-broken' : $dialog.params.ignoreSimilarity, 'fa-chain' : !$dialog.params.ignoreSimilarity }"></i>
+                        <i class="text-primary fa"
+                            ng-class="{ 'fa-chain-broken' : $dialog.params.ignoreSimilarity, 'fa-chain' : !$dialog.params.ignoreSimilarity }"></i>
                     </a>
                 </p>
             </div>
         </div>
 
-        <div class="form-group" ng-class="{ 'has-error' : observableForm.addTags.$invalid && !observableForm.addTagsInput.$pristine }">
-            <label class="col-md-3 control-label">Add Tags <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableAddTags"></label>
+        <div class="form-group"
+            ng-class="{ 'has-error' : observableForm.addTags.$invalid && !observableForm.addTagsInput.$pristine }">
+            <label class="col-md-3 control-label">Add Tags <input class="ml-xxs" type="checkbox"
+                    ng-model="$dialog.state.enableAddTags"></label>
             <div class="col-md-9">
-                <input type="hidden" name="addTags" ng-model="$dialog.params.addTagNames" ng-required="$dialog.state.enableAddTags"/>
+                <input type="hidden" name="addTags" ng-model="$dialog.params.addTagNames"
+                    ng-required="$dialog.state.enableAddTags" />
 
                 <div class="input-group">
-                    <tags-input name="addTagsInput" ng-model="$dialog.params.addTags" class="ti-input-sm ti-tag-selector"
-                        placeholder="Add tags" replace-spaces-with-dashes="false" min-length="2"
-                        on-tag-added="$dialog.toggleAddTags()" template="views/directives/tag-input-item.html">
-                        <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
+                    <tags-input name="addTagsInput" ng-model="$dialog.params.addTags"
+                        class="ti-input-sm ti-tag-selector" placeholder="Add tags" replace-spaces-with-dashes="false"
+                        min-length="2" on-tag-added="$dialog.toggleAddTags()"
+                        template="views/directives/tag-input-item.html">
+                        <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)">
+                        </auto-complete>
                     </tags-input>
 
                     <span class="input-group-btn vtop">
-                        <button type="button" class="btn btn-block btn-sm btn-primary" ng-click="$dialog.fromTagLibrary('add')" uib-tooltip="Add tag from library" tooltip-placement="left">
+                        <button type="button" class="btn btn-block btn-sm btn-primary"
+                            ng-click="$dialog.fromTagLibrary('add')" uib-tooltip="Add tag from library"
+                            tooltip-placement="left">
                             <span class="fa fa-plus"></span>
                         </button>
                     </span>
@@ -74,19 +101,26 @@
             </div>
         </div>
 
-        <div class="form-group" ng-class="{ 'has-error' : observableForm.removeTags.$invalid && !observableForm.removeTagsInput.$pristine }">
-            <label class="col-md-3 control-label">Remove Tags <input class="ml-xxs" type="checkbox" ng-model="$dialog.state.enableRemoveTags"></label>
+        <div class="form-group"
+            ng-class="{ 'has-error' : observableForm.removeTags.$invalid && !observableForm.removeTagsInput.$pristine }">
+            <label class="col-md-3 control-label">Remove Tags <input class="ml-xxs" type="checkbox"
+                    ng-model="$dialog.state.enableRemoveTags"></label>
             <div class="col-md-9">
-                <input type="hidden" name="removeTags" ng-model="$dialog.params.removeTagNames" ng-required="$dialog.state.enableRemoveTags"/>
+                <input type="hidden" name="removeTags" ng-model="$dialog.params.removeTagNames"
+                    ng-required="$dialog.state.enableRemoveTags" />
                 <div class="input-group">
-                    <tags-input name="removeTagsInput" ng-model="$dialog.params.removeTags" class="ti-input-sm ti-tag-selector"
-                        placeholder="Remove tags" replace-spaces-with-dashes="false" min-length="2"
-                        on-tag-added="$dialog.toggleRemoveTags()" template="views/directives/tag-input-item.html">
-                        <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)"></auto-complete>
+                    <tags-input name="removeTagsInput" ng-model="$dialog.params.removeTags"
+                        class="ti-input-sm ti-tag-selector" placeholder="Remove tags" replace-spaces-with-dashes="false"
+                        min-length="2" on-tag-added="$dialog.toggleRemoveTags()"
+                        template="views/directives/tag-input-item.html">
+                        <auto-complete min-length="3" debounce-delay="400" source="$dialog.getTags($query)">
+                        </auto-complete>
                     </tags-input>
 
                     <span class="input-group-btn vtop">
-                        <button type="button" class="btn btn-block btn-sm btn-primary" ng-click="$dialog.fromTagLibrary('remove')" uib-tooltip="Add tag from library" tooltip-placement="left">
+                        <button type="button" class="btn btn-block btn-sm btn-primary"
+                            ng-click="$dialog.fromTagLibrary('remove')" uib-tooltip="Add tag from library"
+                            tooltip-placement="left">
                             <span class="fa fa-plus"></span>
                         </button>
                     </span>
@@ -100,6 +134,7 @@
 
     <div class="modal-footer text-left">
         <button class="btn btn-default" ng-click="$dialog.cancel()" type="button">Cancel</button>
-        <button class="btn btn-primary pull-right" ng-disabled="observableForm.$invalid" type="submit">Update observable(s)</button>
+        <button class="btn btn-primary pull-right" ng-disabled="observableForm.$invalid" type="submit">Update
+            observable(s)</button>
     </div>
 </form>

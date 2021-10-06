@@ -351,6 +351,7 @@ class ObservableCtrl(
 }
 
 class PublicObservable(
+    observableTypeSrv: ObservableTypeSrv,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
     searchSrv: SearchSrv,

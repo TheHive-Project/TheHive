@@ -1,5 +1,20 @@
 # Change Log
 
+## [4.1.11](https://github.com/TheHive-Project/TheHive/milestone/81) (2021-10-06)
+
+**Implemented enhancements:**
+
+- [Feature Request] Add the ability to update type of observable [\#2125](https://github.com/TheHive-Project/TheHive/issues/2125)
+
+**Closed issues:**
+
+- [Bug] Editing Someone Else's Dashboard [\#2212](https://github.com/TheHive-Project/TheHive/issues/2212)
+
+**Fixed bugs:**
+
+- [Bug] Dashboard are shared in read only by default [\#2190](https://github.com/TheHive-Project/TheHive/issues/2190)
+- [Bug] Analyzer reports migration to 4.1.10 problem [\#2203](https://github.com/TheHive-Project/TheHive/issues/2203)
+
 ## [4.1.10](https://github.com/TheHive-Project/TheHive/milestone/79) (2021-08-26)
 
 **Fixed bugs:**
