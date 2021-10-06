@@ -60,7 +60,7 @@ object Migrate extends App with MigrationOps {
         .valueName("http://ip1:port,ip2:port")
         .text("TheHive3 ElasticSearch URI")
         .action((u, c) => addConfig(c, "input.search.uri", u)),
-      opt[String]('i', "es-index")
+      opt[String]('e', "es-index")
         .valueName("<index>")
         .text("TheHive3 ElasticSearch index name")
         .action((i, c) => addConfig(c, "input.search.index", i)),
