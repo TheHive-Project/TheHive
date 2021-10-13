@@ -109,21 +109,24 @@ trait Conversion {
   }
 
   implicit val taxonomiesReads: Reads[Seq[ReportTag]] = Reads.JsObjectReads.map { input =>
-    input.fields.flatMap {
-      case (origin, value) =>
-        (value \ "taxonomies")
-          .asOpt[Seq[JsValue]]
-          .getOrElse(Nil)
-          .flatMap { taxonomy =>
-            for {
-              namespace <- (taxonomy \ "namespace").asOpt[String]
-              predicate <- (taxonomy \ "predicate").asOpt[String]
-              value = (taxonomy \ "value").getOrElse(JsNull)
-              levelName <- (taxonomy \ "level").asOpt[String]
-              level     <- Try(ReportTagLevel.withName(levelName)).toOption
-            } yield ReportTag(origin, level, namespace, predicate, value)
-          }
-    }
+    input
+      .fields
+      .flatMap {
+        case (origin, value) =>
+          (value \ "taxonomies")
+            .asOpt[Seq[JsValue]]
+            .getOrElse(Nil)
+            .flatMap { taxonomy =>
+              for {
+                namespace <- (taxonomy \ "namespace").asOpt[String]
+                predicate <- (taxonomy \ "predicate").asOpt[String]
+                value = (taxonomy \ "value").getOrElse(JsNull)
+                levelName <- (taxonomy \ "level").asOpt[String]
+                level     <- Try(ReportTagLevel.withName(levelName)).toOption
+              } yield ReportTag(origin, level, namespace, predicate, value)
+            }
+      }
+      .toSeq
   }
 
   implicit val observableReads: Reads[InputObservable] = Reads[InputObservable] { json =>

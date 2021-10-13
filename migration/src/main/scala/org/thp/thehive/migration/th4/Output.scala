@@ -735,7 +735,7 @@ class Output(
       for {
         organisations <- inputObservable.organisations.toTry(getOrganisation)
         observable    <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
-        _             <- reportTagSrv.updateTags(richObservable, inputObservable.reportTags)
+        _             <- reportTagSrv.updateTags(observable, inputObservable.reportTags)
         case0         <- getCase(caseId)
         _             <- organisations.toTry(o => shareSrv.addObservableToCase(RichObservable(observable, None, None, Nil), case0, o._id))
       } yield IdMapping(inputObservable.metaData.id, observable._id)

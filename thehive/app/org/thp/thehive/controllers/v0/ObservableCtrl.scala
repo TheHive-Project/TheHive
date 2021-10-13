@@ -353,7 +353,6 @@ class ObservableCtrl(
 class PublicObservable(
     observableTypeSrv: ObservableTypeSrv,
     observableSrv: ObservableSrv,
-    observableTypeSrv: ObservableTypeSrv,
     searchSrv: SearchSrv,
     override val organisationSrv: OrganisationSrv,
     override val customFieldSrv: CustomFieldSrv,
