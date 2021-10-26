@@ -56,7 +56,7 @@ class ObservableCtrl @Inject() (
   override val initialQuery: Query =
     Query.init[Traversal.V[Observable]](
       "listObservable",
-      (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables
+      (graph, authContext) => observableSrv.startTraversal(graph).visible(organisationSrv)(authContext)
     )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
