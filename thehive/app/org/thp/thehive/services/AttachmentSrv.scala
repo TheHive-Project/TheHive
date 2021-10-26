@@ -33,12 +33,10 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
     val hs = hashers.fromPath(file.filepath)
     val id = hs.head.toString
     val is = Files.newInputStream(file.filepath)
-    val result =
-      storageSrv
-        .saveBinary("attachment", id, is)
-        .flatMap(_ => createEntity(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
-    is.close()
-    result
+    try storageSrv
+      .saveBinary("attachment", id, is)
+      .flatMap(_ => createEntity(Attachment(file.filename, Files.size(file.filepath), file.contentType, hs, id)))
+    finally is.close()
   }
 
   def create(filename: String, contentType: String, data: Array[Byte])(implicit
