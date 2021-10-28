@@ -28,6 +28,8 @@ object Authentication {
     case PasswordAuthentication(username, password) => Json.obj("type" -> "basic", "username" -> username, "password" -> password)
     case KeyAuthentication(key, "")                 => Json.obj("type" -> "key", "key" -> key)
     case KeyAuthentication(key, "Bearer ")          => Json.obj("type" -> "bearer", "key" -> key)
+    case NoAuthentication                           => Json.obj("type" -> "none")
+    case KeyAuthentication(key, other)              => Json.obj("type" -> other, "key" -> key)
   }
   implicit val format: Format[Authentication] = Format(reads, writes)
 }
