@@ -9,7 +9,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.RichType
-import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, GlobalQueryExecutor}
+import org.thp.scalligraph.{BadRequestError, EntityId, GlobalQueryExecutor}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
@@ -90,7 +90,7 @@ class TheHiveQueryExecutor @Inject() (
   override val customFilterQuery: FilterQuery = FilterQuery(publicProperties) { (tpe, globalParser) =>
     FieldsParser("parentChildFilter") {
       case (_, FObjOne("_parent", ParentIdFilter(parentType, parentId))) if parentTypes.isDefinedAt((tpe, parentType)) =>
-        Good(new ParentIdInputFilter(parentType, parentId))
+        Good(new ParentIdInputFilter(parentId))
       case (path, FObjOne("_parent", ParentQueryFilter(parentType, parentFilterField))) if parentTypes.isDefinedAt((tpe, parentType)) =>
         globalParser(parentTypes((tpe, parentType))).apply(path, parentFilterField).map(query => new ParentQueryInputFilter(parentType, query))
       case (path, FObjOne("_child", ChildQueryFilter(childType, childQueryField))) if childTypes.isDefinedAt((tpe, childType)) =>
@@ -118,7 +118,7 @@ object ParentIdFilter {
       .fold(Some(_), _ => None)
 }
 
-class ParentIdInputFilter(parentType: String, parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
+class ParentIdInputFilter(parentId: String) extends InputQuery[Traversal.Unk, Traversal.Unk] {
   override def apply(
       publicProperties: PublicProperties,
       traversalType: ru.Type,
@@ -129,35 +129,20 @@ class ParentIdInputFilter(parentType: String, parentId: String) extends InputQue
       .getTypeArgs(traversalType, ru.typeOf[Traversal[_, _, _]])
       .headOption
       .collect {
-        case t if t <:< ru.typeOf[Task] && parentType == "caseTemplate" =>
-          traversal
-            .asInstanceOf[Traversal.V[Task]]
-            .filter(_.caseTemplate.get(EntityIdOrName(parentId)))
-            .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Task] =>
           traversal
             .asInstanceOf[Traversal.V[Task]]
-            .filter(_.`case`.get(EntityIdOrName(parentId)))
+            .has(_.relatedId, EntityId(parentId))
             .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Observable] =>
           traversal
             .asInstanceOf[Traversal.V[Observable]]
             .has(_.relatedId, EntityId(parentId))
             .asInstanceOf[Traversal.Unk]
-//          && parentType == "alert" =>
-//          traversal
-//            .asInstanceOf[Traversal.V[Observable]]
-//            .filter(_.alert.get(EntityIdOrName(parentId)))
-//            .asInstanceOf[Traversal.Unk]
-//        case t if t <:< ru.typeOf[Observable] =>
-//          traversal
-//            .asInstanceOf[Traversal.V[Observable]]
-//            .filter(_.`case`.get(EntityIdOrName(parentId)))
-//            .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Log] =>
           traversal
             .asInstanceOf[Traversal.V[Log]]
-            .filter(_.task.get(EntityIdOrName(parentId)))
+            .has(_.taskId, EntityId(parentId))
             .asInstanceOf[Traversal.Unk]
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't parent"))

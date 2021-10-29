@@ -86,7 +86,7 @@ class Webhook(
   object v0 extends AuditRenderer
 
   object v1 {
-    import org.thp.thehive.controllers.v0.Conversion._
+    import org.thp.thehive.controllers.v1.Conversion._
 
     def caseToJson: Traversal.V[Case] => Traversal[JsObject, JMap[String, Any], Converter[JsObject, JMap[String, Any]]] =
       _.richCaseWithoutPerms.domainMap[JsObject](_.toJson.as[JsObject])
@@ -226,7 +226,7 @@ class Webhook(
             Json.obj(
               "operation"  -> audit.action,
               "details"    -> audit.details.fold[JsValue](JsObject.empty)(fixCustomFieldDetails(objectType, _)),
-              "objectType" -> fromObjectType(objectType),
+              "objectType" -> objectType,
               "objectId"   -> audit.objectId,
               "base"       -> audit.mainAction,
               "startDate"  -> audit._createdAt,

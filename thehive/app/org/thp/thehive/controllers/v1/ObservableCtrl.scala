@@ -56,7 +56,7 @@ class ObservableCtrl @Inject() (
   override val initialQuery: Query =
     Query.init[Traversal.V[Observable]](
       "listObservable",
-      (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).shares.observables
+      (graph, authContext) => observableSrv.startTraversal(graph).visible(organisationSrv)(authContext)
     )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Observable]](
     "getObservable",
@@ -372,8 +372,8 @@ class ObservableCtrl @Inject() (
 
   private def getZipFiles(observable: InputObservable, zipPassword: Option[String]): Seq[InputObservable] =
     observable.attachment.flatMap(_.swap.toSeq).flatMap { attachment =>
-      val zipFile                = new ZipFile(attachment.filepath.toFile)
-      val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
+      val zipFile = new ZipFile(attachment.filepath.toFile)
+      val files   = zipFile.getFileHeaders.asScala
 
       if (zipFile.isEncrypted)
         zipFile.setPassword(zipPassword.getOrElse(configuration.get[String]("datastore.attachment.password")).toCharArray)

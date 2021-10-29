@@ -23,7 +23,6 @@ import scala.util.{Failure, Success}
 class DashboardCtrl @Inject() (
     override val entrypoint: Entrypoint,
     dashboardSrv: DashboardSrv,
-    userSrv: UserSrv,
     implicit val db: Database,
     override val publicData: PublicDashboard,
     @Named("v0") override val queryExecutor: QueryExecutor
