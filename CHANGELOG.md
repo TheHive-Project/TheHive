@@ -1,5 +1,15 @@
 # Change Log
 
+## [4.1.12](https://github.com/TheHive-Project/TheHive/milestone/82) (2021-10-29)
+
+**Fixed bugs:**
+
+- [Bug] Upon case merge: missing webhook events about the operation performed on merged cases [\#1969](https://github.com/TheHive-Project/TheHive/issues/1969)
+- [Bug] Uploading zipped observables raises a ClassCastException [\#2224](https://github.com/TheHive-Project/TheHive/issues/2224)
+- [Bug] The search for an observable data is slow [\#2225](https://github.com/TheHive-Project/TheHive/issues/2225)
+- [Bug] Uploading files could cause TheHive crash with "too many open files" errror [\#2226](https://github.com/TheHive-Project/TheHive/issues/2226)
+- [Bug] Configuration containing endpoint with "authentication: none" cannot be written [\#2231](https://github.com/TheHive-Project/TheHive/issues/2231)
+
 ## [4.1.11](https://github.com/TheHive-Project/TheHive/milestone/81) (2021-10-06)
 
 **Implemented enhancements:**
