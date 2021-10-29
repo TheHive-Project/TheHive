@@ -166,11 +166,6 @@ class AuditSrv(
     def delete(entity: E with Entity, context: C with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, None), context, None)
 
-    def merge(entity: E with Entity, destination: C with Entity, details: Option[JsObject] = None)(implicit
-        graph: Graph,
-        authContext: AuthContext
-    ): Try[Unit] =
-      auditSrv.create(Audit(Audit.merge, destination, details.map(_.toString())), destination, Some(destination))
   }
 
   class SelfContextObjectAudit[E <: Product] {
@@ -187,6 +182,12 @@ class AuditSrv(
         authContext: AuthContext
     ): Try[Unit] =
       auditSrv.create(Audit(Audit.delete, entity, details.map(_.toString())), context, None)
+
+    def merge(entity: E with Entity, details: Option[JsObject] = None)(implicit
+        graph: Graph,
+        authContext: AuthContext
+    ): Try[Unit] =
+      auditSrv.create(Audit(Audit.merge, entity, details.map(_.toString())), entity, Some(entity))
   }
 
   class UserAudit extends SelfContextObjectAudit[User] {

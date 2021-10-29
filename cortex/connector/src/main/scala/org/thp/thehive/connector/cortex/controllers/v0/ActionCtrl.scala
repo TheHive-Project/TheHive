@@ -98,7 +98,8 @@ class PublicAction(
   val actionsQuery: Query = new Query {
     override val name: String = "actions"
     override def checkFrom(t: ru.Type): Boolean =
-      SubType(t, ru.typeOf[Traversal.V[Case]]) || SubType(t, ru.typeOf[Traversal.V[Observable]]) ||
+      SubType(t, ru.typeOf[Traversal.V[Case]]) ||
+        SubType(t, ru.typeOf[Traversal.V[Observable]]) ||
         SubType(t, ru.typeOf[Traversal.V[Task]]) ||
         SubType(t, ru.typeOf[Traversal.V[Log]]) ||
         SubType(t, ru.typeOf[Traversal.V[Alert]])

@@ -337,8 +337,8 @@ class ObservableCtrl(
 
   private def getZipFiles(observable: InputObservable, zipPassword: Option[String]): Seq[InputObservable] =
     observable.attachment.flatMap(_.swap.toSeq).flatMap { attachment =>
-      val zipFile                = new ZipFile(attachment.filepath.toFile)
-      val files: Seq[FileHeader] = zipFile.getFileHeaders.asScala.asInstanceOf[Seq[FileHeader]]
+      val zipFile = new ZipFile(attachment.filepath.toFile)
+      val files   = zipFile.getFileHeaders.asScala
 
       if (zipFile.isEncrypted)
         zipFile.setPassword(zipPassword.getOrElse(configuration.get[String]("datastore.attachment.password")).toCharArray)

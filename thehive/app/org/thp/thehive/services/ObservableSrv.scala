@@ -233,7 +233,7 @@ trait ObservableOpsNoDeps { _: TheHiveOpsNoDeps =>
 
     def organisations: Traversal.V[Organisation] =
       traversal
-        .unionFlat(identity, _.in("ReportObservable").in("ObservableJob").v[Observable])
+        .optional(_.in("ReportObservable").in("ObservableJob").v[Observable])
         .unionFlat(_.shares.organisation, _.alert.organisation)
 //      traversal.coalesceIdent(_.in[ShareObservable].in[OrganisationShare], _.in[AlertObservable].out[AlertOrganisation]).v[Organisation]
 
