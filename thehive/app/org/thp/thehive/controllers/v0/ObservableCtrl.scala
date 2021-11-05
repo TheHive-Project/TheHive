@@ -16,7 +16,6 @@ import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
 import play.api.Configuration
 import play.api.libs.Files.DefaultTemporaryFileCreator
@@ -382,14 +381,25 @@ class PublicObservable @Inject() (
             .richPage(from, to, withTotal = true) {
               case o if withStats =>
                 o.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv)(authContext))(authContext)
-                  .domainMap(ros => (ros._1, ros._2, None: Option[RichCase]))
+                  .domainMap(ros => (ros._1, ros._2, None: Option[Either[RichCase, RichAlert]]))
               case o =>
                 o.richObservable.domainMap(ro => (ro, JsObject.empty, None))
             }
         case (OutputParam(from, to, _, _), observableSteps, authContext) =>
           observableSteps.richPage(from, to, withTotal = true)(
-            _.richObservableWithCustomRenderer(organisationSrv, o => o.`case`.richCase(authContext))(authContext).domainMap(roc =>
-              (roc._1, JsObject.empty, Some(roc._2): Option[RichCase])
+            _.richObservableWithCustomRenderer(
+              organisationSrv,
+              o => o.project(_.by(_.`case`.richCase(authContext).option).by(_.alert.richAlert.option))
+            )(authContext).domainMap(roc =>
+              (
+                roc._1,
+                JsObject.empty,
+                roc._2 match {
+                  case (Some(c), _) => Some(Left(c))
+                  case (_, Some(a)) => Some(Right(a))
+                  case _            => None
+                }
+              )
             )
           )
       }
