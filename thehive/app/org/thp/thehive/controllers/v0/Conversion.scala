@@ -408,13 +408,14 @@ object Conversion {
       )
       .withFieldConst(_.stats, JsObject.empty)
       .withFieldConst(_.`case`, None)
+      .withFieldConst(_.alert, None)
       .enableMethodAccessors
       .transform
   )
 
-  implicit val observableWithExtraOutput: Renderer.Aux[(RichObservable, JsObject, Option[RichCase]), OutputObservable] =
-    Renderer.toJson[(RichObservable, JsObject, Option[RichCase]), OutputObservable] {
-      case (richObservable, stats, richCase) =>
+  implicit val observableWithExtraOutput: Renderer.Aux[(RichObservable, JsObject, Option[Either[RichCase, RichAlert]]), OutputObservable] =
+    Renderer.toJson[(RichObservable, JsObject, Option[Either[RichCase, RichAlert]]), OutputObservable] {
+      case (richObservable, stats, caseOrAlert) =>
         richObservable
           .into[OutputObservable]
           .withFieldConst(_._type, "case_artifact")
@@ -438,7 +439,8 @@ object Conversion {
               })
           )
           .withFieldConst(_.stats, stats)
-          .withFieldConst(_.`case`, richCase.map(_.toValue))
+          .withFieldConst(_.`case`, caseOrAlert.flatMap(_.swap.map(_.toValue).toOption))
+          .withFieldConst(_.alert, caseOrAlert.flatMap(_.map(_.toValue).toOption))
           .enableMethodAccessors
           .transform
     }
@@ -470,6 +472,7 @@ object Conversion {
           )
           .withFieldConst(_.stats, stats)
           .withFieldConst(_.`case`, None)
+          .withFieldConst(_.alert, None)
           .enableMethodAccessors
           .transform
     }

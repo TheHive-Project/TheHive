@@ -736,6 +736,7 @@ class Output @Inject() (
       for {
         organisation <- getOrganisation(inputAlert.organisation)
         createdAlert <- alertSrv.createEntity(inputAlert.alert.copy(organisationId = organisation._id, caseId = `case`.fold(EntityId.empty)(_._id)))
+        _            <- `case`.map(alertSrv.alertCaseSrv.create(AlertCase(), createdAlert, _)).flip
         tags = inputAlert.alert.tags.flatMap(getTag(_, organisation._id.value).toOption)
         _    = updateMetaData(createdAlert, inputAlert.metaData)
         _ <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
