@@ -73,6 +73,7 @@ case class OutputObservable(
     stats: JsObject,
     seen: Option[Boolean],
     `case`: Option[OutputCase],
+    alert: Option[OutputAlert],
     ignoreSimilarity: Option[Boolean]
 )
 

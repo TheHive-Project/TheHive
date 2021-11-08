@@ -77,7 +77,7 @@ object Conversion {
           _.case_artifact,
           jobWithParent._2.fold[Option[OutputObservable]](None) {
             case (richObservable, richCase) =>
-              Some(observableWithExtraOutput.toValue((richObservable, JsObject.empty, Some(richCase))))
+              Some(observableWithExtraOutput.toValue((richObservable, JsObject.empty, Some(Left(richCase)))))
           }
         )
         .enableMethodAccessors

@@ -1,5 +1,17 @@
 # Change Log
 
+## [4.1.13](https://github.com/TheHive-Project/TheHive/milestone/83) (2021-11-08)
+
+**Implemented enhancements:**
+
+- [Feature Request] Add API to link alert and case after a broken migration from TH3 [\#2238](https://github.com/TheHive-Project/TheHive/issues/2238)
+
+**Fixed bugs:**
+
+- [Bug] Migration breaks links between alerts and cases thus rendering all alert statuses as ignored [\#2232](https://github.com/TheHive-Project/TheHive/issues/2232)
+- [Bug] Search Section results missing (Observables) [\#2233](https://github.com/TheHive-Project/TheHive/issues/2233)
+- [Enhancement] Accept slash in attachment filename [\#2240](https://github.com/TheHive-Project/TheHive/issues/2240)
+
 ## [4.1.12](https://github.com/TheHive-Project/TheHive/milestone/82) (2021-10-29)
 
 **Fixed bugs:**

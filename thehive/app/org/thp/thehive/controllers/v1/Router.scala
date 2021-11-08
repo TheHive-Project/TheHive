@@ -145,6 +145,7 @@ class Router(
     case POST(p"/alert/$alertId/follow")   => alertCtrl.followAlert(alertId)
     case POST(p"/alert/$alertId/unfollow") => alertCtrl.unfollowAlert(alertId)
     case POST(p"/alert/$alertId/case")     => alertCtrl.createCase(alertId)
+    case POST(p"/alert/fixCaseLink")       => alertCtrl.fixCaseLink
     // PATCH    /alert/_bulk                         controllers.AlertCtrl.bulkUpdate()
 //    DELETE   /alert/:alertId                      controllers.AlertCtrl.delete(alertId)
 //    POST     /alert/:alertId/merge/:caseId        controllers.AlertCtrl.mergeWithCase(alertId, caseId)

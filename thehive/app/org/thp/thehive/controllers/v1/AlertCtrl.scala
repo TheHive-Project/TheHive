@@ -5,7 +5,7 @@ import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{Converter, IteratorOutput, Traversal}
-import org.thp.scalligraph.{EntityIdOrName, RichOptionTry}
+import org.thp.scalligraph.{BadRequestError, EntityIdOrName, EntityName, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.{InputAlert, InputCustomFieldValue, InputShare}
 import org.thp.thehive.models._
@@ -15,7 +15,7 @@ import play.api.mvc.{Action, AnyContent, Results}
 
 import java.util.{Map => JMap}
 import scala.reflect.runtime.{universe => ru}
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 case class SimilarCaseFilter()
 
@@ -23,6 +23,7 @@ class AlertCtrl(
     entrypoint: Entrypoint,
     properties: Properties,
     alertSrv: AlertSrv,
+    caseSrv: CaseSrv,
     caseTemplateSrv: CaseTemplateSrv,
     userSrv: UserSrv,
     observableSrv: ObservableSrv,
@@ -225,5 +226,23 @@ class AlertCtrl(
             alertSrv.unfollowAlert(alert._id)
             Results.NoContent
           }
+      }
+
+  def fixCaseLink: Action[AnyContent] =
+    entrypoint("fix link between case and alert")
+      .extract("alertName", FieldsParser.string.on("alertName"))
+      .extract("caseNumber", FieldsParser.string.on("caseNumber"))
+      .extract("organisation", FieldsParser.string.on("organisation"))
+      .authPermittedTransaction(db, Permissions.managePlatform) { implicit request => implicit graph =>
+        val alertName: String    = request.body("alertName")
+        val caseNumber: String   = request.body("caseNumber")
+        val organisation: String = request.body("organisation")
+        for {
+          organisation <- organisationSrv.getOrFail(EntityIdOrName(organisation))
+          alert        <- alertSrv.startTraversal.has(_.organisationId, organisation._id).get(EntityName(alertName)).getOrFail("Alert")
+          _            <- if (alertSrv.get(alert).`case`.exists) Failure(BadRequestError("The alert is already linked to a case")) else Success(())
+          c            <- caseSrv.getOrFail(EntityName(caseNumber))
+          _            <- alertSrv.alertCaseSrv.create(AlertCase(), alert, c)
+        } yield Results.NoContent
       }
 }
