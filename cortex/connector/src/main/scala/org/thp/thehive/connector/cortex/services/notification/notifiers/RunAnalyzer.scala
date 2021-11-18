@@ -64,8 +64,8 @@ class RunAnalyzer(
 
   override def execute(
       audit: Audit with Entity,
-      context: Option[Entity],
-      `object`: Option[Entity],
+      context: Option[Map[String, Seq[Any]] with Entity],
+      `object`: Option[Map[String, Seq[Any]] with Entity],
       organisation: Organisation with Entity,
       user: Option[User with Entity]
   )(implicit graph: Graph): Future[Unit] =

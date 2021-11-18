@@ -114,8 +114,8 @@ class NotificationActor @Inject() (
       user: Option[User with Entity],
       notificationConfigs: Seq[NotificationConfig],
       audit: Audit with Entity,
-      context: Option[Entity],
-      `object`: Option[Entity],
+      context: Option[Map[String, Seq[Any]] with Entity],
+      `object`: Option[Map[String, Seq[Any]] with Entity],
       organisation: Organisation with Entity
   )(implicit
       graph: Graph
