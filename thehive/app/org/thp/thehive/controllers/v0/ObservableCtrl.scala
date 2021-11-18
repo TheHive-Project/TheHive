@@ -435,7 +435,7 @@ class PublicObservable @Inject() (
     )
     .property("message", UMapping.string)(_.field.updatable)
     .property("tlp", UMapping.int)(_.field.updatable)
-    .property("dataType", UMapping.string)(_.field.custom { (_, value, vertex, graph, _) =>
+    .property("dataType", UMapping.string)(_.field.custom { (_, value, vertex, graph, authContext) =>
       val observable = observableSrv.model.converter(vertex)
       for {
         currentDataType <- observableTypeSrv.getByName(observable.dataType)(graph).getOrFail("ObservableType")
@@ -443,6 +443,8 @@ class PublicObservable @Inject() (
         isSameType = currentDataType.isAttachment == newDataType.isAttachment
         _ <- if (isSameType) Success(()) else Failure(BadRequestError("Can not update dataType: isAttachment does not match"))
         _ <- Try(observableSrv.get(vertex)(graph).update(_.dataType, value).iterate())
+        _ = observableSrv.get(vertex)(graph).outE[ObservableObservableType].remove()
+        _ <- observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, newDataType)(graph, authContext)
       } yield Json.obj("dataType" -> value)
     })
     .property("data", UMapping.string.optional)(_.field.readonly)
