@@ -422,6 +422,7 @@ class Properties @Inject() (
       .property("name", UMapping.string)(_.field.readonly)
       .property("locked", UMapping.boolean)(_.field.readonly)
       .property("avatar", UMapping.string.optional)(_.select(_.avatar.value(_.attachmentId).domainMap(id => s"/api/datastore/$id")).readonly)
+      .property("profile", UMapping.string)(_.authSelect((users, authContext) => users.profile(authContext.organisation).value(_.name)).readonly)
       .build
 
   lazy val observable: PublicProperties =

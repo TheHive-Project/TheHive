@@ -283,6 +283,7 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv) 
             }
         }
     )
+    .property("profile", UMapping.string)(_.authSelect((users, authContext) => users.profile(authContext.organisation).value(_.name)).readonly)
     .build
 
 }
