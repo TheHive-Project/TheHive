@@ -1,5 +1,20 @@
 # Change Log
 
+## [4.1.14](https://github.com/TheHive-Project/TheHive/milestone/84) (2021-11-19)
+
+**Implemented enhancements:**
+
+- [FR] Add user/org in Analyzers requests parameters [\#2245](https://github.com/TheHive-Project/TheHive/issues/2245)
+- [Feature Request] Add sort capability on "Profile" field of a organisations users list [\#2246](https://github.com/TheHive-Project/TheHive/issues/2246)
+- [Feature Request] Add API for change observable from a type to another [\#2251](https://github.com/TheHive-Project/TheHive/issues/2251)
+
+**Fixed bugs:**
+
+- [Bug] Fix observable type inconsistencies [\#2248](https://github.com/TheHive-Project/TheHive/issues/2248)
+- [Bug] Send notification to all viewing organisations [\#2249](https://github.com/TheHive-Project/TheHive/issues/2249)
+- [Bug] Update the field caseId in alert when it is imported in case [\#2250](https://github.com/TheHive-Project/TheHive/issues/2250)
+- [Bug] Incomplete alert observable details in search page [\#2252](https://github.com/TheHive-Project/TheHive/issues/2252)
+
 ## [4.1.13](https://github.com/TheHive-Project/TheHive/milestone/83) (2021-11-08)
 
 **Implemented enhancements:**
