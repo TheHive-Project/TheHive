@@ -1,11 +1,17 @@
+<!-- <span ng-if="value._type == 'alert'">
+    <a class="text-muted wrap" href ng-click="onClickEvent({value: value})">
+        <i class="glyphicon glyphicon-folder-open"></i>
+        &nbsp;{{value.title}}&nbsp;
+    </a>
+</span> -->
 <span ng-if="value._type == 'case'">
-    <a class="text-muted wrap"href ng-click="openLink(entityUrl(value))">
+    <a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
         <i class="glyphicon glyphicon-folder-open"></i>
         &nbsp;#{{value.caseId || value.number}} - {{value.title}}&nbsp;
     </a>
 </span>
 <span ng-if="value._type == 'Case'">
-    <a class="text-muted wrap"href ng-click="openLink(entityUrl(value))">
+    <a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
         <i class="glyphicon glyphicon-folder-open"></i>
         &nbsp;#{{value.caseId || value.number}} - {{value.title}}&nbsp;
     </a>
@@ -28,7 +34,9 @@
     <entity-link value="value.case_task" target="target"></entity-link>
     <i class="text-muted wrap" class="glyphicon glyphicon-comment"></i>
 </span>
-<span ng-if="value._type == 'case_artifact'">
+<span ng-if="value._type == 'case_artifact' && value.case">
+    <!-- <entity-link ng-if="value.alert" value="value.alert" target="target"></entity-link> -->
+    <!-- <entity-link ng-if="value.case" value="value.case" target="target"></entity-link> -->
     <entity-link value="value.case" target="target"></entity-link>
     <a class="text-muted wrap" href ng-click="openLink(entityUrl(value))">
         <i class="glyphicon glyphicon-pushpin"></i>

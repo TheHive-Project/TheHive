@@ -25,7 +25,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
-import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableTypeSrv, ReportTagSrv}
+import org.thp.thehive.services.{AttachmentSrv, ObservableSrv, ObservableTypeSrv, OrganisationSrv, ReportTagSrv}
 import play.api.libs.json.{JsObject, JsString, Json}
 
 import java.nio.file.Files
@@ -44,6 +44,7 @@ class JobSrv @Inject() (
     reportTagSrv: ReportTagSrv,
     serviceHelper: ServiceHelper,
     auditSrv: CortexAuditSrv,
+    organisationSrv: OrganisationSrv,
     implicit val db: Database,
     implicit val ec: ExecutionContext,
     implicit val mat: Materializer
@@ -63,9 +64,15 @@ class JobSrv @Inject() (
     * @param authContext auth context instance
     * @return
     */
-  def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity)(implicit
+  def submit(cortexId: String, workerId: String, observable: RichObservable, `case`: Case with Entity, parameters: JsObject)(implicit
       authContext: AuthContext
-  ): Future[RichJob] =
+  ): Future[RichJob] = {
+    val parametersWithRequesterInfo = db.roTransaction { implicit graph =>
+      parameters +
+        ("organisation" -> JsString(organisationSrv.current.value(_.name).head)) +
+        ("user"         -> JsString(authContext.userId))
+    }
+
     for {
       cortexClient <-
         serviceHelper
@@ -78,12 +85,20 @@ class JobSrv @Inject() (
       cortexArtifact <- observable.dataOrAttachment match {
         case Left(data) =>
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.dataType, `case`.number.toString, Some(data), None)
+            InputArtifact(observable.tlp, `case`.pap, observable.dataType, `case`.number.toString, Some(data), None, parametersWithRequesterInfo)
           )
         case Right(a) =>
           val attachment = CortexAttachment(a.name, a.size, a.contentType, attachmentSrv.source(a))
           Future.successful(
-            InputArtifact(observable.tlp, `case`.pap, observable.dataType, `case`.number.toString, None, Some(attachment))
+            InputArtifact(
+              observable.tlp,
+              `case`.pap,
+              observable.dataType,
+              `case`.number.toString,
+              None,
+              Some(attachment),
+              parametersWithRequesterInfo
+            )
           )
         case _ => Future.failed(new Exception(s"Invalid Observable data for ${observable.observable._id}"))
       }
@@ -102,6 +117,7 @@ class JobSrv @Inject() (
       })
       _ = cortexActor ! CheckJob(Some(createdJob._id), cortexOutputJob.id, None, cortexClient.name, authContext)
     } yield createdJob
+  }
 
   private def fromCortexOutputJob(j: CortexJob): Job =
     j.into[Job]

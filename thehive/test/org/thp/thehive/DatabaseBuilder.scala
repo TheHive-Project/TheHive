@@ -38,7 +38,6 @@ class DatabaseBuilder @Inject() (
     dashboardSrv: DashboardSrv,
     dataSrv: DataSrv,
     impactStatusSrv: ImpactStatusSrv,
-    keyValueSrv: KeyValueSrv,
     logSrv: LogSrv,
     observableSrv: ObservableSrv,
     observableTypeSrv: ObservableTypeSrv,
@@ -229,7 +228,7 @@ class DatabaseBuilder @Inject() (
                 observableTypeSrv
                   .getByName(observable.dataType)
                   .getOrFail("ObservableType")
-                  .flatMap(observableSrv.observableObservableType.create(ObservableObservableType(), observable, _))
+                  .flatMap(observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, _))
                   .get
                 observable
                   .data

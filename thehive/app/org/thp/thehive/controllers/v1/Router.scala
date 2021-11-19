@@ -77,7 +77,8 @@ class Router @Inject() (
     case PATCH(p"/observable/_bulk")          => observableCtrl.bulkUpdate
     case PATCH(p"/observable/$observableId")  => observableCtrl.update(observableId)
 //    case GET(p"/observable/$observableId/similar") => observableCtrl.findSimilar(observableId)
-    case POST(p"/observable/$observableId/shares") => shareCtrl.shareObservable(observableId)
+    case POST(p"/observable/$observableId/shares")         => shareCtrl.shareObservable(observableId)
+    case PUT(p"/observable/type/update/$fromType/$toType") => observableCtrl.updateAllTypes(fromType, toType)
 
     case GET(p"/caseTemplate")                   => caseTemplateCtrl.list
     case POST(p"/caseTemplate")                  => caseTemplateCtrl.create

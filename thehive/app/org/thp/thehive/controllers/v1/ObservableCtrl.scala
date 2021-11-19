@@ -15,6 +15,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services.ObservableOps._
+import org.thp.thehive.services.ObservableTypeOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services._
@@ -310,6 +311,18 @@ class ObservableCtrl @Inject() (
         observableSrv
           .update(_.get(EntityIdOrName(observableId)).canManage(organisationSrv), propertyUpdaters)
           .map(_ => Results.NoContent)
+      }
+
+  def updateAllTypes(fromType: String, toType: String): Action[AnyContent] =
+    entrypoint("update all observable types")
+      .authPermittedTransaction(db, Permissions.managePlatform) { implicit request => implicit graph =>
+        for {
+          from <- observableTypeSrv.getOrFail(EntityIdOrName(fromType))
+          to   <- observableTypeSrv.getOrFail(EntityIdOrName(toType))
+          isSameType = from.isAttachment == to.isAttachment
+          _ <- if (isSameType) Success(()) else Failure(BadRequestError("Can not update dataType: isAttachment does not match"))
+          _ <- observableTypeSrv.get(from).observables.toIterator.toTry(observableSrv.updateType(_, to))
+        } yield Results.NoContent
       }
 
   def bulkUpdate: Action[AnyContent] =

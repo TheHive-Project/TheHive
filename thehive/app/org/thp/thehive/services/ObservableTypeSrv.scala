@@ -35,8 +35,10 @@ class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityChec
       createEntity(observableType)
 
   def remove(idOrName: EntityIdOrName)(implicit graph: Graph): Try[Unit] =
-    if (useCount(idOrName) == 0) Success(get(idOrName).remove())
+    if (isUsed(idOrName)) Success(get(idOrName).remove())
     else Failure(BadRequestError(s"Observable type $idOrName is used"))
+
+  def isUsed(idOrName: EntityIdOrName)(implicit graph: Graph): Boolean = get(idOrName).inE[ObservableObservableType].exists
 
   def useCount(idOrName: EntityIdOrName)(implicit graph: Graph): Long =
     get(idOrName).in[ObservableObservableType].getCount
@@ -50,6 +52,8 @@ object ObservableTypeOps {
       idOrName.fold(traversal.getByIds(_), getByName)
 
     def getByName(name: String): Traversal.V[ObservableType] = traversal.has(_.name, name)
+
+    def observables: Traversal.V[Observable] = traversal.in[ObservableObservableType].v[Observable]
   }
 }
 

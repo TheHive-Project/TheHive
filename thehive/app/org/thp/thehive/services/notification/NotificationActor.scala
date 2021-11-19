@@ -114,8 +114,8 @@ class NotificationActor @Inject() (
       user: Option[User with Entity],
       notificationConfigs: Seq[NotificationConfig],
       audit: Audit with Entity,
-      context: Option[Entity],
-      `object`: Option[Entity],
+      context: Option[Map[String, Seq[Any]] with Entity],
+      `object`: Option[Map[String, Seq[Any]] with Entity],
       organisation: Organisation with Entity
   )(implicit
       graph: Graph
@@ -156,64 +156,68 @@ class NotificationActor @Inject() (
           .auditContextObjectOrganisation
           .toIterator
           .foreach {
-            case (audit, context, obj, Some(organisation)) =>
-              logger.debug(s"Notification is related to $audit, $context, $organisation")
-              triggerMap
-                .getOrElse(organisation._id, Map.empty)
-                .foreach {
-                  case (trigger, (inOrg, userIds)) if trigger.preFilter(audit, context, organisation) =>
-                    logger.debug(s"Notification trigger ${trigger.name} is applicable for $audit")
-                    if (userIds.nonEmpty)
-                      userSrv
-                        .getByIds(userIds: _*)
-                        .project(
-                          _.by
-                            .by(_.config("notification").value(_.value).fold)
-                        )
-                        .toIterator
-                        .foreach {
-                          case (user, notificationConfig) =>
-                            val config = notificationConfig.flatMap(_.asOpt[NotificationConfig])
-                            executeNotification(Some(user), config, audit, context, obj, organisation)
-                        }
-                    if (inOrg)
-                      organisationSrv
-                        .get(organisation)
-                        .config
-                        .has(_.name, "notification")
-                        .value(_.value)
-                        .toIterator
-                        .foreach { notificationConfig: JsValue =>
-                          val (userConfig, orgConfig) = notificationConfig
-                            .asOpt[Seq[NotificationConfig]]
-                            .getOrElse(Nil)
-                            .partition(_.delegate)
-                          organisationSrv
-                            .get(organisation)
-                            .users
-                            .filter(_.config.hasNot(_.name, "notification"))
-                            .toIterator
-                            .foreach { user =>
-                              executeNotification(Some(user), userConfig, audit, context, obj, organisation)
-                            }
-                          executeNotification(None, orgConfig, audit, context, obj, organisation)
-                        }
-                  case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable for $audit")
-                }
+            case (audit, context, obj, organisations) =>
+              logger.debug(s"Notification is related to $audit, $context, ${organisations.map(_.name).mkString(",")}")
+              organisations.foreach { organisation =>
+                triggerMap
+                  .getOrElse(organisation._id, Map.empty)
+                  .foreach {
+                    case (trigger, (inOrg, userIds)) if trigger.preFilter(audit, context, organisation) =>
+                      logger.debug(s"Notification trigger ${trigger.name} is applicable for $audit")
+                      if (userIds.nonEmpty)
+                        userSrv
+                          .getByIds(userIds: _*)
+                          .project(
+                            _.by
+                              .by(_.config("notification").value(_.value).fold)
+                          )
+                          .toIterator
+                          .foreach {
+                            case (user, notificationConfig) =>
+                              val config = notificationConfig.flatMap(_.asOpt[NotificationConfig])
+                              executeNotification(Some(user), config, audit, context, obj, organisation)
+                          }
+                      if (inOrg)
+                        organisationSrv
+                          .get(organisation)
+                          .config
+                          .has(_.name, "notification")
+                          .value(_.value)
+                          .toIterator
+                          .foreach { notificationConfig: JsValue =>
+                            val (userConfig, orgConfig) = notificationConfig
+                              .asOpt[Seq[NotificationConfig]]
+                              .getOrElse(Nil)
+                              .partition(_.delegate)
+                            organisationSrv
+                              .get(organisation)
+                              .users
+                              .filter(_.config.hasNot(_.name, "notification"))
+                              .toIterator
+                              .foreach { user =>
+                                executeNotification(Some(user), userConfig, audit, context, obj, organisation)
+                              }
+                            executeNotification(None, orgConfig, audit, context, obj, organisation)
+                          }
+                    case (trigger, _) => logger.debug(s"Notification trigger ${trigger.name} is NOT applicable for $audit")
+                  }
+              }
             case _ =>
           }
       }
     case NotificationExecution(userId, auditId, notificationConfig) =>
       db.roTransaction { implicit graph =>
         auditSrv.getByIds(auditId).auditContextObjectOrganisation.getOrFail("Audit").foreach {
-          case (audit, context, obj, Some(organisation)) =>
-            for {
-              user    <- userId.map(userSrv.getOrFail).flip
-              trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
-              if trigger.filter(audit, context, organisation, user)
-              notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
-              _ = logger.debug(s"Execution of notifier ${notifier.name} for user $user")
-            } yield notifier.execute(audit, context, obj, organisation, user)
+          case (audit, context, obj, organisations) =>
+            organisations.foreach { organisation =>
+              for {
+                user    <- userId.map(userSrv.getOrFail).flip
+                trigger <- notificationSrv.getTrigger(notificationConfig.triggerConfig)
+                if trigger.filter(audit, context, organisation, user)
+                notifier <- notificationSrv.getNotifier(notificationConfig.notifierConfig)
+                _ = logger.debug(s"Execution of notifier ${notifier.name} for user $user")
+              } yield notifier.execute(audit, context, obj, organisation, user)
+            }
           case _ => // TODO
         }
       }
