@@ -722,7 +722,7 @@ class Output(
               )
           )
       _ = updateMetaData(observable, inputObservable.metaData)
-      _ <- observableSrv.observableObservableType.create(ObservableObservableType(), observable, observableType)
+      _ <- observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, observableType)
       _ = inputObservable.observable.tags.foreach { tagName =>
         getTag(tagName, organisationIds.head.value)
           .foreach(tag => observableSrv.observableTagSrv.create(ObservableTag(), observable, tag))

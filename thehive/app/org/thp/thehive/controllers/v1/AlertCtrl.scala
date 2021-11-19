@@ -243,6 +243,7 @@ class AlertCtrl(
           _            <- if (alertSrv.get(alert).`case`.exists) Failure(BadRequestError("The alert is already linked to a case")) else Success(())
           c            <- caseSrv.getOrFail(EntityName(caseNumber))
           _            <- alertSrv.alertCaseSrv.create(AlertCase(), alert, c)
+          _            <- alertSrv.get(alert).update(_.caseId, c._id).getOrFail("Alert")
         } yield Results.NoContent
       }
 }

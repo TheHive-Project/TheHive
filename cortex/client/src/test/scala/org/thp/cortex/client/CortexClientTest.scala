@@ -37,7 +37,7 @@
 //    }
 //
 //    "run an analysis" in {
-//      await(client.analyse("anaTest1", InputArtifact(1, 1, "test", "test", Some("test"), None))) must equalTo(
+//      await(client.analyse("anaTest1", InputArtifact(1, 1, "test", "test", Some("test"), None, JsObject.empty))) must equalTo(
 //        OutputJob(
 //          id = "AWuYKFatq3Rtqym9DFmL",
 //          workerId = "anaTest1",

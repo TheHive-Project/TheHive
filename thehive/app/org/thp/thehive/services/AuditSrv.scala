@@ -311,20 +311,23 @@ trait AuditOpsNoDeps { _: TheHiveOpsNoDeps =>
   }
 
   implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
-    def auditContextObjectOrganisation
-        : Traversal[(Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]), JMap[String, Any], Converter[
-          (Audit with Entity, Option[Entity], Option[Entity], Option[Organisation with Entity]),
-          JMap[String, Any]
-        ]] =
+    def auditContextObjectOrganisation: Traversal[
+      (Audit with Entity, Option[Map[String, Seq[Any]] with Entity], Option[Map[String, Seq[Any]] with Entity], Seq[Organisation with Entity]),
+      JMap[String, Any],
+      Converter[
+        (Audit with Entity, Option[Map[String, Seq[Any]] with Entity], Option[Map[String, Seq[Any]] with Entity], Seq[Organisation with Entity]),
+        JMap[String, Any]
+      ]
+    ] =
       traversal
         .project(
           _.by
-            .by(_.context.entity.fold)
-            .by(_.`object`.entity.fold)
+            .by(_.context.entityMap.option)
+            .by(_.`object`.entityMap.option)
             .by(_.organisation.v[Organisation].fold)
         )
         .domainMap {
-          case (audit, context, obj, organisation) => (audit, context.headOption, obj.headOption, organisation.headOption)
+          case (audit, context, obj, organisation) => (audit, context, obj, organisation)
         }
 
     def richAudit: Traversal[RichAudit, JMap[String, Any], Converter[RichAudit, JMap[String, Any]]] =

@@ -9,7 +9,7 @@ import org.thp.thehive.connector.cortex.models.{Job, JobStatus}
 import org.thp.thehive.models.Permissions
 import org.thp.thehive.services.notification.triggers.JobFinished
 import org.thp.thehive.services.{TestAppBuilder => _}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.PlaySpecification
 
 import java.util.Date
@@ -85,7 +85,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder with CortexOps {
         case0 <- database.roTransaction { implicit graph =>
           caseSrv.getOrFail(EntityName("1"))
         }
-      } yield await(jobSrv.submit("test", "anaTest1", observable, case0))
+      } yield await(jobSrv.submit("test", "anaTest1", observable, case0, JsObject.empty))
 
       x must beASuccessfulTry.which { job =>
         job.cortexId shouldEqual "test"

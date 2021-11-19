@@ -27,10 +27,10 @@ class ObservableSrv(
     organisationSrv: OrganisationSrv
 ) extends VertexSrv[Observable]
     with TheHiveOpsNoDeps {
-  val observableDataSrv        = new EdgeSrv[ObservableData, Observable, Data]
-  val observableObservableType = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
-  val observableAttachmentSrv  = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val observableTagSrv         = new EdgeSrv[ObservableTag, Observable, Tag]
+  val observableDataSrv           = new EdgeSrv[ObservableData, Observable, Data]
+  val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
+  val observableAttachmentSrv     = new EdgeSrv[ObservableAttachment, Observable, Attachment]
+  val observableTagSrv            = new EdgeSrv[ObservableTag, Observable, Tag]
 
   def create(observable: Observable, file: FFile)(implicit
       graph: Graph,
@@ -62,7 +62,7 @@ class ObservableSrv(
           else Success(())
         tags              <- observable.tags.toTry(tagSrv.getOrCreate)
         createdObservable <- createEntity(observable.copy(data = None))
-        _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, observableType)
+        _                 <- observableObservableTypeSrv.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
         _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       } yield RichObservable(createdObservable, Some(attachment), None, Nil)
@@ -91,7 +91,7 @@ class ObservableSrv(
         tags              <- observable.tags.toTry(tagSrv.getOrCreate)
         data              <- dataSrv.create(Data(dataValue))
         createdObservable <- createEntity(observable.copy(data = Some(dataValue)))
-        _                 <- observableObservableType.create(ObservableObservableType(), createdObservable, observableType)
+        _                 <- observableObservableTypeSrv.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
         _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       } yield RichObservable(createdObservable, None, None, Nil)
@@ -181,6 +181,19 @@ class ObservableSrv(
           .getOrFail("Observable")
           .flatMap(observable => auditSrv.observable.update(observable, updatedFields))
     }
+
+  def updateType(observable: Observable with Entity, observableType: ObservableType with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    get(observable)
+      .update(_.dataType, observableType.name)
+      .outE[ObservableObservableType]
+      .remove()
+    observableObservableTypeSrv
+      .create(ObservableObservableType(), observable, observableType)
+      .flatMap(_ => auditSrv.observable.update(observable, Json.obj("dataType" -> observableType.name)))
+  }
 }
 
 trait ObservableOpsNoDeps { _: TheHiveOpsNoDeps =>
@@ -368,8 +381,12 @@ trait ObservableOps { _: TheHiveOps =>
   }
 }
 
-class ObservableIntegrityCheckOps(val db: Database, val service: ObservableSrv, organisationSrv: OrganisationSrv)
-    extends IntegrityCheckOps[Observable]
+class ObservableIntegrityCheckOps(
+    val db: Database,
+    val service: ObservableSrv,
+    organisationSrv: OrganisationSrv,
+    observableTypeSrv: ObservableTypeSrv
+) extends IntegrityCheckOps[Observable]
     with TheHiveOpsNoDeps {
   override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
@@ -382,14 +399,15 @@ class ObservableIntegrityCheckOps(val db: Database, val service: ObservableSrv, 
             _.by
               .by(_.organisations._id.fold)
               .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
+              .by(_.observableType.fold)
           )
           .toIterator
           .map {
-            case (observable, organisationIds, relatedIds) =>
+            case (observable, organisationIds, relatedIds, observableTypes) =>
               val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
                 .check(observable, observable.organisationIds, organisationIds)
 
-              val removeOrphan: OrphanStrategy[Observable, EntityId] = { (a, entity) =>
+              val removeOrphan: OrphanStrategy[Observable, EntityId] = { (_, entity) =>
                 service.get(entity).remove()
                 Map("Observable-relatedId-removeOrphan" -> 1)
               }
@@ -402,7 +420,46 @@ class ObservableIntegrityCheckOps(val db: Database, val service: ObservableSrv, 
                 Some(_)
               ).check(observable, observable.relatedId, relatedIds)
 
-              orgStats <+> relatedStats
+              val observableTypeStatus =
+                if (observableTypes.exists(_.name == observable.dataType))
+                  if (observableTypes.size > 1) { // more than one link to observableType
+                    service
+                      .get(observable)
+                      .outE[ObservableObservableType]
+                      .filter(_.inV.v[ObservableType].has(_.name, P.neq(observable.dataType)))
+                      .remove()
+                    service
+                      .get(observable)
+                      .outE[ObservableObservableType]
+                      .range(1, Long.MaxValue)
+                      .remove()
+                    Map("Observable-extraObservableType" -> (observableTypes.size - 1))
+                  } else Map.empty[String, Int]
+                else // Links to ObservableType doesn't contain observable.dataType
+                  observableTypeSrv.get(EntityName(observable.dataType)).headOption match {
+                    case Some(ot) => // dataType is a valid ObservableType => remove all links and create the good one
+                      service
+                        .get(observable)
+                        .outE[ObservableObservableType]
+                        .remove()
+                      service
+                        .observableObservableTypeSrv
+                        .create(ObservableObservableType(), observable, ot)(graph, LocalUserSrv.getSystemAuthContext)
+                      Map("Observable-linkObservableType" -> 1, "Observable-extraObservableTypeLink" -> observableTypes.size)
+                    case None => // DataType is not a valid ObservableType, select the first created observableType
+                      observableTypes match {
+                        case ot +: extraTypes =>
+                          service.get(observable).update(_.dataType, ot.name).iterate()
+                          if (extraTypes.nonEmpty)
+                            service.get(observable).outE[ObservableObservableType].filter(_.inV.hasId(extraTypes.map(_._id): _*)).remove()
+                          Map("Observable-dataType-setField" -> 1, "Observable-extraObservableTypeLink" -> extraTypes.size)
+                        case _ => // DataType is not valid and there is no ObservableType, no choice, remove the observable
+                          service.delete(observable)(graph, LocalUserSrv.getSystemAuthContext)
+                          Map("Observable-removeInvalidDataType" -> 1)
+                      }
+                  }
+
+              orgStats <+> relatedStats <+> observableTypeStatus
           }
           .reduceOption(_ <+> _)
           .getOrElse(Map.empty)

@@ -87,14 +87,14 @@ class NotificationTemplateTest extends PlaySpecification with TestAppBuilder wit
           |Context {{context._id}}""".stripMargin
 
       val message = database.tryTransaction { implicit graph =>
-        println(s"querying ${graph} ${graph.db} ${graph.db}")
         for {
-          case4 <- caseSrv.get(EntityName("1")).getOrFail("Case")
-          _     <- caseSrv.addTags(case4, Set("emailer test"))
-          _     <- caseSrv.addTags(case4, Set("emailer test")) // this is needed to make AuditSrv write Audit in DB
-          audit <- auditSrv.startTraversal.has(_.objectId, case4._id.toString).getOrFail("Audit")
-          user  <- userSrv.get(EntityName("certuser@thehive.local")).getOrFail("User")
-          msg   <- templateEngine(schema).buildMessage(template, audit, Some(case4), Some(case4), Some(user), "http://localhost/")
+          case4       <- caseSrv.get(EntityName("1")).getOrFail("Case")
+          case4Entity <- caseSrv.get(EntityName("1")).entityMap.getOrFail("Case")
+          _           <- caseSrv.addTags(case4, Set("emailer test"))
+          _           <- caseSrv.addTags(case4, Set("emailer test")) // this is needed to make AuditSrv write Audit in DB
+          audit       <- auditSrv.startTraversal.has(_.objectId, case4._id.toString).getOrFail("Audit")
+          user        <- userSrv.get(EntityName("certuser@thehive.local")).getOrFail("User")
+          msg         <- templateEngine(schema).buildMessage(template, audit, Some(case4Entity), Some(case4Entity), Some(user), "http://localhost/")
         } yield msg
       }
       message must beSuccessfulTry.which { m =>

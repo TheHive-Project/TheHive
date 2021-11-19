@@ -287,6 +287,7 @@ class PublicUser(userSrv: UserSrv, organisationSrv: OrganisationSrv, searchSrv: 
             }
         }
     )
+    .property("profile", UMapping.string)(_.authSelect((users, authContext) => users.profile(authContext.organisation).value(_.name)).readonly)
     .build
 
 }

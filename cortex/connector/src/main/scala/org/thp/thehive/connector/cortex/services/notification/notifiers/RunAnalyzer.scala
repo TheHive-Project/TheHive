@@ -1,5 +1,6 @@
 package org.thp.thehive.connector.cortex.services.notification.notifiers
 
+import com.typesafe.config.ConfigRenderOptions
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.{BadConfigurationError, NotFoundError, RichOption}
@@ -9,6 +10,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.notifiers.{Notifier, NotifierProvider}
 import play.api.Configuration
+import play.api.libs.json.{JsObject, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Try}
@@ -22,10 +24,12 @@ class RunAnalyzerProvider(
 ) extends NotifierProvider {
   override val name: String = "RunAnalyzer"
 
-  override def apply(config: Configuration): Try[Notifier] =
+  override def apply(config: Configuration): Try[Notifier] = {
+    val parameters = Try(Json.parse(config.underlying.getValue("parameters").render(ConfigRenderOptions.concise())).as[JsObject]).toOption
     config.getOrFail[String]("analyzerName").map { responderName =>
       new RunAnalyzer(
         responderName,
+        parameters.getOrElse(JsObject.empty),
         analyzerSrv,
         jobSrv,
         caseSrv,
@@ -33,10 +37,12 @@ class RunAnalyzerProvider(
         ec
       )
     }
+  }
 }
 
 class RunAnalyzer(
     analyzerName: String,
+    parameters: JsObject,
     analyzerSrv: AnalyzerSrv,
     jobSrv: JobSrv,
     caseSrv: CaseSrv,
@@ -60,8 +66,8 @@ class RunAnalyzer(
 
   override def execute(
       audit: Audit with Entity,
-      context: Option[Entity],
-      `object`: Option[Entity],
+      context: Option[Map[String, Seq[Any]] with Entity],
+      `object`: Option[Map[String, Seq[Any]] with Entity],
       organisation: Organisation with Entity,
       user: Option[User with Entity]
   )(implicit graph: Graph): Future[Unit] =
@@ -74,6 +80,6 @@ class RunAnalyzer(
         workers             <- analyzerSrv.getAnalyzerByName(analyzerName, organisation._id)
         (worker, cortexIds) <- Future.fromTry(workers.headOption.toTry(Failure(NotFoundError(s"Analyzer $analyzerName not found"))))
         authContext = LocalUserSrv.getSystemAuthContext.changeOrganisation(organisation._id, Permissions.all)
-        _ <- jobSrv.submit(cortexIds.head, worker.id, observable, case0)(authContext)
+        _ <- jobSrv.submit(cortexIds.head, worker.id, observable, case0, parameters)(authContext)
       } yield ()
 }

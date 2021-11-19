@@ -2,7 +2,7 @@ package org.thp.thehive.services.notification.notifiers
 
 import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.helper.ConditionalHelpers
-import org.thp.scalligraph.models.{Entity, Schema}
+import org.thp.scalligraph.models.{Entity, MappingCardinality, Schema}
 import org.thp.thehive.models.{Audit, User}
 
 import java.util.{HashMap => JHashMap}
@@ -18,6 +18,24 @@ trait Template {
     * @param cc the entity
     * @return
     */
+  private def getMap(cc: Map[String, Seq[Any]] with Entity): Map[String, String] =
+    schema.getModel(cc._label).fold(cc.mapValues(_.mkString("[", ",", "]"))) { model =>
+      cc.map {
+        case (k, v) =>
+          model.fields.get(k).fold(k -> v.mkString("[", ",", "]")) {
+            case mapping if mapping.cardinality == MappingCardinality.list || mapping.cardinality == MappingCardinality.set =>
+              k -> v.mkString("[", ",", "]")
+            case _ => k -> v.head.toString
+          }
+      } +
+        ("_id"        -> cc._id.toString) +
+        ("_type"      -> cc._label) +
+        ("_createdAt" -> cc._createdAt.toString) +
+        ("_createdBy" -> cc._createdBy) +
+        ("_updatedAt" -> cc._updatedAt.fold("never")(_.toString)) +
+        ("_updatedBy" -> cc._updatedBy.getOrElse("nobody"))
+    }
+
   private def getMap(cc: Entity): Map[String, String] =
     schema
       .getModel(cc._label)
@@ -63,8 +81,8 @@ trait Template {
   def buildMessage(
       template: String,
       audit: Audit with Entity,
-      context: Option[Entity],
-      `object`: Option[Entity],
+      context: Option[Map[String, Seq[Any]] with Entity],
+      `object`: Option[Map[String, Seq[Any]] with Entity],
       user: Option[User with Entity],
       baseUrl: String
   ): Try[String] = {

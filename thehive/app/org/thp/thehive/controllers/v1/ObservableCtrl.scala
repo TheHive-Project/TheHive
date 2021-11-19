@@ -305,6 +305,18 @@ class ObservableCtrl(
           .map(_ => Results.NoContent)
       }
 
+  def updateAllTypes(fromType: String, toType: String): Action[AnyContent] =
+    entrypoint("update all observable types")
+      .authPermittedTransaction(db, Permissions.managePlatform) { implicit request => implicit graph =>
+        for {
+          from <- observableTypeSrv.getOrFail(EntityIdOrName(fromType))
+          to   <- observableTypeSrv.getOrFail(EntityIdOrName(toType))
+          isSameType = from.isAttachment == to.isAttachment
+          _ <- if (isSameType) Success(()) else Failure(BadRequestError("Can not update dataType: isAttachment does not match"))
+          _ <- observableTypeSrv.get(from).observables.toIterator.toTry(observableSrv.updateType(_, to))
+        } yield Results.NoContent
+      }
+
   def bulkUpdate: Action[AnyContent] =
     entrypoint("bulk update")
       .extract("input", FieldsParser.update("observable", publicProperties))

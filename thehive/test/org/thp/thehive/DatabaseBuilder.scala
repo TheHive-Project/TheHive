@@ -248,7 +248,7 @@ class DatabaseBuilder(
                 observableTypeSrv
                   .getByName(observable.dataType)
                   .getOrFail("ObservableType")
-                  .flatMap(observableSrv.observableObservableType.create(ObservableObservableType(), observable, _))
+                  .flatMap(observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, _))
                   .get
                 observable
                   .data

@@ -1,4 +1,4 @@
-<div class="search-item-title">
+<div ng-if="value.case" class="search-item-title">
     <a href ui-sref="app.case.observables-item({caseId: value.case.id, itemId: value.id})">
         [<span ng-bind="value.dataType"></span>]:
         <em>
@@ -7,15 +7,44 @@
         </em>
     </a>
 </div>
+<div ng-if="value.alert" class="search-item-title">
+    <span ng-if="value.alert" ng-click="onTitleClicked({value: value.alert})">
+        <a href>
+            [<span ng-bind="value.dataType"></span>]:
+            <em>
+                <span ng-if="!value.attachment.name" ng-bind="value.data"></span>
+                <span ng-if="value.attachment.name" ng-bind="value.attachment.name"></span>
+            </em>
+        </a>
+    </span>
+</div>
 <div>
     <i class="glyphicon glyphicon-user"></i>
     <user-info value="value.createdBy" field="name"></user-info>
 
     <i class="glyphicon glyphicon-calendar ml-xxs"></i>
     <span ng-bind="value.startDate | shortDate"></span>
+
+    <span ng-if="value.alert">
+        <i class="fa fa-certificate ml-xxs"></i> Type:
+        <span>{{value.alert.type}}</span>
+
+        <i class="fa fa-barcode ml-xxs"></i> Reference:
+        <span>{{value.alert.sourceRef}}</span>
+
+        <i class="fa fa-bullseye ml-xxs"></i> Source:
+        <span>{{value.alert.source}}</span>
+    </span>
 </div>
+
+<div class="mt-xs wrap" ng-if="value.alert">
+    <strong>Alert:</strong><br>
+    <span>{{value.alert.title}}</span>
+</div>
+
 <div class="mt-xs wrap" ng-if="value.tags.length>0">
-    <strong>Tags:</strong><tag-list data="value.tags"></tag-list>
+    <strong>Tags:</strong>
+    <tag-list data="value.tags"></tag-list>
 </div>
 <div class="mt-xs wrap">
     <span ng-bind="(value.message || 'No Description') | limitTo: 250"></span>

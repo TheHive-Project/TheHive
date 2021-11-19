@@ -28,7 +28,11 @@ steps:
   - name: run-tests
     image: thehiveproject/drone-scala-node
     commands:
-      - sbt -Duser.home=$PWD test:compile test
+      - |
+        . ~/.nvm/nvm.sh
+        nvm install 14
+        npm install -g bower grunt
+        sbt -Duser.home=$PWD test:compile test Universal/packageBin
 
   # Build packages
   - name: build-packages
@@ -45,6 +49,8 @@ steps:
           exit 1
         fi
         . ~/.nvm/nvm.sh
+        nvm install 14
+        npm install -g bower grunt
         [ -n "$PLUGIN_PGP_KEY" ] && gpg --batch --import - <<< $PLUGIN_PGP_KEY
         sbt -Duser.home=$PWD Docker/stage Debian/packageBin Rpm/packageBin Universal/packageBin
         if ( echo $V | grep -qi rc )
