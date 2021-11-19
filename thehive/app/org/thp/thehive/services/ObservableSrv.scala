@@ -192,6 +192,19 @@ class ObservableSrv @Inject() (
           .getOrFail("Observable")
           .flatMap(observable => auditSrv.observable.update(observable, updatedFields))
     }
+
+  def updateType(observable: Observable with Entity, observableType: ObservableType with Entity)(implicit
+      graph: Graph,
+      authContext: AuthContext
+  ): Try[Unit] = {
+    get(observable)
+      .update(_.dataType, observableType.name)
+      .outE[ObservableObservableType]
+      .remove()
+    observableObservableTypeSrv
+      .create(ObservableObservableType(), observable, observableType)
+      .flatMap(_ => auditSrv.observable.update(observable, Json.obj("dataType" -> observableType.name)))
+  }
 }
 
 object ObservableOps {

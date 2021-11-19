@@ -52,6 +52,8 @@ object ObservableTypeOps {
       idOrName.fold(traversal.getByIds(_), getByName)
 
     def getByName(name: String): Traversal.V[ObservableType] = traversal.has(_.name, name)
+
+    def observables: Traversal.V[Observable] = traversal.in[ObservableObservableType].v[Observable]
   }
 }
 

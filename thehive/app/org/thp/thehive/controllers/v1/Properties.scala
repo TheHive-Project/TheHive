@@ -449,9 +449,7 @@ class Properties @Inject() (
           newDataType     <- observableTypeSrv.getByName(value)(graph).getOrFail("ObservableType")
           isSameType = currentDataType.isAttachment == newDataType.isAttachment
           _ <- if (isSameType) Success(()) else Failure(BadRequestError("Can not update dataType: isAttachment does not match"))
-          _ <- Try(observableSrv.get(vertex)(graph).update(_.dataType, value).iterate())
-          _ = observableSrv.get(vertex)(graph).outE[ObservableObservableType].remove()
-          _ <- observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, newDataType)(graph, authContext)
+          _ <- observableSrv.updateType(observable, newDataType)(graph, authContext)
         } yield Json.obj("dataType" -> value)
       })
       .property("data", UMapping.string.optional)(_.field.readonly)
