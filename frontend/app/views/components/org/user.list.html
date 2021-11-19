@@ -19,7 +19,8 @@
                     <th>
                         <a href class="text-default" ng-click="$ctrl.sortByField('login')">
                             Login
-                            <i ng-show="$ctrl.sort.indexOf('+login') === -1 && $ctrl.sort.indexOf('-login') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+login') === -1 && $ctrl.sort.indexOf('-login') === -1"
+                                class="fa fa-sort"></i>
                             <i ng-show="$ctrl.sort.indexOf('+login') !== -1" class="fa fa-caret-up"></i>
                             <i ng-show="$ctrl.sort.indexOf('-login') !== -1" class="fa fa-caret-down"></i>
                         </a>
@@ -27,12 +28,21 @@
                     <th style="width: 150px">
                         <a href class="text-default" ng-click="$ctrl.sortByField('name')">
                             Full Name
-                            <i ng-show="$ctrl.sort.indexOf('+name') === -1 && $ctrl.sort.indexOf('-name') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+name') === -1 && $ctrl.sort.indexOf('-name') === -1"
+                                class="fa fa-sort"></i>
                             <i ng-show="$ctrl.sort.indexOf('+name') !== -1" class="fa fa-caret-up"></i>
                             <i ng-show="$ctrl.sort.indexOf('-name') !== -1" class="fa fa-caret-down"></i>
                         </a>
                     </th>
-                    <th style="width: 140px">Profile</th>
+                    <th style="width: 140px">
+                        <a href class="text-default" ng-click="$ctrl.sortByField('profile')">
+                            Profile
+                            <i ng-show="$ctrl.sort.indexOf('+profile') === -1 && $ctrl.sort.indexOf('-profile') === -1"
+                                class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+profile') !== -1" class="fa fa-caret-up"></i>
+                            <i ng-show="$ctrl.sort.indexOf('-profile') !== -1" class="fa fa-caret-down"></i>
+                        </a>
+                    </th>
                     <th>Password</th>
                     <th>API Key</th>
                     <th class="text-center" style="width: 100px" ng-if="$ctrl.mfaEnabled">MFA</th>
@@ -40,13 +50,15 @@
                         Dates
                         <a href class="text-default" ng-click="$ctrl.sortByField('_createdAt')">
                             C.
-                            <i ng-show="$ctrl.sort.indexOf('+_createdAt') === -1 && $ctrl.sort.indexOf('-_createdAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+_createdAt') === -1 && $ctrl.sort.indexOf('-_createdAt') === -1"
+                                class="fa fa-sort"></i>
                             <i ng-show="$ctrl.sort.indexOf('+_createdAt') !== -1" class="fa fa-caret-up"></i>
                             <i ng-show="$ctrl.sort.indexOf('-_createdAt') !== -1" class="fa fa-caret-down"></i>
                         </a>
                         <a href class="text-default" ng-click="$ctrl.sortByField('_updatedAt')">
                             U.
-                            <i ng-show="$ctrl.sort.indexOf('+_updatedAt') === -1 && $ctrl.sort.indexOf('-_updatedAt') === -1" class="fa fa-sort"></i>
+                            <i ng-show="$ctrl.sort.indexOf('+_updatedAt') === -1 && $ctrl.sort.indexOf('-_updatedAt') === -1"
+                                class="fa fa-sort"></i>
                             <i ng-show="$ctrl.sort.indexOf('+_updatedAt') !== -1" class="fa fa-caret-up"></i>
                             <i ng-show="$ctrl.sort.indexOf('-_updatedAt') !== -1" class="fa fa-caret-down"></i>
                         </a>
@@ -57,26 +69,35 @@
             <tbody>
                 <tr ng-repeat="user in $ctrl.users.values track by user._id">
                     <td>
-                        <span class="label label-default label-lg" ng-class="{false: 'label-success', true: 'label-danger'}[user.locked]">{{user.locked === false ? 'Active' : 'Locked'}}</span>
+                        <span class="label label-default label-lg"
+                            ng-class="{false: 'label-success', true: 'label-danger'}[user.locked]">{{user.locked ===
+                            false ? 'Active' : 'Locked'}}</span>
                     </td>
                     <td>{{user.login}}</td>
                     <td>{{user.name}}</td>
                     <td>
-                        <span popover-trigger="'mouseenter'" uib-popover-template="'permissionsPopoverTemplate.html'" popover-title="Permissions">
+                        <span popover-trigger="'mouseenter'" uib-popover-template="'permissionsPopoverTemplate.html'"
+                            popover-title="Permissions">
                             {{user.profile}}
                         </span>
                     </td>
                     <td>
                         <span>
-                            <span class="btn btn-sm btn-default" ng-class="{ true: 'disabled', false: ''}[user.locked]" ng-click="$ctrl.showPassword(user, true)" ng-hide="$ctrl.showPwdForm[user._id]">{{user.hasPassword ? 'Edit password' : 'New password'}}</span>
-                            <form ng-show="$ctrl.showPwdForm[user._id]" ng-submit="$ctrl.setPassword(user, newValue); $ctrl.showPassword(user, false);">
+                            <span class="btn btn-sm btn-default" ng-class="{ true: 'disabled', false: ''}[user.locked]"
+                                ng-click="$ctrl.showPassword(user, true)"
+                                ng-hide="$ctrl.showPwdForm[user._id]">{{user.hasPassword ? 'Edit password' : 'New
+                                password'}}</span>
+                            <form ng-show="$ctrl.showPwdForm[user._id]"
+                                ng-submit="$ctrl.setPassword(user, newValue); $ctrl.showPassword(user, false);">
                                 <div class="input-group input-group-sm">
-                                    <input auto-focus="user-showPassword-{{user._id}}" class="form-control input-sm" ng-model="newValue" type="password">
+                                    <input auto-focus="user-showPassword-{{user._id}}" class="form-control input-sm"
+                                        ng-model="newValue" type="password">
                                     <span class="input-group-btn">
                                         <button class="btn btn-default" type="submit">
                                             <i class="fa fa-check text-success"></i>
                                         </button>
-                                        <button class="btn btn-default" type="button" ng-click="$ctrl.showPassword(user, false)">
+                                        <button class="btn btn-default" type="button"
+                                            ng-click="$ctrl.showPassword(user, false)">
                                             <i class="fa fa-times text-danger"></i>
                                         </button>
                                     </span>
@@ -86,16 +107,22 @@
                     </td>
                     <td>
                         <span ng-if="!user.hasKey">
-                            <span class="btn btn-sm btn-default" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.createKey(user)">Create API Key</span>
+                            <span class="btn btn-sm btn-default" ng-class="{true: 'disabled'}[user.locked]"
+                                ng-click="$ctrl.createKey(user)">Create API Key</span>
                         </span>
                         <span ng-if="user.hasKey">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-btn">
-                                    <span class="btn btn-sm btn-default" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.createKey(user)">Renew</span>
-                                    <span class="btn btn-sm btn-danger" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.revokeKey(user)">Revoke</span>
-                                    <span class="btn btn-sm btn-primary" ng-class="{true: 'disabled'}[user.locked]" ng-click="$ctrl.getKey(user)" ng-if="!$ctrl.userKeyCache[user._id]">Reveal</span>
+                                    <span class="btn btn-sm btn-default" ng-class="{true: 'disabled'}[user.locked]"
+                                        ng-click="$ctrl.createKey(user)">Renew</span>
+                                    <span class="btn btn-sm btn-danger" ng-class="{true: 'disabled'}[user.locked]"
+                                        ng-click="$ctrl.revokeKey(user)">Revoke</span>
+                                    <span class="btn btn-sm btn-primary" ng-class="{true: 'disabled'}[user.locked]"
+                                        ng-click="$ctrl.getKey(user)"
+                                        ng-if="!$ctrl.userKeyCache[user._id]">Reveal</span>
                                 </span>
-                                <input class="form-control" readonly ng-model="$ctrl.userKeyCache[user._id]" ng-if="$ctrl.userKeyCache[user._id]">
+                                <input class="form-control" readonly ng-model="$ctrl.userKeyCache[user._id]"
+                                    ng-if="$ctrl.userKeyCache[user._id]">
                                 <span class="input-group-btn" ng-if="$ctrl.userKeyCache[user._id]">
                                     <button class="btn btn-primary" type="button" ng-click="$ctrl.copyKey(user)">
                                         <i class="fa fa-copy"></i>
@@ -109,31 +136,42 @@
                             No
                         </span>
                         <span ng-if="user.hasMFA">
-                            <button type="button" class="btn btn-danger btn-sm" ng-click="$ctrl.resetMfa(user)">Reset</button>
+                            <button type="button" class="btn btn-danger btn-sm"
+                                ng-click="$ctrl.resetMfa(user)">Reset</button>
                         </span>
                     </td>
                     <td>
-                        <div ng-class="{'text-bold': $ctrl.sort.indexOf('+_createdAt') !== -1 || $ctrl.sort.indexOf('-_createdAt') !== -1}">
-                            C. <a href ng-click="$ctrl.addFilterValue('_createdAt', user._createdAt)">{{user._createdAt | shortDate}}</a>
+                        <div
+                            ng-class="{'text-bold': $ctrl.sort.indexOf('+_createdAt') !== -1 || $ctrl.sort.indexOf('-_createdAt') !== -1}">
+                            C. <a href ng-click="$ctrl.addFilterValue('_createdAt', user._createdAt)">{{user._createdAt
+                                | shortDate}}</a>
                         </div>
-                        <div ng-if="user._updatedAt > 0" ng-class="{'text-bold': $ctrl.sort.indexOf('+_updatedAt') !== -1 || $ctrl.sort.indexOf('-_updatedAt') !== -1}">
-                            U. <a href ng-click="$ctrl.addFilterValue('_updatedAt', user._updatedAt)">{{user._updatedAt | shortDate}}</a>
+                        <div ng-if="user._updatedAt > 0"
+                            ng-class="{'text-bold': $ctrl.sort.indexOf('+_updatedAt') !== -1 || $ctrl.sort.indexOf('-_updatedAt') !== -1}">
+                            U. <a href ng-click="$ctrl.addFilterValue('_updatedAt', user._updatedAt)">{{user._updatedAt
+                                | shortDate}}</a>
                         </div>
                     </td>
                     <td>
-                        <span class="clickable mr-xxs text-primary" ng-click="$ctrl.editUser(user)" uib-tooltip="Edit User">
+                        <span class="clickable mr-xxs text-primary" ng-click="$ctrl.editUser(user)"
+                            uib-tooltip="Edit User">
                             <i class="text-20 fa fa-edit"></i>
                         </span>
 
-                        <span class="clickable mr-xxs text-primary" ng-if="!user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, true)" uib-tooltip="Lock User">
+                        <span class="clickable mr-xxs text-primary"
+                            ng-if="!user.locked && user._id !== $ctrl.currentUser._id"
+                            ng-click="$ctrl.lockUser(user, true)" uib-tooltip="Lock User">
                             <i class="text-20 fa fa-lock"></i>
                         </span>
 
-                        <span class="clickable mr-xxs text-primary" ng-if="user.locked && user._id !== $ctrl.currentUser._id" ng-click="$ctrl.lockUser(user, false)" uib-tooltip="Unlock User">
+                        <span class="clickable mr-xxs text-primary"
+                            ng-if="user.locked && user._id !== $ctrl.currentUser._id"
+                            ng-click="$ctrl.lockUser(user, false)" uib-tooltip="Unlock User">
                             <i class="text-20 fa fa-unlock-alt"></i>
                         </span>
 
-                        <span class="clickable mr-xxs text-danger" ng-if="user._id !== $ctrl.currentUser._id" ng-click="$ctrl.removeUser(user)" uib-tooltip="Delete User">
+                        <span class="clickable mr-xxs text-danger" ng-if="user._id !== $ctrl.currentUser._id"
+                            ng-click="$ctrl.removeUser(user)" uib-tooltip="Delete User">
                             <i class="text-20 fa fa-trash"></i>
                         </span>
                     </td>
