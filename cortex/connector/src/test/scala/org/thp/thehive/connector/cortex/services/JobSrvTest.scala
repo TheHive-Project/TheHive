@@ -14,7 +14,7 @@ import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.UserOps._
 import org.thp.thehive.services._
 import org.thp.thehive.services.notification.triggers.JobFinished
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.PlaySpecification
 
 import java.util.Date
@@ -89,7 +89,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder {
         case0 <- app[Database].roTransaction { implicit graph =>
           app[CaseSrv].getOrFail(EntityName("1"))
         }
-      } yield await(app[JobSrv].submit("test", "anaTest1", observable, case0))
+      } yield await(app[JobSrv].submit("test", "anaTest1", observable, case0, JsObject.empty))
 
       x must beASuccessfulTry.which { job =>
         job.cortexId shouldEqual "test"

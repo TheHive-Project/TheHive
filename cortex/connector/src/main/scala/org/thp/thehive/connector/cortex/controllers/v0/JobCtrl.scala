@@ -16,6 +16,7 @@ import org.thp.thehive.controllers.v0.{OutputParam, PublicData, QueryCtrl}
 import org.thp.thehive.models.{Observable, Permissions, RichCase, RichObservable}
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.ObservableSrv
+import play.api.libs.json.JsObject
 import play.api.mvc.{Action, AnyContent, Results}
 
 import javax.inject.{Inject, Singleton}
@@ -48,10 +49,12 @@ class JobCtrl @Inject() (
       .extract("analyzerId", FieldsParser[String].on("analyzerId"))
       .extract("cortexId", FieldsParser[String].on("cortexId"))
       .extract("artifactId", FieldsParser[String].on("artifactId"))
+      .extract("parameters", FieldsParser.jsObject.optional.on("parameters"))
       .asyncAuth { implicit request =>
         if (request.isPermitted(Permissions.manageAnalyse)) {
-          val analyzerId: String = request.body("analyzerId")
-          val cortexId: String   = request.body("cortexId")
+          val analyzerId: String           = request.body("analyzerId")
+          val cortexId: String             = request.body("cortexId")
+          val parameters: Option[JsObject] = request.body("parameters")
           db.roTransaction { implicit graph =>
             val artifactId: String = request.body("artifactId")
             for {
@@ -63,7 +66,7 @@ class JobCtrl @Inject() (
             {
               case (o, c) =>
                 jobSrv
-                  .submit(cortexId, analyzerId, o, c)
+                  .submit(cortexId, analyzerId, o, c, parameters.getOrElse(JsObject.empty))
                   .map(j => Results.Created(j.toJson))
             }
           )
