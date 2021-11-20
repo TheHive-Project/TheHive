@@ -19,7 +19,7 @@ trait Template {
     * @return
     */
   private def getMap(cc: Map[String, Seq[Any]] with Entity): Map[String, String] =
-    schema.getModel(cc._label).fold(cc.mapValues(_.mkString("[", ",", "]"))) { model =>
+    schema.getModel(cc._label).fold(cc.view.mapValues(_.mkString("[", ",", "]")).toMap) { model =>
       cc.map {
         case (k, v) =>
           model.fields.get(k).fold(k -> v.mkString("[", ",", "]")) {
