@@ -76,10 +76,11 @@ class PublicPage @Inject() (pageSrv: PageSrv, organisationSrv: OrganisationSrv) 
     "getPage",
     (idOrName, graph, authContext) => pageSrv.get(idOrName)(graph).visible(authContext)
   )
-  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Page], IteratorOutput](
-    "page",
-    (range, pageSteps, _) => pageSteps.page(range.from, range.to, withTotal = true)
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Page], IteratorOutput](
+      "page",
+      (range, pageSteps, _) => pageSteps.page(range.from, range.to, withTotal = true, limitedCountThreshold)
+    )
   override val outputQuery: Query = Query.output[Page with Entity]
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Page]
     .property("title", UMapping.string)(_.field.updatable)

@@ -35,10 +35,12 @@ class OrganisationCtrl @Inject() (
           .startTraversal(graph)
           .visible(authContext)
     )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
-    "page",
-    (range, organisationSteps, _) => organisationSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richOrganisation)
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
+      "page",
+      (range, organisationSteps, _) =>
+        organisationSteps.richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(_.richOrganisation)
+    )
   override val outputQuery: Query = Query.output[RichOrganisation, Traversal.V[Organisation]](_.richOrganisation)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",

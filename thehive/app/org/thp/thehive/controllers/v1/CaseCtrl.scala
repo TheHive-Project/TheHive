@@ -53,15 +53,16 @@ class CaseCtrl @Inject() (
     "getCase",
     (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
-    "page",
-    {
-      case (OutputParam(from, to, extraData), caseSteps, authContext) =>
-        caseSteps.richPage(from, to, extraData.contains("total")) {
-          _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext))(authContext)
-        }
-    }
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
+      "page",
+      {
+        case (OutputParam(from, to, extraData), caseSteps, authContext) =>
+          caseSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold) {
+            _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext))(authContext)
+          }
+      }
+    )
   override val outputQuery: Query = Query.outputWithContext[RichCase, Traversal.V[Case]]((caseSteps, authContext) => caseSteps.richCase(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq(
     Query.init[Long](

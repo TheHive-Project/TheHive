@@ -101,7 +101,7 @@ class TheHiveQueryExecutor @Inject() (
   override lazy val queries: Seq[ParamQuery[_]] =
     publicDatas.map(_.initialQuery) ++
       publicDatas.map(_.getQuery) ++
-      publicDatas.map(_.pageQuery) ++
+      publicDatas.map(_.pageQuery(limitedCountThreshold)) ++ // FIXME the value of limitedCountThreshold is read only once. The value is not updated.
       publicDatas.map(_.outputQuery) ++
       publicDatas.flatMap(_.extraQueries)
   override val version: (Int, Int) = 0 -> 0

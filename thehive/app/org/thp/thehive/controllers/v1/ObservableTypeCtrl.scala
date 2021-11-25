@@ -23,10 +23,10 @@ class ObservableTypeCtrl @Inject() (
   override val entityName: String = "ObservableType"
   override val initialQuery: Query =
     Query.init[Traversal.V[ObservableType]]("listObservableType", (graph, _) => observableTypeSrv.startTraversal(graph))
-  override val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[ObservableType], IteratorOutput](
       "page",
-      (range, observableTypeSteps, _) => observableTypeSteps.richPage(range.from, range.to, withTotal = true)(identity)
+      (range, observableTypeSteps, _) => observableTypeSteps.richPage(range.from, range.to, withTotal = true, limitedCountThreshold)(identity)
     )
   override val outputQuery: Query = Query.output[ObservableType with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[ObservableType]](

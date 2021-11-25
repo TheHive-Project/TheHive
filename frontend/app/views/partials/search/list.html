@@ -1,6 +1,6 @@
 <div class="box search-list">
     <!-- <div class="box-header">
-        <h3 class="box-title">Search result ({{searchResults.total}} records(s) found)</h3>
+        <h3 class="box-title">Search result ({{searchResults.total | limitedCount}} records(s) found)</h3>
     </div> -->
     <div class="m-xs text-primary">
         <h3>Search scope</h3>
@@ -80,7 +80,7 @@
         </form>
     </div>
     <div class="m-xs text-primary" ng-if="searchResults">
-        <h3>Search Result <small>{{searchResults.total}} records(s) found</small></h3>
+        <h3>Search Result <small>{{searchResults.total | limitedCount}} records(s) found</small></h3>
     </div>
     <div class="box-body">
         <div class="row">

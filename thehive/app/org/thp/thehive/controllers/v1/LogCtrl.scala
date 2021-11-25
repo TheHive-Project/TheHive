@@ -36,13 +36,14 @@ class LogCtrl @Inject() (
     "getLog",
     (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
-    "page",
-    (range, logSteps, authContext) =>
-      logSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
-        _.richLogWithCustomRenderer(logStatsRenderer(range.extraData - "total")(authContext))
-      )
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
+      "page",
+      (range, logSteps, authContext) =>
+        logSteps.richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(
+          _.richLogWithCustomRenderer(logStatsRenderer(range.extraData - "total")(authContext))
+        )
+    )
   override val outputQuery: Query = Query.output[RichLog, Traversal.V[Log]](_.richLog)
 
   def create(taskId: String): Action[AnyContent] =

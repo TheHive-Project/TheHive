@@ -35,10 +35,10 @@ class AuditCtrl @Inject() (
     (idOrName, graph, authContext) => auditSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
 
-  val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Audit], IteratorOutput](
       "page",
-      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richAudit)
+      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(_.richAudit)
     )
   override val outputQuery: Query = Query.output[RichAudit, Traversal.V[Audit]](_.richAudit)
 

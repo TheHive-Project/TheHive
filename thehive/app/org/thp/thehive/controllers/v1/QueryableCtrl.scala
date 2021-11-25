@@ -7,7 +7,7 @@ trait QueryableCtrl {
   val entityName: String
   val publicProperties: PublicProperties
   val initialQuery: Query
-  val pageQuery: ParamQuery[_]
+  def pageQuery(limitedCountThreshold: Long): ParamQuery[_]
   val outputQuery: Query
   val getQuery: ParamQuery[EntityIdOrName]
   val extraQueries: Seq[ParamQuery[_]] = Nil

@@ -63,15 +63,18 @@ class ObservableCtrl @Inject() (
     "getObservable",
     (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
-    "page",
-    {
-      case (OutputParam(from, to, extraData), observableSteps, authContext) =>
-        observableSteps.richPage(from, to, extraData.contains("total")) {
-          _.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv, extraData - "total")(authContext))(authContext)
-        }
-    }
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
+      "page",
+      {
+        case (OutputParam(from, to, extraData), observableSteps, authContext) =>
+          observableSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold) {
+            _.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv, extraData - "total")(authContext))(
+              authContext
+            )
+          }
+      }
+    )
   override val outputQuery: Query = Query.output[RichObservable, Traversal.V[Observable]](_.richObservable)
 
   override val extraQueries: Seq[ParamQuery[_]] = Seq(

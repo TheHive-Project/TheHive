@@ -235,10 +235,11 @@ class PublicUser @Inject() (userSrv: UserSrv, organisationSrv: OrganisationSrv) 
     "getUser",
     (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
-    "page",
-    (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true)
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[User], IteratorOutput](
+      "page",
+      (range, userSteps, authContext) => userSteps.richUser(authContext).page(range.from, range.to, withTotal = true, limitedCountThreshold)
+    )
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
   override val extraQueries: Seq[ParamQuery[_]] = Seq()

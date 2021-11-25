@@ -75,10 +75,10 @@ class PublicAudit @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSr
   override val initialQuery: Query =
     Query.init[Traversal.V[Audit]]("listAudit", (graph, authContext) => auditSrv.startTraversal(graph).visible(organisationSrv)(authContext))
 
-  override val pageQuery: ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[org.thp.thehive.controllers.v0.OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Audit], IteratorOutput](
       "page",
-      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true)(_.richAudit)
+      (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, withTotal = true, limitedCountThreshold)(_.richAudit)
     )
   override val outputQuery: Query = Query.output[RichAudit, Traversal.V[Audit]](_.richAudit)
 

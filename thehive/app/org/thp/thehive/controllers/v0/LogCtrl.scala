@@ -81,21 +81,22 @@ class PublicLog @Inject() (logSrv: LogSrv, organisationSrv: OrganisationSrv) ext
     "getLog",
     (idOrName, graph, authContext) => logSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
-    "page",
-    {
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Log], IteratorOutput](
+      "page",
+      {
 
-      case (OutputParam(from, to, _, 0), logSteps, _) => logSteps.richPage(from, to, withTotal = true)(_.richLog)
-      case (OutputParam(from, to, _, _), logSteps, authContext) =>
-        logSteps.richPage(from, to, withTotal = true)(
-          _.richLogWithCustomRenderer(
-            _.task.richTaskWithCustomRenderer(
-              _.`case`.richCase(authContext).option
+        case (OutputParam(from, to, _, 0), logSteps, _) => logSteps.richPage(from, to, withTotal = true, limitedCountThreshold)(_.richLog)
+        case (OutputParam(from, to, _, _), logSteps, authContext) =>
+          logSteps.richPage(from, to, withTotal = true, limitedCountThreshold)(
+            _.richLogWithCustomRenderer(
+              _.task.richTaskWithCustomRenderer(
+                _.`case`.richCase(authContext).option
+              )
             )
           )
-        )
-    }
-  )
+      }
+    )
 
   override val outputQuery: Query = Query.output[RichLog, Traversal.V[Log]](_.richLog)
   override val publicProperties: PublicProperties =

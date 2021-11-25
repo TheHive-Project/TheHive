@@ -31,13 +31,14 @@ class ProcedureCtrl @Inject() (
       procedureSrv
         .startTraversal(graph)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Procedure], IteratorOutput](
-    "page",
-    (range, procedureSteps, _) =>
-      procedureSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
-        _.richProcedureWithCustomRenderer(procedureStatsRenderer(range.extraData - "total"))
-      )
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Procedure], IteratorOutput](
+      "page",
+      (range, procedureSteps, _) =>
+        procedureSteps.richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(
+          _.richProcedureWithCustomRenderer(procedureStatsRenderer(range.extraData - "total"))
+        )
+    )
   override val outputQuery: Query = Query.output[RichProcedure, Traversal.V[Procedure]](_.richProcedure)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Procedure]](
     "getProcedure",
