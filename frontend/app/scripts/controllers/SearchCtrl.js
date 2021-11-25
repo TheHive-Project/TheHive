@@ -143,6 +143,7 @@
                         $scope.searchResults = PSearchSrv(undefined, entityName === 'all' ? 'any' : $scope.metadata[entityName].path, {
                             filter: query,
                             baseFilter: $scope.buildBaseFilter(entityName),
+                            sort: "-createdAt",
                             nparent: 10,
                             nstats: entityName === 'audit',
                             skipStream: true
