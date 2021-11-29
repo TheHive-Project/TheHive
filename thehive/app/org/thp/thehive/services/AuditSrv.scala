@@ -388,7 +388,7 @@ object AuditOps {
         .coalesceIdent[Vertex](
           _.share.in[OrganisationShare],
           _.out[AlertOrganisation],
-          _.hasLabel("Organisation"),
+          _.unsafeHas("_label", "Organisation"),
           _.out[CaseTemplateOrganisation],
           _.in[OrganisationDashboard]
         )
