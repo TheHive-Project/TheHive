@@ -14,7 +14,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 import org.thp.thehive.services.TaxonomyOps._
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
@@ -49,13 +49,14 @@ class TaxonomySrv @Inject() (organisationSrv: OrganisationSrv, tagSrv: TagSrv) e
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
     startTraversal.getByNamespace(name)
 
-  def update(taxonomy: Taxonomy with Entity, input: Taxonomy)(implicit graph: Graph): Try[RichTaxonomy] =
+  def update(taxonomy: Taxonomy with Entity, input: Taxonomy)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {
       updatedTaxonomy <-
         get(taxonomy)
           .when(taxonomy.namespace != input.namespace)(_.update(_.namespace, input.namespace))
           .when(taxonomy.description != input.description)(_.update(_.description, input.description))
           .when(taxonomy.version != input.version)(_.update(_.version, input.version))
+          .when(input != taxonomy)(_.update(_._updatedAt, Some(new Date)).update(_._updatedBy, Some(authContext.userId)))
           .richTaxonomy
           .getOrFail("Taxonomy")
     } yield updatedTaxonomy

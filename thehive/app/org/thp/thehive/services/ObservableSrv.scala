@@ -19,7 +19,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import play.api.libs.json.{JsObject, JsString, Json}
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
@@ -118,7 +118,11 @@ class ObservableSrv @Inject() (
     for {
       createdTags <- newTags.filterNot(_.isEmpty).toTry(tagSrv.getOrCreate)
       _           <- createdTags.toTry(observableTagSrv.create(ObservableTag(), observable, _))
-      _           <- get(observable).update(_.tags, (currentTags ++ newTags).toSeq).getOrFail("Observable")
+      _ <- get(observable)
+        .update(_.tags, (currentTags ++ newTags).toSeq)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Observable")
 //      _           <- auditSrv.observable.update(observable, Json.obj("tags" -> (currentTags ++ tags)))
     } yield createdTags
   }
@@ -132,7 +136,11 @@ class ObservableSrv @Inject() (
       tagsToRemove = get(observable).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
       _ = if (tags.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
-      _ <- get(observable).update(_.tags, tags.toSeq).getOrFail("Observable")
+      _ <- get(observable)
+        .update(_.tags, tags.toSeq)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Observable")
       _ <- auditSrv.observable.update(observable, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 
@@ -199,6 +207,8 @@ class ObservableSrv @Inject() (
   ): Try[Unit] = {
     get(observable)
       .update(_.dataType, observableType.name)
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
       .outE[ObservableObservableType]
       .remove()
     observableObservableTypeSrv

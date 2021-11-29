@@ -8,7 +8,7 @@ import org.thp.thehive.services.UserOps._
 import play.api.Configuration
 import play.api.mvc.RequestHeader
 
-import java.util.Base64
+import java.util.{Base64, Date}
 import javax.inject.{Inject, Provider, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Random, Success, Try}
@@ -45,6 +45,8 @@ class LocalKeyAuthSrv(
       userSrv
         .get(EntityIdOrName(username))
         .update(_.apikey, Some(newKey))
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
         .domainMap(_ => newKey)
         .getOrFail("User")
     }
@@ -61,6 +63,8 @@ class LocalKeyAuthSrv(
       userSrv
         .get(EntityIdOrName(username))
         .update(_.apikey, None)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
         .domainMap(_ => ())
         .getOrFail("User")
     }

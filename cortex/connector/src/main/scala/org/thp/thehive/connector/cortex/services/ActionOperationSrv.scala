@@ -72,7 +72,13 @@ class ActionOperationSrv @Inject() (
       case CloseTask() =>
         for {
           t <- relatedTask.fold[Try[Task with Entity]](Failure(InternalError("Unable to apply action CloseTask without task")))(Success(_))
-          _ <- taskSrv.get(t).update(_.status, TaskStatus.Completed).getOrFail("Task")
+          _ <-
+            taskSrv
+              .get(t)
+              .update(_.status, TaskStatus.Completed)
+              .update(_._updatedAt, Some(new Date))
+              .update(_._updatedBy, Some(authContext.userId))
+              .getOrFail("Task")
         } yield updateOperation(operation)
 
       case MarkAlertAsRead() =>

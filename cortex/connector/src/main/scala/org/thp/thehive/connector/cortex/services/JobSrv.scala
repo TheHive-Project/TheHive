@@ -191,6 +191,8 @@ class JobSrv @Inject() (
             .update(_.report, report)
             .update(_.status, status)
             .update(_.endDate, endDate)
+            .update(_._updatedAt, Some(new Date))
+            .update(_._updatedBy, Some(authContext.userId))
             .getOrFail("Job")
           observable <- get(job).observable.getOrFail("Observable")
           _ <-

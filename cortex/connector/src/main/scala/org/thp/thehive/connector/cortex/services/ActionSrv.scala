@@ -167,6 +167,8 @@ class ActionSrv @Inject() (
           .update(_.report, cortexJob.report.map(r => Json.toJsObject(r.copy(operations = Nil))))
           .update(_.endDate, Some(new Date()))
           .update(_.operations, operations.map(o => Json.toJsObject(o)))
+          .update(_._updatedAt, Some(new Date))
+          .update(_._updatedBy, Some(authContext.userId))
           .getOrFail("Action")
           .map { updated =>
             auditSrv

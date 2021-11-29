@@ -22,7 +22,7 @@ import play.api.Configuration
 import play.api.libs.json.{JsObject, Json}
 
 import java.util.regex.Pattern
-import java.util.{List => JList, Map => JMap}
+import java.util.{Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Named, Singleton}
 import scala.util.{Failure, Success, Try}
 
@@ -102,14 +102,22 @@ class UserSrv @Inject() (
       Failure(AuthorizationError("You cannot lock yourself"))
     else
       for {
-        updatedUser <- get(user).update(_.locked, true: Boolean).getOrFail("User")
-        _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
+        updatedUser <- get(user)
+          .update(_.locked, true: Boolean)
+          .update(_._updatedAt, Some(new Date))
+          .update(_._updatedBy, Some(authContext.userId))
+          .getOrFail("User")
+        _ <- auditSrv.user.update(updatedUser, Json.obj("locked" -> true))
       } yield updatedUser
 
   def unlock(user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[User with Entity] =
     for {
-      updatedUser <- get(user).update(_.locked, false: Boolean).getOrFail("User")
-      _           <- auditSrv.user.update(updatedUser, Json.obj("locked" -> false))
+      updatedUser <- get(user)
+        .update(_.locked, false: Boolean)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("User")
+      _ <- auditSrv.user.update(updatedUser, Json.obj("locked" -> false))
     } yield updatedUser
 
   def current(implicit graph: Graph, authContext: AuthContext): Traversal.V[User] = get(EntityName(authContext.userId))

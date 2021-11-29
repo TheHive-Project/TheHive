@@ -14,6 +14,7 @@ import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.services.OrganisationSrv
 import play.api.libs.json.{JsObject, Json}
 
+import java.util.Date
 import java.util.zip.{ZipEntry, ZipFile}
 import javax.inject.{Inject, Singleton}
 import scala.collection.JavaConverters._
@@ -89,8 +90,12 @@ class AnalyzerTemplateSrv @Inject() (
             .flatMap { content =>
               db.tryTransaction { implicit graph =>
                 (for {
-                  updated <- get(EntityName(analyzerId)).update(_.content, content).getOrFail("AnalyzerTemplate")
-                  _       <- auditSrv.analyzerTemplate.update(updated, Json.obj("content" -> content))
+                  updated <- get(EntityName(analyzerId))
+                    .update(_.content, content)
+                    .update(_._updatedAt, Some(new Date))
+                    .update(_._updatedBy, Some(authContext.userId))
+                    .getOrFail("AnalyzerTemplate")
+                  _ <- auditSrv.analyzerTemplate.update(updated, Json.obj("content" -> content))
                 } yield updated).recoverWith {
                   case _ =>
                     for {
