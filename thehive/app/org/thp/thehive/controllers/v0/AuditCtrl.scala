@@ -3,7 +3,7 @@ package org.thp.thehive.controllers.v0
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import org.thp.scalligraph.{EntityId, EntityIdOrName}
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs

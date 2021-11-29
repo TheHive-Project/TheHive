@@ -62,218 +62,214 @@ class DatabaseBuilder @Inject() (
 
     lazy val logger: Logger = Logger(getClass)
     logger.info("Initialize database schema")
-    db.createSchemaFrom(schema)(LocalUserSrv.getSystemAuthContext)
-      .flatMap(_ => db.addSchemaIndexes(schema))
-      .flatMap { _ =>
-        integrityChecks.foreach { check =>
-          db.tryTransaction { implicit graph =>
-            Success(check.initialCheck()(graph, LocalUserSrv.getSystemAuthContext))
-          }
-          ()
-        }
-        db.tryTransaction { implicit graph =>
-          implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-          val idMap =
-            createVertex(caseSrv, FieldsParser[Case]) ++
-              createVertex(alertSrv, FieldsParser[Alert]) ++
-              createVertex(attachmentSrv, FieldsParser[Attachment]) ++
-              createVertex(caseTemplateSrv, FieldsParser[CaseTemplate]) ++
-              createVertex(customFieldSrv, FieldsParser[CustomField]) ++
-              createVertex(dashboardSrv, FieldsParser[Dashboard]) ++
-//              createVertex(dataSrv, FieldsParser[Data]) ++
-//              createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
-//              createVertex(keyValueSrv, FieldsParser[KeyValue]) ++
-              createVertex(logSrv, FieldsParser[Log]) ++
-              createVertex(observableSrv, FieldsParser[Observable]) ++
-              createVertex(observableTypeSrv, FieldsParser[ObservableType]) ++
-              createVertex(organisationSrv, FieldsParser[Organisation]) ++
-              createVertex(pageSrv, FieldsParser[Page]) ++
-              createVertex(patternSrv, FieldsParser[Pattern]) ++
-              createVertex(procedureSrv, FieldsParser[Procedure]) ++
-              createVertex(profileSrv, FieldsParser[Profile]) ++
-//              createVertex(resolutionStatusSrv, FieldsParser[ResolutionStatus]) ++
-              createVertex(roleSrv, FieldsParser[Role]) ++
-              createVertex(shareSrv, FieldsParser[Share]) ++
-              createVertex(tagSrv, FieldsParser[Tag]) ++
-              createVertex(taskSrv, FieldsParser[Task]) ++
-              createVertex(taxonomySrv, FieldsParser[Taxonomy]) ++
-              createVertex(userSrv, FieldsParser[User])
-
-          createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
-          createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
-          createEdge(organisationSrv.organisationTaxonomySrv, organisationSrv, taxonomySrv, FieldsParser[OrganisationTaxonomy], idMap)
-
-          createEdge(taxonomySrv.taxonomyTagSrv, taxonomySrv, tagSrv, FieldsParser[TaxonomyTag], idMap)
-
-          createEdge(roleSrv.userRoleSrv, userSrv, roleSrv, FieldsParser[UserRole], idMap)
-
-          createEdge(shareSrv.shareProfileSrv, shareSrv, profileSrv, FieldsParser[ShareProfile], idMap)
-          createEdge(shareSrv.shareObservableSrv, shareSrv, observableSrv, FieldsParser[ShareObservable], idMap)
-          createEdge(shareSrv.shareTaskSrv, shareSrv, taskSrv, FieldsParser[ShareTask], idMap)
-          createEdge(shareSrv.shareCaseSrv, shareSrv, caseSrv, FieldsParser[ShareCase], idMap)
-
-          createEdge(roleSrv.roleOrganisationSrv, roleSrv, organisationSrv, FieldsParser[RoleOrganisation], idMap)
-          createEdge(roleSrv.roleProfileSrv, roleSrv, profileSrv, FieldsParser[RoleProfile], idMap)
-
-          //          createEdge(observableSrv.observableKeyValueSrv, observableSrv, keyValueSrv, FieldsParser[ObservableKeyValue], idMap)
-//          createEdge(observableSrv.observableObservableType, observableSrv, observableTypeSrv, FieldsParser[ObservableObservableType], idMap)
-//          createEdge(observableSrv.observableDataSrv, observableSrv, dataSrv, FieldsParser[ObservableData], idMap)
-          createEdge(observableSrv.observableAttachmentSrv, observableSrv, attachmentSrv, FieldsParser[ObservableAttachment], idMap)
-//          createEdge(observableSrv.observableTagSrv, observableSrv, tagSrv, FieldsParser[ObservableTag], idMap)
-
-//          createEdge(taskSrv.taskUserSrv, taskSrv, userSrv, FieldsParser[TaskUser], idMap)
-          createEdge(taskSrv.taskLogSrv, taskSrv, logSrv, FieldsParser[TaskLog], idMap)
-
-          createEdge(logSrv.logAttachmentSrv, logSrv, attachmentSrv, FieldsParser[LogAttachment], idMap)
-//          createEdge(caseSrv.caseUserSrv, caseSrv, userSrv, FieldsParser[CaseUser], idMap)
-//          createEdge(caseSrv.mergedFromSrv, caseSrv, caseSrv, FieldsParser[MergedFrom], idMap)
-//          createEdge(caseSrv.caseCaseTemplateSrv, caseSrv, caseTemplateSrv, FieldsParser[CaseCaseTemplate], idMap)
-//          createEdge(caseSrv.caseResolutionStatusSrv, caseSrv, resolutionStatusSrv, FieldsParser[CaseResolutionStatus], idMap)
-//          createEdge(caseSrv.caseImpactStatusSrv, caseSrv, impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
-          createEdge(caseSrv.caseCustomFieldSrv, caseSrv, customFieldSrv, FieldsParser[CaseCustomField], idMap)
-//          createEdge(caseSrv.caseTagSrv, caseSrv, tagSrv, FieldsParser[CaseTag], idMap)
-
-          createEdge(caseTemplateSrv.caseTemplateOrganisationSrv, caseTemplateSrv, organisationSrv, FieldsParser[CaseTemplateOrganisation], idMap)
-//          createEdge(caseTemplateSrv.caseTemplateTaskSrv, caseTemplateSrv, taskSrv, FieldsParser[CaseTemplateTask], idMap)
-          createEdge(caseTemplateSrv.caseTemplateCustomFieldSrv, caseTemplateSrv, customFieldSrv, FieldsParser[CaseTemplateCustomField], idMap)
-//          createEdge(caseTemplateSrv.caseTemplateTagSrv, caseTemplateSrv, tagSrv, FieldsParser[CaseTemplateTag], idMap)
-
-          createEdge(alertSrv.alertOrganisationSrv, alertSrv, organisationSrv, FieldsParser[AlertOrganisation], idMap)
-          createEdge(alertSrv.alertObservableSrv, alertSrv, observableSrv, FieldsParser[AlertObservable], idMap)
-          createEdge(alertSrv.alertCaseSrv, alertSrv, caseSrv, FieldsParser[AlertCase], idMap)
-          createEdge(alertSrv.alertCaseTemplateSrv, alertSrv, caseTemplateSrv, FieldsParser[AlertCaseTemplate], idMap)
-          createEdge(alertSrv.alertCustomFieldSrv, alertSrv, customFieldSrv, FieldsParser[AlertCustomField], idMap)
-//          createEdge(alertSrv.alertTagSrv, alertSrv, tagSrv, FieldsParser[AlertTag], idMap)
-
-          createEdge(pageSrv.organisationPageSrv, organisationSrv, pageSrv, FieldsParser[OrganisationPage], idMap)
-
-          createEdge(dashboardSrv.dashboardUserSrv, dashboardSrv, userSrv, FieldsParser[DashboardUser], idMap)
-          createEdge(dashboardSrv.organisationDashboardSrv, organisationSrv, dashboardSrv, FieldsParser[OrganisationDashboard], idMap)
-
-//          createEdge(patternSrv.patternPatternSrv, patternSrv, patternSrv, FieldsParser[PatternPattern], idMap)
-
-          createEdge(procedureSrv.caseProcedureSrv, caseSrv, procedureSrv, FieldsParser[CaseProcedure], idMap)
-          createEdge(procedureSrv.procedurePatternSrv, procedureSrv, patternSrv, FieldsParser[ProcedurePattern], idMap)
-          Success(())
-        }
-
-        db.tryTransaction { implicit graph =>
-          val (defaultOrganisation, defaultUser) = organisationSrv.startTraversal.notAdmin.project(_.by.by(_.users)).head
-          implicit val authContext: AuthContext =
-            AuthContextImpl(defaultUser.login, defaultUser.name, defaultOrganisation._id, "init", Permissions.all)
-          // For each organisation, if there is no custom taxonomy, create it
-          organisationSrv
-            .startTraversal
-            .hasNot(_.name, "admin")
-            .filterNot(_.taxonomies.freetags)
-            .foreach(o => taxonomySrv.createFreetagTaxonomy(o).get)
-
-          caseSrv
-            .startTraversal
-            .project(
-              _.by
-                .by(_.organisations._id.fold)
-            )
-            .foreach {
-              case (case0, organisationIds) =>
-                case0.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseSrv.caseTagSrv.create(CaseTag(), case0, _)).get)
-                case0.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(caseSrv.caseUserSrv.create(CaseUser(), case0, _)).get)
-                case0
-                  .resolutionStatus
-                  .foreach(
-                    resolutionStatusSrv
-                      .getByName(_)
-                      .getOrFail("ResolutionStatus")
-                      .flatMap(caseSrv.caseResolutionStatusSrv.create(CaseResolutionStatus(), case0, _))
-                      .get
-                  )
-                case0
-                  .impactStatus
-                  .foreach(
-                    impactStatusSrv
-                      .getByName(_)
-                      .getOrFail("ImpectStatus")
-                      .flatMap(caseSrv.caseImpactStatusSrv.create(CaseImpactStatus(), case0, _))
-                      .get
-                  )
-                case0
-                  .caseTemplate
-                  .foreach(
-                    caseTemplateSrv
-                      .getByName(_)
-                      .getOrFail("CaseTemplate")
-                      .flatMap(caseSrv.caseCaseTemplateSrv.create(CaseCaseTemplate(), case0, _))
-                      .get
-                  )
-                caseSrv.get(case0).update(_.organisationIds, organisationIds.toSet).iterate()
-            }
-
-          alertSrv
-            .startTraversal
-            .project(_.by.by(_.organisation._id).by(_.`case`._id.option))
-            .foreach {
-              case (alert, organisationId, caseId) =>
-                alert.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(alertSrv.alertTagSrv.create(AlertTag(), alert, _)).get)
-                alertSrv.get(alert).update(_.organisationId, organisationId).update(_.caseId, caseId.getOrElse(EntityId.empty)).iterate()
-            }
-
-          observableSrv
-            .startTraversal
-            .project(_.by.by(_.coalesceIdent(_.`case`, _.alert)._id).by(_.organisations._id.fold))
-            .foreach {
-              case (observable, relatedId, organisationIds) =>
-                observable
-                  .tags
-                  .foreach(tag => tagSrv.getOrCreate(tag).flatMap(observableSrv.observableTagSrv.create(ObservableTag(), observable, _)).get)
-                observableTypeSrv
-                  .getByName(observable.dataType)
-                  .getOrFail("ObservableType")
-                  .flatMap(observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, _))
-                  .get
-                observable
-                  .data
-                  .foreach(data =>
-                    dataSrv
-                      .getByName(data)
-                      .getOrFail("data")
-                      .orElse(dataSrv.create(Data(data)))
-                      .flatMap(observableSrv.observableDataSrv.create(ObservableData(), observable, _))
-                      .get
-                  )
-                observableSrv.get(observable).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
-            }
-
-          caseTemplateSrv
-            .startTraversal
-            .foreach { caseTemplate =>
-              caseTemplate
-                .tags
-                .foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _)).get)
-            }
-
-          logSrv
-            .startTraversal
-            .project(_.by.by(_.task._id).by(_.organisations._id.fold))
-            .foreach {
-              case (log, taskId, organisationIds) =>
-                logSrv.get(log).update(_.taskId, taskId).update(_.organisationIds, organisationIds.toSet).iterate()
-            }
-
-          taskSrv
-            .startTraversal
-            .project(
-              _.by
-                .by(_.coalesceIdent(_.`case`, _.caseTemplate)._id)
-                .by(_.coalesceIdent(_.organisations, _.caseTemplate.organisation)._id.fold)
-            )
-            .foreach {
-              case (task, relatedId, organisationIds) =>
-                task.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(taskSrv.taskUserSrv.create(TaskUser(), task, _)).get)
-                taskSrv.get(task).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
-            }
-          Success(())
-        }
+    integrityChecks.foreach { check =>
+      db.tryTransaction { implicit graph =>
+        Success(check.initialCheck()(graph, LocalUserSrv.getSystemAuthContext))
       }
+      ()
+    }
+    db.tryTransaction { implicit graph =>
+      implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+      val idMap =
+        createVertex(caseSrv, FieldsParser[Case]) ++
+          createVertex(alertSrv, FieldsParser[Alert]) ++
+          createVertex(attachmentSrv, FieldsParser[Attachment]) ++
+          createVertex(caseTemplateSrv, FieldsParser[CaseTemplate]) ++
+          createVertex(customFieldSrv, FieldsParser[CustomField]) ++
+          createVertex(dashboardSrv, FieldsParser[Dashboard]) ++
+          //              createVertex(dataSrv, FieldsParser[Data]) ++
+          //              createVertex(impactStatusSrv, FieldsParser[ImpactStatus]) ++
+          //              createVertex(keyValueSrv, FieldsParser[KeyValue]) ++
+          createVertex(logSrv, FieldsParser[Log]) ++
+          createVertex(observableSrv, FieldsParser[Observable]) ++
+          createVertex(observableTypeSrv, FieldsParser[ObservableType]) ++
+          createVertex(organisationSrv, FieldsParser[Organisation]) ++
+          createVertex(pageSrv, FieldsParser[Page]) ++
+          createVertex(patternSrv, FieldsParser[Pattern]) ++
+          createVertex(procedureSrv, FieldsParser[Procedure]) ++
+          createVertex(profileSrv, FieldsParser[Profile]) ++
+          //              createVertex(resolutionStatusSrv, FieldsParser[ResolutionStatus]) ++
+          createVertex(roleSrv, FieldsParser[Role]) ++
+          createVertex(shareSrv, FieldsParser[Share]) ++
+          createVertex(tagSrv, FieldsParser[Tag]) ++
+          createVertex(taskSrv, FieldsParser[Task]) ++
+          createVertex(taxonomySrv, FieldsParser[Taxonomy]) ++
+          createVertex(userSrv, FieldsParser[User])
+
+      createEdge(organisationSrv.organisationOrganisationSrv, organisationSrv, organisationSrv, FieldsParser[OrganisationOrganisation], idMap)
+      createEdge(organisationSrv.organisationShareSrv, organisationSrv, shareSrv, FieldsParser[OrganisationShare], idMap)
+      createEdge(organisationSrv.organisationTaxonomySrv, organisationSrv, taxonomySrv, FieldsParser[OrganisationTaxonomy], idMap)
+
+      createEdge(taxonomySrv.taxonomyTagSrv, taxonomySrv, tagSrv, FieldsParser[TaxonomyTag], idMap)
+
+      createEdge(roleSrv.userRoleSrv, userSrv, roleSrv, FieldsParser[UserRole], idMap)
+
+      createEdge(shareSrv.shareProfileSrv, shareSrv, profileSrv, FieldsParser[ShareProfile], idMap)
+      createEdge(shareSrv.shareObservableSrv, shareSrv, observableSrv, FieldsParser[ShareObservable], idMap)
+      createEdge(shareSrv.shareTaskSrv, shareSrv, taskSrv, FieldsParser[ShareTask], idMap)
+      createEdge(shareSrv.shareCaseSrv, shareSrv, caseSrv, FieldsParser[ShareCase], idMap)
+
+      createEdge(roleSrv.roleOrganisationSrv, roleSrv, organisationSrv, FieldsParser[RoleOrganisation], idMap)
+      createEdge(roleSrv.roleProfileSrv, roleSrv, profileSrv, FieldsParser[RoleProfile], idMap)
+
+      //          createEdge(observableSrv.observableKeyValueSrv, observableSrv, keyValueSrv, FieldsParser[ObservableKeyValue], idMap)
+      //          createEdge(observableSrv.observableObservableType, observableSrv, observableTypeSrv, FieldsParser[ObservableObservableType], idMap)
+      //          createEdge(observableSrv.observableDataSrv, observableSrv, dataSrv, FieldsParser[ObservableData], idMap)
+      createEdge(observableSrv.observableAttachmentSrv, observableSrv, attachmentSrv, FieldsParser[ObservableAttachment], idMap)
+      //          createEdge(observableSrv.observableTagSrv, observableSrv, tagSrv, FieldsParser[ObservableTag], idMap)
+
+      //          createEdge(taskSrv.taskUserSrv, taskSrv, userSrv, FieldsParser[TaskUser], idMap)
+      createEdge(taskSrv.taskLogSrv, taskSrv, logSrv, FieldsParser[TaskLog], idMap)
+
+      createEdge(logSrv.logAttachmentSrv, logSrv, attachmentSrv, FieldsParser[LogAttachment], idMap)
+      //          createEdge(caseSrv.caseUserSrv, caseSrv, userSrv, FieldsParser[CaseUser], idMap)
+      //          createEdge(caseSrv.mergedFromSrv, caseSrv, caseSrv, FieldsParser[MergedFrom], idMap)
+      //          createEdge(caseSrv.caseCaseTemplateSrv, caseSrv, caseTemplateSrv, FieldsParser[CaseCaseTemplate], idMap)
+      //          createEdge(caseSrv.caseResolutionStatusSrv, caseSrv, resolutionStatusSrv, FieldsParser[CaseResolutionStatus], idMap)
+      //          createEdge(caseSrv.caseImpactStatusSrv, caseSrv, impactStatusSrv, FieldsParser[CaseImpactStatus], idMap)
+      createEdge(caseSrv.caseCustomFieldSrv, caseSrv, customFieldSrv, FieldsParser[CaseCustomField], idMap)
+      //          createEdge(caseSrv.caseTagSrv, caseSrv, tagSrv, FieldsParser[CaseTag], idMap)
+
+      createEdge(caseTemplateSrv.caseTemplateOrganisationSrv, caseTemplateSrv, organisationSrv, FieldsParser[CaseTemplateOrganisation], idMap)
+      //          createEdge(caseTemplateSrv.caseTemplateTaskSrv, caseTemplateSrv, taskSrv, FieldsParser[CaseTemplateTask], idMap)
+      createEdge(caseTemplateSrv.caseTemplateCustomFieldSrv, caseTemplateSrv, customFieldSrv, FieldsParser[CaseTemplateCustomField], idMap)
+      //          createEdge(caseTemplateSrv.caseTemplateTagSrv, caseTemplateSrv, tagSrv, FieldsParser[CaseTemplateTag], idMap)
+
+      createEdge(alertSrv.alertOrganisationSrv, alertSrv, organisationSrv, FieldsParser[AlertOrganisation], idMap)
+      createEdge(alertSrv.alertObservableSrv, alertSrv, observableSrv, FieldsParser[AlertObservable], idMap)
+      createEdge(alertSrv.alertCaseSrv, alertSrv, caseSrv, FieldsParser[AlertCase], idMap)
+      createEdge(alertSrv.alertCaseTemplateSrv, alertSrv, caseTemplateSrv, FieldsParser[AlertCaseTemplate], idMap)
+      createEdge(alertSrv.alertCustomFieldSrv, alertSrv, customFieldSrv, FieldsParser[AlertCustomField], idMap)
+      //          createEdge(alertSrv.alertTagSrv, alertSrv, tagSrv, FieldsParser[AlertTag], idMap)
+
+      createEdge(pageSrv.organisationPageSrv, organisationSrv, pageSrv, FieldsParser[OrganisationPage], idMap)
+
+      createEdge(dashboardSrv.dashboardUserSrv, dashboardSrv, userSrv, FieldsParser[DashboardUser], idMap)
+      createEdge(dashboardSrv.organisationDashboardSrv, organisationSrv, dashboardSrv, FieldsParser[OrganisationDashboard], idMap)
+
+      //          createEdge(patternSrv.patternPatternSrv, patternSrv, patternSrv, FieldsParser[PatternPattern], idMap)
+
+      createEdge(procedureSrv.caseProcedureSrv, caseSrv, procedureSrv, FieldsParser[CaseProcedure], idMap)
+      createEdge(procedureSrv.procedurePatternSrv, procedureSrv, patternSrv, FieldsParser[ProcedurePattern], idMap)
+      Success(())
+    }
+
+    db.tryTransaction { implicit graph =>
+      val (defaultOrganisation, defaultUser) = organisationSrv.startTraversal.notAdmin.project(_.by.by(_.users)).head
+      implicit val authContext: AuthContext =
+        AuthContextImpl(defaultUser.login, defaultUser.name, defaultOrganisation._id, "init", Permissions.all)
+      // For each organisation, if there is no custom taxonomy, create it
+      organisationSrv
+        .startTraversal
+        .hasNot(_.name, "admin")
+        .filterNot(_.taxonomies.freetags)
+        .foreach(o => taxonomySrv.createFreetagTaxonomy(o).get)
+
+      caseSrv
+        .startTraversal
+        .project(
+          _.by
+            .by(_.organisations._id.fold)
+        )
+        .foreach {
+          case (case0, organisationIds) =>
+            case0.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseSrv.caseTagSrv.create(CaseTag(), case0, _)).get)
+            case0.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(caseSrv.caseUserSrv.create(CaseUser(), case0, _)).get)
+            case0
+              .resolutionStatus
+              .foreach(
+                resolutionStatusSrv
+                  .getByName(_)
+                  .getOrFail("ResolutionStatus")
+                  .flatMap(caseSrv.caseResolutionStatusSrv.create(CaseResolutionStatus(), case0, _))
+                  .get
+              )
+            case0
+              .impactStatus
+              .foreach(
+                impactStatusSrv
+                  .getByName(_)
+                  .getOrFail("ImpectStatus")
+                  .flatMap(caseSrv.caseImpactStatusSrv.create(CaseImpactStatus(), case0, _))
+                  .get
+              )
+            case0
+              .caseTemplate
+              .foreach(
+                caseTemplateSrv
+                  .getByName(_)
+                  .getOrFail("CaseTemplate")
+                  .flatMap(caseSrv.caseCaseTemplateSrv.create(CaseCaseTemplate(), case0, _))
+                  .get
+              )
+            caseSrv.get(case0).update(_.organisationIds, organisationIds.toSet).iterate()
+        }
+
+      alertSrv
+        .startTraversal
+        .project(_.by.by(_.organisation._id).by(_.`case`._id.option))
+        .foreach {
+          case (alert, organisationId, caseId) =>
+            alert.tags.foreach(tag => tagSrv.getOrCreate(tag).flatMap(alertSrv.alertTagSrv.create(AlertTag(), alert, _)).get)
+            alertSrv.get(alert).update(_.organisationId, organisationId).update(_.caseId, caseId.getOrElse(EntityId.empty)).iterate()
+        }
+
+      observableSrv
+        .startTraversal
+        .project(_.by.by(_.coalesceIdent(_.`case`, _.alert)._id).by(_.organisations._id.fold))
+        .foreach {
+          case (observable, relatedId, organisationIds) =>
+            observable
+              .tags
+              .foreach(tag => tagSrv.getOrCreate(tag).flatMap(observableSrv.observableTagSrv.create(ObservableTag(), observable, _)).get)
+            observableTypeSrv
+              .getByName(observable.dataType)
+              .getOrFail("ObservableType")
+              .flatMap(observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, _))
+              .get
+            observable
+              .data
+              .foreach(data =>
+                dataSrv
+                  .getByName(data)
+                  .getOrFail("data")
+                  .orElse(dataSrv.create(Data(data)))
+                  .flatMap(observableSrv.observableDataSrv.create(ObservableData(), observable, _))
+                  .get
+              )
+            observableSrv.get(observable).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
+        }
+
+      caseTemplateSrv
+        .startTraversal
+        .foreach { caseTemplate =>
+          caseTemplate
+            .tags
+            .foreach(tag => tagSrv.getOrCreate(tag).flatMap(caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _)).get)
+        }
+
+      logSrv
+        .startTraversal
+        .project(_.by.by(_.task._id).by(_.organisations._id.fold))
+        .foreach {
+          case (log, taskId, organisationIds) =>
+            logSrv.get(log).update(_.taskId, taskId).update(_.organisationIds, organisationIds.toSet).iterate()
+        }
+
+      taskSrv
+        .startTraversal
+        .project(
+          _.by
+            .by(_.coalesceIdent(_.`case`, _.caseTemplate)._id)
+            .by(_.coalesceIdent(_.organisations, _.caseTemplate.organisation)._id.fold)
+        )
+        .foreach {
+          case (task, relatedId, organisationIds) =>
+            task.assignee.foreach(userSrv.getByName(_).getOrFail("User").flatMap(taskSrv.taskUserSrv.create(TaskUser(), task, _)).get)
+            taskSrv.get(task).update(_.relatedId, relatedId).update(_.organisationIds, organisationIds.toSet).iterate()
+        }
+      Success(())
+    }
   }
 
   def warn(message: String, error: Throwable = null): Option[Nothing] = {
