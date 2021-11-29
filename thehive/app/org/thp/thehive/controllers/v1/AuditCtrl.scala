@@ -1,7 +1,7 @@
 package org.thp.thehive.controllers.v1
 
 import org.thp.scalligraph.EntityIdOrName
-import org.thp.scalligraph.controllers.Entrypoint
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, Schema}
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -41,6 +41,20 @@ class AuditCtrl @Inject() (
       (range, auditSteps, _) => auditSteps.richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(_.richAudit)
     )
   override val outputQuery: Query = Query.output[RichAudit, Traversal.V[Audit]](_.richAudit)
+
+  override val extraQueries: Seq[ParamQuery[_]] = {
+    implicit val entityIdParser: FieldsParser[String] = FieldsParser.string.on("id")
+    Seq(
+      Query.initWithParam[String, Traversal.V[Audit]](
+        "listAuditFromObject",
+        (objectId, graph, authContext) =>
+          if (auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit].limit(1).visible(organisationSrv)(authContext).exists)
+            auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit]
+          else
+            graph.empty
+      )
+    )
+  }
 
   def flow: Action[AnyContent] =
     entrypoint("audit flow")

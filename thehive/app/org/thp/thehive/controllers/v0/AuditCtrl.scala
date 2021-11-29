@@ -3,9 +3,10 @@ package org.thp.thehive.controllers.v0
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import org.thp.scalligraph.EntityIdOrName
-import org.thp.scalligraph.controllers.Entrypoint
+import org.thp.scalligraph.{EntityId, EntityIdOrName}
+import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, UMapping}
+import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
@@ -82,11 +83,41 @@ class PublicAudit @Inject() (auditSrv: AuditSrv, organisationSrv: OrganisationSr
     )
   override val outputQuery: Query = Query.output[RichAudit, Traversal.V[Audit]](_.richAudit)
 
+  override val extraQueries: Seq[ParamQuery[_]] = {
+    implicit val entityIdParser: FieldsParser[String] = FieldsParser.string.on("id")
+    Seq(
+      Query.initWithParam[String, Traversal.V[Audit]](
+        "listAuditFromObject",
+        (objectId, graph, authContext) =>
+          if (auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit].limit(1).visible(organisationSrv)(authContext).exists)
+            auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit]
+          else
+            graph.empty
+      )
+    )
+  }
+
   override val publicProperties: PublicProperties =
     PublicPropertyListBuilder[Audit]
-      .property("operation", UMapping.string)(_.rename("action").readonly)
+      .property("operation", UMapping.string)(
+        _.select(_.value(_.action).domainMap(actionToOperation))
+          .filter[String] {
+            case (_, audits, _, Right(p))   => audits.has(_.action, p.mapValue(operationToAction))
+            case (_, audits, _, Left(true)) => audits
+            case (_, audits, _, _)          => audits.empty
+          }
+          .readonly
+      )
       .property("details", UMapping.string)(_.field.readonly)
-      .property("objectType", UMapping.string.optional)(_.field.readonly)
+      .property("objectType", UMapping.string.optional)(
+        _.select(_.value(_.objectType).domainMap(fromObjectType))
+          .filter[String] {
+            case (_, audits, _, Right(p))   => audits.has(_.objectType, p.mapValue(toObjectType))
+            case (_, audits, _, Left(true)) => audits
+            case (_, audits, _, _)          => audits.empty
+          }
+          .readonly
+      )
       .property("objectId", UMapping.string.optional)(_.field.readonly)
       .property("base", UMapping.boolean)(_.rename("mainAction").readonly)
       .property("startDate", UMapping.date)(_.rename("_createdAt").readonly)

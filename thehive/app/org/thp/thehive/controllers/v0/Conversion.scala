@@ -27,6 +27,14 @@ object Conversion {
       case _        => "Unknown"
     }
 
+  def operationToAction(operation: String): String =
+    operation match {
+      case "Creation" => "create"
+      case "Update"   => "update"
+      case "Delete"   => "delete"
+      case _          => "Unknown"
+    }
+
   def fromObjectType(objectType: String): String =
     objectType match {
       case "Task"       => "case_task"

@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Transaction.Status
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.models.{Entity, _}
+import org.thp.scalligraph.models._
 import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, IdentityConverter, Traversal}
@@ -318,6 +318,11 @@ object AuditOps {
 
   implicit class VertexDefs(traversal: Traversal[Vertex, Vertex, IdentityConverter[Vertex]]) {
     def share: Traversal.V[Share] = traversal.coalesceIdent(_.in[ShareObservable], _.in[ShareTask], _.in[ShareCase], _.identity).v[Share]
+  }
+
+  implicit class AuditedObjectOpsDefs[A](traversal: Traversal.V[A]) {
+    def audits: Traversal.V[Audit]            = traversal.in[Audited].v[Audit]
+    def auditsFromContext: Traversal.V[Audit] = traversal.in[AuditContext].v[Audit]
   }
 
   implicit class AuditOpsDefs(traversal: Traversal.V[Audit]) {
