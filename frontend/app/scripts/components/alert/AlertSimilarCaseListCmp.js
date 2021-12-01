@@ -21,7 +21,7 @@
                     fIocs: undefined
                 };
 
-                self.sortField = '-sCreatedAt';
+                self.sortField = '-fObservables';
                 self.matches = [];
                 self.filteredCases = [];
 
