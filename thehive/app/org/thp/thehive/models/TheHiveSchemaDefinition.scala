@@ -491,6 +491,17 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         }
       Success(())
     }
+    //=====[release 4.1.15]=====
+    .removeIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
+    .removeIndex("Alert", IndexType.unique, "type", "source", "sourceRef", "organisationId")
+    .removeIndex("Organisation", IndexType.unique, "name")
+    .removeIndex("Customfield", IndexType.unique, "name")
+    .removeIndex("Profile", IndexType.unique, "name")
+    .removeIndex("ImpactStatus", IndexType.unique, "value")
+    .removeIndex("ObservableType", IndexType.unique, "name")
+    .removeIndex("User", IndexType.unique, "login")
+    .removeIndex("Case", IndexType.unique, "number")
+    .removeIndex("ResolutionStatus", IndexType.unique, "value")
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
