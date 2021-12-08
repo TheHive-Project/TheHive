@@ -83,14 +83,16 @@ class PublicJob @Inject() (jobSrv: JobSrv) extends PublicData with JobRenderer {
     "getJob",
     (idOrName, graph, authContext) => jobSrv.get(idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Job], IteratorOutput](
       "page",
       {
         case (OutputParam(from, to, _, withParents), jobSteps, authContext) if withParents > 0 =>
-          jobSteps.richPage(from, to, withTotal = true)(_.richJobWithCustomRenderer(jobParents(_)(authContext))(authContext))
+          jobSteps.richPage(from, to, withTotal = true, limitedCountThreshold)(_.richJobWithCustomRenderer(jobParents(_)(authContext))(authContext))
         case (range, jobSteps, authContext) =>
-          jobSteps.richPage(range.from, range.to, withTotal = true)(_.richJob(authContext).domainMap((_, None: Option[(RichObservable, RichCase)])))
+          jobSteps.richPage(range.from, range.to, withTotal = true, limitedCountThreshold)(
+            _.richJob(authContext).domainMap((_, None: Option[(RichObservable, RichCase)]))
+          )
       }
     )
   override val outputQuery: Query = Query.outputWithContext[RichJob, Traversal.V[Job]]((jobSteps, authContext) => jobSteps.richJob(authContext))

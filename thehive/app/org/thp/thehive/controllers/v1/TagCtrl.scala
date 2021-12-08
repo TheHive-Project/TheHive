@@ -37,13 +37,14 @@ class TagCtrl @Inject() (
   override val publicProperties: PublicProperties = properties.tag
   override val initialQuery: Query =
     Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
-    "page",
-    (params, tagSteps, authContext) =>
-      tagSteps.richPage(params.from, params.to, params.extraData.contains("total"))(
-        _.withCustomRenderer(tagStatsRenderer(params.extraData - "total")(authContext))
-      )
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
+      "page",
+      (params, tagSteps, authContext) =>
+        tagSteps.richPage(params.from, params.to, params.extraData.contains("total"), limitedCountThreshold)(
+          _.withCustomRenderer(tagStatsRenderer(params.extraData - "total")(authContext))
+        )
+    )
   override val outputQuery: Query = Query.output[Tag with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Tag]](
     "getTag",

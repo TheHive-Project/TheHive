@@ -16,7 +16,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
 import org.thp.thehive.services.TaskOps._
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Try}
 
@@ -226,6 +226,8 @@ class ShareSrv @Inject() (implicit
     val (orgsToAdd, orgsToRemove) = taskSrv
       .get(task)
       .update(_.organisationIds, organisations.map(_._id))
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
       .shares
       .organisation
       .toIterator
@@ -306,6 +308,8 @@ class ShareSrv @Inject() (implicit
     val (orgsToAdd, orgsToRemove) = observableSrv
       .get(observable)
       .update(_.organisationIds, organisations.map(_._id))
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
       .shares
       .organisation
       .toIterator

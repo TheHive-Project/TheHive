@@ -143,9 +143,12 @@ class AdminCtrl @Inject() (
   def rebuild(name: String): Action[AnyContent] =
     entrypoint("Rebuild index")
       .authPermitted(Permissions.managePlatform) { _ =>
-        db
-          .removeIndex(name, IndexType.fulltext, Nil)
-          .flatMap(_ => schemas.toTry(db.addSchemaIndexes))
+        val removalResult =
+          if (name == "all") db.removeAllIndex()
+          else db.removeIndex(name, IndexType.fulltext, Nil)
+        schemas
+          .toTry(db.addSchemaIndexes)
+          .flatMap(_ => removalResult)
           .map(_ => Results.NoContent)
       }
 
@@ -188,8 +191,8 @@ class AdminCtrl @Inject() (
             case (_: AddIndex, _) =>
               filter.contains("AddIndex") || filter
                 .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!AddIndex"))
-            case (RebuildIndexes, _) =>
-              filter.contains("RebuildIndexes") || filter
+            case (ReindexData, _) =>
+              filter.contains("ReindexData") || filter
                 .contains("index") || (filters.contains("all") && !filter.contains("!index") && !filter.contains("!RebuildIndexes"))
             case (NoOperation, _) => false
             case (_: RemoveIndex, _) =>

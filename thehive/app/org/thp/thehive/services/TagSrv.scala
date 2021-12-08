@@ -15,7 +15,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.TagOps._
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.matching.Regex
 import scala.util.{Success, Try}
@@ -85,11 +85,12 @@ class TagSrv @Inject() (
   def update(
       tag: Tag with Entity,
       input: Tag
-  )(implicit graph: Graph): Try[Tag with Entity] =
+  )(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
     for {
       updatedTag <- get(tag)
         .when(tag.description != input.description)(_.update(_.description, input.description))
         .when(tag.colour != input.colour)(_.update(_.colour, input.colour))
+        .when(input != tag)(_.update(_._updatedAt, Some(new Date)).update(_._updatedBy, Some(authContext.userId)))
         .getOrFail("Tag")
     } yield updatedTag
 

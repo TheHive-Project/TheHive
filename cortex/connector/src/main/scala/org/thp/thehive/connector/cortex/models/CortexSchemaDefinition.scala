@@ -35,7 +35,7 @@ class CortexSchemaDefinition @Inject() () extends Schema with UpdatableSchema {
       .map(modelClass => rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance)
       .collect {
         case hasModel: HasModel =>
-          logger.info(s"Loading model ${hasModel.model.label}")
+          logger.debug(s"Loading model ${hasModel.model.label}")
           hasModel.model
       }
       .toSeq

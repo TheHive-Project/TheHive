@@ -55,15 +55,6 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
               case error => logger.warn(s"Unable to remove lock on property $name: $error")
             }
         }
-      // TODO remove unused commented code ?
-      // def removeIndexLock(name: String): Try[Unit] =
-      //   db.managementTransaction { mgmt =>
-      //     Try(mgmt.setConsistency(mgmt.getGraphIndex(name), ConsistencyModifier.DEFAULT))
-      //       .recover {
-      //         case error => logger.warn(s"Unable to remove lock on index $name: $error")
-      //       }
-      //   }
-
       // removeIndexLock("CaseNumber")
       removePropertyLock("number")
       // removeIndexLock("DataData")
@@ -71,7 +62,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
     }
     .noop // .addIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
     .noop // .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
-    .rebuildIndexes
+    .noop // .reindexData
     //=====[release 4.0.0]=====
     .updateGraph("Remove cases with a Deleted status", "Case") { traversal =>
       traversal.unsafeHas("status", "Deleted").remove()
@@ -500,6 +491,17 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
         }
       Success(())
     }
+    //=====[release 4.1.15]=====
+    .removeIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
+    .removeIndex("Alert", IndexType.unique, "type", "source", "sourceRef", "organisationId")
+    .removeIndex("Organisation", IndexType.unique, "name")
+    .removeIndex("Customfield", IndexType.unique, "name")
+    .removeIndex("Profile", IndexType.unique, "name")
+    .removeIndex("ImpactStatus", IndexType.unique, "value")
+    .removeIndex("ObservableType", IndexType.unique, "name")
+    .removeIndex("User", IndexType.unique, "login")
+    .removeIndex("Case", IndexType.unique, "number")
+    .removeIndex("ResolutionStatus", IndexType.unique, "value")
 
   val reflectionClasses = new Reflections(
     new ConfigurationBuilder()
@@ -517,7 +519,7 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       .filterNot(c => Modifier.isAbstract(c.getModifiers))
       .map { modelClass =>
         val hasModel = rm.reflectModule(rm.classSymbol(modelClass).companion.companion.asModule).instance.asInstanceOf[HasModel]
-        logger.info(s"Loading model ${hasModel.model.label}")
+        logger.debug(s"Loading model ${hasModel.model.label}")
         hasModel.model
       }
       .toSeq

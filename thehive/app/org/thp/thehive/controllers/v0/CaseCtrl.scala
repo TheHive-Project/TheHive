@@ -195,13 +195,13 @@ class PublicCase @Inject() (
       "getCase",
       (idOrName, graph, authContext) => caseSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
     )
-  override val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
       "page",
       {
         case (OutputParam(from, to, withStats, _), caseSteps, authContext) =>
           caseSteps
-            .richPage(from, to, withTotal = true) {
+            .richPage(from, to, withTotal = true, limitedCountThreshold) {
               case c if withStats =>
                 c.richCaseWithCustomRenderer(caseStatsRenderer(authContext))(authContext)
               case c =>

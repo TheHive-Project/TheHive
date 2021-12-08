@@ -111,7 +111,11 @@ class AlertSrv @Inject() (
       tagsToRemove = get(alert).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
       _ = if (tags.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
-      _ <- get(alert).update(_.tags, tags.toSeq).getOrFail("Alert")
+      _ <- get(alert)
+        .update(_.tags, tags.toSeq)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Alert")
       _ <- auditSrv.alert.update(alert, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 
@@ -186,26 +190,42 @@ class AlertSrv @Inject() (
 
   def markAsUnread(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update[Boolean](_.read, false).getOrFail("Alert")
-      _     <- auditSrv.alert.update(alert, Json.obj("read" -> false))
+      alert <- get(alertId)
+        .update[Boolean](_.read, false)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Alert")
+      _ <- auditSrv.alert.update(alert, Json.obj("read" -> false))
     } yield ()
 
   def markAsRead(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update[Boolean](_.read, true).getOrFail("Alert")
-      _     <- auditSrv.alert.update(alert, Json.obj("read" -> true))
+      alert <- get(alertId)
+        .update[Boolean](_.read, true)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Alert")
+      _ <- auditSrv.alert.update(alert, Json.obj("read" -> true))
     } yield ()
 
   def followAlert(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update[Boolean](_.follow, true).getOrFail("Alert")
-      _     <- auditSrv.alert.update(alert, Json.obj("follow" -> true))
+      alert <- get(alertId)
+        .update[Boolean](_.follow, true)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Alert")
+      _ <- auditSrv.alert.update(alert, Json.obj("follow" -> true))
     } yield ()
 
   def unfollowAlert(alertId: EntityIdOrName)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
     for {
-      alert <- get(alertId).update[Boolean](_.follow, false).getOrFail("Alert")
-      _     <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
+      alert <- get(alertId)
+        .update[Boolean](_.follow, false)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Alert")
+      _ <- auditSrv.alert.update(alert, Json.obj("follow" -> false))
     } yield ()
 
   def createCase(alert: RichAlert, assignee: Option[User with Entity], organisation: Organisation with Entity)(implicit
@@ -268,7 +288,13 @@ class AlertSrv @Inject() (
             _ <- caseSrv.addTags(`case`, alert.tags.toSet)
             _ <- alertCaseSrv.create(AlertCase(), alert, `case`)
             _ <- get(alert).update(_.caseId, `case`._id).getOrFail("Alert")
-            c <- caseSrv.get(`case`).update(_.description, description).getOrFail("Case")
+            c <-
+              caseSrv
+                .get(`case`)
+                .update(_.description, description)
+                .update(_._updatedAt, Some(new Date))
+                .update(_._updatedBy, Some(authContext.userId))
+                .getOrFail("Case")
             details <- Success(
               Json.obj(
                 "customFields" -> get(alert).richCustomFields.toSeq.map(_.toOutput.toJson),

@@ -43,10 +43,11 @@ class PublicTag @Inject() (tagSrv: TagSrv, organisationSrv: OrganisationSrv) ext
   override val entityName: String = "tag"
   override val initialQuery: Query =
     Query.init[Traversal.V[Tag]]("listTag", (graph, authContext) => tagSrv.startTraversal(graph).visible(authContext))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
-    "page",
-    (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true)
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Tag], IteratorOutput](
+      "page",
+      (range, tagSteps, _) => tagSteps.page(range.from, range.to, withTotal = true, limitedCountThreshold)
+    )
   override val outputQuery: Query = Query.output[Tag with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Tag]](
     "getTag",

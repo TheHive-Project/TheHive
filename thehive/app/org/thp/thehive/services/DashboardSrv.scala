@@ -13,7 +13,7 @@ import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.UserOps._
 import play.api.libs.json.{JsObject, Json}
 
-import java.util.{List => JList, Map => JMap}
+import java.util.{Date, List => JList, Map => JMap}
 import javax.inject.{Inject, Singleton}
 import scala.util.{Success, Try}
 
@@ -52,6 +52,8 @@ class DashboardSrv @Inject() (organisationSrv: OrganisationSrv, userSrv: UserSrv
         .inE[OrganisationDashboard]
         .filter(_.outV.v[Organisation].getEntity(org))
         .update(_.writable, writable)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
         .fold
         .getOrFail("Dashboard")
         .flatMap {

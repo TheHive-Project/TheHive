@@ -2,7 +2,7 @@ import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.1.14-1"
+val thehiveVersion         = "4.1.15-1"
 val scala212               = "2.12.13"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
@@ -350,29 +350,4 @@ lazy val thehiveMigration = (project in file("migration"))
       specs % Test
     ),
     normalizedName := "migrate"
-  )
-
-lazy val rpmPackageRelease = (project in file("package/rpm-release"))
-  .enablePlugins(RpmPlugin)
-  .settings(
-    name := "thehive-project-release",
-    maintainer := "TheHive Project <support@thehive-project.org>",
-    version := "1.2.0",
-    rpmRelease := "1",
-    rpmVendor := "TheHive Project",
-    rpmUrl := Some("http://thehive-project.org/"),
-    rpmLicense := Some("AGPL"),
-    maintainerScripts in Rpm := Map.empty,
-    linuxPackageSymlinks in Rpm := Nil,
-    packageSummary := "TheHive-Project RPM repository",
-    packageDescription :=
-      """This package contains the TheHive-Project packages repository
-        |GPG key as well as configuration for yum.""".stripMargin,
-    linuxPackageMappings in Rpm := Seq(
-      packageMapping(
-        file("PGP-PUBLIC-KEY")                       -> "etc/pki/rpm-gpg/GPG-TheHive-Project",
-        file("package/rpm-release/thehive-rpm.repo") -> "/etc/yum.repos.d/thehive-rpm.repo",
-        file("LICENSE")                              -> "/usr/share/doc/thehive-project-release/LICENSE"
-      )
-    )
   )

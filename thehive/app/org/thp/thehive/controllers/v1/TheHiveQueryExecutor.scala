@@ -1,12 +1,19 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityId
+import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FObject, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
+import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.utils.RichType
+import org.thp.thehive.models.Audit
+import org.thp.thehive.services.AuditOps._
 
 import javax.inject.{Inject, Singleton}
+import scala.reflect.runtime.{universe => ru}
 
 case class InCase(caseId: EntityId)
 case class InAlert(alertId: EntityId)
@@ -82,7 +89,22 @@ class TheHiveQueryExecutor @Inject() (
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) ++
       controllers.map(_.getQuery) ++
-      controllers.map(_.pageQuery) ++
+      controllers.map(_.pageQuery(limitedCountThreshold)) ++ // FIXME the value of limitedCountThreshold is read only once. The value is not updated.
       controllers.map(_.outputQuery) ++
-      controllers.flatMap(_.extraQueries)
+      controllers.flatMap(_.extraQueries) :+
+      new Query {
+        override val name: String = "audits"
+        override def checkFrom(t: ru.Type): Boolean =
+          RichType.getTypeArgs(t, ru.typeOf[Traversal[_, _, _]]).drop(1).headOption.exists(_ =:= ru.typeOf[Vertex])
+        override def toType(t: ru.Type): ru.Type                                                     = ru.typeOf[Traversal.V[Audit]]
+        override def apply(param: Unit, fromType: ru.Type, from: Any, authContext: AuthContext): Any = from.asInstanceOf[Traversal.V[Any]].audits
+      } :+
+      new Query {
+        override val name: String = "auditsFromContext"
+        override def checkFrom(t: ru.Type): Boolean =
+          RichType.getTypeArgs(t, ru.typeOf[Traversal[_, _, _]]).drop(1).headOption.exists(_ =:= ru.typeOf[Vertex])
+        override def toType(t: ru.Type): ru.Type = ru.typeOf[Traversal.V[Audit]]
+        override def apply(param: Unit, fromType: ru.Type, from: Any, authContext: AuthContext): Any =
+          from.asInstanceOf[Traversal.V[Any]].auditsFromContext
+      }
 }

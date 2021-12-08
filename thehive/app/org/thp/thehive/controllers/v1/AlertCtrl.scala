@@ -44,14 +44,15 @@ class AlertCtrl @Inject() (
     "getAlert",
     (idOrName, graph, authContext) => alertSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
-    "page",
-    (range, alertSteps, authContext) =>
-      alertSteps
-        .richPage(range.from, range.to, range.extraData.contains("total"))(
-          _.richAlertWithCustomRenderer(alertStatsRenderer(organisationSrv, range.extraData)(authContext))
-        )
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
+      "page",
+      (range, alertSteps, authContext) =>
+        alertSteps
+          .richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(
+            _.richAlertWithCustomRenderer(alertStatsRenderer(organisationSrv, range.extraData)(authContext))
+          )
+    )
   override val outputQuery: Query      = Query.output[RichAlert, Traversal.V[Alert]](_.richAlert)
   val caseProperties: PublicProperties = properties.`case` ++ properties.metaProperties
   implicit val caseFilterParser: FieldsParser[Option[InputQuery[Traversal.Unk, Traversal.Unk]]] =

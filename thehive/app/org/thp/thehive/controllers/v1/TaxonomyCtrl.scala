@@ -39,12 +39,14 @@ class TaxonomyCtrl @Inject() (
       "getTaxonomy",
       (idOrName, graph, authContext) => taxonomySrv.get(idOrName)(graph).visible(authContext)
     )
-  override val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Taxonomy], IteratorOutput](
       "page",
       {
         case (OutputParam(from, to, extraData), taxoSteps, _) =>
-          taxoSteps.richPage(from, to, extraData.contains("total"))(_.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total")))
+          taxoSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold)(
+            _.richTaxonomyWithCustomRenderer(taxoStatsRenderer(extraData - "total"))
+          )
       }
     )
   override val outputQuery: Query =

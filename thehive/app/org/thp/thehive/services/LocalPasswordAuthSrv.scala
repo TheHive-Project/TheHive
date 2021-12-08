@@ -10,6 +10,7 @@ import org.thp.thehive.models.User
 import play.api.mvc.RequestHeader
 import play.api.{Configuration, Logger}
 
+import java.util.Date
 import javax.inject.{Inject, Singleton}
 import scala.util.{Failure, Success, Try}
 
@@ -62,6 +63,8 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
       userSrv
         .get(EntityIdOrName(username))
         .update(_.password, Some(hashPassword(newPassword)))
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
         .getOrFail("User")
         .map(_ => ())
     }

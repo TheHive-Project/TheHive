@@ -90,13 +90,14 @@ class CustomFieldCtrl @Inject() (
 class PublicCustomField @Inject() (customFieldSrv: CustomFieldSrv) extends PublicData {
   override val entityName: String  = "CustomField"
   override val initialQuery: Query = Query.init[Traversal.V[CustomField]]("listCustomField", (graph, _) => customFieldSrv.startTraversal(graph))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
-    "page",
-    {
-      case (OutputParam(from, to, _, _), customFieldSteps, _) =>
-        customFieldSteps.page(from, to, withTotal = true)
-    }
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[CustomField], IteratorOutput](
+      "page",
+      {
+        case (OutputParam(from, to, _, _), customFieldSteps, _) =>
+          customFieldSteps.page(from, to, withTotal = true, limitedCountThreshold)
+      }
+    )
   override val outputQuery: Query = Query.output[CustomField with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[CustomField]](
     "getCustomField",

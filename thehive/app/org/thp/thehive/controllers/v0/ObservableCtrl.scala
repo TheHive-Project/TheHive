@@ -372,13 +372,13 @@ class PublicObservable @Inject() (
     "getObservable",
     (idOrName, graph, authContext) => observableSrv.get(idOrName)(graph).visible(organisationSrv)(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Observable], IteratorOutput](
       "page",
       {
         case (OutputParam(from, to, withStats, 0), observableSteps, authContext) =>
           observableSteps
-            .richPage(from, to, withTotal = true) {
+            .richPage(from, to, withTotal = true, limitedCountThreshold) {
               case o if withStats =>
                 o.richObservableWithCustomRenderer(organisationSrv, observableStatsRenderer(organisationSrv)(authContext))(authContext)
                   .domainMap(ros => (ros._1, ros._2, None: Option[Either[RichCase, RichAlert]]))
@@ -386,7 +386,7 @@ class PublicObservable @Inject() (
                 o.richObservable.domainMap(ro => (ro, JsObject.empty, None))
             }
         case (OutputParam(from, to, _, _), observableSteps, authContext) =>
-          observableSteps.richPage(from, to, withTotal = true)(
+          observableSteps.richPage(from, to, withTotal = true, limitedCountThreshold)(
             _.richObservableWithCustomRenderer(
               organisationSrv,
               o => o.project(_.by(_.`case`.richCase(authContext).option).by(_.alert.richAlert.option))

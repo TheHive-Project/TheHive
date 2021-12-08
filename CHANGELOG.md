@@ -1,5 +1,20 @@
 # Change Log
 
+## [4.1.15](https://github.com/TheHive-Project/TheHive/milestone/85) (2021-12-06)
+
+**Implemented enhancements:**
+
+- [Feature Request] Add query to retrieve audit from an object [\#2266](https://github.com/TheHive-Project/TheHive/issues/2266)
+- [Feature Request] Sort similar Alerts by Observables [\#2270](https://github.com/TheHive-Project/TheHive/issues/2270)
+- [Enhancement] Add space after the title prefix from case template [\#2278](https://github.com/TheHive-Project/TheHive/issues/2278)
+
+**Fixed bugs:**
+
+- [Bug] Search without sort make queries slow [\#2261](https://github.com/TheHive-Project/TheHive/issues/2261)
+- [Bug] Marking an alert as read do not update it's "updatedAt" field [\#2262](https://github.com/TheHive-Project/TheHive/issues/2262)
+- [Bug] dataType removal doesn't work [\#2263](https://github.com/TheHive-Project/TheHive/issues/2263)
+- [Bug] Fix index creation and rebuild [\#2265](https://github.com/TheHive-Project/TheHive/issues/2265)
+
 ## [4.1.14](https://github.com/TheHive-Project/TheHive/milestone/84) (2021-11-19)
 
 **Implemented enhancements:**
