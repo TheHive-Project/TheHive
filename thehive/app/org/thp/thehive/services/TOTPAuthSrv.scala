@@ -11,6 +11,7 @@ import play.api.Configuration
 import play.api.mvc.RequestHeader
 
 import java.net.URI
+import java.util.Date
 import java.util.concurrent.TimeUnit
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -73,7 +74,13 @@ class TOTPAuthSrv(
     userSrv.get(EntityIdOrName(username)).headOption.flatMap(_.totpSecret)
 
   def unsetSecret(username: String)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
-    userSrv.get(EntityIdOrName(username)).update(_.totpSecret, None).domainMap(_ => ()).getOrFail("User")
+    userSrv
+      .get(EntityIdOrName(username))
+      .update(_.totpSecret, None)
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .domainMap(_ => ())
+      .getOrFail("User")
 
   def generateSecret(): String = {
     val key = Array.ofDim[Byte](20)
@@ -88,6 +95,8 @@ class TOTPAuthSrv(
     userSrv
       .get(EntityIdOrName(username))
       .update(_.totpSecret, Some(secret))
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
       .domainMap(_ => secret)
       .getOrFail("User")
 

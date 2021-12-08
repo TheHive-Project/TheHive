@@ -94,9 +94,24 @@ class TheHiveQueryExecutor(
   override lazy val queries: Seq[ParamQuery[_]] =
     publicDatas.map(_.initialQuery) ++
       publicDatas.map(_.getQuery) ++
-      publicDatas.map(_.pageQuery) ++
+      publicDatas.map(_.pageQuery(limitedCountThreshold)) ++ // FIXME the value of limitedCountThreshold is read only once. The value is not updated.
       publicDatas.map(_.outputQuery) ++
-      publicDatas.flatMap(_.extraQueries)
+      publicDatas.flatMap(_.extraQueries) :+
+      new Query {
+        override val name: String = "audits"
+        override def checkFrom(t: ru.Type): Boolean =
+          RichType.getTypeArgs(t, ru.typeOf[Traversal[_, _, _]]).drop(1).headOption.exists(_ =:= ru.typeOf[Vertex])
+        override def toType(t: ru.Type): ru.Type                                                     = ru.typeOf[Traversal.V[Audit]]
+        override def apply(param: Unit, fromType: ru.Type, from: Any, authContext: AuthContext): Any = from.asInstanceOf[Traversal.V[Any]].audits
+      } :+
+      new Query {
+        override val name: String = "auditsFromContext"
+        override def checkFrom(t: ru.Type): Boolean =
+          RichType.getTypeArgs(t, ru.typeOf[Traversal[_, _, _]]).drop(1).headOption.exists(_ =:= ru.typeOf[Vertex])
+        override def toType(t: ru.Type): ru.Type = ru.typeOf[Traversal.V[Audit]]
+        override def apply(param: Unit, fromType: ru.Type, from: Any, authContext: AuthContext): Any =
+          from.asInstanceOf[Traversal.V[Any]].auditsFromContext
+      }
   override val version: (Int, Int) = 0 -> 0
 }
 

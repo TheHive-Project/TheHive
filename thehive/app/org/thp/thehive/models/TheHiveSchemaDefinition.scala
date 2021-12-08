@@ -29,6 +29,7 @@ object TheHiveSchemaDefinition
     with V4_1_3
     with V4_1_4
     with V4_1_5
+    with V4_1_15
     with V4_2_0 {
 
   // Make sure TypeDefinitionCategory has been initialised before ModifierType to prevent ExceptionInInitializerError
@@ -45,6 +46,7 @@ object TheHiveSchemaDefinition
       evolutionV4_1_3 andThen
       evolutionV4_1_4 andThen
       evolutionV4_1_5 andThen
+      evolutionV4_1_15 andThen
       evolutionV4_2_0
     evolution(Operations("thehive"))
   }

@@ -105,17 +105,18 @@ class PublicTask(
       (graph, authContext) => taskSrv.startTraversal(graph).visible(authContext)
     )
   //organisationSrv.get(authContext.organisation)(graph).shares.tasks)
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
-    "page",
-    {
-      case (OutputParam(from, to, _, 0), taskSteps, _) =>
-        taskSteps.richPage(from, to, withTotal = true)(_.richTask.domainMap(_ -> (None: Option[RichCase])))
-      case (OutputParam(from, to, _, _), taskSteps, authContext) =>
-        taskSteps.richPage(from, to, withTotal = true)(
-          _.richTaskWithCustomRenderer(_.`case`.richCase(authContext).option)
-        )
-    }
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
+      "page",
+      {
+        case (OutputParam(from, to, _, 0), taskSteps, _) =>
+          taskSteps.richPage(from, to, withTotal = true, limitedCountThreshold)(_.richTask.domainMap(_ -> (None: Option[RichCase])))
+        case (OutputParam(from, to, _, _), taskSteps, authContext) =>
+          taskSteps.richPage(from, to, withTotal = true, limitedCountThreshold)(
+            _.richTaskWithCustomRenderer(_.`case`.richCase(authContext).option)
+          )
+      }
+    )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
     "getTask",
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)

@@ -140,7 +140,7 @@ object Conversion {
 
     def withCaseTemplate(caseTemplate: RichCaseTemplate): InputCase =
       InputCase(
-        title = String512("title", caseTemplate.titlePrefix.getOrElse("") + inputCase.title.value),
+        title = String512("title", caseTemplate.titlePrefix.fold("")(_.replaceAll("(?m)\\s+$", "") + " ") + inputCase.title.value),
         description = inputCase.description,
         severity = inputCase.severity orElse caseTemplate.severity.map(Severity.apply),
         startDate = inputCase.startDate,

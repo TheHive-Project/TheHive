@@ -48,14 +48,15 @@ class UserCtrl(
     (idOrName, graph, authContext) => userSrv.get(idOrName)(graph).visible(authContext)
   )
 
-  override val pageQuery: ParamQuery[UserOutputParam] = Query.withParam[UserOutputParam, Traversal.V[User], IteratorOutput](
-    "page",
-    (params, userSteps, authContext) =>
-      params
-        .organisation
-        .fold(userSteps.richUser(authContext))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
-        .page(params.from, params.to, params.extraData.contains("total"))
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[UserOutputParam] =
+    Query.withParam[UserOutputParam, Traversal.V[User], IteratorOutput](
+      "page",
+      (params, userSteps, authContext) =>
+        params
+          .organisation
+          .fold(userSteps.richUser(authContext))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
+          .page(params.from, params.to, params.extraData.contains("total"), limitedCountThreshold)
+    )
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
 

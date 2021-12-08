@@ -20,7 +20,7 @@ trait PublicData {
   val entityName: String
   val publicProperties: PublicProperties
   val initialQuery: Query
-  val pageQuery: ParamQuery[OutputParam]
+  def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam]
   val outputQuery: Query
   val getQuery: ParamQuery[EntityIdOrName]
   val extraQueries: Seq[ParamQuery[_]] = Nil
@@ -104,7 +104,7 @@ trait QueryCtrl {
           inputSort <- sortParser(field.get("sort"))
           sortedQuery = filteredQuery andThen new SortQuery(queryExecutor.publicProperties).toQuery(inputSort)
           outputParam <- outputParamParser.optional(field).map(_.getOrElse(OutputParam(0, 10, withStats = false, withParents = 0)))
-          outputQuery = publicData.pageQuery.toQuery(outputParam)
+          outputQuery = publicData.pageQuery(queryExecutor.limitedCountThreshold).toQuery(outputParam)
         } yield sortedQuery andThen outputQuery
     }
 

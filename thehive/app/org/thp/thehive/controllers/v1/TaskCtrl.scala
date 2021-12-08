@@ -34,13 +34,14 @@ class TaskCtrl(
       (graph, authContext) => taskSrv.startTraversal(graph).visible(authContext)
 //        organisationSrv.get(authContext.organisation)(graph).shares.tasks)
     )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
-    "page",
-    (range, taskSteps, authContext) =>
-      taskSteps.richPage(range.from, range.to, range.extraData.contains("total"))(
-        _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))
-      )
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Task], IteratorOutput](
+      "page",
+      (range, taskSteps, authContext) =>
+        taskSteps.richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(
+          _.richTaskWithCustomRenderer(taskStatsRenderer(range.extraData)(authContext))
+        )
+    )
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Task]](
     "getTask",
     (idOrName, graph, authContext) => taskSrv.get(idOrName)(graph).visible(authContext)

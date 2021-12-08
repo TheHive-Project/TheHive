@@ -30,10 +30,11 @@ class ShareCtrl(
   override val publicProperties: PublicProperties = properties.share
   override val initialQuery: Query =
     Query.init[Traversal.V[Share]]("listShare", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext).shares)
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Share], IteratorOutput](
-    "page",
-    (range, shareSteps, _) => shareSteps.richPage(range.from, range.to, range.extraData.contains("total"))(_.richShare)
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Share], IteratorOutput](
+      "page",
+      (range, shareSteps, _) => shareSteps.richPage(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)(_.richShare)
+    )
   override val outputQuery: Query = Query.outputWithContext[RichShare, Traversal.V[Share]]((shareSteps, _) => shareSteps.richShare)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Share]](
     "getShare",

@@ -31,10 +31,11 @@ class ProfileCtrl(
   val initialQuery: Query =
     Query.init[Traversal.V[Profile]]("listProfile", (graph, _) => profileSrv.startTraversal(graph))
 
-  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Profile], IteratorOutput](
-    "page",
-    (range, profileSteps, _) => profileSteps.page(range.from, range.to, range.extraData.contains("total"))
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Profile], IteratorOutput](
+      "page",
+      (range, profileSteps, _) => profileSteps.page(range.from, range.to, range.extraData.contains("total"), limitedCountThreshold)
+    )
   override val outputQuery: Query = Query.output[Profile with Entity]
 
   def create: Action[AnyContent] =

@@ -101,10 +101,12 @@ class PublicDashboard(
     (idOrName, graph, authContext) => dashboardSrv.get(idOrName)(graph).visible(authContext)
   )
 
-  val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Dashboard], IteratorOutput](
-    "page",
-    (range, dashboardSteps, authContext) => dashboardSteps.richPage(range.from, range.to, withTotal = true)(_.richDashboard(authContext))
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Dashboard], IteratorOutput](
+      "page",
+      (range, dashboardSteps, authContext) =>
+        dashboardSteps.richPage(range.from, range.to, withTotal = true, limitedCountThreshold)(_.richDashboard(authContext))
+    )
   override val outputQuery: Query = Query.outputWithContext[RichDashboard, Traversal.V[Dashboard]](_.richDashboard(_))
   val publicProperties: PublicProperties = PublicPropertyListBuilder[Dashboard]
     .property("keyword", UMapping.string)(

@@ -9,7 +9,7 @@ import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichSeq}
 import org.thp.thehive.models._
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import scala.util.{Failure, Success, Try}
 
 class TaxonomySrv(_organisationSrv: => OrganisationSrv, _tagSrv: => TagSrv) extends VertexSrv[Taxonomy] with TheHiveOpsNoDeps {
@@ -43,13 +43,14 @@ class TaxonomySrv(_organisationSrv: => OrganisationSrv, _tagSrv: => TagSrv) exte
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[Taxonomy] =
     startTraversal.getByNamespace(name)
 
-  def update(taxonomy: Taxonomy with Entity, input: Taxonomy)(implicit graph: Graph): Try[RichTaxonomy] =
+  def update(taxonomy: Taxonomy with Entity, input: Taxonomy)(implicit graph: Graph, authContext: AuthContext): Try[RichTaxonomy] =
     for {
       updatedTaxonomy <-
         get(taxonomy)
           .when(taxonomy.namespace != input.namespace)(_.update(_.namespace, input.namespace))
           .when(taxonomy.description != input.description)(_.update(_.description, input.description))
           .when(taxonomy.version != input.version)(_.update(_.version, input.version))
+          .when(input != taxonomy)(_.update(_._updatedAt, Some(new Date)).update(_._updatedBy, Some(authContext.userId)))
           .richTaxonomy
           .getOrFail("Taxonomy")
     } yield updatedTaxonomy

@@ -101,10 +101,10 @@ class PublicAnalyzerTemplate(analyzerTemplateSrv: AnalyzerTemplateSrv, searchSrv
     "getReportTemplate",
     (idOrName, graph, _) => analyzerTemplateSrv.get(idOrName)(graph)
   )
-  override val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[AnalyzerTemplate], IteratorOutput](
       "page",
-      (range, analyzerTemplateTraversal, _) => analyzerTemplateTraversal.page(range.from, range.to, withTotal = true)
+      (range, analyzerTemplateTraversal, _) => analyzerTemplateTraversal.page(range.from, range.to, withTotal = true, limitedCountThreshold)
     )
   override val outputQuery: Query = Query.output[AnalyzerTemplate with Entity]
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[AnalyzerTemplate]

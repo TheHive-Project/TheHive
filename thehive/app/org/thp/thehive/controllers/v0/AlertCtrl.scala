@@ -392,12 +392,12 @@ class PublicAlert(
     "getAlert",
     (idOrName, graph, authContext) => alertSrv.get(idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] =
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
     Query.withParam[OutputParam, Traversal.V[Alert], IteratorOutput](
       "page",
       (range, alertSteps, _) =>
         alertSteps
-          .richPage(range.from, range.to, withTotal = true) { alerts =>
+          .richPage(range.from, range.to, withTotal = true, limitedCountThreshold) { alerts =>
             alerts.project(_.by(_.richAlert).by(_.observables.richObservable.fold))
           }
     )

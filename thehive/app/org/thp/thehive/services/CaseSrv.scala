@@ -192,7 +192,11 @@ class CaseSrv(
       tagsToRemove = get(`case`).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(caseTagSrv.create(CaseTag(), `case`, _))
       _ = if (tagsToRemove.nonEmpty) get(`case`).outE[CaseTag].filter(_.otherV().hasId(tagsToRemove.map(_._id): _*)).remove()
-      _ <- get(`case`).update(_.tags, tags.toSeq).getOrFail("Case")
+      _ <- get(`case`)
+        .update(_.tags, tags.toSeq)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("Case")
       _ <- auditSrv.`case`.update(`case`, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 
@@ -316,13 +320,23 @@ class CaseSrv(
       `case`: Case with Entity,
       impactStatus: ImpactStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.impactStatus, Some(impactStatus.value)).outE[CaseImpactStatus].remove()
+    get(`case`)
+      .update(_.impactStatus, Some(impactStatus.value))
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[CaseImpactStatus]
+      .remove()
     caseImpactStatusSrv.create(CaseImpactStatus(), `case`, impactStatus)
     auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> impactStatus.value))
   }
 
   def unsetImpactStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.impactStatus, None).outE[CaseImpactStatus].remove()
+    get(`case`)
+      .update(_.impactStatus, None)
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[CaseImpactStatus]
+      .remove()
     auditSrv.`case`.update(`case`, Json.obj("impactStatus" -> JsNull))
   }
 
@@ -336,24 +350,44 @@ class CaseSrv(
       `case`: Case with Entity,
       resolutionStatus: ResolutionStatus with Entity
   )(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.resolutionStatus, Some(resolutionStatus.value)).outE[CaseResolutionStatus].remove()
+    get(`case`)
+      .update(_.resolutionStatus, Some(resolutionStatus.value))
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[CaseResolutionStatus]
+      .remove()
     caseResolutionStatusSrv.create(CaseResolutionStatus(), `case`, resolutionStatus)
     auditSrv.`case`.update(`case`, Json.obj("resolutionStatus" -> resolutionStatus.value))
   }
 
   def unsetResolutionStatus(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.resolutionStatus, None).outE[CaseResolutionStatus].remove()
+    get(`case`)
+      .update(_.resolutionStatus, None)
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[CaseResolutionStatus]
+      .remove()
     auditSrv.`case`.update(`case`, Json.obj("resolutionStatus" -> JsNull))
   }
 
   def assign(`case`: Case with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.assignee, Some(user.login)).outE[CaseUser].remove()
+    get(`case`)
+      .update(_.assignee, Some(user.login))
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[CaseUser]
+      .remove()
     caseUserSrv.create(CaseUser(), `case`, user)
     auditSrv.`case`.update(`case`, Json.obj("owner" -> user.login))
   }
 
   def unassign(`case`: Case with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(`case`).update(_.assignee, None).outE[CaseUser].remove()
+    get(`case`)
+      .update(_.assignee, None)
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[CaseUser]
+      .remove()
     auditSrv.`case`.update(`case`, Json.obj("owner" -> JsNull))
   }
 

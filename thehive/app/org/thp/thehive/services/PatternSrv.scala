@@ -8,7 +8,7 @@ import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.thehive.models._
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import scala.util.{Success, Try}
 
 class PatternSrv(
@@ -39,7 +39,7 @@ class PatternSrv(
   def update(
       pattern: Pattern with Entity,
       input: Pattern
-  )(implicit graph: Graph): Try[Pattern with Entity] =
+  )(implicit graph: Graph, authContext: AuthContext): Try[Pattern with Entity] =
     for {
       updatedPattern <- get(pattern)
         .when(pattern.patternId != input.patternId)(_.update(_.patternId, input.patternId))
@@ -59,6 +59,7 @@ class PatternSrv(
         .when(pattern.remoteSupport != input.remoteSupport)(_.update(_.remoteSupport, input.remoteSupport))
         .when(pattern.systemRequirements != input.systemRequirements)(_.update(_.systemRequirements, input.systemRequirements))
         .when(pattern.revision != input.revision)(_.update(_.revision, input.revision))
+        .when(input != pattern)(_.update(_._updatedAt, Some(new Date)).update(_._updatedBy, Some(authContext.userId)))
         .getOrFail("Pattern")
     } yield updatedPattern
 

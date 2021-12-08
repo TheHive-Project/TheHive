@@ -225,6 +225,13 @@ class MispImportSrv(
                 .when(richObservable.ioc != observable.ioc)(_.update(_.ioc, observable.ioc))
                 .when(richObservable.sighted != observable.sighted)(_.update(_.sighted, observable.sighted))
                 .when(richObservable.tags.toSet != observable.tags.toSet)(_.update(_.tags, observable.tags))
+                .when(
+                  richObservable.message != observable.message ||
+                    richObservable.tlp != observable.tlp ||
+                    richObservable.ioc != observable.ioc ||
+                    richObservable.sighted != observable.sighted ||
+                    richObservable.tags.toSet != observable.tags.toSet
+                )(_.update(_._updatedAt, Some(new Date)).update(_._updatedBy, Some(authContext.userId)))
                 .getOrFail("Observable")
           } yield ()
       }
@@ -387,7 +394,10 @@ class MispImportSrv(
             .map(ra => (ra.alert, None, ra.toJson.asInstanceOf[JsObject]))
         case Some(richAlert) =>
           logger.debug(s"Event ${client.name}#${event.id} have already been imported for organisation ${organisation.name}, updating the alert")
-          val (updatedAlertTraversal, updatedFields) = (alertSrv.get(richAlert.alert).update(_.read, false), Json.obj("read" -> false))
+          val (updatedAlertTraversal, updatedFields) = (
+            alertSrv.get(richAlert.alert).update(_.read, false).update(_._updatedAt, Some(new Date)).update(_._updatedBy, Some(authContext.userId)),
+            Json.obj("read" -> false)
+          )
             .when(richAlert.title != alert.title)(_.update(_.title, alert.title), _ + ("title" -> JsString(alert.title)))
             .when(richAlert.lastSyncDate != alert.lastSyncDate)(
               _.update(_.lastSyncDate, alert.lastSyncDate),

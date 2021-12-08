@@ -33,6 +33,9 @@ steps:
         nvm install 14
         npm install -g bower grunt
         sbt -Duser.home=$PWD test:compile test Universal/packageBin
+    when:
+      event:
+        exclude: [promote]
 
   # Build packages
   - name: build-packages
@@ -82,7 +85,7 @@ steps:
         mv target/thehive-backend/target/universal/thehive4*.zip target/
         mv target/thehive/target/universal/thehive4*.zip target/
     when:
-      event: [tag]
+      event: [promote]
 
   # Save external libraries in cache
   - name: save-cache
@@ -112,7 +115,7 @@ steps:
         - target/thehive*.zip
       strip_components: 1
     when:
-      event: [tag]
+      event: [promote]
 
   # Publish packages
   - name: publish packages
@@ -125,7 +128,7 @@ steps:
     commands:
       - PLUGIN_SCRIPT="bash $PLUGIN_PUBLISH_SCRIPT thehive4 $(cat thehive-version.txt)" /bin/drone-ssh
     when:
-      event: [tag]
+      event: [promote]
 
   # Publish docker image on Docker Hub
   - name: docker
@@ -137,7 +140,7 @@ steps:
       username: {from_secret: docker_username}
       password: {from_secret: docker_password}
     when:
-      event: [tag]
+      event: [promote]
 
   # Publish docker image on Harbor
 #  - name: harbor

@@ -38,7 +38,12 @@ class TaskSrv(
     } yield RichTask(createdTask)
 
   def unassign(task: Task with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(task).update(_.assignee, None).outE[TaskUser].remove()
+    get(task)
+      .update(_.assignee, None)
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[TaskUser]
+      .remove()
     auditSrv.task.update(task, Json.obj("assignee" -> JsNull))
   }
 
@@ -89,7 +94,11 @@ class TaskSrv(
       graph: Graph,
       authContext: AuthContext
   ): Try[Task with Entity] = {
-    def setStatus(): Traversal.V[Task] = get(task).update(_.status, status)
+    def setStatus(): Traversal.V[Task] =
+      get(task)
+        .update(_.status, status)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
 
     status match {
       case TaskStatus.Cancel | TaskStatus.Waiting => setStatus().getOrFail("Task")
@@ -110,7 +119,12 @@ class TaskSrv(
   }
 
   def assign(task: Task with Entity, user: User with Entity)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = {
-    get(task).update(_.assignee, Some(user.login)).outE[TaskUser].remove()
+    get(task)
+      .update(_.assignee, Some(user.login))
+      .update(_._updatedAt, Some(new Date))
+      .update(_._updatedBy, Some(authContext.userId))
+      .outE[TaskUser]
+      .remove()
     for {
       _ <- taskUserSrv.create(TaskUser(), task, user)
       _ <- auditSrv.task.update(task, Json.obj("assignee" -> user.login))
@@ -130,6 +144,8 @@ class TaskSrv(
         .outE[ShareTask]
         .filter(_.inV.v[Task].hasId(task._id))
         .update(_.actionRequired, actionRequired)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
         .iterate()
     }
   }

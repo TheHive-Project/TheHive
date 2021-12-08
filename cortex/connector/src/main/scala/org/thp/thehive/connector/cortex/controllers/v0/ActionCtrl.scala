@@ -90,10 +90,11 @@ class PublicAction(
     "getAction",
     (idOrName, graph, authContext) => actionSrv.get(idOrName)(graph).visible(authContext)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Action], IteratorOutput](
-    "page",
-    (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true)(_.richAction)
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Action], IteratorOutput](
+      "page",
+      (range, actionSteps, _) => actionSteps.richPage(range.from, range.to, withTotal = true, limitedCountThreshold)(_.richAction)
+    )
   override val outputQuery: Query = Query.output[RichAction, Traversal.V[Action]](_.richAction)
   val actionsQuery: Query = new Query {
     override val name: String = "actions"

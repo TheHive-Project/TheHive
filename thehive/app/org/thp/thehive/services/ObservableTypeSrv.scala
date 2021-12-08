@@ -32,7 +32,7 @@ class ObservableTypeSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) e
       createEntity(observableType)
 
   def remove(idOrName: EntityIdOrName)(implicit graph: Graph): Try[Unit] =
-    if (isUsed(idOrName)) Success(get(idOrName).remove())
+    if (!isUsed(idOrName)) Success(get(idOrName).remove())
     else Failure(BadRequestError(s"Observable type $idOrName is used"))
 
   def isUsed(idOrName: EntityIdOrName)(implicit graph: Graph): Boolean = get(idOrName).inE[ObservableObservableType].exists

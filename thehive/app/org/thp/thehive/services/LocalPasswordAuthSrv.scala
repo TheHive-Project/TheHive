@@ -10,6 +10,7 @@ import play.api.libs.json.{Json, OWrites}
 import play.api.mvc.RequestHeader
 import play.api.{Configuration, Logger}
 
+import java.util.Date
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -78,6 +79,8 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
         userSrv
           .get(EntityIdOrName(username))
           .update(_.password, Some(hashPassword(newPassword)))
+          .update(_._updatedAt, Some(new Date))
+          .update(_._updatedBy, Some(authContext.userId))
           .getOrFail("User")
       }
     } yield ()

@@ -31,13 +31,16 @@ class PatternCtrl(
       patternSrv
         .startTraversal(graph)
   )
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Pattern], IteratorOutput](
-    "page",
-    {
-      case (OutputParam(from, to, extraData), patternSteps, _) =>
-        patternSteps.richPage(from, to, extraData.contains("total"))(_.richPatternWithCustomRenderer(patternRenderer(extraData - "total")))
-    }
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Pattern], IteratorOutput](
+      "page",
+      {
+        case (OutputParam(from, to, extraData), patternSteps, _) =>
+          patternSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold)(
+            _.richPatternWithCustomRenderer(patternRenderer(extraData - "total"))
+          )
+      }
+    )
   override val outputQuery: Query = Query.output[RichPattern, Traversal.V[Pattern]](_.richPattern)
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Pattern]](
     "getPattern",

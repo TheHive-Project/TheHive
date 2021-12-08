@@ -91,7 +91,11 @@ class CaseTemplateSrv(
       tagsToRemove = get(caseTemplate).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
       _ = if (tags.nonEmpty) get(caseTemplate).outE[CaseTemplateTag].filter(_.otherV().hasId(tagsToRemove.map(_._id): _*)).remove()
-      _ <- get(caseTemplate).update(_.tags, tags.toSeq).getOrFail("CaseTemplate")
+      _ <- get(caseTemplate)
+        .update(_.tags, tags.toSeq)
+        .update(_._updatedAt, Some(new Date))
+        .update(_._updatedBy, Some(authContext.userId))
+        .getOrFail("CaseTemplate")
       _ <- auditSrv.caseTemplate.update(caseTemplate, Json.obj("tags" -> tags))
     } yield (tagsToAdd, tagsToRemove)
 

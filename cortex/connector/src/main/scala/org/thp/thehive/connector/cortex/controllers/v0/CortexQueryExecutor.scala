@@ -34,7 +34,7 @@ class CortexQueryExecutor(
   override lazy val queries: Seq[ParamQuery[_]] =
     controllers.map(_.initialQuery) :::
       controllers.map(_.getQuery) :::
-      controllers.map(_.pageQuery) :::
+      controllers.map(_.pageQuery(limitedCountThreshold)) ::: // FIXME the value of limitedCountThreshold is read only once. The value is not updated.
       controllers.map(_.outputQuery) :::
       controllers.flatMap(_.extraQueries)
 

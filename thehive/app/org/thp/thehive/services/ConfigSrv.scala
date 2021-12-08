@@ -9,7 +9,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.notification.NotificationSrv
 import org.thp.thehive.services.notification.triggers.Trigger
 import play.api.libs.json.{JsValue, Reads}
-
+import java.util.Date
 import scala.util.Try
 
 class ConfigSrv(
@@ -28,7 +28,13 @@ class ConfigSrv(
 
     def setConfigValue(organisationName: EntityIdOrName, name: String, value: JsValue)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       getConfigValue(organisationName, name) match {
-        case Some(config) => get(config).update(_.value, value).domainMap(_ => ()).getOrFail("Config")
+        case Some(config) =>
+          get(config)
+            .update(_.value, value)
+            .update(_._updatedAt, Some(new Date))
+            .update(_._updatedBy, Some(authContext.userId))
+            .domainMap(_ => ())
+            .getOrFail("Config")
         case None =>
           for {
             createdConfig <- createEntity(Config(name, value))
@@ -49,7 +55,13 @@ class ConfigSrv(
 
     def setConfigValue(userName: EntityIdOrName, name: String, value: JsValue)(implicit graph: Graph, authContext: AuthContext): Try[Unit] =
       getConfigValue(userName, name) match {
-        case Some(config) => get(config).update(_.value, value).domainMap(_ => ()).getOrFail("Config")
+        case Some(config) =>
+          get(config)
+            .update(_.value, value)
+            .update(_._updatedAt, Some(new Date))
+            .update(_._updatedBy, Some(authContext.userId))
+            .domainMap(_ => ())
+            .getOrFail("Config")
         case None =>
           for {
             createdConfig <- createEntity(Config(name, value))

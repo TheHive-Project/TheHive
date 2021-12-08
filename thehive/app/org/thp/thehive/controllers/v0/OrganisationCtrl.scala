@@ -134,10 +134,11 @@ class PublicOrganisation(organisationSrv: OrganisationSrv, searchSrv: SearchSrv)
 
   override val initialQuery: Query =
     Query.init[Traversal.V[Organisation]]("listOrganisation", (graph, authContext) => organisationSrv.startTraversal(graph).visible(authContext))
-  override val pageQuery: ParamQuery[OutputParam] = Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
-    "page",
-    (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true)
-  )
+  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+    Query.withParam[OutputParam, Traversal.V[Organisation], IteratorOutput](
+      "page",
+      (range, organisationSteps, _) => organisationSteps.page(range.from, range.to, withTotal = true, limitedCountThreshold)
+    )
   override val outputQuery: Query = Query.output[Organisation with Entity]
   override val getQuery: ParamQuery[EntityIdOrName] = Query.initWithParam[EntityIdOrName, Traversal.V[Organisation]](
     "getOrganisation",
