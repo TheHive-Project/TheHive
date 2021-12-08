@@ -10,7 +10,7 @@ import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.traversal.Traversal
 import org.thp.scalligraph.utils.RichType
 import org.thp.thehive.models.Audit
-import org.thp.thehive.services.AuditOps._
+import org.thp.thehive.services.TheHiveOpsNoDeps
 
 import scala.reflect.runtime.{universe => ru}
 
@@ -52,7 +52,8 @@ class TheHiveQueryExecutor(
     dashboardCtrl: DashboardCtrl,
     properties: Properties,
     implicit val db: Database
-) extends QueryExecutor {
+) extends QueryExecutor
+    with TheHiveOpsNoDeps {
 
   lazy val controllers: Seq[QueryableCtrl] =
     Seq(

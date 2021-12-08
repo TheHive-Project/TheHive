@@ -35,7 +35,7 @@ trait V4_0_0 extends TraversalOps {
       }
       .noop // .addIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
       .noop // .addIndex("Audit", IndexType.basic, "requestId", "mainAction")
-      .rebuildIndexes
+      .reindexData
 
   private def removePropertyLock(db: JanusDatabase, name: String): Try[Unit] =
     db.managementTransaction { mgmt =>

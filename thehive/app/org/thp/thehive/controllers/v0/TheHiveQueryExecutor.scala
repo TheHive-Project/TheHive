@@ -1,6 +1,7 @@
 package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.process.traversal.P
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.scalactic.Good
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers.{FObject, Field, FieldsParser}
@@ -47,7 +48,8 @@ class TheHiveQueryExecutor(
     tag: PublicTag,
     task: PublicTask,
     user: PublicUser
-) extends QueryExecutor {
+) extends QueryExecutor
+    with TheHiveOpsNoDeps {
 
   lazy val publicDatas: Seq[PublicData] =
     Seq(alert, audit, `case`, caseTemplate, customField, dashboard, log, observable, observableType, organisation, page, profile, tag, task, user)

@@ -1,12 +1,8 @@
 package org.thp.thehive.models.evolution
 
-import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{IndexType, Operations}
 
-import scala.util.{Success, Try}
-
-trait V4_1_15 extends TraversalOps {
+trait V4_1_15 {
   def evolutionV4_1_15: Operations => Operations =
     _.removeIndex("Tag", IndexType.unique, "namespace", "predicate", "value")
       .removeIndex("Alert", IndexType.unique, "type", "source", "sourceRef", "organisationId")

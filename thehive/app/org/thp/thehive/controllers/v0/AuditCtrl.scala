@@ -7,7 +7,6 @@ import com.softwaremill.tagging.@@
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.{Database, IndexType, UMapping}
-import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
 import org.thp.thehive.controllers.v0.Conversion._
@@ -95,7 +94,7 @@ class PublicAudit(
       Query.initWithParam[String, Traversal.V[Audit]](
         "listAuditFromObject",
         (objectId, graph, authContext) =>
-          if (auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit].limit(1).visible(organisationSrv)(authContext).exists)
+          if (auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit].limit(1).visible(authContext).exists)
             auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit]
           else
             graph.empty
@@ -116,7 +115,7 @@ class PublicAudit(
       )
       .property("operation", UMapping.string)(
         _.select(_.value(_.action).domainMap(actionToOperation))
-          .filter[String] {
+          .filter[String](IndexType.standard) {
             case (_, audits, _, Right(p))   => audits.has(_.action, p.mapValue(operationToAction))
             case (_, audits, _, Left(true)) => audits
             case (_, audits, _, _)          => audits.empty
@@ -126,7 +125,7 @@ class PublicAudit(
       .property("details", UMapping.string)(_.field.readonly)
       .property("objectType", UMapping.string.optional)(
         _.select(_.value(_.objectType).domainMap(fromObjectType))
-          .filter[String] {
+          .filter[String](IndexType.standard) {
             case (_, audits, _, Right(p))   => audits.has(_.objectType, p.mapValue(toObjectType))
             case (_, audits, _, Left(true)) => audits
             case (_, audits, _, _)          => audits.empty

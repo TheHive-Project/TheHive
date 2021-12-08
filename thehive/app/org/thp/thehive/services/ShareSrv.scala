@@ -11,7 +11,7 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.{Json, OFormat}
 
-import java.util.{Date, Map => JMap}
+import java.util.{Map => JMap}
 import scala.util.{Failure, Success, Try}
 
 case class SharingParameter(

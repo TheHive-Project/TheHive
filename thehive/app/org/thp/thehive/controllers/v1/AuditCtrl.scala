@@ -47,7 +47,7 @@ class AuditCtrl(
       Query.initWithParam[String, Traversal.V[Audit]](
         "listAuditFromObject",
         (objectId, graph, authContext) =>
-          if (auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit].limit(1).visible(organisationSrv)(authContext).exists)
+          if (auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit].limit(1).visible(authContext).exists)
             auditSrv.startTraversal(graph).has(_.objectId, objectId).v[Audit]
           else
             graph.empty

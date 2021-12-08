@@ -11,7 +11,7 @@ import org.thp.thehive.models._
 import org.thp.thehive.services._
 import play.api.libs.json.{JsValue, Json}
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class Properties(
     alertSrv: AlertSrv,

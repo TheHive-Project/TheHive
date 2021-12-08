@@ -14,7 +14,7 @@ import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
-import java.util.{Map => JMap}
+import java.util.{Date, Map => JMap}
 import scala.util.{Failure, Success, Try}
 
 class CaseTemplateSrv(
