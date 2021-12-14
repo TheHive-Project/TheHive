@@ -10,7 +10,7 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
-import org.thp.scalligraph.utils.Hash
+import org.thp.scalligraph.utils.{Hash, Hasher}
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
@@ -76,7 +76,7 @@ class ObservableSrv @Inject() (
         _                 <- observableObservableTypeSrv.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
         _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
-      } yield RichObservable(createdObservable, Some(attachment), None, Nil)
+      } yield RichObservable(createdObservable, None, Some(attachment), None, Nil)
   }
 
   def create(
@@ -86,10 +86,11 @@ class ObservableSrv @Inject() (
       graph: Graph,
       authContext: AuthContext
   ): Try[RichObservable] = {
+    val (dataOrHash, fullData) = UseHashToIndex.hashToIndex(dataValue).fold[(String, Option[String])](dataValue -> None)(_ -> Some(dataValue))
     val alreadyExists = startTraversal
       .has(_.organisationIds, organisationSrv.currentId)
       .has(_.relatedId, observable.relatedId)
-      .has(_.data, dataValue)
+      .has(_.data, dataOrHash)
       .has(_.dataType, observable.dataType)
       .exists
     if (alreadyExists) Failure(CreateError("Observable already exists"))
@@ -100,12 +101,12 @@ class ObservableSrv @Inject() (
           if (observableType.isAttachment) Failure(BadRequestError("A attachment observable doesn't accept string value"))
           else Success(())
         tags              <- observable.tags.toTry(tagSrv.getOrCreate)
-        data              <- dataSrv.create(Data(dataValue))
-        createdObservable <- createEntity(observable.copy(data = Some(dataValue)))
+        data              <- dataSrv.create(Data(dataOrHash, fullData))
+        createdObservable <- createEntity(observable.copy(data = Some(dataOrHash)))
         _                 <- observableObservableTypeSrv.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
         _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
-      } yield RichObservable(createdObservable, None, None, Nil)
+      } yield RichObservable(createdObservable, Some(data), None, None, Nil)
   }
 
   def addTags(observable: Observable with Entity, tags: Set[String])(implicit graph: Graph, authContext: AuthContext): Try[Seq[Tag with Entity]] = {
@@ -289,14 +290,16 @@ object ObservableOps {
       traversal
         .project(
           _.by
-            .by(_.attachments.fold)
+            .by(_.data.option)
+            .by(_.attachments.option)
             .by(_.reportTags.fold)
         )
         .domainMap {
-          case (observable, attachment, reportTags) =>
+          case (observable, data, attachment, reportTags) =>
             RichObservable(
               observable,
-              attachment.headOption,
+              data,
+              attachment,
               None,
               reportTags
             )
@@ -308,15 +311,17 @@ object ObservableOps {
       traversal
         .project(
           _.by
-            .by(_.attachments.fold)
+            .by(_.data.option)
+            .by(_.attachments.option)
             .by(_.filteredSimilar.visible(organisationSrv).limit(1).count)
             .by(_.reportTags.fold)
         )
         .domainMap {
-          case (observable, attachment, count, reportTags) =>
+          case (observable, data, attachment, count, reportTags) =>
             RichObservable(
               observable,
-              attachment.headOption,
+              data,
+              attachment,
               Some(count != 0),
               reportTags
             )
@@ -329,16 +334,18 @@ object ObservableOps {
       traversal
         .project(
           _.by
-            .by(_.attachments.fold)
+            .by(_.data.option)
+            .by(_.attachments.option)
             .by(_.filteredSimilar.visible(organisationSrv).limit(1).count)
             .by(_.reportTags.fold)
             .by(entityRenderer)
         )
         .domainMap {
-          case (observable, attachment, count, reportTags, renderedEntity) =>
+          case (observable, data, attachment, count, reportTags, renderedEntity) =>
             RichObservable(
               observable,
-              attachment.headOption,
+              data,
+              attachment,
               Some(count != 0),
               reportTags
             ) -> renderedEntity

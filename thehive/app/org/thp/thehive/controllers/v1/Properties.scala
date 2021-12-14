@@ -1,11 +1,13 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.process.traversal.Compare
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.PredicateOps._
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.TraversalOps._
+import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._
@@ -28,7 +30,7 @@ import org.thp.thehive.services._
 import play.api.libs.json.{JsObject, JsValue, Json}
 
 import javax.inject.{Inject, Singleton}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 @Singleton
 class Properties @Inject() (
@@ -452,7 +454,15 @@ class Properties @Inject() (
           _ <- observableSrv.updateType(observable, newDataType)(graph, authContext)
         } yield Json.obj("dataType" -> value)
       })
-      .property("data", UMapping.string.optional)(_.field.readonly)
+      .property("data", UMapping.string.optional)(
+        _.select(_.value(_.data))
+          .filter[String] {
+            case (_, observables, _, Right(predicate)) => observables.has(_.data, predicate.mapValue(v => UseHashToIndex.hashToIndex(v).getOrElse(v)))
+            case (_, observables, _, Left(true))       => observables.has(_.data)
+            case (_, observables, _, Left(false))      => observables.hasNot(_.data)
+          }
+          .readonly
+      )
       .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
       .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
       .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)

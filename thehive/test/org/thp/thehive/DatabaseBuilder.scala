@@ -3,7 +3,7 @@ package org.thp.thehive
 import org.scalactic.Or
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.controllers._
-import org.thp.scalligraph.models.{Database, Entity, Schema}
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
@@ -29,7 +29,6 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class DatabaseBuilder @Inject() (
-    schema: Schema,
     alertSrv: AlertSrv,
     attachmentSrv: AttachmentSrv,
     caseSrv: CaseSrv,
@@ -233,7 +232,7 @@ class DatabaseBuilder @Inject() (
                 dataSrv
                   .getByName(data)
                   .getOrFail("data")
-                  .orElse(dataSrv.create(Data(data)))
+                  .orElse(dataSrv.create(Data(data, None)))
                   .flatMap(observableSrv.observableDataSrv.create(ObservableData(), observable, _))
                   .get
               )
