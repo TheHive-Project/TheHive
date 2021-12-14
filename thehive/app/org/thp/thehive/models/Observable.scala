@@ -7,7 +7,6 @@ import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{BuildEdgeEntity, BuildVertexEntity, EntityId}
 
 import java.util.Date
-import scala.util.Try
 
 @BuildEdgeEntity[Observable, KeyValue]
 case class ObservableKeyValue()
@@ -80,7 +79,7 @@ object UseHashToIndex extends ImmenseTermProcessor with ImmenseStringTermFilter 
   private val hasher: Hasher      = Hasher("SHA-256")
 
   def hashToIndex(value: String): Option[String] =
-    if (value.length > termSizeLimit) Some(hasher.fromString(value).head.toString)
+    if (value.length > termSizeLimit) Some("sha256/" + hasher.fromString(value).head.toString)
     else None
 
   override def apply[V](vertex: Vertex, property: VertexProperty[V]): Boolean = {
@@ -95,7 +94,7 @@ object UseHashToIndex extends ImmenseTermProcessor with ImmenseStringTermFilter 
                            |  message=${UMapping.string.optional.getProperty(vertex, "message").getOrElse("<not set>")}
                            |  tags=${UMapping.string.sequence.getProperty(vertex, "message").mkString(", ")}""".stripMargin)
             strProp.remove()
-            vertex.property(strProp.key(), hasher.fromString(currentValue).head.toString)
+            vertex.property(strProp.key(), "sha256/" + hasher.fromString(currentValue).head.toString)
           }
 
         case "Data" =>

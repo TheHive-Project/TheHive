@@ -420,7 +420,6 @@ class PublicObservable @Inject() (
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert)
   )
-  lazy val hasher: Hasher = Hasher("SHA-256")
   override val publicProperties: PublicProperties = PublicPropertyListBuilder[Observable]
     .property("status", UMapping.string)(_.select(_.constant("Ok")).readonly)
     .property("startDate", UMapping.date)(_.select(_._createdAt).readonly)
