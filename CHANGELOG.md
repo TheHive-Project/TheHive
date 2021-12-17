@@ -1,5 +1,18 @@
 # Change Log
 
+## [4.1.16](https://github.com/TheHive-Project/TheHive/milestone/86) (2021-12-17)
+
+**Implemented enhancements:**
+
+- [Feature Request] Remove persistent filters on "Similar Cases" tab [\#2282](https://github.com/TheHive-Project/TheHive/issues/2282)
+- [Enhancement] When observable data is too big, use hash [\#2288](https://github.com/TheHive-Project/TheHive/issues/2288)
+- Remove unnecessary log4j dependency  [\#2291](https://github.com/TheHive-Project/TheHive/issues/2291)
+
+**Fixed bugs:**
+
+- [Bug] Index fails with immense terms [\#2289](https://github.com/TheHive-Project/TheHive/issues/2289)
+- [Bug] Marking an alert as read do not update it's "updatedAt" nor "updatedBy" field [\#2292](https://github.com/TheHive-Project/TheHive/issues/2292)
+
 ## [4.1.15](https://github.com/TheHive-Project/TheHive/milestone/85) (2021-12-06)
 
 **Implemented enhancements:**
