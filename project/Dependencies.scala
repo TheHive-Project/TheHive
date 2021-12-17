@@ -9,6 +9,7 @@ object Dependencies {
   lazy val playLogback             = "com.typesafe.play"        %% "play-logback"                       % play.core.PlayVersion.current
   lazy val playGuice               = "com.typesafe.play"        %% "play-guice"                         % play.core.PlayVersion.current
   lazy val playFilters             = "com.typesafe.play"        %% "filters-helpers"                    % play.core.PlayVersion.current
+  lazy val logbackClassic          = "ch.qos.logback"            % "logback-classic"                    % "1.2.8"
   lazy val playMockws              = "de.leanovate.play-mockws" %% "play-mockws"                        % "2.8.0"
   lazy val akkaActor               = "com.typesafe.akka"        %% "akka-actor"                         % akkaVersion
   lazy val akkaCluster             = "com.typesafe.akka"        %% "akka-cluster"                       % akkaVersion
@@ -35,7 +36,7 @@ object Dependencies {
   lazy val elastic4sHttpStreams    = "com.sksamuel.elastic4s"   %% "elastic4s-http-streams"             % elastic4sVersion
   lazy val elastic4sClient         = "com.sksamuel.elastic4s"   %% "elastic4s-client-esjava"            % elastic4sVersion
   lazy val reflections             = "org.reflections"           % "reflections"                        % "0.9.12"
-  lazy val hadoopClient            = "org.apache.hadoop"         % "hadoop-client"                      % "3.3.0"
+  lazy val hadoopClient            = "org.apache.hadoop"         % "hadoop-client"                      % "3.3.0" exclude ("log4j", "log4j")
   lazy val zip4j                   = "net.lingala.zip4j"         % "zip4j"                              % "2.6.4"
   lazy val alpakka                 = "com.lightbend.akka"       %% "akka-stream-alpakka-json-streaming" % "2.0.2"
   lazy val handlebars              = "com.github.jknack"         % "handlebars"                         % "4.2.0"

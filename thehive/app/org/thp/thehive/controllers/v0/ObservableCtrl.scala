@@ -2,13 +2,16 @@ package org.thp.thehive.controllers.v0
 
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
+import org.apache.tinkerpop.gremlin.process.traversal.Compare
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
+import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
+import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
@@ -445,7 +448,15 @@ class PublicObservable @Inject() (
         _ <- observableSrv.updateType(observable, newDataType)(graph, authContext)
       } yield Json.obj("dataType" -> value)
     })
-    .property("data", UMapping.string.optional)(_.field.readonly)
+    .property("data", UMapping.string.optional)(
+      _.select(_.value(_.data))
+        .filter[String] {
+          case (_, observables, _, Right(predicate)) => observables.has(_.data, predicate.mapValue(v => UseHashToIndex.hashToIndex(v).getOrElse(v)))
+          case (_, observables, _, Left(true))       => observables.has(_.data)
+          case (_, observables, _, Left(false))      => observables.hasNot(_.data)
+        }
+        .readonly
+    )
     .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
     .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
     .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)

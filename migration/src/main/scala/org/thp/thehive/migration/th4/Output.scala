@@ -630,9 +630,11 @@ class Output @Inject() (
       } yield IdMapping(inputLog.metaData.id, log._id)
     }
 
-  private def getData(value: String)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
-    if (observableDataIsIndexed) dataSrv.create(Data(value))
-    else dataSrv.createEntity(Data(value))
+  private def getData(value: String)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] = {
+    val (dataOrHash, fullData) = UseHashToIndex.hashToIndex(value).fold[(String, Option[String])](value -> None)(_ -> Some(value))
+    if (observableDataIsIndexed) dataSrv.create(Data(dataOrHash, fullData))
+    else dataSrv.createEntity(Data(dataOrHash, fullData))
+  }
 
   private def createSimpleObservable(observable: Observable, observableType: ObservableType with Entity, dataValue: String)(implicit
       graph: Graph,
@@ -700,7 +702,8 @@ class Output @Inject() (
         richObservable <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
         _              <- reportTagSrv.updateTags(richObservable, inputObservable.reportTags)
         case0          <- getCase(caseId)
-        _              <- organisations.toTry(o => shareSrv.shareObservable(RichObservable(richObservable, None, None, Nil), case0, o._id))
+        // the data in richObservable is not set because it is not used in shareSrv
+        _ <- organisations.toTry(o => shareSrv.shareObservable(RichObservable(richObservable, None, None, None, Nil), case0, o._id))
       } yield IdMapping(inputObservable.metaData.id, richObservable._id)
     }
 
