@@ -603,7 +603,7 @@ class Properties(
       })
       .property("data", UMapping.string.optional)(
         _.select(_.value(_.data))
-          .filter[String] {
+          .filter[String](IndexType.standard) {
             case (_, observables, _, Right(predicate)) => observables.has(_.data, predicate.mapValue(v => UseHashToIndex.hashToIndex(v).getOrElse(v)))
             case (_, observables, _, Left(true))       => observables.has(_.data)
             case (_, observables, _, Left(false))      => observables.hasNot(_.data)

@@ -7,11 +7,12 @@ import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import com.softwaremill.macwire.Module
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.controllers.Entrypoint
+import org.thp.scalligraph.janus.ImmenseTermProcessor
 import org.thp.scalligraph.models.Schema
 import org.thp.scalligraph.services.GenIntegrityCheckOps
 import org.thp.scalligraph.{ActorSingletonUtils, ErrorHandler, InternalError, LazyMutableSeq, ScalligraphApplication, ScalligraphModule}
 import org.thp.thehive.controllers.ModelDescription
-import org.thp.thehive.models.TheHiveSchemaDefinition
+import org.thp.thehive.models.{TheHiveSchemaDefinition, UseHashToIndex}
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.notification.{NotificationActor, NotificationSrv, NotificationTag}

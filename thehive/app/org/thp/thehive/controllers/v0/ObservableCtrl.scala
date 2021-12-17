@@ -2,15 +2,12 @@ package org.thp.thehive.controllers.v0
 
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
-import org.apache.tinkerpop.gremlin.process.traversal.Compare
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity, IndexType, UMapping}
-import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query._
-import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.utils.Hasher
+import org.thp.scalligraph.traversal.{IteratorOutput, Traversal, TraversalOps}
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
@@ -361,7 +358,8 @@ class PublicObservable(
     override val customFieldSrv: CustomFieldSrv,
     override val customFieldValueSrv: CustomFieldValueSrv
 ) extends PublicData
-    with ObservableRenderer {
+    with ObservableRenderer
+    with TraversalOps {
   override val entityName: String = "observable"
   override val initialQuery: Query =
     Query.init[Traversal.V[Observable]](
@@ -465,7 +463,7 @@ class PublicObservable(
     })
     .property("data", UMapping.string.optional)(
       _.select(_.value(_.data))
-        .filter[String] {
+        .filter[String](IndexType.standard) {
           case (_, observables, _, Right(predicate)) => observables.has(_.data, predicate.mapValue(v => UseHashToIndex.hashToIndex(v).getOrElse(v)))
           case (_, observables, _, Left(true))       => observables.has(_.data)
           case (_, observables, _, Left(false))      => observables.hasNot(_.data)
