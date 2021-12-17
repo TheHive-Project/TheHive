@@ -39,7 +39,7 @@
                     this.filtering = new FilteringSrv('case', 'alert.dialog.similar-cases', {
                         version: 'v1',
                         defaults: {
-                            showFilters: true,
+                            showFilters: false,
                             showStats: false,
                             pageSize: 2,
                             sort: ['-startDate']
@@ -47,7 +47,8 @@
                         defaultFilter: []
                     });
 
-                    self.filtering.initContext('alert.dialog.similar-cases')
+                    //self.filtering.initContext('alert.dialog.similar-cases')
+                    self.filtering.initContext()
                         .then(function () {
                             var defaultFilter = AlertingSrv.getSimilarityFilter(self.state.defaultAlertSimilarCaseFilter);
 

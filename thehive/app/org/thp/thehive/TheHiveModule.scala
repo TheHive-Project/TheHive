@@ -139,6 +139,7 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   }
 
   app.schemas += TheHiveSchemaDefinition
+  ImmenseTermProcessor.registerStrategy("observableHashToIndex", _ => UseHashToIndex)
 
   val entityDescriptions: LazyMutableSeq[(Int, ModelDescription)] = LazyMutableSeq[(Int, ModelDescription)]
 

@@ -1,10 +1,12 @@
 package org.thp.thehive.controllers.v1
 
+import org.apache.tinkerpop.gremlin.process.traversal.Compare
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.controllers.{FPathElem, FString}
 import org.thp.scalligraph.models.{Database, IndexType, UMapping}
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.Traversal
+import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
@@ -599,7 +601,15 @@ class Properties(
           _ <- observableSrv.updateType(observable, newDataType)(graph, authContext)
         } yield Json.obj("dataType" -> value)
       })
-      .property("data", UMapping.string.optional)(_.field.readonly)
+      .property("data", UMapping.string.optional)(
+        _.select(_.value(_.data))
+          .filter[String] {
+            case (_, observables, _, Right(predicate)) => observables.has(_.data, predicate.mapValue(v => UseHashToIndex.hashToIndex(v).getOrElse(v)))
+            case (_, observables, _, Left(true))       => observables.has(_.data)
+            case (_, observables, _, Left(false))      => observables.hasNot(_.data)
+          }
+          .readonly
+      )
       .property("attachment.name", UMapping.string.optional)(_.select(_.attachments.value(_.name)).readonly)
       .property("attachment.hashes", UMapping.hash.sequence)(_.select(_.attachments.value(_.hashes)).readonly)
       .property("attachment.size", UMapping.long.optional)(_.select(_.attachments.value(_.size)).readonly)

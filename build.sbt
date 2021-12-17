@@ -48,7 +48,7 @@ val defaultSettings = Seq(
     "-XX:MaxPermSize=256M",
     "-XX:MaxMetaspaceSize=512m"
   ),
-  dependencyOverrides += akkaActor,
+  dependencyOverrides ++= Seq(akkaActor, logbackClassic),
   Compile / packageDoc / publishArtifact := false,
   Compile / doc / sources := Nil,
   Test / packageDoc / publishArtifact := false,
