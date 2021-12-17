@@ -78,7 +78,7 @@ class StatusCtrlTest extends PlaySpecification with TestAppBuilder {
           "freeTagDefaultColour" -> "#000000"
         ),
         "schemaStatus" -> Json.arr(
-          Json.obj("name" -> "thehive", "currentVersion" -> 135, "expectedVersion" -> 135, "error" -> JsNull)
+          Json.obj("name" -> "thehive", "currentVersion" -> 145, "expectedVersion" -> 145, "error" -> JsNull)
         )
       )
 
