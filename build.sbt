@@ -342,10 +342,6 @@ lazy val thehiveMigration = (project in file("migration"))
     resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
     crossScalaVersions := Seq(scala212),
     libraryDependencies ++= Seq(
-      elastic4sCore,
-      elastic4sHttpStreams,
-      elastic4sClient,
-//      jts,
       ehcache,
       scopt,
       specs % Test

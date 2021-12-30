@@ -61,7 +61,7 @@ trait Conversion {
       endDate     <- (json \ "endDate").validateOpt[Date]
       flag        <- (json \ "flag").validate[Boolean]
       tlp         <- (json \ "tlp").validate[Int]
-      pap         <- (json \ "pap").validate[Int]
+      pap         <- (json \ "pap").validateOpt[Int]
       status      <- (json \ "status").validate[CaseStatus.Value]
       summary     <- (json \ "summary").validateOpt[String]
       user        <- (json \ "owner").validateOpt[String]
@@ -86,7 +86,7 @@ trait Conversion {
         endDate = endDate,
         flag = flag,
         tlp = tlp,
-        pap = pap,
+        pap = pap.getOrElse(2),
         status = status,
         summary = summary,
         tags = tags.toSeq,
@@ -127,7 +127,7 @@ trait Conversion {
       message  <- (json \ "message").validateOpt[String]
       tlp      <- (json \ "tlp").validate[Int]
       ioc      <- (json \ "ioc").validate[Boolean]
-      sighted  <- (json \ "sighted").validate[Boolean]
+      sighted  <- (json \ "sighted").validateOpt[Boolean]
       dataType <- (json \ "dataType").validate[String]
       tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
       taxonomiesList <- Json.parse((json \ "reports").asOpt[String].getOrElse("{}")).validate[Seq[ReportTag]]
@@ -146,7 +146,7 @@ trait Conversion {
         message = message,
         tlp = tlp,
         ioc = ioc,
-        sighted = sighted,
+        sighted = sighted.getOrElse(false),
         ignoreSimilarity = None,
         dataType = dataType,
         tags = tags.toSeq
@@ -161,7 +161,7 @@ trait Conversion {
     for {
       metaData    <- json.validate[MetaData]
       title       <- (json \ "title").validate[String]
-      group       <- (json \ "group").validate[String]
+      group       <- (json \ "group").validateOpt[String]
       description <- (json \ "description").validateOpt[String]
       status      <- (json \ "status").validate[TaskStatus.Value]
       flag        <- (json \ "flag").validate[Boolean]
@@ -174,7 +174,7 @@ trait Conversion {
       metaData,
       Task(
         title = title,
-        group = group,
+        group = group.getOrElse("default"),
         description = description,
         status = status,
         flag = flag,
@@ -219,8 +219,12 @@ trait Conversion {
       read = status == "Ignored" || status == "Imported"
       follow <- (json \ "follow").validate[Boolean]
       caseId <- (json \ "case").validateOpt[String]
-      tags         = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
-      customFields = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
+      tags    = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
+      metrics = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
+      metricsValue = metrics.value.map {
+        case (name, value) => name -> Some(value)
+      }
+      customFields = (json \ "customFields").asOpt[JsObject].getOrElse(JsObject.empty)
       customFieldsValue = customFields.value.map {
         case (name, value) =>
           name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
@@ -246,7 +250,7 @@ trait Conversion {
       ),
       caseId,
       mainOrganisation,
-      customFieldsValue.toMap,
+      (metricsValue ++ customFieldsValue).toMap,
       caseTemplate: Option[String]
     )
   }

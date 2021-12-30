@@ -3,7 +3,6 @@ import sbt._
 object Dependencies {
   val janusVersion        = "0.5.3"
   val akkaVersion: String = play.core.PlayVersion.akkaVersion
-  val elastic4sVersion    = "7.10.2"
 
   lazy val specs                   = "com.typesafe.play"        %% "play-specs2"                        % play.core.PlayVersion.current
   lazy val playLogback             = "com.typesafe.play"        %% "play-logback"                       % play.core.PlayVersion.current
@@ -32,9 +31,6 @@ object Dependencies {
   lazy val apacheConfiguration     = "commons-configuration"     % "commons-configuration"              % "1.10"
   lazy val macroParadise           = "org.scalamacros"           % "paradise"                           % "2.1.1" cross CrossVersion.full
   lazy val chimney                 = "io.scalaland"             %% "chimney"                            % "0.6.1"
-  lazy val elastic4sCore           = "com.sksamuel.elastic4s"   %% "elastic4s-core"                     % elastic4sVersion
-  lazy val elastic4sHttpStreams    = "com.sksamuel.elastic4s"   %% "elastic4s-http-streams"             % elastic4sVersion
-  lazy val elastic4sClient         = "com.sksamuel.elastic4s"   %% "elastic4s-client-esjava"            % elastic4sVersion
   lazy val reflections             = "org.reflections"           % "reflections"                        % "0.9.12"
   lazy val hadoopClient            = "org.apache.hadoop"         % "hadoop-client"                      % "3.3.0" exclude ("log4j", "log4j")
   lazy val zip4j                   = "net.lingala.zip4j"         % "zip4j"                              % "2.6.4"

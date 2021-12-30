@@ -5,11 +5,13 @@ import org.janusgraph.core.JanusGraph
 import org.thp.scalligraph.SingleInstance
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
+import org.thp.thehive.services.LocalUserSrv
 import play.api.Configuration
 
 import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.util.Success
 
 @Singleton
 class JanusDatabaseProvider @Inject() (configuration: Configuration, system: ActorSystem, schemas: immutable.Set[UpdatableSchema])
@@ -34,7 +36,11 @@ class JanusDatabaseProvider @Inject() (configuration: Configuration, system: Act
       system,
       new SingleInstance(true)
     )
-    schemas.toTry(schema => schema.update(db)).get
+    db.createSchema(schemas.flatMap(_.modelList).toSeq)
+    db.tryTransaction { graph =>
+      schemas.flatMap(_.initialValues).foreach(_.create()(graph, LocalUserSrv.getSystemAuthContext))
+      Success(())
+    }
     db
   }
 }

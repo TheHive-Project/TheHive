@@ -64,6 +64,10 @@ object Migrate extends App with MigrationOps {
         .valueName("<index>")
         .text("TheHive3 ElasticSearch index name")
         .action((i, c) => addConfig(c, "input.search.index", i)),
+      opt[String]('x', "es-index-version")
+        .valueName("<index>")
+        .text("TheHive3 ElasticSearch index name version number (default: autodetect)")
+        .action((i, c) => addConfig(c, "input.search.indexVersion", i)),
       opt[String]('a', "es-keepalive")
         .valueName("<duration>")
         .text("TheHive3 ElasticSearch keepalive")

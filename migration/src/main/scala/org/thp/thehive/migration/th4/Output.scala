@@ -6,7 +6,6 @@ import akka.stream.Materializer
 import com.google.inject.{Guice, Injector => GInjector}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.janusgraph.core.schema.{SchemaStatus => JanusSchemaStatus}
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
@@ -121,7 +120,7 @@ class Output @Inject() (
     )
   val caseNumberShift: Int = configuration.get[Int]("caseNumberShift")
   val observableDataIsIndexed: Boolean = db match {
-    case jdb: JanusDatabase => jdb.listIndexesWithStatus(JanusSchemaStatus.ENABLED).fold(_ => false, _.exists(_.startsWith("Data")))
+    case jdb: JanusDatabase => jdb.fieldIsIndexed("data")
     case _                  => false
   }
   lazy val observableSrv: ObservableSrv                                     = observableSrvProvider.get
