@@ -24,6 +24,7 @@ object Conversion {
       case "create" => "Creation"
       case "update" => "Update"
       case "delete" => "Delete"
+      case "merge"  => "Update"
       case _        => "Unknown"
     }
 
