@@ -10,10 +10,11 @@ import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
-import org.thp.scalligraph.utils.{Hash, Hasher}
+import org.thp.scalligraph.utils.Hash
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
@@ -407,7 +408,8 @@ class ObservableIntegrityCheckOps @Inject() (
     val db: Database,
     val service: ObservableSrv,
     organisationSrv: OrganisationSrv,
-    observableTypeSrv: ObservableTypeSrv
+    observableTypeSrv: ObservableTypeSrv,
+    dataSrv: DataSrv
 ) extends IntegrityCheckOps[Observable] {
   override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
@@ -421,10 +423,11 @@ class ObservableIntegrityCheckOps @Inject() (
               .by(_.organisations._id.fold)
               .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
               .by(_.observableType.fold)
+              .by(_.data.option)
           )
           .toIterator
           .map {
-            case (observable, organisationIds, relatedIds, observableTypes) =>
+            case (observable, organisationIds, relatedIds, observableTypes, data) =>
               val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
                 .check(observable, observable.organisationIds, organisationIds)
 
@@ -480,7 +483,29 @@ class ObservableIntegrityCheckOps @Inject() (
                       }
                   }
 
-              orgStats <+> relatedStats <+> observableTypeStatus
+              val observableDataStatus = data match {
+                case None if observable.data.nonEmpty =>
+                  // missing link between Observable and Data
+                  implicit val ctx: AuthContext = LocalUserSrv.getSystemAuthContext
+                  dataSrv
+                    .startTraversal
+                    .getByData(observable.data.get)
+                    .headOption
+                    .map { dataEntity =>
+                      service.observableDataSrv.create(ObservableData(), observable, dataEntity)
+                      Map("Observable-data-setData" -> 1)
+                    }
+                    .getOrElse {
+                      for {
+                        dataEntity <- dataSrv.createEntity(Data(observable.data.get, None))
+                        _          <- service.observableDataSrv.create(ObservableData(), observable, dataEntity)
+                      } yield ()
+                      Map("Observable-data-create" -> 1)
+                    }
+                case _ => Map.empty[String, Int]
+              }
+
+              orgStats <+> relatedStats <+> observableTypeStatus <+> observableDataStatus
           }
           .reduceOption(_ <+> _)
           .getOrElse(Map.empty)
