@@ -145,11 +145,11 @@ object Migrate extends App with MigrationOps {
       opt[String]("max-audit-age")
         .valueName("<duration>")
         .text("migrate only audits whose age is less than <duration>")
-        .action((v, c) => addConfig(c, "input.filter.minAuditAge", v)),
+        .action((v, c) => addConfig(c, "input.filter.maxAuditAge", v)),
       opt[String]("min-audit-age")
         .valueName("<duration>")
         .text("migrate only audits whose age is greater than <duration>")
-        .action((v, c) => addConfig(c, "input.filter.maxAuditAge", v)),
+        .action((v, c) => addConfig(c, "input.filter.minAuditAge", v)),
       opt[String]("audit-from-date")
         .valueName("<date>")
         .text("migrate only audits created from <date>")

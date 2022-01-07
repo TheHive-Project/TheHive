@@ -77,25 +77,11 @@ class Input @Inject() (configuration: Configuration, elaticClient: ElasticClient
   def caseFilter(filter: Filter): Seq[JsObject] = {
     val dateFilter =
       if (filter.caseDateRange._1.isDefined || filter.caseDateRange._2.isDefined)
-        Seq(
-          Json.obj(
-            "createdAt" -> JsObject(
-              filter.caseDateRange._1.map(d => "gte" -> JsNumber(d)).toSeq ++
-                filter.caseDateRange._2.map(d => "lt" -> JsNumber(d))
-            )
-          )
-        )
+        Seq(range("createdAt", filter.caseDateRange._1, filter.caseDateRange._2))
       else Nil
     val numberFilter =
       if (filter.caseNumberRange._1.isDefined || filter.caseNumberRange._2.isDefined)
-        Seq(
-          Json.obj(
-            "caseId" -> JsObject(
-              filter.caseNumberRange._1.map(d => "gte" -> JsNumber(d)).toSeq ++
-                filter.caseNumberRange._2.map(d => "lt" -> JsNumber(d))
-            )
-          )
-        )
+        Seq(range("caseId", filter.caseNumberRange._1, filter.caseNumberRange._2))
       else Nil
     dateFilter ++ numberFilter
   }
@@ -175,14 +161,7 @@ class Input @Inject() (configuration: Configuration, elaticClient: ElasticClient
   def alertFilter(filter: Filter): JsObject = {
     val dateFilter =
       if (filter.alertDateRange._1.isDefined || filter.alertDateRange._2.isDefined)
-        Seq(
-          Json.obj(
-            "createdAt" -> JsObject(
-              filter.alertDateRange._1.map(d => "gte" -> JsNumber(d)).toSeq ++
-                filter.alertDateRange._2.map(d => "lt" -> JsNumber(d))
-            )
-          )
-        )
+        Seq(range("createdAt", filter.alertDateRange._1, filter.alertDateRange._2))
       else Nil
     val includeFilter = (if (filter.includeAlertTypes.nonEmpty) Seq(termsQuery("type", filter.includeAlertTypes)) else Nil) ++
       (if (filter.includeAlertSources.nonEmpty) Seq(termsQuery("source", filter.includeAlertSources)) else Nil)
@@ -408,14 +387,7 @@ class Input @Inject() (configuration: Configuration, elaticClient: ElasticClient
   def auditFilter(filter: Filter, objectIds: String*): JsObject = {
     val dateFilter =
       if (filter.auditDateRange._1.isDefined || filter.auditDateRange._2.isDefined)
-        Seq(
-          Json.obj(
-            "createdAt" -> JsObject(
-              filter.auditDateRange._1.map(d => "gte" -> JsNumber(d)).toSeq ++
-                filter.auditDateRange._2.map(d => "lt" -> JsNumber(d))
-            )
-          )
-        )
+        Seq(range("createdAt", filter.auditDateRange._1, filter.auditDateRange._2))
       else Nil
 
     val objectIdFilter = if (objectIds.nonEmpty) Seq(termsQuery("objectId", objectIds)) else Nil

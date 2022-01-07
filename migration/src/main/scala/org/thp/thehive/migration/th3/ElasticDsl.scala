@@ -1,6 +1,6 @@
 package org.thp.thehive.migration.th3
 
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsNumber, JsObject, JsString, JsValue, Json}
 
 object ElasticDsl {
   def searchQuery(query: JsObject, sort: String*): JsObject = {
@@ -15,8 +15,17 @@ object ElasticDsl {
   def termQuery(field: String, value: String): JsObject             = Json.obj("term" -> Json.obj(field -> value))
   def termsQuery(field: String, values: Iterable[String]): JsObject = Json.obj("terms" -> Json.obj(field -> values))
   def idsQuery(ids: String*): JsObject                              = Json.obj("ids" -> Json.obj("values" -> ids))
-  def and(queries: JsValue*): JsObject                              = bool(queries)
-  def or(queries: JsValue*): JsObject                               = bool(Nil, queries)
+  def range[N](field: String, from: Option[N], to: Option[N])(implicit ev: N => BigDecimal) =
+    Json.obj(
+      "range" -> Json.obj(
+        field -> JsObject(
+          from.map(f => "gte" -> JsNumber(f)).toSeq ++
+            to.map(t => "lt" -> JsNumber(t)).toSeq
+        )
+      )
+    )
+  def and(queries: JsValue*): JsObject = bool(queries)
+  def or(queries: JsValue*): JsObject  = bool(Nil, queries)
   def bool(mustQueries: Seq[JsValue], shouldQueries: Seq[JsValue] = Nil, notQueries: Seq[JsValue] = Nil): JsObject =
     Json.obj(
       "bool" -> Json.obj(
