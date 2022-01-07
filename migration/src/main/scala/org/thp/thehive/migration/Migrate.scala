@@ -53,6 +53,9 @@ object Migrate extends App with MigrationOps {
       opt[Unit]('d', "drop-database")
         .action((_, c) => addConfig(c, "output.dropDatabase", true))
         .text("Drop TheHive4 database before migration"),
+      opt[Boolean]('r', "resume")
+        .action((_, c) => addConfig(c, "output.resume", true))
+        .text("Resume migration (or migrate on existing database)"),
       opt[String]('m', "main-organisation")
         .valueName("<organisation>")
         .action((o, c) => addConfig(c, "input.mainOrganisation", o)),
@@ -75,6 +78,10 @@ object Migrate extends App with MigrationOps {
       opt[Int]('p', "es-pagesize")
         .text("TheHive3 ElasticSearch page size")
         .action((p, c) => addConfig(c, "input.search.pagesize", p)),
+      opt[Boolean]('s', "es-single-type")
+        .valueName("<bool>")
+        .text("Elasticsearch single type")
+        .action((s, c) => addConfig(c, "search.singleType", s)),
       /* case age */
       opt[String]("max-case-age")
         .valueName("<duration>")

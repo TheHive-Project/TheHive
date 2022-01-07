@@ -1,11 +1,12 @@
 package org.thp.thehive.migration.th3
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Scheduler}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.sslconfig.ssl.{KeyManagerConfig, KeyStoreConfig, SSLConfigSettings, TrustManagerConfig, TrustStoreConfig}
 import org.thp.client.{Authentication, NoAuthentication, PasswordAuthentication}
+import org.thp.scalligraph.utils.Retry
 import org.thp.scalligraph.{InternalError, NotFoundError}
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
@@ -15,7 +16,7 @@ import play.api.{Configuration, Logger}
 
 import java.net.{URI, URLEncoder}
 import javax.inject.{Inject, Provider, Singleton}
-import scala.concurrent.duration.{Duration, DurationInt, DurationLong}
+import scala.concurrent.duration.{Duration, DurationInt, DurationLong, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 @Singleton
@@ -79,10 +80,26 @@ class ElasticClientProvider @Inject() (
       } yield PasswordAuthentication(user, password))
         .getOrElse(NoAuthentication)
 
-    val esUri          = config.get[String]("search.uri")
-    val pageSize       = config.get[Int]("search.pagesize")
-    val keepAlive      = config.getMillis("search.keepalive").millis
-    val elasticConfig  = new ElasticConfig(ws, authentication, esUri, pageSize, keepAlive.toMillis + "ms")
+    val esUri        = config.get[String]("search.uri")
+    val pageSize     = config.get[Int]("search.pagesize")
+    val keepAlive    = config.getMillis("search.keepalive").millis
+    val maxAttempts  = config.get[Int]("search.maxAttempts")
+    val minBackoff   = config.get[FiniteDuration]("search.minBackoff")
+    val maxBackoff   = config.get[FiniteDuration]("search.maxBackoff")
+    val randomFactor = config.get[Double]("search.randomFactor")
+
+    val elasticConfig = new ElasticConfig(
+      ws,
+      authentication,
+      esUri,
+      pageSize,
+      keepAlive.toMillis + "ms",
+      maxAttempts,
+      minBackoff,
+      maxBackoff,
+      randomFactor,
+      actorSystem.scheduler
+    )
     val elasticVersion = elasticConfig.version
     logger.info(s"Found ElasticSearch $elasticVersion")
     lazy val indexName: String = {
@@ -102,14 +119,25 @@ class ElasticClientProvider @Inject() (
     }
     logger.info(s"Found Index $indexName")
 
-    val isSingleType = elasticConfig.isSingleType(indexName)
+    val isSingleType = config.getOptional[Boolean]("search.singleType").getOrElse(elasticConfig.isSingleType(indexName))
     logger.info(s"Found index with ${if (isSingleType) "single type" else "multiple types"}")
-    if (elasticConfig.isSingleType(indexName)) new ElasticSingleTypeClient(elasticConfig, indexName)
+    if (isSingleType) new ElasticSingleTypeClient(elasticConfig, indexName)
     else new ElasticMultiTypeClient(elasticConfig, indexName)
   }
 }
 
-class ElasticConfig(ws: WSClient, authentication: Authentication, esUri: String, val pageSize: Int, val keepAlive: String) {
+class ElasticConfig(
+    ws: WSClient,
+    authentication: Authentication,
+    esUri: String,
+    val pageSize: Int,
+    val keepAlive: String,
+    maxAttempts: Int,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    randomFactor: Double,
+    scheduler: Scheduler
+) {
   lazy val logger: Logger           = Logger(getClass)
   def stripUrl(url: String): String = new URI(url).normalize().toASCIIString.replaceAll("/+$", "")
 
@@ -118,13 +146,32 @@ class ElasticConfig(ws: WSClient, authentication: Authentication, esUri: String,
       .map(p => s"${URLEncoder.encode(p._1, "UTF-8")}=${URLEncoder.encode(p._2, "UTF-8")}")
       .mkString("&")
     logger.debug(s"POST ${stripUrl(s"$esUri/$url?$encodedParams")}\n$body")
+    Retry(maxAttempts).withBackoff(minBackoff, maxBackoff, randomFactor)(scheduler, ec) {
+      authentication(
+        ws.url(stripUrl(s"$esUri/$url?$encodedParams"))
+          .withHttpHeaders(HeaderNames.CONTENT_TYPE -> "application/json")
+      )
+        .post(body)
+        .map {
+          case response if response.status == 200 => response.json
+          case response                           => throw InternalError(s"Unexpected response from Elasticsearch: ${response.status} ${response.statusText}\n${response.body}")
+        }
+    }
+  }
+
+  def delete(url: String, body: JsValue, params: (String, String)*)(implicit ec: ExecutionContext): Future[JsValue] = {
+    val encodedParams = params
+      .map(p => s"${URLEncoder.encode(p._1, "UTF-8")}=${URLEncoder.encode(p._2, "UTF-8")}")
+      .mkString("&")
     authentication(
-      ws.url(stripUrl(s"$esUri/$url?$encodedParams"))
+      ws
+        .url(stripUrl(s"$esUri/$url?$encodedParams"))
         .withHttpHeaders(HeaderNames.CONTENT_TYPE -> "application/json")
     )
-      .post(body)
+      .withBody(body)
+      .execute("DELETE")
       .map {
-        case response if response.status == 200 => response.json
+        case response if response.status == 200 => response.body[JsValue]
         case response                           => throw InternalError(s"Unexpected response from Elasticsearch: ${response.status} ${response.statusText}\n${response.body}")
       }
   }
@@ -162,6 +209,7 @@ trait ElasticClient {
   val keepAlive: String
   def search(docType: String, request: JsObject, params: (String, String)*)(implicit ec: ExecutionContext): Future[JsValue]
   def scroll(scrollId: String, keepAlive: String)(implicit ec: ExecutionContext): Future[JsValue]
+  def clearScroll(scrollId: String)(implicit ec: ExecutionContext): Future[JsValue]
 
   def apply(docType: String, query: JsObject)(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
     val searchWithScroll = new SearchWithScroll(this, docType, query + ("size" -> JsNumber(pageSize)), keepAlive)
@@ -184,7 +232,10 @@ class ElasticMultiTypeClient(elasticConfig: ElasticConfig, indexName: String) ex
     elasticConfig.post(s"/$indexName/$docType/_search", request, params: _*)
   override def scroll(scrollId: String, keepAlive: String)(implicit ec: ExecutionContext): Future[JsValue] =
     elasticConfig.post("/_search/scroll", Json.obj("scroll_id" -> scrollId, "scroll" -> keepAlive))
+  override def clearScroll(scrollId: String)(implicit ec: ExecutionContext): Future[JsValue] =
+    elasticConfig.delete("/_search/scroll", Json.obj("scroll_id" -> scrollId))
 }
+
 class ElasticSingleTypeClient(elasticConfig: ElasticConfig, indexName: String) extends ElasticClient {
   override val pageSize: Int     = elasticConfig.pageSize
   override val keepAlive: String = elasticConfig.keepAlive
@@ -196,4 +247,6 @@ class ElasticSingleTypeClient(elasticConfig: ElasticConfig, indexName: String) e
   }
   override def scroll(scrollId: String, keepAlive: String)(implicit ec: ExecutionContext): Future[JsValue] =
     elasticConfig.post("/_search/scroll", Json.obj("scroll_id" -> scrollId, "scroll" -> keepAlive))
+  override def clearScroll(scrollId: String)(implicit ec: ExecutionContext): Future[JsValue] =
+    elasticConfig.delete("/_search/scroll", Json.obj("scroll_id" -> scrollId))
 }

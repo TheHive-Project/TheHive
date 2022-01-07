@@ -5,7 +5,6 @@ import akka.actor.typed.{ActorRef, Scheduler}
 import akka.stream.Materializer
 import com.google.inject.{Guice, Injector => GInjector}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
-import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, UserSrv => UserDB}
 import org.thp.scalligraph.janus.JanusDatabase
@@ -19,8 +18,11 @@ import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.migration.IdMapping
 import org.thp.thehive.migration.dto._
 import org.thp.thehive.models._
+import org.thp.thehive.services.AlertOps._
+import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services._
 import org.thp.thehive.{migration, ClusterSetup}
+import play.api.cache.SyncCacheApi
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
 import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
@@ -110,9 +112,11 @@ class Output @Inject() (
     resolutionStatusSrv: ResolutionStatusSrv,
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
-    db: Database
+    db: Database,
+    cache: SyncCacheApi
 ) extends migration.Output {
-  lazy val logger: Logger = Logger(getClass)
+  lazy val logger: Logger      = Logger(getClass)
+  val resumeMigration: Boolean = configuration.get[Boolean]("resume")
   val defaultUserDomain: String = userSrv
     .defaultUserDomain
     .getOrElse(
@@ -132,124 +136,34 @@ class Output @Inject() (
   private var observableTypes: Map[String, ObservableType with Entity]      = Map.empty
   private var customFields: Map[String, CustomField with Entity]            = Map.empty
   private var caseTemplates: Map[String, CaseTemplate with Entity]          = Map.empty
-  private var caseNumbers: Set[Int]                                         = Set.empty
-  private var alerts: Set[(String, String, String)]                         = Set.empty
-  private var tags: Map[String, Tag with Entity]                            = Map.empty
 
-  private def retrieveExistingData(): Unit = {
-    val profilesBuilder           = Map.newBuilder[String, Profile with Entity]
-    val organisationsBuilder      = Map.newBuilder[String, Organisation with Entity]
-    val usersBuilder              = Map.newBuilder[String, User with Entity]
-    val impactStatusesBuilder     = Map.newBuilder[String, ImpactStatus with Entity]
-    val resolutionStatusesBuilder = Map.newBuilder[String, ResolutionStatus with Entity]
-    val observableTypesBuilder    = Map.newBuilder[String, ObservableType with Entity]
-    val customFieldsBuilder       = Map.newBuilder[String, CustomField with Entity]
-    val caseTemplatesBuilder      = Map.newBuilder[String, CaseTemplate with Entity]
-    val caseNumbersBuilder        = Set.newBuilder[Int]
-    val alertsBuilder             = Set.newBuilder[(String, String, String)]
-    val tagsBuilder               = Map.newBuilder[String, Tag with Entity]
-
-    db.roTransaction { implicit graph =>
-      graph
-        .VV()
-        .unsafeHas(
-          "_label",
-          P.within(
-            "Profile",
-            "Organisation",
-            "User",
-            "ImpactStatus",
-            "ResolutionStatus",
-            "ObservableType",
-            "CustomField",
-            "CaseTemplate",
-            "Case",
-            "Alert",
-            "Tag"
-          )
-        )
-        .toIterator
-        .map(v => v.value[String]("_label") -> v)
-        .foreach {
-          case ("Profile", vertex) =>
-            val profile = profileSrv.model.converter(vertex)
-            profilesBuilder += (profile.name -> profile)
-          case ("Organisation", vertex) =>
-            val organisation = organisationSrv.model.converter(vertex)
-            organisationsBuilder += (organisation.name -> organisation)
-          case ("User", vertex) =>
-            val user = userSrv.model.converter(vertex)
-            usersBuilder += (user.login -> user)
-          case ("ImpactStatus", vertex) =>
-            val impactStatuse = impactStatusSrv.model.converter(vertex)
-            impactStatusesBuilder += (impactStatuse.value -> impactStatuse)
-          case ("ResolutionStatus", vertex) =>
-            val resolutionStatuse = resolutionStatusSrv.model.converter(vertex)
-            resolutionStatusesBuilder += (resolutionStatuse.value -> resolutionStatuse)
-          case ("ObservableType", vertex) =>
-            val observableType = observableTypeSrv.model.converter(vertex)
-            observableTypesBuilder += (observableType.name -> observableType)
-          case ("CustomField", vertex) =>
-            val customField = customFieldSrv.model.converter(vertex)
-            customFieldsBuilder += (customField.name -> customField)
-          case ("CaseTemplate", vertex) =>
-            val caseTemplate = caseTemplateSrv.model.converter(vertex)
-            caseTemplatesBuilder += (caseTemplate.name -> caseTemplate)
-          case ("Case", vertex) =>
-            caseNumbersBuilder += UMapping.int.getProperty(vertex, "number")
-          case ("Alert", vertex) =>
-            val `type`    = UMapping.string.getProperty(vertex, "type")
-            val source    = UMapping.string.getProperty(vertex, "source")
-            val sourceRef = UMapping.string.getProperty(vertex, "sourceRef")
-            alertsBuilder += ((`type`, source, sourceRef))
-          case ("Tag", vertex) =>
-            val tag = tagSrv.model.converter(vertex)
-            if (tag.namespace.startsWith(s"_freetags_"))
-              tagsBuilder += (s"${tag.namespace.drop(10)}-${tag.predicate}" -> tag)
-            else
-              tagsBuilder += (tag.toString -> tag)
-          case _ =>
-        }
-    }
-    profiles = profilesBuilder.result()
-    organisations = organisationsBuilder.result()
-    users = usersBuilder.result()
-    impactStatuses = impactStatusesBuilder.result()
-    resolutionStatuses = resolutionStatusesBuilder.result()
-    observableTypes = observableTypesBuilder.result()
-    customFields = customFieldsBuilder.result()
-    caseTemplates = caseTemplatesBuilder.result()
-    caseNumbers = caseNumbersBuilder.result()
-    alerts = alertsBuilder.result()
-    tags = tagsBuilder.result()
-    if (
-      profiles.nonEmpty ||
-      organisations.nonEmpty ||
-      users.nonEmpty ||
-      impactStatuses.nonEmpty ||
-      resolutionStatuses.nonEmpty ||
-      observableTypes.nonEmpty ||
-      customFields.nonEmpty ||
-      caseTemplates.nonEmpty ||
-      caseNumbers.nonEmpty ||
-      alerts.nonEmpty ||
-      tags.nonEmpty
-    )
-      logger.info(s"""Already migrated:
-                     | ${profiles.size} profiles
-                     | ${organisations.size} organisations
-                     | ${users.size} users
-                     | ${impactStatuses.size} impactStatuses
-                     | ${resolutionStatuses.size} resolutionStatuses
-                     | ${observableTypes.size} observableTypes
-                     | ${customFields.size} customFields
-                     | ${caseTemplates.size} caseTemplates
-                     | ${caseNumbers.size} caseNumbers
-                     | ${alerts.size} alerts
-                     | ${tags.size} tags""".stripMargin)
+  def startMigration(): Try[Unit] = {
+    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+    if (resumeMigration) {
+      db.addSchemaIndexes(theHiveSchema)
+        .flatMap(_ => db.addSchemaIndexes(cortexSchema))
+      db.roTransaction { implicit graph =>
+        profiles = profileSrv.startTraversal.toSeq.map(p => p.name -> p).toMap
+        organisations = organisationSrv.startTraversal.toSeq.map(o => o.name -> o).toMap
+        users = userSrv.startTraversal.toSeq.map(u => u.name -> u).toMap
+        impactStatuses = impactStatusSrv.startTraversal.toSeq.map(s => s.value -> s).toMap
+        resolutionStatuses = resolutionStatusSrv.startTraversal.toSeq.map(s => s.value -> s).toMap
+        observableTypes = observableTypeSrv.startTraversal.toSeq.map(o => o.name -> o).toMap
+        customFields = customFieldSrv.startTraversal.toSeq.map(c => c.name -> c).toMap
+        caseTemplates = caseTemplateSrv.startTraversal.toSeq.map(c => c.name -> c).toMap
+      }
+      Success(())
+    } else
+      db.tryTransaction { implicit graph =>
+        profiles = Profile.initialValues.flatMap(p => profileSrv.createEntity(p).map(p.name -> _).toOption).toMap
+        resolutionStatuses = ResolutionStatus.initialValues.flatMap(p => resolutionStatusSrv.createEntity(p).map(p.value -> _).toOption).toMap
+        impactStatuses = ImpactStatus.initialValues.flatMap(p => impactStatusSrv.createEntity(p).map(p.value -> _).toOption).toMap
+        observableTypes = ObservableType.initialValues.flatMap(p => observableTypeSrv.createEntity(p).map(p.name -> _).toOption).toMap
+        organisations = Organisation.initialValues.flatMap(p => organisationSrv.createEntity(p).map(p.name -> _).toOption).toMap
+        users = User.initialValues.flatMap(p => userSrv.createEntity(p).map(p.name -> _).toOption).toMap
+        Success(())
+      }
   }
-
-  def startMigration(): Try[Unit] = Success(retrieveExistingData())
 
   def endMigration(): Try[Unit] = {
     db.addSchemaIndexes(theHiveSchema)
@@ -281,15 +195,11 @@ class Output @Inject() (
     }
 
   def getTag(tagName: String, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    tags
-      .get(tagName)
-      .orElse(tags.get(s"$organisationId-$tagName"))
-      .fold[Try[Tag with Entity]] {
-        tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour)).map { tag =>
-          tags += (tagName -> tag)
-          tag
-        }
-      }(Success.apply)
+    cache.getOrElseUpdate(s"tag--$tagName") {
+      cache.get(s"tag-$organisationId-$tagName").getOrElse {
+        tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour))
+      }
+    }
 
   override def organisationExists(inputOrganisation: InputOrganisation): Boolean = organisations.contains(inputOrganisation.organisation.name)
 
@@ -500,7 +410,12 @@ class Output @Inject() (
       } yield IdMapping(inputTask.metaData.id, richTask._id)
     }
 
-  override def caseExists(inputCase: InputCase): Boolean = caseNumbers.contains(inputCase.`case`.number + caseNumberShift)
+  override def caseExists(inputCase: InputCase): Boolean =
+    if (resumeMigration) false
+    else
+      db.roTransaction { implicit graph =>
+        caseSrv.startTraversal.getByNumber(inputCase.`case`.number + caseNumberShift).exists
+      }
 
   private def getCase(caseId: EntityId)(implicit graph: Graph): Try[Case with Entity] = caseSrv.getByIds(caseId).getOrFail("Case")
 
@@ -728,7 +643,11 @@ class Output @Inject() (
     }
 
   override def alertExists(inputAlert: InputAlert): Boolean =
-    alerts.contains((inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef))
+    if (resumeMigration) false
+    else
+      db.roTransaction { implicit graph =>
+        alertSrv.startTraversal.getBySourceId(inputAlert.alert.`type`, inputAlert.alert.source, inputAlert.alert.sourceRef).exists
+      }
 
   override def createAlert(inputAlert: InputAlert): Try[IdMapping] =
     authTransaction(inputAlert.metaData.createdBy) { implicit graph => implicit authContext =>

@@ -83,5 +83,8 @@ class SearchWithScroll(client: ElasticClient, docType: String, query: JsObject, 
             else firstResults.onComplete(firstCallback.invoke)
         }
       )
+
+      override def postStop(): Unit =
+        scrollId.foreach(client.clearScroll(_))
     }
 }
