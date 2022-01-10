@@ -15,8 +15,16 @@ case class UserAttachment()
 
 @DefineIndex(IndexType.unique, "login")
 @BuildVertexEntity
-case class User(login: String, name: String, apikey: Option[String], locked: Boolean, password: Option[String], totpSecret: Option[String])
-    extends ScalligraphUser {
+case class User(
+    login: String,
+    name: String,
+    apikey: Option[String],
+    locked: Boolean,
+    password: Option[String],
+    totpSecret: Option[String],
+    failedAttempts: Option[Int],
+    lastFailed: Option[Date]
+) extends ScalligraphUser {
   override val id: String          = login
   override def getUserName: String = name
 
@@ -32,11 +40,22 @@ object User {
     apikey = None,
     locked = false,
     password = Some(LocalPasswordAuthSrv.hashPassword(initPassword)),
-    totpSecret = None
+    totpSecret = None,
+    failedAttempts = None,
+    lastFailed = None
   )
 
   val system: User =
-    User(login = "system@thehive.local", name = "TheHive system user", apikey = None, locked = false, password = None, totpSecret = None)
+    User(
+      login = "system@thehive.local",
+      name = "TheHive system user",
+      apikey = None,
+      locked = false,
+      password = None,
+      totpSecret = None,
+      failedAttempts = None,
+      lastFailed = None
+    )
 
   val initialValues: Seq[User] = Seq(init, system)
 }

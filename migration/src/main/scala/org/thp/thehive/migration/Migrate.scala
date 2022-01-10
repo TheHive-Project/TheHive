@@ -17,6 +17,9 @@ object Migrate extends App with MigrationOps {
   val defaultLoggerConfigFile = "/etc/thehive/logback-migration.xml"
   if (System.getProperty("logger.file") == null && Files.exists(Paths.get(defaultLoggerConfigFile)))
     System.setProperty("logger.file", defaultLoggerConfigFile)
+  (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
+  var transactionPageSize: Int = 100
+  var threadCount: Int         = 3
 
   def getVersion: String = Option(getClass.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
@@ -81,7 +84,13 @@ object Migrate extends App with MigrationOps {
       opt[Boolean]('s', "es-single-type")
         .valueName("<bool>")
         .text("Elasticsearch single type")
-        .action((s, c) => addConfig(c, "search.singleType", s)),
+        .action((s, c) => addConfig(c, "input.search.singleType", s)),
+      opt[Int]('y', "transaction-pagesize")
+        .text("page size for each transaction")
+        .action((t, c) => addConfig(c, "transactionPageSize", t)),
+      opt[Int]('t', "thread-count")
+        .text("number of threads")
+        .action((t, c) => addConfig(c, "threadCount", t)),
       /* case age */
       opt[String]("max-case-age")
         .valueName("<duration>")
@@ -194,10 +203,10 @@ object Migrate extends App with MigrationOps {
     implicit val actorSystem: ActorSystem = ActorSystem("TheHiveMigration", config)
     implicit val ec: ExecutionContext     = actorSystem.dispatcher
     implicit val mat: Materializer        = Materializer(actorSystem)
+    transactionPageSize = config.getInt("transactionPageSize")
+    threadCount = config.getInt("threadCount")
 
     try {
-      (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
-
       val timer = actorSystem.scheduler.scheduleAtFixedRate(10.seconds, 10.seconds) { () =>
         logger.info(migrationStats.showStats())
         migrationStats.flush()

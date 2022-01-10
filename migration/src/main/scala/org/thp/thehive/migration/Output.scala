@@ -5,36 +5,37 @@ import org.thp.thehive.migration.dto._
 
 import scala.util.Try
 
-trait Output {
+trait Output[TX] {
   def startMigration(): Try[Unit]
   def endMigration(): Try[Unit]
-  def profileExists(inputProfile: InputProfile): Boolean
-  def createProfile(inputProfile: InputProfile): Try[IdMapping]
-  def organisationExists(inputOrganisation: InputOrganisation): Boolean
-  def createOrganisation(inputOrganisation: InputOrganisation): Try[IdMapping]
-  def userExists(inputUser: InputUser): Boolean
-  def createUser(inputUser: InputUser): Try[IdMapping]
-  def customFieldExists(inputCustomField: InputCustomField): Boolean
-  def createCustomField(inputCustomField: InputCustomField): Try[IdMapping]
-  def observableTypeExists(inputObservableType: InputObservableType): Boolean
-  def createObservableTypes(inputObservableType: InputObservableType): Try[IdMapping]
-  def impactStatusExists(inputImpactStatus: InputImpactStatus): Boolean
-  def createImpactStatus(inputImpactStatus: InputImpactStatus): Try[IdMapping]
-  def resolutionStatusExists(inputResolutionStatus: InputResolutionStatus): Boolean
-  def createResolutionStatus(inputResolutionStatus: InputResolutionStatus): Try[IdMapping]
-  def caseTemplateExists(inputCaseTemplate: InputCaseTemplate): Boolean
-  def createCaseTemplate(inputCaseTemplate: InputCaseTemplate): Try[IdMapping]
-  def createCaseTemplateTask(caseTemplateId: EntityId, inputTask: InputTask): Try[IdMapping]
-  def caseExists(inputCase: InputCase): Boolean
-  def createCase(inputCase: InputCase): Try[IdMapping]
-  def createCaseObservable(caseId: EntityId, inputObservable: InputObservable): Try[IdMapping]
-  def createJob(observableId: EntityId, inputJob: InputJob): Try[IdMapping]
-  def createJobObservable(jobId: EntityId, inputObservable: InputObservable): Try[IdMapping]
-  def createCaseTask(caseId: EntityId, inputTask: InputTask): Try[IdMapping]
-  def createCaseTaskLog(taskId: EntityId, inputLog: InputLog): Try[IdMapping]
-  def alertExists(inputAlert: InputAlert): Boolean
-  def createAlert(inputAlert: InputAlert): Try[IdMapping]
-  def createAlertObservable(alertId: EntityId, inputObservable: InputObservable): Try[IdMapping]
-  def createAction(objectId: EntityId, inputAction: InputAction): Try[IdMapping]
-  def createAudit(contextId: EntityId, inputAudit: InputAudit): Try[Unit]
+  def withTx[R](body: TX => Try[R]): Try[R]
+  def profileExists(tx: TX, inputProfile: InputProfile): Boolean
+  def createProfile(tx: TX, inputProfile: InputProfile): Try[IdMapping]
+  def organisationExists(tx: TX, inputOrganisation: InputOrganisation): Boolean
+  def createOrganisation(tx: TX, inputOrganisation: InputOrganisation): Try[IdMapping]
+  def userExists(tx: TX, inputUser: InputUser): Boolean
+  def createUser(tx: TX, inputUser: InputUser): Try[IdMapping]
+  def customFieldExists(tx: TX, inputCustomField: InputCustomField): Boolean
+  def createCustomField(tx: TX, inputCustomField: InputCustomField): Try[IdMapping]
+  def observableTypeExists(tx: TX, inputObservableType: InputObservableType): Boolean
+  def createObservableTypes(tx: TX, inputObservableType: InputObservableType): Try[IdMapping]
+  def impactStatusExists(tx: TX, inputImpactStatus: InputImpactStatus): Boolean
+  def createImpactStatus(tx: TX, inputImpactStatus: InputImpactStatus): Try[IdMapping]
+  def resolutionStatusExists(tx: TX, inputResolutionStatus: InputResolutionStatus): Boolean
+  def createResolutionStatus(tx: TX, inputResolutionStatus: InputResolutionStatus): Try[IdMapping]
+  def caseTemplateExists(tx: TX, inputCaseTemplate: InputCaseTemplate): Boolean
+  def createCaseTemplate(tx: TX, inputCaseTemplate: InputCaseTemplate): Try[IdMapping]
+  def createCaseTemplateTask(tx: TX, caseTemplateId: EntityId, inputTask: InputTask): Try[IdMapping]
+  def caseExists(tx: TX, inputCase: InputCase): Boolean
+  def createCase(tx: TX, inputCase: InputCase): Try[IdMapping]
+  def createCaseObservable(tx: TX, caseId: EntityId, inputObservable: InputObservable): Try[IdMapping]
+  def createJob(tx: TX, observableId: EntityId, inputJob: InputJob): Try[IdMapping]
+  def createJobObservable(tx: TX, jobId: EntityId, inputObservable: InputObservable): Try[IdMapping]
+  def createCaseTask(tx: TX, caseId: EntityId, inputTask: InputTask): Try[IdMapping]
+  def createCaseTaskLog(tx: TX, taskId: EntityId, inputLog: InputLog): Try[IdMapping]
+  def alertExists(tx: TX, inputAlert: InputAlert): Boolean
+  def createAlert(tx: TX, inputAlert: InputAlert): Try[IdMapping]
+  def createAlertObservable(tx: TX, alertId: EntityId, inputObservable: InputObservable): Try[IdMapping]
+  def createAction(tx: TX, objectId: EntityId, inputAction: InputAction): Try[IdMapping]
+  def createAudit(tx: TX, contextId: EntityId, inputAudit: InputAudit): Try[Unit]
 }

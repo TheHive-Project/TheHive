@@ -7,6 +7,7 @@ import org.thp.scalligraph.{EntityId, NotFoundError, RichOptionTry}
 import org.thp.thehive.migration.dto.{InputAlert, InputAudit, InputCase, InputCaseTemplate}
 import play.api.Logger
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -74,10 +75,10 @@ class MigrationStats() {
     }
   }
 
-  val logger: Logger                        = Logger("org.thp.thehive.migration.Migration")
-  val stats: mutable.Map[String, StatEntry] = mutable.Map.empty
-  val startDate: Long                       = System.currentTimeMillis()
-  var stage: String                         = "initialisation"
+  val logger: Logger                    = Logger("org.thp.thehive.migration.Migration")
+  val stats: TrieMap[String, StatEntry] = TrieMap.empty
+  val startDate: Long                   = System.currentTimeMillis()
+  var stage: String                     = "initialisation"
 
   def apply[A](name: String)(body: => Try[A]): Try[A] = {
     val start = System.currentTimeMillis()
@@ -121,6 +122,8 @@ class MigrationStats() {
 trait MigrationOps {
   lazy val logger: Logger            = Logger(getClass)
   val migrationStats: MigrationStats = new MigrationStats
+  def transactionPageSize: Int
+  def threadCount: Int
 
   implicit class IdMappingOpsDefs(idMappings: Seq[IdMapping]) {
 
@@ -130,121 +133,164 @@ trait MigrationOps {
         .fold[Try[EntityId]](Failure(NotFoundError(s"Id $id not found")))(m => Success(m.outputId))
   }
 
-  def migrate[A](name: String, source: Source[Try[A], NotUsed], create: A => Try[IdMapping], exists: A => Boolean = (_: A) => true)(implicit
+  def migrate[TX, A](
+      output: Output[TX]
+  )(name: String, source: Source[Try[A], NotUsed], create: (TX, A) => Try[IdMapping], exists: (TX, A) => Boolean = (_: TX, _: A) => true)(implicit
       mat: Materializer
   ): Future[Seq[IdMapping]] =
     source
-      .mapConcat {
-        case Success(a) if !exists(a) => migrationStats(name)(create(a)).toOption.toList
-        case Failure(error) =>
-          migrationStats.failure(name, error)
-          Nil
-        case _ =>
-          migrationStats.exist(name)
-          Nil
+      .grouped(transactionPageSize)
+      .mapConcat { as =>
+        output
+          .withTx { tx =>
+            Try {
+              as.flatMap {
+                case Success(a) if !exists(tx, a) => migrationStats(name)(create(tx, a)).toOption.toList
+                case Failure(error) =>
+                  migrationStats.failure(name, error)
+                  Nil
+                case _ =>
+                  migrationStats.exist(name)
+                  Nil
+              }.toList
+            }
+          }
+          .getOrElse(Nil)
       }
       .runWith(Sink.seq)
 
-  def migrateWithParent[A](
+  def migrateWithParent[TX, A](output: Output[TX])(
       name: String,
       parentIds: Seq[IdMapping],
       source: Source[Try[(String, A)], NotUsed],
-      create: (EntityId, A) => Try[IdMapping]
+      create: (TX, EntityId, A) => Try[IdMapping]
   )(implicit mat: Materializer): Future[Seq[IdMapping]] =
     source
-      .mapConcat {
-        case Success((parentId, a)) =>
-          parentIds
-            .fromInput(parentId)
-            .flatMap(parent => migrationStats(name)(create(parent, a)))
-            .toOption
-            .toList
-        case Failure(error) =>
-          migrationStats.failure(name, error)
-          Nil
-        case _ =>
-          migrationStats.exist(name)
-          Nil
+      .grouped(transactionPageSize)
+      .mapConcat { parentIdAs =>
+        output
+          .withTx { tx =>
+            Try {
+              parentIdAs.flatMap {
+                case Success((parentId, a)) =>
+                  parentIds
+                    .fromInput(parentId)
+                    .flatMap(parent => migrationStats(name)(create(tx, parent, a)))
+                    .toOption
+                    .toList
+                case Failure(error) =>
+                  migrationStats.failure(name, error)
+                  Nil
+                case _ =>
+                  migrationStats.exist(name)
+                  Nil
+              }.toList
+            }
+          }
+          .getOrElse(Nil)
       }
       .runWith(Sink.seq)
 
-  def migrateAudit(ids: Seq[IdMapping], source: Source[Try[(String, InputAudit)], NotUsed], create: (EntityId, InputAudit) => Try[Unit])(implicit
+  def migrateAudit[TX](
+      output: Output[TX]
+  )(ids: Seq[IdMapping], source: Source[Try[(String, InputAudit)], NotUsed], create: (TX, EntityId, InputAudit) => Try[Unit])(implicit
       ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] =
     source
-      .runForeach {
-        case Success((contextId, inputAudit)) =>
-          migrationStats("Audit") {
-            for {
-              cid <- ids.fromInput(contextId)
-              objId = inputAudit.audit.objectId.map(ids.fromInput).flip.getOrElse {
-                logger.warn(s"object Id not found in audit ${inputAudit.audit}")
-                None
+      .grouped(transactionPageSize)
+      .runForeach { audits =>
+        output.withTx { tx =>
+          audits.foreach {
+            case Success((contextId, inputAudit)) =>
+              migrationStats("Audit") {
+                for {
+                  cid <- ids.fromInput(contextId)
+                  objId = inputAudit.audit.objectId.map(ids.fromInput).flip.getOrElse {
+                    logger.warn(s"object Id not found in audit ${inputAudit.audit}")
+                    None
+                  }
+                  _ <- create(tx, cid, inputAudit.updateObjectId(objId))
+                } yield ()
               }
-              _ <- create(cid, inputAudit.updateObjectId(objId))
-            } yield ()
+              ()
+            case Failure(error) =>
+              migrationStats.failure("Audit", error)
           }
-          ()
-        case Failure(error) =>
-          migrationStats.failure("Audit", error)
+          Success(())
+        }
+        ()
       }
       .map(_ => ())
 
-  def migrateAWholeCaseTemplate(input: Input, output: Output)(
+  def migrateAWholeCaseTemplate[TX](input: Input, output: Output[TX])(
       inputCaseTemplate: InputCaseTemplate
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Unit] =
-    migrationStats("CaseTemplate")(output.createCaseTemplate(inputCaseTemplate)).fold(
+    migrationStats("CaseTemplate")(output.withTx(output.createCaseTemplate(_, inputCaseTemplate))).fold(
       _ => Future.successful(()),
       {
         case caseTemplateId @ IdMapping(inputCaseTemplateId, _) =>
-          migrateWithParent("CaseTemplate/Task", Seq(caseTemplateId), input.listCaseTemplateTask(inputCaseTemplateId), output.createCaseTemplateTask)
+          migrateWithParent(output)(
+            "CaseTemplate/Task",
+            Seq(caseTemplateId),
+            input.listCaseTemplateTask(inputCaseTemplateId),
+            output.createCaseTemplateTask
+          )
             .map(_ => ())
       }
     )
 
-  def migrateWholeCaseTemplates(input: Input, output: Output, filter: Filter)(implicit
+  def migrateWholeCaseTemplates[TX](input: Input, output: Output[TX], filter: Filter)(implicit
       ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] =
     input
       .listCaseTemplate(filter)
-      .mapConcat {
-        case Success(ct) if !output.caseTemplateExists(ct) => List(ct)
-        case Failure(error) =>
-          migrationStats.failure("CaseTemplate", error)
-          Nil
-        case _ =>
-          migrationStats.exist("CaseTemplate")
-          Nil
+      .grouped(transactionPageSize)
+      .mapConcat { cts =>
+        output
+          .withTx { tx =>
+            Try {
+              cts.flatMap {
+                case Success(ct) if !output.caseTemplateExists(tx, ct) => List(ct)
+                case Failure(error) =>
+                  migrationStats.failure("CaseTemplate", error)
+                  Nil
+                case _ =>
+                  migrationStats.exist("CaseTemplate")
+                  Nil
+              }.toList
+            }
+          }
+          .getOrElse(Nil)
       }
       .mapAsync(1)(migrateAWholeCaseTemplate(input, output))
       .runWith(Sink.ignore)
       .map(_ => ())
 
-  def migrateAWholeCase(input: Input, output: Output, filter: Filter)(
+  def migrateAWholeCase[TX](input: Input, output: Output[TX], filter: Filter)(
       inputCase: InputCase
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Option[IdMapping]] =
-    migrationStats("Case")(output.createCase(inputCase)).fold[Future[Option[IdMapping]]](
+    migrationStats("Case")(output.withTx(output.createCase(_, inputCase))).fold[Future[Option[IdMapping]]](
       _ => Future.successful(None),
       {
         case caseId @ IdMapping(inputCaseId, _) =>
           for {
-            caseTaskIds <- migrateWithParent("Case/Task", Seq(caseId), input.listCaseTasks(inputCaseId), output.createCaseTask)
-            caseTaskLogIds <- migrateWithParent(
+            caseTaskIds <- migrateWithParent(output)("Case/Task", Seq(caseId), input.listCaseTasks(inputCaseId), output.createCaseTask)
+            caseTaskLogIds <- migrateWithParent(output)(
               "Case/Task/Log",
               caseTaskIds,
               input.listCaseTaskLogs(inputCaseId),
               output.createCaseTaskLog
             )
-            caseObservableIds <- migrateWithParent(
+            caseObservableIds <- migrateWithParent(output)(
               "Case/Observable",
               Seq(caseId),
               input.listCaseObservables(inputCaseId),
               output.createCaseObservable
             )
-            jobIds <- migrateWithParent("Job", caseObservableIds, input.listJobs(inputCaseId), output.createJob)
-            jobObservableIds <- migrateWithParent(
+            jobIds <- migrateWithParent(output)("Job", caseObservableIds, input.listJobs(inputCaseId), output.createJob)
+            jobObservableIds <- migrateWithParent(output)(
               "Case/Observable/Job/Observable",
               jobIds,
               input.listJobObservables(inputCaseId),
@@ -252,30 +298,23 @@ trait MigrationOps {
             )
             caseEntitiesIds = caseTaskIds ++ caseTaskLogIds ++ caseObservableIds ++ jobIds ++ jobObservableIds :+ caseId
             actionSource    = input.listActions(caseEntitiesIds.map(_.inputId).distinct)
-            actionIds <- migrateWithParent("Action", caseEntitiesIds, actionSource, output.createAction)
+            actionIds <- migrateWithParent(output)("Action", caseEntitiesIds, actionSource, output.createAction)
             caseEntitiesAuditIds = caseEntitiesIds ++ actionIds
             auditSource          = input.listAudits(caseEntitiesAuditIds.map(_.inputId).distinct, filter)
-            _ <- migrateAudit(caseEntitiesAuditIds, auditSource, output.createAudit)
+            _ <- migrateAudit(output)(caseEntitiesAuditIds, auditSource, output.createAudit)
           } yield Some(caseId)
       }
     )
 
-//  def migrateWholeCases(input: Input, output: Output, filter: Filter)(implicit ec: ExecutionContext, mat: Materializer): Future[MigrationStats] =
-//    input
-//      .listCases(filter)
-//      .filterNot(output.caseExists)
-//      .mapAsync(1)(migrateAWholeCase(input, output, filter)) // TODO recover failed future
-//    .runFold(MigrationStats.empty)(_ + _)
-
-  def migrateAWholeAlert(input: Input, output: Output, filter: Filter)(
+  def migrateAWholeAlert[TX](input: Input, output: Output[TX], filter: Filter)(
       inputAlert: InputAlert
   )(implicit ec: ExecutionContext, mat: Materializer): Future[Unit] =
-    migrationStats("Alert")(output.createAlert(inputAlert)).fold(
+    migrationStats("Alert")(output.withTx(output.createAlert(_, inputAlert))).fold(
       _ => Future.successful(()),
       {
         case alertId @ IdMapping(inputAlertId, _) =>
           for {
-            alertObservableIds <- migrateWithParent(
+            alertObservableIds <- migrateWithParent(output)(
               "Alert/Observable",
               Seq(alertId),
               input.listAlertObservables(inputAlertId),
@@ -283,27 +322,19 @@ trait MigrationOps {
             )
             alertEntitiesIds = alertId +: alertObservableIds
             actionSource     = input.listActions(alertEntitiesIds.map(_.inputId).distinct)
-            actionIds <- migrateWithParent("Action", alertEntitiesIds, actionSource, output.createAction)
+            actionIds <- migrateWithParent(output)("Action", alertEntitiesIds, actionSource, output.createAction)
             alertEntitiesAuditIds = alertEntitiesIds ++ actionIds
             auditSource           = input.listAudits(alertEntitiesAuditIds.map(_.inputId).distinct, filter)
-            _ <- migrateAudit(alertEntitiesAuditIds, auditSource, output.createAudit)
+            _ <- migrateAudit(output)(alertEntitiesAuditIds, auditSource, output.createAudit)
           } yield ()
       }
     )
 
-//  def migrateWholeAlerts(input: Input, output: Output, filter: Filter)(implicit ec: ExecutionContext, mat: Materializer): Future[Unit] =
-//    input
-//      .listAlerts(filter)
-//      .filterNot(output.alertExists)
-//      .mapAsync(1)(migrateAWholeAlert(input, output, filter))
-//      .runWith(Sink.ignore)
-//      .map(_ => ())
-
-  def migrate(input: Input, output: Output, filter: Filter)(implicit
+  def migrate[TX](input: Input, output: Output[TX], filter: Filter)(implicit
       ec: ExecutionContext,
       mat: Materializer
   ): Future[Unit] = {
-    val pendingAlertCase: mutable.Map[String, mutable.Buffer[InputAlert]] = mutable.HashMap.empty[String, mutable.Buffer[InputAlert]]
+    val pendingAlertCase: TrieMap[String, mutable.Buffer[InputAlert]] = TrieMap.empty[String, mutable.Buffer[InputAlert]]
     def migrateCasesAndAlerts(): Future[Unit] = {
       val ordering: Ordering[Either[InputAlert, InputCase]] = new Ordering[Either[InputAlert, InputCase]] {
         def createdAt(x: Either[InputAlert, InputCase]): Long = x.fold(_.metaData.createdAt.getTime, _.metaData.createdAt.getTime)
@@ -313,8 +344,8 @@ trait MigrationOps {
 
       val caseSource = input
         .listCases(filter)
-        .collect {
-          case Success(c) if !output.caseExists(c) => List(Right(c))
+        .mapConcat {
+          case Success(c) if !output.withTx(tx => Try(output.caseExists(tx, c))).fold(_ => false, identity) => List(Right(c))
           case Failure(error) =>
             migrationStats.failure("Case", error)
             Nil
@@ -322,11 +353,10 @@ trait MigrationOps {
             migrationStats.exist("Case")
             Nil
         }
-        .mapConcat(identity)
       val alertSource = input
         .listAlerts(filter)
-        .collect {
-          case Success(a) if !output.alertExists(a) => List(Left(a))
+        .mapConcat {
+          case Success(a) if !output.withTx(tx => Try(output.alertExists(tx, a))).fold(_ => false, identity) => List(Left(a))
           case Failure(error) =>
             migrationStats.failure("Alert", error)
             Nil
@@ -334,28 +364,40 @@ trait MigrationOps {
             migrationStats.exist("Alert")
             Nil
         }
-        .mapConcat(identity)
       caseSource
         .mergeSorted(alertSource)(ordering)
+        .grouped(threadCount)
         .runFoldAsync[Seq[IdMapping]](Seq.empty) {
-          case (caseIds, Right(case0)) => migrateAWholeCase(input, output, filter)(case0).map(caseId => caseIds ++ caseId)
-          case (caseIds, Left(alert)) =>
-            alert
-              .caseId
-              .map { caseId =>
-                caseIds.fromInput(caseId).recoverWith {
-                  case error =>
-                    pendingAlertCase.getOrElseUpdate(caseId, mutable.Buffer.empty) += alert
-                    Failure(error)
-                }
+          case (caseIds, alertsCases) =>
+            val (alerts, cases) = alertsCases.partition(_.isLeft)
+            Future
+              .traverse(cases) {
+                case Right(case0) => migrateAWholeCase(input, output, filter)(case0)
+                case _            => Future.successful(None)
               }
-              .flip
-              .fold(
-                _ => Future.successful(caseIds),
-                caseId =>
-                  migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId.map(_.toString)))
-                    .map(_ => caseIds)
-              )
+              .flatMap { newCaseIds =>
+                val allCaseIds = caseIds ++ newCaseIds.flatten
+                Future
+                  .traverse(alerts) {
+                    case Left(alert) =>
+                      alert
+                        .caseId
+                        .map { caseId =>
+                          allCaseIds.fromInput(caseId).recoverWith {
+                            case error =>
+                              pendingAlertCase.getOrElseUpdate(caseId, mutable.Buffer.empty) += alert
+                              Failure(error)
+                          }
+                        }
+                        .flip
+                        .fold(
+                          _ => Future.successful(None),
+                          caseId => migrateAWholeAlert(input, output, filter)(alert.updateCaseId(caseId.map(_.toString)))
+                        )
+                    case _ => Future.successful(())
+                  }
+                  .map(_ => allCaseIds)
+              }
         }
         .flatMap { caseIds =>
           pendingAlertCase.foldLeft(Future.successful(())) {
@@ -396,19 +438,19 @@ trait MigrationOps {
     for {
       _ <- Future.fromTry(output.startMigration())
       _ = migrationStats.stage = "Migrate profiles"
-      _ <- migrate("Profile", input.listProfiles(filter), output.createProfile, output.profileExists)
+      _ <- migrate(output)("Profile", input.listProfiles(filter), output.createProfile, output.profileExists)
       _ = migrationStats.stage = "Migrate organisations"
-      _ <- migrate("Organisation", input.listOrganisations(filter), output.createOrganisation, output.organisationExists)
+      _ <- migrate(output)("Organisation", input.listOrganisations(filter), output.createOrganisation, output.organisationExists)
       _ = migrationStats.stage = "Migrate users"
-      _ <- migrate("User", input.listUsers(filter), output.createUser, output.userExists)
+      _ <- migrate(output)("User", input.listUsers(filter), output.createUser, output.userExists)
       _ = migrationStats.stage = "Migrate impact statuses"
-      _ <- migrate("ImpactStatus", input.listImpactStatus(filter), output.createImpactStatus, output.impactStatusExists)
+      _ <- migrate(output)("ImpactStatus", input.listImpactStatus(filter), output.createImpactStatus, output.impactStatusExists)
       _ = migrationStats.stage = "Migrate resolution statuses"
-      _ <- migrate("ResolutionStatus", input.listResolutionStatus(filter), output.createResolutionStatus, output.resolutionStatusExists)
+      _ <- migrate(output)("ResolutionStatus", input.listResolutionStatus(filter), output.createResolutionStatus, output.resolutionStatusExists)
       _ = migrationStats.stage = "Migrate custom fields"
-      _ <- migrate("CustomField", input.listCustomFields(filter), output.createCustomField, output.customFieldExists)
+      _ <- migrate(output)("CustomField", input.listCustomFields(filter), output.createCustomField, output.customFieldExists)
       _ = migrationStats.stage = "Migrate observable types"
-      _ <- migrate("ObservableType", input.listObservableTypes(filter), output.createObservableTypes, output.observableTypeExists)
+      _ <- migrate(output)("ObservableType", input.listObservableTypes(filter), output.createObservableTypes, output.observableTypeExists)
       _ = migrationStats.stage = "Migrate case templates"
       _ <- migrateWholeCaseTemplates(input, output, filter)
       _ = migrationStats.stage = "Migrate cases and alerts"

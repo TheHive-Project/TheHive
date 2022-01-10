@@ -2,7 +2,7 @@ package org.thp.thehive.services
 
 import io.github.nremond.SecureHash
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
-import org.thp.scalligraph.models.Database
+import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, EntityIdOrName}
@@ -12,6 +12,7 @@ import play.api.{Configuration, Logger}
 
 import java.util.Date
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 object LocalPasswordAuthSrv {
@@ -24,6 +25,8 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)
   lazy val logger: Logger                              = Logger(getClass)
+  val maxAttempts: Int                                 = ???
+  val resetAfter: Option[Duration]                     = None
   import LocalPasswordAuthSrv._
 
   def isValidPasswordLegacy(hash: String, password: String): Boolean =
@@ -37,8 +40,33 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
         false
     }
 
-  def isValidPassword(user: User, password: String): Boolean =
-    user.password.fold(false)(hash => SecureHash.validatePassword(password, hash) || isValidPasswordLegacy(hash, password))
+  private def timeElapsed(user: User with Entity): Boolean =
+    (for {
+      lastFailed <- user.lastFailed
+      ra         <- resetAfter
+    } yield (System.currentTimeMillis - lastFailed.getTime) > ra.toMillis).getOrElse(true)
+
+  def isValidPassword(user: User with Entity, password: String): Boolean =
+    //(failedAttempts < threshold) or ((now - lastFailed) > timeThreshold)
+    if (user.failedAttempts.fold(true)(_ < maxAttempts) || timeElapsed(user)) {
+      val isValid = user.password.fold(false)(hash => SecureHash.validatePassword(password, hash) || isValidPasswordLegacy(hash, password))
+      if (!isValid)
+        db.tryTransaction { implicit graph =>
+          userSrv
+            .get(user)
+            .update(_.failedAttempts, Some(user.failedAttempts.fold(1)(_ + 1)))
+            .update(_.lastFailed, Some(new Date))
+            .getOrFail("User")
+        }
+      else if (user.failedAttempts.exists(_ > 0))
+        db.tryTransaction { implicit graph =>
+          userSrv
+            .get(user)
+            .update(_.failedAttempts, Some(0))
+            .getOrFail("User")
+        }
+      isValid
+    } else false
 
   override def authenticate(username: String, password: String, organisation: Option[EntityIdOrName], code: Option[String])(implicit
       request: RequestHeader

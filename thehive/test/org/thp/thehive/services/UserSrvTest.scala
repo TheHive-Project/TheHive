@@ -20,7 +20,16 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder {
     "create and get an user by his id" in testApp { app =>
       app[Database].transaction { implicit graph =>
         app[UserSrv].createEntity(
-          User(login = "getByIdTest", name = "test user (getById)", apikey = None, locked = false, password = None, totpSecret = None)
+          User(
+            login = "getByIdTest",
+            name = "test user (getById)",
+            apikey = None,
+            locked = false,
+            password = None,
+            totpSecret = None,
+            failedAttempts = None,
+            lastFailed = None
+          )
         ) must beSuccessfulTry
           .which { user =>
             app[UserSrv].getOrFail(user._id) must beSuccessfulTry(user)
@@ -37,7 +46,9 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder {
             apikey = None,
             locked = false,
             password = None,
-            totpSecret = None
+            totpSecret = None,
+            failedAttempts = None,
+            lastFailed = None
           )
         ) must beSuccessfulTry
           .which { user =>

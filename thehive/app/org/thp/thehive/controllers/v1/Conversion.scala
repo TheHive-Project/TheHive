@@ -343,6 +343,8 @@ object Conversion {
         .withFieldConst(_.password, None)
         .withFieldConst(_.locked, false)
         .withFieldConst(_.totpSecret, None)
+        .withFieldConst(_.failedAttempts, None)
+        .withFieldConst(_.lastFailed, None)
         //      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unknown permissions are ignored
         .transform
   }
