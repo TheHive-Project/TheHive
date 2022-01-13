@@ -21,12 +21,11 @@ object LocalPasswordAuthSrv {
     SecureHash.createHash(password)
 }
 
-class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrv {
+class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv, maxAttempts: Option[Int], resetAfter: Option[Duration])
+    extends AuthSrv {
   val name                                             = "local"
   override val capabilities: Set[AuthCapability.Value] = Set(AuthCapability.changePassword, AuthCapability.setPassword)
   lazy val logger: Logger                              = Logger(getClass)
-  val maxAttempts: Int                                 = ???
-  val resetAfter: Option[Duration]                     = None
   import LocalPasswordAuthSrv._
 
   def isValidPasswordLegacy(hash: String, password: String): Boolean =
@@ -41,14 +40,16 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
     }
 
   private def timeElapsed(user: User with Entity): Boolean =
+    user.lastFailed.fold(true)(lf => resetAfter.fold(false)(ra => (System.currentTimeMillis - lf.getTime) > ra.toMillis))
+
+  private def maxAttemptsReached(user: User with Entity) =
     (for {
-      lastFailed <- user.lastFailed
-      ra         <- resetAfter
-    } yield (System.currentTimeMillis - lastFailed.getTime) > ra.toMillis).getOrElse(true)
+      ma <- maxAttempts
+      fa <- user.failedAttempts
+    } yield fa >= ma).getOrElse(false)
 
   def isValidPassword(user: User with Entity, password: String): Boolean =
-    //(failedAttempts < threshold) or ((now - lastFailed) > timeThreshold)
-    if (user.failedAttempts.fold(true)(_ < maxAttempts) || timeElapsed(user)) {
+    if (!maxAttemptsReached(user) || timeElapsed(user)) {
       val isValid = user.password.fold(false)(hash => SecureHash.validatePassword(password, hash) || isValidPasswordLegacy(hash, password))
       if (!isValid)
         db.tryTransaction { implicit graph =>
@@ -100,6 +101,10 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
 
 @Singleton
 class LocalPasswordAuthProvider @Inject() (db: Database, userSrv: UserSrv, localUserSrv: LocalUserSrv) extends AuthSrvProvider {
-  override val name: String                               = "local"
-  override def apply(config: Configuration): Try[AuthSrv] = Success(new LocalPasswordAuthSrv(db, userSrv, localUserSrv))
+  override val name: String = "local"
+  override def apply(config: Configuration): Try[AuthSrv] = {
+    val maxAttempts = config.getOptional[Int]("maxAttempts")
+    val resetAfter  = config.getOptional[Duration]("resetAfter")
+    Success(new LocalPasswordAuthSrv(db, userSrv, localUserSrv, maxAttempts, resetAfter))
+  }
 }
