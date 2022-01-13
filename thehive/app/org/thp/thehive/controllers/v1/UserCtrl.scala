@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v1
 
-import org.thp.scalligraph.auth.AuthSrv
+import org.thp.scalligraph.auth.{AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, NotFoundError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, NotFoundError, NotSupportedError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
@@ -120,6 +120,28 @@ class UserCtrl @Inject() (
         for {
           user <- userSrv.current.organisations(Permissions.manageUser).users.get(EntityIdOrName(userIdOrName)).getOrFail("User")
           _    <- userSrv.lock(user)
+        } yield Results.NoContent
+      }
+
+  lazy val localPasswordAuthSrv: Try[LocalPasswordAuthSrv] = {
+    def getLocalPasswordAuthSrv(authSrv: AuthSrv): Option[LocalPasswordAuthSrv] =
+      authSrv match {
+        case lpas: LocalPasswordAuthSrv => Some(lpas)
+        case mas: MultiAuthSrv          => mas.authProviders.flatMap(getLocalPasswordAuthSrv).headOption
+      }
+    getLocalPasswordAuthSrv(authSrv) match {
+      case Some(lpas) => Success(lpas)
+      case None       => Failure(NotSupportedError("The local password authentication is not enabled"))
+    }
+  }
+
+  def resetFailedAttempts(userIdOrName: String): Action[AnyContent] =
+    entrypoint("reset user")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          lpas <- localPasswordAuthSrv
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(EntityIdOrName(userIdOrName)).getOrFail("User")
+          _    <- lpas.resetFailedAttempts(user)
         } yield Results.NoContent
       }
 

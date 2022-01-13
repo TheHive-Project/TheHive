@@ -3,6 +3,7 @@ package org.thp.thehive.services
 import io.github.nremond.SecureHash
 import org.thp.scalligraph.auth.{AuthCapability, AuthContext, AuthSrv, AuthSrvProvider}
 import org.thp.scalligraph.models.{Database, Entity}
+import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{AuthenticationError, AuthorizationError, EntityIdOrName}
@@ -67,7 +68,15 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
             .getOrFail("User")
         }
       isValid
-    } else false
+    } else {
+      logger.warn(
+        s"Authentication of ${user.login} is refused because the max attempts is reached (${user.failedAttempts.orNull}/${maxAttempts.orNull})"
+      )
+      false
+    }
+
+  def resetFailedAttempts(user: User with Entity)(implicit graph: Graph): Try[Unit] =
+    userSrv.get(user).update(_.failedAttempts, None).update(_.lastFailed, None).getOrFail("User").map(_ => ())
 
   override def authenticate(username: String, password: String, organisation: Option[EntityIdOrName], code: Option[String])(implicit
       request: RequestHeader
