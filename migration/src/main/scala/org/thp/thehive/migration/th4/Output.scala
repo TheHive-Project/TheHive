@@ -22,7 +22,7 @@ import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services._
 import org.thp.thehive.{migration, ClusterSetup}
-import play.api.cache.SyncCacheApi
+import play.api.cache.{DefaultSyncCacheApi, SyncCacheApi}
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
 import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
@@ -31,6 +31,7 @@ import play.api.{Configuration, Environment, Logger}
 
 import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
@@ -55,6 +56,22 @@ object Output {
               bindActor[DummyActor]("cortex-actor")
               bindActor[DummyActor]("integrity-check-actor")
               bind[ActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
+              val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[GenIntegrityCheckOps](binder)
+              integrityCheckOpsBindings.addBinding.to[AlertIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[CaseIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[CaseTemplateIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[CustomFieldIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[DataIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[ImpactStatusIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[LogIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[ObservableIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[ObservableTypeIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[OrganisationIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[ResolutionStatusIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[TagIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[TaskIntegrityCheckOps]
+              integrityCheckOpsBindings.addBinding.to[UserIntegrityCheckOps]
 
               val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
               schemaBindings.addBinding.to[TheHiveSchemaDefinition]
@@ -114,7 +131,8 @@ class Output @Inject() (
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
     db: Database,
-    cache: SyncCacheApi
+    cache: SyncCacheApi,
+    checks: immutable.Set[GenIntegrityCheckOps]
 ) extends migration.Output[Graph] {
   lazy val logger: Logger      = Logger(getClass)
   val resumeMigration: Boolean = configuration.get[Boolean]("resume")
@@ -171,8 +189,39 @@ class Output @Inject() (
   }
 
   override def endMigration(): Try[Unit] = {
+    /* free memory */
+    cache match {
+      case c: DefaultSyncCacheApi => c.cacheApi.removeAll()
+      case _                      =>
+    }
+    profiles = null
+    organisations = null
+    users = null
+    impactStatuses = null
+    resolutionStatuses = null
+    observableTypes = null
+    customFields = null
+    caseTemplates = null
+
+    import MapMerger._
     db.addSchemaIndexes(theHiveSchema)
       .flatMap(_ => db.addSchemaIndexes(cortexSchema))
+      .foreach { _ =>
+        implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+        checks.foreach { c =>
+          db.tryTransaction { implicit graph =>
+            logger.info(s"Running check on ${c.name} ...")
+            c.initialCheck()
+            val stats = c.duplicationCheck() <+> c.globalCheck()
+            val statsStr = stats
+              .collect { case (k, v) if v != 0 => s"$k:$v" }
+              .mkString(" ")
+            if (statsStr.isEmpty) logger.info(s"Check on ${c.name}: no change needed")
+            else logger.info(s"Check on ${c.name}: $statsStr")
+            Success(())
+          }
+        }
+      }
     Try(db.close())
   }
 
