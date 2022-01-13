@@ -32,6 +32,7 @@ import play.api.{Configuration, Environment, Logger}
 import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
 object Output {
@@ -123,9 +124,13 @@ class Output @Inject() (
       throw BadConfigurationError("Default user domain is empty in configuration. Please add `auth.defaultUserDomain` in your configuration file.")
     )
   val caseNumberShift: Int = configuration.get[Int]("caseNumberShift")
-  val observableDataIsIndexed: Boolean = db match {
-    case jdb: JanusDatabase => jdb.fieldIsIndexed("data")
-    case _                  => false
+  val observableDataIsIndexed: Boolean = {
+    val v = db match {
+      case jdb: JanusDatabase => jdb.fieldIsIndexed("data")
+      case _                  => false
+    }
+    logger.info(s"The field data is ${if (v) "" else "not"} indexed")
+    v
   }
   lazy val observableSrv: ObservableSrv                                     = observableSrvProvider.get
   private var profiles: Map[String, Profile with Entity]                    = Map.empty
@@ -160,7 +165,7 @@ class Output @Inject() (
         impactStatuses = ImpactStatus.initialValues.flatMap(p => impactStatusSrv.createEntity(p).map(p.value -> _).toOption).toMap
         observableTypes = ObservableType.initialValues.flatMap(p => observableTypeSrv.createEntity(p).map(p.name -> _).toOption).toMap
         organisations = Organisation.initialValues.flatMap(p => organisationSrv.createEntity(p).map(p.name -> _).toOption).toMap
-        users = User.initialValues.flatMap(p => userSrv.createEntity(p).map(p.name -> _).toOption).toMap
+        users = User.initialValues.flatMap(p => userSrv.createEntity(p).map(p.login -> _).toOption).toMap
         Success(())
       }
   }
@@ -175,7 +180,7 @@ class Output @Inject() (
     def logFailure(message: String): Unit = t.failed.foreach(error => logger.warn(s"$message: $error"))
   }
 
-  def updateMetaData(entity: Entity, metaData: MetaData)(implicit graph: Graph): Unit = {
+  private def updateMetaData(entity: Entity, metaData: MetaData)(implicit graph: Graph): Unit = {
     val vertex = graph.VV(entity._id).head
     UMapping.date.setProperty(vertex, "_createdAt", metaData.createdAt)
     UMapping.date.optional.setProperty(vertex, "_updatedAt", metaData.updatedAt)
@@ -183,17 +188,15 @@ class Output @Inject() (
 
   private def withAuthContext[R](userId: String)(body: AuthContext => R): R = {
     val authContext =
-      if (userId.startsWith("init@")) LocalUserSrv.getSystemAuthContext
+      if (userId.startsWith("init@") || userId == "init") LocalUserSrv.getSystemAuthContext
       else if (userId.contains('@')) AuthContextImpl(userId, userId, EntityName("admin"), "mig-request", Permissions.all)
       else AuthContextImpl(s"$userId@$defaultUserDomain", s"$userId@$defaultUserDomain", EntityName("admin"), "mig-request", Permissions.all)
     body(authContext)
   }
 
-  def getTag(tagName: String, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    cache.getOrElseUpdate(s"tag--$tagName") {
-      cache.get(s"tag-$organisationId-$tagName").getOrElse {
-        tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour))
-      }
+  private def getTag(tagName: String, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+    cache.getOrElseUpdate(s"tag-$organisationId-$tagName", 10.minutes) {
+      tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour))
     }
 
   override def withTx[R](body: Graph => Try[R]): Try[R] = db.tryTransaction(body)
@@ -208,7 +211,7 @@ class Output @Inject() (
 
   override def createOrganisation(graph: Graph, inputOrganisation: InputOrganisation): Try[IdMapping] =
     withAuthContext(inputOrganisation.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create organisation ${inputOrganisation.organisation.name}")
       organisationSrv.create(inputOrganisation.organisation).map { o =>
         updateMetaData(o, inputOrganisation.metaData)
@@ -235,7 +238,7 @@ class Output @Inject() (
 
   override def createUser(graph: Graph, inputUser: InputUser): Try[IdMapping] =
     withAuthContext(inputUser.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create user ${inputUser.user.login}")
       userSrv.checkUser(inputUser.user).flatMap(userSrv.createEntity).map { createdUser =>
         updateMetaData(createdUser, inputUser.metaData)
@@ -270,7 +273,7 @@ class Output @Inject() (
 
   override def createCustomField(graph: Graph, inputCustomField: InputCustomField): Try[IdMapping] =
     withAuthContext(inputCustomField.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create custom field ${inputCustomField.customField.name}")
       customFieldSrv.create(inputCustomField.customField).map { cf =>
         updateMetaData(cf, inputCustomField.metaData)
@@ -282,7 +285,7 @@ class Output @Inject() (
   override def observableTypeExists(graph: Graph, inputObservableType: InputObservableType): Boolean =
     observableTypes.contains(inputObservableType.observableType.name)
 
-  def getObservableType(typeName: String)(implicit graph: Graph, authContext: AuthContext): Try[ObservableType with Entity] =
+  private def getObservableType(typeName: String)(implicit graph: Graph, authContext: AuthContext): Try[ObservableType with Entity] =
     observableTypes
       .get(typeName)
       .fold[Try[ObservableType with Entity]] {
@@ -294,7 +297,7 @@ class Output @Inject() (
 
   override def createObservableTypes(graph: Graph, inputObservableType: InputObservableType): Try[IdMapping] =
     withAuthContext(inputObservableType.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create observable types ${inputObservableType.observableType.name}")
       observableTypeSrv.create(inputObservableType.observableType).map { ot =>
         updateMetaData(ot, inputObservableType.metaData)
@@ -317,7 +320,7 @@ class Output @Inject() (
 
   override def createProfile(graph: Graph, inputProfile: InputProfile): Try[IdMapping] =
     withAuthContext(inputProfile.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create profile ${inputProfile.profile.name}")
       profileSrv.create(inputProfile.profile).map { profile =>
         updateMetaData(profile, inputProfile.metaData)
@@ -341,7 +344,7 @@ class Output @Inject() (
 
   override def createImpactStatus(graph: Graph, inputImpactStatus: InputImpactStatus): Try[IdMapping] =
     withAuthContext(inputImpactStatus.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create impact status ${inputImpactStatus.impactStatus.value}")
       impactStatusSrv.create(inputImpactStatus.impactStatus).map { status =>
         updateMetaData(status, inputImpactStatus.metaData)
@@ -365,7 +368,7 @@ class Output @Inject() (
 
   override def createResolutionStatus(graph: Graph, inputResolutionStatus: InputResolutionStatus): Try[IdMapping] =
     withAuthContext(inputResolutionStatus.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create resolution status ${inputResolutionStatus.resolutionStatus.value}")
       resolutionStatusSrv
         .create(inputResolutionStatus.resolutionStatus)
@@ -383,7 +386,7 @@ class Output @Inject() (
 
   override def createCaseTemplate(graph: Graph, inputCaseTemplate: InputCaseTemplate): Try[IdMapping] =
     withAuthContext(inputCaseTemplate.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create case template ${inputCaseTemplate.caseTemplate.name}")
       for {
         organisation        <- getOrganisation(inputCaseTemplate.organisation)
@@ -411,7 +414,7 @@ class Output @Inject() (
 
   override def createCaseTemplateTask(graph: Graph, caseTemplateId: EntityId, inputTask: InputTask): Try[IdMapping] =
     withAuthContext(inputTask.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create task ${inputTask.task.title} in case template $caseTemplateId")
       for {
         caseTemplate <- caseTemplateSrv.getOrFail(caseTemplateId)
@@ -431,7 +434,7 @@ class Output @Inject() (
 
   override def createCase(graph: Graph, inputCase: InputCase): Try[IdMapping] =
     withAuthContext(inputCase.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create case #${inputCase.`case`.number + caseNumberShift}")
       val organisationIds = inputCase
         .organisations
@@ -528,7 +531,7 @@ class Output @Inject() (
 
   override def createCaseTask(graph: Graph, caseId: EntityId, inputTask: InputTask): Try[IdMapping] =
     withAuthContext(inputTask.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create task ${inputTask.task.title} in case $caseId")
       val assignee      = inputTask.owner.flatMap(getUser(_).toOption)
       val organisations = inputTask.organisations.flatMap(getOrganisation(_).toOption)
@@ -542,7 +545,7 @@ class Output @Inject() (
 
   override def createCaseTaskLog(graph: Graph, taskId: EntityId, inputLog: InputLog): Try[IdMapping] =
     withAuthContext(inputLog.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       for {
         task <- taskSrv.getOrFail(taskId)
         _ = logger.debug(s"Create log in task ${task.title}")
@@ -623,7 +626,7 @@ class Output @Inject() (
 
   override def createCaseObservable(graph: Graph, caseId: EntityId, inputObservable: InputObservable): Try[IdMapping] =
     withAuthContext(inputObservable.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
       for {
         organisations  <- inputObservable.organisations.toTry(getOrganisation)
@@ -637,7 +640,7 @@ class Output @Inject() (
 
   override def createJob(graph: Graph, observableId: EntityId, inputJob: InputJob): Try[IdMapping] =
     withAuthContext(inputJob.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create job ${inputJob.job.cortexId}:${inputJob.job.workerName}:${inputJob.job.cortexJobId}")
       for {
         observable <- observableSrv.getOrFail(observableId)
@@ -648,7 +651,7 @@ class Output @Inject() (
 
   override def createJobObservable(graph: Graph, jobId: EntityId, inputObservable: InputObservable): Try[IdMapping] =
     withAuthContext(inputObservable.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in job $jobId")
       for {
         organisations <- inputObservable.organisations.toTry(getOrganisation)
@@ -667,7 +670,7 @@ class Output @Inject() (
 
   override def createAlert(graph: Graph, inputAlert: InputAlert): Try[IdMapping] =
     withAuthContext(inputAlert.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create alert ${inputAlert.alert.`type`}:${inputAlert.alert.source}:${inputAlert.alert.sourceRef}")
       val `case` = inputAlert.caseId.flatMap(c => getCase(EntityId.read(c)).toOption)
 
@@ -700,9 +703,16 @@ class Output @Inject() (
       } yield IdMapping(inputAlert.metaData.id, createdAlert._id)
     }
 
+  override def linkAlertToCase(graph: Graph, alertId: EntityId, caseId: EntityId): Try[Unit] =
+    for {
+      c <- getCase(caseId)(graph)
+      a <- alertSrv.getByIds(alertId)(graph).getOrFail("Alert")
+      _ <- alertSrv.alertCaseSrv.create(AlertCase(), a, c)(graph, LocalUserSrv.getSystemAuthContext)
+    } yield ()
+
   override def createAlertObservable(graph: Graph, alertId: EntityId, inputObservable: InputObservable): Try[IdMapping] =
     withAuthContext(inputObservable.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
       for {
         alert      <- alertSrv.getOrFail(alertId)
@@ -725,7 +735,7 @@ class Output @Inject() (
 
   override def createAction(graph: Graph, objectId: EntityId, inputAction: InputAction): Try[IdMapping] =
     withAuthContext(inputAction.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(
         s"Create action ${inputAction.action.cortexId}:${inputAction.action.workerName}:${inputAction.action.cortexJobId} for ${inputAction.objectType} $objectId"
       )
@@ -738,7 +748,7 @@ class Output @Inject() (
 
   override def createAudit(graph: Graph, contextId: EntityId, inputAudit: InputAudit): Try[Unit] =
     withAuthContext(inputAudit.metaData.createdBy) { implicit authContext =>
-      implicit val g = graph
+      implicit val g: Graph = graph
       logger.debug(s"Create audit ${inputAudit.audit.action} on ${inputAudit.audit.objectType} ${inputAudit.audit.objectId}")
       for {
         obj <- (for {

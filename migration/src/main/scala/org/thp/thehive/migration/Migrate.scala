@@ -11,7 +11,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 
 object Migrate extends App with MigrationOps {
   val defaultLoggerConfigFile = "/etc/thehive/logback-migration.xml"
@@ -205,11 +205,17 @@ object Migrate extends App with MigrationOps {
     implicit val mat: Materializer        = Materializer(actorSystem)
     transactionPageSize = config.getInt("transactionPageSize")
     threadCount = config.getInt("threadCount")
+    var stop = false
 
     try {
-      val timer = actorSystem.scheduler.scheduleAtFixedRate(10.seconds, 10.seconds) { () =>
-        logger.info(migrationStats.showStats())
-        migrationStats.flush()
+      Future {
+        blocking {
+          while (!stop) {
+            logger.info(migrationStats.showStats())
+            migrationStats.flush()
+            Thread.sleep(10000) // 10 seconds
+          }
+        }
       }
 
       val returnStatus =
@@ -219,8 +225,7 @@ object Migrate extends App with MigrationOps {
           val filter = Filter.fromConfig(config.getConfig("input.filter"))
 
           val process = migrate(input, output, filter)
-
-          Await.result(process, Duration.Inf)
+          blocking(Await.result(process, Duration.Inf))
           logger.info("Migration finished")
           0
         } catch {
@@ -228,7 +233,7 @@ object Migrate extends App with MigrationOps {
             logger.error(s"Migration failed", e)
             1
         } finally {
-          timer.cancel()
+          stop = true
           Await.ready(actorSystem.terminate(), 1.minute)
           ()
         }

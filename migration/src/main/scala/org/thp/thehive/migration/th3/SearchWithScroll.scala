@@ -30,56 +30,56 @@ class SearchWithScroll(client: ElasticClient, docType: String, query: JsObject, 
     }
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) {
-      var processed: Long               = 0
       val queue: mutable.Queue[JsValue] = mutable.Queue.empty
-      var scrollId: Future[String]      = firstResults.map(j => (j \ "_scroll_id").as[String])
+      var scrollId: Option[String]      = None
       var firstResultProcessed          = false
 
       setHandler(
         out,
         new OutHandler {
 
-          def pushNextHit(): Unit = {
-            push(out, queue.dequeue())
-            processed += 1
-          }
+          def firstCallback: AsyncCallback[Try[JsValue]] =
+            getAsyncCallback[Try[JsValue]] {
+              case Success(searchResponse) =>
+                val hits = readHits(searchResponse)
+                if (hits.isEmpty)
+                  completeStage()
+                else {
+                  queue ++= hits
+                  scrollId = (searchResponse \ "_scroll_id").asOpt[String].orElse(scrollId)
+                  firstResultProcessed = true
+                  push(out, queue.dequeue())
+                }
+              case Failure(error) =>
+                logger.warn("Search error", error)
+                failStage(error)
+            }
 
-          val firstCallback: AsyncCallback[Try[JsValue]] = getAsyncCallback[Try[JsValue]] {
-            case Success(searchResponse) =>
-              queue ++= readHits(searchResponse)
-              firstResultProcessed = true
-              onPull()
-            case Failure(error) =>
-              logger.warn("Search error", error)
-              failStage(error)
-          }
+          def callback: AsyncCallback[Try[JsValue]] =
+            getAsyncCallback[Try[JsValue]] {
+              case Success(searchResponse) =>
+                scrollId = (searchResponse \ "_scroll_id").asOpt[String].orElse(scrollId)
+                if ((searchResponse \ "timed_out").as[Boolean]) {
+                  logger.warn(s"Search timeout")
+                  failStage(SearchError(s"Request terminated early or timed out ($docType)"))
+                } else {
+                  val hits = readHits(searchResponse)
+                  if (hits.isEmpty)
+                    completeStage()
+                  else {
+                    queue ++= hits
+                    push(out, queue.dequeue())
+                  }
+                }
+              case Failure(error) =>
+                logger.warn(s"Search error", error)
+                failStage(SearchError(s"Request terminated early or timed out"))
+            }
 
           override def onPull(): Unit =
             if (firstResultProcessed)
-              if (queue.isEmpty) {
-                val callback = getAsyncCallback[Try[JsValue]] {
-                  case Success(searchResponse) =>
-                    if ((searchResponse \ "timed_out").as[Boolean]) {
-                      logger.warn("Search timeout")
-                      failStage(SearchError("Request terminated early or timed out"))
-                    } else {
-                      val hits = readHits(searchResponse)
-                      if (hits.isEmpty) completeStage()
-                      else {
-                        queue ++= hits
-                        pushNextHit()
-                      }
-                    }
-                  case Failure(error) =>
-                    logger.warn("Search error", error)
-                    failStage(SearchError("Request terminated early or timed out"))
-                }
-                val futureSearchResponse = scrollId
-                  .flatMap(s => client.scroll(s, keepAliveStr))
-                scrollId = futureSearchResponse.map(j => (j \ "_scroll_id").as[String])
-                futureSearchResponse.onComplete(callback.invoke)
-              } else
-                pushNextHit()
+              if (queue.isEmpty) client.scroll(scrollId.get, keepAliveStr).onComplete(callback.invoke)
+              else push(out, queue.dequeue())
             else firstResults.onComplete(firstCallback.invoke)
         }
       )

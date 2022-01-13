@@ -48,17 +48,15 @@ object Filter {
               new ParseException(s"Unparseable date: $s\nExpected format is ${dateFormats.map(_.toPattern).mkString("\"", "\" or \"", "\"")}", 0)
             )
         }
-    def readDate(dateConfigName: String, ageConfigName: String) =
+    def readDate(dateConfigName: String, ageConfigName: String): Option[Long] =
       Try(config.getString(dateConfigName))
         .flatMap(parseDate)
         .map(d => d.getTime)
-        .toOption
         .orElse {
-          Try {
-            val age = config.getDuration(ageConfigName)
-            if (age.isZero) None else Some(now - age.getSeconds * 1000)
-          }.toOption.flatten
+          Try(config.getDuration(ageConfigName))
+            .map(d => now - d.getSeconds * 1000)
         }
+        .toOption
     val caseFromDate    = readDate("caseFromDate", "maxCaseAge")
     val caseUntilDate   = readDate("caseUntilDate", "minCaseAge")
     val caseFromNumber  = Try(config.getInt("caseFromNumber")).toOption

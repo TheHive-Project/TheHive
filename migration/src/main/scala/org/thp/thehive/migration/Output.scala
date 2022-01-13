@@ -35,6 +35,7 @@ trait Output[TX] {
   def createCaseTaskLog(tx: TX, taskId: EntityId, inputLog: InputLog): Try[IdMapping]
   def alertExists(tx: TX, inputAlert: InputAlert): Boolean
   def createAlert(tx: TX, inputAlert: InputAlert): Try[IdMapping]
+  def linkAlertToCase(tx: TX, alertId: EntityId, caseId: EntityId): Try[Unit]
   def createAlertObservable(tx: TX, alertId: EntityId, inputObservable: InputObservable): Try[IdMapping]
   def createAction(tx: TX, objectId: EntityId, inputAction: InputAction): Try[IdMapping]
   def createAudit(tx: TX, contextId: EntityId, inputAudit: InputAudit): Try[Unit]
