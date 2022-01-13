@@ -11,10 +11,10 @@ import scala.util.{Success, Try}
 @Singleton
 class CaseShareProvider @Inject() extends TriggerProvider {
   override val name: String                               = "CaseShared"
-  override def apply(config: Configuration): Try[Trigger] = Success(new CaseShared())
+  override def apply(config: Configuration): Try[Trigger] = Success(CaseShared)
 }
 
-class CaseShared() extends Trigger {
+object CaseShared extends Trigger {
   override val name: String = "CaseShared"
 
   override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =

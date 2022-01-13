@@ -339,7 +339,7 @@ object AuditOps {
           _.by
             .by(_.context.entityMap.option)
             .by(_.`object`.entityMap.option)
-            .by(_.organisation.fold)
+            .by(_.organisation.dedup.fold)
         )
 
     def richAudit: Traversal[RichAudit, JMap[String, Any], Converter[RichAudit, JMap[String, Any]]] =

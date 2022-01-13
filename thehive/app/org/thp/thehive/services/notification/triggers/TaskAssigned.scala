@@ -37,4 +37,6 @@ class TaskAssigned(taskSrv: TaskSrv) extends Trigger {
 
   def taskAssignee(taskId: EntityId, userId: EntityId)(implicit graph: Graph): Option[User with Entity] =
     taskSrv.getByIds(taskId).assignee.get(userId).headOption
+
+  override def toString: String = "TaskAssigned"
 }
