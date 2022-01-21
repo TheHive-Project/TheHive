@@ -37,10 +37,23 @@ class UserCtrl @Inject() (
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
     implicit val db: Database
-) extends QueryableCtrl {
+) extends QueryableCtrl
+    with UserRenderer {
 
   override val entityName: String                 = "user"
   override val publicProperties: PublicProperties = properties.user
+  lazy val localPasswordAuthSrv: Try[LocalPasswordAuthSrv] = {
+    def getLocalPasswordAuthSrv(authSrv: AuthSrv): Option[LocalPasswordAuthSrv] =
+      authSrv match {
+        case lpas: LocalPasswordAuthSrv => Some(lpas)
+        case mas: MultiAuthSrv          => mas.authProviders.flatMap(getLocalPasswordAuthSrv).headOption
+        case _                          => None
+      }
+    getLocalPasswordAuthSrv(authSrv) match {
+      case Some(lpas) => Success(lpas)
+      case None       => Failure(NotSupportedError("The local password authentication is not enabled"))
+    }
+  }
 
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
@@ -53,12 +66,32 @@ class UserCtrl @Inject() (
   override def pageQuery(limitedCountThreshold: Long): ParamQuery[UserOutputParam] =
     Query.withParam[UserOutputParam, Traversal.V[User], IteratorOutput](
       "page",
-      (params, userSteps, authContext) =>
-        params
-          .organisation
-          .fold(userSteps.richUser(authContext))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
-          .page(params.from, params.to, params.extraData.contains("total"), limitedCountThreshold)
+      {
+        case (UserOutputParam(from, to, extraData, organisation), userSteps, authContext) =>
+          userSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold) {
+            _.richUserWithCustomRenderer(
+              organisation.fold(authContext.organisation)(EntityIdOrName(_)),
+              userStatsRenderer(extraData - "Total", localPasswordAuthSrv.toOption)(authContext)
+            )(authContext)
+          }
+      }
     )
+//
+//            authContext
+//          }))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
+//          .page(params.from, params.to, params.extraData.contains("total"), limitedCountThreshold)
+//    )
+//  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
+//    Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
+//      "page",
+//      {
+//        case (OutputParam(from, to, extraData), caseSteps, authContext) =>
+//          caseSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold) {
+//            _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext))(authContext)
+//          }
+//      }
+//    )
+
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
 
@@ -122,18 +155,6 @@ class UserCtrl @Inject() (
           _    <- userSrv.lock(user)
         } yield Results.NoContent
       }
-
-  lazy val localPasswordAuthSrv: Try[LocalPasswordAuthSrv] = {
-    def getLocalPasswordAuthSrv(authSrv: AuthSrv): Option[LocalPasswordAuthSrv] =
-      authSrv match {
-        case lpas: LocalPasswordAuthSrv => Some(lpas)
-        case mas: MultiAuthSrv          => mas.authProviders.flatMap(getLocalPasswordAuthSrv).headOption
-      }
-    getLocalPasswordAuthSrv(authSrv) match {
-      case Some(lpas) => Success(lpas)
-      case None       => Failure(NotSupportedError("The local password authentication is not enabled"))
-    }
-  }
 
   def resetFailedAttempts(userIdOrName: String): Action[AnyContent] =
     entrypoint("reset user")
