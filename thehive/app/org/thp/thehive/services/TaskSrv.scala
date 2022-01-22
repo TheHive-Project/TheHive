@@ -258,39 +258,44 @@ class TaskIntegrityCheckOps @Inject() (val db: Database, val service: TaskSrv, o
   override def resolve(entities: Seq[Task with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
   override def globalCheck(): Map[String, Int] =
-    db.tryTransaction { implicit graph =>
-      Try {
-        service
-          .startTraversal
-          .project(
-            _.by
-              .by(_.unionFlat(_.`case`._id, _.caseTemplate._id).fold)
-              .by(_.unionFlat(_.organisations._id, _.caseTemplate.organisation._id).fold)
-          )
-          .toIterator
-          .map {
-            case (task, relatedIds, organisationIds) =>
-              val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
-                .check(task, task.organisationIds, organisationIds)
-
-              val removeOrphan: OrphanStrategy[Task, EntityId] = { (_, entity) =>
-                service.get(entity).remove()
-                Map("Task-relatedId-removeOrphan" -> 1)
-              }
-
-              val relatedStats = new SingleLinkChecker[Product, EntityId, EntityId](
-                orphanStrategy = removeOrphan,
-                setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
-                entitySelector = _ => EntitySelector.firstCreatedEntity,
-                removeLink = (_, _) => (),
-                getLink = id => graph.VV(id).entity.head,
-                Some(_)
-              ).check(task, task.relatedId, relatedIds)
-
-              orgStats <+> relatedStats
+    service
+      .pagedTraversalIds(db, 100) { ids =>
+        db.tryTransaction { implicit graph =>
+          val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
+          val removeOrphan: OrphanStrategy[Task, EntityId] = { (_, entity) =>
+            service.get(entity).remove()
+            Map("Task-relatedId-removeOrphan" -> 1)
           }
-          .reduceOption(_ <+> _)
-          .getOrElse(Map.empty)
+          val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
+            orphanStrategy = removeOrphan,
+            setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
+            entitySelector = _ => EntitySelector.firstCreatedEntity,
+            removeLink = (_, _) => (),
+            getLink = id => graph.VV(id).entity.head,
+            Some(_)
+          )
+
+          Try {
+            service
+              .getByIds(ids: _*)
+              .project(
+                _.by
+                  .by(_.unionFlat(_.`case`._id, _.caseTemplate._id).fold)
+                  .by(_.unionFlat(_.organisations._id, _.caseTemplate.organisation._id).fold)
+              )
+              .toIterator
+              .map {
+                case (task, relatedIds, organisationIds) =>
+                  val orgStats     = orgCheck.check(task, task.organisationIds, organisationIds)
+                  val relatedStats = relatedCheck.check(task, task.relatedId, relatedIds)
+
+                  orgStats <+> relatedStats
+              }
+              .reduceOption(_ <+> _)
+              .getOrElse(Map.empty)
+          }
+        }.getOrElse(Map("globalFailure" -> 1))
       }
-    }.getOrElse(Map("globalFailure" -> 1))
+      .reduceOption(_ <+> _)
+      .getOrElse(Map.empty)
 }

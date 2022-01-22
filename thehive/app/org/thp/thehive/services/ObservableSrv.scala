@@ -14,7 +14,6 @@ import org.thp.scalligraph.utils.Hash
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
 import org.thp.thehive.models._
 import org.thp.thehive.services.AlertOps._
-import org.thp.thehive.services.DataOps._
 import org.thp.thehive.services.ObservableOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
@@ -22,6 +21,7 @@ import play.api.libs.json.{JsObject, JsString, Json}
 
 import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -428,56 +428,48 @@ class ObservableIntegrityCheckOps @Inject() (
             singleOptionLink[Data, String]("data", d => dataSrv.create(Data(d, None)).get, _.data)(_.outEdge[ObservableData])
           }
 
-          val processStats = new ProcessStats
+          Try {
+            service
+              .getByIds(ids: _*)
+              .project(
+                _.by
+                  .by(_.organisations._id.fold)
+                  .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
+                  .by(_.data.value(_.data).fold)
+                  .by(_.tags.fold)
+              )
+              .toIterator
+              .map {
+                case (observable, organisationIds, relatedIds, data, tags) =>
+                  val orgStats            = orgCheck.check(observable, observable.organisationIds, organisationIds)
+                  val relatedStats        = relatedCheck.check(observable, observable.relatedId, relatedIds)
+                  val observableDataStats = observableDataCheck.check(observable, observable.data, data)
+                  val tagStats = {
+                    val observableTagSet = observable.tags.toSet
+                    val tagSet           = tags.map(_.toString).toSet
+                    if (observableTagSet == tagSet) Map.empty[String, Int]
+                    else {
+                      implicit val authContext: AuthContext =
+                        LocalUserSrv.getSystemAuthContext.changeOrganisation(observable.organisationIds.head, Permissions.all)
 
-          processStats
-            .showStats(10.seconds, msg => logger.debug(s"observable integrity checks: $msg")) {
-              Try {
-                service
-                  .getByIds(ids: _*)
-                  .project(
-                    _.by
-                      .by(_.organisations._id.fold)
-                      .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
-                      .by(_.data.value(_.data).fold)
-                      .by(_.tags.fold)
-                  )
-                  .toIterator
-                  .map {
-                    case (observable, organisationIds, relatedIds, data, tags) =>
-                      processStats("all-checks") {
-                        //                    logger.debug(s"processing integrity check of ${observable.dataType}:${observable.data} (${observable.tags.mkString(",")}")
-                        val orgStats            = processStats("org-checks")(orgCheck.check(observable, observable.organisationIds, organisationIds))
-                        val relatedStats        = processStats("related-checks")(relatedCheck.check(observable, observable.relatedId, relatedIds))
-                        val observableDataStats = processStats("data-checks")(observableDataCheck.check(observable, observable.data, data))
-                        val tagStats = processStats("tag-checks") {
-                          val observableTagSet = observable.tags.toSet
-                          val tagSet           = tags.map(_.toString).toSet
-                          if (observableTagSet == tagSet) Map.empty[String, Int]
-                          else {
-                            implicit val authContext: AuthContext =
-                              LocalUserSrv.getSystemAuthContext.changeOrganisation(observable.organisationIds.head, Permissions.all)
-
-                            val extraTagField = observableTagSet -- tagSet
-                            val extraTagLink  = tagSet -- observableTagSet
-                            extraTagField
-                              .flatMap(tagSrv.getOrCreate(_).toOption)
-                              .foreach(service.observableTagSrv.create(ObservableTag(), observable, _))
-                            service.get(observable).update(_.tags, observable.tags ++ extraTagLink).iterate()
-                            Map(
-                              "observable-tags-extraField" -> extraTagField.size,
-                              "observable-tags-extraLink"  -> extraTagLink.size
-                            )
-                          }
-                        }
-
-                        orgStats <+> relatedStats <+> observableDataStats <+> tagStats
-                      }
+                      val extraTagField = observableTagSet -- tagSet
+                      val extraTagLink  = tagSet -- observableTagSet
+                      extraTagField
+                        .flatMap(tagSrv.getOrCreate(_).toOption)
+                        .foreach(service.observableTagSrv.create(ObservableTag(), observable, _))
+                      service.get(observable).update(_.tags, observable.tags ++ extraTagLink).iterate()
+                      Map(
+                        "observable-tags-extraField" -> extraTagField.size,
+                        "observable-tags-extraLink"  -> extraTagLink.size
+                      )
+                    }
                   }
-                  .reduceOption(_ <+> _)
-                  .getOrElse(Map.empty)
+
+                  orgStats <+> relatedStats <+> observableDataStats <+> tagStats
               }
-            }
+              .reduceOption(_ <+> _)
+              .getOrElse(Map.empty)
+          }
         }.getOrElse(Map("globalFailure" -> 1))
       }
       .reduceOption(_ <+> _)
