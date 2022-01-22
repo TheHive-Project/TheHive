@@ -40,10 +40,17 @@ class LocalPasswordAuthSrv(db: Database, userSrv: UserSrv, localUserSrv: LocalUs
         false
     }
 
-  private def timeElapsed(user: User with Entity): Boolean =
+  def timeElapsed(user: User with Entity): Boolean =
     user.lastFailed.fold(true)(lf => resetAfter.fold(false)(ra => (System.currentTimeMillis - lf.getTime) > ra.toMillis))
 
-  private def maxAttemptsReached(user: User with Entity) =
+  def lockedUntil(user: User with Entity): Option[Date] =
+    if (maxAttemptsReached(user))
+      user.lastFailed.map { lf =>
+        resetAfter.fold(new Date(Long.MaxValue))(ra => new Date(ra.toMillis + lf.getTime))
+      }
+    else None
+
+  def maxAttemptsReached(user: User with Entity) =
     (for {
       ma <- maxAttempts
       fa <- user.failedAttempts
