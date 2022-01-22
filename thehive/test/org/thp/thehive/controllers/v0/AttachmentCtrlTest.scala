@@ -19,7 +19,7 @@ class AttachmentCtrlTest extends PlaySpecification with TestAppBuilder {
       .withHeaders("user" -> "certuser@thehive.local")
     val result = app[AttachmentCtrl].download("810384dd79918958607f6a6e4c90f738c278c847b408864ea7ce84ee1970bcdf", None)(request)
 
-    status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+    status(result)                        must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
     header("Content-Disposition", result) must beSome("attachment; filename=\"810384dd79918958607f6a6e4c90f738c278c847b408864ea7ce84ee1970bcdf\"")
   }
 
@@ -31,7 +31,7 @@ class AttachmentCtrlTest extends PlaySpecification with TestAppBuilder {
       .withHeaders("user" -> "certuser@thehive.local")
     val result = app[AttachmentCtrl].downloadZip("810384dd79918958607f6a6e4c90f738c278c847b408864ea7ce84ee1970bcdf", Some("lol"))(request)
 
-    status(result) must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
+    status(result)                        must equalTo(200).updateMessage(s => s"$s\n${contentAsString(result)}")
     header("Content-Disposition", result) must beSome("attachment; filename=\"lol.zip\"")
   }
 }

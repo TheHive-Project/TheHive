@@ -10,7 +10,7 @@ import scopt.OParser
 import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 
 object Migrate extends App with MigrationOps {
@@ -56,7 +56,7 @@ object Migrate extends App with MigrationOps {
       opt[Unit]('d', "drop-database")
         .action((_, c) => addConfig(c, "output.dropDatabase", true))
         .text("Drop TheHive4 database before migration"),
-      opt[Boolean]('r', "resume")
+      opt[Unit]('r', "resume")
         .action((_, c) => addConfig(c, "output.resume", true))
         .text("Resume migration (or migrate on existing database)"),
       opt[String]('m', "main-organisation")
@@ -224,8 +224,7 @@ object Migrate extends App with MigrationOps {
           val output = th4.Output(Configuration(config.getConfig("output").withFallback(config)))
           val filter = Filter.fromConfig(config.getConfig("input.filter"))
 
-          val process = migrate(input, output, filter)
-          blocking(Await.result(process, Duration.Inf))
+          migrate(input, output, filter).get
           logger.info("Migration finished")
           0
         } catch {

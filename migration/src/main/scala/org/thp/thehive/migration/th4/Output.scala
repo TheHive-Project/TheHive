@@ -22,7 +22,7 @@ import org.thp.thehive.services.AlertOps._
 import org.thp.thehive.services.CaseOps._
 import org.thp.thehive.services._
 import org.thp.thehive.{migration, ClusterSetup}
-import play.api.cache.{DefaultSyncCacheApi, SyncCacheApi}
+import play.api.cache.SyncCacheApi
 import play.api.cache.ehcache.EhCacheModule
 import play.api.inject.guice.GuiceInjector
 import play.api.inject.{ApplicationLifecycle, DefaultApplicationLifecycle, Injector}
@@ -31,6 +31,7 @@ import play.api.{Configuration, Environment, Logger}
 
 import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
@@ -114,7 +115,7 @@ class Output @Inject() (
     dataSrv: DataSrv,
     reportTagSrv: ReportTagSrv,
     userSrv: UserSrv,
-    tagSrv: TagSrv,
+//    tagSrv: TagSrv,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
     observableTypeSrv: ObservableTypeSrv,
@@ -150,15 +151,15 @@ class Output @Inject() (
     logger.info(s"The field data is ${if (v) "" else "not"} indexed")
     v
   }
-  lazy val observableSrv: ObservableSrv                                     = observableSrvProvider.get
-  private var profiles: Map[String, Profile with Entity]                    = Map.empty
-  private var organisations: Map[String, Organisation with Entity]          = Map.empty
-  private var users: Map[String, User with Entity]                          = Map.empty
-  private var impactStatuses: Map[String, ImpactStatus with Entity]         = Map.empty
-  private var resolutionStatuses: Map[String, ResolutionStatus with Entity] = Map.empty
-  private var observableTypes: Map[String, ObservableType with Entity]      = Map.empty
-  private var customFields: Map[String, CustomField with Entity]            = Map.empty
-  private var caseTemplates: Map[String, CaseTemplate with Entity]          = Map.empty
+  lazy val observableSrv: ObservableSrv                                         = observableSrvProvider.get
+  private var profiles: TrieMap[String, Profile with Entity]                    = TrieMap.empty
+  private var organisations: TrieMap[String, Organisation with Entity]          = TrieMap.empty
+  private var users: TrieMap[String, User with Entity]                          = TrieMap.empty
+  private var impactStatuses: TrieMap[String, ImpactStatus with Entity]         = TrieMap.empty
+  private var resolutionStatuses: TrieMap[String, ResolutionStatus with Entity] = TrieMap.empty
+  private var observableTypes: TrieMap[String, ObservableType with Entity]      = TrieMap.empty
+  private var customFields: TrieMap[String, CustomField with Entity]            = TrieMap.empty
+  private var caseTemplates: TrieMap[String, CaseTemplate with Entity]          = TrieMap.empty
 
   override def startMigration(): Try[Unit] = {
     implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
@@ -166,34 +167,30 @@ class Output @Inject() (
       db.addSchemaIndexes(theHiveSchema)
         .flatMap(_ => db.addSchemaIndexes(cortexSchema))
       db.roTransaction { implicit graph =>
-        profiles = profileSrv.startTraversal.toSeq.map(p => p.name -> p).toMap
-        organisations = organisationSrv.startTraversal.toSeq.map(o => o.name -> o).toMap
-        users = userSrv.startTraversal.toSeq.map(u => u.name -> u).toMap
-        impactStatuses = impactStatusSrv.startTraversal.toSeq.map(s => s.value -> s).toMap
-        resolutionStatuses = resolutionStatusSrv.startTraversal.toSeq.map(s => s.value -> s).toMap
-        observableTypes = observableTypeSrv.startTraversal.toSeq.map(o => o.name -> o).toMap
-        customFields = customFieldSrv.startTraversal.toSeq.map(c => c.name -> c).toMap
-        caseTemplates = caseTemplateSrv.startTraversal.toSeq.map(c => c.name -> c).toMap
+        profiles ++= profileSrv.startTraversal.toSeq.map(p => p.name -> p)
+        organisations ++= organisationSrv.startTraversal.toSeq.map(o => o.name -> o)
+        users ++= userSrv.startTraversal.toSeq.map(u => u.name -> u)
+        impactStatuses ++= impactStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
+        resolutionStatuses ++= resolutionStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
+        observableTypes ++= observableTypeSrv.startTraversal.toSeq.map(o => o.name -> o)
+        customFields ++= customFieldSrv.startTraversal.toSeq.map(c => c.name -> c)
+        caseTemplates ++= caseTemplateSrv.startTraversal.toSeq.map(c => c.name -> c)
       }
       Success(())
     } else
       db.tryTransaction { implicit graph =>
-        profiles = Profile.initialValues.flatMap(p => profileSrv.createEntity(p).map(p.name -> _).toOption).toMap
-        resolutionStatuses = ResolutionStatus.initialValues.flatMap(p => resolutionStatusSrv.createEntity(p).map(p.value -> _).toOption).toMap
-        impactStatuses = ImpactStatus.initialValues.flatMap(p => impactStatusSrv.createEntity(p).map(p.value -> _).toOption).toMap
-        observableTypes = ObservableType.initialValues.flatMap(p => observableTypeSrv.createEntity(p).map(p.name -> _).toOption).toMap
-        organisations = Organisation.initialValues.flatMap(p => organisationSrv.createEntity(p).map(p.name -> _).toOption).toMap
-        users = User.initialValues.flatMap(p => userSrv.createEntity(p).map(p.login -> _).toOption).toMap
+        profiles ++= Profile.initialValues.flatMap(p => profileSrv.createEntity(p).map(p.name -> _).toOption)
+        resolutionStatuses ++= ResolutionStatus.initialValues.flatMap(p => resolutionStatusSrv.createEntity(p).map(p.value -> _).toOption)
+        impactStatuses ++= ImpactStatus.initialValues.flatMap(p => impactStatusSrv.createEntity(p).map(p.value -> _).toOption)
+        observableTypes ++= ObservableType.initialValues.flatMap(p => observableTypeSrv.createEntity(p).map(p.name -> _).toOption)
+        organisations ++= Organisation.initialValues.flatMap(p => organisationSrv.createEntity(p).map(p.name -> _).toOption)
+        users ++= User.initialValues.flatMap(p => userSrv.createEntity(p).map(p.login -> _).toOption)
         Success(())
       }
   }
 
   override def endMigration(): Try[Unit] = {
     /* free memory */
-    cache match {
-      case c: DefaultSyncCacheApi => c.cacheApi.removeAll()
-      case _                      =>
-    }
     profiles = null
     organisations = null
     users = null
@@ -222,6 +219,7 @@ class Output @Inject() (
           }
         }
       }
+
     Try(db.close())
   }
 
@@ -243,10 +241,10 @@ class Output @Inject() (
     body(authContext)
   }
 
-  private def getTag(tagName: String, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
-    cache.getOrElseUpdate(s"tag-$organisationId-$tagName", 10.minutes) {
-      tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour))
-    }
+//  private def getTag(tagName: String, organisationId: String)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] =
+//    cache.getOrElseUpdate(s"tag-$organisationId-$tagName", 10.minutes) {
+//      tagSrv.createEntity(Tag(s"_freetags_$organisationId", tagName, None, None, tagSrv.freeTagColour))
+//    }
 
   override def withTx[R](body: Graph => Try[R]): Try[R] = db.tryTransaction(body)
 
@@ -441,13 +439,13 @@ class Output @Inject() (
         organisation        <- getOrganisation(inputCaseTemplate.organisation)
         createdCaseTemplate <- caseTemplateSrv.createEntity(inputCaseTemplate.caseTemplate)
         _                   <- caseTemplateSrv.caseTemplateOrganisationSrv.create(CaseTemplateOrganisation(), createdCaseTemplate, organisation)
-        _ <-
-          inputCaseTemplate
-            .caseTemplate
-            .tags
-            .toTry(
-              getTag(_, organisation._id.value).flatMap(t => caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
-            )
+//        _ <-
+//          inputCaseTemplate
+//            .caseTemplate
+//            .tags
+//            .toTry(
+//              getTag(_, organisation._id.value).flatMap(t => caseTemplateSrv.caseTemplateTagSrv.create(CaseTemplateTag(), createdCaseTemplate, t))
+//            )
         _ = updateMetaData(createdCaseTemplate, inputCaseTemplate.metaData)
         _ = inputCaseTemplate.customFields.foreach {
           case InputCustomFieldValue(name, value, order) =>
@@ -464,10 +462,14 @@ class Output @Inject() (
   override def createCaseTemplateTask(graph: Graph, caseTemplateId: EntityId, inputTask: InputTask): Try[IdMapping] =
     withAuthContext(inputTask.metaData.createdBy) { implicit authContext =>
       implicit val g: Graph = graph
+      import CaseTemplateOps._
       logger.debug(s"Create task ${inputTask.task.title} in case template $caseTemplateId")
+      val assignee = inputTask.task.assignee.flatMap(u => getUser(u).toOption)
       for {
-        caseTemplate <- caseTemplateSrv.getOrFail(caseTemplateId)
-        richTask     <- caseTemplateSrv.createTask(caseTemplate, inputTask.task)
+        (caseTemplate, organisationIds) <-
+          caseTemplateSrv.getByIds(caseTemplateId).project(_.by.by(_.organisation._id.fold)).getOrFail("CaseTemplate")
+        richTask <- taskSrv.create(inputTask.task.copy(relatedId = caseTemplate._id, organisationIds = organisationIds.toSet), assignee)
+        _        <- caseTemplateSrv.caseTemplateTaskSrv.create(CaseTemplateTask(), caseTemplate, richTask.task)
         _ = updateMetaData(richTask.task, inputTask.metaData)
       } yield IdMapping(inputTask.metaData.id, richTask._id)
     }
@@ -479,7 +481,15 @@ class Output @Inject() (
         caseSrv.startTraversal.getByNumber(inputCase.`case`.number + caseNumberShift).exists
       }
 
-  private def getCase(caseId: EntityId)(implicit graph: Graph): Try[Case with Entity] = caseSrv.getByIds(caseId).getOrFail("Case")
+  private def getCase(caseId: EntityId)(implicit graph: Graph): Try[Case with Entity] =
+    cache
+      .get[Case with Entity](s"case-$caseId")
+      .fold {
+        caseSrv.getByIds(caseId).getOrFail("Case").map { c =>
+          cache.set(s"case-$caseId", c, 5.minutes)
+          c
+        }
+      }(Success(_))
 
   override def createCase(graph: Graph, inputCase: InputCase): Try[IdMapping] =
     withAuthContext(inputCase.metaData.createdBy) { implicit authContext =>
@@ -514,10 +524,12 @@ class Output @Inject() (
           organisationIds = organisationIds,
           caseTemplate = caseTemplate.map(_.name),
           impactStatus = impactStatus.map(_.value),
-          resolutionStatus = resolutionStatus.map(_.value)
+          resolutionStatus = resolutionStatus.map(_.value),
+          number = inputCase.`case`.number + caseNumberShift
         )
-      caseSrv.createEntity(`case`.copy(number = `case`.number + caseNumberShift)).map { createdCase =>
+      caseSrv.createEntity(`case`).map { createdCase =>
         updateMetaData(createdCase, inputCase.metaData)
+        cache.set(s"case-${createdCase._id}", createdCase, 5.minutes)
         assignee
           .foreach { user =>
             caseSrv
@@ -532,11 +544,11 @@ class Output @Inject() (
               .create(CaseCaseTemplate(), createdCase, ct)
               .logFailure(s"Unable to set case template ${ct.name} to case #${createdCase.number}")
           }
-        inputCase.`case`.tags.foreach { tagName =>
-          getTag(tagName, organisationIds.head.value)
-            .flatMap(tag => caseSrv.caseTagSrv.create(CaseTag(), createdCase, tag))
-            .logFailure(s"Unable to add tag $tagName to case #${createdCase.number}")
-        }
+//        inputCase.`case`.tags.foreach { tagName =>
+//          getTag(tagName, organisationIds.head.value)
+//            .flatMap(tag => caseSrv.caseTagSrv.create(CaseTag(), createdCase, tag))
+//            .logFailure(s"Unable to add tag $tagName to case #${createdCase.number}")
+//        }
         inputCase.customFields.foreach {
           case (name, value) => // TODO Add order
             getCustomField(name)
@@ -586,17 +598,28 @@ class Output @Inject() (
       val organisations = inputTask.organisations.flatMap(getOrganisation(_).toOption)
       for {
         richTask <- taskSrv.create(inputTask.task.copy(relatedId = caseId, organisationIds = organisations.map(_._id)), assignee)
+        _ = cache.set(s"task-${richTask._id}", richTask.task, 1.minute)
         _ = updateMetaData(richTask.task, inputTask.metaData)
         case0 <- getCase(caseId)
         _     <- organisations.toTry(o => shareSrv.shareTask(richTask, case0, o._id))
       } yield IdMapping(inputTask.metaData.id, richTask._id)
     }
 
+  private def getTask(taskId: EntityId)(implicit graph: Graph): Try[Task with Entity] =
+    cache
+      .get[Task with Entity](s"task-$taskId")
+      .fold {
+        taskSrv.getOrFail(taskId).map { t =>
+          cache.set(s"task-$taskId", t, 1.minute)
+          t
+        }
+      }(Success(_))
+
   override def createCaseTaskLog(graph: Graph, taskId: EntityId, inputLog: InputLog): Try[IdMapping] =
     withAuthContext(inputLog.metaData.createdBy) { implicit authContext =>
       implicit val g: Graph = graph
       for {
-        task <- taskSrv.getOrFail(taskId)
+        task <- getTask(taskId)
         _ = logger.debug(s"Create log in task ${task.title}")
         log <- logSrv.createEntity(inputLog.log.copy(taskId = task._id, organisationIds = task.organisationIds))
         _ = updateMetaData(log, inputLog.metaData)
@@ -666,25 +689,40 @@ class Output @Inject() (
               )
           )
       _ = updateMetaData(observable, inputObservable.metaData)
-      _ <- observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, observableType)
-      _ = inputObservable.observable.tags.foreach { tagName =>
-        getTag(tagName, organisationIds.head.value)
-          .foreach(tag => observableSrv.observableTagSrv.create(ObservableTag(), observable, tag))
-      }
+//      _ = inputObservable.observable.tags.foreach { tagName =>
+//        getTag(tagName, organisationIds.head.value)
+//          .foreach(tag => observableSrv.observableTagSrv.create(ObservableTag(), observable, tag))
+//      }
     } yield observable
+
+  private def getShare(caseId: EntityId, organisationId: EntityId)(implicit graph: Graph): Try[Share with Entity] =
+    cache
+      .get[Share with Entity](s"share-$caseId-$organisationId")
+      .fold {
+        import org.thp.thehive.services.CaseOps._
+        caseSrv
+          .getByIds(caseId)
+          .share(organisationId)
+          .getOrFail("Share")
+          .map { s =>
+            cache.set(s"share-$caseId-$organisationId", s, 5.minutes)
+            s
+          }
+      }(Success(_))
 
   override def createCaseObservable(graph: Graph, caseId: EntityId, inputObservable: InputObservable): Try[IdMapping] =
     withAuthContext(inputObservable.metaData.createdBy) { implicit authContext =>
       implicit val g: Graph = graph
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in case $caseId")
       for {
-        organisations  <- inputObservable.organisations.toTry(getOrganisation)
-        richObservable <- createObservable(caseId, inputObservable, organisations.map(_._id).toSet)
-        _              <- reportTagSrv.updateTags(richObservable, inputObservable.reportTags)
-        case0          <- getCase(caseId)
-        // the data in richObservable is not set because it is not used in shareSrv
-        _ <- organisations.toTry(o => shareSrv.shareObservable(RichObservable(richObservable, None, None, None, Nil), case0, o._id))
-      } yield IdMapping(inputObservable.metaData.id, richObservable._id)
+        organisationIds <- inputObservable.organisations.toTry(getOrganisation).map(_.map(_._id))
+        observable      <- createObservable(caseId, inputObservable, organisationIds.toSet)
+        _               <- reportTagSrv.updateTags(observable, inputObservable.reportTags)
+        _ = organisationIds.toTry { o =>
+          getShare(caseId, o)
+            .flatMap(share => shareSrv.shareObservableSrv.create(ShareObservable(), share, observable))
+        }
+      } yield IdMapping(inputObservable.metaData.id, observable._id)
     }
 
   override def createJob(graph: Graph, observableId: EntityId, inputJob: InputJob): Try[IdMapping] =
@@ -727,8 +765,9 @@ class Output @Inject() (
         organisation <- getOrganisation(inputAlert.organisation)
         createdAlert <- alertSrv.createEntity(inputAlert.alert.copy(organisationId = organisation._id, caseId = `case`.fold(EntityId.empty)(_._id)))
         _            <- `case`.map(alertSrv.alertCaseSrv.create(AlertCase(), createdAlert, _)).flip
-        tags = inputAlert.alert.tags.flatMap(getTag(_, organisation._id.value).toOption)
-        _    = updateMetaData(createdAlert, inputAlert.metaData)
+//        tags = inputAlert.alert.tags.flatMap(getTag(_, organisation._id.value).toOption)
+        _ = cache.set(s"alert-${createdAlert._id}", createdAlert, 5.minutes)
+        _ = updateMetaData(createdAlert, inputAlert.metaData)
         _ <- alertSrv.alertOrganisationSrv.create(AlertOrganisation(), createdAlert, organisation)
         _ <-
           inputAlert
@@ -736,7 +775,7 @@ class Output @Inject() (
             .flatMap(getCaseTemplate)
             .map(ct => alertSrv.alertCaseTemplateSrv.create(AlertCaseTemplate(), createdAlert, ct))
             .flip
-        _ = tags.foreach(t => alertSrv.alertTagSrv.create(AlertTag(), createdAlert, t))
+//        _ = tags.foreach(t => alertSrv.alertTagSrv.create(AlertTag(), createdAlert, t))
         _ = inputAlert.customFields.foreach {
           case (name, value) => // TODO Add order
             getCustomField(name)
@@ -755,16 +794,26 @@ class Output @Inject() (
   override def linkAlertToCase(graph: Graph, alertId: EntityId, caseId: EntityId): Try[Unit] =
     for {
       c <- getCase(caseId)(graph)
-      a <- alertSrv.getByIds(alertId)(graph).getOrFail("Alert")
+      a <- getAlert(alertId)(graph)
       _ <- alertSrv.alertCaseSrv.create(AlertCase(), a, c)(graph, LocalUserSrv.getSystemAuthContext)
     } yield ()
+
+  private def getAlert(alertId: EntityId)(implicit graph: Graph): Try[Alert with Entity] =
+    cache
+      .get[Alert with Entity](s"alert-$alertId")
+      .fold {
+        alertSrv.getByIds(alertId).getOrFail("Alert").map { alert =>
+          cache.set(s"alert-$alertId", alert, 5.minutes)
+          alert
+        }
+      }(Success(_))
 
   override def createAlertObservable(graph: Graph, alertId: EntityId, inputObservable: InputObservable): Try[IdMapping] =
     withAuthContext(inputObservable.metaData.createdBy) { implicit authContext =>
       implicit val g: Graph = graph
       logger.debug(s"Create observable ${inputObservable.dataOrAttachment.fold(identity, _.name)} in alert $alertId")
       for {
-        alert      <- alertSrv.getOrFail(alertId)
+        alert      <- getAlert(alertId)
         observable <- createObservable(alert._id, inputObservable, Set(alert.organisationId))
         _          <- alertSrv.alertObservableSrv.create(AlertObservable(), alert, observable)
       } yield IdMapping(inputObservable.metaData.id, observable._id)
@@ -772,11 +821,11 @@ class Output @Inject() (
 
   private def getEntity(entityType: String, entityId: EntityId)(implicit graph: Graph): Try[Product with Entity] =
     entityType match {
-      case "Task"       => taskSrv.getOrFail(entityId)
+      case "Task"       => getTask(entityId)
       case "Case"       => getCase(entityId)
       case "Observable" => observableSrv.getOrFail(entityId)
       case "Log"        => logSrv.getOrFail(entityId)
-      case "Alert"      => alertSrv.getOrFail(entityId)
+      case "Alert"      => getAlert(entityId)
       case "Job"        => jobSrv.getOrFail(entityId)
       case "Action"     => actionSrv.getOrFail(entityId)
       case _            => Failure(BadRequestError(s"objectType $entityType is not recognised"))
