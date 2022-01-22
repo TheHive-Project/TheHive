@@ -444,71 +444,58 @@ class ObservableIntegrityCheckOps @Inject() (
                 Some(_)
               ).check(observable, observable.relatedId, relatedIds)
 
-              val observableTypeStatus =
-                if (observableTypes.exists(_.name == observable.dataType))
-                  if (observableTypes.size > 1) { // more than one link to observableType
-                    service
-                      .get(observable)
-                      .outE[ObservableObservableType]
-                      .filter(_.inV.v[ObservableType].has(_.name, P.neq(observable.dataType)))
-                      .remove()
-                    service
-                      .get(observable)
-                      .outE[ObservableObservableType]
-                      .range(1, Long.MaxValue)
-                      .remove()
-                    Map("Observable-extraObservableType" -> (observableTypes.size - 1))
-                  } else Map.empty[String, Int]
-                else // Links to ObservableType doesn't contain observable.dataType
-                  observableTypeSrv.get(EntityName(observable.dataType)).headOption match {
-                    case Some(ot) => // dataType is a valid ObservableType => remove all links and create the good one
-                      service
-                        .get(observable)
-                        .outE[ObservableObservableType]
-                        .remove()
-                      service
-                        .observableObservableTypeSrv
-                        .create(ObservableObservableType(), observable, ot)(graph, LocalUserSrv.getSystemAuthContext)
-                      Map("Observable-linkObservableType" -> 1, "Observable-extraObservableTypeLink" -> observableTypes.size)
-                    case None => // DataType is not a valid ObservableType, select the first created observableType
-                      observableTypes match {
-                        case ot +: extraTypes =>
-                          service.get(observable).update(_.dataType, ot.name).iterate()
-                          if (extraTypes.nonEmpty)
-                            service.get(observable).outE[ObservableObservableType].filter(_.inV.hasId(extraTypes.map(_._id): _*)).remove()
-                          Map("Observable-dataType-setField" -> 1, "Observable-extraObservableTypeLink" -> extraTypes.size)
-                        case _ => // DataType is not valid and there is no ObservableType, no choice, remove the observable
-                          service.delete(observable)(graph, LocalUserSrv.getSystemAuthContext)
-                          Map("Observable-removeInvalidDataType" -> 1)
+          val processStats = new ProcessStats
+
+          processStats
+            .showStats(10.seconds, msg => logger.debug(s"observable integrity checks: $msg")) {
+              Try {
+                service
+                  .getByIds(ids: _*)
+                  .project(
+                    _.by
+                      .by(_.organisations._id.fold)
+                      .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
+                      .by(_.data.value(_.data).fold)
+                      .by(_.tags.fold)
+                  )
+                  .toIterator
+                  .map {
+                    case (observable, organisationIds, relatedIds, data, tags) =>
+                      processStats("all-checks") {
+                        //                    logger.debug(s"processing integrity check of ${observable.dataType}:${observable.data} (${observable.tags.mkString(",")}")
+                        val orgStats            = processStats("org-checks")(orgCheck.check(observable, observable.organisationIds, organisationIds))
+                        val relatedStats        = processStats("related-checks")(relatedCheck.check(observable, observable.relatedId, relatedIds))
+                        val observableDataStats = processStats("data-checks")(observableDataCheck.check(observable, observable.data, data))
+                        val tagStats = processStats("tag-checks") {
+                          val observableTagSet = observable.tags.toSet
+                          val tagSet           = tags.map(_.toString).toSet
+                          if (observableTagSet == tagSet) Map.empty[String, Int]
+                          else {
+                            implicit val authContext: AuthContext =
+                              LocalUserSrv.getSystemAuthContext.changeOrganisation(observable.organisationIds.head, Permissions.all)
+
+                            val extraTagField = observableTagSet -- tagSet
+                            val extraTagLink  = tagSet -- observableTagSet
+                            extraTagField
+                              .flatMap(tagSrv.getOrCreate(_).toOption)
+                              .foreach(service.observableTagSrv.create(ObservableTag(), observable, _))
+                            service.get(observable).update(_.tags, observable.tags ++ extraTagLink).iterate()
+                            Map(
+                              "observable-tags-extraField" -> extraTagField.size,
+                              "observable-tags-extraLink"  -> extraTagLink.size
+                            )
+                          }
+                        }
+
+                        orgStats <+> relatedStats <+> observableDataStats <+> tagStats
                       }
                   }
-
-              val observableDataStatus = data match {
-                case None if observable.data.nonEmpty =>
-                  // missing link between Observable and Data
-                  implicit val ctx: AuthContext = LocalUserSrv.getSystemAuthContext
-                  dataSrv
-                    .startTraversal
-                    .getByData(observable.data.get)
-                    .headOption
-                    .map { dataEntity =>
-                      service.observableDataSrv.create(ObservableData(), observable, dataEntity)
-                      Map("Observable-data-setData" -> 1)
-                    }
-                    .getOrElse {
-                      for {
-                        dataEntity <- dataSrv.createEntity(Data(observable.data.get, None))
-                        _          <- service.observableDataSrv.create(ObservableData(), observable, dataEntity)
-                      } yield ()
-                      Map("Observable-data-create" -> 1)
-                    }
-                case _ => Map.empty[String, Int]
+                  .reduceOption(_ <+> _)
+                  .getOrElse(Map.empty)
               }
-
-              orgStats <+> relatedStats <+> observableTypeStatus <+> observableDataStatus
-          }
-          .reduceOption(_ <+> _)
-          .getOrElse(Map.empty)
+            }
+        }.getOrElse(Map("globalFailure" -> 1))
       }
-    }.getOrElse(Map("globalFailure" -> 1))
+      .reduceOption(_ <+> _)
+      .getOrElse(Map.empty)
 }
