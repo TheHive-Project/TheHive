@@ -10,13 +10,13 @@ import org.thp.scalligraph.{BadRequestError, CreateError, EntityIdOrName}
 import org.thp.thehive.models._
 import org.thp.thehive.services.ObservableTypeOps._
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Named, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[ObservableType] {
-
-  val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
+class ObservableTypeSrv @Inject() (_observableSrv: Provider[ObservableSrv], @Named("integrity-check-actor") integrityCheckActor: ActorRef)
+    extends VertexSrv[ObservableType] {
+  lazy val observableSrv: ObservableSrv = _observableSrv.get
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ObservableType] =
     startTraversal.getByName(name)
@@ -38,10 +38,17 @@ class ObservableTypeSrv @Inject() (@Named("integrity-check-actor") integrityChec
     if (!isUsed(idOrName)) Success(get(idOrName).remove())
     else Failure(BadRequestError(s"Observable type $idOrName is used"))
 
-  def isUsed(idOrName: EntityIdOrName)(implicit graph: Graph): Boolean = get(idOrName).inE[ObservableObservableType].exists
+  def isUsed(idOrName: EntityIdOrName)(implicit graph: Graph): Boolean =
+    get(idOrName)
+      .value(_.name)
+      .headOption
+      .fold(false)(ot => observableSrv.startTraversal.has(_.dataType, ot).exists)
 
   def useCount(idOrName: EntityIdOrName)(implicit graph: Graph): Long =
-    get(idOrName).in[ObservableObservableType].getCount
+    get(idOrName)
+      .value(_.name)
+      .headOption
+      .fold(0L)(ot => observableSrv.startTraversal.has(_.dataType, ot).getCount)
 }
 
 object ObservableTypeOps {
@@ -52,8 +59,6 @@ object ObservableTypeOps {
       idOrName.fold(traversal.getByIds(_), getByName)
 
     def getByName(name: String): Traversal.V[ObservableType] = traversal.has(_.name, name)
-
-    def observables: Traversal.V[Observable] = traversal.in[ObservableObservableType].v[Observable]
   }
 }
 

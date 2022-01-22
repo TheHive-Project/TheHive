@@ -36,13 +36,12 @@ class ObservableSrv @Inject() (
     organisationSrv: OrganisationSrv,
     alertSrvProvider: Provider[AlertSrv]
 ) extends VertexSrv[Observable] {
-  lazy val shareSrv: ShareSrv     = shareSrvProvider.get
-  lazy val caseSrv: CaseSrv       = caseSrvProvider.get
-  lazy val alertSrv: AlertSrv     = alertSrvProvider.get
-  val observableDataSrv           = new EdgeSrv[ObservableData, Observable, Data]
-  val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
-  val observableAttachmentSrv     = new EdgeSrv[ObservableAttachment, Observable, Attachment]
-  val observableTagSrv            = new EdgeSrv[ObservableTag, Observable, Tag]
+  lazy val shareSrv: ShareSrv = shareSrvProvider.get
+  lazy val caseSrv: CaseSrv   = caseSrvProvider.get
+  lazy val alertSrv: AlertSrv = alertSrvProvider.get
+  val observableDataSrv       = new EdgeSrv[ObservableData, Observable, Data]
+  val observableAttachmentSrv = new EdgeSrv[ObservableAttachment, Observable, Attachment]
+  val observableTagSrv        = new EdgeSrv[ObservableTag, Observable, Tag]
 
   def create(observable: Observable, file: FFile)(implicit
       graph: Graph,
@@ -74,7 +73,6 @@ class ObservableSrv @Inject() (
           else Success(())
         tags              <- observable.tags.toTry(tagSrv.getOrCreate)
         createdObservable <- createEntity(observable.copy(data = None))
-        _                 <- observableObservableTypeSrv.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableAttachmentSrv.create(ObservableAttachment(), createdObservable, attachment)
         _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       } yield RichObservable(createdObservable, None, Some(attachment), None, Nil)
@@ -104,7 +102,6 @@ class ObservableSrv @Inject() (
         tags              <- observable.tags.toTry(tagSrv.getOrCreate)
         data              <- dataSrv.create(Data(dataOrHash, fullData))
         createdObservable <- createEntity(observable.copy(data = Some(dataOrHash)))
-        _                 <- observableObservableTypeSrv.create(ObservableObservableType(), createdObservable, observableType)
         _                 <- observableDataSrv.create(ObservableData(), createdObservable, data)
         _                 <- tags.toTry(observableTagSrv.create(ObservableTag(), createdObservable, _))
       } yield RichObservable(createdObservable, Some(data), None, None, Nil)
@@ -206,17 +203,13 @@ class ObservableSrv @Inject() (
   def updateType(observable: Observable with Entity, observableType: ObservableType with Entity)(implicit
       graph: Graph,
       authContext: AuthContext
-  ): Try[Unit] = {
+  ): Try[Unit] =
     get(observable)
       .update(_.dataType, observableType.name)
       .update(_._updatedAt, Some(new Date))
       .update(_._updatedBy, Some(authContext.userId))
-      .outE[ObservableObservableType]
-      .remove()
-    observableObservableTypeSrv
-      .create(ObservableObservableType(), observable, observableType)
+      .getOrFail("Observable")
       .flatMap(_ => auditSrv.observable.update(observable, Json.obj("dataType" -> observableType.name)))
-  }
 }
 
 object ObservableOps {
@@ -391,9 +384,7 @@ object ObservableOps {
 
     def keyValues: Traversal.V[KeyValue] = traversal.out[ObservableKeyValue].v[KeyValue]
 
-    def observableType: Traversal.V[ObservableType] = traversal.out[ObservableObservableType].v[ObservableType]
-
-    def typeName: Traversal[String, String, Converter[String, String]] = observableType.value(_.name)
+    def typeName: Traversal[String, String, Converter[String, String]] = traversal.value(_.dataType)
 
     def shares: Traversal.V[Share] = traversal.in[ShareObservable].v[Share]
 
@@ -408,41 +399,34 @@ class ObservableIntegrityCheckOps @Inject() (
     val db: Database,
     val service: ObservableSrv,
     organisationSrv: OrganisationSrv,
-    observableTypeSrv: ObservableTypeSrv,
-    dataSrv: DataSrv
+    dataSrv: DataSrv,
+    tagSrv: TagSrv,
+    implicit val ec: ExecutionContext
 ) extends IntegrityCheckOps[Observable] {
   override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
   override def globalCheck(): Map[String, Int] =
-    db.tryTransaction { implicit graph =>
-      Try {
-        service
-          .startTraversal
-          .project(
-            _.by
-              .by(_.organisations._id.fold)
-              .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
-              .by(_.observableType.fold)
-              .by(_.data.option)
+    service
+      .pagedTraversalIds(db, 100) { ids =>
+        db.tryTransaction { implicit graph =>
+          val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
+          val removeOrphan: OrphanStrategy[Observable, EntityId] = { (_, entity) =>
+            service.get(entity).remove()
+            Map("Observable-relatedId-removeOrphan" -> 1)
+          }
+          val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
+            orphanStrategy = removeOrphan,
+            setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
+            entitySelector = _ => EntitySelector.firstCreatedEntity,
+            removeLink = (_, _) => (),
+            getLink = id => graph.VV(id).entity.head,
+            optionalField = Some(_)
           )
-          .toIterator
-          .map {
-            case (observable, organisationIds, relatedIds, observableTypes, data) =>
-              val orgStats = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
-                .check(observable, observable.organisationIds, organisationIds)
 
-              val removeOrphan: OrphanStrategy[Observable, EntityId] = { (_, entity) =>
-                service.get(entity).remove()
-                Map("Observable-relatedId-removeOrphan" -> 1)
-              }
-              val relatedStats = new SingleLinkChecker[Product, EntityId, EntityId](
-                orphanStrategy = removeOrphan,
-                setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
-                entitySelector = _ => EntitySelector.firstCreatedEntity,
-                removeLink = (_, _) => (),
-                getLink = id => graph.VV(id).entity.head,
-                Some(_)
-              ).check(observable, observable.relatedId, relatedIds)
+          val observableDataCheck = {
+            implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+            singleOptionLink[Data, String]("data", d => dataSrv.create(Data(d, None)).get, _.data)(_.outEdge[ObservableData])
+          }
 
           val processStats = new ProcessStats
 
