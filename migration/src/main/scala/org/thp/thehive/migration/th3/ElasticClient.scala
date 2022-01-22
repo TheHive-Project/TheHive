@@ -4,6 +4,7 @@ import akka.NotUsed
 import akka.actor.{ActorSystem, Scheduler}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
+import akka.util.ByteString
 import com.typesafe.sslconfig.ssl.{KeyManagerConfig, KeyStoreConfig, SSLConfigSettings, TrustManagerConfig, TrustStoreConfig}
 import org.thp.client.{Authentication, NoAuthentication, PasswordAuthentication}
 import org.thp.scalligraph.utils.Retry
@@ -11,7 +12,7 @@ import org.thp.scalligraph.{InternalError, NotFoundError}
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
 import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfig}
-import play.api.libs.ws.{WSClient, WSClientConfig}
+import play.api.libs.ws.{WSClient, WSClientConfig, WSResponse}
 import play.api.{Configuration, Logger}
 
 import java.net.{URI, URLEncoder}
@@ -141,7 +142,7 @@ class ElasticConfig(
   lazy val logger: Logger           = Logger(getClass)
   def stripUrl(url: String): String = new URI(url).normalize().toASCIIString.replaceAll("/+$", "")
 
-  def post(url: String, body: JsValue, params: (String, String)*)(implicit ec: ExecutionContext): Future[JsValue] = {
+  def post(url: String, body: JsValue, params: (String, String)*)(implicit ec: ExecutionContext): Future[WSResponse] = {
     val encodedParams = params
       .map(p => s"${URLEncoder.encode(p._1, "UTF-8")}=${URLEncoder.encode(p._2, "UTF-8")}")
       .mkString("&")
@@ -152,12 +153,22 @@ class ElasticConfig(
           .withHttpHeaders(HeaderNames.CONTENT_TYPE -> "application/json")
       )
         .post(body)
-        .map {
-          case response if response.status == 200 => response.json
-          case response                           => throw InternalError(s"Unexpected response from Elasticsearch: ${response.status} ${response.statusText}\n${response.body}")
-        }
     }
   }
+
+  def postJson(url: String, body: JsValue, params: (String, String)*)(implicit ec: ExecutionContext): Future[JsValue] =
+    post(url, body, params: _*)
+      .map {
+        case response if response.status == 200 => response.json
+        case response                           => throw InternalError(s"Unexpected response from Elasticsearch: ${response.status} ${response.statusText}\n${response.body}")
+      }
+
+  def postRaw(url: String, body: JsValue, params: (String, String)*)(implicit ec: ExecutionContext): Future[ByteString] =
+    post(url, body, params: _*)
+      .map {
+        case response if response.status == 200 => response.bodyAsBytes
+        case response                           => throw InternalError(s"Unexpected response from Elasticsearch: ${response.status} ${response.statusText}\n${response.body}")
+      }
 
   def delete(url: String, body: JsValue, params: (String, String)*)(implicit ec: ExecutionContext): Future[JsValue] = {
     val encodedParams = params
@@ -208,6 +219,7 @@ trait ElasticClient {
   val pageSize: Int
   val keepAlive: String
   def search(docType: String, request: JsObject, params: (String, String)*)(implicit ec: ExecutionContext): Future[JsValue]
+  def searchRaw(docType: String, request: JsObject, params: (String, String)*)(implicit ec: ExecutionContext): Future[ByteString]
   def scroll(scrollId: String, keepAlive: String)(implicit ec: ExecutionContext): Future[JsValue]
   def clearScroll(scrollId: String)(implicit ec: ExecutionContext): Future[JsValue]
 
@@ -217,7 +229,13 @@ trait ElasticClient {
   }
 
   def count(docType: String, query: JsObject)(implicit ec: ExecutionContext): Future[Long] =
-    search(docType, query + ("size" -> JsNumber(0))).map(j => (j \ "hits" \ "total").as[Long])
+    search(docType, query + ("size" -> JsNumber(0)))
+      .map { j =>
+        (j \ "hits" \ "total")
+          .asOpt[Long]
+          .orElse((j \ "hits" \ "total" \ "value").asOpt[Long])
+          .getOrElse(-1)
+      }
 
   def get(docType: String, id: String)(implicit ec: ExecutionContext, mat: Materializer): Future[JsValue] = {
     import ElasticDsl._
@@ -229,9 +247,11 @@ class ElasticMultiTypeClient(elasticConfig: ElasticConfig, indexName: String) ex
   override val pageSize: Int     = elasticConfig.pageSize
   override val keepAlive: String = elasticConfig.keepAlive
   override def search(docType: String, request: JsObject, params: (String, String)*)(implicit ec: ExecutionContext): Future[JsValue] =
-    elasticConfig.post(s"/$indexName/$docType/_search", request, params: _*)
+    elasticConfig.postJson(s"/$indexName/$docType/_search", request, params: _*)
+  override def searchRaw(docType: String, request: JsObject, params: (String, String)*)(implicit ec: ExecutionContext): Future[ByteString] =
+    elasticConfig.postRaw(s"/$indexName/$docType/_search", request, params: _*)
   override def scroll(scrollId: String, keepAlive: String)(implicit ec: ExecutionContext): Future[JsValue] =
-    elasticConfig.post("/_search/scroll", Json.obj("scroll_id" -> scrollId, "scroll" -> keepAlive))
+    elasticConfig.postJson("/_search/scroll", Json.obj("scroll_id" -> scrollId, "scroll" -> keepAlive))
   override def clearScroll(scrollId: String)(implicit ec: ExecutionContext): Future[JsValue] =
     elasticConfig.delete("/_search/scroll", Json.obj("scroll_id" -> scrollId))
 }
@@ -243,10 +263,16 @@ class ElasticSingleTypeClient(elasticConfig: ElasticConfig, indexName: String) e
     import ElasticDsl._
     val query         = (request \ "query").as[JsObject]
     val queryWithType = request + ("query" -> and(termQuery("relations", docType), query))
-    elasticConfig.post(s"/$indexName/_search", queryWithType, params: _*)
+    elasticConfig.postJson(s"/$indexName/_search", queryWithType, params: _*)
+  }
+  override def searchRaw(docType: String, request: JsObject, params: (String, String)*)(implicit ec: ExecutionContext): Future[ByteString] = {
+    import ElasticDsl._
+    val query         = (request \ "query").as[JsObject]
+    val queryWithType = request + ("query" -> and(termQuery("relations", docType), query))
+    elasticConfig.postRaw(s"/$indexName/_search", queryWithType, params: _*)
   }
   override def scroll(scrollId: String, keepAlive: String)(implicit ec: ExecutionContext): Future[JsValue] =
-    elasticConfig.post("/_search/scroll", Json.obj("scroll_id" -> scrollId, "scroll" -> keepAlive))
+    elasticConfig.postJson("/_search/scroll", Json.obj("scroll_id" -> scrollId, "scroll" -> keepAlive))
   override def clearScroll(scrollId: String)(implicit ec: ExecutionContext): Future[JsValue] =
     elasticConfig.delete("/_search/scroll", Json.obj("scroll_id" -> scrollId))
 }

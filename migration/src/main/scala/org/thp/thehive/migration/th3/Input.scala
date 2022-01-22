@@ -200,37 +200,24 @@ class Input @Inject() (configuration: Configuration, elaticClient: ElasticClient
 
   override def countAlertObservables(filter: Filter): Future[Long] = Future.failed(new NotImplementedError)
 
-  override def listAlertObservables(alertId: String): Source[Try[(String, InputObservable)], NotUsed] =
-    elaticClient("alert", searchQuery(idsQuery(alertId)))
-      .map { json =>
-        for {
-          metaData        <- json.validate[MetaData]
-          observablesJson <- (json \ "artifacts").validate[Seq[JsValue]]
-        } yield (metaData, observablesJson)
+  override def listAlertObservables(alertId: String): Source[Try[(String, InputObservable)], NotUsed] = {
+    val dummyMetaData = MetaData("no-id", "init", new Date, None, None)
+    Source
+      .future(elaticClient.searchRaw("alert", searchQuery(idsQuery(alertId))))
+      .via(JsonReader.select("$.hits.hits[*]._source.artifacts[*]"))
+      .mapConcat { data =>
+        Try(Json.parse(data.toArray[Byte]))
+          .flatMap { j =>
+            Try(List(alertId -> j.as(alertObservableReads(dummyMetaData))))
+              .recover {
+                case _ if (j \ "remoteAttachment").isDefined =>
+                  logger.warn(s"Pre 2.13 file observables are ignored in MISP alert $alertId")
+                  Nil
+              }
+          }
+          .fold(error => List(Failure(error)), _.map(Success(_)))
       }
-      .mapConcat {
-        case JsSuccess(x, _) => List(x)
-        case JsError(errors) =>
-          val errorStr = errors.map(e => s"\n - ${e._1}: ${e._2.mkString(",")}")
-          logger.error(s"Alert observable read failure:$errorStr")
-          Nil
-      }
-      .mapConcat {
-        case (metaData, observablesJson) =>
-          observablesJson.flatMap { observableJson =>
-            Try(metaData.id -> observableJson.as(alertObservableReads(metaData)))
-              .fold(
-                error =>
-                  if ((observableJson \ "remoteAttachment").isDefined) {
-                    logger.warn(s"Pre 2.13 file observables are ignored in MISP alert $alertId")
-                    Nil
-                  } else List(Failure(error)),
-                o => List(Success(o))
-              )
-          }.toList
-      }
-
-  override def countAlertObservables(alertId: String): Future[Long] = Future.failed(new NotImplementedError)
+  }
 
   override def listUsers(filter: Filter): Source[Try[InputUser], NotUsed] =
     elaticClient("user", searchQuery(matchAll))
