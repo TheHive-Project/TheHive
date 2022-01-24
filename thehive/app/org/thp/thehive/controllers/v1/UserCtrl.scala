@@ -1,12 +1,12 @@
 package org.thp.thehive.controllers.v1
 
 import org.apache.tinkerpop.gremlin.process.traversal.P
-import org.thp.scalligraph.auth.AuthSrv
+import org.thp.scalligraph.auth.{AuthSrv, MultiAuthSrv}
 import org.thp.scalligraph.controllers.{Entrypoint, FieldsParser}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.query.{ParamQuery, PublicProperties, Query}
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, NotFoundError, RichOptionTry}
+import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, NotFoundError, NotSupportedError, RichOptionTry}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.dto.v1.InputUser
 import org.thp.thehive.models._
@@ -35,10 +35,23 @@ class UserCtrl(
     attachmentSrv: AttachmentSrv,
     db: Database
 ) extends QueryableCtrl
-    with TheHiveOps {
+    with TheHiveOps
+    with UserRenderer {
 
   override val entityName: String                 = "user"
   override val publicProperties: PublicProperties = properties.user
+  lazy val localPasswordAuthSrv: Try[LocalPasswordAuthSrv] = {
+    def getLocalPasswordAuthSrv(authSrv: AuthSrv): Option[LocalPasswordAuthSrv] =
+      authSrv match {
+        case lpas: LocalPasswordAuthSrv => Some(lpas)
+        case mas: MultiAuthSrv          => mas.authProviders.flatMap(getLocalPasswordAuthSrv).headOption
+        case _                          => None
+      }
+    getLocalPasswordAuthSrv(authSrv) match {
+      case Some(lpas) => Success(lpas)
+      case None       => Failure(NotSupportedError("The local password authentication is not enabled"))
+    }
+  }
 
   override val initialQuery: Query =
     Query.init[Traversal.V[User]]("listUser", (graph, authContext) => organisationSrv.get(authContext.organisation)(graph).users)
@@ -51,12 +64,17 @@ class UserCtrl(
   override def pageQuery(limitedCountThreshold: Long): ParamQuery[UserOutputParam] =
     Query.withParam[UserOutputParam, Traversal.V[User], IteratorOutput](
       "page",
-      (params, userSteps, authContext) =>
-        params
-          .organisation
-          .fold(userSteps.richUser(authContext))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
-          .page(params.from, params.to, params.extraData.contains("total"), limitedCountThreshold)
+      {
+        case (UserOutputParam(from, to, extraData, organisation), userSteps, authContext) =>
+          userSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold) {
+            _.richUserWithCustomRenderer(
+              organisation.fold(authContext.organisation)(EntityIdOrName(_)),
+              userStatsRenderer(extraData - "Total", localPasswordAuthSrv.toOption)(authContext)
+            )(authContext)
+          }
+      }
     )
+
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
 
@@ -122,6 +140,16 @@ class UserCtrl(
         for {
           user <- userSrv.current.organisations(Permissions.manageUser).users.get(EntityIdOrName(userIdOrName)).getOrFail("User")
           _    <- userSrv.lock(user)
+        } yield Results.NoContent
+      }
+
+  def resetFailedAttempts(userIdOrName: String): Action[AnyContent] =
+    entrypoint("reset user")
+      .authTransaction(db) { implicit request => implicit graph =>
+        for {
+          lpas <- localPasswordAuthSrv
+          user <- userSrv.current.organisations(Permissions.manageUser).users.get(EntityIdOrName(userIdOrName)).getOrFail("User")
+          _    <- lpas.resetFailedAttempts(user)
         } yield Results.NoContent
       }
 

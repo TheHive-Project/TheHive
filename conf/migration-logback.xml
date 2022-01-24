@@ -44,6 +44,7 @@
     <logger name="org.thp.thehive.services.LocalAuthSrv" level="TRACE" />
     <logger name="org.thp.scalligraph.graphql" level="TRACE" />
     -->
+    <logger name="org.thp.scalligraph.traversal" level="INFO"/>
     <logger name="org.janusgraph.graphdb.transaction.StandardJanusGraphTx" level="ERROR"/>
     <logger name="org.thp.thehive" level="INFO"/>
 

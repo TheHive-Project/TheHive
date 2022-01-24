@@ -68,7 +68,7 @@ class JobSrvTest extends PlaySpecification with TestAppBuilder with CortexOps {
             audit        <- auditSrv.startTraversal.has(_.objectId, updatedJob._id.toString).getOrFail("Audit")
             organisation <- organisationSrv.getByName("cert").getOrFail("Organisation")
             user         <- userSrv.startTraversal.getByName("certuser@thehive.local").getOrFail("User")
-          } yield new JobFinished().filter(audit, Some(updatedJob), organisation, Some(user))
+          } yield JobFinished.filter(audit, Some(updatedJob), organisation, Some(user))
         } must beASuccessfulTry(true)
       }
     }

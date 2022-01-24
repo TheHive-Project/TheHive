@@ -131,11 +131,11 @@ class FilteredEventProvider extends TriggerProvider {
   override val name: String = "FilteredEvent"
   override def apply(config: Configuration): Try[Trigger] = {
     val filter = Json.parse(config.underlying.getValue("filter").render(ConfigRenderOptions.concise())).as[EventFilter]
-    Success(new FilteredEvent(filter))
+    Success(FilteredEvent(filter))
   }
 }
 
-class FilteredEvent(eventFilter: EventFilter) extends Trigger {
+case class FilteredEvent(eventFilter: EventFilter) extends Trigger {
   override val name: String = "FilteredEvent"
 
   override def preFilter(audit: Audit with Entity, context: Option[Entity], organisation: Organisation with Entity): Boolean =

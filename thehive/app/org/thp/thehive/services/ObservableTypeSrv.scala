@@ -11,9 +11,11 @@ import org.thp.thehive.models._
 
 import scala.util.{Failure, Success, Try}
 
-class ObservableTypeSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ObservableType] with TheHiveOpsNoDeps {
+class ObservableTypeSrv(_observableSrv: => ObservableSrv, integrityCheckActor: => ActorRef @@ IntegrityCheckTag)
+    extends VertexSrv[ObservableType]
+    with TheHiveOpsNoDeps {
 
-  val observableObservableTypeSrv = new EdgeSrv[ObservableObservableType, Observable, ObservableType]
+  lazy val observableSrv: ObservableSrv = _observableSrv
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ObservableType] =
     startTraversal.getByName(name)
@@ -35,10 +37,17 @@ class ObservableTypeSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) e
     if (!isUsed(idOrName)) Success(get(idOrName).remove())
     else Failure(BadRequestError(s"Observable type $idOrName is used"))
 
-  def isUsed(idOrName: EntityIdOrName)(implicit graph: Graph): Boolean = get(idOrName).inE[ObservableObservableType].exists
+  def isUsed(idOrName: EntityIdOrName)(implicit graph: Graph): Boolean =
+    get(idOrName)
+      .value(_.name)
+      .headOption
+      .fold(false)(ot => observableSrv.startTraversal.has(_.dataType, ot).exists)
 
   def useCount(idOrName: EntityIdOrName)(implicit graph: Graph): Long =
-    get(idOrName).in[ObservableObservableType].getCount
+    get(idOrName)
+      .value(_.name)
+      .headOption
+      .fold(0L)(ot => observableSrv.startTraversal.has(_.dataType, ot).getCount)
 }
 
 trait ObservableTypeOps { _: TheHiveOpsNoDeps =>
@@ -49,8 +58,6 @@ trait ObservableTypeOps { _: TheHiveOpsNoDeps =>
       idOrName.fold(traversal.getByIds(_), getByName)
 
     def getByName(name: String): Traversal.V[ObservableType] = traversal.has(_.name, name)
-
-    def observables: Traversal.V[Observable] = traversal.in[ObservableObservableType].v[Observable]
   }
 }
 

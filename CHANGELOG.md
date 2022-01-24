@@ -1,5 +1,18 @@
 # Change Log
 
+## [4.1.17](https://github.com/TheHive-Project/TheHive/milestone/87) (2022-01-24)
+
+**Implemented enhancements:**
+
+- [Enhancement] Improve migration tool by accepting old versions of TheHive [\#2305](https://github.com/TheHive-Project/TheHive/issues/2305)
+- Security concern [\#2309](https://github.com/TheHive-Project/TheHive/issues/2309)
+
+**Fixed bugs:**
+
+- [Bug] Action 'mergeCase' not mapped in v0  [\#2304](https://github.com/TheHive-Project/TheHive/issues/2304)
+- Can't start after upgrade thehive4 (4.1.16-1) over (4.0.0-1) [Bug] [\#2308](https://github.com/TheHive-Project/TheHive/issues/2308)
+- [Bug] Notifications are executed several times [\#2317](https://github.com/TheHive-Project/TheHive/issues/2317)
+
 ## [4.1.16](https://github.com/TheHive-Project/TheHive/milestone/86) (2021-12-17)
 
 **Implemented enhancements:**

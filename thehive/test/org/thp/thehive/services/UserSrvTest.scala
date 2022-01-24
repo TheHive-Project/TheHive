@@ -27,7 +27,9 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             apikey = None,
             locked = false,
             password = None,
-            totpSecret = None
+            totpSecret = None,
+            failedAttempts = None,
+            lastFailed = None
           )
         ) must beSuccessfulTry
           .which { user =>
@@ -50,7 +52,9 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
             apikey = None,
             locked = false,
             password = None,
-            totpSecret = None
+            totpSecret = None,
+            failedAttempts = None,
+            lastFailed = None
           )
         ) must beSuccessfulTry
           .which { user =>

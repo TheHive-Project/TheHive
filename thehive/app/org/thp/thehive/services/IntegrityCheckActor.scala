@@ -95,8 +95,6 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
     result + ("startDate" -> startDate) + ("endDate" -> endDate) + ("duration" -> (endDate - startDate))
   }
 
-  private var globalTimers: Seq[Cancellable] = Nil
-
   override def preStart(): Unit = {
     super.preStart()
 
@@ -115,25 +113,6 @@ class IntegrityCheckActor(appConfig: ApplicationConfig, db: Database, _integrity
     integrityCheckOps.foreach { integrityCheck =>
       self ! DuplicationCheck(integrityCheck.name)
     }
-    globalTimers = integrityCheckOps.map { integrityCheck =>
-      val interval     = globalInterval(integrityCheck.name)
-      val initialDelay = FiniteDuration((interval.toNanos * Random.nextDouble()).round, NANOSECONDS)
-      context
-        .system
-        .scheduler
-        .scheduleWithFixedDelay(initialDelay, interval) { () =>
-          logger.debug(s"Global check of ${integrityCheck.name}")
-          val startDate = System.currentTimeMillis()
-          val result    = integrityCheck.globalCheck().view.mapValues(_.toLong).toMap
-          val duration  = System.currentTimeMillis() - startDate
-          self ! GlobalCheckResult(integrityCheck.name, result + ("duration" -> duration))
-        }
-    }
-  }
-
-  override def postStop(): Unit = {
-    super.postStop()
-    globalTimers.foreach(_.cancel())
   }
 
   override def receive: Receive = {

@@ -241,11 +241,6 @@ class DatabaseBuilder(
             observable
               .tags
               .foreach(tag => tagSrv.getOrCreate(tag).flatMap(observableSrv.observableTagSrv.create(ObservableTag(), observable, _)).get)
-            observableTypeSrv
-              .getByName(observable.dataType)
-              .getOrFail("ObservableType")
-              .flatMap(observableSrv.observableObservableTypeSrv.create(ObservableObservableType(), observable, _))
-              .get
             observable
               .data
               .foreach(data =>

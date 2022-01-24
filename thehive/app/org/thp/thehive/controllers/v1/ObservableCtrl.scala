@@ -20,7 +20,7 @@ import shapeless.{:+:, CNil, Coproduct, Poly1}
 
 import java.io.FilterInputStream
 import java.nio.file.Files
-import java.util.Base64
+import java.util.{Base64, Date}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -310,14 +310,28 @@ class ObservableCtrl(
 
   def updateAllTypes(fromType: String, toType: String): Action[AnyContent] =
     entrypoint("update all observable types")
-      .authPermittedTransaction(db, Permissions.managePlatform) { implicit request => implicit graph =>
-        for {
-          from <- observableTypeSrv.getOrFail(EntityIdOrName(fromType))
-          to   <- observableTypeSrv.getOrFail(EntityIdOrName(toType))
-          isSameType = from.isAttachment == to.isAttachment
-          _ <- if (isSameType) Success(()) else Failure(BadRequestError("Can not update dataType: isAttachment does not match"))
-          _ <- observableTypeSrv.get(from).observables.toIterator.toTry(observableSrv.updateType(_, to))
-        } yield Results.NoContent
+      .authPermitted(Permissions.managePlatform) { implicit request =>
+        db.roTransaction { implicit graph =>
+          for {
+            from <- observableTypeSrv.getOrFail(EntityIdOrName(fromType))
+            to   <- observableTypeSrv.getOrFail(EntityIdOrName(toType))
+            isSameType = from.isAttachment == to.isAttachment
+            _ <- if (isSameType) Success(()) else Failure(BadRequestError("Can not update dataType: isAttachment does not match"))
+          } yield (from, to)
+        }.map {
+          case (from, to) =>
+            observableSrv
+              .pagedTraversal(db, 100, _.has(_.dataType, from.name)) { t =>
+                Try(
+                  t.update(_.dataType, to.name)
+                    .update(_._updatedAt, Some(new Date))
+                    .update(_._updatedBy, Some(request.userId))
+                    .iterate()
+                )
+              }
+              .foreach(_.failed.foreach(error => logger.error(s"Error while updating observable type", error)))
+            Results.NoContent
+        }
       }
 
   def bulkUpdate: Action[AnyContent] =

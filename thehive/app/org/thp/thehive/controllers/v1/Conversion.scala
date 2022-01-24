@@ -409,6 +409,8 @@ object Conversion {
         .withFieldConst(_.password, None)
         .withFieldConst(_.locked, false)
         .withFieldConst(_.totpSecret, None)
+        .withFieldConst(_.failedAttempts, None)
+        .withFieldConst(_.lastFailed, None)
         //      .withFieldComputed(_.permissions, _.permissions.flatMap(Permissions.withName)) // FIXME unknown permissions are ignored
         .transform
   }
@@ -420,9 +422,25 @@ object Conversion {
       .withFieldComputed(_._id, _._id.toString)
       .withFieldConst(_.organisations, Nil)
       .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
+      .withFieldConst(_.extraData, JsObject.empty)
       .enableMethodAccessors
       .transform
   )
+
+  implicit val userWithStatsOutput: Renderer.Aux[(RichUser, JsObject), OutputUser] =
+    Renderer.toJson[(RichUser, JsObject), OutputUser] { userWithExtraData =>
+      userWithExtraData
+        ._1
+        .into[OutputUser]
+        .withFieldComputed(_.permissions, _.permissions.asInstanceOf[Set[String]])
+        .withFieldComputed(_.hasKey, _.apikey.isDefined)
+        .withFieldComputed(_._id, _._id.toString)
+        .withFieldConst(_.organisations, Nil)
+        .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
+        .withFieldConst(_.extraData, userWithExtraData._2)
+        .enableMethodAccessors
+        .transform
+    }
 
   implicit val userWithOrganisationOutput: Renderer.Aux[(RichUser, Seq[(Organisation with Entity, String)]), OutputUser] =
     Renderer.toJson[(RichUser, Seq[(Organisation with Entity, String)]), OutputUser] { userWithOrganisations =>
@@ -434,6 +452,7 @@ object Conversion {
         .withFieldComputed(_.hasKey, _.apikey.isDefined)
         .withFieldConst(_.organisations, organisations.map { case (org, role) => OutputOrganisationProfile(org._id.toString, org.name, role) })
         .withFieldComputed(_.avatar, user => user.avatar.map(avatar => s"/api/v1/user/${user._id}/avatar/$avatar"))
+        .withFieldConst(_.extraData, JsObject.empty)
         .enableMethodAccessors
         .transform
     }

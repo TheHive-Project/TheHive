@@ -526,7 +526,7 @@ trait AlertOps { ops: TheHiveOps =>
   }
 
 }
-class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, caseSrv: CaseSrv, organisationSrv: OrganisationSrv)
+class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, caseSrv: CaseSrv, organisationSrv: OrganisationSrv, tagSrv: TagSrv)
     extends IntegrityCheckOps[Alert]
     with TheHiveOpsNoDeps {
 
@@ -543,32 +543,52 @@ class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, caseSrv: C
   }
 
   override def globalCheck(): Map[String, Int] =
-    db.tryTransaction { implicit graph =>
-      Try {
-        service
-          .startTraversal
-          .project(
-            _.by
-              .by(_.`case`._id.fold)
-              .by(_.organisation._id.fold)
-              .by(_.removeDuplicateOutEdges[AlertCase]())
-              .by(_.removeDuplicateOutEdges[AlertOrganisation]())
-          )
-          .toIterator
-          .map {
-            case (alert, caseIds, orgIds, extraCaseEdges, extraOrgEdges) =>
-              val caseStats = singleIdLink[Case]("caseId", caseSrv)(_.outEdge[AlertCase], _.set(EntityId.empty))
-//                alert => cases => {
-//                  service.get(alert).outE[AlertCase].filter(_.inV.hasId(cases.map(_._id): _*)).project(_.by.by(_.inV.v[Case])).toSeq
-//              }
-                .check(alert, alert.caseId, caseIds)
-              val orgStats = singleIdLink[Organisation]("organisationId", organisationSrv)(_.outEdge[AlertOrganisation], _.remove)
-                .check(alert, alert.organisationId, orgIds)
+    service
+      .pagedTraversalIds(db, 100) { ids =>
+        db.tryTransaction { implicit graph =>
+          val caseCheck = singleIdLink[Case]("caseId", caseSrv)(_.outEdge[AlertCase], _.set(EntityId.empty))
+          val orgCheck  = singleIdLink[Organisation]("organisationId", organisationSrv)(_.outEdge[AlertOrganisation], _.remove)
+          Try {
+            service
+              .getByIds(ids: _*)
+              .project(
+                _.by
+                  .by(_.`case`._id.fold)
+                  .by(_.organisation._id.fold)
+                  .by(_.removeDuplicateOutEdges[AlertCase]())
+                  .by(_.removeDuplicateOutEdges[AlertOrganisation]())
+                  .by(_.tags.fold)
+              )
+              .toIterator
+              .map {
+                case (alert, caseIds, orgIds, extraCaseEdges, extraOrgEdges, tags) =>
+                  val caseStats = caseCheck.check(alert, alert.caseId, caseIds)
+                  val orgStats  = orgCheck.check(alert, alert.organisationId, orgIds)
+                  val tagStats = {
+                    val alertTagSet = alert.tags.toSet
+                    val tagSet      = tags.map(_.toString).toSet
+                    if (alertTagSet == tagSet) Map.empty[String, Int]
+                    else {
+                      implicit val authContext: AuthContext =
+                        LocalUserSrv.getSystemAuthContext.changeOrganisation(alert.organisationId, Permissions.all)
 
-              caseStats <+> orgStats <+> extraCaseEdges <+> extraOrgEdges
+                      val extraTagField = alertTagSet -- tagSet
+                      val extraTagLink  = tagSet -- alertTagSet
+                      extraTagField.flatMap(tagSrv.getOrCreate(_).toOption).foreach(service.alertTagSrv.create(AlertTag(), alert, _))
+                      service.get(alert).update(_.tags, alert.tags ++ extraTagLink).iterate()
+                      Map(
+                        "case-tags-extraField" -> extraTagField.size,
+                        "case-tags-extraLink"  -> extraTagLink.size
+                      )
+                    }
+                  }
+                  caseStats <+> orgStats <+> extraCaseEdges <+> extraOrgEdges <+> tagStats
+              }
+              .reduceOption(_ <+> _)
+              .getOrElse(Map.empty)
           }
-          .reduceOption(_ <+> _)
-          .getOrElse(Map.empty)
+        }.getOrElse(Map("Alert-globalFailure" -> 1))
       }
-    }.getOrElse(Map("Alert-globalFailure" -> 1))
+      .reduceOption(_ <+> _)
+      .getOrElse(Map.empty)
 }

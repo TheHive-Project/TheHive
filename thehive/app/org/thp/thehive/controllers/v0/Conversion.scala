@@ -33,6 +33,7 @@ object Conversion {
       case "create" => "Creation"
       case "update" => "Update"
       case "delete" => "Delete"
+      case "merge"  => "Update"
       case _        => "Unknown"
     }
 
@@ -676,6 +677,8 @@ object Conversion {
         .withFieldConst(_.password, None)
         .withFieldConst(_.locked, false)
         .withFieldConst(_.totpSecret, None)
+        .withFieldConst(_.failedAttempts, None)
+        .withFieldConst(_.lastFailed, None)
         //    .withFieldRenamed(_.roles, _.permissions)
         .transform
   }

@@ -61,7 +61,7 @@ class AlertCreatedTest extends PlaySpecification with TestAppBuilder with TheHiv
         user2 must beSuccessfulTry
         user1 must beSuccessfulTry
 
-        val alertCreated = new AlertCreated()
+        val alertCreated = AlertCreated
 
         alertCreated.filter(audit.get, Some(alert.get.alert), organisation.get, user1.toOption) must beFalse
         alertCreated.filter(audit.get, Some(alert.get.alert), organisation.get, user2.toOption) must beTrue

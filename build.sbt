@@ -366,16 +366,14 @@ lazy val thehiveMigration = (project in file("migration"))
     name := "thehive-migration",
     resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
     libraryDependencies ++= Seq(
-      elastic4sCore,
-      elastic4sHttpStreams,
-      elastic4sClient,
-//      jts,
+      alpakka,
       ehcache,
       scopt,
       macWireMacros,
       macWireMacrosakka,
       macWireUtil,
       macWireProxy,
+      scalaParallelCollection,
       specs % Test
     ),
     normalizedName := "migrate",

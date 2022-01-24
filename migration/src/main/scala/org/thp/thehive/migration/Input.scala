@@ -47,17 +47,15 @@ object Filter {
               new ParseException(s"Unparseable date: $s\nExpected format is ${dateFormats.map(_.toPattern).mkString("\"", "\" or \"", "\"")}", 0)
             )
         }
-    def readDate(dateConfigName: String, ageConfigName: String) =
+    def readDate(dateConfigName: String, ageConfigName: String): Option[Long] =
       Try(config.getString(dateConfigName))
         .flatMap(parseDate)
         .map(d => d.getTime)
-        .toOption
         .orElse {
-          Try {
-            val age = config.getDuration(ageConfigName)
-            if (age.isZero) None else Some(now - age.getSeconds * 1000)
-          }.toOption.flatten
+          Try(config.getDuration(ageConfigName))
+            .map(d => now - d.getSeconds * 1000)
         }
+        .toOption
     val caseFromDate    = readDate("caseFromDate", "maxCaseAge")
     val caseUntilDate   = readDate("caseUntilDate", "minCaseAge")
     val caseFromNumber  = Try(config.getInt("caseFromNumber")).toOption
@@ -89,24 +87,16 @@ trait Input {
   def countOrganisations(filter: Filter): Future[Long]
   def listCases(filter: Filter): Source[Try[InputCase], NotUsed]
   def countCases(filter: Filter): Future[Long]
-  def listCaseObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed]
   def countCaseObservables(filter: Filter): Future[Long]
   def listCaseObservables(caseId: String): Source[Try[(String, InputObservable)], NotUsed]
-  def countCaseObservables(caseId: String): Future[Long]
-  def listCaseTasks(filter: Filter): Source[Try[(String, InputTask)], NotUsed]
   def countCaseTasks(filter: Filter): Future[Long]
   def listCaseTasks(caseId: String): Source[Try[(String, InputTask)], NotUsed]
-  def countCaseTasks(caseId: String): Future[Long]
-  def listCaseTaskLogs(filter: Filter): Source[Try[(String, InputLog)], NotUsed]
   def countCaseTaskLogs(filter: Filter): Future[Long]
   def listCaseTaskLogs(caseId: String): Source[Try[(String, InputLog)], NotUsed]
-  def countCaseTaskLogs(caseId: String): Future[Long]
   def listAlerts(filter: Filter): Source[Try[InputAlert], NotUsed]
   def countAlerts(filter: Filter): Future[Long]
-  def listAlertObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed]
   def countAlertObservables(filter: Filter): Future[Long]
   def listAlertObservables(alertId: String): Source[Try[(String, InputObservable)], NotUsed]
-  def countAlertObservables(alertId: String): Future[Long]
   def listUsers(filter: Filter): Source[Try[InputUser], NotUsed]
   def countUsers(filter: Filter): Future[Long]
   def listCustomFields(filter: Filter): Source[Try[InputCustomField], NotUsed]
@@ -122,25 +112,13 @@ trait Input {
   def listCaseTemplate(filter: Filter): Source[Try[InputCaseTemplate], NotUsed]
   def countCaseTemplate(filter: Filter): Future[Long]
   def listCaseTemplateTask(caseTemplateId: String): Source[Try[(String, InputTask)], NotUsed]
-  def countCaseTemplateTask(caseTemplateId: String): Future[Long]
-  def listCaseTemplateTask(filter: Filter): Source[Try[(String, InputTask)], NotUsed]
   def countCaseTemplateTask(filter: Filter): Future[Long]
   def listJobs(caseId: String): Source[Try[(String, InputJob)], NotUsed]
-  def countJobs(caseId: String): Future[Long]
-  def listJobs(filter: Filter): Source[Try[(String, InputJob)], NotUsed]
   def countJobs(filter: Filter): Future[Long]
-  def listJobObservables(filter: Filter): Source[Try[(String, InputObservable)], NotUsed]
   def countJobObservables(filter: Filter): Future[Long]
   def listJobObservables(caseId: String): Source[Try[(String, InputObservable)], NotUsed]
-  def countJobObservables(caseId: String): Future[Long]
-  def listAction(filter: Filter): Source[Try[(String, InputAction)], NotUsed]
   def countAction(filter: Filter): Future[Long]
-  def listAction(entityId: String): Source[Try[(String, InputAction)], NotUsed]
   def listActions(entityIds: Seq[String]): Source[Try[(String, InputAction)], NotUsed]
-  def countAction(entityId: String): Future[Long]
-  def listAudit(filter: Filter): Source[Try[(String, InputAudit)], NotUsed]
   def countAudit(filter: Filter): Future[Long]
-  def listAudit(entityId: String, filter: Filter): Source[Try[(String, InputAudit)], NotUsed]
   def listAudits(entityIds: Seq[String], filter: Filter): Source[Try[(String, InputAudit)], NotUsed]
-  def countAudit(entityId: String, filter: Filter): Future[Long]
 }

@@ -14,13 +14,15 @@ import play.api.http.HttpEntity
 import play.api.mvc._
 
 import java.nio.file.Files
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Try}
 
 class AttachmentCtrl(
     entrypoint: Entrypoint,
     appConfig: ApplicationConfig,
     attachmentSrv: AttachmentSrv,
-    db: Database
+    db: Database,
+    ec: ExecutionContext
 ) extends TheHiveOpsNoDeps {
   val forbiddenChar: Seq[Char] = Seq('/', '\n', '\r', '\t', '\u0000', '\f', '`', '?', '*', '\\', '<', '>', '|', '\"', ':', ';')
 
@@ -72,8 +74,12 @@ class AttachmentCtrl(
               zipParams.setEncryptionMethod(EncryptionMethod.ZIP_STANDARD)
               zipParams.setFileNameInZip(filename)
               //      zipParams.setSourceExternalStream(true)
-              zipFile.addStream(attachmentSrv.stream(attachment), zipParams)
-
+              val is = attachmentSrv.stream(attachment)
+              try zipFile.addStream(is, zipParams)
+              finally is.close()
+              val source = FileIO.fromPath(f).mapMaterializedValue { fut =>
+                fut.andThen { case _ => Files.delete(f) }(ec)
+              }
               Result(
                 header = ResponseHeader(
                   200,
@@ -84,8 +90,8 @@ class AttachmentCtrl(
                     "Content-Length"            -> Files.size(f).toString
                   )
                 ),
-                body = HttpEntity.Streamed(FileIO.fromPath(f), Some(Files.size(f)), Some("application/zip"))
-              ) // FIXME remove temporary file (but when ?)
+                body = HttpEntity.Streamed(source, Some(Files.size(f)), Some("application/zip"))
+              )
             }
           }
           .recoverWith {

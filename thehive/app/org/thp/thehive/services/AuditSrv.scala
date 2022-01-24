@@ -329,11 +329,8 @@ trait AuditOpsNoDeps { _: TheHiveOpsNoDeps =>
           _.by
             .by(_.context.entityMap.option)
             .by(_.`object`.entityMap.option)
-            .by(_.organisation.v[Organisation].fold)
+            .by(_.organisation.dedup.fold)
         )
-        .domainMap {
-          case (audit, context, obj, organisation) => (audit, context, obj, organisation)
-        }
 
     def richAudit: Traversal[RichAudit, JMap[String, Any], Converter[RichAudit, JMap[String, Any]]] =
       traversal

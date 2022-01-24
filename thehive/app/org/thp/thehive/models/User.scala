@@ -23,7 +23,9 @@ case class User(
     apikey: Option[String],
     locked: Boolean,
     password: Option[String],
-    totpSecret: Option[String]
+    totpSecret: Option[String],
+    failedAttempts: Option[Int],
+    lastFailed: Option[Date]
 ) extends ScalligraphUser {
   override val id: String          = login
   override def getUserName: String = name
@@ -42,7 +44,9 @@ object User {
     apikey = None,
     locked = false,
     password = Some(LocalPasswordAuthSrv.hashPassword(initPassword)),
-    totpSecret = None
+    totpSecret = None,
+    failedAttempts = None,
+    lastFailed = None
   )
 
   val system: User =
@@ -54,7 +58,9 @@ object User {
       apikey = None,
       locked = false,
       password = None,
-      totpSecret = None
+      totpSecret = None,
+      failedAttempts = None,
+      lastFailed = None
     )
 
   val initialValues: Seq[User] = Seq(init, system)
