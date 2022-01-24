@@ -770,60 +770,64 @@ class CaseIntegrityCheckOps @Inject() (
     Success(())
   }
 
-  override def globalCheck(): Map[String, Int] =
+  override def globalCheck(stopAt: Long): Map[String, Int] =
     service
       .pagedTraversalIds(db, 100) { ids =>
-        db.tryTransaction { implicit graph =>
-          val assigneeCheck = singleOptionLink[User, String]("assignee", userSrv.getByName(_).head, _.login)(_.outEdge[CaseUser])
-          val orgCheck      = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove) // FIXME => Seq => Set
-          val templateCheck =
-            singleOptionLink[CaseTemplate, String]("caseTemplate", caseTemplateSrv.getByName(_).head, _.name)(_.outEdge[CaseCaseTemplate])
-          val fixOwningOrg: LinkRemover =
-            (caseId, orgId) => service.get(caseId).shares.filter(_.organisation.get(orgId._id)).update(_.owner, false).iterate()
-          val owningOrgCheck = singleIdLink[Organisation]("owningOrganisation", organisationSrv)(_ => fixOwningOrg, _.remove)
+        if (System.currentTimeMillis() > stopAt) None
+        else
+          Some {
+            db.tryTransaction { implicit graph =>
+              val assigneeCheck = singleOptionLink[User, String]("assignee", userSrv.getByName(_).head, _.login)(_.outEdge[CaseUser])
+              val orgCheck      = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove) // FIXME => Seq => Set
+              val templateCheck =
+                singleOptionLink[CaseTemplate, String]("caseTemplate", caseTemplateSrv.getByName(_).head, _.name)(_.outEdge[CaseCaseTemplate])
+              val fixOwningOrg: LinkRemover =
+                (caseId, orgId) => service.get(caseId).shares.filter(_.organisation.get(orgId._id)).update(_.owner, false).iterate()
+              val owningOrgCheck = singleIdLink[Organisation]("owningOrganisation", organisationSrv)(_ => fixOwningOrg, _.remove)
 
-          Try {
-            service
-              .getByIds(ids: _*)
-              .project(
-                _.by
-                  .by(_.organisations._id.fold)
-                  .by(_.assignee.value(_.login).fold)
-                  .by(_.caseTemplate.value(_.name).fold)
-                  .by(_.origin._id.fold)
-                  .by(_.tags.fold)
-              )
-              .toIterator
-              .map {
-                case (case0, organisationIds, assigneeIds, caseTemplateNames, owningOrganisationIds, tags) =>
-                  val assigneeStats  = assigneeCheck.check(case0, case0.assignee, assigneeIds)
-                  val orgStats       = orgCheck.check(case0, case0.organisationIds, organisationIds)
-                  val templateStats  = templateCheck.check(case0, case0.caseTemplate, caseTemplateNames)
-                  val owningOrgStats = owningOrgCheck.check(case0, case0.owningOrganisation, owningOrganisationIds)
-                  val tagStats = {
-                    val caseTagSet = case0.tags.toSet
-                    val tagSet     = tags.map(_.toString).toSet
-                    if (caseTagSet == tagSet) Map.empty[String, Int]
-                    else {
-                      implicit val authContext: AuthContext =
-                        LocalUserSrv.getSystemAuthContext.changeOrganisation(case0.owningOrganisation, Permissions.all)
+              Try {
+                service
+                  .getByIds(ids: _*)
+                  .project(
+                    _.by
+                      .by(_.organisations._id.fold)
+                      .by(_.assignee.value(_.login).fold)
+                      .by(_.caseTemplate.value(_.name).fold)
+                      .by(_.origin._id.fold)
+                      .by(_.tags.fold)
+                  )
+                  .toIterator
+                  .map {
+                    case (case0, organisationIds, assigneeIds, caseTemplateNames, owningOrganisationIds, tags) =>
+                      val assigneeStats  = assigneeCheck.check(case0, case0.assignee, assigneeIds)
+                      val orgStats       = orgCheck.check(case0, case0.organisationIds, organisationIds)
+                      val templateStats  = templateCheck.check(case0, case0.caseTemplate, caseTemplateNames)
+                      val owningOrgStats = owningOrgCheck.check(case0, case0.owningOrganisation, owningOrganisationIds)
+                      val tagStats = {
+                        val caseTagSet = case0.tags.toSet
+                        val tagSet     = tags.map(_.toString).toSet
+                        if (caseTagSet == tagSet) Map.empty[String, Int]
+                        else {
+                          implicit val authContext: AuthContext =
+                            LocalUserSrv.getSystemAuthContext.changeOrganisation(case0.owningOrganisation, Permissions.all)
 
-                      val extraTagField = caseTagSet -- tagSet
-                      val extraTagLink  = tagSet -- caseTagSet
-                      extraTagField.flatMap(tagSrv.getOrCreate(_).toOption).foreach(service.caseTagSrv.create(CaseTag(), case0, _))
-                      service.get(case0).update(_.tags, case0.tags ++ extraTagLink).iterate()
-                      Map(
-                        "case-tags-extraField" -> extraTagField.size,
-                        "case-tags-extraLink"  -> extraTagLink.size
-                      )
-                    }
+                          val extraTagField = caseTagSet -- tagSet
+                          val extraTagLink  = tagSet -- caseTagSet
+                          extraTagField.flatMap(tagSrv.getOrCreate(_).toOption).foreach(service.caseTagSrv.create(CaseTag(), case0, _))
+                          service.get(case0).update(_.tags, case0.tags ++ extraTagLink).iterate()
+                          Map(
+                            "case-tags-extraField" -> extraTagField.size,
+                            "case-tags-extraLink"  -> extraTagLink.size
+                          )
+                        }
+                      }
+                      assigneeStats <+> orgStats <+> templateStats <+> owningOrgStats <+> tagStats
                   }
-                  assigneeStats <+> orgStats <+> templateStats <+> owningOrgStats <+> tagStats
+                  .reduceOption(_ <+> _)
+                  .getOrElse(Map.empty)
               }
-              .reduceOption(_ <+> _)
-              .getOrElse(Map.empty)
+            }.getOrElse(Map("globalFailure" -> 1))
           }
-        }.getOrElse(Map("globalFailure" -> 1))
       }
       .reduceOption(_ <+> _)
       .getOrElse(Map.empty)

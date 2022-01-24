@@ -112,29 +112,32 @@ object LogOps {
 class LogIntegrityCheckOps @Inject() (val db: Database, val service: LogSrv, taskSrv: TaskSrv) extends IntegrityCheckOps[Log] {
   override def resolve(entities: Seq[Log with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
-  override def globalCheck(): Map[String, Int] =
+  override def globalCheck(stopAt: Long): Map[String, Int] =
     service
       .pagedTraversalIds(db, 100) { ids =>
-        println(s"get ids: ${ids.mkString(",")}")
-        db.tryTransaction { implicit graph =>
-          val taskCheck = singleIdLink[Task]("taskId", taskSrv)(_.inEdge[TaskLog], _.remove)
-          Try {
-            service
-              .getByIds(ids: _*)
-              .project(_.by.by(_.task.fold))
-              .toIterator
-              .map {
-                case (log, tasks) =>
-                  val taskStats = taskCheck.check(log, log.taskId, tasks.map(_._id))
-                  if (tasks.size == 1 && tasks.head.organisationIds != log.organisationIds) {
-                    service.get(log).update(_.organisationIds, tasks.head.organisationIds).iterate()
-                    taskStats + ("Log-invalidOrgs" -> 1)
-                  } else taskStats
+        if (System.currentTimeMillis() > stopAt) None
+        else
+          Some {
+            db.tryTransaction { implicit graph =>
+              val taskCheck = singleIdLink[Task]("taskId", taskSrv)(_.inEdge[TaskLog], _.remove)
+              Try {
+                service
+                  .getByIds(ids: _*)
+                  .project(_.by.by(_.task.fold))
+                  .toIterator
+                  .map {
+                    case (log, tasks) =>
+                      val taskStats = taskCheck.check(log, log.taskId, tasks.map(_._id))
+                      if (tasks.size == 1 && tasks.head.organisationIds != log.organisationIds) {
+                        service.get(log).update(_.organisationIds, tasks.head.organisationIds).iterate()
+                        taskStats + ("Log-invalidOrgs" -> 1)
+                      } else taskStats
+                  }
+                  .reduceOption(_ <+> _)
+                  .getOrElse(Map.empty)
               }
-              .reduceOption(_ <+> _)
-              .getOrElse(Map.empty)
+            }.getOrElse(Map("globalFailure" -> 1))
           }
-        }.getOrElse(Map("globalFailure" -> 1))
       }
       .reduceOption(_ <+> _)
       .getOrElse(Map.empty)

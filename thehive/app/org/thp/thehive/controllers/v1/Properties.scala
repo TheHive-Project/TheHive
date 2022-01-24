@@ -1,13 +1,11 @@
 package org.thp.thehive.controllers.v1
 
-import org.apache.tinkerpop.gremlin.process.traversal.Compare
 import org.apache.tinkerpop.gremlin.structure.T
 import org.thp.scalligraph.controllers.{FPathElem, FPathEmpty, FString}
 import org.thp.scalligraph.models.{Database, UMapping}
 import org.thp.scalligraph.query.PredicateOps._
 import org.thp.scalligraph.query.{PublicProperties, PublicPropertyListBuilder}
 import org.thp.scalligraph.traversal.TraversalOps._
-import org.thp.scalligraph.utils.Hasher
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, InvalidFormatAttributeError, RichSeq}
 import org.thp.thehive.dto.v1.InputCustomFieldValue
 import org.thp.thehive.models._

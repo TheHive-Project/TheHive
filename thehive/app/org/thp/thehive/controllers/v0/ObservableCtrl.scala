@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
-import org.apache.tinkerpop.gremlin.process.traversal.Compare
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
@@ -11,7 +10,6 @@ import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAttachment, InputObservable}
 import org.thp.thehive.models._

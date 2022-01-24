@@ -257,45 +257,36 @@ object TaskOps {
 class TaskIntegrityCheckOps @Inject() (val db: Database, val service: TaskSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Task] {
   override def resolve(entities: Seq[Task with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
-  override def globalCheck(): Map[String, Int] =
-    service
-      .pagedTraversalIds(db, 100) { ids =>
-        db.tryTransaction { implicit graph =>
-          val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
-          val removeOrphan: OrphanStrategy[Task, EntityId] = { (_, entity) =>
-            service.get(entity).remove()
-            Map("Task-relatedId-removeOrphan" -> 1)
-          }
-          val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
-            orphanStrategy = removeOrphan,
-            setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
-            entitySelector = _ => EntitySelector.firstCreatedEntity,
-            removeLink = (_, _) => (),
-            getLink = id => graph.VV(id).entity.head,
-            Some(_)
-          )
+  override def globalCheck(traversal: Traversal.V[Task])(implicit graph: Graph): Map[String, Int] = {
+    val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
+    val removeOrphan: OrphanStrategy[Task, EntityId] = { (_, entity) =>
+      service.get(entity).remove()
+      Map("Task-relatedId-removeOrphan" -> 1)
+    }
+    val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
+      orphanStrategy = removeOrphan,
+      setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
+      entitySelector = _ => EntitySelector.firstCreatedEntity,
+      removeLink = (_, _) => (),
+      getLink = id => graph.VV(id).entity.head,
+      Some(_)
+    )
 
-          Try {
-            service
-              .getByIds(ids: _*)
-              .project(
-                _.by
-                  .by(_.unionFlat(_.`case`._id, _.caseTemplate._id).fold)
-                  .by(_.unionFlat(_.organisations._id, _.caseTemplate.organisation._id).fold)
-              )
-              .toIterator
-              .map {
-                case (task, relatedIds, organisationIds) =>
-                  val orgStats     = orgCheck.check(task, task.organisationIds, organisationIds)
-                  val relatedStats = relatedCheck.check(task, task.relatedId, relatedIds)
+    traversal
+      .project(
+        _.by
+          .by(_.unionFlat(_.`case`._id, _.caseTemplate._id).fold)
+          .by(_.unionFlat(_.organisations._id, _.caseTemplate.organisation._id).fold)
+      )
+      .toIterator
+      .map {
+        case (task, relatedIds, organisationIds) =>
+          val orgStats     = orgCheck.check(task, task.organisationIds, organisationIds)
+          val relatedStats = relatedCheck.check(task, task.relatedId, relatedIds)
 
-                  orgStats <+> relatedStats
-              }
-              .reduceOption(_ <+> _)
-              .getOrElse(Map.empty)
-          }
-        }.getOrElse(Map("globalFailure" -> 1))
+          orgStats <+> relatedStats
       }
       .reduceOption(_ <+> _)
       .getOrElse(Map.empty)
+  }
 }

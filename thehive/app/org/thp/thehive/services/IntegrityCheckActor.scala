@@ -17,7 +17,7 @@ import java.util.{Set => JSet}
 import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.concurrent.duration.{Duration, FiniteDuration, NANOSECONDS}
+import scala.concurrent.duration.{Duration, DurationDouble, DurationLong, FiniteDuration, NANOSECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Success}
 
@@ -208,6 +208,14 @@ class IntegrityCheckActor() extends Actor {
         val lastRequestIsObsolete = state.globalStats.lastDate >= state.globalCheckRequestTime
         val checkIsRunning        = state.globalStats.lastDate + globalInterval(name).toMillis > now
         if (lastRequestIsObsolete && !checkIsRunning) {
+          /*
+              service
+      .pagedTraversalIds(db, 100) { ids =>
+        if (System.currentTimeMillis() > stopAt) None
+        else
+          Some {
+db.tryTransaction
+           */
           Future {
             logger.debug(s"Global check of $name")
             val startDate = System.currentTimeMillis()
@@ -227,6 +235,37 @@ class IntegrityCheckActor() extends Actor {
     case GetCheckStats(name) =>
       sender() ! states.getOrElse(name, CheckStats(Map("checkNotFound" -> 1L), Map("checkNotFound" -> 1L), 0L))
   }
+  def runGlobalChecks(maxDuration: FiniteDuration): Map[String, Map[String, Int]] =
+    if (integrityCheckOps.isEmpty) Map.empty
+    else {
+      val startAt        = System.currentTimeMillis()
+      val checksWithPerf = integrityCheckOps.map(c => (c, c.getPerformanceIndicator))
+      val avg1           = (maxDuration.toMillis / integrityCheckOps.size).millis
+      // checks are quick if they have finished the process of all the dataset in one turn
+      val (quickChecks, otherChecks) = checksWithPerf.partition(p => p._2.period.isEmpty && p._2.duration.isDefined)
+      quickChecks.map(c => c._1.name -> c._1.runGlobalCheck(avg1)).toMap ++ {
+        val remainingTime1 = maxDuration.toMillis - (System.currentTimeMillis - startAt)
+        if (remainingTime1 <= 0) Map.empty
+        else {
+          // checks are known if there is performance indicator (period and duration)
+          val (knownChecks, unknownChecks) = otherChecks.partition(p => p._2.duration.exists(_ > 0) && p._2.period.exists(_ > 0))
+          val otherCheckResults =
+            if (otherChecks.isEmpty) Map.empty
+            else {
+              val avg2 = remainingTime1 / otherChecks.size
+              unknownChecks.map(c => c._1.name -> c._1.runGlobalCheck(avg2.millis)).toMap
+            }
+          val remainingTime2 = maxDuration.toMillis - (System.currentTimeMillis - startAt)
+          val knownCheckResults =
+            if (remainingTime2 <= 0) Map.empty
+            else {
+              val sum = knownChecks.map(c => c._2.duration.get.toDouble / c._2.period.get).sum
+              knownChecks.map(c => c._1.name -> c._1.runGlobalCheck((remainingTime2 * sum * c._2.period.get / c._2.duration.get).millis)).toMap
+            }
+          otherCheckResults ++ knownCheckResults
+        }
+      }
+    }
 }
 
 @Singleton
