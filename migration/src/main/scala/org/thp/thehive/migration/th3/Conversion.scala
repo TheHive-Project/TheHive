@@ -19,6 +19,8 @@ import scala.util.Try
 case class Attachment(name: String, hashes: Seq[Hash], size: Long, contentType: String, id: String)
 trait Conversion {
 
+  def truncateString(s: String): String = if (s.length < 8191) s else s.take(8191)
+
   private val attachmentWrites: OWrites[Attachment] = OWrites[Attachment] { attachment =>
     Json.obj(
       "name"        -> attachment.name,
@@ -31,11 +33,11 @@ trait Conversion {
 
   private val attachmentReads: Reads[Attachment] = Reads { json =>
     for {
-      name        <- (json \ "name").validate[String]
+      name        <- (json \ "name").validate[String].map(truncateString)
       hashes      <- (json \ "hashes").validate[Seq[Hash]]
       size        <- (json \ "size").validate[Long]
-      contentType <- (json \ "contentType").validate[String]
-      id          <- (json \ "id").validate[String]
+      contentType <- (json \ "contentType").validate[String].map(truncateString)
+      id          <- (json \ "id").validate[String].map(truncateString)
     } yield Attachment(name, hashes, size, contentType, id)
   }
   implicit val attachmentFormat: OFormat[Attachment] = OFormat(attachmentReads, attachmentWrites)
@@ -54,17 +56,17 @@ trait Conversion {
     for {
       metaData    <- json.validate[MetaData]
       number      <- (json \ "caseId").validate[Int]
-      title       <- (json \ "title").validate[String]
+      title       <- (json \ "title").validate[String].map(truncateString)
       description <- (json \ "description").validate[String]
       severity    <- (json \ "severity").validate[Int]
       startDate   <- (json \ "startDate").validate[Date]
       endDate     <- (json \ "endDate").validateOpt[Date]
       flag        <- (json \ "flag").validate[Boolean]
       tlp         <- (json \ "tlp").validate[Int]
-      pap         <- (json \ "pap").validate[Int]
+      pap         <- (json \ "pap").validateOpt[Int]
       status      <- (json \ "status").validate[CaseStatus.Value]
-      summary     <- (json \ "summary").validateOpt[String]
-      user        <- (json \ "owner").validateOpt[String]
+      summary     <- (json \ "summary").validateOpt[String].map(_.map(truncateString))
+      user        <- (json \ "owner").validateOpt[String].map(_.map(truncateString))
       tags             = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
       metrics          = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
       resolutionStatus = (json \ "resolutionStatus").asOpt[String]
@@ -86,7 +88,7 @@ trait Conversion {
         endDate = endDate,
         flag = flag,
         tlp = tlp,
-        pap = pap,
+        pap = pap.getOrElse(2),
         status = status,
         summary = summary,
         tags = tags.toSeq,
@@ -127,8 +129,8 @@ trait Conversion {
       message  <- (json \ "message").validateOpt[String]
       tlp      <- (json \ "tlp").validate[Int]
       ioc      <- (json \ "ioc").validate[Boolean]
-      sighted  <- (json \ "sighted").validate[Boolean]
-      dataType <- (json \ "dataType").validate[String]
+      sighted  <- (json \ "sighted").validateOpt[Boolean]
+      dataType <- (json \ "dataType").validate[String].map(truncateString)
       tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
       taxonomiesList <- Json.parse((json \ "reports").asOpt[String].getOrElse("{}")).validate[Seq[ReportTag]]
       dataOrAttachment <-
@@ -146,7 +148,7 @@ trait Conversion {
         message = message,
         tlp = tlp,
         ioc = ioc,
-        sighted = sighted,
+        sighted = sighted.getOrElse(false),
         ignoreSimilarity = None,
         dataType = dataType,
         tags = tags.toSeq
@@ -160,8 +162,8 @@ trait Conversion {
   implicit val taskReads: Reads[InputTask] = Reads[InputTask] { json =>
     for {
       metaData    <- json.validate[MetaData]
-      title       <- (json \ "title").validate[String]
-      group       <- (json \ "group").validate[String]
+      title       <- (json \ "title").validate[String].map(truncateString)
+      group       <- (json \ "group").validateOpt[String].map(_.map(truncateString))
       description <- (json \ "description").validateOpt[String]
       status      <- (json \ "status").validate[TaskStatus.Value]
       flag        <- (json \ "flag").validate[Boolean]
@@ -169,12 +171,12 @@ trait Conversion {
       endDate     <- (json \ "endDate").validateOpt[Date]
       order       <- (json \ "order").validate[Int]
       dueDate     <- (json \ "dueDate").validateOpt[Date]
-      owner       <- (json \ "owner").validateOpt[String]
+      owner       <- (json \ "owner").validateOpt[String].map(_.map(truncateString))
     } yield InputTask(
       metaData,
       Task(
         title = title,
-        group = group,
+        group = group.getOrElse("default"),
         description = description,
         status = status,
         flag = flag,
@@ -204,23 +206,27 @@ trait Conversion {
   implicit val alertReads: Reads[InputAlert] = Reads[InputAlert] { json =>
     for {
       metaData     <- json.validate[MetaData]
-      tpe          <- (json \ "type").validate[String]
-      source       <- (json \ "source").validate[String]
-      sourceRef    <- (json \ "sourceRef").validate[String]
-      externalLink <- (json \ "externalLink").validateOpt[String]
-      title        <- (json \ "title").validate[String]
+      tpe          <- (json \ "type").validate[String].map(truncateString)
+      source       <- (json \ "source").validate[String].map(truncateString)
+      sourceRef    <- (json \ "sourceRef").validate[String].map(truncateString)
+      externalLink <- (json \ "externalLink").validateOpt[String].map(_.map(truncateString))
+      title        <- (json \ "title").validate[String].map(truncateString)
       description  <- (json \ "description").validate[String]
       severity     <- (json \ "severity").validate[Int]
       date         <- (json \ "date").validate[Date]
       lastSyncDate <- (json \ "lastSyncDate").validate[Date]
       tlp          <- (json \ "tlp").validate[Int]
       pap          <- (json \ "pap").validateOpt[Int] // not in TH3
-      status       <- (json \ "status").validate[String]
+      status       <- (json \ "status").validate[String].map(truncateString)
       read = status == "Ignored" || status == "Imported"
       follow <- (json \ "follow").validate[Boolean]
       caseId <- (json \ "case").validateOpt[String]
-      tags         = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
-      customFields = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
+      tags    = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty).filterNot(_.isEmpty)
+      metrics = (json \ "metrics").asOpt[JsObject].getOrElse(JsObject.empty)
+      metricsValue = metrics.value.map {
+        case (name, value) => name -> Some(value)
+      }
+      customFields = (json \ "customFields").asOpt[JsObject].getOrElse(JsObject.empty)
       customFieldsValue = customFields.value.map {
         case (name, value) =>
           name -> Some((value \ "string") orElse (value \ "boolean") orElse (value \ "number") orElse (value \ "date") getOrElse JsNull)
@@ -246,7 +252,7 @@ trait Conversion {
       ),
       caseId,
       mainOrganisation,
-      customFieldsValue.toMap,
+      (metricsValue ++ customFieldsValue).toMap,
       caseTemplate: Option[String]
     )
   }
@@ -254,7 +260,7 @@ trait Conversion {
   def alertObservableReads(metaData: MetaData): Reads[InputObservable] =
     Reads[InputObservable] { json =>
       for {
-        dataType <- (json \ "dataType").validate[String]
+        dataType <- (json \ "dataType").validate[String].map(truncateString)
         message  <- (json \ "message").validateOpt[String]
         tlp      <- (json \ "tlp").validateOpt[Int]
         tags = (json \ "tags").asOpt[Set[String]].getOrElse(Set.empty)
@@ -303,12 +309,12 @@ trait Conversion {
   implicit val userReads: Reads[InputUser] = Reads[InputUser] { json =>
     for {
       metaData <- json.validate[MetaData]
-      login    <- (json \ "_id").validate[String]
-      name     <- (json \ "name").validate[String]
-      apikey   <- (json \ "key").validateOpt[String]
-      status   <- (json \ "status").validate[String]
+      login    <- (json \ "_id").validate[String].map(truncateString)
+      name     <- (json \ "name").validate[String].map(truncateString)
+      apikey   <- (json \ "key").validateOpt[String].map(_.map(truncateString))
+      status   <- (json \ "status").validate[String].map(truncateString)
       locked = status == "Locked"
-      password <- (json \ "password").validateOpt[String]
+      password <- (json \ "password").validateOpt[String].map(_.map(truncateString))
       role     <- (json \ "roles").validateOpt[Seq[String]].map(_.getOrElse(Nil))
       organisationProfiles =
         if (role.contains("admin")) Map(mainOrganisation -> Profile.orgAdmin.name)
@@ -322,15 +328,15 @@ trait Conversion {
             val data = Base64.getDecoder.decode(base64)
             InputAttachment(s"$login.avatar", data.size.toLong, "image/png", Nil, Source.single(ByteString(data)))
           }
-    } yield InputUser(metaData, User(normaliseLogin(login), name, apikey, locked, password, None), organisationProfiles, avatar)
+    } yield InputUser(metaData, User(normaliseLogin(login), name, apikey, locked, password, None, None, None), organisationProfiles, avatar)
   }
 
   val metricsReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>
     for {
-      valueJson <- (json \ "value").validate[String]
+      valueJson <- (json \ "value").validate[String].map(truncateString)
       value = Json.parse(valueJson)
-      name <- (value \ "name").validate[String]
-//      title       <- (value \ "title").validate[String]
+      name <- (value \ "name").validate[String].map(truncateString)
+//      title       <- (value \ "title").validate[String].map(truncateString
       description <- (value \ "description").validate[String]
     } yield InputCustomField(
       MetaData(name, User.init.login, new Date, None, None),
@@ -341,12 +347,12 @@ trait Conversion {
   implicit val customFieldReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>
     for {
       //      metaData    <- json.validate[MetaData]
-      valueJson <- (json \ "value").validate[String]
+      valueJson <- (json \ "value").validate[String].map(truncateString)
       value = Json.parse(valueJson)
-      displayName <- (value \ "name").validate[String]
-      name        <- (value \ "reference").validate[String]
+      displayName <- (value \ "name").validate[String].map(truncateString)
+      name        <- (value \ "reference").validate[String].map(truncateString)
       description <- (value \ "description").validate[String]
-      tpe         <- (value \ "type").validate[String]
+      tpe         <- (value \ "type").validate[String].map(truncateString)
       customFieldType = tpe match {
         case "string"  => CustomFieldType.string
         case "number"  => CustomFieldType.integer
@@ -365,19 +371,18 @@ trait Conversion {
   implicit val observableTypeReads: Reads[InputObservableType] = Reads[InputObservableType] { json =>
     for {
       //      metaData    <- json.validate[MetaData]
-      valueJson <- (json \ "value").validate[String]
+      valueJson <- (json \ "value").validate[String].map(truncateString)
       value = Json.parse(valueJson)
-      name <- value.validate[String]
+      name <- value.validate[String].map(truncateString)
     } yield InputObservableType(MetaData(name, User.init.login, new Date, None, None), ObservableType(name, name == "file"))
   }
 
   implicit val caseTemplateReads: Reads[InputCaseTemplate] = Reads[InputCaseTemplate] { json =>
     for {
       metaData    <- json.validate[MetaData]
-      name        <- (json \ "name").validate[String]
-      displayName <- (json \ "name").validate[String]
+      name        <- (json \ "name").validate[String].map(truncateString)
       description <- (json \ "description").validateOpt[String]
-      titlePrefix <- (json \ "titlePrefix").validateOpt[String]
+      titlePrefix <- (json \ "titlePrefix").validateOpt[String].map(_.map(truncateString))
       severity    <- (json \ "severity").validateOpt[Int]
       flag = (json \ "flag").asOpt[Boolean].getOrElse(false)
       tlp     <- (json \ "tlp").validateOpt[Int]
@@ -401,7 +406,7 @@ trait Conversion {
       metaData,
       CaseTemplate(
         name = name,
-        displayName = displayName,
+        displayName = name,
         titlePrefix = titlePrefix,
         description = description,
         tags = tags.toSeq,
@@ -419,8 +424,8 @@ trait Conversion {
   def caseTemplateTaskReads(metaData: MetaData): Reads[InputTask] =
     Reads[InputTask] { json =>
       for {
-        title       <- (json \ "title").validate[String]
-        group       <- (json \ "group").validateOpt[String]
+        title       <- (json \ "title").validate[String].map(truncateString)
+        group       <- (json \ "group").validateOpt[String].map(_.map(truncateString))
         description <- (json \ "description").validateOpt[String]
         status      <- (json \ "status").validateOpt[TaskStatus.Value]
         flag        <- (json \ "flag").validateOpt[Boolean]
@@ -451,9 +456,9 @@ trait Conversion {
   lazy val jobReads: Reads[InputJob] = Reads[InputJob] { json =>
     for {
       metaData         <- json.validate[MetaData]
-      workerId         <- (json \ "analyzerId").validate[String]
-      workerName       <- (json \ "analyzerName").validate[String]
-      workerDefinition <- (json \ "analyzerDefinition").validate[String]
+      workerId         <- (json \ "analyzerId").validate[String].map(truncateString)
+      workerName       <- (json \ "analyzerName").validate[String].map(truncateString)
+      workerDefinition <- (json \ "analyzerDefinition").validate[String].map(truncateString)
       status           <- (json \ "status").validate[JobStatus.Value]
       startDate        <- (json \ "createdAt").validate[Date]
       endDate          <- (json \ "endDate").validate[Date]
@@ -461,8 +466,8 @@ trait Conversion {
       report = reportJson.flatMap { j =>
         (Json.parse(j) \ "full").asOpt[JsObject]
       }
-      cortexId    <- (json \ "cortexId").validate[String]
-      cortexJobId <- (json \ "cortexJobId").validate[String]
+      cortexId    <- (json \ "cortexId").validate[String].map(truncateString)
+      cortexJobId <- (json \ "cortexJobId").validate[String].map(truncateString)
     } yield InputJob(
       metaData,
       Job(
@@ -482,13 +487,16 @@ trait Conversion {
   def jobObservableReads(metaData: MetaData): Reads[InputObservable] =
     Reads[InputObservable] { json =>
       for {
-        message  <- (json \ "message").validateOpt[String] orElse (json \ "attributes" \ "message").validateOpt[String]
-        tlp      <- (json \ "tlp").validate[Int] orElse (json \ "attributes" \ "tlp").validate[Int] orElse JsSuccess(2)
-        ioc      <- (json \ "ioc").validate[Boolean] orElse (json \ "attributes" \ "ioc").validate[Boolean] orElse JsSuccess(false)
-        sighted  <- (json \ "sighted").validate[Boolean] orElse (json \ "attributes" \ "sighted").validate[Boolean] orElse JsSuccess(false)
-        dataType <- (json \ "dataType").validate[String] orElse (json \ "type").validate[String] orElse (json \ "attributes").validate[String]
-        tags     <- (json \ "tags").validate[Set[String]] orElse (json \ "attributes" \ "tags").validate[Set[String]] orElse JsSuccess(Set.empty[String])
-        dataOrAttachment <- ((json \ "data").validate[String] orElse (json \ "value").validate[String])
+        message <- (json \ "message").validateOpt[String].map(_.map(truncateString)) orElse (json \ "attributes" \ "message").validateOpt[String]
+        tlp     <- (json \ "tlp").validate[Int] orElse (json \ "attributes" \ "tlp").validate[Int] orElse JsSuccess(2)
+        ioc     <- (json \ "ioc").validate[Boolean] orElse (json \ "attributes" \ "ioc").validate[Boolean] orElse JsSuccess(false)
+        sighted <- (json \ "sighted").validate[Boolean] orElse (json \ "attributes" \ "sighted").validate[Boolean] orElse JsSuccess(false)
+        dataType <-
+          (json \ "dataType").validate[String].map(truncateString) orElse (json \ "type")
+            .validate[String]
+            .map(truncateString) orElse (json \ "attributes").validate[String].map(truncateString)
+        tags <- (json \ "tags").validate[Set[String]] orElse (json \ "attributes" \ "tags").validate[Set[String]] orElse JsSuccess(Set.empty[String])
+        dataOrAttachment <- ((json \ "data").validate[String].map(truncateString) orElse (json \ "value").validate[String].map(truncateString))
           .map(Left.apply)
           .orElse(
             (json \ "attachment")
@@ -515,18 +523,18 @@ trait Conversion {
   implicit val actionReads: Reads[(String, InputAction)] = Reads[(String, InputAction)] { json =>
     for {
       metaData         <- json.validate[MetaData]
-      workerId         <- (json \ "responderId").validate[String]
-      workerName       <- (json \ "responderName").validateOpt[String]
-      workerDefinition <- (json \ "responderDefinition").validateOpt[String]
+      workerId         <- (json \ "responderId").validate[String].map(truncateString)
+      workerName       <- (json \ "responderName").validateOpt[String].map(_.map(truncateString))
+      workerDefinition <- (json \ "responderDefinition").validateOpt[String].map(_.map(truncateString))
       status           <- (json \ "status").validate[JobStatus.Value]
-      objectType       <- (json \ "objectType").validate[String]
-      objectId         <- (json \ "objectId").validate[String]
+      objectType       <- (json \ "objectType").validate[String].map(truncateString)
+      objectId         <- (json \ "objectId").validate[String].map(truncateString)
       parameters = JsObject.empty // not in th3
       startDate   <- (json \ "startDate").validate[Date]
       endDate     <- (json \ "endDate").validateOpt[Date]
       report      <- (json \ "report").validateOpt[String]
-      cortexId    <- (json \ "cortexId").validateOpt[String]
-      cortexJobId <- (json \ "cortexJobId").validateOpt[String]
+      cortexId    <- (json \ "cortexId").validateOpt[String].map(_.map(truncateString))
+      cortexJobId <- (json \ "cortexJobId").validateOpt[String].map(_.map(truncateString))
       operations  <- (json \ "operations").validateOpt[String]
     } yield objectId -> InputAction(
       metaData,
@@ -550,13 +558,13 @@ trait Conversion {
   implicit val auditReads: Reads[(String, InputAudit)] = Reads[(String, InputAudit)] { json =>
     for {
       metaData   <- json.validate[MetaData]
-      requestId  <- (json \ "requestId").validate[String]
-      operation  <- (json \ "operation").validate[String]
+      requestId  <- (json \ "requestId").validate[String].map(truncateString)
+      operation  <- (json \ "operation").validate[String].map(truncateString)
       mainAction <- (json \ "base").validate[Boolean]
-      objectId   <- (json \ "objectId").validateOpt[String]
-      objectType <- (json \ "objectType").validateOpt[String]
+      objectId   <- (json \ "objectId").validateOpt[String].map(_.map(truncateString))
+      objectType <- (json \ "objectType").validateOpt[String].map(_.map(truncateString))
       details    <- (json \ "details").validateOpt[JsObject]
-      rootId     <- (json \ "rootId").validate[String]
+      rootId     <- (json \ "rootId").validate[String].map(truncateString)
     } yield (
       rootId,
       InputAudit(

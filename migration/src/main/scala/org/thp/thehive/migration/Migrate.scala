@@ -10,13 +10,16 @@ import scopt.OParser
 import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{blocking, Await, ExecutionContext, Future}
 
 object Migrate extends App with MigrationOps {
   val defaultLoggerConfigFile = "/etc/thehive/logback-migration.xml"
   if (System.getProperty("logger.file") == null && Files.exists(Paths.get(defaultLoggerConfigFile)))
     System.setProperty("logger.file", defaultLoggerConfigFile)
+  (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
+  var transactionPageSize: Int = 100
+  var threadCount: Int         = 3
 
   def getVersion: String = Option(getClass.getPackage.getImplementationVersion).getOrElse("SNAPSHOT")
 
@@ -53,6 +56,9 @@ object Migrate extends App with MigrationOps {
       opt[Unit]('d', "drop-database")
         .action((_, c) => addConfig(c, "output.dropDatabase", true))
         .text("Drop TheHive4 database before migration"),
+      opt[Unit]('r', "resume")
+        .action((_, c) => addConfig(c, "output.resume", true))
+        .text("Resume migration (or migrate on existing database)"),
       opt[String]('m', "main-organisation")
         .valueName("<organisation>")
         .action((o, c) => addConfig(c, "input.mainOrganisation", o)),
@@ -64,6 +70,10 @@ object Migrate extends App with MigrationOps {
         .valueName("<index>")
         .text("TheHive3 ElasticSearch index name")
         .action((i, c) => addConfig(c, "input.search.index", i)),
+      opt[String]('x', "es-index-version")
+        .valueName("<index>")
+        .text("TheHive3 ElasticSearch index name version number (default: autodetect)")
+        .action((i, c) => addConfig(c, "input.search.indexVersion", i)),
       opt[String]('a', "es-keepalive")
         .valueName("<duration>")
         .text("TheHive3 ElasticSearch keepalive")
@@ -71,6 +81,16 @@ object Migrate extends App with MigrationOps {
       opt[Int]('p', "es-pagesize")
         .text("TheHive3 ElasticSearch page size")
         .action((p, c) => addConfig(c, "input.search.pagesize", p)),
+      opt[Boolean]('s', "es-single-type")
+        .valueName("<bool>")
+        .text("Elasticsearch single type")
+        .action((s, c) => addConfig(c, "input.search.singleType", s)),
+      opt[Int]('y', "transaction-pagesize")
+        .text("page size for each transaction")
+        .action((t, c) => addConfig(c, "transactionPageSize", t)),
+      opt[Int]('t', "thread-count")
+        .text("number of threads")
+        .action((t, c) => addConfig(c, "threadCount", t)),
       /* case age */
       opt[String]("max-case-age")
         .valueName("<duration>")
@@ -134,11 +154,11 @@ object Migrate extends App with MigrationOps {
       opt[String]("max-audit-age")
         .valueName("<duration>")
         .text("migrate only audits whose age is less than <duration>")
-        .action((v, c) => addConfig(c, "input.filter.minAuditAge", v)),
+        .action((v, c) => addConfig(c, "input.filter.maxAuditAge", v)),
       opt[String]("min-audit-age")
         .valueName("<duration>")
         .text("migrate only audits whose age is greater than <duration>")
-        .action((v, c) => addConfig(c, "input.filter.maxAuditAge", v)),
+        .action((v, c) => addConfig(c, "input.filter.minAuditAge", v)),
       opt[String]("audit-from-date")
         .valueName("<date>")
         .text("migrate only audits created from <date>")
@@ -183,13 +203,19 @@ object Migrate extends App with MigrationOps {
     implicit val actorSystem: ActorSystem = ActorSystem("TheHiveMigration", config)
     implicit val ec: ExecutionContext     = actorSystem.dispatcher
     implicit val mat: Materializer        = Materializer(actorSystem)
+    transactionPageSize = config.getInt("transactionPageSize")
+    threadCount = config.getInt("threadCount")
+    var stop = false
 
     try {
-      (new LogbackLoggerConfigurator).configure(Environment.simple(), Configuration.empty, Map.empty)
-
-      val timer = actorSystem.scheduler.scheduleAtFixedRate(10.seconds, 10.seconds) { () =>
-        logger.info(migrationStats.showStats())
-        migrationStats.flush()
+      Future {
+        blocking {
+          while (!stop) {
+            logger.info(migrationStats.showStats())
+            migrationStats.flush()
+            Thread.sleep(10000) // 10 seconds
+          }
+        }
       }
 
       val returnStatus =
@@ -198,9 +224,7 @@ object Migrate extends App with MigrationOps {
           val output = th4.Output(Configuration(config.getConfig("output").withFallback(config)))
           val filter = Filter.fromConfig(config.getConfig("input.filter"))
 
-          val process = migrate(input, output, filter)
-
-          Await.result(process, Duration.Inf)
+          migrate(input, output, filter).get
           logger.info("Migration finished")
           0
         } catch {
@@ -208,7 +232,7 @@ object Migrate extends App with MigrationOps {
             logger.error(s"Migration failed", e)
             1
         } finally {
-          timer.cancel()
+          stop = true
           Await.ready(actorSystem.terminate(), 1.minute)
           ()
         }

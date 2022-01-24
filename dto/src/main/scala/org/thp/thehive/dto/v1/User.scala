@@ -1,7 +1,7 @@
 package org.thp.thehive.dto.v1
 
 import org.thp.scalligraph.controllers.FFile
-import play.api.libs.json.{Json, OFormat, Writes}
+import play.api.libs.json.{JsObject, Json, OFormat, Writes}
 
 import java.util.Date
 
@@ -32,7 +32,8 @@ case class OutputUser(
     permissions: Set[String],
     organisation: String,
     avatar: Option[String],
-    organisations: Seq[OutputOrganisationProfile]
+    organisations: Seq[OutputOrganisationProfile],
+    extraData: JsObject
 )
 
 object OutputUser {

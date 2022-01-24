@@ -65,7 +65,10 @@ class AttachmentSrv @Inject() (configuration: Configuration, storageSrv: Storage
       case Some(a) => (a.size, a.hashes)
       case None =>
         val s  = storageSrv.getSize("attachment", attachmentId).getOrElse(throw NotFoundError(s"Attachment $attachmentId not found"))
-        val hs = hashers.fromInputStream(storageSrv.loadBinary("attachment", attachmentId))
+        val is = storageSrv.loadBinary("attachment", attachmentId)
+        val hs =
+          try hashers.fromInputStream(is)
+          finally is.close()
         (s, hs)
     }
     createEntity(Attachment(filename, size, contentType, hashes, attachmentId))

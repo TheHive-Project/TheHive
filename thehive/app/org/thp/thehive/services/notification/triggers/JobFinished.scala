@@ -9,10 +9,10 @@ import scala.util.{Success, Try}
 @Singleton
 class JobFinishedProvider @Inject() extends TriggerProvider {
   override val name: String                               = "JobFinished"
-  override def apply(config: Configuration): Try[Trigger] = Success(new JobFinished())
+  override def apply(config: Configuration): Try[Trigger] = Success(JobFinished)
 }
 
-class JobFinished extends GlobalTrigger {
+object JobFinished extends GlobalTrigger {
   override val name: String        = "JobFinished"
   override val auditAction: String = Audit.update
   override val entityName: String  = "Job"

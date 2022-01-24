@@ -34,7 +34,7 @@ class JanusDatabaseProvider @Inject() (configuration: Configuration, system: Act
       system,
       new SingleInstance(true)
     )
-    schemas.toTry(schema => schema.update(db)).get
+    db.createSchema(schemas.flatMap(_.modelList).toSeq).get
     db
   }
 }

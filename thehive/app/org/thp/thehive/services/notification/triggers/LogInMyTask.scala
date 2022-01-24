@@ -37,4 +37,6 @@ class LogInMyTask(logSrv: LogSrv) extends Trigger {
 
   def taskAssignee(logId: EntityId)(implicit graph: Graph): Option[String] =
     logSrv.getByIds(logId).task.assignee.value(_.login).headOption
+
+  override def toString: String = "LogInMyTask"
 }

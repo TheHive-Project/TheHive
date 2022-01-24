@@ -2,7 +2,7 @@ import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.1.16-1"
+val thehiveVersion         = "4.1.17-1"
 val scala212               = "2.12.13"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
@@ -342,10 +342,7 @@ lazy val thehiveMigration = (project in file("migration"))
     resolvers += "elasticsearch-releases" at "https://artifacts.elastic.co/maven",
     crossScalaVersions := Seq(scala212),
     libraryDependencies ++= Seq(
-      elastic4sCore,
-      elastic4sHttpStreams,
-      elastic4sClient,
-//      jts,
+      alpakka,
       ehcache,
       scopt,
       specs % Test
