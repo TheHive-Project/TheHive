@@ -189,7 +189,12 @@ class TagIntegrityCheckOps @Inject() (val db: Database, val service: TagSrv) ext
 
   override def globalCheck(): Map[String, Int] =
     service
-      .pagedTraversalIds(db, 100, _.filterNot(_.or(_.alert, _.observable, _.`case`, _.caseTemplate, _.taxonomy))) { ids =>
+      .pagedTraversalIds(
+        db,
+        100,
+        _.filter(_.taxonomy.has(_.namespace, TextP.startingWith("_freetags_")))
+          .filterNot(_.or(_.alert, _.observable, _.`case`, _.caseTemplate, _.taxonomy))
+      ) { ids =>
         db.tryTransaction { implicit graph =>
           Try {
             val orphans = service

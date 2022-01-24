@@ -76,21 +76,6 @@ class UserCtrl @Inject() (
           }
       }
     )
-//
-//            authContext
-//          }))(org => userSteps.richUser(authContext, EntityIdOrName(org)))
-//          .page(params.from, params.to, params.extraData.contains("total"), limitedCountThreshold)
-//    )
-//  override def pageQuery(limitedCountThreshold: Long): ParamQuery[OutputParam] =
-//    Query.withParam[OutputParam, Traversal.V[Case], IteratorOutput](
-//      "page",
-//      {
-//        case (OutputParam(from, to, extraData), caseSteps, authContext) =>
-//          caseSteps.richPage(from, to, extraData.contains("total"), limitedCountThreshold) {
-//            _.richCaseWithCustomRenderer(caseStatsRenderer(extraData - "total")(authContext))(authContext)
-//          }
-//      }
-//    )
 
   override val outputQuery: Query =
     Query.outputWithContext[RichUser, Traversal.V[User]]((userSteps, authContext) => userSteps.richUser(authContext))
