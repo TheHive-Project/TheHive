@@ -19,6 +19,7 @@ import java.net.{URI, URLEncoder}
 import javax.inject.{Inject, Provider, Singleton}
 import scala.concurrent.duration.{Duration, DurationInt, DurationLong, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class ElasticClientProvider @Inject() (
@@ -196,17 +197,22 @@ class ElasticConfig(
       )
       .status == 200
 
-  def isSingleType(indexName: String): Boolean = {
-    val response = Await
-      .result(
-        authentication(ws.url(stripUrl(s"$esUri/$indexName")))
-          .get(),
-        10.seconds
-      )
-    if (response.status != 200)
-      throw InternalError(s"Unexpected response from Elasticsearch: ${response.status} ${response.statusText}\n${response.body}")
-    (response.json \ indexName \ "settings" \ "index" \ "mapping" \ "single_type").asOpt[String].fold(version.head > '6')(_.toBoolean)
-  }
+  def isSingleType(indexName: String): Boolean =
+    indexName
+      .split('_')
+      .lastOption
+      .flatMap(version => Try(version.toInt).toOption)
+      .fold {
+        val response = Await
+          .result(
+            authentication(ws.url(stripUrl(s"$esUri/$indexName")))
+              .get(),
+            10.seconds
+          )
+        if (response.status != 200)
+          throw InternalError(s"Unexpected response from Elasticsearch: ${response.status} ${response.statusText}\n${response.body}")
+        (response.json \ indexName \ "settings" \ "index" \ "mapping" \ "single_type").asOpt[String].fold(version.head > '6')(_.toBoolean)
+      }(version => version >= 15)
 
   def version: String = {
     val response = Await.result(authentication(ws.url(stripUrl(esUri))).get(), 10.seconds)
