@@ -4,7 +4,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.Entity
 import org.thp.scalligraph.services.{EdgeSrv, VertexSrv}
-import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps.TraversalOpsDefs
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
@@ -123,7 +122,7 @@ object TaxonomyOps {
 
     def organisations: Traversal.V[Organisation] = traversal.in[OrganisationTaxonomy].v[Organisation]
 
-    def enabled: Traversal[Boolean, Boolean, Identity[Boolean]] =
+    def enabled: Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
       traversal.choose(_.organisations, true, false)
 
     def tags: Traversal.V[Tag] = traversal.out[TaxonomyTag].v[Tag]

@@ -1,20 +1,19 @@
 package org.thp.thehive.controllers.v1
 
-import akka.actor.ActorRef
-import akka.pattern.ask
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.{ActorRef, Scheduler}
 import akka.util.Timeout
 import ch.qos.logback.classic.{Level, LoggerContext}
 import org.slf4j.LoggerFactory
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.services.GenIntegrityCheckOps
 import org.thp.thehive.models.Permissions
-import org.thp.thehive.services.{CheckState, CheckStats, GetCheckStats, GlobalCheckRequest}
+import org.thp.thehive.services._
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json, OWrites}
+import play.api.libs.json.{Json, OWrites}
 import play.api.mvc.{Action, AnyContent, Results}
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.immutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,22 +22,21 @@ import scala.util.{Failure, Success}
 @Singleton
 class AdminCtrl @Inject() (
     entrypoint: Entrypoint,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
-    integrityCheckOps: immutable.Set[GenIntegrityCheckOps],
+    integrityCheckActorProvider: Provider[ActorRef[IntegrityCheck.Request]],
     db: Database,
     schemas: immutable.Set[UpdatableSchema],
-    implicit val ec: ExecutionContext
+    implicit val ec: ExecutionContext,
+    implicit val scheduler: Scheduler
 ) {
-
-  implicit val timeout: Timeout                      = Timeout(5.seconds)
-  implicit val checkStatsWrites: OWrites[CheckStats] = Json.writes[CheckStats]
+  lazy val integrityCheckActor: ActorRef[IntegrityCheck.Request] = integrityCheckActorProvider.get
+  implicit val timeout: Timeout                                  = Timeout(5.seconds)
+  implicit val checkStatsWrites: OWrites[CheckStats]             = Json.writes[CheckStats]
   implicit val checkStateWrites: OWrites[CheckState] = OWrites[CheckState] { state =>
     Json.obj(
-      "needCheck"              -> state.needCheck,
-      "duplicateTimer"         -> state.duplicateTimer.isDefined,
-      "duplicateStats"         -> state.duplicateStats,
-      "globalStats"            -> state.globalStats,
-      "globalCheckRequestTime" -> state.globalCheckRequestTime
+      "needCheck"      -> state.needCheck,
+      "duplicateTimer" -> state.dedupTimer.isDefined,
+      "duplicateStats" -> state.dedupStats,
+      "globalStats"    -> state.globalStats
     )
   }
   lazy val logger: Logger = Logger(getClass)
@@ -62,29 +60,39 @@ class AdminCtrl @Inject() (
         Success(Results.NoContent)
       }
 
-  def triggerCheck(name: String): Action[AnyContent] =
+  def triggerGlobalCheck(name: String): Action[AnyContent] =
     entrypoint("Trigger check")
       .authPermitted(Permissions.managePlatform) { _ =>
-        integrityCheckActor ! GlobalCheckRequest(name)
+        integrityCheckActor ! IntegrityCheck.CheckRequest(name, dedup = false, global = true)
+        Success(Results.NoContent)
+      }
+  def triggerDedup(name: String): Action[AnyContent] =
+    entrypoint("Trigger check")
+      .authPermitted(Permissions.managePlatform) { _ =>
+        integrityCheckActor ! IntegrityCheck.CheckRequest(name, dedup = true, global = false)
+        Success(Results.NoContent)
+      }
+
+  def cancelCurrentCheck: Action[AnyContent] =
+    entrypoint("Cancel current check")
+      .authPermitted(Permissions.managePlatform) { _ =>
+        integrityCheckActor ! IntegrityCheck.CancelCheck
         Success(Results.NoContent)
       }
 
   def checkStats: Action[AnyContent] =
     entrypoint("Get check stats")
       .asyncAuthPermitted(Permissions.managePlatform) { _ =>
-        Future
-          .traverse(integrityCheckOps.toSeq) { c =>
-            (integrityCheckActor ? GetCheckStats(c.name))
-              .mapTo[CheckState]
-              .recover {
-                case error =>
-                  logger.error(s"Fail to get check stats of ${c.name}", error)
-                  CheckState.empty
-              }
-              .map(c.name -> _)
+        integrityCheckActor
+          .ask(IntegrityCheck.GetAllCheckStats)
+          .mapTo[IntegrityCheck.AllCheckStats]
+          .recover {
+            case error =>
+              logger.error(s"Fail to get check stats", error)
+              IntegrityCheck.AllCheckStats(Map.empty)
           }
           .map { results =>
-            Results.Ok(JsObject(results.map(r => r._1 -> Json.toJson(r._2))))
+            Results.Ok(Json.toJson(results.stats))
           }
       }
 

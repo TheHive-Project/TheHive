@@ -8,7 +8,7 @@ import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabaseProvider
 import org.thp.scalligraph.models.{Database, Schema, UpdatableSchema}
 import org.thp.scalligraph.query.QueryExecutor
-import org.thp.scalligraph.services.{GenIntegrityCheckOps, LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.services.{IntegrityCheck, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, SingleInstance}
 import org.thp.thehive.controllers.v0.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchemaDefinition
@@ -44,19 +44,19 @@ trait TestAppBuilder {
       .multiBind[TriggerProvider](classOf[AlertCreatedProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
       .bindInstance[SingleInstance](new SingleInstance(true))
-      .multiBind[GenIntegrityCheckOps](
-        classOf[ProfileIntegrityCheckOps],
-        classOf[OrganisationIntegrityCheckOps],
-        classOf[TagIntegrityCheckOps],
-        classOf[UserIntegrityCheckOps],
-        classOf[ImpactStatusIntegrityCheckOps],
-        classOf[ResolutionStatusIntegrityCheckOps],
-        classOf[ObservableTypeIntegrityCheckOps],
-        classOf[CustomFieldIntegrityCheckOps],
-        classOf[CaseTemplateIntegrityCheckOps],
-        classOf[DataIntegrityCheckOps],
-        classOf[CaseIntegrityCheckOps],
-        classOf[AlertIntegrityCheckOps]
+      .multiBind[IntegrityCheck](
+        classOf[ProfileIntegrityCheck],
+        classOf[OrganisationIntegrityCheck],
+        classOf[TagIntegrityCheck],
+        classOf[UserIntegrityCheck],
+        classOf[ImpactStatusIntegrityCheck],
+        classOf[ResolutionStatusIntegrityCheck],
+        classOf[ObservableTypeIntegrityCheck],
+        classOf[CustomFieldIntegrityCheck],
+        classOf[CaseTemplateIntegrityCheck],
+        classOf[DataIntegrityCheck],
+        classOf[CaseIntegrityCheck],
+        classOf[AlertIntegrityCheck]
       )
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")

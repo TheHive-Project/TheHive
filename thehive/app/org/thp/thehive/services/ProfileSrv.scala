@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -13,22 +13,23 @@ import org.thp.thehive.models._
 import org.thp.thehive.services.ProfileOps._
 import play.api.libs.json.JsObject
 
-import javax.inject.{Inject, Named, Provider, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ProfileSrv @Inject() (
     auditSrv: AuditSrv,
     organisationSrvProvider: Provider[OrganisationSrv],
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+    integrityCheckActorProvider: Provider[ActorRef[IntegrityCheck.Request]]
 )(implicit
     val db: Database
 ) extends VertexSrv[Profile] {
-  lazy val organisationSrv: OrganisationSrv = organisationSrvProvider.get
-  lazy val orgAdmin: Profile with Entity    = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
+  lazy val organisationSrv: OrganisationSrv                      = organisationSrvProvider.get
+  lazy val orgAdmin: Profile with Entity                         = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
+  lazy val integrityCheckActor: ActorRef[IntegrityCheck.Request] = integrityCheckActorProvider.get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
-    integrityCheckActor ! EntityAdded("Profile")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("Profile")
     super.createEntity(e)
   }
 
@@ -82,15 +83,4 @@ object ProfileOps {
 
 }
 
-class ProfileIntegrityCheckOps @Inject() (val db: Database, val service: ProfileSrv) extends IntegrityCheckOps[Profile] {
-  override def resolve(entities: Seq[Profile with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class ProfileIntegrityCheck @Inject() (val db: Database, val service: ProfileSrv) extends DedupCheck[Profile]

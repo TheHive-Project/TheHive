@@ -1,14 +1,15 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
+import akka.actor.typed.ActorRef
 import org.apache.tinkerpop.gremlin.structure.Edge
+import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.RichSeq
+import org.thp.scalligraph.services.{DedupCheck, IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
-import org.thp.scalligraph.{EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldOps._
@@ -16,19 +17,20 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.{JsObject, JsValue}
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Success, Try}
 
 @Singleton
 class CustomFieldSrv @Inject() (
     auditSrv: AuditSrv,
     organisationSrv: OrganisationSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    integrityCheckActorProvider: Provider[ActorRef[IntegrityCheck.Request]],
     cacheApi: SyncCacheApi
 ) extends VertexSrv[CustomField] {
+  lazy val integrityCheckActor: ActorRef[IntegrityCheck.Request] = integrityCheckActorProvider.get
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
-    integrityCheckActor ! EntityAdded("CustomField")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("CustomField")
     cacheApi.remove("describe.v0")
     cacheApi.remove("describe.v1")
     super.createEntity(e)
@@ -178,15 +180,4 @@ object CustomFieldOps {
 
 }
 
-class CustomFieldIntegrityCheckOps @Inject() (val db: Database, val service: CustomFieldSrv) extends IntegrityCheckOps[CustomField] {
-  override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class CustomFieldIntegrityCheck @Inject() (val db: Database, val service: CustomFieldSrv) extends DedupCheck[CustomField]

@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -17,7 +17,7 @@ import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
 import java.util.{Map => JMap}
-import javax.inject.{Inject, Named, Provider, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -27,16 +27,17 @@ class OrganisationSrv @Inject() (
     profileSrv: ProfileSrv,
     auditSrv: AuditSrv,
     userSrv: UserSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef,
+    integrityCheckActorProvider: Provider[ActorRef[IntegrityCheck.Request]],
     cache: SyncCacheApi
 ) extends VertexSrv[Organisation] {
-  lazy val taxonomySrv: TaxonomySrv = taxonomySrvProvider.get
-  val organisationOrganisationSrv   = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
-  val organisationShareSrv          = new EdgeSrv[OrganisationShare, Organisation, Share]
-  val organisationTaxonomySrv       = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
+  lazy val taxonomySrv: TaxonomySrv                              = taxonomySrvProvider.get
+  lazy val integrityCheckActor: ActorRef[IntegrityCheck.Request] = integrityCheckActorProvider.get
+  val organisationOrganisationSrv                                = new EdgeSrv[OrganisationOrganisation, Organisation, Organisation]
+  val organisationShareSrv                                       = new EdgeSrv[OrganisationShare, Organisation, Share]
+  val organisationTaxonomySrv                                    = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
-    integrityCheckActor ! EntityAdded("Organisation")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("Organisation")
     super.createEntity(e)
   }
 
@@ -229,15 +230,4 @@ object OrganisationOps {
 
 }
 
-class OrganisationIntegrityCheckOps @Inject() (val db: Database, val service: OrganisationSrv) extends IntegrityCheckOps[Organisation] {
-  override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class OrganisationIntegrityCheck @Inject() (val db: Database, val service: OrganisationSrv) extends DedupCheck[Organisation]

@@ -57,22 +57,22 @@ object Output {
               bindActor[DummyActor]("cortex-actor")
               bindActor[DummyActor]("integrity-check-actor")
               bind[ActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
-              val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[GenIntegrityCheckOps](binder)
-              integrityCheckOpsBindings.addBinding.to[AlertIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[CaseIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[CaseTemplateIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[CustomFieldIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[DataIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[ImpactStatusIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[LogIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[ObservableIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[ObservableTypeIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[OrganisationIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[ResolutionStatusIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[TagIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[TaskIntegrityCheckOps]
-              integrityCheckOpsBindings.addBinding.to[UserIntegrityCheckOps]
+              val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[IntegrityCheck](binder)
+              integrityCheckOpsBindings.addBinding.to[AlertIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[CaseIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[CaseTemplateIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[CustomFieldIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[DataIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[ImpactStatusIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[LogIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[ObservableIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[ObservableTypeIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[OrganisationIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[ResolutionStatusIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[TagIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[TaskIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[UserIntegrityCheck]
 
               val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
               schemaBindings.addBinding.to[TheHiveSchemaDefinition]
@@ -133,7 +133,7 @@ class Output @Inject() (
     actionSrv: ActionSrv,
     db: Database,
     cache: SyncCacheApi,
-    checks: immutable.Set[GenIntegrityCheckOps]
+    checks: immutable.Set[IntegrityCheck]
 ) extends migration.Output[Graph] {
   lazy val logger: Logger      = Logger(getClass)
   val resumeMigration: Boolean = configuration.get[Boolean]("resume")
@@ -206,17 +206,20 @@ class Output @Inject() (
       .foreach { _ =>
         implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
         checks.foreach { c =>
-          db.tryTransaction { implicit graph =>
-            logger.info(s"Running check on ${c.name} ...")
-            c.initialCheck()
-            val stats = c.duplicationCheck() <+> c.globalCheck()
-            val statsStr = stats
-              .collect { case (k, v) if v != 0 => s"$k:$v" }
-              .mkString(" ")
-            if (statsStr.isEmpty) logger.info(s"Check on ${c.name}: no change needed")
-            else logger.info(s"Check on ${c.name}: $statsStr")
-            Success(())
+          logger.info(s"Running check on ${c.name} ...")
+          val desupStats = c match {
+            case dc: DedupCheck[_] => dc.dedup(KillSwitch.alwaysOn)
+            case _                 => Map.empty[String, Long]
           }
+          val globalStats = c match {
+            case gc: GlobalCheck[_] => gc.runGlobalCheck(24.hours, KillSwitch.alwaysOn)
+            case _                  => Map.empty[String, Long]
+          }
+          val statsStr = (desupStats <+> globalStats)
+            .collect { case (k, v) if v != 0 => s"$k:$v" }
+            .mkString(" ")
+          if (statsStr.isEmpty) logger.info(s"Check on ${c.name}: no change needed")
+          else logger.info(s"Check on ${c.name}: $statsStr")
         }
       }
 

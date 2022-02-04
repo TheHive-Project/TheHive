@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
+import akka.actor.typed.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.Order
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
@@ -8,7 +8,6 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Converter.CList
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.{AuthorizationError, BadRequestError, EntityIdOrName, EntityName, RichOptionTry}
@@ -23,7 +22,7 @@ import play.api.libs.json.{JsObject, Json}
 
 import java.util.regex.Pattern
 import java.util.{Date, List => JList, Map => JMap}
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -32,10 +31,12 @@ class UserSrv @Inject() (
     roleSrv: RoleSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    @Named("integrity-check-actor") integrityCheckActor: ActorRef
+    integrityCheckActorProvider: Provider[ActorRef[IntegrityCheck.Request]]
 ) extends VertexSrv[User] {
+  lazy val integrityCheckActor: ActorRef[IntegrityCheck.Request] = integrityCheckActorProvider.get
+
   val defaultUserDomain: Option[String] = configuration.getOptional[String]("auth.defaultUserDomain")
-  val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+(?:[\\p{Alnum}-.])*".r.pattern
+  val fullUserNameRegex: Pattern        = "[\\p{Graph}&&[^@.]](?:[\\p{Graph}&&[^@]]*)*@\\p{Alnum}+[\\p{Alnum}-.]*".r.pattern
 
   val userAttachmentSrv = new EdgeSrv[UserAttachment, User, Attachment]
 
@@ -57,7 +58,7 @@ class UserSrv @Inject() (
        roleSrv.create(user, organisation, profile)
      else
        Success(())).flatMap { _ =>
-      integrityCheckActor ! EntityAdded("User")
+      integrityCheckActor ! IntegrityCheck.EntityAdded("User")
       for {
         richUser <- get(user).richUser(authContext, organisation._id).getOrFail("User")
         _        <- auditSrv.user.create(user, richUser.toJson)
@@ -195,7 +196,7 @@ object UserOps {
       else organisations0(requiredPermission)
     }
 
-    def organisationWithRole: Traversal[Seq[(Organisation with Entity, String)], JList[JMap[String, Any]], CList[
+    def organisationWithRole: Traversal[Seq[(Organisation with Entity, String)], JList[JMap[String, Any]], Converter.CList[
       (Organisation with Entity, String),
       JMap[String, Any],
       Converter[(Organisation with Entity, String), JMap[String, Any]]
@@ -317,13 +318,15 @@ object UserOps {
 }
 
 @Singleton
-class UserIntegrityCheckOps @Inject() (
+class UserIntegrityCheck @Inject() (
     val db: Database,
     val service: UserSrv,
     profileSrv: ProfileSrv,
     organisationSrv: OrganisationSrv,
     roleSrv: RoleSrv
-) extends IntegrityCheckOps[User] {
+) extends DedupCheck[User]
+    with GlobalCheck[User]
+    with IntegrityCheckOps[User] {
 
   override def initialCheck()(implicit graph: Graph, authContext: AuthContext): Unit = {
     super.initialCheck()
@@ -344,36 +347,12 @@ class UserIntegrityCheckOps @Inject() (
     ()
   }
 
-  override def duplicationCheck(): Map[String, Int] = {
-    super.duplicationCheck()
-    db.tryTransaction { implicit graph =>
-      val duplicateTaskAssignments =
-        duplicateInEdges[TaskUser](service.startTraversal).flatMap(ElementSelector.firstCreatedElement(_)).map(e => removeEdges(e._2)).size
-      val duplicateCaseAssignments =
-        duplicateInEdges[CaseUser](service.startTraversal).flatMap(ElementSelector.firstCreatedElement(_)).map(e => removeEdges(e._2)).size
-      val duplicateUsers = duplicateLinks[Vertex, Vertex](
-        service.startTraversal,
-        (_.out("UserRole"), _.in("UserRole")),
-        (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
-      ).flatMap(ElementSelector.firstCreatedElement(_)).map(e => removeVertices(e._2)).size
-      Success(
-        Map(
-          "duplicateTaskAssignments" -> duplicateTaskAssignments,
-          "duplicateCaseAssignments" -> duplicateCaseAssignments,
-          "duplicateUsers"           -> duplicateUsers
-        )
-      )
-    }.getOrElse(Map("globalFailure" -> 1))
+  override def globalCheck(traversal: Traversal.V[User])(implicit graph: Graph): Map[String, Long] = {
+    val duplicateRoleLinks = duplicateLinks[Vertex, Vertex](
+      traversal,
+      (_.out("UserRole"), _.in("UserRole")),
+      (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
+    ).flatMap(ElementSelector.firstCreatedElement(_)).map(e => removeVertices(e._2)).size
+    Map("duplicateRoleLinks" -> duplicateRoleLinks.toLong)
   }
-
-  override def resolve(entities: Seq[User with Entity])(implicit graph: Graph): Try[Unit] = {
-    EntitySelector.firstCreatedEntity(entities).foreach {
-      case (firstUser, otherUsers) =>
-        otherUsers.foreach(copyEdge(_, firstUser))
-        otherUsers.foreach(service.get(_).remove())
-    }
-    Success(())
-  }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
 }

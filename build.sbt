@@ -165,7 +165,8 @@ lazy val thehiveCore = (project in file("thehive"))
       pbkdf2,
       commonCodec,
       scalaGuice,
-      reflections
+      reflections,
+      quartzScheduler
     )
   )
 

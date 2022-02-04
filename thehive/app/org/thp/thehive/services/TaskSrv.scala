@@ -6,12 +6,11 @@ import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity, Model, UMapping}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition._
 import org.thp.scalligraph.{EntityId, EntityIdOrName}
-import org.thp.thehive.models.{TaskStatus, _}
+import org.thp.thehive.models._
 import org.thp.thehive.services.CaseTemplateOps._
 import org.thp.thehive.services.OrganisationOps._
 import org.thp.thehive.services.ShareOps._
@@ -21,7 +20,7 @@ import play.api.libs.json.{JsNull, JsObject, Json}
 import java.lang.{Boolean => JBoolean}
 import java.util.{Date, Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 @Singleton
 class TaskSrv @Inject() (
@@ -209,7 +208,7 @@ object TaskOps {
         .users(Permissions.manageTask)
         .dedup
 
-    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+    def isShared: Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
       traversal.choose(_.inE[ShareTask].count.is(P.gt(1)), true, false)
 
     def actionRequired(implicit authContext: AuthContext): Traversal[Boolean, JBoolean, Converter[Boolean, JBoolean]] =
@@ -254,48 +253,41 @@ object TaskOps {
   }
 }
 
-class TaskIntegrityCheckOps @Inject() (val db: Database, val service: TaskSrv, organisationSrv: OrganisationSrv) extends IntegrityCheckOps[Task] {
-  override def resolve(entities: Seq[Task with Entity])(implicit graph: Graph): Try[Unit] = Success(())
+class TaskIntegrityCheck @Inject() (val db: Database, val service: TaskSrv, organisationSrv: OrganisationSrv, userSrv: UserSrv)
+    extends GlobalCheck[Task]
+    with IntegrityCheckOps[Task] {
+  override def globalCheck(traversal: Traversal.V[Task])(implicit graph: Graph): Map[String, Long] = {
+    val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
+    val removeOrphan: OrphanStrategy[Task, EntityId] = { (_, entity) =>
+      service.get(entity).remove()
+      Map("Task-relatedId-removeOrphan" -> 1L)
+    }
+    val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
+      orphanStrategy = removeOrphan,
+      setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
+      entitySelector = _ => EntitySelector.firstCreatedEntity,
+      removeLink = (_, _) => (),
+      getLink = id => graph.VV(id).entity.head,
+      Some(_)
+    )
+    val assigneeCheck = singleOptionLink[User, String]("assignee", userSrv.getByName(_).head, _.login)(_.outEdge[TaskUser])
 
-  override def globalCheck(): Map[String, Int] =
-    service
-      .pagedTraversalIds(db, 100) { ids =>
-        db.tryTransaction { implicit graph =>
-          val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
-          val removeOrphan: OrphanStrategy[Task, EntityId] = { (_, entity) =>
-            service.get(entity).remove()
-            Map("Task-relatedId-removeOrphan" -> 1)
-          }
-          val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
-            orphanStrategy = removeOrphan,
-            setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
-            entitySelector = _ => EntitySelector.firstCreatedEntity,
-            removeLink = (_, _) => (),
-            getLink = id => graph.VV(id).entity.head,
-            Some(_)
-          )
-
-          Try {
-            service
-              .getByIds(ids: _*)
-              .project(
-                _.by
-                  .by(_.unionFlat(_.`case`._id, _.caseTemplate._id).fold)
-                  .by(_.unionFlat(_.organisations._id, _.caseTemplate.organisation._id).fold)
-              )
-              .toIterator
-              .map {
-                case (task, relatedIds, organisationIds) =>
-                  val orgStats     = orgCheck.check(task, task.organisationIds, organisationIds)
-                  val relatedStats = relatedCheck.check(task, task.relatedId, relatedIds)
-
-                  orgStats <+> relatedStats
-              }
-              .reduceOption(_ <+> _)
-              .getOrElse(Map.empty)
-          }
-        }.getOrElse(Map("globalFailure" -> 1))
+    traversal
+      .project(
+        _.by
+          .by(_.unionFlat(_.`case`._id, _.caseTemplate._id).fold)
+          .by(_.unionFlat(_.organisations._id, _.caseTemplate.organisation._id).fold)
+          .by(_.assignee.value(_.login).fold)
+      )
+      .toIterator
+      .map {
+        case (task, relatedIds, organisationIds, assignees) =>
+          val orgStats      = orgCheck.check(task, task.organisationIds, organisationIds)
+          val relatedStats  = relatedCheck.check(task, task.relatedId, relatedIds)
+          val assigneeStats = assigneeCheck.check(task, task.assignee, assignees)
+          orgStats <+> relatedStats <+> assigneeStats
       }
       .reduceOption(_ <+> _)
       .getOrElse(Map.empty)
+  }
 }

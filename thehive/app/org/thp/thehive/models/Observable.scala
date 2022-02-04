@@ -66,11 +66,11 @@ case class RichObservable(
   def ignoreSimilarity: Option[Boolean]                        = observable.ignoreSimilarity
   def dataOrAttachment: Either[String, Attachment with Entity] = data.toLeft(attachment.get)
   def dataType: String                                         = observable.dataType
-  def data: Option[String]                                     = fullData.map(d => d.fullData.getOrElse(d.data))
+  def data: Option[String]                                     = fullData.map(d => d.fullData.getOrElse(d.data)).orElse(observable.data)
   def tags: Seq[String]                                        = observable.tags
 }
 
-@DefineIndex(IndexType.standard, "data")
+@DefineIndex(IndexType.unique, "data")
 @BuildVertexEntity
 case class Data(data: String, fullData: Option[String])
 

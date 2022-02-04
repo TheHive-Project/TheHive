@@ -44,7 +44,10 @@ class Router @Inject() (
 //    GET  /health                              controllers.StatusCtrl.health
 
     case GET(p"/admin/check/stats")                                                            => adminCtrl.checkStats
-    case GET(p"/admin/check/$name/trigger")                                                    => adminCtrl.triggerCheck(name)
+    case GET(p"/admin/check/$name/trigger")                                                    => adminCtrl.triggerGlobalCheck(name)
+    case POST(p"/admin/check/$name/global/trigger")                                            => adminCtrl.triggerGlobalCheck(name)
+    case POST(p"/admin/check/$name/dedup/trigger")                                             => adminCtrl.triggerDedup(name)
+    case POST(p"/admin/check/cancel")                                                          => adminCtrl.cancelCurrentCheck
     case GET(p"/admin/index/status")                                                           => adminCtrl.indexStatus
     case POST(p"/admin/index/$name/reindex")                                                   => adminCtrl.reindex(name)
     case POST(p"/admin/index/$name/rebuild")                                                   => adminCtrl.rebuild(name)

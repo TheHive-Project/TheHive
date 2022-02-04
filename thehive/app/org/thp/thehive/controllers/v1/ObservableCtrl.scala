@@ -329,11 +329,13 @@ class ObservableCtrl @Inject() (
           case (from, to) =>
             observableSrv
               .pagedTraversal(db, 100, _.has(_.dataType, from.name)) { t =>
-                Try(
-                  t.update(_.dataType, to.name)
-                    .update(_._updatedAt, Some(new Date))
-                    .update(_._updatedBy, Some(request.userId))
-                    .iterate()
+                Some(
+                  Try(
+                    t.update(_.dataType, to.name)
+                      .update(_._updatedAt, Some(new Date))
+                      .update(_._updatedBy, Some(request.userId))
+                      .iterate()
+                  )
                 )
               }
               .foreach(_.failed.foreach(error => logger.error(s"Error while updating observable type", error)))
