@@ -1,6 +1,7 @@
 package org.thp.thehive
 
 import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef => TypedActorRef}
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import org.apache.commons.io.FileUtils
@@ -18,6 +19,7 @@ import org.thp.thehive.services.{UserSrv => _, _}
 
 import java.io.File
 import java.nio.file.{Files, Paths}
+import java.util.UUID
 import javax.inject.{Inject, Provider, Singleton}
 import scala.util.Try
 
@@ -60,6 +62,7 @@ trait TestAppBuilder {
       )
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
+      .bindToProvider[TypedActorRef[IntegrityCheck.Request], DummyTypedActorProvider[IntegrityCheck.Request]]
       .bindActor[DummyActor]("integrity-check-actor")
       .bindActor[DummyActor]("flow-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
@@ -134,4 +137,11 @@ class TestNumberActorProvider @Inject() (actorSystem: ActorSystem) extends Provi
     actorSystem
       .toTyped
       .systemActorOf(CaseNumberActor.caseNumberProvider(getNextNumber = () => 36, reloadTimer = () => (), nextNumber = 36), "case-number")
+}
+
+class DummyTypedActorProvider[T] @Inject() (actorSystem: ActorSystem) extends Provider[TypedActorRef[T]] {
+  override def get(): TypedActorRef[T] =
+    actorSystem
+      .toTyped
+      .systemActorOf(Behaviors.empty, UUID.randomUUID().toString)
 }

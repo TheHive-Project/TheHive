@@ -88,7 +88,7 @@ class AttachmentCtrl @Inject() (
                 header = ResponseHeader(
                   200,
                   Map(
-                    "Content-Disposition"       -> s"""attachment; ${HttpHeaderParameterEncoding.encode("filename", filename)}.zip""",
+                    "Content-Disposition"       -> s"""attachment; ${HttpHeaderParameterEncoding.encode("filename", s"$filename.zip")}""",
                     "Content-Type"              -> "application/zip",
                     "Content-Transfer-Encoding" -> "binary",
                     "Content-Length"            -> Files.size(f).toString
