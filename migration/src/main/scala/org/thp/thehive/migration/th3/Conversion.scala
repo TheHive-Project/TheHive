@@ -347,7 +347,7 @@ trait Conversion {
   implicit val customFieldReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>
     for {
       //      metaData    <- json.validate[MetaData]
-      valueJson <- (json \ "value").validate[String].map(truncateString)
+      valueJson <- (json \ "value").validate[String]
       value = Json.parse(valueJson)
       displayName <- (value \ "name").validate[String].map(truncateString)
       name        <- (value \ "reference").validate[String].map(truncateString)
