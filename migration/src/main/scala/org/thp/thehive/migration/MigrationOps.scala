@@ -68,7 +68,7 @@ class MigrationStats() {
     def setTotal(v: Long): Unit = total = v
 
     override def toString: String = {
-      val totalTxt = if (total < 0) s"/${nSuccess + nFailure}" else s"/${total / 1000}"
+      val totalTxt = if (total < 0) s"/${nSuccess + nFailure}" else s"/$total"
       val avg      = if (global.isEmpty) "" else s" avg:${global}µs"
       val failureAndExistTxt = if (nFailure > 0 || nExist > 0) {
         val failureTxt = if (nFailure > 0) s"$nFailure failures" else ""
