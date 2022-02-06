@@ -14,7 +14,7 @@ import org.thp.thehive.services.ProfileOps._
 import play.api.libs.json.JsObject
 
 import javax.inject.{Inject, Provider, Singleton}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 @Singleton
 class ProfileSrv @Inject() (

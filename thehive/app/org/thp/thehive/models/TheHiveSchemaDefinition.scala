@@ -11,7 +11,6 @@ import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.janus.JanusDatabase
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
@@ -525,16 +524,10 @@ class TheHiveSchemaDefinition @Inject() extends Schema with UpdatableSchema {
       .toSeq
   }
 
-  override lazy val initialValues: Seq[InitialValue[_]] = modelList.collect {
-    case vertexModel: VertexModel => vertexModel.getInitialValues
-  }.flatten
-
   private def tagString(namespace: String, predicate: String, value: String): String =
     (if (namespace.headOption.getOrElse('_') == '_') "" else namespace + ':') +
       (if (predicate.headOption.getOrElse('_') == '_') "" else predicate) +
       (if (value.isEmpty) "" else f"""="$value"""")
-
-  override def init(db: Database)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
 
   override val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
 }

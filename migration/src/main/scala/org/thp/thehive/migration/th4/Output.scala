@@ -55,7 +55,7 @@ object Output {
               bindActor[DummyActor]("notification-actor")
               bindActor[DummyActor]("config-actor")
               bindActor[DummyActor]("cortex-actor")
-              bindActor[DummyActor]("integrity-check-actor")
+              bind[ActorRef[IntegrityCheck.Request]].toProvider[DummyTypedActorProvider[IntegrityCheck.Request]]
               bind[ActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
               val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[IntegrityCheck](binder)
               integrityCheckOpsBindings.addBinding.to[AlertIntegrityCheck]
@@ -131,6 +131,7 @@ class Output @Inject() (
     resolutionStatusSrv: ResolutionStatusSrv,
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
+    dashboardSrv: DashboardSrv,
     db: Database,
     cache: SyncCacheApi,
     checks: immutable.Set[IntegrityCheck]
@@ -204,23 +205,23 @@ class Output @Inject() (
     db.addSchemaIndexes(theHiveSchema)
       .flatMap(_ => db.addSchemaIndexes(cortexSchema))
       .foreach { _ =>
-        implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-        checks.foreach { c =>
-          logger.info(s"Running check on ${c.name} ...")
-          val desupStats = c match {
-            case dc: DedupCheck[_] => dc.dedup(KillSwitch.alwaysOn)
-            case _                 => Map.empty[String, Long]
+        if (configuration.get[Boolean]("integrityCheck.enabled"))
+          checks.foreach { c =>
+            logger.info(s"Running check on ${c.name} ...")
+            val desupStats = c match {
+              case dc: DedupCheck[_] => dc.dedup(KillSwitch.alwaysOn)
+              case _                 => Map.empty[String, Long]
+            }
+            val globalStats = c match {
+              case gc: GlobalCheck[_] => gc.runGlobalCheck(24.hours, KillSwitch.alwaysOn)
+              case _                  => Map.empty[String, Long]
+            }
+            val statsStr = (desupStats <+> globalStats)
+              .collect { case (k, v) if v != 0 => s"$k:$v" }
+              .mkString(" ")
+            if (statsStr.isEmpty) logger.info(s"Check on ${c.name}: no change needed")
+            else logger.info(s"Check on ${c.name}: $statsStr")
           }
-          val globalStats = c match {
-            case gc: GlobalCheck[_] => gc.runGlobalCheck(24.hours, KillSwitch.alwaysOn)
-            case _                  => Map.empty[String, Long]
-          }
-          val statsStr = (desupStats <+> globalStats)
-            .collect { case (k, v) if v != 0 => s"$k:$v" }
-            .mkString(" ")
-          if (statsStr.isEmpty) logger.info(s"Check on ${c.name}: no change needed")
-          else logger.info(s"Check on ${c.name}: $statsStr")
-        }
       }
 
     Try(db.close())
@@ -873,5 +874,23 @@ class Output @Inject() (
         _ <- obj.map(auditSrv.auditedSrv.create(Audited(), createdAudit, _)).flip
         _ <- context.map(auditSrv.auditContextSrv.create(AuditContext(), createdAudit, _)).flip
       } yield ()
+    }
+
+  def dashboardExists(graph: Graph, inputDashboard: InputDashboard): Boolean =
+    if (!resumeMigration) false
+    else
+      db.roTransaction { implicit graph =>
+        dashboardSrv.startTraversal.has(_.title, inputDashboard.dashboard.title).exists
+      }
+
+  override def createDashboard(graph: Graph, inputDashboard: InputDashboard): Try[IdMapping] =
+    withAuthContext(inputDashboard.metaData.createdBy) { implicit authContext =>
+      implicit val g: Graph = graph
+      logger.debug(s"Create dashboard ${inputDashboard.dashboard.title}")
+      for {
+        dashboard <- dashboardSrv.create(inputDashboard.dashboard).map(_.dashboard)
+        _         <- inputDashboard.organisation.map { case (org, writable) => dashboardSrv.share(dashboard, EntityName(org), writable) }.flip
+        _ = updateMetaData(dashboard, inputDashboard.metaData)
+      } yield IdMapping(inputDashboard.metaData.id, dashboard._id)
     }
 }

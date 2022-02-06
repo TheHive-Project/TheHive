@@ -7,6 +7,8 @@ import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import org.quartz
 import org.quartz._
+import org.thp.scalligraph.auth.AuthContext
+import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
 import org.thp.scalligraph.services.config.ApplicationConfig.finiteDurationFormat
 import org.thp.scalligraph.services.{DedupCheck, GlobalCheck, IntegrityCheck, KillSwitch}
@@ -17,7 +19,7 @@ import play.api.libs.json._
 import javax.inject.{Inject, Provider, Singleton}
 import scala.collection.immutable
 import scala.concurrent.duration.{DurationDouble, DurationLong, FiniteDuration}
-import scala.util.Try
+import scala.util.{Success, Try}
 
 case class CheckStats(global: Map[String, Long], last: Map[String, Long], lastDate: Long) {
   def +(stats: Map[String, Long]): CheckStats = {
@@ -112,6 +114,7 @@ object IntegrityCheck {
   private val actorRefContextKey = "IntegrityCheck-actor"
 
   def behavior(
+      db: Database,
       quartzScheduler: quartz.Scheduler,
       appConfig: ApplicationConfig,
       integrityChecks: Seq[IntegrityCheck]
@@ -128,6 +131,11 @@ object IntegrityCheck {
             }
         )
 
+        db.tryTransaction { implicit graph =>
+          implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+          integrityChecks.foreach(_.initialCheck())
+          Success(())
+        }
         setupScheduling(context.self, quartzScheduler, integrityChecks, configItem)
         behavior(context.self, quartzScheduler, configItem, timers, integrityChecks.map(_.name))
       }
@@ -428,6 +436,7 @@ object IntegrityCheck {
 
 @Singleton
 class IntegrityCheckActorProvider @Inject() (
+    db: Database,
     system: ActorSystem,
     quartzScheduler: quartz.Scheduler,
     appConfig: ApplicationConfig,
@@ -435,5 +444,5 @@ class IntegrityCheckActorProvider @Inject() (
 ) extends Provider[ActorRef[IntegrityCheck.Request]] {
   override lazy val get: ActorRef[IntegrityCheck.Request] =
     ClusterSingleton(system.toTyped)
-      .init(SingletonActor(IntegrityCheck.behavior(quartzScheduler, appConfig, integrityChecks.toSeq), "IntegrityCheckActor"))
+      .init(SingletonActor(IntegrityCheck.behavior(db, quartzScheduler, appConfig, integrityChecks.toSeq), "IntegrityCheckActor"))
 }
