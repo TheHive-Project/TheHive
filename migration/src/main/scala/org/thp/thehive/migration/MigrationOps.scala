@@ -454,7 +454,7 @@ trait MigrationOps {
     input.countJobs(filter).foreach(count => migrationStats.setTotal("Job", count))
     input.countJobObservables(filter).foreach(count => migrationStats.setTotal("Job/Observable", count))
     input.countAction(filter).foreach(count => migrationStats.setTotal("Action", count))
-    input.countAudit(filter).foreach(count => migrationStats.setTotal("Audit", count))
+    input.countAudits(filter).foreach(count => migrationStats.setTotal("Audit", count))
 
     migrationStats.stage = "Prepare database"
     output.startMigration().flatMap { _ =>
@@ -474,6 +474,8 @@ trait MigrationOps {
       migrate(output)("ObservableType", input.listObservableTypes(filter), output.createObservableTypes, output.observableTypeExists)
       migrationStats.stage = "Migrate case templates"
       migrateWholeCaseTemplates(input, output, filter)
+      migrationStats.stage = "Migrate dashboards"
+      migrate(output)("Dashboard", input.listDashboards(filter), output.createDashboard, output.dashboardExists)
       migrationStats.stage = "Migrate cases and alerts"
       migrateCasesAndAlerts(input, output, filter)
       migrationStats.stage = "Finalisation"
