@@ -221,7 +221,7 @@ object IntegrityCheck {
           case FinishGlobal(name, cancel, result) =>
             logger.info(s"End of global check of $name${if (cancel) " (cancelled)" else ""}:${result.map(kv => s"\n  ${kv._1}: ${kv._2}").mkString}")
             val state    = states.getOrElse(name, CheckState.empty)
-            val newState = state.copy(dedupStats = state.dedupStats + result, globalCheckRequested = false, globalCheckIsRunning = false)
+            val newState = state.copy(globalStats = state.globalStats + result, globalCheckRequested = false, globalCheckIsRunning = false)
             onMessage(states + (name -> newState))
 
           case CancelCheck =>

@@ -164,21 +164,25 @@ class Output @Inject() (
 
   override def startMigration(): Try[Unit] = {
     implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-    if (resumeMigration) {
+    if (resumeMigration)
       db.addSchemaIndexes(theHiveSchema)
         .flatMap(_ => db.addSchemaIndexes(cortexSchema))
-      db.roTransaction { implicit graph =>
-        profiles ++= profileSrv.startTraversal.toSeq.map(p => p.name -> p)
-        organisations ++= organisationSrv.startTraversal.toSeq.map(o => o.name -> o)
-        users ++= userSrv.startTraversal.toSeq.map(u => u.name -> u)
-        impactStatuses ++= impactStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
-        resolutionStatuses ++= resolutionStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
-        observableTypes ++= observableTypeSrv.startTraversal.toSeq.map(o => o.name -> o)
-        customFields ++= customFieldSrv.startTraversal.toSeq.map(c => c.name -> c)
-        caseTemplates ++= caseTemplateSrv.startTraversal.toSeq.map(c => c.name -> c)
-      }
-      Success(())
-    } else
+        .flatMap { _ =>
+          db.roTransaction { implicit graph =>
+            profiles ++= profileSrv.startTraversal.toSeq.map(p => p.name -> p)
+            organisations ++= organisationSrv.startTraversal.toSeq.map(o => o.name -> o)
+            users ++= userSrv.startTraversal.toSeq.map(u => u.name -> u)
+            impactStatuses ++= impactStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
+            resolutionStatuses ++= resolutionStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
+            observableTypes ++= observableTypeSrv.startTraversal.toSeq.map(o => o.name -> o)
+            customFields ++= customFieldSrv.startTraversal.toSeq.map(c => c.name -> c)
+            caseTemplates ++= caseTemplateSrv.startTraversal.toSeq.map(c => c.name -> c)
+          }
+          Success(())
+        }
+    else {
+      db.setVersion(theHiveSchema.name, theHiveSchema.operations.lastVersion)
+      db.setVersion(cortexSchema.name, cortexSchema.operations.lastVersion)
       db.tryTransaction { implicit graph =>
         profiles ++= Profile.initialValues.flatMap(p => profileSrv.createEntity(p).map(p.name -> _).toOption)
         resolutionStatuses ++= ResolutionStatus.initialValues.flatMap(p => resolutionStatusSrv.createEntity(p).map(p.value -> _).toOption)
@@ -188,6 +192,7 @@ class Output @Inject() (
         users ++= User.initialValues.flatMap(p => userSrv.createEntity(p).map(p.login -> _).toOption)
         Success(())
       }
+    }
   }
 
   override def endMigration(): Try[Unit] = {
