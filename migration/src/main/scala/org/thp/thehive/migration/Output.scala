@@ -39,4 +39,6 @@ trait Output[TX] {
   def createAlertObservable(tx: TX, alertId: EntityId, inputObservable: InputObservable): Try[IdMapping]
   def createAction(tx: TX, objectId: EntityId, inputAction: InputAction): Try[IdMapping]
   def createAudit(tx: TX, contextId: EntityId, inputAudit: InputAudit): Try[Unit]
+  def dashboardExists(tx: TX, inputDashboard: InputDashboard): Boolean
+  def createDashboard(tx: TX, inputDashboard: InputDashboard): Try[IdMapping]
 }

@@ -1,32 +1,30 @@
 package org.thp.thehive
 
-import akka.actor.ActorRef
 import akka.actor.typed.{ActorRef => TypedActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
+import org.quartz.Scheduler
+import org.quartz.impl.StdSchedulerFactory
 import org.thp.scalligraph.SingleInstance
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.{ImmenseTermProcessor, JanusDatabaseProvider}
 import org.thp.scalligraph.models.{Database, UpdatableSchema}
-import org.thp.scalligraph.services.{GenIntegrityCheckOps, HadoopStorageSrv, S3StorageSrv}
-import org.thp.thehive.controllers.v0.QueryExecutorVersion0Provider
+import org.thp.scalligraph.query.QueryExecutor
+import org.thp.scalligraph.services.config.ConfigActor
+import org.thp.scalligraph.services.{IntegrityCheck, _}
+import org.thp.thehive.controllers.v0.{QueryExecutorVersion0Provider, TheHiveQueryExecutor => TheHiveQueryExecutorV0}
+import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
 import org.thp.thehive.models.{TheHiveSchemaDefinition, UseHashToIndex}
+import org.thp.thehive.services.notification.NotificationActor
 import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
-import org.thp.thehive.services.{UserSrv => _, _}
+import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv, UserSrv => _, _}
 import play.api.libs.concurrent.AkkaGuiceSupport
-//import org.thp.scalligraph.orientdb.{OrientDatabase, OrientDatabaseStorageSrv}
-import org.thp.scalligraph.services.config.ConfigActor
-import org.thp.scalligraph.services.{DatabaseStorageSrv, LocalFileSystemStorageSrv, StorageSrv}
-import org.thp.thehive.services.notification.NotificationActor
-import org.thp.thehive.services.{Connector, LocalKeyAuthProvider, LocalPasswordAuthProvider, LocalUserSrv}
-//import org.thp.scalligraph.neo4j.Neo4jDatabase
-//import org.thp.scalligraph.orientdb.OrientDatabase
-import org.thp.scalligraph.query.QueryExecutor
-import org.thp.thehive.controllers.v0.{TheHiveQueryExecutor => TheHiveQueryExecutorV0}
-import org.thp.thehive.controllers.v1.{TheHiveQueryExecutor => TheHiveQueryExecutorV1}
 import play.api.routing.{Router => PlayRouter}
 import play.api.{Configuration, Environment, Logger}
+
+import javax.inject.{Inject, Provider, Singleton}
 
 class TheHiveModule(environment: Environment, configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
   lazy val logger: Logger = Logger(getClass)
@@ -90,24 +88,26 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     bindActor[ConfigActor]("config-actor")
     bindActor[NotificationActor]("notification-actor")
 
-    val integrityCheckOpsBindings = ScalaMultibinder.newSetBinder[GenIntegrityCheckOps](binder)
-    integrityCheckOpsBindings.addBinding.to[ProfileIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[OrganisationIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[TagIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[UserIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[ImpactStatusIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[ResolutionStatusIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[ObservableTypeIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[CustomFieldIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[CaseTemplateIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[DataIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[CaseIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[AlertIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[TaskIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[ObservableIntegrityCheckOps]
-    integrityCheckOpsBindings.addBinding.to[LogIntegrityCheckOps]
-    bind[ActorRef].annotatedWithName("integrity-check-actor").toProvider[IntegrityCheckActorProvider]
+    val integrityChecksBindings = ScalaMultibinder.newSetBinder[IntegrityCheck](binder)
+    integrityChecksBindings.addBinding.to[ProfileIntegrityCheck]
+    integrityChecksBindings.addBinding.to[OrganisationIntegrityCheck]
+    integrityChecksBindings.addBinding.to[TagIntegrityCheck]
+    integrityChecksBindings.addBinding.to[UserIntegrityCheck]
+    integrityChecksBindings.addBinding.to[ImpactStatusIntegrityCheck]
+    integrityChecksBindings.addBinding.to[ResolutionStatusIntegrityCheck]
+    integrityChecksBindings.addBinding.to[ObservableTypeIntegrityCheck]
+    integrityChecksBindings.addBinding.to[CustomFieldIntegrityCheck]
+    integrityChecksBindings.addBinding.to[CaseTemplateIntegrityCheck]
+    integrityChecksBindings.addBinding.to[DataIntegrityCheck]
+    integrityChecksBindings.addBinding.to[CaseIntegrityCheck]
+    integrityChecksBindings.addBinding.to[AlertIntegrityCheck]
+    integrityChecksBindings.addBinding.to[TaskIntegrityCheck]
+    integrityChecksBindings.addBinding.to[ObservableIntegrityCheck]
+    integrityChecksBindings.addBinding.to[LogIntegrityCheck]
+    bind[TypedActorRef[IntegrityCheck.Request]].toProvider[IntegrityCheckActorProvider].asEagerSingleton()
     bind[TypedActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
+
+    bind[Scheduler].toProvider[QuartzSchedulerProvider].asEagerSingleton()
 
     bind[ActorRef].annotatedWithName("flow-actor").toProvider[FlowActorProvider]
 
@@ -115,5 +115,17 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
 
     ImmenseTermProcessor.registerStrategy("observableHashToIndex", _ => UseHashToIndex)
     ()
+  }
+}
+
+@Singleton
+class QuartzSchedulerProvider @Inject() (actorSystem: ActorSystem) extends Provider[Scheduler] {
+  override def get(): Scheduler = {
+    val factory = new StdSchedulerFactory
+    factory.initialize()
+    val scheduler = factory.getScheduler()
+    actorSystem.registerOnTermination(scheduler.shutdown())
+    scheduler.start()
+    scheduler
   }
 }

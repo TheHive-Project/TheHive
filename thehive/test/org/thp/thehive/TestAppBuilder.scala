@@ -1,6 +1,7 @@
 package org.thp.thehive
 
 import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef => TypedActorRef}
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import org.apache.commons.io.FileUtils
@@ -8,7 +9,7 @@ import org.thp.scalligraph.auth._
 import org.thp.scalligraph.janus.JanusDatabaseProvider
 import org.thp.scalligraph.models.{Database, Schema, UpdatableSchema}
 import org.thp.scalligraph.query.QueryExecutor
-import org.thp.scalligraph.services.{GenIntegrityCheckOps, LocalFileSystemStorageSrv, StorageSrv}
+import org.thp.scalligraph.services.{IntegrityCheck, LocalFileSystemStorageSrv, StorageSrv}
 import org.thp.scalligraph.{AppBuilder, SingleInstance}
 import org.thp.thehive.controllers.v0.TheHiveQueryExecutor
 import org.thp.thehive.models.TheHiveSchemaDefinition
@@ -18,6 +19,7 @@ import org.thp.thehive.services.{UserSrv => _, _}
 
 import java.io.File
 import java.nio.file.{Files, Paths}
+import java.util.UUID
 import javax.inject.{Inject, Provider, Singleton}
 import scala.util.Try
 
@@ -44,22 +46,23 @@ trait TestAppBuilder {
       .multiBind[TriggerProvider](classOf[AlertCreatedProvider])
       .bindToProvider[AuthSrv, MultiAuthSrvProvider]
       .bindInstance[SingleInstance](new SingleInstance(true))
-      .multiBind[GenIntegrityCheckOps](
-        classOf[ProfileIntegrityCheckOps],
-        classOf[OrganisationIntegrityCheckOps],
-        classOf[TagIntegrityCheckOps],
-        classOf[UserIntegrityCheckOps],
-        classOf[ImpactStatusIntegrityCheckOps],
-        classOf[ResolutionStatusIntegrityCheckOps],
-        classOf[ObservableTypeIntegrityCheckOps],
-        classOf[CustomFieldIntegrityCheckOps],
-        classOf[CaseTemplateIntegrityCheckOps],
-        classOf[DataIntegrityCheckOps],
-        classOf[CaseIntegrityCheckOps],
-        classOf[AlertIntegrityCheckOps]
+      .multiBind[IntegrityCheck](
+        classOf[ProfileIntegrityCheck],
+        classOf[OrganisationIntegrityCheck],
+        classOf[TagIntegrityCheck],
+        classOf[UserIntegrityCheck],
+        classOf[ImpactStatusIntegrityCheck],
+        classOf[ResolutionStatusIntegrityCheck],
+        classOf[ObservableTypeIntegrityCheck],
+        classOf[CustomFieldIntegrityCheck],
+        classOf[CaseTemplateIntegrityCheck],
+        classOf[DataIntegrityCheck],
+        classOf[CaseIntegrityCheck],
+        classOf[AlertIntegrityCheck]
       )
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")
+      .bindToProvider[TypedActorRef[IntegrityCheck.Request], DummyTypedActorProvider[IntegrityCheck.Request]]
       .bindActor[DummyActor]("integrity-check-actor")
       .bindActor[DummyActor]("flow-actor")
       .addConfiguration("auth.providers = [{name:local},{name:key},{name:header, userHeader:user}]")
@@ -134,4 +137,11 @@ class TestNumberActorProvider @Inject() (actorSystem: ActorSystem) extends Provi
     actorSystem
       .toTyped
       .systemActorOf(CaseNumberActor.caseNumberProvider(getNextNumber = () => 36, reloadTimer = () => (), nextNumber = 36), "case-number")
+}
+
+class DummyTypedActorProvider[T] @Inject() (actorSystem: ActorSystem) extends Provider[TypedActorRef[T]] {
+  override def get(): TypedActorRef[T] =
+    actorSystem
+      .toTyped
+      .systemActorOf(Behaviors.empty, UUID.randomUUID().toString)
 }

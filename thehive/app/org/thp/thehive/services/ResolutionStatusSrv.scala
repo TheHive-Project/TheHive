@@ -1,26 +1,27 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{DedupCheck, IntegrityCheckOps, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName}
 import org.thp.thehive.models.ResolutionStatus
 import org.thp.thehive.services.ResolutionStatusOps._
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Provider, Singleton}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class ResolutionStatusSrv @Inject() (@Named("integrity-check-actor") integrityCheckActor: ActorRef) extends VertexSrv[ResolutionStatus] {
+class ResolutionStatusSrv @Inject() (integrityCheckActorProvider: Provider[ActorRef[IntegrityCheck.Request]]) extends VertexSrv[ResolutionStatus] {
+  lazy val integrityCheckActor: ActorRef[IntegrityCheck.Request] = integrityCheckActorProvider.get
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ResolutionStatus] =
     startTraversal.getByName(name)
 
   override def createEntity(e: ResolutionStatus)(implicit graph: Graph, authContext: AuthContext): Try[ResolutionStatus with Entity] = {
-    integrityCheckActor ! EntityAdded("Resolution")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("Resolution")
     super.createEntity(e)
   }
 
@@ -42,15 +43,4 @@ object ResolutionStatusOps {
   }
 }
 
-class ResolutionStatusIntegrityCheckOps @Inject() (val db: Database, val service: ResolutionStatusSrv) extends IntegrityCheckOps[ResolutionStatus] {
-  override def resolve(entities: Seq[ResolutionStatus with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class ResolutionStatusIntegrityCheck @Inject() (val db: Database, val service: ResolutionStatusSrv) extends DedupCheck[ResolutionStatus]

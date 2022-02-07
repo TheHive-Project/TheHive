@@ -138,7 +138,13 @@ class ObservableCtrl @Inject() (
                     .flatMap(obs => obs.attachment.map(createAttachmentObservableInCase(case0, obs, _)))
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservableInCase(case0, obs, _)))
+                    .flatMap(obs =>
+                      obs
+                        .data
+                        .filter(_.exists(_ != ' '))
+                        .filterNot(_.isEmpty)
+                        .map(createSimpleObservableInCase(case0, obs, _))
+                    )
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -219,7 +225,13 @@ class ObservableCtrl @Inject() (
                     }
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservableInAlert(alert, obs, _)))
+                    .flatMap(obs =>
+                      obs
+                        .data
+                        .filter(_.exists(_ != ' '))
+                        .filterNot(_.isEmpty)
+                        .map(createSimpleObservableInAlert(alert, obs, _))
+                    )
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -329,11 +341,13 @@ class ObservableCtrl @Inject() (
           case (from, to) =>
             observableSrv
               .pagedTraversal(db, 100, _.has(_.dataType, from.name)) { t =>
-                Try(
-                  t.update(_.dataType, to.name)
-                    .update(_._updatedAt, Some(new Date))
-                    .update(_._updatedBy, Some(request.userId))
-                    .iterate()
+                Some(
+                  Try(
+                    t.update(_.dataType, to.name)
+                      .update(_._updatedAt, Some(new Date))
+                      .update(_._updatedBy, Some(request.userId))
+                      .iterate()
+                  )
                 )
               }
               .foreach(_.failed.foreach(error => logger.error(s"Error while updating observable type", error)))

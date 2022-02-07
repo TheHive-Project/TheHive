@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.FileHeader
-import org.apache.tinkerpop.gremlin.process.traversal.Compare
 import org.thp.scalligraph._
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.controllers._
@@ -11,7 +10,6 @@ import org.thp.scalligraph.query.PredicateOps.PredicateOpsDefs
 import org.thp.scalligraph.query._
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal.{IteratorOutput, Traversal}
-import org.thp.scalligraph.utils.Hasher
 import org.thp.thehive.controllers.v0.Conversion._
 import org.thp.thehive.dto.v0.{InputAttachment, InputObservable}
 import org.thp.thehive.models._
@@ -83,7 +81,13 @@ class ObservableCtrl @Inject() (
                     .flatMap(obs => obs.attachment.map(createAttachmentObservableInCase(case0, obs, _)))
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservableInCase(case0, obs, _)))
+                    .flatMap(obs =>
+                      obs
+                        .data
+                        .filter(_.exists(_ != ' '))
+                        .filterNot(_.isEmpty)
+                        .map(createSimpleObservableInCase(case0, obs, _))
+                    )
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)
@@ -164,7 +168,13 @@ class ObservableCtrl @Inject() (
                     }
                 else
                   inputAttachObs
-                    .flatMap(obs => obs.data.map(createSimpleObservableInAlert(alert, obs, _)))
+                    .flatMap(obs =>
+                      obs
+                        .data
+                        .filter(_.exists(_ != ' '))
+                        .filterNot(_.isEmpty)
+                        .map(createSimpleObservableInAlert(alert, obs, _))
+                    )
               val (successes, failures) = successesAndFailures
                 .foldLeft[(Seq[JsValue], Seq[JsValue])]((Nil, Nil)) {
                   case ((s, f), Right(o)) => (s :+ o, f)

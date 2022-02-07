@@ -4,7 +4,7 @@ import org.scalactic.Or
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl}
 import org.thp.scalligraph.controllers._
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.services.{EdgeSrv, GenIntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{EdgeSrv, IntegrityCheck, VertexSrv}
 import org.thp.scalligraph.traversal.Graph
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.{EntityId, EntityName, RichOption}
@@ -52,7 +52,7 @@ class DatabaseBuilder @Inject() (
     taskSrv: TaskSrv,
     taxonomySrv: TaxonomySrv,
     userSrv: UserSrv,
-    integrityChecks: Set[GenIntegrityCheckOps]
+    integrityChecks: Set[IntegrityCheck]
 ) {
 
   lazy val logger: Logger = Logger(getClass)

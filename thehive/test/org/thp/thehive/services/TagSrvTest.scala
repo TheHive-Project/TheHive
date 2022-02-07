@@ -16,7 +16,7 @@ class TagSrvTest extends PlaySpecification with TestAppBuilder {
   "tag service" should {
     "fromString" should {
       "be parsed from namespace:predicate" in testApp { app =>
-        app[TagSrv].fromString("namespace:predicate") must beEqualTo(Some("namespace", "predicate", None))
+        app[TagSrv].fromString("namespace:predicate") must beEqualTo(Some(("namespace", "predicate", None)))
       }
 
       "be parsed from namespace:predicate=" in testApp { app =>
@@ -24,11 +24,11 @@ class TagSrvTest extends PlaySpecification with TestAppBuilder {
       }
 
       "be parsed from namespace: predicate" in testApp { app =>
-        app[TagSrv].fromString("namespace: predicate") must beEqualTo(Some("namespace", "predicate", None))
+        app[TagSrv].fromString("namespace: predicate") must beEqualTo(Some(("namespace", "predicate", None)))
       }
 
       "be parsed from namespace:predicate=value" in testApp { app =>
-        app[TagSrv].fromString("namespace:predicate=value") must beEqualTo(Some("namespace", "predicate", Some("value")))
+        app[TagSrv].fromString("namespace:predicate=value") must beEqualTo(Some(("namespace", "predicate", Some("value"))))
       }
     }
 
@@ -48,7 +48,7 @@ class TagSrvTest extends PlaySpecification with TestAppBuilder {
           tag.map(_.namespace) must beEqualTo(Success(s"_freetags_$orgId"))
           tag.map(_.predicate) must beEqualTo(Success("afreetag"))
           tag.map(_.predicate) must beEqualTo(Success("afreetag"))
-          tag.map(_.colour) must beEqualTo(Success(app[TagSrv].freeTagColour))
+          tag.map(_.colour)    must beEqualTo(Success(app[TagSrv].freeTagColour))
         }
       }
     }

@@ -2,7 +2,7 @@ import Dependencies._
 import com.typesafe.sbt.packager.Keys.bashScriptDefines
 import org.thp.ghcl.Milestone
 
-val thehiveVersion         = "4.1.17-1"
+val thehiveVersion         = "4.1.18-1"
 val scala212               = "2.12.13"
 val scala213               = "2.13.1"
 val supportedScalaVersions = List(scala212, scala213)
@@ -165,7 +165,8 @@ lazy val thehiveCore = (project in file("thehive"))
       pbkdf2,
       commonCodec,
       scalaGuice,
-      reflections
+      reflections,
+      quartzScheduler
     )
   )
 

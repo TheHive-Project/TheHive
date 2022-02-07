@@ -44,6 +44,7 @@ object Dependencies {
   lazy val scopt                   = "com.github.scopt"           %% "scopt"                              % "4.0.0"
   lazy val aix                     = "ai.x"                       %% "play-json-extensions"               % "0.42.0"
   lazy val bloomFilter             = "com.github.alexandrnikitin" %% "bloom-filter"                       % "0.13.1"
+  lazy val quartzScheduler         = "org.quartz-scheduler"        % "quartz"                             % "2.3.2"
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang" % "scala-reflect"  % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang" % "scala-compiler" % scalaVersion

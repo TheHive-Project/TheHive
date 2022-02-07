@@ -347,7 +347,7 @@ trait Conversion {
   implicit val customFieldReads: Reads[InputCustomField] = Reads[InputCustomField] { json =>
     for {
       //      metaData    <- json.validate[MetaData]
-      valueJson <- (json \ "value").validate[String].map(truncateString)
+      valueJson <- (json \ "value").validate[String]
       value = Json.parse(valueJson)
       displayName <- (value \ "name").validate[String].map(truncateString)
       name        <- (value \ "reference").validate[String].map(truncateString)
@@ -583,5 +583,15 @@ trait Conversion {
         )
       )
     )
+  }
+  implicit val dashboardReads: Reads[InputDashboard] = Reads[InputDashboard] { json =>
+    for {
+      metaData         <- json.validate[MetaData]
+      title            <- (json \ "title").validate[String]
+      description      <- (json \ "description").validate[String]
+      definitionString <- (json \ "definition").validate[String]
+      definition       <- Json.parse(definitionString).validate[JsObject]
+      status           <- (json \ "status").validate[String]
+    } yield InputDashboard(metaData, if (status == "Shared") Some(mainOrganisation -> true) else None, Dashboard(title, description, definition))
   }
 }

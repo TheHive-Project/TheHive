@@ -1,5 +1,20 @@
 # Change Log
 
+## [4.1.18](https://github.com/TheHive-Project/TheHive/milestone/88) (2022-02-07)
+
+**Implemented enhancements:**
+
+- [Enhancement] Integrity check improvement [\#2334](https://github.com/TheHive-Project/TheHive/issues/2334)
+- [Enhancement] Improve migration tool [\#2335](https://github.com/TheHive-Project/TheHive/issues/2335)
+
+**Fixed bugs:**
+
+- [Bug] "Character 8211 cannot match AsciiSet because it is out of range" error when downloading a report [\#1534](https://github.com/TheHive-Project/TheHive/issues/1534)
+- [Bug] Can add a "space" as observable [\#2324](https://github.com/TheHive-Project/TheHive/issues/2324)
+- [Bug]- Migration from Hive 3.4.4 to Hive 4.1.17 not working [\#2331](https://github.com/TheHive-Project/TheHive/issues/2331)
+- [Bug] Duplicated entities after "db.janusgraph.forceDropAndRebuildIndex: true" with Elasticsearch index [\#2333](https://github.com/TheHive-Project/TheHive/issues/2333)
+- [Bug] Query with parendId filter doesn't work (v0) [\#2336](https://github.com/TheHive-Project/TheHive/issues/2336)
+
 ## [4.1.17](https://github.com/TheHive-Project/TheHive/milestone/87) (2022-01-24)
 
 **Implemented enhancements:**

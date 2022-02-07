@@ -25,8 +25,7 @@ class ShareSrv @Inject() (implicit
     auditSrv: AuditSrv,
     caseSrvProvider: Provider[CaseSrv],
     taskSrv: TaskSrv,
-    observableSrvProvider: Provider[ObservableSrv],
-    organisationSrv: OrganisationSrv
+    observableSrvProvider: Provider[ObservableSrv]
 ) extends VertexSrv[Share] {
   lazy val caseSrv: CaseSrv             = caseSrvProvider.get
   lazy val observableSrv: ObservableSrv = observableSrvProvider.get
