@@ -65,14 +65,16 @@ object IntegrityCheckGlobalConfig {
 
 sealed trait DedupStrategy
 object DedupStrategy {
-  final case object AfterAddition      extends DedupStrategy
-  final case object DuringGlobalChecks extends DedupStrategy
-  final case object Disable            extends DedupStrategy
+  final case object AfterAddition                      extends DedupStrategy
+  final case object DuringGlobalChecks                 extends DedupStrategy
+  final case object AfterAdditionAndDuringGlobalChecks extends DedupStrategy
+  final case object Disable                            extends DedupStrategy
   implicit val reads: Reads[DedupStrategy] = Reads.StringReads.flatMap {
-    case "AfterAddition"      => Reads.pure(AfterAddition)
-    case "DuringGlobalChecks" => Reads.pure(DuringGlobalChecks)
-    case "Disable"            => Reads.pure(Disable)
-    case other                => Reads.failed(s"Dedup strategy `$other` is not recognised (accepted: AfterAddition, DuringGlobalChecks and Disable)")
+    case "AfterAddition"                      => Reads.pure(AfterAddition)
+    case "DuringGlobalChecks"                 => Reads.pure(DuringGlobalChecks)
+    case "AfterAdditionAndDuringGlobalChecks" => Reads.pure(AfterAdditionAndDuringGlobalChecks)
+    case "Disable"                            => Reads.pure(Disable)
+    case other                                => Reads.failed(s"Dedup strategy `$other` is not recognised (accepted: AfterAddition, DuringGlobalChecks and Disable)")
   }
   implicit val writes: Writes[DedupStrategy] = Writes[DedupStrategy](s => JsString(s.toString))
 }
@@ -154,7 +156,7 @@ object IntegrityCheck {
           case EntityAdded(name) =>
             logger.debug(s"An entity $name has been created")
             configItem.get.integrityCheckConfig.get(name).foreach {
-              case cfg if cfg.dedupStrategy == DedupStrategy.AfterAddition =>
+              case cfg if cfg.dedupStrategy == DedupStrategy.AfterAddition || cfg.dedupStrategy == DedupStrategy.AfterAdditionAndDuringGlobalChecks =>
                 timers.startSingleTimer(NeedCheck(name), cfg.initialDelay)
             }
             Behaviors.same
@@ -380,7 +382,7 @@ object IntegrityCheck {
     ): Unit = {
       val cfg = getConfig(config, name)
       runGlobal(integrityCheckActor, integrityChecks, name, maxDuration.merge(cfg.maxTime)(min).merge(cfg.minTime)(max))
-      if (cfg.dedupStrategy == DedupStrategy.DuringGlobalChecks)
+      if (cfg.dedupStrategy == DedupStrategy.DuringGlobalChecks || cfg.dedupStrategy == DedupStrategy.AfterAdditionAndDuringGlobalChecks)
         runDedup(integrityCheckActor, integrityChecks, name)
     }
 
