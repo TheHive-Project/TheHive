@@ -2,7 +2,6 @@ package org.thp.thehive.controllers.v0
 
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.AuthContext
-import org.thp.scalligraph.traversal.Converter.CList
 import org.thp.scalligraph.traversal.{Converter, IdentityConverter, Traversal}
 import org.thp.thehive.models._
 import org.thp.thehive.services.TheHiveOpsNoDeps
@@ -45,7 +44,7 @@ trait CaseRenderer extends TheHiveOpsNoDeps {
 
   def mergeIntoStats: Traversal.V[Case] => Traversal[JsNull.type, JsNull.type, IdentityConverter[JsNull.type]] = _.constant(JsNull)
 
-  def sharedWithStats: Traversal.V[Case] => Traversal[Seq[String], JList[String], CList[String, String, Converter[String, String]]] =
+  def sharedWithStats: Traversal.V[Case] => Traversal[Seq[String], JList[String], Converter.CList[String, String, Converter[String, String]]] =
     _.organisations.value(_.name).fold
 
   def originStats: Traversal.V[Case] => Traversal[String, String, Converter[String, String]] = _.origin.value(_.name)

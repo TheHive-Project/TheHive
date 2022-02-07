@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models.{Database, Entity}
@@ -24,7 +23,7 @@ class CaseTemplateSrv(
     tagSrv: TagSrv,
     taskSrv: TaskSrv,
     auditSrv: AuditSrv,
-    integrityCheckActor: => ActorRef @@ IntegrityCheckTag
+    integrityCheckActor: => ActorRef[IntegrityCheck.Request]
 ) extends VertexSrv[CaseTemplate]
     with TheHiveOps {
 
@@ -37,7 +36,7 @@ class CaseTemplateSrv(
     startTraversal.getByName(name)
 
   override def createEntity(e: CaseTemplate)(implicit graph: Graph, authContext: AuthContext): Try[CaseTemplate with Entity] = {
-    integrityCheckActor ! EntityAdded("CaseTemplate")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("CaseTemplate")
     super.createEntity(e)
   }
 
@@ -202,14 +201,16 @@ trait CaseTemplateOps { ops: TheHiveOps =>
       extends EntityWithCustomFieldOpsDefs[CaseTemplate, CaseTemplateCustomFieldValue](traversal, ops)
 }
 
-class CaseTemplateIntegrityCheckOps(
+class CaseTemplateIntegrityCheck(
     val db: Database,
     val service: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
     tagSrv: TagSrv
-) extends IntegrityCheckOps[CaseTemplate]
+) extends GlobalCheck[CaseTemplate]
+    with DedupCheck[CaseTemplate]
+    with IntegrityCheckOps[CaseTemplate]
     with TheHiveOpsNoDeps {
-  override def findDuplicates(): Seq[Seq[CaseTemplate with Entity]] =
+  override def findDuplicates(killSwitch: KillSwitch): Seq[Seq[CaseTemplate with Entity]] =
     db.roTransaction { implicit graph =>
       organisationSrv
         .startTraversal
@@ -223,61 +224,58 @@ class CaseTemplateIntegrityCheckOps(
             .traversal
         )
         .domainMap(ids => service.getByIds(ids: _*).toSeq)
+        .toIterator
+        .takeWhile(_ => killSwitch.continueProcess)
         .toSeq
     }
 
-  override def resolve(entities: Seq[CaseTemplate with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
+  override def resolve(entities: Seq[CaseTemplate with Entity])(implicit graph: Graph): Try[Unit] = {
+    entitySelector(entities).foreach {
+      case (head, tail) =>
         tail.foreach(copyEdge(_, head, e => e.label() == "CaseCaseTemplate" || e.label() == "AlertCaseTemplate"))
         service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
     }
+    Success(())
+  }
 
-  override def globalCheck(): Map[String, Int] =
-    db.tryTransaction { implicit graph =>
-      Try {
-        service
-          .startTraversal
-          .project(_.by.by(_.organisation._id.fold).by(_.tags.fold))
-          .toIterator
-          .map {
-            case (caseTemplate, organisationIds, tags) =>
-              if (organisationIds.isEmpty) {
-                service.get(caseTemplate).remove()
-                Map("caseTemplate-orphans" -> 1)
-              } else {
-                val orgStats = if (organisationIds.size > 1) {
-                  service.get(caseTemplate).out[CaseTemplateOrganisation].range(1, Int.MaxValue).remove()
-                  Map("caseTemplate-organisation-extraLink" -> organisationIds.size)
-                } else Map.empty[String, Int]
-                val tagStats = {
-                  val caseTemplateTagSet = caseTemplate.tags.toSet
-                  val tagSet             = tags.map(_.toString).toSet
-                  if (caseTemplateTagSet == tagSet) Map.empty[String, Int]
-                  else {
-                    implicit val authContext: AuthContext =
-                      LocalUserSrv.getSystemAuthContext.changeOrganisation(organisationIds.head, Permissions.all)
+  override def globalCheck(traversal: Traversal.V[CaseTemplate])(implicit graph: Graph): Map[String, Long] =
+    traversal
+      .project(_.by.by(_.organisation._id.fold).by(_.tags.fold))
+      .toIterator
+      .map {
+        case (caseTemplate, organisationIds, tags) =>
+          if (organisationIds.isEmpty) {
+            service.get(caseTemplate).remove()
+            Map("caseTemplate-orphans" -> 1L)
+          } else {
+            val orgStats = if (organisationIds.size > 1) {
+              service.get(caseTemplate).out[CaseTemplateOrganisation].range(1, Int.MaxValue).remove()
+              Map("caseTemplate-organisation-extraLink" -> organisationIds.size.toLong)
+            } else Map.empty[String, Long]
+            val tagStats = {
+              val caseTemplateTagSet = caseTemplate.tags.toSet
+              val tagSet             = tags.map(_.toString).toSet
+              if (caseTemplateTagSet == tagSet) Map.empty[String, Long]
+              else {
+                implicit val authContext: AuthContext =
+                  LocalUserSrv.getSystemAuthContext.changeOrganisation(organisationIds.head, Permissions.all)
 
-                    val extraTagField = caseTemplateTagSet -- tagSet
-                    val extraTagLink  = tagSet -- caseTemplateTagSet
-                    extraTagField
-                      .flatMap(tagSrv.getOrCreate(_).toOption)
-                      .foreach(service.caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
-                    service.get(caseTemplate).update(_.tags, caseTemplate.tags ++ extraTagLink).iterate()
-                    Map(
-                      "caseTemplate-tags-extraField" -> extraTagField.size,
-                      "caseTemplate-tags-extraLink"  -> extraTagLink.size
-                    )
-                  }
-                }
-
-                orgStats <+> tagStats
+                val extraTagField = caseTemplateTagSet -- tagSet
+                val extraTagLink  = tagSet -- caseTemplateTagSet
+                extraTagField
+                  .flatMap(tagSrv.getOrCreate(_).toOption)
+                  .foreach(service.caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
+                service.get(caseTemplate).update(_.tags, caseTemplate.tags ++ extraTagLink).iterate()
+                Map(
+                  "caseTemplate-tags-extraField" -> extraTagField.size.toLong,
+                  "caseTemplate-tags-extraLink"  -> extraTagLink.size.toLong
+                )
               }
+            }
+
+            orgStats <+> tagStats
           }
-          .reduceOption(_ <+> _)
-          .getOrElse(Map.empty)
       }
-    }.getOrElse(Map("globalFailure" -> 1))
+      .reduceOption(_ <+> _)
+      .getOrElse(Map.empty)
 }

@@ -119,6 +119,8 @@ trait Input {
   def listJobObservables(caseId: String): Source[Try[(String, InputObservable)], NotUsed]
   def countAction(filter: Filter): Future[Long]
   def listActions(entityIds: Seq[String]): Source[Try[(String, InputAction)], NotUsed]
-  def countAudit(filter: Filter): Future[Long]
+  def countAudits(filter: Filter): Future[Long]
   def listAudits(entityIds: Seq[String], filter: Filter): Source[Try[(String, InputAudit)], NotUsed]
+  def countDashboards(filter: Filter): Future[Long]
+  def listDashboards(filter: Filter): Source[Try[InputDashboard], NotUsed]
 }

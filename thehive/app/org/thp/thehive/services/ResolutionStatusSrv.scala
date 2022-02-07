@@ -1,23 +1,22 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
-import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{DedupCheck, VertexSrv}
 import org.thp.scalligraph.traversal.{Graph, Traversal}
 import org.thp.scalligraph.{CreateError, EntityIdOrName}
 import org.thp.thehive.models.ResolutionStatus
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
-class ResolutionStatusSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[ResolutionStatus] with TheHiveOpsNoDeps {
+class ResolutionStatusSrv(integrityCheckActor: => ActorRef[IntegrityCheck.Request]) extends VertexSrv[ResolutionStatus] with TheHiveOpsNoDeps {
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ResolutionStatus] =
     startTraversal.getByName(name)
 
   override def createEntity(e: ResolutionStatus)(implicit graph: Graph, authContext: AuthContext): Try[ResolutionStatus with Entity] = {
-    integrityCheckActor ! EntityAdded("Resolution")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("Resolution")
     super.createEntity(e)
   }
 
@@ -39,15 +38,4 @@ trait ResolutionStatusOps { _: TheHiveOpsNoDeps =>
   }
 }
 
-class ResolutionStatusIntegrityCheckOps(val db: Database, val service: ResolutionStatusSrv) extends IntegrityCheckOps[ResolutionStatus] {
-  override def resolve(entities: Seq[ResolutionStatus with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class ResolutionStatusIntegrityCheck(val db: Database, val service: ResolutionStatusSrv) extends DedupCheck[ResolutionStatus]

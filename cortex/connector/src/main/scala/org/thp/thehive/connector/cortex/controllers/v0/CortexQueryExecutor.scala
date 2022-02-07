@@ -47,7 +47,7 @@ class CortexQueryExecutor(
 
   override val customFilterQuery: FilterQuery = FilterQuery(publicProperties) { (tpe, globalParser) =>
     FieldsParser("parentChildFilter") {
-      case (_, FObjOne("_parent", ParentIdFilter(_, parentId))) if parentTypes.isDefinedAt(tpe) =>
+      case (_, FObjOne("_parent", ParentIdFilter(parentId, _))) if parentTypes.isDefinedAt(tpe) =>
         Good(new CortexParentIdInputFilter(parentId))
       case (path, FObjOne("_parent", ParentQueryFilter(_, parentFilterField))) if parentTypes.isDefinedAt(tpe) =>
         globalParser(parentTypes(tpe)).apply(path, parentFilterField).map(query => new CortexParentQueryInputFilter(query))

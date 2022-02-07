@@ -1,10 +1,8 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.T
-import org.thp.scalligraph.EntityId
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services.{VertexSrv, _}
@@ -12,13 +10,12 @@ import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.thehive.models._
 
 import java.lang.{Long => JLong}
-import scala.collection.mutable
 import scala.util.{Success, Try}
 
-class DataSrv(integrityCheckActor: => ActorRef @@ IntegrityCheckTag) extends VertexSrv[Data] with TheHiveOpsNoDeps {
+class DataSrv(integrityCheckActor: => ActorRef[IntegrityCheck.Request]) extends VertexSrv[Data] with TheHiveOpsNoDeps {
   override def createEntity(e: Data)(implicit graph: Graph, authContext: AuthContext): Try[Data with Entity] =
     super.createEntity(e).map { data =>
-      integrityCheckActor ! EntityAdded("Data")
+      integrityCheckActor ! IntegrityCheck.EntityAdded("Data")
       data
     }
 
@@ -56,40 +53,9 @@ trait DataOps { _: TheHiveOpsNoDeps =>
 
 }
 
-class DataIntegrityCheckOps(val db: Database, val service: DataSrv) extends IntegrityCheckOps[Data] {
+class DataIntegrityCheck(val db: Database, val service: DataSrv) extends DedupCheck[Data] with GlobalCheck[Data] {
 
-  override def findDuplicates(): Seq[Seq[Data with Entity]] =
-    db.roTransaction { implicit graph =>
-      val map = mutable.Map.empty[String, mutable.Buffer[EntityId]]
-      service
-        .startTraversal
-        .foreach { data =>
-          map.getOrElseUpdate(data.data, mutable.Buffer.empty[EntityId]) += EntityId(data._id)
-        }
-      map
-        .values
-        .collect {
-          case vertexIds if vertexIds.lengthCompare(1) > 0 => service.getByIds(vertexIds.toSeq: _*).toList
-        }
-        .toSeq
-    }
-  override def resolve(entities: Seq[Data with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] =
-    db.tryTransaction { implicit graph =>
-      Try {
-        val orphans = service.startTraversal.filterNot(_.inE[ObservableData])._id.toSeq
-        if (orphans.nonEmpty) {
-          service.getByIds(orphans: _*).remove()
-          Map("orphan" -> orphans.size)
-        } else Map.empty[String, Int]
-      }
-    }.getOrElse(Map("globalFailure" -> 1))
+  override def extraFilter(traversal: Traversal.V[Data]): Traversal.V[Data] = traversal.filterNot(_.inE[ObservableData])
+  override def globalCheck(traversal: Traversal.V[Data])(implicit graph: Graph): Map[String, Long] =
+    Map("orphan" -> traversal.sideEffect(_.drop()).getCount)
 }

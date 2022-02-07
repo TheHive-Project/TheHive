@@ -31,7 +31,7 @@ class InputModule(configuration: Configuration, actorSystem: ActorSystem) {
   lazy val input: Input                               = wire[Input]
 }
 
-class Input(configuration: Configuration, elaticClient: ElasticClient, implicit val ec: ExecutionContext, implicit val mat: Materializer)
+class Input(configuration: Configuration, elasticClient: ElasticClient, implicit val ec: ExecutionContext, implicit val mat: Materializer)
     extends migration.Input
     with Conversion {
   lazy val logger: Logger               = Logger(getClass)
@@ -48,7 +48,7 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
 
   override def readAttachment(id: String): Source[ByteString, NotUsed] =
     Source.unfoldAsync(0) { chunkNumber =>
-      elaticClient
+      elasticClient
         .get("data", s"${id}_$chunkNumber")
         .map { json =>
           (json \ "binary").asOpt[String].map(s => chunkNumber + 1 -> ByteString(Base64.getDecoder.decode(s)))
@@ -81,31 +81,31 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
   }
 
   override def listCases(filter: Filter): Source[Try[InputCase], NotUsed] =
-    elaticClient("case", searchQuery(bool(caseFilter(filter)), "-createdAt"))
+    elasticClient("case", searchQuery(bool(caseFilter(filter)), "-createdAt"))
       .read[InputCase]
 
   override def countCases(filter: Filter): Future[Long] =
-    elaticClient.count("case", searchQuery(bool(caseFilter(filter))))
+    elasticClient.count("case", searchQuery(bool(caseFilter(filter))))
 
   override def countCaseObservables(filter: Filter): Future[Long] =
-    elaticClient.count("case_artifact", searchQuery(hasParentQuery("case", bool(caseFilter(filter)))))
+    elasticClient.count("case_artifact", searchQuery(hasParentQuery("case", bool(caseFilter(filter)))))
 
   override def listCaseObservables(caseId: String): Source[Try[(String, InputObservable)], NotUsed] =
-    elaticClient("case_artifact", searchQuery(hasParentQuery("case", idsQuery(caseId))))
+    elasticClient("case_artifact", searchQuery(hasParentQuery("case", idsQuery(caseId))))
       .readWithParent[InputObservable](json => Try((json \ "_parent").as[String]))
 
   override def countCaseTasks(filter: Filter): Future[Long] =
-    elaticClient.count("case_task", searchQuery(hasParentQuery("case", bool(caseFilter(filter)))))
+    elasticClient.count("case_task", searchQuery(hasParentQuery("case", bool(caseFilter(filter)))))
 
   override def listCaseTasks(caseId: String): Source[Try[(String, InputTask)], NotUsed] =
-    elaticClient("case_task", searchQuery(hasParentQuery("case", idsQuery(caseId))))
+    elasticClient("case_task", searchQuery(hasParentQuery("case", idsQuery(caseId))))
       .readWithParent[InputTask](json => Try((json \ "_parent").as[String]))
 
   override def countCaseTaskLogs(filter: Filter): Future[Long] =
     countCaseTaskLogs(bool(caseFilter(filter)))
 
   override def listCaseTaskLogs(caseId: String): Source[Try[(String, InputLog)], NotUsed] =
-    elaticClient(
+    elasticClient(
       "case_task_log",
       searchQuery(
         bool(
@@ -118,7 +118,7 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
       .readWithParent[InputLog](json => Try((json \ "_parent").as[String]))
 
   private def countCaseTaskLogs(caseQuery: JsObject): Future[Long] =
-    elaticClient.count(
+    elasticClient.count(
       "case_task_log",
       searchQuery(
         bool(
@@ -142,19 +142,20 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
 
     bool(dateFilter ++ includeFilter, Nil, excludeFilter)
   }
+
   override def listAlerts(filter: Filter): Source[Try[InputAlert], NotUsed] =
-    elaticClient("alert", searchQuery(alertFilter(filter), "-createdAt"))
+    elasticClient("alert", searchQuery(alertFilter(filter), "-createdAt"))
       .read[InputAlert]
 
   override def countAlerts(filter: Filter): Future[Long] =
-    elaticClient.count("alert", searchQuery(alertFilter(filter)))
+    elasticClient.count("alert", searchQuery(alertFilter(filter)))
 
   override def countAlertObservables(filter: Filter): Future[Long] = Future.failed(new NotImplementedError)
 
   override def listAlertObservables(alertId: String): Source[Try[(String, InputObservable)], NotUsed] = {
     val dummyMetaData = MetaData("no-id", "init", new Date, None, None)
     Source
-      .future(elaticClient.searchRaw("alert", searchQuery(idsQuery(alertId))))
+      .future(elasticClient.searchRaw("alert", searchQuery(idsQuery(alertId))))
       .via(JsonReader.select("$.hits.hits[*]._source.artifacts[*]"))
       .mapConcat { data =>
         Try(Json.parse(data.toArray[Byte]))
@@ -171,25 +172,25 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
   }
 
   override def listUsers(filter: Filter): Source[Try[InputUser], NotUsed] =
-    elaticClient("user", searchQuery(matchAll))
+    elasticClient("user", searchQuery(matchAll))
       .read[InputUser]
 
   override def countUsers(filter: Filter): Future[Long] =
-    elaticClient.count("user", searchQuery(matchAll))
+    elasticClient.count("user", searchQuery(matchAll))
 
   override def listCustomFields(filter: Filter): Source[Try[InputCustomField], NotUsed] =
-    elaticClient("dblist", searchQuery(or(termQuery("dblist", "case_metrics"), termQuery("dblist", "custom_fields"))))
+    elasticClient("dblist", searchQuery(or(termQuery("dblist", "case_metrics"), termQuery("dblist", "custom_fields"))))
       .read[InputCustomField]
 
   override def countCustomFields(filter: Filter): Future[Long] =
-    elaticClient.count("dblist", searchQuery(or(termQuery("dblist", "case_metrics"), termQuery("dblist", "custom_fields"))))
+    elasticClient.count("dblist", searchQuery(or(termQuery("dblist", "case_metrics"), termQuery("dblist", "custom_fields"))))
 
   override def listObservableTypes(filter: Filter): Source[Try[InputObservableType], NotUsed] =
-    elaticClient("dblist", searchQuery(termQuery("dblist", "list_artifactDataType")))
+    elasticClient("dblist", searchQuery(termQuery("dblist", "list_artifactDataType")))
       .read[InputObservableType]
 
   override def countObservableTypes(filter: Filter): Future[Long] =
-    elaticClient.count("dblist", searchQuery(termQuery("dblist", "list_artifactDataType")))
+    elasticClient.count("dblist", searchQuery(termQuery("dblist", "list_artifactDataType")))
 
   override def listProfiles(filter: Filter): Source[Try[InputProfile], NotUsed] =
     Source.empty[Try[InputProfile]]
@@ -207,18 +208,18 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
   override def countResolutionStatus(filter: Filter): Future[Long] = Future.successful(0)
 
   override def listCaseTemplate(filter: Filter): Source[Try[InputCaseTemplate], NotUsed] =
-    elaticClient("caseTemplate", searchQuery(matchAll))
+    elasticClient("caseTemplate", searchQuery(matchAll))
       .read[InputCaseTemplate]
 
   override def countCaseTemplate(filter: Filter): Future[Long] =
-    elaticClient.count("caseTemplate", searchQuery(matchAll))
+    elasticClient.count("caseTemplate", searchQuery(matchAll))
 
   override def countCaseTemplateTask(filter: Filter): Future[Long] = Future.failed(new NotImplementedError)
 
   def listCaseTemplateTask(caseTemplateId: String): Source[Try[(String, InputTask)], NotUsed] =
     Source
       .futureSource {
-        elaticClient
+        elasticClient
           .get("caseTemplate", caseTemplateId)
           .map { json =>
             val metaData = json.as[MetaData]
@@ -233,16 +234,16 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
       .mapMaterializedValue(_ => NotUsed)
 
   override def countJobs(filter: Filter): Future[Long] =
-    elaticClient.count("case_artifact_job", searchQuery(hasParentQuery("case_artifact", hasParentQuery("case", bool(caseFilter(filter))))))
+    elasticClient.count("case_artifact_job", searchQuery(hasParentQuery("case_artifact", hasParentQuery("case", bool(caseFilter(filter))))))
 
   override def listJobs(caseId: String): Source[Try[(String, InputJob)], NotUsed] =
-    elaticClient("case_artifact_job", searchQuery(hasParentQuery("case_artifact", hasParentQuery("case", idsQuery(caseId)))))
+    elasticClient("case_artifact_job", searchQuery(hasParentQuery("case_artifact", hasParentQuery("case", idsQuery(caseId)))))
       .readWithParent[InputJob](json => Try((json \ "_parent").as[String]))(jobReads, classTag[InputJob])
 
   override def countJobObservables(filter: Filter): Future[Long] = Future.failed(new NotImplementedError)
 
   override def listJobObservables(caseId: String): Source[Try[(String, InputObservable)], NotUsed] =
-    elaticClient("case_artifact_job", searchQuery(hasParentQuery("case_artifact", hasParentQuery("case", idsQuery(caseId)))))
+    elasticClient("case_artifact_job", searchQuery(hasParentQuery("case_artifact", hasParentQuery("case", idsQuery(caseId)))))
       .map { json =>
         Try {
           val metaData = json.as[MetaData]
@@ -255,10 +256,10 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
       }
 
   override def countAction(filter: Filter): Future[Long] =
-    elaticClient.count("action", searchQuery(matchAll))
+    elasticClient.count("action", searchQuery(matchAll))
 
   override def listActions(entityIds: Seq[String]): Source[Try[(String, InputAction)], NotUsed] =
-    elaticClient("action", searchQuery(termsQuery("objectId", entityIds)))
+    elasticClient("action", searchQuery(termsQuery("objectId", entityIds)))
       .read[(String, InputAction)]
 
   private def auditFilter(filter: Filter, objectIds: String*): JsObject = {
@@ -278,10 +279,17 @@ class Input(configuration: Configuration, elaticClient: ElasticClient, implicit 
     bool(dateFilter ++ includeFilter ++ objectIdFilter, Nil, excludeFilter)
   }
 
-  override def countAudit(filter: Filter): Future[Long] =
-    elaticClient.count("audit", searchQuery(auditFilter(filter)))
+  override def countAudits(filter: Filter): Future[Long] =
+    elasticClient.count("audit", searchQuery(auditFilter(filter)))
 
   override def listAudits(entityIds: Seq[String], filter: Filter): Source[Try[(String, InputAudit)], NotUsed] =
-    elaticClient("audit", searchQuery(auditFilter(filter, entityIds: _*)))
+    elasticClient("audit", searchQuery(auditFilter(filter, entityIds: _*)))
       .read[(String, InputAudit)]
+
+  override def countDashboards(filter: Filter): Future[Long] =
+    elasticClient.count("dashboard", searchQuery(matchAll))
+
+  override def listDashboards(filter: Filter): Source[Try[InputDashboard], NotUsed] =
+    elasticClient("dashboard", searchQuery(matchAll))
+      .read[InputDashboard]
 }

@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models._
@@ -30,7 +29,7 @@ class AlertSrv(
     observableSrv: ObservableSrv,
     auditSrv: AuditSrv,
     attachmentSrv: AttachmentSrv,
-    integrityCheckActor: => ActorRef @@ IntegrityCheckTag
+    integrityCheckActor: => ActorRef[IntegrityCheck.Request]
 ) extends VertexSrv[Alert]
     with TheHiveOpsNoDeps {
 
@@ -262,7 +261,7 @@ class AlertSrv(
           _           <- alertCaseSrv.create(AlertCase(), alert.alert, createdCase.`case`)
           _           <- get(alert.alert).update(_.caseId, createdCase._id).getOrFail("Alert")
           _           <- markAsRead(alert._id)
-          _ = integrityCheckActor ! EntityAdded("Alert")
+          _ = integrityCheckActor ! IntegrityCheck.EntityAdded("Alert")
         } yield createdCase
       }
     }(richCase => auditSrv.alert.createCase(alert.alert, richCase.`case`, richCase.toJson.as[JsObject]))
@@ -306,7 +305,7 @@ class AlertSrv(
             )
           } yield details
         }(details => auditSrv.alert.mergeToCase(alert, `case`, details.as[JsObject]))
-        .map(_ => integrityCheckActor ! EntityAdded("Alert"))
+        .map(_ => integrityCheckActor ! IntegrityCheck.EntityAdded("Alert"))
         .flatMap(_ => caseSrv.getOrFail(`case`._id))
 
   def importObservables(alert: Alert with Entity, `case`: Case with Entity)(implicit
@@ -473,7 +472,8 @@ trait AlertOpsNoDeps { ops: TheHiveOpsNoDeps =>
   }
 }
 
-trait AlertOps { ops: TheHiveOps =>
+trait AlertOps {
+  ops: TheHiveOps =>
   protected val organisationSrv: OrganisationSrv
   protected val customFieldSrv: CustomFieldSrv
 
@@ -524,10 +524,12 @@ trait AlertOps { ops: TheHiveOps =>
             )
         }
   }
-
 }
-class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, caseSrv: CaseSrv, organisationSrv: OrganisationSrv, tagSrv: TagSrv)
-    extends IntegrityCheckOps[Alert]
+
+class AlertIntegrityCheck(val db: Database, val service: AlertSrv, caseSrv: CaseSrv, organisationSrv: OrganisationSrv, tagSrv: TagSrv)
+    extends GlobalCheck[Alert]
+    with DedupCheck[Alert]
+    with IntegrityCheckOps[Alert]
     with TheHiveOpsNoDeps {
 
   override def resolve(entities: Seq[Alert with Entity])(implicit graph: Graph): Try[Unit] = {
@@ -538,57 +540,50 @@ class AlertIntegrityCheckOps(val db: Database, val service: AlertSrv, caseSrv: C
       imported
     } else entities
     // Keep the last created alert
-    EntitySelector.lastCreatedEntity(remainingAlerts).foreach(e => service.getByIds(e._2.map(_._id): _*).remove())
+    EntitySelector.lastCreatedEntity(remainingAlerts).foreach {
+      case (_, tail) => service.getByIds(tail.map(_._id): _*).remove()
+    }
     Success(())
   }
 
-  override def globalCheck(): Map[String, Int] =
-    service
-      .pagedTraversalIds(db, 100) { ids =>
-        db.tryTransaction { implicit graph =>
-          val caseCheck = singleIdLink[Case]("caseId", caseSrv)(_.outEdge[AlertCase], _.set(EntityId.empty))
-          val orgCheck  = singleIdLink[Organisation]("organisationId", organisationSrv)(_.outEdge[AlertOrganisation], _.remove)
-          Try {
-            service
-              .getByIds(ids: _*)
-              .project(
-                _.by
-                  .by(_.`case`._id.fold)
-                  .by(_.organisation._id.fold)
-                  .by(_.removeDuplicateOutEdges[AlertCase]())
-                  .by(_.removeDuplicateOutEdges[AlertOrganisation]())
-                  .by(_.tags.fold)
-              )
-              .toIterator
-              .map {
-                case (alert, caseIds, orgIds, extraCaseEdges, extraOrgEdges, tags) =>
-                  val caseStats = caseCheck.check(alert, alert.caseId, caseIds)
-                  val orgStats  = orgCheck.check(alert, alert.organisationId, orgIds)
-                  val tagStats = {
-                    val alertTagSet = alert.tags.toSet
-                    val tagSet      = tags.map(_.toString).toSet
-                    if (alertTagSet == tagSet) Map.empty[String, Int]
-                    else {
-                      implicit val authContext: AuthContext =
-                        LocalUserSrv.getSystemAuthContext.changeOrganisation(alert.organisationId, Permissions.all)
+  override def globalCheck(traversal: Traversal.V[Alert])(implicit graph: Graph): Map[String, Long] = {
+    val caseCheck = singleIdLink[Case]("caseId", caseSrv)(_.outEdge[AlertCase], _.set(EntityId.empty))
+    val orgCheck  = singleIdLink[Organisation]("organisationId", organisationSrv)(_.outEdge[AlertOrganisation], _.remove)
+    traversal
+      .project(
+        _.by
+          .by(_.`case`._id.fold)
+          .by(_.organisation._id.fold)
+          .by(_.removeDuplicateOutEdges[AlertCase]())
+          .by(_.removeDuplicateOutEdges[AlertOrganisation]())
+          .by(_.tags.fold)
+      )
+      .toIterator
+      .map {
+        case (alert, caseIds, orgIds, extraCaseEdges, extraOrgEdges, tags) =>
+          val caseStats = caseCheck.check(alert, alert.caseId, caseIds)
+          val orgStats  = orgCheck.check(alert, alert.organisationId, orgIds)
+          val tagStats = {
+            val alertTagSet = alert.tags.toSet
+            val tagSet      = tags.map(_.toString).toSet
+            if (alertTagSet == tagSet) Map.empty[String, Long]
+            else {
+              implicit val authContext: AuthContext =
+                LocalUserSrv.getSystemAuthContext.changeOrganisation(alert.organisationId, Permissions.all)
 
-                      val extraTagField = alertTagSet -- tagSet
-                      val extraTagLink  = tagSet -- alertTagSet
-                      extraTagField.flatMap(tagSrv.getOrCreate(_).toOption).foreach(service.alertTagSrv.create(AlertTag(), alert, _))
-                      service.get(alert).update(_.tags, alert.tags ++ extraTagLink).iterate()
-                      Map(
-                        "case-tags-extraField" -> extraTagField.size,
-                        "case-tags-extraLink"  -> extraTagLink.size
-                      )
-                    }
-                  }
-                  caseStats <+> orgStats <+> extraCaseEdges <+> extraOrgEdges <+> tagStats
-              }
-              .reduceOption(_ <+> _)
-              .getOrElse(Map.empty)
+              val extraTagField = alertTagSet -- tagSet
+              val extraTagLink  = tagSet -- alertTagSet
+              extraTagField.flatMap(tagSrv.getOrCreate(_).toOption).foreach(service.alertTagSrv.create(AlertTag(), alert, _))
+              service.get(alert).update(_.tags, alert.tags ++ extraTagLink).iterate()
+              Map(
+                "case-tags-extraField" -> extraTagField.size.toLong,
+                "case-tags-extraLink"  -> extraTagLink.size.toLong
+              )
+            }
           }
-        }.getOrElse(Map("Alert-globalFailure" -> 1))
+          caseStats <+> orgStats <+> extraCaseEdges <+> extraOrgEdges <+> tagStats
       }
       .reduceOption(_ <+> _)
       .getOrElse(Map.empty)
+  }
 }

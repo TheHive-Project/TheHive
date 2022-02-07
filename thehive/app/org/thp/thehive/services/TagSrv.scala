@@ -1,13 +1,13 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
+import org.apache.tinkerpop.gremlin.process.traversal.TextP
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity, TextPredicate}
 import org.thp.scalligraph.services.config.{ApplicationConfig, ConfigItem}
-import org.thp.scalligraph.services.{EdgeSrv, EntitySelector, IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services._
 import org.thp.scalligraph.traversal.{Converter, Graph, Traversal}
 import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.thehive.models._
@@ -22,7 +22,7 @@ class TagSrv(
     override val customFieldValueSrv: CustomFieldValueSrv,
     taxonomySrv: TaxonomySrv,
     appConfig: ApplicationConfig,
-    integrityCheckActor: => ActorRef @@ IntegrityCheckTag
+    integrityCheckActor: => ActorRef[IntegrityCheck.Request]
 ) extends VertexSrv[Tag]
     with TheHiveOps {
   override lazy val organisationSrv: OrganisationSrv = _organisationSrv
@@ -74,7 +74,7 @@ class TagSrv(
     } yield tag
 
   def create(tag: Tag)(implicit graph: Graph, authContext: AuthContext): Try[Tag with Entity] = {
-    integrityCheckActor ! EntityAdded("Tag")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("Tag")
     super.createEntity(tag)
   }
 
@@ -146,6 +146,11 @@ trait TagOpsNoDeps { _: TheHiveOpsNoDeps =>
         .has(_.namespace, freeTagNamespace)
     }
 
+    def freetags: Traversal.V[Tag] = traversal.has(_.namespace, TextP.startingWith("_freetag_"))
+
+    def getFreetag(organisationSrv: OrganisationSrv, idOrName: EntityIdOrName)(implicit authContext: AuthContext): Traversal.V[Tag] =
+      idOrName.fold(traversal.getByIds(_), traversal.has(_.predicate, _)).freetags(organisationSrv)
+
     def autoComplete(organisationSrv: OrganisationSrv, freeTag: String)(implicit authContext: AuthContext): Traversal.V[Tag] =
       freetags(organisationSrv)
         .has(_.predicate, TextPredicate.contains(freeTag))
@@ -168,48 +173,26 @@ trait TagOpsNoDeps { _: TheHiveOpsNoDeps =>
       traversal.project(_.by.by(entityRenderer))
   }
 }
-trait TagOps { _: TheHiveOpsNoDeps =>
+trait TagOps {
+  _: TheHiveOpsNoDeps =>
   protected val organisationSrv: OrganisationSrv
+
   implicit class TagOpsDefs(traversal: Traversal.V[Tag]) {
     def getFreetag(idOrName: EntityIdOrName)(implicit authContext: AuthContext): Traversal.V[Tag] =
       idOrName.fold(traversal.getByIds(_), traversal.has(_.predicate, _)).freetags(organisationSrv)
-
   }
 }
-class TagIntegrityCheckOps(val db: Database, val service: TagSrv) extends IntegrityCheckOps[Tag] with TheHiveOpsNoDeps {
 
-  override def resolve(entities: Seq[Tag with Entity])(implicit graph: Graph): Try[Unit] = {
-    EntitySelector.firstCreatedEntity(entities).foreach {
-      case (head, tail) =>
-        tail.foreach(copyEdge(_, head))
-        val tailIds = tail.map(_._id)
-        logger.debug(s"Remove duplicated vertex: ${tailIds.mkString(",")}")
-        service.getByIds(tailIds: _*).remove()
-    }
-    Success(())
-  }
+class TagIntegrityCheck(val db: Database, val service: TagSrv)
+    extends DedupCheck[Tag]
+    with GlobalCheck[Tag]
+    with IntegrityCheckOps[Tag]
+    with TheHiveOpsNoDeps {
+  override def extraFilter(traversal: Traversal.V[Tag]): Traversal.V[Tag] =
+    traversal
+      .freetags
+      .filterNot(_.or(_.alert, _.observable, _.`case`, _.caseTemplate))
 
-  override def globalCheck(): Map[String, Int] =
-    service
-      .pagedTraversalIds(
-        db,
-        100,
-        _.filter(_.taxonomy.has(_.namespace, TextPredicate.startsWith("_freetags_")))
-          .filterNot(_.or(_.alert, _.observable, _.`case`, _.caseTemplate, _.taxonomy))
-      ) { ids =>
-        db.tryTransaction { implicit graph =>
-          Try {
-            val orphans = service
-              .getByIds(ids: _*)
-              ._id
-              .toSeq
-            if (orphans.nonEmpty) {
-              service.getByIds(orphans: _*).remove()
-              Map("orphan" -> orphans.size)
-            } else Map.empty[String, Int]
-          }
-        }.getOrElse(Map("globalFailure" -> 1))
-      }
-      .reduceOption(_ <+> _)
-      .getOrElse(Map.empty)
+  override def globalCheck(traversal: Traversal.V[Tag])(implicit graph: Graph): Map[String, Long] =
+    Map("orphan" -> traversal.sideEffect(_.drop()).getCount)
 }

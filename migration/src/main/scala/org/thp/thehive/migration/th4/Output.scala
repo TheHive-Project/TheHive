@@ -64,22 +64,23 @@ class OutputModule(val configuration: Configuration, val actorSystem: ActorSyste
     }
     new JanusDatabaseProvider(configuration, actorSystem, Set(TheHiveSchemaDefinition, CortexSchemaDefinition)).get
   }
-  lazy val dataSrv: DataSrv                                   = wire[DataSrv]
-  lazy val entityHelper: EntityHelper                         = wire[EntityHelper]
-  lazy val eventSrv: EventSrv                                 = wire[EventSrv]
-  lazy val impactStatusSrv: ImpactStatusSrv                   = wire[ImpactStatusSrv]
-  lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag = dummyActor.taggedWith[IntegrityCheckTag]
-  lazy val jobSrv: JobSrv                                     = wire[JobSrv]
-  lazy val logSrv: LogSrv                                     = wire[LogSrv]
-  lazy val notificationActor: ActorRef @@ NotificationTag     = dummyActor.taggedWith[NotificationTag]
-  lazy val observableSrv: ObservableSrv                       = wire[ObservableSrv]
-  lazy val observableTypeSrv: ObservableTypeSrv               = wire[ObservableTypeSrv]
-  lazy val organisationSrv: OrganisationSrv                   = wire[OrganisationSrv]
-  lazy val profileSrv: ProfileSrv                             = wire[ProfileSrv]
-  lazy val reportTagSrv: ReportTagSrv                         = wire[ReportTagSrv]
-  lazy val resolutionStatusSrv: ResolutionStatusSrv           = wire[ResolutionStatusSrv]
-  lazy val roleSrv: RoleSrv                                   = wire[RoleSrv]
-  lazy val serviceHelper: ServiceHelper                       = wire[ServiceHelper]
+  lazy val dataSrv: DataSrv                                            = wire[DataSrv]
+  lazy val entityHelper: EntityHelper                                  = wire[EntityHelper]
+  lazy val eventSrv: EventSrv                                          = wire[EventSrv]
+  lazy val impactStatusSrv: ImpactStatusSrv                            = wire[ImpactStatusSrv]
+  lazy val integrityCheckActor: typed.ActorRef[IntegrityCheck.Request] = dummyActor.toTyped
+  lazy val jobSrv: JobSrv                                              = wire[JobSrv]
+  lazy val logSrv: LogSrv                                              = wire[LogSrv]
+  lazy val notificationActor: ActorRef @@ NotificationTag              = dummyActor.taggedWith[NotificationTag]
+  lazy val observableSrv: ObservableSrv                                = wire[ObservableSrv]
+  lazy val observableTypeSrv: ObservableTypeSrv                        = wire[ObservableTypeSrv]
+  lazy val organisationSrv: OrganisationSrv                            = wire[OrganisationSrv]
+  lazy val profileSrv: ProfileSrv                                      = wire[ProfileSrv]
+  lazy val reportTagSrv: ReportTagSrv                                  = wire[ReportTagSrv]
+  lazy val resolutionStatusSrv: ResolutionStatusSrv                    = wire[ResolutionStatusSrv]
+  lazy val roleSrv: RoleSrv                                            = wire[RoleSrv]
+  lazy val dashboardSrv: DashboardSrv                                  = wire[DashboardSrv]
+  lazy val serviceHelper: ServiceHelper                                = wire[ServiceHelper]
   lazy val storageSrv: StorageSrv =
     configuration.get[String]("storage.provider") match {
       case "localfs" => new LocalFileSystemStorageSrv(configuration)
@@ -104,22 +105,22 @@ class OutputModule(val configuration: Configuration, val actorSystem: ActorSyste
     case _                  => new DefaultSyncCacheApi(defaultCacheApi)
   }
 
-  lazy val integrityChecks: Seq[GenIntegrityCheckOps] = Seq(
-    wire[ProfileIntegrityCheckOps],
-    wire[OrganisationIntegrityCheckOps],
-    wire[TagIntegrityCheckOps],
-    wire[UserIntegrityCheckOps],
-    wire[ImpactStatusIntegrityCheckOps],
-    wire[ResolutionStatusIntegrityCheckOps],
-    wire[ObservableTypeIntegrityCheckOps],
-    wire[CustomFieldIntegrityCheckOps],
-    wire[CaseTemplateIntegrityCheckOps],
-    wire[DataIntegrityCheckOps],
-    wire[CaseIntegrityCheckOps],
-    wire[AlertIntegrityCheckOps],
-    wire[TaskIntegrityCheckOps],
-    wire[ObservableIntegrityCheckOps],
-    wire[LogIntegrityCheckOps]
+  lazy val integrityChecks: Seq[IntegrityCheck] = Seq(
+    wire[AlertIntegrityCheck],
+    wire[CaseIntegrityCheck],
+    wire[CaseTemplateIntegrityCheck],
+    wire[CustomFieldIntegrityCheck],
+    wire[DataIntegrityCheck],
+    wire[ImpactStatusIntegrityCheck],
+    wire[LogIntegrityCheck],
+    wire[ObservableIntegrityCheck],
+    wire[ObservableTypeIntegrityCheck],
+    wire[OrganisationIntegrityCheck],
+    wire[ProfileIntegrityCheck],
+    wire[ResolutionStatusIntegrityCheck],
+    wire[TagIntegrityCheck],
+    wire[TaskIntegrityCheck],
+    wire[UserIntegrityCheck]
   )
 }
 
@@ -147,9 +148,10 @@ class Output(
     resolutionStatusSrv: ResolutionStatusSrv,
     jobSrv: JobSrv,
     actionSrv: ActionSrv,
+    dashboardSrv: DashboardSrv,
     db: Database,
     cache: SyncCacheApi,
-    checks: Seq[GenIntegrityCheckOps]
+    checks: Seq[IntegrityCheck]
 ) extends migration.Output[Graph]
     with TheHiveOpsNoDeps {
   lazy val logger: Logger      = Logger(getClass)
@@ -179,21 +181,25 @@ class Output(
 
   override def startMigration(): Try[Unit] = {
     implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-    if (resumeMigration) {
+    if (resumeMigration)
       db.addSchemaIndexes(TheHiveSchemaDefinition)
         .flatMap(_ => db.addSchemaIndexes(CortexSchemaDefinition))
-      db.roTransaction { implicit graph =>
-        profiles ++= profileSrv.startTraversal.toSeq.map(p => p.name -> p)
-        organisations ++= organisationSrv.startTraversal.toSeq.map(o => o.name -> o)
-        users ++= userSrv.startTraversal.toSeq.map(u => u.name -> u)
-        impactStatuses ++= impactStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
-        resolutionStatuses ++= resolutionStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
-        observableTypes ++= observableTypeSrv.startTraversal.toSeq.map(o => o.name -> o)
-        customFields ++= customFieldSrv.startTraversal.toSeq.map(c => c.name -> c)
-        caseTemplates ++= caseTemplateSrv.startTraversal.toSeq.map(c => c.name -> c)
-      }
-      Success(())
-    } else
+        .flatMap { _ =>
+          db.roTransaction { implicit graph =>
+            profiles ++= profileSrv.startTraversal.toSeq.map(p => p.name -> p)
+            organisations ++= organisationSrv.startTraversal.toSeq.map(o => o.name -> o)
+            users ++= userSrv.startTraversal.toSeq.map(u => u.name -> u)
+            impactStatuses ++= impactStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
+            resolutionStatuses ++= resolutionStatusSrv.startTraversal.toSeq.map(s => s.value -> s)
+            observableTypes ++= observableTypeSrv.startTraversal.toSeq.map(o => o.name -> o)
+            customFields ++= customFieldSrv.startTraversal.toSeq.map(c => c.name -> c)
+            caseTemplates ++= caseTemplateSrv.startTraversal.toSeq.map(c => c.name -> c)
+          }
+          Success(())
+        }
+    else {
+      db.setVersion(TheHiveSchemaDefinition.name, TheHiveSchemaDefinition.operations.lastVersion)
+      db.setVersion(CortexSchemaDefinition.name, CortexSchemaDefinition.operations.lastVersion)
       db.tryTransaction { implicit graph =>
         profiles ++= Profile.initialValues.flatMap(p => profileSrv.createEntity(p).map(p.name -> _).toOption)
         resolutionStatuses ++= ResolutionStatus.initialValues.flatMap(p => resolutionStatusSrv.createEntity(p).map(p.value -> _).toOption)
@@ -203,6 +209,7 @@ class Output(
         users ++= User.initialValues.flatMap(p => userSrv.createEntity(p).map(p.login -> _).toOption)
         Success(())
       }
+    }
   }
 
   override def endMigration(): Try[Unit] = {
@@ -220,20 +227,23 @@ class Output(
     db.addSchemaIndexes(TheHiveSchemaDefinition)
       .flatMap(_ => db.addSchemaIndexes(CortexSchemaDefinition))
       .foreach { _ =>
-        implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-        checks.foreach { c =>
-          db.tryTransaction { implicit graph =>
+        if (configuration.get[Boolean]("integrityCheck.enabled"))
+          checks.foreach { c =>
             logger.info(s"Running check on ${c.name} ...")
-            c.initialCheck()
-            val stats = c.duplicationCheck() <+> c.globalCheck()
-            val statsStr = stats
+            val desupStats = c match {
+              case dc: DedupCheck[_] => dc.dedup(KillSwitch.alwaysOn)
+              case _                 => Map.empty[String, Long]
+            }
+            val globalStats = c match {
+              case gc: GlobalCheck[_] => gc.runGlobalCheck(24.hours, KillSwitch.alwaysOn)
+              case _                  => Map.empty[String, Long]
+            }
+            val statsStr = (desupStats <+> globalStats)
               .collect { case (k, v) if v != 0 => s"$k:$v" }
               .mkString(" ")
             if (statsStr.isEmpty) logger.info(s"Check on ${c.name}: no change needed")
             else logger.info(s"Check on ${c.name}: $statsStr")
-            Success(())
           }
-        }
       }
 
     Try(db.close())
@@ -880,5 +890,23 @@ class Output(
         _ <- obj.map(auditSrv.auditedSrv.create(Audited(), createdAudit, _)).flip
         _ <- context.map(auditSrv.auditContextSrv.create(AuditContext(), createdAudit, _)).flip
       } yield ()
+    }
+
+  def dashboardExists(graph: Graph, inputDashboard: InputDashboard): Boolean =
+    if (!resumeMigration) false
+    else
+      db.roTransaction { implicit graph =>
+        dashboardSrv.startTraversal.has(_.title, inputDashboard.dashboard.title).exists
+      }
+
+  override def createDashboard(graph: Graph, inputDashboard: InputDashboard): Try[IdMapping] =
+    withAuthContext(inputDashboard.metaData.createdBy) { implicit authContext =>
+      implicit val g: Graph = graph
+      logger.debug(s"Create dashboard ${inputDashboard.dashboard.title}")
+      for {
+        dashboard <- dashboardSrv.create(inputDashboard.dashboard).map(_.dashboard)
+        _         <- inputDashboard.organisation.map { case (org, writable) => dashboardSrv.share(dashboard, EntityName(org), writable) }.flip
+        _ = updateMetaData(dashboard, inputDashboard.metaData)
+      } yield IdMapping(inputDashboard.metaData.id, dashboard._id)
     }
 }

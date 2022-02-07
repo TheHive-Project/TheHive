@@ -84,7 +84,7 @@ class TheHiveQueryExecutor(
   }
   override val customFilterQuery: FilterQuery = FilterQuery(publicProperties) { (tpe, globalParser) =>
     FieldsParser("parentChildFilter") {
-      case (_, FObjOne("_parent", ParentIdFilter(parentType, parentId))) if parentTypes.isDefinedAt((tpe, parentType)) =>
+      case (_, FObjOne("_parent", ParentIdFilter(parentId, parentType))) if parentTypes.isDefinedAt((tpe, parentType)) =>
         Good(new ParentIdInputFilter(parentId))
       case (path, FObjOne("_parent", ParentQueryFilter(parentType, parentFilterField))) if parentTypes.isDefinedAt((tpe, parentType)) =>
         globalParser(parentTypes((tpe, parentType))).apply(path, parentFilterField).map(query => new ParentQueryInputFilter(parentType, query))
@@ -147,12 +147,12 @@ class ParentIdInputFilter(parentId: String) extends InputFilter with TheHiveOpsN
         case t if t <:< ru.typeOf[Task] =>
           traversal
             .asInstanceOf[Traversal.V[Task]]
-            .has(_.relatedId, EntityId(parentId))
+            .has(_.relatedId, EntityId.read(parentId))
             .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Observable] && isNegate =>
           traversal
             .asInstanceOf[Traversal.V[Observable]]
-            .has(_.relatedId, EntityId(parentId))
+            .has(_.relatedId, EntityId.read(parentId))
             .asInstanceOf[Traversal.Unk]
         case t if t <:< ru.typeOf[Observable] =>
           traversal
@@ -167,7 +167,7 @@ class ParentIdInputFilter(parentId: String) extends InputFilter with TheHiveOpsN
         case t if t <:< ru.typeOf[Log] =>
           traversal
             .asInstanceOf[Traversal.V[Log]]
-            .has(_.taskId, EntityId(parentId))
+            .has(_.taskId, EntityId.read(parentId))
             .asInstanceOf[Traversal.Unk]
       }
       .getOrElse(throw BadRequestError(s"$traversalType hasn't parent"))

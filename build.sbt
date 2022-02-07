@@ -151,7 +151,8 @@ lazy val thehiveCore = (project in file("thehive"))
       macWireMacrosakka,
       macWireUtil,
       macWireProxy,
-      passay
+      passay,
+      quartzScheduler
     )
   )
 

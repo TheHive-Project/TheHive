@@ -93,6 +93,9 @@ object Migrate extends App with MigrationOps {
       opt[Int]('t', "thread-count")
         .text("number of threads")
         .action((t, c) => addConfig(c, "threadCount", t)),
+      opt[Unit]('k', "integrity-checks")
+        .text("run integrity checks after the migration")
+        .action((_, c) => addConfig(c, "output.integrityCheck.enabled", true)),
       /* case age */
       opt[String]("max-case-age")
         .valueName("<duration>")

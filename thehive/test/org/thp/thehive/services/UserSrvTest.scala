@@ -3,9 +3,11 @@ package org.thp.thehive.services
 import org.thp.scalligraph.EntityName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.DummyUserSrv
+import org.thp.scalligraph.services.KillSwitch
 import org.thp.thehive.models._
 import play.api.test.PlaySpecification
 
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 class UserSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsNoDeps {
@@ -76,7 +78,7 @@ class UserSrvTest extends PlaySpecification with TestAppBuilder with TheHiveOpsN
         if (userCount == 2) Success(())
         else Failure(new Exception(s"User certadmin is not in cert organisation twice ($userCount)"))
       }
-      new UserIntegrityCheckOps(database, userSrv, profileSrv, organisationSrv, roleSrv).duplicationCheck()
+      new UserIntegrityCheck(database, userSrv, profileSrv, organisationSrv, roleSrv).runGlobalCheck(5.minutes, KillSwitch.alwaysOn)
       database.roTransaction { implicit graph =>
         val userCount = userSrv.get(EntityName("certadmin@thehive.local")).organisations.get(EntityName("cert")).getCount
         userCount must beEqualTo(1)

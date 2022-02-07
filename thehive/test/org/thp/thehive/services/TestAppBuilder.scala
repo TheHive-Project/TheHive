@@ -1,6 +1,8 @@
 package org.thp.thehive.services
 
 import akka.actor.ActorRef
+import akka.actor.typed
+import akka.actor.typed.scaladsl.adapter.ClassicActorRefOps
 import com.softwaremill.macwire.akkasupport.wireAnonymousActor
 import org.thp.scalligraph.ScalligraphApplication
 import org.thp.scalligraph.models.Database
@@ -45,8 +47,8 @@ trait WithTheHiveModule {
 class TheHiveTestModule(app: ScalligraphApplication) extends TheHiveModule(app) {
   import com.softwaremill.tagging._
 
-  lazy val dummyActor: ActorRef                                        = wireAnonymousActor[DummyActor]
-  override lazy val notificationActor: ActorRef @@ NotificationTag     = dummyActor.taggedWith[NotificationTag]
-  override lazy val flowActor: ActorRef @@ FlowTag                     = dummyActor.taggedWith[FlowTag]
-  override lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag = dummyActor.taggedWith[IntegrityCheckTag]
+  lazy val dummyActor: ActorRef                                                 = wireAnonymousActor[DummyActor]
+  override lazy val notificationActor: ActorRef @@ NotificationTag              = dummyActor.taggedWith[NotificationTag]
+  override lazy val flowActor: ActorRef @@ FlowTag                              = dummyActor.taggedWith[FlowTag]
+  override lazy val integrityCheckActor: typed.ActorRef[IntegrityCheck.Request] = dummyActor.toTyped
 }

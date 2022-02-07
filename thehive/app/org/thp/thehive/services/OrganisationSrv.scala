@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.apache.tinkerpop.gremlin.process.traversal.P
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -26,7 +25,7 @@ class OrganisationSrv(
     _profileSrv: => ProfileSrv,
     _auditSrv: => AuditSrv,
     _userSrv: => UserSrv,
-    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
+    integrityCheckActor: => ActorRef[IntegrityCheck.Request],
     cache: SyncCacheApi
 ) extends VertexSrv[Organisation]
     with TheHiveOpsNoDeps {
@@ -40,7 +39,7 @@ class OrganisationSrv(
   val organisationTaxonomySrv       = new EdgeSrv[OrganisationTaxonomy, Organisation, Taxonomy]
 
   override def createEntity(e: Organisation)(implicit graph: Graph, authContext: AuthContext): Try[Organisation with Entity] = {
-    integrityCheckActor ! EntityAdded("Organisation")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("Organisation")
     super.createEntity(e)
   }
 
@@ -274,15 +273,4 @@ trait OrganisationOps {
   }
 }
 
-class OrganisationIntegrityCheckOps(val db: Database, val service: OrganisationSrv) extends IntegrityCheckOps[Organisation] {
-  override def resolve(entities: Seq[Organisation with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class OrganisationIntegrityCheck(val db: Database, val service: OrganisationSrv) extends DedupCheck[Organisation]

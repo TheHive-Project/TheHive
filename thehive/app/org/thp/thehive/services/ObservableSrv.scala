@@ -7,7 +7,6 @@ import org.thp.scalligraph.controllers.FFile
 import org.thp.scalligraph.models.{Database, Entity, UMapping}
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal.{Converter, Graph, StepLabel, Traversal}
 import org.thp.scalligraph.utils.Hash
 import org.thp.scalligraph.{BadRequestError, CreateError, EntityId, EntityIdOrName, EntityName, RichSeq}
@@ -257,7 +256,7 @@ trait ObservableOpsNoDeps { _: TheHiveOpsNoDeps =>
 
     def origin: Traversal.V[Organisation] = shares.has(_.owner, true).organisation
 
-    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+    def isShared: Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
       traversal.choose(_.inE[ShareObservable].count.is(P.gt(1)), true, false)
 
     def richObservable: Traversal[RichObservable, JMap[String, Any], Converter[RichObservable, JMap[String, Any]]] =
@@ -390,84 +389,99 @@ trait ObservableOps { _: TheHiveOps =>
   }
 }
 
-class ObservableIntegrityCheckOps(
+class ObservableIntegrityCheck(
     val db: Database,
     val service: ObservableSrv,
     organisationSrv: OrganisationSrv,
     dataSrv: DataSrv,
     tagSrv: TagSrv,
     implicit val ec: ExecutionContext
-) extends IntegrityCheckOps[Observable]
+) extends GlobalCheck[Observable]
+    with IntegrityCheckOps[Observable]
     with TheHiveOpsNoDeps {
-  override def resolve(entities: Seq[Observable with Entity])(implicit graph: Graph): Try[Unit] = Success(())
 
-  override def globalCheck(): Map[String, Int] =
-    service
-      .pagedTraversalIds(db, 100) { ids =>
-        db.tryTransaction { implicit graph =>
-          val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
-          val removeOrphan: OrphanStrategy[Observable, EntityId] = { (_, entity) =>
-            service.get(entity).remove()
-            Map("Observable-relatedId-removeOrphan" -> 1)
-          }
-          val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
-            orphanStrategy = removeOrphan,
-            setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
-            entitySelector = _ => EntitySelector.firstCreatedEntity,
-            removeLink = (_, _) => (),
-            getLink = id => graph.VV(id).entity.head,
-            optionalField = Some(_)
-          )
-
-          val observableDataCheck = {
-            implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
-            singleOptionLink[Data, String]("data", d => dataSrv.create(Data(d, None)).get, _.data)(_.outEdge[ObservableData])
-          }
-
-          Try {
+  def checkData(observable: Observable with Entity, data: Seq[Data with Entity])(implicit graph: Graph): Map[String, Long] = {
+    implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
+    data match {
+      case Seq(d) if observable.data.contains(d.data) => Map.empty
+      case Seq() if observable.data.isEmpty           => Map.empty
+      case Seq() =>
+        dataSrv
+          .create(Data(observable.data.get, None))
+          .flatMap(d => service.observableDataSrv.create(ObservableData(), observable, d))
+          .fold(e => Map(s"Observable-data-missingLink-failure-$e" -> 1L), _ => Map(s"Observable-data-missingLink" -> 1L))
+      case ds if observable.data.nonEmpty =>
+        val (relatedData, unrelatedData) = ds.partition(_.data == observable.data.get)
+        val extraLinks                   = EntitySelector.firstCreatedEntity(relatedData).fold(Seq.empty[Data with Entity])(_._2) ++ unrelatedData
+        service.get(observable).outE[ObservableData].filter(_.hasId(extraLinks.map(_._id): _*)).remove()
+        Map("Observable-data-extraLinks" -> extraLinks.size.toLong)
+      case ds =>
+        EntitySelector.firstCreatedEntity(ds).fold(Map.empty[String, Long]) {
+          case (head, tail) =>
             service
-              .getByIds(ids: _*)
-              .project(
-                _.by
-                  .by(_.organisations._id.fold)
-                  .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
-                  .by(_.data.value(_.data).fold)
-                  .by(_.tags.fold)
+              .get(observable)
+              .update(_.data, Some(head.data))
+              .outE[ObservableData]
+              .filter(_.hasId(tail.map(_._id): _*))
+              .remove()
+            Map("Observable-data-extraLinks" -> tail.size.toLong, "Observable-data-missingField" -> 1L)
+        }
+    }
+  }
+
+  override def globalCheck(traversal: Traversal.V[Observable])(implicit graph: Graph): Map[String, Long] = {
+    val orgCheck = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove)
+    val removeOrphan: OrphanStrategy[Observable, EntityId] = { (_, entity) =>
+      service.get(entity).remove()
+      Map("Observable-relatedId-removeOrphan" -> 1)
+    }
+    val relatedCheck = new SingleLinkChecker[Product, EntityId, EntityId](
+      orphanStrategy = removeOrphan,
+      setField = (entity, link) => UMapping.entityId.setProperty(service.get(entity), "relatedId", link._id).iterate(),
+      entitySelector = _ => EntitySelector.firstCreatedEntity,
+      removeLink = (_, _) => (),
+      getLink = id => graph.VV(id).entity.head,
+      optionalField = Some(_)
+    )
+
+    traversal
+      .project(
+        _.by
+          .by(_.organisations._id.fold)
+          .by(_.unionFlat(_.`case`._id, _.alert._id, _.in("ReportObservable")._id).fold)
+          .by(_.data.fold)
+          .by(_.tags.fold)
+      )
+      .toIterator
+      .map {
+        case (observable, organisationIds, relatedIds, data, tags) =>
+          val orgStats            = orgCheck.check(observable, observable.organisationIds, organisationIds)
+          val relatedStats        = relatedCheck.check(observable, observable.relatedId, relatedIds)
+          val observableDataStats = checkData(observable, data)
+          val tagStats = {
+            val observableTagSet = observable.tags.toSet
+            val tagSet           = tags.map(_.toString).toSet
+            if (observableTagSet == tagSet) Map.empty[String, Long]
+            else {
+              implicit val authContext: AuthContext =
+                LocalUserSrv.getSystemAuthContext.changeOrganisation(observable.organisationIds.head, Permissions.all)
+
+              val extraTagField = observableTagSet -- tagSet
+              val extraTagLink  = tagSet -- observableTagSet
+              extraTagField
+                .flatMap(tagSrv.getOrCreate(_).toOption)
+                .foreach(service.observableTagSrv.create(ObservableTag(), observable, _))
+              service.get(observable).update(_.tags, observable.tags ++ extraTagLink).iterate()
+              Map(
+                "observable-tags-extraField" -> extraTagField.size.toLong,
+                "observable-tags-extraLink"  -> extraTagLink.size.toLong
               )
-              .toIterator
-              .map {
-                case (observable, organisationIds, relatedIds, data, tags) =>
-                  val orgStats            = orgCheck.check(observable, observable.organisationIds, organisationIds)
-                  val relatedStats        = relatedCheck.check(observable, observable.relatedId, relatedIds)
-                  val observableDataStats = observableDataCheck.check(observable, observable.data, data)
-                  val tagStats = {
-                    val observableTagSet = observable.tags.toSet
-                    val tagSet           = tags.map(_.toString).toSet
-                    if (observableTagSet == tagSet) Map.empty[String, Int]
-                    else {
-                      implicit val authContext: AuthContext =
-                        LocalUserSrv.getSystemAuthContext.changeOrganisation(observable.organisationIds.head, Permissions.all)
-
-                      val extraTagField = observableTagSet -- tagSet
-                      val extraTagLink  = tagSet -- observableTagSet
-                      extraTagField
-                        .flatMap(tagSrv.getOrCreate(_).toOption)
-                        .foreach(service.observableTagSrv.create(ObservableTag(), observable, _))
-                      service.get(observable).update(_.tags, observable.tags ++ extraTagLink).iterate()
-                      Map(
-                        "observable-tags-extraField" -> extraTagField.size,
-                        "observable-tags-extraLink"  -> extraTagLink.size
-                      )
-                    }
-                  }
-
-                  orgStats <+> relatedStats <+> observableDataStats <+> tagStats
-              }
-              .reduceOption(_ <+> _)
-              .getOrElse(Map.empty)
+            }
           }
-        }.getOrElse(Map("globalFailure" -> 1))
+
+          orgStats <+> relatedStats <+> observableDataStats <+> tagStats
       }
       .reduceOption(_ <+> _)
       .getOrElse(Map.empty)
+  }
 }

@@ -1,11 +1,10 @@
 package org.thp.thehive.services
 
+import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter.ClassicSchedulerOps
-import akka.actor.typed.{Scheduler, ActorRef => TypedActorRef}
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.typed.{ActorRef, Scheduler}
 import akka.util.Timeout
-import com.softwaremill.tagging.@@
 import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, Permission}
@@ -13,7 +12,6 @@ import org.thp.scalligraph.controllers.{FFile, FPathElem}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
 import org.thp.scalligraph.services._
-import org.thp.scalligraph.traversal.Converter.Identity
 import org.thp.scalligraph.traversal._
 import org.thp.scalligraph.{BadRequestError, EntityId, EntityIdOrName, RichOptionTry, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
@@ -42,16 +40,15 @@ class CaseSrv(
     observableSrv: ObservableSrv,
     attachmentSrv: AttachmentSrv,
     userSrv: UserSrv,
-    _alertSrv: => AlertSrv,
-    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
-    caseNumberActor: => TypedActorRef[CaseNumberActor.Request],
+    alertSrv: => AlertSrv,
+    integrityCheckActor: => ActorRef[IntegrityCheck.Request],
+    caseNumberActor: => ActorRef[CaseNumberActor.Request],
     cache: SyncCacheApi,
     implicit val ec: ExecutionContext,
     implicit val actorSystem: ActorSystem
 ) extends VertexSrv[Case]
     with ElementOps
     with TheHiveOps {
-  lazy val alertSrv: AlertSrv = _alertSrv
 
   val caseTagSrv              = new EdgeSrv[CaseTag, Case, Tag]
   val caseImpactStatusSrv     = new EdgeSrv[CaseImpactStatus, Case, ImpactStatus]
@@ -65,7 +62,7 @@ class CaseSrv(
 
   override def createEntity(e: Case)(implicit graph: Graph, authContext: AuthContext): Try[Case with Entity] =
     super.createEntity(e).map { `case` =>
-      integrityCheckActor ! EntityAdded("Case")
+      integrityCheckActor ! IntegrityCheck.EntityAdded("Case")
       `case`
     }
 
@@ -610,7 +607,7 @@ trait CaseOpsNoDeps { ops: TheHiveOpsNoDeps =>
         .project(_.by(_.selectKeys.richCase).by(_.selectValues))
     }
 
-    def isShared: Traversal[Boolean, Boolean, Identity[Boolean]] =
+    def isShared: Traversal[Boolean, Boolean, Converter.Identity[Boolean]] =
       traversal.choose(_.inE[ShareCase].count.is(P.gt(1)), true, false)
 
     def richCase(implicit authContext: AuthContext): Traversal[RichCase, JMap[String, Any], Converter[RichCase, JMap[String, Any]]] =
@@ -696,14 +693,16 @@ trait CaseOps { ops: TheHiveOps =>
   }
 }
 
-class CaseIntegrityCheckOps(
+class CaseIntegrityCheck(
     val db: Database,
     val service: CaseSrv,
     userSrv: UserSrv,
     caseTemplateSrv: CaseTemplateSrv,
     organisationSrv: OrganisationSrv,
     tagSrv: TagSrv
-) extends IntegrityCheckOps[Case]
+) extends DedupCheck[Case]
+    with GlobalCheck[Case]
+    with IntegrityCheckOps[Case]
     with TheHiveOpsNoDeps {
 
   override def resolve(entities: Seq[Case with Entity])(implicit graph: Graph): Try[Unit] = {
@@ -720,61 +719,52 @@ class CaseIntegrityCheckOps(
     Success(())
   }
 
-  override def globalCheck(): Map[String, Int] =
-    service
-      .pagedTraversalIds(db, 100) { ids =>
-        db.tryTransaction { implicit graph =>
-          val assigneeCheck = singleOptionLink[User, String]("assignee", userSrv.getByName(_).head, _.login)(_.outEdge[CaseUser])
-          val orgCheck      = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove) // FIXME => Seq => Set
-          val templateCheck =
-            singleOptionLink[CaseTemplate, String]("caseTemplate", caseTemplateSrv.getByName(_).head, _.name)(_.outEdge[CaseCaseTemplate])
-          val fixOwningOrg: LinkRemover =
-            (caseId, orgId) => service.get(caseId).shares.filter(_.organisation.get(orgId._id)).update(_.owner, false).iterate()
-          val owningOrgCheck = singleIdLink[Organisation]("owningOrganisation", organisationSrv)(_ => fixOwningOrg, _.remove)
+  override def globalCheck(traversal: Traversal.V[Case])(implicit graph: Graph): Map[String, Long] = {
+    val assigneeCheck = singleOptionLink[User, String]("assignee", userSrv.getByName(_).head, _.login)(_.outEdge[CaseUser])
+    val orgCheck      = multiIdLink[Organisation]("organisationIds", organisationSrv)(_.remove) // FIXME => Seq => Set
+    val templateCheck =
+      singleOptionLink[CaseTemplate, String]("caseTemplate", caseTemplateSrv.getByName(_).head, _.name)(_.outEdge[CaseCaseTemplate])
+    val fixOwningOrg: LinkRemover =
+      (caseId, orgId) => service.get(caseId).shares.filter(_.organisation.get(orgId._id)).update(_.owner, false).iterate()
+    val owningOrgCheck = singleIdLink[Organisation]("owningOrganisation", organisationSrv)(_ => fixOwningOrg, _.remove)
 
-          Try {
-            service
-              .getByIds(ids: _*)
-              .project(
-                _.by
-                  .by(_.organisations._id.fold)
-                  .by(_.assignee.value(_.login).fold)
-                  .by(_.caseTemplate.value(_.name).fold)
-                  .by(_.origin._id.fold)
-                  .by(_.tags.fold)
+    traversal
+      .project(
+        _.by
+          .by(_.organisations._id.fold)
+          .by(_.assignee.value(_.login).fold)
+          .by(_.caseTemplate.value(_.name).fold)
+          .by(_.origin._id.fold)
+          .by(_.tags.fold)
+      )
+      .toIterator
+      .map {
+        case (case0, organisationIds, assignees, caseTemplateNames, owningOrganisationIds, tags) =>
+          val assigneeStats  = assigneeCheck.check(case0, case0.assignee, assignees)
+          val orgStats       = orgCheck.check(case0, case0.organisationIds, organisationIds)
+          val templateStats  = templateCheck.check(case0, case0.caseTemplate, caseTemplateNames)
+          val owningOrgStats = owningOrgCheck.check(case0, case0.owningOrganisation, owningOrganisationIds)
+          val tagStats = {
+            val caseTagSet = case0.tags.toSet
+            val tagSet     = tags.map(_.toString).toSet
+            if (caseTagSet == tagSet) Map.empty[String, Long]
+            else {
+              implicit val authContext: AuthContext =
+                LocalUserSrv.getSystemAuthContext.changeOrganisation(case0.owningOrganisation, Permissions.all)
+
+              val extraTagField = caseTagSet -- tagSet
+              val extraTagLink  = tagSet -- caseTagSet
+              extraTagField.flatMap(tagSrv.getOrCreate(_).toOption).foreach(service.caseTagSrv.create(CaseTag(), case0, _))
+              service.get(case0).update(_.tags, case0.tags ++ extraTagLink).iterate()
+              Map(
+                "case-tags-extraField" -> extraTagField.size.toLong,
+                "case-tags-extraLink"  -> extraTagLink.size.toLong
               )
-              .toIterator
-              .map {
-                case (case0, organisationIds, assigneeIds, caseTemplateNames, owningOrganisationIds, tags) =>
-                  val assigneeStats  = assigneeCheck.check(case0, case0.assignee, assigneeIds)
-                  val orgStats       = orgCheck.check(case0, case0.organisationIds, organisationIds)
-                  val templateStats  = templateCheck.check(case0, case0.caseTemplate, caseTemplateNames)
-                  val owningOrgStats = owningOrgCheck.check(case0, case0.owningOrganisation, owningOrganisationIds)
-                  val tagStats = {
-                    val caseTagSet = case0.tags.toSet
-                    val tagSet     = tags.map(_.toString).toSet
-                    if (caseTagSet == tagSet) Map.empty[String, Int]
-                    else {
-                      implicit val authContext: AuthContext =
-                        LocalUserSrv.getSystemAuthContext.changeOrganisation(case0.owningOrganisation, Permissions.all)
-
-                      val extraTagField = caseTagSet -- tagSet
-                      val extraTagLink  = tagSet -- caseTagSet
-                      extraTagField.flatMap(tagSrv.getOrCreate(_).toOption).foreach(service.caseTagSrv.create(CaseTag(), case0, _))
-                      service.get(case0).update(_.tags, case0.tags ++ extraTagLink).iterate()
-                      Map(
-                        "case-tags-extraField" -> extraTagField.size,
-                        "case-tags-extraLink"  -> extraTagLink.size
-                      )
-                    }
-                  }
-                  assigneeStats <+> orgStats <+> templateStats <+> owningOrgStats <+> tagStats
-              }
-              .reduceOption(_ <+> _)
-              .getOrElse(Map.empty)
+            }
           }
-        }.getOrElse(Map("globalFailure" -> 1))
+          assigneeStats <+> orgStats <+> templateStats <+> owningOrgStats <+> tagStats
       }
       .reduceOption(_ <+> _)
       .getOrElse(Map.empty)
+  }
 }

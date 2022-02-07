@@ -1,15 +1,17 @@
 package org.thp.thehive
 
-import akka.actor.{ActorRef, Scheduler}
 import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
 import akka.actor.typed.{ActorRef => TypedActorRef}
+import akka.actor.{ActorRef, Scheduler}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import com.softwaremill.macwire.Module
+import org.quartz
+import org.quartz.impl.StdSchedulerFactory
 import org.thp.scalligraph.auth._
 import org.thp.scalligraph.controllers.Entrypoint
 import org.thp.scalligraph.janus.ImmenseTermProcessor
 import org.thp.scalligraph.models.Schema
-import org.thp.scalligraph.services.GenIntegrityCheckOps
+import org.thp.scalligraph.services.IntegrityCheck
 import org.thp.scalligraph.{ActorSingletonUtils, ErrorHandler, InternalError, LazyMutableSeq, ScalligraphApplication, ScalligraphModule}
 import org.thp.thehive.controllers.ModelDescription
 import org.thp.thehive.models.{TheHiveSchemaDefinition, UseHashToIndex}
@@ -17,9 +19,9 @@ import org.thp.thehive.services.notification.notifiers._
 import org.thp.thehive.services.notification.triggers._
 import org.thp.thehive.services.notification.{NotificationActor, NotificationSrv, NotificationTag}
 import org.thp.thehive.services.{UserSrv => TheHiveUserSrv, _}
-import play.api.{Logger, Mode}
 import play.api.routing.SimpleRouter
 import play.api.routing.sird._
+import play.api.{Logger, Mode}
 
 @Module
 class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with ActorSingletonUtils {
@@ -31,8 +33,8 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
   lazy val logger: Logger                                 = Logger(getClass)
   lazy val notificationActor: ActorRef @@ NotificationTag = wireActor[NotificationActor]("notification").taggedWith[NotificationTag]
   lazy val flowActor: ActorRef @@ FlowTag                 = wireActorSingleton(actorSystem, wireProps[FlowActor], "flow-actor").taggedWith[FlowTag]
-  lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag =
-    wireActorSingleton(actorSystem, wireProps[IntegrityCheckActor], "integrity-check-actor").taggedWith[IntegrityCheckTag]
+  lazy val integrityCheckActor: TypedActorRef[IntegrityCheck.Request] = ClusterSingleton(app.actorSystem.toTyped)
+    .init(SingletonActor(IntegrityCheck.behavior(app.database, quartzScheduler, app.applicationConfig, integrityChecks()), "IntegrityCheckActor"))
   lazy val caseNumberActor: TypedActorRef[CaseNumberActor.Request] = {
     val behavior = CaseNumberActor.behavior(app.database, app.applicationConfig, caseSrv)
     if (app.application.mode == Mode.Test)
@@ -78,6 +80,13 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
 
   lazy val connectors: LazyMutableSeq[Connector] = LazyMutableSeq[Connector]
 
+  lazy val quartzScheduler: quartz.Scheduler = {
+    val factory   = new StdSchedulerFactory
+    val scheduler = factory.getScheduler()
+    actorSystem.registerOnTermination(scheduler.shutdown())
+    scheduler
+  }
+
 //  lazy val authSrv: AuthSrv = wire[TOTPAuthSrv]
 
   app.authSrvProviders += wire[ADAuthProvider]
@@ -108,22 +117,22 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
     () => wire[MattermostProvider],
     () => wire[WebhookProvider]
   )
-  lazy val integrityChecks: LazyMutableSeq[GenIntegrityCheckOps] = LazyMutableSeq(
-    () => wire[ProfileIntegrityCheckOps],
-    () => wire[OrganisationIntegrityCheckOps],
-    () => wire[TagIntegrityCheckOps],
-    () => wire[UserIntegrityCheckOps],
-    () => wire[ImpactStatusIntegrityCheckOps],
-    () => wire[ResolutionStatusIntegrityCheckOps],
-    () => wire[ObservableTypeIntegrityCheckOps],
-    () => wire[CustomFieldIntegrityCheckOps],
-    () => wire[CaseTemplateIntegrityCheckOps],
-    () => wire[DataIntegrityCheckOps],
-    () => wire[CaseIntegrityCheckOps],
-    () => wire[AlertIntegrityCheckOps],
-    () => wire[TaskIntegrityCheckOps],
-    () => wire[ObservableIntegrityCheckOps],
-    () => wire[LogIntegrityCheckOps]
+  lazy val integrityChecks: LazyMutableSeq[IntegrityCheck] = LazyMutableSeq(
+    () => wire[ProfileIntegrityCheck],
+    () => wire[OrganisationIntegrityCheck],
+    () => wire[TagIntegrityCheck],
+    () => wire[UserIntegrityCheck],
+    () => wire[ImpactStatusIntegrityCheck],
+    () => wire[ResolutionStatusIntegrityCheck],
+    () => wire[ObservableTypeIntegrityCheck],
+    () => wire[CustomFieldIntegrityCheck],
+    () => wire[CaseTemplateIntegrityCheck],
+    () => wire[DataIntegrityCheck],
+    () => wire[CaseIntegrityCheck],
+    () => wire[AlertIntegrityCheck],
+    () => wire[TaskIntegrityCheck],
+    () => wire[ObservableIntegrityCheck],
+    () => wire[LogIntegrityCheck]
   )
 
   lazy val entrypoint: Entrypoint     = wire[Entrypoint]
@@ -148,6 +157,7 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
     integrityCheckActor
     notificationActor
     app.router
+    quartzScheduler.start()
     ()
   }
 }

@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.services._
@@ -11,11 +10,9 @@ import org.thp.thehive.models._
 
 import scala.util.{Failure, Success, Try}
 
-class ObservableTypeSrv(_observableSrv: => ObservableSrv, integrityCheckActor: => ActorRef @@ IntegrityCheckTag)
+class ObservableTypeSrv(observableSrv: => ObservableSrv, integrityCheckActor: => ActorRef[IntegrityCheck.Request])
     extends VertexSrv[ObservableType]
     with TheHiveOpsNoDeps {
-
-  lazy val observableSrv: ObservableSrv = _observableSrv
 
   override def getByName(name: String)(implicit graph: Graph): Traversal.V[ObservableType] =
     startTraversal.getByName(name)
@@ -23,7 +20,7 @@ class ObservableTypeSrv(_observableSrv: => ObservableSrv, integrityCheckActor: =
   override def exists(e: ObservableType)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
   override def createEntity(e: ObservableType)(implicit graph: Graph, authContext: AuthContext): Try[ObservableType with Entity] = {
-    integrityCheckActor ! EntityAdded("ObservableType")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("ObservableType")
     super.createEntity(e)
   }
 
@@ -61,15 +58,4 @@ trait ObservableTypeOps { _: TheHiveOpsNoDeps =>
   }
 }
 
-class ObservableTypeIntegrityCheckOps(val db: Database, val service: ObservableTypeSrv) extends IntegrityCheckOps[ObservableType] {
-  override def resolve(entities: Seq[ObservableType with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class ObservableTypeIntegrityCheck(val db: Database, val service: ObservableTypeSrv) extends DedupCheck[ObservableType]

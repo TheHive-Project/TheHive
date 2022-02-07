@@ -53,6 +53,7 @@ object Dependencies {
   lazy val passay                  = "org.passay"                  % "passay"                             % "1.6.1"
   lazy val bloomFilter             = "com.github.alexandrnikitin" %% "bloom-filter"                       % "0.13.1"
   lazy val scalaParallelCollection = "org.scala-lang.modules"     %% "scala-parallel-collections"         % "1.0.0"
+  lazy val quartzScheduler         = "org.quartz-scheduler"        % "quartz"                             % "2.3.2"
 
   def scalaReflect(scalaVersion: String)  = "org.scala-lang" % "scala-reflect"  % scalaVersion
   def scalaCompiler(scalaVersion: String) = "org.scala-lang" % "scala-compiler" % scalaVersion

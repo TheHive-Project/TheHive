@@ -1,31 +1,30 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.services.{IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{DedupCheck, VertexSrv}
 import org.thp.scalligraph.traversal._
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
-import scala.util.{Success, Try}
+import scala.util.Try
 
 class CustomFieldSrv(
     auditSrv: AuditSrv,
     organisationSrv: OrganisationSrv,
-    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
+    integrityCheckActor: => ActorRef[IntegrityCheck.Request],
     cacheApi: SyncCacheApi,
     customFieldValueSrv: CustomFieldValueSrv
 ) extends VertexSrv[CustomField]
     with TheHiveOpsNoDeps {
 
   override def createEntity(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] = {
-    integrityCheckActor ! EntityAdded("CustomField")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("CustomField")
     cacheApi.remove("describe.v0")
     cacheApi.remove("describe.v1")
     super.createEntity(e)
@@ -86,15 +85,4 @@ trait CustomFieldOps { _: TraversalOps =>
   }
 }
 
-class CustomFieldIntegrityCheckOps(val db: Database, val service: CustomFieldSrv) extends IntegrityCheckOps[CustomField] {
-  override def resolve(entities: Seq[CustomField with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class CustomFieldIntegrityCheck(val db: Database, val service: CustomFieldSrv) extends DedupCheck[CustomField]

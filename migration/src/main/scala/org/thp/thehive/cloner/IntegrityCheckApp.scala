@@ -1,6 +1,6 @@
 package org.thp.thehive.cloner
 
-import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+import akka.actor.typed.scaladsl.adapter.{ClassicActorRefOps, ClassicActorSystemOps}
 import akka.actor.typed.{ActorRef => TypedActorRef}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.Materializer
@@ -16,7 +16,7 @@ import play.api.cache.caffeine.CaffeineCacheComponents
 import play.api.cache.{DefaultSyncCacheApi, SyncCacheApi}
 
 import scala.concurrent.ExecutionContext
-import scala.util.Success
+import scala.concurrent.duration.DurationInt
 
 class IntegrityCheckApp(val configuration: Configuration, val db: Database)(implicit
     val actorSystem: ActorSystem
@@ -59,59 +59,63 @@ class IntegrityCheckApp(val configuration: Configuration, val db: Database)(impl
   lazy val applicationConfig: ApplicationConfig     = wire[ApplicationConfig]
   lazy val eventSrv: EventSrv                       = wire[EventSrv]
 
-  lazy val dummyActor: ActorRef                               = wireAnonymousActor[DummyActor]
-  lazy val auditSrv: AuditSrv                                 = wire[AuditSrv]
-  lazy val roleSrv: RoleSrv                                   = wire[RoleSrv]
-  lazy val integrityCheckActor: ActorRef @@ IntegrityCheckTag = dummyActor.taggedWith[IntegrityCheckTag]
-  lazy val configActor: ActorRef @@ ConfigTag                 = dummyActor.taggedWith[ConfigTag]
-  lazy val notificationActor: ActorRef @@ NotificationTag     = dummyActor.taggedWith[NotificationTag]
-  lazy val taxonomySrv: TaxonomySrv                           = wire[TaxonomySrv]
-  lazy val attachmentSrv: AttachmentSrv                       = wire[AttachmentSrv]
-  lazy val logSrv: LogSrv                                     = wire[LogSrv]
-  lazy val taskSrv: TaskSrv                                   = wire[TaskSrv]
-  lazy val shareSrv: ShareSrv                                 = wire[ShareSrv]
-  lazy val caseSrv: CaseSrv                                   = wire[CaseSrv]
-  lazy val observableSrv: ObservableSrv                       = wire[ObservableSrv]
-  lazy val dataSrv: DataSrv                                   = wire[DataSrv]
-  lazy val alertSrv: AlertSrv                                 = wire[AlertSrv]
+  lazy val dummyActor: ActorRef                                       = wireAnonymousActor[DummyActor]
+  lazy val auditSrv: AuditSrv                                         = wire[AuditSrv]
+  lazy val roleSrv: RoleSrv                                           = wire[RoleSrv]
+  lazy val integrityCheckActor: TypedActorRef[IntegrityCheck.Request] = dummyActor.toTyped
+  lazy val configActor: ActorRef @@ ConfigTag                         = dummyActor.taggedWith[ConfigTag]
+  lazy val notificationActor: ActorRef @@ NotificationTag             = dummyActor.taggedWith[NotificationTag]
+  lazy val taxonomySrv: TaxonomySrv                                   = wire[TaxonomySrv]
+  lazy val attachmentSrv: AttachmentSrv                               = wire[AttachmentSrv]
+  lazy val logSrv: LogSrv                                             = wire[LogSrv]
+  lazy val taskSrv: TaskSrv                                           = wire[TaskSrv]
+  lazy val shareSrv: ShareSrv                                         = wire[ShareSrv]
+  lazy val caseSrv: CaseSrv                                           = wire[CaseSrv]
+  lazy val observableSrv: ObservableSrv                               = wire[ObservableSrv]
+  lazy val dataSrv: DataSrv                                           = wire[DataSrv]
+  lazy val alertSrv: AlertSrv                                         = wire[AlertSrv]
 
   lazy val checks = Seq(
-    wire[ProfileIntegrityCheckOps],
-    wire[OrganisationIntegrityCheckOps],
-    wire[TagIntegrityCheckOps],
-    wire[UserIntegrityCheckOps],
-    wire[ImpactStatusIntegrityCheckOps],
-    wire[ResolutionStatusIntegrityCheckOps],
-    wire[ObservableTypeIntegrityCheckOps],
-    wire[CustomFieldIntegrityCheckOps],
-    wire[CaseTemplateIntegrityCheckOps],
-    wire[DataIntegrityCheckOps],
-    wire[CaseIntegrityCheckOps],
-    wire[AlertIntegrityCheckOps],
-    wire[TaskIntegrityCheckOps],
-    wire[ObservableIntegrityCheckOps],
-    wire[LogIntegrityCheckOps]
+    wire[AlertIntegrityCheck],
+    wire[CaseIntegrityCheck],
+    wire[CaseTemplateIntegrityCheck],
+    wire[CustomFieldIntegrityCheck],
+    wire[DataIntegrityCheck],
+    wire[ImpactStatusIntegrityCheck],
+    wire[LogIntegrityCheck],
+    wire[ObservableIntegrityCheck],
+    wire[ObservableTypeIntegrityCheck],
+    wire[OrganisationIntegrityCheck],
+    wire[ProfileIntegrityCheck],
+    wire[ResolutionStatusIntegrityCheck],
+    wire[TagIntegrityCheck],
+    wire[TaskIntegrityCheck],
+    wire[UserIntegrityCheck]
   )
 
   def runChecks(): Unit = {
     implicit val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
     checks
       .foreach { c =>
-        db.tryTransaction { implicit graph =>
-          println(s"Running check on ${c.name} ...")
-          c.initialCheck()
-          val stats = c.duplicationCheck() <+> c.globalCheck()
-          val statsStr = stats
-            .collect {
-              case (k, v) if v != 0 => s"$k:$v"
-            }
-            .mkString(" ")
-          if (statsStr.isEmpty)
-            println("  no change needed")
-          else
-            println(s"  $statsStr")
-          Success(())
+        println(s"Running check on ${c.name} ...")
+        val desupStats = c match {
+          case dc: DedupCheck[_] => dc.dedup(KillSwitch.alwaysOn)
+          case _                 => Map.empty[String, Long]
         }
+        val globalStats = c match {
+          case gc: GlobalCheck[_] => gc.runGlobalCheck(24.hours, KillSwitch.alwaysOn)
+          case _                  => Map.empty[String, Long]
+        }
+        val statsStr = (desupStats <+> globalStats)
+          .collect {
+            case (k, v) if v != 0 => s"$k:$v"
+          }
+          .mkString(" ")
+        if (statsStr.isEmpty)
+          println("  no change needed")
+        else
+          println(s"  $statsStr")
+
       }
   }
 }

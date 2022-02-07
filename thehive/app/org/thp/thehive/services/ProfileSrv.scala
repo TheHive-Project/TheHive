@@ -1,7 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.ActorRef
-import com.softwaremill.tagging.@@
+import akka.actor.typed.ActorRef
 import org.thp.scalligraph.auth.{AuthContext, Permission}
 import org.thp.scalligraph.models._
 import org.thp.scalligraph.query.PropertyUpdater
@@ -12,19 +11,19 @@ import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import play.api.libs.json.JsObject
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 class ProfileSrv(
     auditSrv: AuditSrv,
     organisationSrv: OrganisationSrv,
-    integrityCheckActor: => ActorRef @@ IntegrityCheckTag,
+    integrityCheckActor: => ActorRef[IntegrityCheck.Request],
     db: Database
 ) extends VertexSrv[Profile]
     with TheHiveOpsNoDeps {
   lazy val orgAdmin: Profile with Entity = db.roTransaction(graph => getOrFail(EntityName(Profile.orgAdmin.name))(graph)).get
 
   override def createEntity(e: Profile)(implicit graph: Graph, authContext: AuthContext): Try[Profile with Entity] = {
-    integrityCheckActor ! EntityAdded("Profile")
+    integrityCheckActor ! IntegrityCheck.EntityAdded("Profile")
     super.createEntity(e)
   }
 
@@ -78,15 +77,4 @@ trait ProfileOps { _: TheHiveOpsNoDeps =>
 
 }
 
-class ProfileIntegrityCheckOps(val db: Database, val service: ProfileSrv) extends IntegrityCheckOps[Profile] {
-  override def resolve(entities: Seq[Profile with Entity])(implicit graph: Graph): Try[Unit] =
-    entities match {
-      case head :: tail =>
-        tail.foreach(copyEdge(_, head))
-        service.getByIds(tail.map(_._id): _*).remove()
-        Success(())
-      case _ => Success(())
-    }
-
-  override def globalCheck(): Map[String, Int] = Map.empty
-}
+class ProfileIntegrityCheck(val db: Database, val service: ProfileSrv) extends DedupCheck[Profile]

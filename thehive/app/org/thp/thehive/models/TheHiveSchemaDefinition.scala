@@ -6,7 +6,6 @@ import org.reflections.scanners.SubTypesScanner
 import org.reflections.util.ConfigurationBuilder
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models._
-import org.thp.scalligraph.traversal.Graph
 import org.thp.thehive.models.evolution._
 import org.thp.thehive.services.LocalUserSrv
 import play.api.Logger
@@ -14,7 +13,6 @@ import play.api.Logger
 import java.lang.reflect.Modifier
 import scala.jdk.CollectionConverters._
 import scala.reflect.runtime.{universe => ru}
-import scala.util.{Success, Try}
 
 object TheHiveSchemaDefinition
     extends Schema
@@ -70,8 +68,6 @@ object TheHiveSchemaDefinition
       }
       .toSeq
   }
-
-  override def init(db: Database)(implicit graph: Graph, authContext: AuthContext): Try[Unit] = Success(())
 
   override val authContext: AuthContext = LocalUserSrv.getSystemAuthContext
 }
