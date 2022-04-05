@@ -126,8 +126,8 @@ class CaseSrv @Inject() (
     val uniqueFields = caseTemplateCf.filter {
       case InputCustomFieldValue(name, _, _) => !caseCf.exists(_.name == name)
     }
-    (caseCf ++ uniqueFields)
-      .sortBy(cf => (cf.order.isEmpty, cf.order))
+    
+    (caseCf.sortBy(_.order) ++ uniqueFields.sortBy(_.order))
       .zipWithIndex
       .map { case (InputCustomFieldValue(name, value, _), i) => InputCustomFieldValue(name, value, Some(i)) }
   }
