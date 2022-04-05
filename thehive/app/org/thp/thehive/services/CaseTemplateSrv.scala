@@ -97,7 +97,7 @@ class CaseTemplateSrv @Inject() (
       tagsToAdd <- (tags -- caseTemplate.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(caseTemplate).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(caseTemplateTagSrv.create(CaseTemplateTag(), caseTemplate, _))
-      _ = if (tags.nonEmpty) get(caseTemplate).outE[CaseTemplateTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tagsToRemove.nonEmpty) get(caseTemplate).outE[CaseTemplateTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(caseTemplate)
         .update(_.tags, tags.toSeq)
         .update(_._updatedAt, Some(new Date))

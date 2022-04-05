@@ -133,7 +133,7 @@ class ObservableSrv @Inject() (
       tagsToAdd <- (tags -- observable.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(observable).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(observableTagSrv.create(ObservableTag(), observable, _))
-      _ = if (tags.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tagsToRemove.nonEmpty) get(observable).outE[ObservableTag].filter(_.otherV.hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(observable)
         .update(_.tags, tags.toSeq)
         .update(_._updatedAt, Some(new Date))
