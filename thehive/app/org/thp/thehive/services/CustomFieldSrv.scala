@@ -2,14 +2,13 @@ package org.thp.thehive.services
 
 import akka.actor.typed.ActorRef
 import org.apache.tinkerpop.gremlin.structure.Edge
-import org.thp.scalligraph.EntityIdOrName
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
-import org.thp.scalligraph.RichSeq
-import org.thp.scalligraph.services.{DedupCheck, IntegrityCheckOps, VertexSrv}
+import org.thp.scalligraph.services.{DedupCheck, VertexSrv}
 import org.thp.scalligraph.traversal.TraversalOps._
 import org.thp.scalligraph.traversal._
+import org.thp.scalligraph.{CreateError, EntityIdOrName, RichSeq}
 import org.thp.thehive.controllers.v1.Conversion._
 import org.thp.thehive.models._
 import org.thp.thehive.services.CustomFieldOps._
@@ -18,7 +17,7 @@ import play.api.libs.json.{JsObject, JsValue}
 
 import java.util.{Map => JMap}
 import javax.inject.{Inject, Provider, Singleton}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Try}
 
 @Singleton
 class CustomFieldSrv @Inject() (
@@ -37,10 +36,13 @@ class CustomFieldSrv @Inject() (
   }
 
   def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] =
-    for {
-      created <- createEntity(e)
-      _       <- auditSrv.customField.create(created, created.toJson)
-    } yield created
+    if (startTraversal.getByName(e.name).exists)
+      Failure(CreateError(s"CustomField ${e.name} already exists"))
+    else
+      for {
+        created <- createEntity(e)
+        _       <- auditSrv.customField.create(created, created.toJson)
+      } yield created
 
   override def exists(e: CustomField)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
