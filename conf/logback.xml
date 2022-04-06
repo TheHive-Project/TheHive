@@ -15,13 +15,13 @@
             <maxFileSize>10MB</maxFileSize>
         </triggeringPolicy>
         <encoder>
-            <pattern>%date [%level] from %logger in %thread [%X{request}|%X{tx}] %message%n%xException</pattern>
+            <pattern>%date [%level] from %logger in %thread %replace(\(%X{userId}@%X{organisation}\) ){'\(@\) ',''}[%X{request}|%X{tx}] %message%n%xException</pattern>
         </encoder>
     </appender>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%coloredLevel %logger{15} [%X{request}|%X{tx}] %message%n%xException{10}
+            <pattern>%coloredLevel %logger{15} %replace(\(%X{userId}@%X{organisation}\) ){'\(@\) ',''}[%X{request}|%X{tx}] %message%n%xException{10}
             </pattern>
         </encoder>
     </appender>
