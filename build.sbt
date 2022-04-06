@@ -62,11 +62,15 @@ libraryDependencies in ThisBuild ++= {
   }
 }
 dependencyOverrides in ThisBuild ++= Seq(
-//  "org.locationtech.spatial4j" % "spatial4j"                 % "0.6",
-//  "org.elasticsearch.client" % "elasticsearch-rest-client" % "6.7.2
   akkaActor,
   logbackClassic
 )
+val securityUpdates = Seq(
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.6",
+  "com.fasterxml.jackson.core"    % "jackson-databind"     % "2.12.6.1",
+  "org.yaml"                      % "snakeyaml"            % "1.30"
+)
+dependencyOverrides in ThisBuild ++= securityUpdates
 PlayKeys.includeDocumentationInBinary := false
 milestoneFilter := ((milestone: Milestone) => milestone.title.startsWith("4"))
 

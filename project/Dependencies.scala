@@ -32,7 +32,7 @@ object Dependencies {
   lazy val macroParadise           = "org.scalamacros"             % "paradise"                           % "2.1.1" cross CrossVersion.full
   lazy val chimney                 = "io.scalaland"               %% "chimney"                            % "0.6.1"
   lazy val reflections             = "org.reflections"             % "reflections"                        % "0.9.12"
-  lazy val hadoopClient            = "org.apache.hadoop"           % "hadoop-client"                      % "3.3.0" exclude ("log4j", "log4j")
+  lazy val hadoopClient            = "org.apache.hadoop"           % "hadoop-client"                      % "3.3.2" exclude ("log4j", "log4j")
   lazy val zip4j                   = "net.lingala.zip4j"           % "zip4j"                              % "2.6.4"
   lazy val alpakka                 = "com.lightbend.akka"         %% "akka-stream-alpakka-json-streaming" % "2.0.2"
   lazy val handlebars              = "com.github.jknack"           % "handlebars"                         % "4.2.0"
