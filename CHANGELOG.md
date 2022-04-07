@@ -1,5 +1,24 @@
 # Change Log
 
+## [4.1.19](https://github.com/TheHive-Project/TheHive/milestone/89) (2022-04-07)
+
+**Implemented enhancements:**
+
+- Migrate hive3 to 4, migrate SSL error. Requesting SSL bypass option [\#2356](https://github.com/TheHive-Project/TheHive/issues/2356)
+- [Enhancement] Improve logging [\#2371](https://github.com/TheHive-Project/TheHive/issues/2371)
+
+**Fixed bugs:**
+
+- [Bug] Regression starting with 4.1.17 in the migration tool with certificate validation  [\#2342](https://github.com/TheHive-Project/TheHive/issues/2342)
+- [Bug] Deadlock when the index backend changed [\#2351](https://github.com/TheHive-Project/TheHive/issues/2351)
+- [Bug][Security] TheHive4 libraries vulnerabilities [\#2362](https://github.com/TheHive-Project/TheHive/issues/2362)
+- [Bug] The Link given in /etc/thehive/application.conf says error. [\#2364](https://github.com/TheHive-Project/TheHive/issues/2364)
+- [Bug] An unshared case is still visible [\#2366](https://github.com/TheHive-Project/TheHive/issues/2366)
+- [Bug] Prevent custom field creation if it already exists [\#2367](https://github.com/TheHive-Project/TheHive/issues/2367)
+- [Bug] An user may exist without being member of any organisation [\#2368](https://github.com/TheHive-Project/TheHive/issues/2368)
+- [Bug] Tags can't be updated [\#2369](https://github.com/TheHive-Project/TheHive/issues/2369)
+- [Bug] Dashboarding on weeks provide incorrect results on specific dates [\#2370](https://github.com/TheHive-Project/TheHive/issues/2370)
+
 ## [4.1.18](https://github.com/TheHive-Project/TheHive/milestone/88) (2022-02-07)
 
 **Implemented enhancements:**
