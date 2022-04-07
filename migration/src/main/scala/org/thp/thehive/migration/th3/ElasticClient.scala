@@ -5,26 +5,29 @@ import akka.actor.{ActorSystem, Scheduler}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
-import com.typesafe.sslconfig.ssl.{KeyManagerConfig, KeyStoreConfig, SSLConfigSettings, TrustManagerConfig, TrustStoreConfig}
-import org.thp.client.{Authentication, NoAuthentication, PasswordAuthentication}
+import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.sslconfig.ssl.{KeyManagerConfig, KeyStoreConfig, TrustManagerConfig, TrustStoreConfig}
+import org.thp.client._
+import org.thp.scalligraph.utils.FunctionalCondition.When
 import org.thp.scalligraph.utils.Retry
 import org.thp.scalligraph.{InternalError, NotFoundError}
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsNumber, JsObject, JsValue, Json}
-import play.api.libs.ws.ahc.{AhcWSClient, AhcWSClientConfig}
-import play.api.libs.ws.{WSClient, WSClientConfig, WSResponse}
+import play.api.libs.ws.ahc.AhcWSClientConfig
+import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.{Configuration, Logger}
 
 import java.net.{URI, URLEncoder}
-import scala.concurrent.duration.{Duration, DurationInt, DurationLong, FiniteDuration}
+import scala.concurrent.duration.{DurationInt, DurationLong, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Try
 
 object ElasticClientProvider {
-  def apply(config: Configuration, actorSystem: ActorSystem): ElasticClient = {
+  def apply(config: Configuration, actorSystem: ActorSystem, mat: Materializer): ElasticClient = {
     implicit val as: ActorSystem = actorSystem
     lazy val logger              = Logger(getClass)
     val ws: WSClient = {
+
       val trustManager = config.getOptional[String]("search.trustStore.path").map { trustStore =>
         val trustStoreConfig = TrustStoreConfig(None, Some(trustStore))
         config.getOptional[String]("search.trustStore.type").foreach(trustStoreConfig.withStoreType)
@@ -41,33 +44,40 @@ object ElasticClientProvider {
         keyManager.withKeyStoreConfigs(List(keyStoreConfig))
         keyManager
       }
-      val sslConfig = SSLConfigSettings()
-      trustManager.foreach(sslConfig.withTrustManagerConfig)
-      keyManager.foreach(sslConfig.withKeyManagerConfig)
+      val connectionTimeout    = config.getOptional[Int]("search.connectTimeout").map(_.millis)
+      val idleTimeout          = config.getOptional[Int]("search.socketTimeout").map(_.millis)
+      val requestTimeout       = config.getOptional[Int]("search.connectionRequestTimeout").map(_.millis)
+      val followRedirects      = config.getOptional[Boolean]("search.redirectsEnabled")
+      val maxNumberOfRedirects = config.getOptional[Int]("search.maxRedirects")
 
-      val wsConfig = AhcWSClientConfig(
-        wsClientConfig = WSClientConfig(
-          connectionTimeout = config.getOptional[Int]("search.connectTimeout").fold(2.minutes)(_.millis),
-          idleTimeout = config.getOptional[Int]("search.socketTimeout").fold(2.minutes)(_.millis),
-          requestTimeout = config.getOptional[Int]("search.connectionRequestTimeout").fold(2.minutes)(_.millis),
-          followRedirects = config.getOptional[Boolean]("search.redirectsEnabled").getOrElse(false),
-          useProxyProperties = true,
-          userAgent = None,
-          compressionEnabled = false,
-          ssl = sslConfig
-        ),
-        maxConnectionsPerHost = -1,
-        maxConnectionsTotal = -1,
-        maxConnectionLifetime = Duration.Inf,
-        idleConnectionInPoolTimeout = 1.minute,
-        maxNumberOfRedirects = config.getOptional[Int]("search.maxRedirects").getOrElse(5),
-        maxRequestRetry = 5,
-        disableUrlEncoding = false,
-        keepAlive = true,
-        useLaxCookieEncoder = false,
-        useCookieStore = false
-      )
-      AhcWSClient(wsConfig)
+      val wsConfig = Try(Json.parse(config.underlying.getValue("search.trustStore.wsConfig").render(ConfigRenderOptions.concise())).as[ProxyWSConfig])
+        .getOrElse(ProxyWSConfig(AhcWSClientConfig(), None))
+        .merge(trustManager) { (cfg, tm) =>
+          cfg.copy(wsConfig =
+            cfg.wsConfig.copy(wsClientConfig = cfg.wsConfig.wsClientConfig.copy(ssl = cfg.wsConfig.wsClientConfig.ssl.withTrustManagerConfig(tm)))
+          )
+        }
+        .merge(keyManager) { (cfg, km) =>
+          cfg.copy(wsConfig =
+            cfg.wsConfig.copy(wsClientConfig = cfg.wsConfig.wsClientConfig.copy(ssl = cfg.wsConfig.wsClientConfig.ssl.withKeyManagerConfig(km)))
+          )
+        }
+        .merge(connectionTimeout) { (cfg, ct) =>
+          cfg.copy(wsConfig = cfg.wsConfig.copy(wsClientConfig = cfg.wsConfig.wsClientConfig.copy(connectionTimeout = ct)))
+        }
+        .merge(idleTimeout) { (cfg, it) =>
+          cfg.copy(wsConfig = cfg.wsConfig.copy(wsClientConfig = cfg.wsConfig.wsClientConfig.copy(idleTimeout = it)))
+        }
+        .merge(requestTimeout) { (cfg, rt) =>
+          cfg.copy(wsConfig = cfg.wsConfig.copy(wsClientConfig = cfg.wsConfig.wsClientConfig.copy(requestTimeout = rt)))
+        }
+        .merge(followRedirects) { (cfg, fr) =>
+          cfg.copy(wsConfig = cfg.wsConfig.copy(wsClientConfig = cfg.wsConfig.wsClientConfig.copy(followRedirects = fr)))
+        }
+        .merge(maxNumberOfRedirects) { (cfg, mr) =>
+          cfg.copy(wsConfig = cfg.wsConfig.copy(maxNumberOfRedirects = mr))
+        }
+      new ProxyWS(wsConfig, mat)
     }
 
     val authentication: Authentication =

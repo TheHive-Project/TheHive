@@ -103,7 +103,7 @@ class AlertSrv(
       tagsToAdd <- (tags -- alert.tags).toTry(tagSrv.getOrCreate)
       tagsToRemove = get(alert).tags.toSeq.filterNot(t => tags.contains(t.toString))
       _ <- tagsToAdd.toTry(alertTagSrv.create(AlertTag(), alert, _))
-      _ = if (tags.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV().hasId(tagsToRemove.map(_._id): _*)).remove()
+      _ = if (tagsToRemove.nonEmpty) get(alert).outE[AlertTag].filter(_.otherV().hasId(tagsToRemove.map(_._id): _*)).remove()
       _ <- get(alert)
         .update(_.tags, tags.toSeq)
         .update(_._updatedAt, Some(new Date))

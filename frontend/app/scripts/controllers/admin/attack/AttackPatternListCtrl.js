@@ -163,7 +163,7 @@
                 .catch(function (response) {
                     NotificationSrv.error('AttackPatternImportCtrl', response.data, response.status);
                 })
-                .fincally(function () {
+                .finally(function () {
                     this.loading = false;
                 });
         };

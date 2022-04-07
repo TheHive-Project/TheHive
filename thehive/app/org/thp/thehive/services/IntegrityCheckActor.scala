@@ -153,6 +153,7 @@ object IntegrityCheck {
             configItem.get.integrityCheckConfig.get(name).foreach {
               case cfg if cfg.dedupStrategy == DedupStrategy.AfterAddition || cfg.dedupStrategy == DedupStrategy.AfterAdditionAndDuringGlobalChecks =>
                 timers.startSingleTimer(NeedCheck(name), cfg.initialDelay)
+              case _ => ()
             }
             Behaviors.same
 

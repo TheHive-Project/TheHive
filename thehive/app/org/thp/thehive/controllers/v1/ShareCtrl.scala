@@ -167,7 +167,7 @@ class ShareCtrl(
     else if (shareSrv.get(shareId).has(_.owner, true).exists)
       Failure(AuthorizationError("You can't remove initial shares"))
     else
-      shareSrv.get(shareId).getOrFail("Share").flatMap(shareSrv.delete(_))
+      shareSrv.unshareCase(shareId)
 
   def updateShare(shareId: String): Action[AnyContent] =
     entrypoint("update share")

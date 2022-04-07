@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.typed.ActorRef
-import org.thp.scalligraph.EntityIdOrName
+import org.thp.scalligraph.{CreateError, EntityIdOrName}
 import org.thp.scalligraph.auth.AuthContext
 import org.thp.scalligraph.models.{Database, Entity}
 import org.thp.scalligraph.query.PropertyUpdater
@@ -12,7 +12,7 @@ import org.thp.thehive.models._
 import play.api.cache.SyncCacheApi
 import play.api.libs.json.JsObject
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 class CustomFieldSrv(
     auditSrv: AuditSrv,
@@ -31,10 +31,13 @@ class CustomFieldSrv(
   }
 
   def create(e: CustomField)(implicit graph: Graph, authContext: AuthContext): Try[CustomField with Entity] =
-    for {
-      created <- createEntity(e)
-      _       <- auditSrv.customField.create(created, created.toJson)
-    } yield created
+    if (startTraversal.getByName(e.name).exists)
+      Failure(CreateError(s"CustomField ${e.name} already exists"))
+    else
+      for {
+        created <- createEntity(e)
+        _       <- auditSrv.customField.create(created, created.toJson)
+      } yield created
 
   override def exists(e: CustomField)(implicit graph: Graph): Boolean = startTraversal.getByName(e.name).exists
 
