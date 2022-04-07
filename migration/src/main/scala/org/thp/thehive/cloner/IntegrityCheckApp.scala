@@ -5,7 +5,7 @@ import akka.actor.typed.ActorRef
 import akka.stream.Materializer
 import com.google.inject.{Guice, Injector => GInjector}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
-import org.thp.scalligraph.auth.{AuthContext, UserSrv => UserDB}
+import org.thp.scalligraph.auth.{UserSrv => UserDB}
 import org.thp.scalligraph.models.Database
 import org.thp.scalligraph.services._
 import org.thp.thehive.migration.th4.DummyActor
@@ -21,7 +21,6 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
-import scala.util.Success
 
 trait IntegrityCheckApp {
   private def buildApp(configuration: Configuration, db: Database)(implicit actorSystem: ActorSystem): GInjector =
@@ -78,9 +77,8 @@ trait IntegrityCheckApp {
     buildApp(configuration, db).getInstance(classOf[IntegrityChecks]).runChecks()
 }
 
-class IntegrityChecks @Inject() (db: Database, checks: immutable.Set[IntegrityCheck], userSrv: UserDB) extends MapMerger {
-  def runChecks(): Unit = {
-    implicit val authContext: AuthContext = userSrv.getSystemAuthContext
+class IntegrityChecks @Inject() (checks: immutable.Set[IntegrityCheck]) extends MapMerger {
+  def runChecks(): Unit =
     checks.foreach { c =>
       println(s"Running check on ${c.name} ...")
       val desupStats = c match {
@@ -102,5 +100,4 @@ class IntegrityChecks @Inject() (db: Database, checks: immutable.Set[IntegrityCh
         println(s"  $statsStr")
 
     }
-  }
 }

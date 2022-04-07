@@ -353,6 +353,7 @@ class UserIntegrityCheck @Inject() (
       (_.out("UserRole"), _.in("UserRole")),
       (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
     ).flatMap(ElementSelector.firstCreatedElement(_)).map(e => removeVertices(e._2)).size
-    Map("duplicateRoleLinks" -> duplicateRoleLinks.toLong)
+    val orphanCount = service.startTraversal.filterNot(_.organisations).sideEffect(_.drop()).getCount
+    Map("duplicateRoleLinks" -> duplicateRoleLinks.toLong, "orphan" -> orphanCount)
   }
 }

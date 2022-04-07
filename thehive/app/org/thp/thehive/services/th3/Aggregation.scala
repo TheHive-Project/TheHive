@@ -1,6 +1,7 @@
 package org.thp.thehive.services.th3
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order
+import org.joda.time.DateTime
 import org.scalactic.Accumulation._
 import org.scalactic._
 import org.thp.scalligraph.auth.AuthContext
@@ -368,38 +369,26 @@ case class TimeAggregation(
     subAggs: Seq[Aggregation],
     filter: Option[InputQuery[Traversal.Unk, Traversal.Unk]]
 ) extends Aggregation(aggName.getOrElse(fieldName)) {
-  val calendar: Calendar = Calendar.getInstance()
 
-  def dateToKey(date: Date): Long =
+  private val threeDaysInMillis = 259200000L
+  private val oneWeekInMillis   = 604800000L
+  private def roundToWeek(date: Date, nWeek: Long): Long = {
+    val shiftedDate = date.getTime + threeDaysInMillis // Jan 1st is a thursday
+    shiftedDate - (shiftedDate % (oneWeekInMillis * nWeek)) - threeDaysInMillis
+  }
+
+  private def dateToKey(date: Date): Long =
     unit match {
-      case ChronoUnit.WEEKS =>
-        calendar.setTime(date)
-        val year = calendar.get(Calendar.YEAR)
-        val week = (calendar.get(Calendar.WEEK_OF_YEAR) / interval) * interval
-        calendar.setTimeInMillis(0)
-        calendar.set(Calendar.YEAR, year)
-        calendar.set(Calendar.WEEK_OF_YEAR, week.toInt)
-        calendar.getTimeInMillis
-
+      case ChronoUnit.WEEKS => roundToWeek(date, interval)
       case ChronoUnit.MONTHS =>
-        calendar.setTime(date)
-        val year  = calendar.get(Calendar.YEAR)
-        val month = (calendar.get(Calendar.MONTH) / interval) * interval
-        calendar.setTimeInMillis(0)
-        calendar.set(Calendar.YEAR, year)
-        calendar.set(Calendar.MONTH, month.toInt)
-        calendar.getTimeInMillis
-
+        val d = new DateTime(date)
+        new DateTime(d.getYear, d.getMonthOfYear, 1, 0, 0).getMillis
       case ChronoUnit.YEARS =>
-        calendar.setTime(date)
-        val year = (calendar.get(Calendar.YEAR) / interval) * interval
-        calendar.setTimeInMillis(0)
-        calendar.set(Calendar.YEAR, year.toInt)
-        calendar.getTimeInMillis
-
+        val d = new DateTime(date)
+        new DateTime(d.getYear, 1, 1, 0, 0).getMillis
       case other =>
         val duration = other.getDuration.toMillis * interval
-        (date.getTime / duration) * duration
+        date.getTime - (date.getTime % duration)
     }
 
   def keyToDate(key: Long): Date = new Date(key)
