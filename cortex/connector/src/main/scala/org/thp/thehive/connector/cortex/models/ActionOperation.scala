@@ -7,16 +7,25 @@ import play.api.libs.json._
   */
 trait ActionOperation
 
-case class AddTagToCase(tag: String)                                          extends ActionOperation
-case class AddTagToArtifact(tag: String)                                      extends ActionOperation
-case class CreateTask(title: String, description: String)                     extends ActionOperation
-case class AddCustomFields(name: String, tpe: String, value: JsValue)         extends ActionOperation
-case class CloseTask()                                                        extends ActionOperation
-case class MarkAlertAsRead()                                                  extends ActionOperation
-case class AddLogToTask(content: String, owner: Option[String])               extends ActionOperation
-case class AddTagToAlert(tag: String)                                         extends ActionOperation
-case class AddArtifactToCase(data: String, dataType: String, message: String) extends ActionOperation
-case class AssignCase(owner: String)                                          extends ActionOperation
+case class AddTagToCase(tag: String)                                  extends ActionOperation
+case class AddTagToArtifact(tag: String)                              extends ActionOperation
+case class CreateTask(title: String, description: String)             extends ActionOperation
+case class AddCustomFields(name: String, tpe: String, value: JsValue) extends ActionOperation
+case class CloseTask()                                                extends ActionOperation
+case class MarkAlertAsRead()                                          extends ActionOperation
+case class AddLogToTask(content: String, owner: Option[String])       extends ActionOperation
+case class AddTagToAlert(tag: String)                                 extends ActionOperation
+case class AddArtifactToCase(
+    data: String,
+    dataType: String,
+    message: String,
+    tlp: Option[Int],
+    ioc: Option[Boolean],
+    sighted: Option[Boolean],
+    ignoreSimilarity: Option[Boolean],
+    tags: Option[Seq[String]]
+)                                    extends ActionOperation
+case class AssignCase(owner: String) extends ActionOperation
 
 object ActionOperation {
   val addTagToCaseFormat: OFormat[AddTagToCase]           = Json.format[AddTagToCase]
