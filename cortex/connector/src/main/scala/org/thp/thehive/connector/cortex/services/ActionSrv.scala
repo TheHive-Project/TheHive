@@ -96,7 +96,7 @@ class ActionSrv @Inject() (
         job.report.flatMap(_.full),
         client.name,
         job.id,
-        job.report.fold[Seq[JsObject]](Nil)(_.operations)
+        Nil
       )
       createdAction <- Future.fromTry {
         db.tryTransaction { implicit graph =>

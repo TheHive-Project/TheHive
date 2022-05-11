@@ -17,7 +17,8 @@ case class OutputJob(
     cortexId: String,
     cortexJobId: String,
     id: String,
-    case_artifact: Option[OutputObservable]
+    case_artifact: Option[OutputObservable],
+    operations: String
 )
 
 object OutputJob {

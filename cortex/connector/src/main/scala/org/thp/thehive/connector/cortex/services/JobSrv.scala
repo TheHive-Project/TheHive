@@ -42,6 +42,7 @@ class JobSrv @Inject() (
     observableTypeSrv: ObservableTypeSrv,
     attachmentSrv: AttachmentSrv,
     reportTagSrv: ReportTagSrv,
+    actionOperationSrv: ActionOperationSrv,
     serviceHelper: ServiceHelper,
     auditSrv: CortexAuditSrv,
     organisationSrv: OrganisationSrv,
@@ -130,6 +131,7 @@ class JobSrv @Inject() (
       .withFieldConst(_.report, None)
       .withFieldConst(_.cortexId, "tbd")
       .withFieldComputed(_.cortexJobId, _.id)
+      .withFieldConst(_.operations, Nil)
       .transform
 
   /**
@@ -167,10 +169,30 @@ class JobSrv @Inject() (
           .availableCortexClients(connector.clients, authContext.organisation)
           .find(_.name == cortexId)
           .fold[Future[CortexClient]](Future.failed(NotFoundError(s"Cortex $cortexId not found")))(Future.successful)
-      job <- Future.fromTry(updateJobStatus(jobId, cortexJob))
-      _   <- importCortexArtifacts(job, cortexJob, cortexClient)
-      _   <- Future.fromTry(importAnalyzerTags(job, cortexJob))
+      operations <- Future.fromTry(executeOperations(jobId, cortexJob))
+      job        <- Future.fromTry(updateJobStatus(jobId, cortexJob, operations))
+      _          <- importCortexArtifacts(job, cortexJob, cortexClient)
+      _          <- Future.fromTry(importAnalyzerTags(job, cortexJob))
     } yield job
+
+  def executeOperations(jobId: EntityId, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Seq[ActionOperationStatus]] =
+    db.tryTransaction { implicit graph =>
+      get(jobId)
+        .observable
+        .project(_.by.by(_.`case`.option))
+        .getOrFail("Observable")
+        .map {
+          case (relatedObservable, relatedCase) =>
+            cortexJob
+              .report
+              .fold[Seq[ActionOperation]](Nil)(_.operations.map(_.as[ActionOperation]))
+              .map { operation =>
+                actionOperationSrv
+                  .execute(relatedObservable, operation, relatedCase, None)
+                  .fold(t => ActionOperationStatus(operation, success = false, t.getMessage), identity)
+              }
+        }
+    }
 
   /**
     * Update job status, set the endDate and remove artifacts from report
@@ -180,7 +202,9 @@ class JobSrv @Inject() (
     * @param authContext the authentication context
     * @return the updated job
     */
-  private def updateJobStatus(jobId: EntityId, cortexJob: CortexJob)(implicit authContext: AuthContext): Try[Job with Entity] =
+  private def updateJobStatus(jobId: EntityId, cortexJob: CortexJob, operations: Seq[ActionOperationStatus])(implicit
+      authContext: AuthContext
+  ): Try[Job with Entity] =
     db.tryTransaction { implicit graph =>
       getOrFail(jobId).flatMap { job =>
         val report  = cortexJob.report.flatMap(r => r.full orElse r.errorMessage.map(m => Json.obj("errorMessage" -> m)))
@@ -193,6 +217,7 @@ class JobSrv @Inject() (
             .update(_.endDate, endDate)
             .update(_._updatedAt, Some(new Date))
             .update(_._updatedBy, Some(authContext.userId))
+            .update(_.operations, operations.map(o => Json.toJsObject(o)))
             .getOrFail("Job")
           observable <- get(job).observable.getOrFail("Observable")
           _ <-
