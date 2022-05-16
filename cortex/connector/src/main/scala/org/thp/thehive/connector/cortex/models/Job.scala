@@ -29,7 +29,8 @@ case class Job(
     endDate: Date, // end date of the job or if it is not finished date of the last check
     report: Option[JsObject],
     cortexId: String,
-    cortexJobId: String
+    cortexJobId: String,
+    operations: Seq[JsObject]
 )
 
 case class RichJob(
@@ -50,5 +51,5 @@ case class RichJob(
   def report: Option[JsObject]   = job.report
   def cortexId: String           = job.cortexId
   def cortexJobId: String        = job.cortexJobId
-
+  def operations: Seq[JsObject]  = job.operations
 }

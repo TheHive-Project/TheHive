@@ -50,7 +50,7 @@ object ElasticClientProvider {
       val followRedirects      = config.getOptional[Boolean]("search.redirectsEnabled")
       val maxNumberOfRedirects = config.getOptional[Int]("search.maxRedirects")
 
-      val wsConfig = Try(Json.parse(config.underlying.getValue("search.trustStore.wsConfig").render(ConfigRenderOptions.concise())).as[ProxyWSConfig])
+      val wsConfig = Try(Json.parse(config.underlying.getValue("search.wsConfig").render(ConfigRenderOptions.concise())).as[ProxyWSConfig])
         .getOrElse(ProxyWSConfig(AhcWSClientConfig(), None))
         .merge(trustManager) { (cfg, tm) =>
           cfg.copy(wsConfig =

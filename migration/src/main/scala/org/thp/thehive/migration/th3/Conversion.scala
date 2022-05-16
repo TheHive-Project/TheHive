@@ -489,7 +489,8 @@ trait Conversion {
         endDate,
         report,
         cortexId,
-        cortexJobId
+        cortexJobId,
+        Nil
       )
     )
   }

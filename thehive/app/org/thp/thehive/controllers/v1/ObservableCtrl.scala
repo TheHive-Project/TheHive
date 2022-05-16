@@ -98,7 +98,13 @@ class ObservableCtrl(
     ),
     Query[Traversal.V[Observable], Traversal.V[Case]]("case", (observableSteps, _) => observableSteps.`case`),
     Query[Traversal.V[Observable], Traversal.V[Alert]]("alert", (observableSteps, _) => observableSteps.alert),
-    Query[Traversal.V[Observable], Traversal.V[Share]]("shares", (observableSteps, authContext) => observableSteps.shares.visible(authContext))
+    Query[Traversal.V[Observable], Traversal.V[Share]]("shares", (observableSteps, authContext) => observableSteps.shares.visible(authContext)),
+    Query[Traversal.V[Observable], Traversal.V[Observable]]("fromCase", (observableSteps, _) => observableSteps.filter(_.shares)),
+    Query[Traversal.V[Observable], Traversal.V[Observable]]("fromAlert", (observableSteps, _) => observableSteps.filter(_.alert)),
+    Query[Traversal.V[Observable], Traversal.V[Observable]](
+      "fromJobReport",
+      (observableSteps, _) => observableSteps.filter(_.inE("ReportObservable"))
+    )
   )
 
   def createInCase(caseId: String): Action[AnyContent] =

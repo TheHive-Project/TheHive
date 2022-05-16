@@ -47,6 +47,7 @@ object Conversion {
       .withFieldComputed(_.id, _._id.toString)
       .withFieldConst(_._type, "case_artifact_job")
       .withFieldConst(_.case_artifact, None)
+      .withFieldComputed(_.operations, a => JsArray(a.operations).toString)
       .enableMethodAccessors
       .transform
   )
@@ -80,6 +81,7 @@ object Conversion {
               Some(observableWithExtraOutput.toValue((richObservable, JsObject.empty, Some(Left(richCase)))))
           }
         )
+        .withFieldComputed(_.operations, a => JsArray(a.operations).toString)
         .enableMethodAccessors
         .transform
     }

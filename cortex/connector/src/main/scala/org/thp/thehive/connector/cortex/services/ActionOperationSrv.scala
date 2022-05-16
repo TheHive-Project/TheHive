@@ -97,7 +97,7 @@ class ActionOperationSrv(
           _ <- logSrv.create(Log(content, new Date()), t, None)
         } yield updateOperation(operation)
 
-      case AddArtifactToCase(data, dataType, message) =>
+      case AddArtifactToCase(data, dataType, message, tlp, ioc, sighted, ignoreSimilarity, tags) =>
         for {
           c            <- relatedCase.fold[Try[Case with Entity]](Failure(InternalError("Unable to apply action AddArtifactToCase without case")))(Success(_))
           organisation <- organisationSrv.getOrFail(authContext.organisation)
@@ -105,12 +105,12 @@ class ActionOperationSrv(
             c,
             Observable(
               message = Some(message),
-              tlp = 2,
-              ioc = false,
-              sighted = false,
-              ignoreSimilarity = None,
+              tlp = tlp.getOrElse(2),
+              ioc = ioc.getOrElse(false),
+              sighted = sighted.getOrElse(false),
+              ignoreSimilarity = ignoreSimilarity,
               dataType = dataType,
-              tags = Nil,
+              tags = tags.getOrElse(Nil),
               relatedId = c._id,
               organisationIds = Set(organisation._id)
             ),
