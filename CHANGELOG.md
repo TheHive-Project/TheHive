@@ -1,5 +1,18 @@
 # Change Log
 
+## [4.1.20](https://github.com/TheHive-Project/TheHive/milestone/90) (2022-05-16)
+
+**Implemented enhancements:**
+
+- [Enhancement] Improve artifact creation from responder operation [\#2383](https://github.com/TheHive-Project/TheHive/issues/2383)
+- [Enhancement] Accept operations in analyzer reports [\#2384](https://github.com/TheHive-Project/TheHive/issues/2384)
+- [Enhancement] Add queries to filter observables based on the type of object it belongs to [\#2385](https://github.com/TheHive-Project/TheHive/issues/2385)
+
+**Fixed bugs:**
+
+- [Bug] Unable to use AWS S3 as storage backend  [\#2316](https://github.com/TheHive-Project/TheHive/issues/2316)
+- [Bug] Typo on migration elasticsearch http config [\#2374](https://github.com/TheHive-Project/TheHive/issues/2374)
+
 ## [4.1.19](https://github.com/TheHive-Project/TheHive/milestone/89) (2022-04-07)
 
 **Implemented enhancements:**
