@@ -87,12 +87,21 @@
         {
           "data": "192.168.1.1",
           "message": "myIp",
-          "tags": [],
+          "tags": ["tag-test"],
           "tlp": 2,
           "dataType": "ip"
         }
       ],
       "operations": [
+        {
+          "type": "AddArtifactToCase",
+          "data": "myData",
+          "dataType": "other",
+          "message": "test-operation",
+          "tlp": 3,
+          "ignoreSimilarity": false,
+          "tags": ["tag1", "tag2"]
+        }
       ]
     },
     "tlp": 2,
