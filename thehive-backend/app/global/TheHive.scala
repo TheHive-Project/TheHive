@@ -1,27 +1,24 @@
 package global
 
-import java.lang.reflect.Modifier
-
-import scala.collection.JavaConverters._
-
-import play.api.libs.concurrent.AkkaGuiceSupport
-import play.api.{Configuration, Environment, Logger, Mode}
-
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import connectors.Connector
 import controllers.{AssetCtrl, AssetCtrlDev, AssetCtrlProd}
 import models.Migration
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
-import org.reflections.Reflections
-import org.reflections.scanners.SubTypesScanner
-import org.reflections.util.ConfigurationBuilder
-import services._
-import services.mappers.{MultiUserMapperSrv, UserMapper}
-
 import org.elastic4play.models.BaseModelDef
 import org.elastic4play.services.auth.MultiAuthSrv
 import org.elastic4play.services.{AuthSrv, MigrationOperations, UserSrv => EUserSrv}
+import org.reflections.Reflections
+import org.reflections.scanners.Scanners
+import org.reflections.util.ConfigurationBuilder
+import play.api.libs.concurrent.AkkaGuiceSupport
+import play.api.{Configuration, Environment, Logger, Mode}
+import services._
+import services.mappers.{MultiUserMapperSrv, UserMapper}
+
+import java.lang.reflect.Modifier
+import scala.collection.JavaConverters._
 
 class TheHive(environment: Environment, val configuration: Configuration) extends AbstractModule with ScalaModule with AkkaGuiceSupport {
   private[TheHive] lazy val logger = Logger(s"module")
@@ -41,10 +38,10 @@ class TheHive(environment: Environment, val configuration: Configuration) extend
         .forPackages("connectors.cortex")
         .forPackages("connectors.misp")
         .forPackages("connectors.metrics")
-        .addClassLoader(getClass.getClassLoader)
-        .addClassLoader(environment.getClass.getClassLoader)
+        .addClassLoaders(getClass.getClassLoader)
+        .addClassLoaders(environment.getClass.getClassLoader)
         .setExpandSuperTypes(false)
-        .setScanners(new SubTypesScanner(false))
+        .setScanners(Scanners.SubTypes)
     )
 
     reflectionClasses

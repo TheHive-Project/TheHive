@@ -1,14 +1,10 @@
 package controllers
 
-import java.nio.file.Files
-
 import akka.stream.scaladsl.FileIO
-import javax.inject.{Inject, Singleton}
 import models.Roles
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.{CompressionLevel, EncryptionMethod}
-
 import org.elastic4play.Timed
 import org.elastic4play.controllers.Authenticated
 import org.elastic4play.models.AttachmentAttributeFormat
@@ -16,7 +12,11 @@ import org.elastic4play.services.{AttachmentSrv, ExecutionContextSrv}
 import play.api.http.HttpEntity
 import play.api.libs.Files.DefaultTemporaryFileCreator
 import play.api.mvc._
-import play.api.{mvc, Configuration}
+import play.api.{Configuration, mvc}
+
+import java.net.URLEncoder
+import java.nio.file.Files
+import javax.inject.{Inject, Singleton}
 
 /**
   * Controller used to access stored attachments (plain or zipped)
@@ -58,13 +58,13 @@ class AttachmentCtrl(
     executionContextSrv.withDefault { implicit ec =>
       if (hash.startsWith("{{")) // angularjs hack
         NoContent
-      else if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
+      else if (name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).nonEmpty)
         mvc.Results.BadRequest("File name is invalid")
       else
         Result(
           header = ResponseHeader(
             200,
-            Map("Content-Disposition" -> s"""attachment; filename="${name.getOrElse(hash)}"""", "Content-Transfer-Encoding" -> "binary")
+            Map("Content-Disposition" -> s"""attachment; filename="${URLEncoder.encode(name.getOrElse(hash), "utf-8")}"""", "Content-Transfer-Encoding" -> "binary")
           ),
           body = HttpEntity.Streamed(attachmentSrv.source(hash), None, None)
         )
@@ -79,7 +79,7 @@ class AttachmentCtrl(
   @Timed("controllers.AttachmentCtrl.downloadZip")
   def downloadZip(hash: String, name: Option[String]): Action[AnyContent] = authenticated(Roles.read) { _ =>
     executionContextSrv.withDefault { implicit ec =>
-      if (!name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).isEmpty)
+      if (name.getOrElse("").intersect(AttachmentAttributeFormat.forbiddenChar).nonEmpty)
         BadRequest("File name is invalid")
       else {
         val f = tempFileCreator.create("zip", hash).path
@@ -99,7 +99,7 @@ class AttachmentCtrl(
           header = ResponseHeader(
             200,
             Map(
-              "Content-Disposition"       -> s"""attachment; filename="${name.getOrElse(hash)}.zip"""",
+              "Content-Disposition"       -> s"""attachment; filename="${URLEncoder.encode(name.getOrElse(hash), "utf-8")}.zip"""",
               "Content-Type"              -> "application/zip",
               "Content-Transfer-Encoding" -> "binary",
               "Content-Length"            -> Files.size(f).toString

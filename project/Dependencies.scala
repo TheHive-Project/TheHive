@@ -1,7 +1,7 @@
 import sbt._
 
 object Dependencies {
-  val scalaVersion = "2.12.11"
+  val scalaVersion = "2.12.16"
 
   object Library {
 
@@ -15,11 +15,11 @@ object Dependencies {
       val guice   = "com.typesafe.play" %% "play-guice"      % play.core.PlayVersion.current
     }
 
-    val scalaGuice = "net.codingwell" %% "scala-guice" % "4.2.6"
+    val scalaGuice = "net.codingwell" %% "scala-guice" % "5.1.0"
 
-    val reflections      = "org.reflections"     % "reflections"         % "0.9.11"
-    val zip4j            = "net.lingala.zip4j"   % "zip4j"               % "2.6.0"
-    val elastic4play     = "org.thehive-project" %% "elastic4play"       % "1.13.1"
+    val reflections      = "org.reflections"     % "reflections"         % "0.10.2"
+    val zip4j            = "net.lingala.zip4j"   % "zip4j"               % "2.10.0"
+    val elastic4play     = "org.thehive-project" %% "elastic4play"       % "1.13.4"
     val akkaCluster      = "com.typesafe.akka"   %% "akka-cluster"       % play.core.PlayVersion.akkaVersion
     val akkaClusterTyped = "com.typesafe.akka"   %% "akka-cluster-typed" % play.core.PlayVersion.akkaVersion
     val akkaClusterTools = "com.typesafe.akka"   %% "akka-cluster-tools" % play.core.PlayVersion.akkaVersion

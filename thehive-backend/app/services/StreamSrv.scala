@@ -8,7 +8,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import play.api.Logger
 import play.api.libs.json.JsObject
 
-import akka.actor.{actorRef2Scala, Actor, ActorRef, Cancellable, PoisonPill}
+import akka.actor.{Actor, ActorRef, Cancellable, PoisonPill}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Unsubscribe}
 import services.StreamActor.{StreamMessages, Submit}
