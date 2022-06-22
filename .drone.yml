@@ -35,6 +35,7 @@ steps:
           exit 1
         fi
         . ~/.nvm/nvm.sh
+        nvm install 12
         npm install -g bower grunt
         [ -n "$PLUGIN_PGP_KEY" ] && gpg --batch --import - <<< $PLUGIN_PGP_KEY
         sbt -Duser.home=$PWD docker:stage debian:packageBin rpm:packageBin universal:packageBin
@@ -48,7 +49,7 @@ steps:
         mv target/rpm/RPMS/noarch/thehive*.rpm target/
         mv target/universal/thehive*.zip target/
     when:
-      event: [tag, promote]
+      event: [push, tag, promote]
 
   # Save external libraries in cache
   - name: save-cache
