@@ -1,7 +1,7 @@
 package models
 
 import com.sksamuel.elastic4s.ElasticDsl.keywordField
-import com.sksamuel.elastic4s.requests.mappings.KeywordField
+import com.sksamuel.elastic4s.fields.KeywordField
 import models.JsonFormat.roleFormat
 import org.elastic4play.controllers.{InputValue, JsonInputValue, StringInputValue}
 import org.elastic4play.models.AttributeFormat
