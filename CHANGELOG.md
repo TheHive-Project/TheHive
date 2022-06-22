@@ -1,5 +1,12 @@
 # Change Log
 
+## [4.1.21](https://github.com/TheHive-Project/TheHive/milestone/91) (2022-06-22)
+
+**Fixed bugs:**
+
+- [Bug] S3 storage fails with old version of Minio [\#2388](https://github.com/TheHive-Project/TheHive/issues/2388)
+- [Bug ] Authentication Bypass Vulnerability [\#2391](https://github.com/TheHive-Project/TheHive/issues/2391)
+
 ## [4.1.20](https://github.com/TheHive-Project/TheHive/milestone/90) (2022-05-16)
 
 **Implemented enhancements:**
