@@ -73,6 +73,7 @@ object Output {
               integrityCheckOpsBindings.addBinding.to[TagIntegrityCheck]
               integrityCheckOpsBindings.addBinding.to[TaskIntegrityCheck]
               integrityCheckOpsBindings.addBinding.to[UserIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[RoleIntegrityCheck]
 
               val schemaBindings = ScalaMultibinder.newSetBinder[UpdatableSchema](binder)
               schemaBindings.addBinding.to[TheHiveSchemaDefinition]

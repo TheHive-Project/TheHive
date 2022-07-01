@@ -1,5 +1,15 @@
 # Change Log
 
+## [4.1.22](https://github.com/TheHive-Project/TheHive/milestone/93) (2022-07-01)
+
+**Implemented enhancements:**
+
+- [Enhancement] Add check on user role [\#2401](https://github.com/TheHive-Project/TheHive/issues/2401)
+
+**Fixed bugs:**
+
+- [Bug] Use dedicated stream topic for stream dispatcher subscription [\#2400](https://github.com/TheHive-Project/TheHive/issues/2400)
+
 ## [4.1.21](https://github.com/TheHive-Project/TheHive/milestone/91) (2022-06-22)
 
 **Fixed bugs:**

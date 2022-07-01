@@ -1,6 +1,6 @@
 package org.thp.thehive.services
 
-import akka.actor.{actorRef2Scala, Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
+import akka.actor.{Actor, ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, PoisonPill, Props}
 import akka.pattern.{ask, AskTimeoutException}
 import akka.serialization.Serializer
 import akka.util.Timeout
@@ -26,7 +26,8 @@ import scala.util.{Random, Try}
 sealed trait StreamMessage extends Serializable
 
 object StreamTopic {
-  def apply(streamId: String = ""): String = if (streamId.isEmpty) "stream" else s"stream-$streamId"
+  def apply(streamId: String): String = s"stream-$streamId"
+  val dispatcher: String              = "stream"
 }
 
 case class AuditStreamMessage(id: EntityId*) extends StreamMessage
@@ -192,7 +193,7 @@ class StreamSrv @Inject() (
       )
     logger.debug(s"Register stream actor ${streamActor.path}")
     eventSrv.subscribe(StreamTopic(streamId), streamActor)
-    eventSrv.subscribe(StreamTopic(), streamActor)
+    eventSrv.subscribe(StreamTopic.dispatcher, streamActor)
     streamId
   }
 

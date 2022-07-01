@@ -50,8 +50,8 @@ class FlowActor extends Actor {
   def fromDate: Date = new Date(System.currentTimeMillis() - maxAgeConfig.get.toMillis)
 
   lazy val eventSrv: EventSrv   = injector.getInstance(classOf[EventSrv])
-  override def preStart(): Unit = eventSrv.subscribe(StreamTopic(), self)
-  override def postStop(): Unit = eventSrv.unsubscribe(StreamTopic(), self)
+  override def preStart(): Unit = eventSrv.subscribe(StreamTopic.dispatcher, self)
+  override def postStop(): Unit = eventSrv.unsubscribe(StreamTopic.dispatcher, self)
 
   def flowQuery(
       caseId: Option[EntityIdOrName]
