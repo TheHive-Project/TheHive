@@ -74,6 +74,7 @@ class IntegrityCheckApp(val configuration: Configuration, val db: Database)(impl
   lazy val observableSrv: ObservableSrv                               = wire[ObservableSrv]
   lazy val dataSrv: DataSrv                                           = wire[DataSrv]
   lazy val alertSrv: AlertSrv                                         = wire[AlertSrv]
+  integrityCheckOpsBindings.addBinding.to[RoleIntegrityCheck]
 
   lazy val checks = Seq(
     wire[AlertIntegrityCheck],

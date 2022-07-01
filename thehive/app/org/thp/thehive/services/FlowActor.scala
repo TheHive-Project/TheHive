@@ -45,8 +45,8 @@ class FlowActor(
     appConfig.item[FiniteDuration]("flow.maxAge", "Max age of audit logs shown in initial flow")
   def fromDate: Date = new Date(System.currentTimeMillis() - maxAgeConfig.get.toMillis)
 
-  override def preStart(): Unit = eventSrv.subscribe(StreamTopic(), self)
-  override def postStop(): Unit = eventSrv.unsubscribe(StreamTopic(), self)
+  override def preStart(): Unit = eventSrv.subscribe(StreamTopic.dispatcher, self)
+  override def postStop(): Unit = eventSrv.unsubscribe(StreamTopic.dispatcher, self)
 
   def flowQuery(
       caseId: Option[EntityIdOrName]

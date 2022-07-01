@@ -132,7 +132,8 @@ class TheHiveModule(app: ScalligraphApplication) extends ScalligraphModule with 
     () => wire[AlertIntegrityCheck],
     () => wire[TaskIntegrityCheck],
     () => wire[ObservableIntegrityCheck],
-    () => wire[LogIntegrityCheck]
+    () => wire[LogIntegrityCheck],
+    () => wire[RoleIntegrityCheck]
   )
 
   lazy val entrypoint: Entrypoint     = wire[Entrypoint]

@@ -95,7 +95,7 @@ class AuditSrv(
           case Status.COMMIT =>
             logger.debug("Sending audit to stream bus and to notification actor")
             val auditIds = ids.map(_._2)
-            eventSrv.publish(StreamTopic())(AuditStreamMessage(auditIds: _*))
+            eventSrv.publish(StreamTopic.dispatcher)(AuditStreamMessage(auditIds: _*))
             notificationActor ! AuditNotificationMessage(auditIds: _*)
           case _ =>
         }

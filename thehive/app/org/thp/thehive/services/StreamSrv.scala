@@ -22,7 +22,8 @@ import scala.util.{Random, Try}
 sealed trait StreamMessage extends Serializable
 
 object StreamTopic {
-  def apply(streamId: String = ""): String = if (streamId.isEmpty) "stream" else s"stream-$streamId"
+  def apply(streamId: String): String = s"stream-$streamId"
+  val dispatcher: String              = "stream"
 }
 
 case class AuditStreamMessage(id: EntityId*) extends StreamMessage
@@ -204,7 +205,7 @@ class StreamSrv(
       )
     logger.debug(s"Register stream actor ${streamActor.path}")
     eventSrv.subscribe(StreamTopic(streamId), streamActor)
-    eventSrv.subscribe(StreamTopic(), streamActor)
+    eventSrv.subscribe(StreamTopic.dispatcher, streamActor)
     streamId
   }
 

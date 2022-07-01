@@ -120,7 +120,8 @@ class OutputModule(val configuration: Configuration, val actorSystem: ActorSyste
     wire[ResolutionStatusIntegrityCheck],
     wire[TagIntegrityCheck],
     wire[TaskIntegrityCheck],
-    wire[UserIntegrityCheck]
+    wire[UserIntegrityCheck],
+    wire[RoleIntegrityCheck]
   )
 }
 
