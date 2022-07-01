@@ -58,7 +58,8 @@ trait TestAppBuilder {
         classOf[CaseTemplateIntegrityCheck],
         classOf[DataIntegrityCheck],
         classOf[CaseIntegrityCheck],
-        classOf[AlertIntegrityCheck]
+        classOf[AlertIntegrityCheck],
+        classOf[RoleIntegrityCheck]
       )
       .bindActor[DummyActor]("config-actor")
       .bindActor[DummyActor]("notification-actor")

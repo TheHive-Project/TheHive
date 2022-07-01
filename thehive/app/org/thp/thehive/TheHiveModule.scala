@@ -104,6 +104,7 @@ class TheHiveModule(environment: Environment, configuration: Configuration) exte
     integrityChecksBindings.addBinding.to[TaskIntegrityCheck]
     integrityChecksBindings.addBinding.to[ObservableIntegrityCheck]
     integrityChecksBindings.addBinding.to[LogIntegrityCheck]
+    integrityChecksBindings.addBinding.to[RoleIntegrityCheck]
     bind[TypedActorRef[IntegrityCheck.Request]].toProvider[IntegrityCheckActorProvider].asEagerSingleton()
     bind[TypedActorRef[CaseNumberActor.Request]].toProvider[CaseNumberActorProvider]
 

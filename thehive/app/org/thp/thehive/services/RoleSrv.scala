@@ -53,3 +53,20 @@ object RoleOps {
 
   }
 }
+
+@Singleton
+class RoleIntegrityCheck @Inject() (
+    val db: Database,
+    val service: RoleSrv,
+    profileSrv: ProfileSrv,
+    organisationSrv: OrganisationSrv,
+    roleSrv: RoleSrv
+) extends GlobalCheck[Role]
+    with IntegrityCheckOps[Role] {
+  override def globalCheck(traversal: Traversal.V[Role])(implicit graph: Graph): Map[String, Long] = {
+    val orgOphanCount      = service.startTraversal.filterNot(_.organisation).sideEffect(_.drop()).getCount
+    val userOrphanCount    = service.startTraversal.filterNot(_.user).sideEffect(_.drop()).getCount
+    val profileOrphanCount = service.startTraversal.filterNot(_.profile).sideEffect(_.drop()).getCount
+    Map("orgOrphan" -> orgOphanCount, "userOrphan" -> userOrphanCount, "profileOrphan" -> profileOrphanCount)
+  }
+}

@@ -59,6 +59,7 @@ trait IntegrityCheckApp {
               integrityCheckOpsBindings.addBinding.to[TagIntegrityCheck]
               integrityCheckOpsBindings.addBinding.to[TaskIntegrityCheck]
               integrityCheckOpsBindings.addBinding.to[UserIntegrityCheck]
+              integrityCheckOpsBindings.addBinding.to[RoleIntegrityCheck]
 
               bind[Environment].toInstance(Environment.simple())
               bind[ApplicationLifecycle].to[DefaultApplicationLifecycle]
