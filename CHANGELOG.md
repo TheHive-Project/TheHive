@@ -1,5 +1,12 @@
 # Change Log
 
+## [4.1.23](https://github.com/TheHive-Project/TheHive/milestone/94) (2022-07-22)
+
+**Fixed bugs:**
+
+- [Bug] system user can be deleted by integrity checks [\#2406](https://github.com/TheHive-Project/TheHive/issues/2406)
+
+
 ## [4.1.22](https://github.com/TheHive-Project/TheHive/milestone/93) (2022-07-01)
 
 **Implemented enhancements:**
