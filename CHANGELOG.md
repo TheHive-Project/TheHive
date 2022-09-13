@@ -1,11 +1,16 @@
 # Change Log
 
-## [4.1.23](https://github.com/TheHive-Project/TheHive/milestone/94) (2022-07-22)
+## [4.1.24](https://github.com/TheHive-Project/TheHive/milestone/95) (2022-09-12)
+
+**Fixed bugs:**
+
+- [Bug] All analyzers become unavailable when an analyzer is updated [\#2420](https://github.com/TheHive-Project/TheHive/issues/2420)
+
+## [4.1.23](https://github.com/TheHive-Project/TheHive/milestone/94) (2022-08-30)
 
 **Fixed bugs:**
 
 - [Bug] system user can be deleted by integrity checks [\#2406](https://github.com/TheHive-Project/TheHive/issues/2406)
-
 
 ## [4.1.22](https://github.com/TheHive-Project/TheHive/milestone/93) (2022-07-01)
 
