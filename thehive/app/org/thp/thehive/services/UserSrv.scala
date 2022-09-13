@@ -1,7 +1,7 @@
 package org.thp.thehive.services
 
 import akka.actor.typed.ActorRef
-import org.apache.tinkerpop.gremlin.process.traversal.Order
+import org.apache.tinkerpop.gremlin.process.traversal.{Order, P}
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.thp.scalligraph.auth.{AuthContext, AuthContextImpl, Permission}
 import org.thp.scalligraph.controllers.FFile
@@ -345,7 +345,13 @@ class UserIntegrityCheck(
       (_.out("UserRole"), _.in("UserRole")),
       (_.out("RoleOrganisation"), _.in("RoleOrganisation"))
     ).flatMap(ElementSelector.firstCreatedElement(_)).map(e => removeVertices(e._2)).size
-    val orphanCount = service.startTraversal.filterNot(_.organisations).sideEffect(_.drop()).getCount
+    val orphanCount =
+      service
+        .startTraversal
+        .has(_.login, P.without(User.initialValues.map(_.login): _*))
+        .filterNot(_.organisations)
+        .sideEffect(_.drop())
+        .getCount
     Map("duplicateRoleLinks" -> duplicateRoleLinks.toLong, "orphan" -> orphanCount)
   }
 }

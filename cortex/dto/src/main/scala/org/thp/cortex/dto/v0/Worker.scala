@@ -14,25 +14,24 @@ case class OutputWorker(
 
 object OutputWorker {
   implicit val writes: Writes[OutputWorker] = Json.writes[OutputWorker]
-  implicit val reads: Reads[OutputWorker] = Reads[OutputWorker](
-    json =>
-      for {
-        id           <- (json \ "id").validate[String]
-        name         <- (json \ "name").validate[String]
-        version      <- (json \ "version").validate[String]
-        description  <- (json \ "description").validate[String]
-        dataTypeList <- (json \ "dataTypeList").validate[Seq[String]]
-        maxTlp = (json \ "maxTlp").asOpt[Long].getOrElse(3L)
-        maxPap = (json \ "maxPap").asOpt[Long].getOrElse(3L)
-      } yield OutputWorker(
-        id,
-        name,
-        version,
-        description,
-        dataTypeList,
-        maxTlp,
-        maxPap
-      )
+  implicit val reads: Reads[OutputWorker] = Reads[OutputWorker](json =>
+    for {
+      id           <- (json \ "id").validate[String]
+      name         <- (json \ "name").validate[String]
+      version      <- (json \ "version").validate[String]
+      description  <- (json \ "description").validate[String]
+      dataTypeList <- (json \ "dataTypeList").validateOpt[Seq[String]]
+      maxTlp = (json \ "maxTlp").asOpt[Long].getOrElse(3L)
+      maxPap = (json \ "maxPap").asOpt[Long].getOrElse(3L)
+    } yield OutputWorker(
+      id,
+      name,
+      version,
+      description,
+      dataTypeList.getOrElse(Nil),
+      maxTlp,
+      maxPap
+    )
   )
 }
 
