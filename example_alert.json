@@ -1,0 +1,10 @@
+{
+  "title": "Phishing Attempt",
+  "description": "Suspicious email with a fake login link detected by the email gateway.",
+  "source": "Email Gateway",
+  "type": "alert",
+  "severity": 2,
+  "tags": ["phishing", "email", "login"],
+  "tlp": 2,
+  "pap": 2
+}
