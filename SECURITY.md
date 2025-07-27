@@ -20,7 +20,7 @@ In this email, please include as much information as possible that can help us b
 - Application and version
 - Special configuration and usage required to reproduce the issue
 - Step-by-step instructions to reproduce the issue
-- Exploit code is any
+- Exploit code if any
 - Impact of the issue
 
 This will be very useful and help us triage your report more quickly.
